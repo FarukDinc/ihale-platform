@@ -1,0 +1,927 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard — İhalePlatform</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <style>
+    body { background: var(--navy); }
+
+    /* ---- LAYOUT ---- */
+    .app {
+      display: grid;
+      grid-template-columns: 240px 1fr;
+      min-height: 100vh;
+    }
+
+    /* ---- SIDEBAR ---- */
+    .sidebar {
+      background: var(--navy-mid);
+      border-right: 1px solid var(--border);
+      padding: 0;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+    }
+
+    .sidebar-logo {
+      padding: 20px 20px 16px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .sidebar-logo a {
+      font-family: var(--font-display);
+      font-size: 18px;
+      font-weight: 800;
+      color: var(--white);
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .sidebar-logo span { color: var(--amber); }
+
+    .sidebar-nav {
+      padding: 16px 12px;
+      flex: 1;
+    }
+
+    .nav-section-label {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      padding: 8px 10px 4px;
+      margin-top: 12px;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 10px;
+      border-radius: var(--radius-sm);
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 500;
+      transition: all var(--transition);
+      margin-bottom: 2px;
+    }
+
+    .nav-item:hover { background: var(--card-bg); color: var(--white); }
+
+    .nav-item.active {
+      background: rgba(240,165,0,0.1);
+      color: var(--amber);
+    }
+
+    .nav-item .icon { font-size: 16px; width: 20px; text-align: center; }
+
+    .nav-badge {
+      margin-left: auto;
+      background: var(--amber);
+      color: var(--navy);
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 20px;
+    }
+
+    .sidebar-footer {
+      padding: 16px 12px;
+      border-top: 1px solid var(--border);
+    }
+
+    .user-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 10px;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: background var(--transition);
+    }
+
+    .user-row:hover { background: var(--card-bg); }
+
+    .user-avatar {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: rgba(240,165,0,0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--amber);
+      flex-shrink: 0;
+    }
+
+    .user-info .user-name { font-size: 13px; font-weight: 600; color: var(--white); }
+    .user-info .user-plan { font-size: 11px; color: var(--muted); }
+
+    /* ---- MAIN CONTENT ---- */
+    .main {
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+
+    /* ---- TOP BAR ---- */
+    .topbar {
+      background: var(--navy-mid);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 28px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    .topbar-search {
+      flex: 1;
+      max-width: 480px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: var(--navy);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 9px 14px;
+    }
+
+    .topbar-search input {
+      flex: 1;
+      background: none;
+      border: none;
+      outline: none;
+      color: var(--white);
+      font-size: 14px;
+      font-family: var(--font-body);
+    }
+
+    .topbar-search input::placeholder { color: var(--muted); }
+
+    .topbar-actions { margin-left: auto; display: flex; gap: 12px; align-items: center; }
+
+    .icon-btn {
+      width: 36px; height: 36px;
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+      color: var(--muted);
+      font-size: 16px;
+      transition: all var(--transition);
+      position: relative;
+    }
+    .icon-btn:hover { color: var(--white); border-color: rgba(255,255,255,0.2); }
+
+    .notif-dot {
+      position: absolute;
+      top: 6px; right: 6px;
+      width: 7px; height: 7px;
+      background: var(--amber);
+      border-radius: 50%;
+      border: 1px solid var(--navy-mid);
+    }
+
+    /* ---- PAGE BODY ---- */
+    .page-body { padding: 28px; flex: 1; }
+
+    .page-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: 24px;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .page-header h1 {
+      font-size: 24px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .page-header p { font-size: 14px; color: var(--muted); }
+
+    /* ---- KPI CARDS ---- */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .kpi-card {
+      background: var(--navy-mid);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 20px;
+    }
+
+    .kpi-label {
+      font-size: 12px;
+      color: var(--muted);
+      font-weight: 500;
+      margin-bottom: 8px;
+    }
+
+    .kpi-value {
+      font-family: var(--font-display);
+      font-size: 28px;
+      font-weight: 700;
+      line-height: 1;
+      margin-bottom: 8px;
+    }
+
+    .kpi-delta {
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .kpi-delta.up { color: #4CAF50; }
+    .kpi-delta.down { color: #F44336; }
+
+    /* ---- FILTERS ---- */
+    .filters-bar {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .filter-select {
+      background: var(--navy-mid);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--white);
+      font-family: var(--font-body);
+      font-size: 13px;
+      padding: 8px 12px;
+      cursor: pointer;
+      outline: none;
+      transition: border-color var(--transition);
+    }
+
+    .filter-select:hover, .filter-select:focus { border-color: rgba(255,255,255,0.3); }
+
+    .filter-chip {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(240,165,0,0.1);
+      border: 1px solid rgba(240,165,0,0.3);
+      color: var(--amber);
+      font-size: 12px;
+      font-weight: 500;
+      padding: 6px 12px;
+      border-radius: 20px;
+      cursor: pointer;
+    }
+
+    .filter-chip .remove {
+      font-size: 14px;
+      line-height: 1;
+      opacity: 0.7;
+    }
+
+    .filter-chip .remove:hover { opacity: 1; }
+
+    .results-count {
+      margin-left: auto;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    /* ---- TABLE ---- */
+    .table-wrap {
+      background: var(--navy-mid);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+    }
+
+    .table-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .table-title {
+      font-size: 15px;
+      font-weight: 700;
+    }
+
+    .view-toggle {
+      margin-left: auto;
+      display: flex;
+      gap: 4px;
+    }
+
+    .view-btn {
+      padding: 6px 10px;
+      background: none;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--muted);
+      font-size: 13px;
+      cursor: pointer;
+      transition: all var(--transition);
+    }
+
+    .view-btn.active {
+      background: var(--card-bg);
+      color: var(--white);
+      border-color: rgba(255,255,255,0.2);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    thead tr {
+      border-bottom: 1px solid var(--border);
+    }
+
+    th {
+      padding: 11px 16px;
+      text-align: left;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      white-space: nowrap;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    th:hover { color: var(--white); }
+
+    th .sort-icon { margin-left: 4px; opacity: 0.4; }
+    th.sorted .sort-icon { opacity: 1; color: var(--amber); }
+
+    td {
+      padding: 14px 16px;
+      font-size: 13px;
+      border-bottom: 1px solid rgba(255,255,255,0.04);
+      vertical-align: middle;
+    }
+
+    tr:last-child td { border-bottom: none; }
+
+    tr:hover td { background: var(--card-bg); }
+
+    .ihale-title-cell {
+      font-weight: 500;
+      color: var(--white);
+      max-width: 280px;
+    }
+
+    .ihale-title-cell a {
+      color: inherit;
+      text-decoration: none;
+      display: block;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .ihale-title-cell a:hover { color: var(--amber); }
+
+    .ihale-kurrum-cell {
+      font-size: 11px;
+      color: var(--muted);
+      margin-top: 2px;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 3px 10px;
+      border-radius: 20px;
+      white-space: nowrap;
+    }
+
+    .badge-open { background: rgba(76,175,80,0.12); color: #4CAF50; }
+    .badge-soon { background: rgba(240,165,0,0.12); color: var(--amber); }
+    .badge-closed { background: rgba(255,255,255,0.06); color: var(--muted); }
+
+    .budget-cell {
+      font-family: var(--font-display);
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--white);
+    }
+
+    .compat-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .compat-fill {
+      height: 4px;
+      border-radius: 2px;
+      background: linear-gradient(90deg, var(--amber), #4CAF50);
+      min-width: 20px;
+    }
+
+    .compat-num {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--white);
+      min-width: 32px;
+    }
+
+    .action-btns {
+      display: flex;
+      gap: 6px;
+    }
+
+    .action-btn {
+      padding: 5px 10px;
+      font-size: 12px;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      border: 1px solid var(--border);
+      background: none;
+      color: var(--muted);
+      font-family: var(--font-body);
+      transition: all var(--transition);
+    }
+
+    .action-btn:hover { color: var(--white); border-color: rgba(255,255,255,0.3); }
+
+    .action-btn.primary {
+      background: rgba(240,165,0,0.1);
+      color: var(--amber);
+      border-color: rgba(240,165,0,0.3);
+    }
+
+    .action-btn.primary:hover { background: rgba(240,165,0,0.2); }
+
+    .table-footer {
+      padding: 14px 20px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .pagination {
+      display: flex;
+      gap: 4px;
+    }
+
+    .page-btn {
+      width: 30px; height: 30px;
+      display: flex; align-items: center; justify-content: center;
+      border-radius: var(--radius-sm);
+      background: none;
+      border: 1px solid var(--border);
+      color: var(--muted);
+      font-size: 13px;
+      cursor: pointer;
+      transition: all var(--transition);
+    }
+
+    .page-btn:hover, .page-btn.active {
+      background: var(--card-bg);
+      color: var(--white);
+      border-color: rgba(255,255,255,0.2);
+    }
+
+    .page-btn.active {
+      background: rgba(240,165,0,0.15);
+      color: var(--amber);
+      border-color: rgba(240,165,0,0.3);
+    }
+
+    /* ---- PREMIUM OVERLAY ---- */
+    .premium-overlay {
+      background: linear-gradient(180deg, transparent 0%, var(--navy-mid) 60%);
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 120px;
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      padding-bottom: 20px;
+    }
+
+    .premium-nudge {
+      background: var(--navy-mid);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 20px 28px;
+      text-align: center;
+      margin: 16px;
+      position: relative;
+    }
+
+    .premium-nudge p { font-size: 14px; color: var(--muted); margin-bottom: 12px; }
+    .premium-nudge strong { color: var(--white); }
+
+    /* ---- RESPONSIVE ---- */
+    @media (max-width: 1100px) {
+      .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    @media (max-width: 860px) {
+      .app { grid-template-columns: 1fr; }
+      .sidebar { display: none; }
+      .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    @media (max-width: 560px) {
+      .kpi-grid { grid-template-columns: 1fr 1fr; }
+      .page-body { padding: 16px; }
+    }
+  </style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ========== SIDEBAR ========== -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <a href="index.html">
+        <span style="width:6px;height:6px;background:var(--amber);border-radius:50%;display:inline-block;animation:pulse 2s infinite;"></span>
+        İhale<span>Platform</span>
+      </a>
+    </div>
+
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">Genel</div>
+      <a href="dashboard.html" class="nav-item active">
+        <span class="icon">◉</span> Dashboard
+      </a>
+      <a href="#" class="nav-item">
+        <span class="icon">⊞</span> İhaleler
+        <span class="nav-badge">2.8K</span>
+      </a>
+      <a href="#" class="nav-item">
+        <span class="icon">☆</span> Takipte
+      </a>
+      <a href="#" class="nav-item">
+        <span class="icon">🔔</span> Bildirimler
+        <span class="nav-badge">4</span>
+      </a>
+
+      <div class="nav-section-label">Analiz</div>
+      <a href="#" class="nav-item">
+        <span class="icon">📊</span> Rekabet Analizi
+      </a>
+      <a href="#" class="nav-item">
+        <span class="icon">✓</span> Uyumluluk
+      </a>
+      <a href="#" class="nav-item">
+        <span class="icon">📁</span> Dökümanlar
+      </a>
+
+      <div class="nav-section-label">Ayarlar</div>
+      <a href="#" class="nav-item">
+        <span class="icon">⚙</span> Profil & Filtreler
+      </a>
+      <a href="#" class="nav-item">
+        <span class="icon">💳</span> Abonelik
+      </a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="user-row">
+        <div class="user-avatar">FD</div>
+        <div class="user-info">
+          <div class="user-name">Faruk D.</div>
+          <div class="user-plan">Ücretsiz Plan</div>
+        </div>
+        <span style="color:var(--muted);font-size:12px;">⋮</span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ========== MAIN ========== -->
+  <div class="main">
+
+    <!-- TOP BAR -->
+    <div class="topbar">
+      <div class="topbar-search">
+        <span style="color:var(--muted);">⌕</span>
+        <input type="text" placeholder="İhale ara... (Ctrl + K)" id="main-search" />
+      </div>
+      <div class="topbar-actions">
+        <div class="icon-btn" title="Bildirimler">
+          🔔
+          <span class="notif-dot"></span>
+        </div>
+        <a href="index.html" class="btn btn-primary" style="padding:8px 16px; font-size:13px;">Pro'ya Geç ↑</a>
+      </div>
+    </div>
+
+    <!-- PAGE BODY -->
+    <div class="page-body">
+
+      <div class="page-header">
+        <div>
+          <h1>Merhaba, Faruk 👋</h1>
+          <p>Profilinize uygun <strong style="color:var(--white);">47 yeni ihale</strong> eklendi. Bugün son gün olan <strong style="color:var(--amber);">3 ihale</strong> var.</p>
+        </div>
+        <div style="display:flex; gap:8px;">
+          <a href="#" class="btn btn-ghost" style="font-size:13px; padding:9px 16px;">+ Filtre Ekle</a>
+          <a href="#" class="btn btn-primary" style="font-size:13px; padding:9px 16px;">Dışa Aktar</a>
+        </div>
+      </div>
+
+      <!-- KPI CARDS -->
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-label">Takipteki İhale</div>
+          <div class="kpi-value" style="color:var(--amber);">12</div>
+          <div class="kpi-delta up">↑ 3 bu hafta eklendi</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Aktif Türkiye İhalesi</div>
+          <div class="kpi-value">2.847</div>
+          <div class="kpi-delta up">↑ +124 bugün eklendi</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Profil Uyumu</div>
+          <div class="kpi-value" style="color:#4CAF50;">%78</div>
+          <div class="kpi-delta" style="color:var(--muted);">Sağlık + Su sektörü</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Bu Hafta Biten</div>
+          <div class="kpi-value" style="color:#F44336;">3</div>
+          <div class="kpi-delta down">⚠ Dikkat gerektiriyor</div>
+        </div>
+      </div>
+
+      <!-- FILTERS -->
+      <div class="filters-bar">
+        <select class="filter-select">
+          <option>Tüm Durumlar</option>
+          <option>Açık</option>
+          <option>Son 3 Gün</option>
+          <option>Tamamlandı</option>
+        </select>
+        <select class="filter-select">
+          <option>Tüm Sektörler</option>
+          <option>Sağlık Teknik</option>
+          <option>Su / Altyapı</option>
+          <option>Enerji</option>
+          <option>İnşaat</option>
+        </select>
+        <select class="filter-select">
+          <option>Tüm İller</option>
+          <option>Ankara</option>
+          <option>İstanbul</option>
+          <option>İzmir</option>
+        </select>
+        <select class="filter-select">
+          <option>Bütçe (Tümü)</option>
+          <option>1M TL altı</option>
+          <option>1M – 5M TL</option>
+          <option>5M – 20M TL</option>
+          <option>20M TL üzeri</option>
+        </select>
+
+        <div class="filter-chip">
+          Ankara <span class="remove">×</span>
+        </div>
+        <div class="filter-chip">
+          Sağlık Teknik <span class="remove">×</span>
+        </div>
+
+        <span class="results-count">2.847 sonuç</span>
+      </div>
+
+      <!-- TABLE -->
+      <div class="table-wrap">
+        <div class="table-header">
+          <span class="table-title">İhale Listesi</span>
+          <div class="view-toggle">
+            <button class="view-btn active">≡ Liste</button>
+            <button class="view-btn">⊞ Kart</button>
+          </div>
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th></th>
+              <th class="sorted">İhale Adı <span class="sort-icon">↕</span></th>
+              <th>Durum <span class="sort-icon">↕</span></th>
+              <th>Bütçe <span class="sort-icon">↕</span></th>
+              <th>Son Tarih <span class="sort-icon">↕</span></th>
+              <th>Uyum <span class="sort-icon">↕</span></th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- ROW 1 -->
+            <tr>
+              <td><input type="checkbox" /></td>
+              <td class="ihale-title-cell">
+                <a href="#">Hemşirelik ve Yardımcı Sağlık Hizmetleri Alımı</a>
+                <div class="ihale-kurrum-cell">Ankara Şehir Hastanesi — EKAP #2024/784231</div>
+              </td>
+              <td><span class="badge badge-soon">● Son 3 Gün</span></td>
+              <td class="budget-cell">₺4.2M</td>
+              <td style="color:var(--amber); font-size:13px;">24 Haz 2025</td>
+              <td>
+                <div class="compat-bar">
+                  <div style="flex:1; background:var(--border); height:4px; border-radius:2px; overflow:hidden;">
+                    <div class="compat-fill" style="width:88%;"></div>
+                  </div>
+                  <span class="compat-num">88%</span>
+                </div>
+              </td>
+              <td>
+                <div class="action-btns">
+                  <button class="action-btn primary">Takibe Al</button>
+                  <button class="action-btn">Detay</button>
+                </div>
+              </td>
+            </tr>
+            <!-- ROW 2 -->
+            <tr>
+              <td><input type="checkbox" /></td>
+              <td class="ihale-title-cell">
+                <a href="#">Atık Su Arıtma Tesisi Periyodik Bakım ve Onarım Hizmetleri</a>
+                <div class="ihale-kurrum-cell">ASKİ Genel Müdürlüğü — EKAP #2024/782100</div>
+              </td>
+              <td><span class="badge badge-open">● Açık</span></td>
+              <td class="budget-cell">₺8.7M</td>
+              <td style="font-size:13px; color:var(--off-white);">5 Tem 2025</td>
+              <td>
+                <div class="compat-bar">
+                  <div style="flex:1; background:var(--border); height:4px; border-radius:2px; overflow:hidden;">
+                    <div class="compat-fill" style="width:72%;"></div>
+                  </div>
+                  <span class="compat-num">72%</span>
+                </div>
+              </td>
+              <td>
+                <div class="action-btns">
+                  <button class="action-btn primary">Takibe Al</button>
+                  <button class="action-btn">Detay</button>
+                </div>
+              </td>
+            </tr>
+            <!-- ROW 3 -->
+            <tr>
+              <td><input type="checkbox" /></td>
+              <td class="ihale-title-cell">
+                <a href="#">İl Geneli Bina Elektrik Altyapı Yenileme İşleri</a>
+                <div class="ihale-kurrum-cell">MEB Ankara İl Müdürlüğü — EKAP #2024/779854</div>
+              </td>
+              <td><span class="badge badge-open">● Açık</span></td>
+              <td class="budget-cell">₺1.9M</td>
+              <td style="font-size:13px; color:var(--off-white);">8 Tem 2025</td>
+              <td>
+                <div class="compat-bar">
+                  <div style="flex:1; background:var(--border); height:4px; border-radius:2px; overflow:hidden;">
+                    <div class="compat-fill" style="width:65%;"></div>
+                  </div>
+                  <span class="compat-num">65%</span>
+                </div>
+              </td>
+              <td>
+                <div class="action-btns">
+                  <button class="action-btn primary">Takibe Al</button>
+                  <button class="action-btn">Detay</button>
+                </div>
+              </td>
+            </tr>
+            <!-- ROW 4 -->
+            <tr>
+              <td><input type="checkbox" /></td>
+              <td class="ihale-title-cell">
+                <a href="#">Merkezi Sterilizasyon Ünitesi Cihaz Bakım Hizmetleri</a>
+                <div class="ihale-kurrum-cell">Gazi Üniversitesi Hastanesi — EKAP #2024/781002</div>
+              </td>
+              <td><span class="badge badge-open">● Açık</span></td>
+              <td class="budget-cell">₺2.4M</td>
+              <td style="font-size:13px; color:var(--off-white);">11 Tem 2025</td>
+              <td>
+                <div class="compat-bar">
+                  <div style="flex:1; background:var(--border); height:4px; border-radius:2px; overflow:hidden;">
+                    <div class="compat-fill" style="width:91%;"></div>
+                  </div>
+                  <span class="compat-num">91%</span>
+                </div>
+              </td>
+              <td>
+                <div class="action-btns">
+                  <button class="action-btn primary">Takibe Al</button>
+                  <button class="action-btn">Detay</button>
+                </div>
+              </td>
+            </tr>
+            <!-- ROW 5 (blurred/premium) -->
+            <tr style="opacity:0.35; pointer-events:none; user-select:none;">
+              <td><input type="checkbox" disabled /></td>
+              <td class="ihale-title-cell">
+                <span>████████████████████████████</span>
+                <div class="ihale-kurrum-cell">████████████ — EKAP #████████</div>
+              </td>
+              <td><span class="badge badge-open">● Açık</span></td>
+              <td class="budget-cell">₺██M</td>
+              <td style="font-size:13px;">██ Tem 2025</td>
+              <td><span>%%</span></td>
+              <td></td>
+            </tr>
+            <tr style="opacity:0.2; pointer-events:none; user-select:none;">
+              <td><input type="checkbox" disabled /></td>
+              <td class="ihale-title-cell">
+                <span>██████████████████</span>
+                <div class="ihale-kurrum-cell">████████████</div>
+              </td>
+              <td><span class="badge badge-open">● Açık</span></td>
+              <td class="budget-cell">₺██M</td>
+              <td style="font-size:13px;">██ Tem 2025</td>
+              <td></td>
+              <td></td>
+            </tr>
+          </tbody>
+        </table>
+
+        <!-- Premium nudge -->
+        <div style="position:relative;">
+          <div class="premium-nudge">
+            <p>Ücretsiz planda günde <strong>10 ihale</strong> görüntüleyebilirsiniz.<br>
+            <strong>Pro'ya geçin</strong> — tüm 2.847 ihaleyi, uyumluluk analizini ve rekabet verilerini görün.</p>
+            <a href="index.html#pricing" class="btn btn-primary">Pro'ya Geç — İlk 30 Gün Ücretsiz</a>
+          </div>
+        </div>
+
+        <div class="table-footer">
+          <span>4 / 2.847 ihale gösteriliyor</span>
+          <div class="pagination">
+            <button class="page-btn">‹</button>
+            <button class="page-btn active">1</button>
+            <button class="page-btn">2</button>
+            <button class="page-btn">3</button>
+            <button class="page-btn">…</button>
+            <button class="page-btn">285</button>
+            <button class="page-btn">›</button>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /page-body -->
+  </div><!-- /main -->
+</div><!-- /app -->
+
+<script src="js/main.js"></script>
+<script>
+  // View toggle
+  document.querySelectorAll('.view-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.view-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    });
+  });
+
+  // Filter chip remove
+  document.querySelectorAll('.filter-chip .remove').forEach(el => {
+    el.addEventListener('click', () => el.closest('.filter-chip').remove());
+  });
+
+  // Takibe al button
+  document.querySelectorAll('.action-btn.primary').forEach(btn => {
+    btn.addEventListener('click', () => {
+      btn.textContent = '✓ Takipte';
+      btn.style.background = 'rgba(76,175,80,0.1)';
+      btn.style.color = '#4CAF50';
+      btn.style.borderColor = 'rgba(76,175,80,0.3)';
+    });
+  });
+</script>
+</body>
+</html>
