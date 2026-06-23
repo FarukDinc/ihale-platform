@@ -7,3 +7,4 @@ python-dotenv==1.0.1
 fastapi==0.111.0
 uvicorn==0.30.0
 iyzipay==1.0.46
+greenlet==3.0.3
