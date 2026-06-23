@@ -1,0 +1,15 @@
+ # Env dosyası — key'leri gizle
+backend/.env
+.env
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.pytest_cache/
+
+# VS Code
+.vscode/
+
+# Node
+node_modules/

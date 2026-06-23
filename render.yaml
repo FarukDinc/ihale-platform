@@ -1,0 +1,59 @@
+# ============================================================
+# Render.com Deploy Konfigürasyonu
+# Repo köküne koy: ihale-platform/render.yaml
+# Render Dashboard → New → Blueprint → repo seç
+# ============================================================
+
+services:
+
+  # ── Ana Worker Servisi ──────────────────────────────────
+  - type: worker
+    name: ihale-worker
+    runtime: python
+    rootDir: backend
+    buildCommand: |
+      pip install -r requirements.txt
+      playwright install chromium
+      playwright install-deps
+    startCommand: python worker.py cron
+
+    # Render Free tier → Paid ($7/ay) gerekiyor
+    # Free tier uyku moduna giriyor, cron çalışmaz
+    plan: starter
+
+    envVars:
+      - key: GEMINI_API_KEY
+        sync: false          # Render dashboard'dan manuel gir
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_KEY
+        sync: false
+      - key: PYTHON_VERSION
+        value: 3.11.0
+
+    # Cron: Her gün 06:00'da çalış (Türkiye 09:00)
+    schedule: "0 6 * * *"
+
+
+  # ── API Servisi (Frontend'den gelen analiz istekleri) ───
+  - type: web
+    name: ihale-api
+    runtime: python
+    rootDir: backend
+    buildCommand: |
+      pip install -r requirements.txt
+      playwright install chromium
+      playwright install-deps
+    startCommand: uvicorn api:app --host 0.0.0.0 --port $PORT
+
+    plan: starter
+
+    envVars:
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_KEY
+        sync: false
+      - key: PYTHON_VERSION
+        value: 3.11.0
