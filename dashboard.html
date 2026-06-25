@@ -853,33 +853,85 @@
     kullaniciProfil = data;
   }
 
+
+  // ── Kategori → ihale başlığı eşleştirme ────────────────
+  const KATEGORI_ANAHTAR_KELIMELER = {
+    insaat:       ["inşaat","yapım","bina","altyapı","yıkım","yol","köprü","üstyapı"],
+    saglik:       ["sağlık","ilaç","medikal","kozmetik","eczane","klinik","hastane"],
+    tibbi_cihaz:  ["tıbbi","laboratuvar","hastane ekipman","sterilizasyon","cihaz"],
+    elektronik:   ["elektronik","bilgisayar","yazıcı","iletişim","ölçü","donanım"],
+    yazilim:      ["yazılım","bilişim","bilgi yönetim","sistem","uygulama","platform"],
+    enerji:       ["enerji","elektrik","aydınlatma","sinyalizasyon","trafo","jeneratör"],
+    kanalizasyon: ["kanalizasyon","boru","su","doğalgaz","sıhhi","tesisat"],
+    temizlik:     ["temizlik","ilaçlama","geri dönüşüm","dezenfektan","çevre"],
+    guvenlik:     ["güvenlik","koruma","bekçilik","özel güvenlik"],
+    hirdavat:     ["hırdavat","nalburiye","metal","plastik","demir"],
+    makine:       ["makine","motor","konveyör","endüstriyel","sanayi"],
+    tasit:        ["taşıt","araç","iş makinesi","yedek parça","otomobil","kamyon"],
+    nakliye:      ["nakliye","taşımacılık","lojistik","kargo","servis"],
+    gida:         ["gıda","tarım","yiyecek","içecek","un","şeker","tahıl"],
+    hazir_yemek:  ["hazır yemek","lokanta","yemek","catering","toplu yemek"],
+    klima:        ["klima","soğutma","ısıtma","havalandırma","iklimlendirme"],
+    yangin:       ["yangın","söndürme","algılama","ihbar"],
+    asansor:      ["asansör","yapı otomasyonu","mekanik güvenlik"],
+    kimyasal:     ["kimyasal","dezenfektan","gübre","boya","solvent"],
+    tekstil:      ["tekstil","giyim","spor ekipman","kıyafet","üniform"],
+    mobilya:      ["mobilya","beyaz eşya","mutfak","züccaciye","büro"],
+    matbaa:       ["matbaa","kırtasiye","toner","kartuş","ambalaj","baskı"],
+    egitim:       ["eğitim","araştırma","anket","tercümanlık","kurs"],
+    is_sagligi:   ["iş sağlığı","iş güvenliği","kask","koruyucu"],
+    uydu:         ["uydu","kamera","scada","haberleşme","izleme"],
+    muhendislik:  ["mühendislik","mimarlık","danışmanlık","etüt","proje"],
+    isletmecilik: ["işletmecilik","işçilik","sosyal hizmet","personel"],
+    tarim:        ["ormancılık","bahçıvanlık","bitki","peyzaj","kozlak"],
+    sigortacilik: ["sigortacılık","mali","hukuki","muhasebe"],
+    gayrimenkul:  ["gayrimenkul","arsa","işyeri","kira","satış"],
+    akaryakit:    ["akaryakıt","gazyakıt","madeni yağ","yakıt","benzin","mazot"],
+    diger:        []
+  };
+
+  // ── Uyum skoru hesabı (kategori bazlı) ──────────────────
   function uyumHesapla(ilan) {
     if (!kullaniciProfil) return Math.floor(Math.random() * 20 + 55);
     let puan = 0;
-    const sektorler = kullaniciProfil.sektorler || [];
-    if (sektorler.length > 0 && ilan.tur) {
-      const turSektorMap = {
-        'Hizmet': ['saglik','temizlik','guvenlik','egitim','tasimacilik','gida','diger'],
-        'Mal': ['teknoloji','gida','saglik','diger'],
-        'Yapım': ['insaat','enerji','su','cevre'],
-        'Danismanlik': ['teknoloji','egitim','cevre','diger']
-      };
-      const eslesen = (turSektorMap[ilan.tur] || []).some(s => sektorler.includes(s));
-      puan += eslesen ? 40 : 10;
+
+    // Kategori eşleşmesi (40 puan) — ihale başlığına anahtar kelime bakılır
+    const kategoriler = kullaniciProfil.kategoriler || kullaniciProfil.sektorler || [];
+    if (kategoriler.length > 0 && ilan.baslik) {
+      const baslikKucuk = ilan.baslik.toLowerCase();
+      let maxEslesen = 0;
+      for (const kat of kategoriler) {
+        const kelimeler = KATEGORI_ANAHTAR_KELIMELER[kat] || [];
+        const eslesen = kelimeler.filter(k => baslikKucuk.includes(k)).length;
+        if (eslesen > maxEslesen) maxEslesen = eslesen;
+      }
+      if (maxEslesen >= 2) puan += 40;
+      else if (maxEslesen === 1) puan += 25;
+      else puan += 5;
+    } else if (kategoriler.length === 0) {
+      puan += 20;
     }
+
+    // İl eşleşmesi (25 puan)
     const iller = kullaniciProfil.tercih_iller || [];
-    if (iller.length === 0 || iller.includes('Tüm Türkiye')) puan += 15;
+    if (iller.length === 0 || iller.includes("Tüm Türkiye")) puan += 15;
     else if (ilan.il && iller.includes(ilan.il)) puan += 25;
+
+    // İhale türü (20 puan)
     const turler = kullaniciProfil.tercih_turler || [];
     if (turler.length === 0) puan += 10;
     else if (ilan.tur && turler.includes(ilan.tur)) puan += 20;
+
+    // Bütçe aralığı (15 puan)
     const min = kullaniciProfil.min_bedel || 0;
     const max = kullaniciProfil.max_bedel || 0;
     const bedel = ilan.tahmini_bedel || 0;
     if (max === 0 || (bedel >= min && bedel <= max)) puan += 15;
     else if (bedel >= min * 0.5 && bedel <= max * 1.5) puan += 7;
+
     return Math.min(puan, 100);
   }
+
 
 
   async function ilanlariYukle() {

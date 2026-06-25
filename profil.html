@@ -93,7 +93,7 @@
 
     /* SEKTÖR GRİD */
     .sektor-grid {
-      display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
+      display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;
     }
     .sektor-kart {
       border: 2px solid var(--border); border-radius: 10px;
@@ -374,18 +374,38 @@
 
   // ── Veri tanımları ─────────────────────────────────────────────────────
   const SEKTORLER = [
-    { id: 'saglik',     emoji: '🏥', ad: 'Sağlık',          aciklama: 'Hastane, tıbbi ekipman, ilaç' },
-    { id: 'insaat',     emoji: '🏗️', ad: 'İnşaat & Yapım',  aciklama: 'Bina, altyapı, yol, köprü' },
-    { id: 'teknoloji',  emoji: '💻', ad: 'Teknoloji & BT',  aciklama: 'Yazılım, donanım, ağ' },
-    { id: 'enerji',     emoji: '⚡', ad: 'Enerji',           aciklama: 'Elektrik, doğalgaz, yenilenebilir' },
-    { id: 'temizlik',   emoji: '🧹', ad: 'Temizlik & Bakım', aciklama: 'İş yeri temizlik hizmetleri' },
-    { id: 'guvenlik',   emoji: '🛡️', ad: 'Güvenlik',         aciklama: 'Özel güvenlik hizmetleri' },
-    { id: 'egitim',     emoji: '📚', ad: 'Eğitim',           aciklama: 'Okul, kurs, yazılım eğitimi' },
-    { id: 'tasimacilik',emoji: '🚛', ad: 'Taşımacılık',      aciklama: 'Lojistik, kargo, araç kiralama' },
-    { id: 'gida',       emoji: '🍽️', ad: 'Gıda & Yemek',    aciklama: 'Toplu yemek, catering' },
-    { id: 'cevre',      emoji: '♻️', ad: 'Çevre & Atık',     aciklama: 'Atık yönetimi, çevre danışmanlığı' },
-    { id: 'su',         emoji: '💧', ad: 'Su & Kanalizasyon', aciklama: 'Su arıtma, altyapı' },
-    { id: 'diger',      emoji: '📦', ad: 'Diğer',            aciklama: 'Diğer sektörler' },
+    { id: 'insaat',       emoji: '🏗️', ad: 'İnşaat - Altyapı - Yapım',        aciklama: 'Bina, yol, köprü, yıkım işleri' },
+    { id: 'saglik',       emoji: '🏥', ad: 'Sağlık - Medikal - İlaç',          aciklama: 'Hastane, ilaç, kozmetik' },
+    { id: 'tibbi_cihaz',  emoji: '🔬', ad: 'Tıbbi Cihaz - Laboratuvar',        aciklama: 'Hastane ekipmanları, lab malzemeleri' },
+    { id: 'elektronik',   emoji: '💻', ad: 'Elektronik - Bilgisayar - BT',     aciklama: 'Donanım, iletişim, ölçü aletleri' },
+    { id: 'yazilim',      emoji: '🖥️', ad: 'Yazılım - Bilişim - BYH',          aciklama: 'Yazılım, bilgi yönetim hizmetleri' },
+    { id: 'enerji',       emoji: '⚡', ad: 'Enerji - Elektrik - Aydınlatma',   aciklama: 'Elektrik tesisatı, sinyalizasyon' },
+    { id: 'kanalizasyon', emoji: '💧', ad: 'Kanalizasyon - Su - Doğalgaz',     aciklama: 'Boru, sıhhi tesisat' },
+    { id: 'temizlik',     emoji: '🧹', ad: 'Temizlik - İlaçlama - Geri Dönüşüm', aciklama: 'Temizlik hizmetleri' },
+    { id: 'guvenlik',     emoji: '🛡️', ad: 'Özel Güvenlik - Koruma',           aciklama: 'Güvenlik, bekçilik hizmetleri' },
+    { id: 'hirdavat',     emoji: '🔧', ad: 'Hırdavat - Metal - Plastik',       aciklama: 'Nalburiye, metal ve plastik ürünler' },
+    { id: 'makine',       emoji: '⚙️', ad: 'Endüstriyel Makine - Motor',       aciklama: 'Konveyör, motor, sanayi makineleri' },
+    { id: 'tasit',        emoji: '🚛', ad: 'Taşıt - İş Makinesi - Yedek Parça', aciklama: 'Araç, yedek parça alımı' },
+    { id: 'nakliye',      emoji: '📦', ad: 'Nakliye - Servis - Taşımacılık',   aciklama: 'Lojistik, kargo, servis hizmetleri' },
+    { id: 'gida',         emoji: '🍽️', ad: 'Gıda - Tarım - Yiyecek - İçecek', aciklama: 'Gıda ürünleri, tarım malzemeleri' },
+    { id: 'hazir_yemek',  emoji: '🍲', ad: 'Hazır Yemek - Lokantacılık',       aciklama: 'Toplu yemek, catering hizmetleri' },
+    { id: 'klima',        emoji: '❄️', ad: 'Klima - Soğutma - Isıtma - HVAC', aciklama: 'Havalandırma, iklimlendirme' },
+    { id: 'yangin',       emoji: '🚒', ad: 'Yangın Algılama - Söndürme',       aciklama: 'İhbar sistemleri, yangın ekipmanı' },
+    { id: 'asansor',      emoji: '🛗', ad: 'Asansör - Yapı Otomasyonu',        aciklama: 'Mekanik güvenlik sistemleri' },
+    { id: 'kimyasal',     emoji: '🧪', ad: 'Kimyasal - Dezenfektan - Gübre',   aciklama: 'Kimyasal maddeler' },
+    { id: 'tekstil',      emoji: '👕', ad: 'Tekstil - Giyim - Spor',           aciklama: 'Kıyafet, spor ekipmanları' },
+    { id: 'mobilya',      emoji: '🪑', ad: 'Mobilya - Beyaz Eşya - Mutfak',    aciklama: 'Büro mobilyaları, züccaciye' },
+    { id: 'matbaa',       emoji: '🖨️', ad: 'Matbaa - Kırtasiye - Ambalaj',     aciklama: 'Toner, kartuş, baskı malzemeleri' },
+    { id: 'egitim',       emoji: '📚', ad: 'Eğitim - Araştırma - Tercümanlık', aciklama: 'Kurs, anket, eğitim hizmetleri' },
+    { id: 'is_sagligi',   emoji: '⛑️', ad: 'İş Sağlığı - İş Güvenliği',       aciklama: 'Ekipman, danışmanlık' },
+    { id: 'uydu',         emoji: '📡', ad: 'Uydu - Kamera - SCADA',            aciklama: 'Haberleşme, izleme sistemleri' },
+    { id: 'muhendislik',  emoji: '📐', ad: 'Mühendislik - Mimarlık - Danışmanlık', aciklama: 'Teknik danışmanlık hizmetleri' },
+    { id: 'isletmecilik', emoji: '💼', ad: 'İşletmecilik - İşçilik - Sosyal', aciklama: 'Sosyal hizmetler, işçilik' },
+    { id: 'tarim',        emoji: '🌿', ad: 'Ormancılık - Bahçıvanlık - Peyzaj', aciklama: 'Bitki, kozlak, peyzaj' },
+    { id: 'sigortacilik', emoji: '📋', ad: 'Sigortacılık - Mali - Hukuki',     aciklama: 'Hukuki ve mali hizmetler' },
+    { id: 'gayrimenkul',  emoji: '🏢', ad: 'Gayrimenkul - Arsa - İşyeri',      aciklama: 'Kiralama, satış ihaleleri' },
+    { id: 'akaryakit',    emoji: '⛽', ad: 'Akaryakıt - Gazyakıt - Madeni Yağ', aciklama: 'Yakıt ve yağ alımları' },
+    { id: 'diger',        emoji: '📦', ad: 'Diğer',                             aciklama: 'Diğer kategoriler' },
   ];
 
   const ILLER = [
@@ -506,6 +526,7 @@
     const veri = {
       user_id: user.id,
       sektorler: [...seciliSektorler],
+      kategoriler: [...seciliSektorler],
       tercih_iller: [...seciliIller],
       tercih_turler: [...seciliTurler],
       min_bedel: parseInt(document.getElementById('min-bedel').value) || 0,
