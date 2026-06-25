@@ -315,6 +315,16 @@
           <label>Min. Bütçe (₺)</label>
           <input type="number" class="filter-input" id="f-min-bedel" placeholder="0" style="width:120px;" />
         </div>
+        <div class="filter-group">
+          <label>Min. Uyum</label>
+          <select class="filter-select" id="f-min-uyum" style="width:130px;">
+            <option value="0">Tümü</option>
+            <option value="40">%40+</option>
+            <option value="55">%55+</option>
+            <option value="70">%70+</option>
+            <option value="85">%85+</option>
+          </select>
+        </div>
         <button class="btn-filtrele" onclick="filtreUygula()">Filtrele</button>
         <button class="btn-sifirla" onclick="filtreleriSifirla()">Sıfırla</button>
       </div>
@@ -323,9 +333,10 @@
       <div class="result-info">
         <div class="result-count" id="result-count">Yükleniyor...</div>
         <select class="sort-select" id="sort-select" onchange="filtreUygula()">
+          <option value="uyum_desc">Uyum % ↓</option>
           <option value="son_teklif_tarihi">Son Teklif ↑</option>
-          <option value="tahmini_bedel_desc">Bütçe ↓</option>
-          <option value="tahmini_bedel_asc">Bütçe ↑</option>
+          <option value="tahmini_bedel_desc">Yak. Maliyet ↓</option>
+          <option value="tahmini_bedel_asc">Yak. Maliyet ↑</option>
           <option value="ilan_tarihi">En Yeni</option>
         </select>
       </div>
@@ -488,7 +499,7 @@
   }
 
   function satirOlustur(ilan) {
-    const uyum = uyumHesapla(ilan);
+    const uyum = ilan._uyum !== undefined ? ilan._uyum : uyumHesapla(ilan);
     return `
       <tr>
         <td><input type="checkbox" /></td>
@@ -519,13 +530,15 @@
     const tbody = document.getElementById('ihale-tbody');
     tbody.innerHTML = `<tr class="state-row"><td colspan="7"><div class="loading-spinner"></div>Yükleniyor...</td></tr>`;
 
-    // Filtreler
-    const arama   = document.getElementById('f-arama').value.trim();
-    const il      = document.getElementById('f-il').value;
-    const tur     = document.getElementById('f-tur').value;
-    const durum   = document.getElementById('f-durum').value;
+    const arama    = document.getElementById('f-arama').value.trim();
+    const il       = document.getElementById('f-il').value;
+    const tur      = document.getElementById('f-tur').value;
+    const durum    = document.getElementById('f-durum').value;
     const minBedel = parseInt(document.getElementById('f-min-bedel').value) || 0;
-    const sort    = document.getElementById('sort-select').value;
+    const minUyum  = parseInt(document.getElementById('f-min-uyum').value) || 0;
+    const sort     = document.getElementById('sort-select').value;
+
+    const uyumModu = sort === 'uyum_desc' || minUyum > 0;
 
     let query = sb.from('ilanlar').select('id,ekap_id,baslik,idare,il,tur,durum,son_teklif_tarihi,tahmini_bedel', { count: 'exact' });
 
@@ -535,15 +548,17 @@
     if (durum)    query = query.eq('durum', durum);
     if (minBedel) query = query.gte('tahmini_bedel', minBedel);
 
-    // Sıralama
     if (sort === 'tahmini_bedel_desc') query = query.order('tahmini_bedel', { ascending: false });
     else if (sort === 'tahmini_bedel_asc') query = query.order('tahmini_bedel', { ascending: true });
     else if (sort === 'ilan_tarihi') query = query.order('ilan_tarihi', { ascending: false });
     else query = query.order('son_teklif_tarihi', { ascending: true });
 
-    // Sayfalama
-    const baslangic = (sayfa - 1) * SAYFA_BOYUTU;
-    query = query.range(baslangic, baslangic + SAYFA_BOYUTU - 1);
+    if (uyumModu) {
+      query = query.limit(200);
+    } else {
+      const baslangic = (sayfa - 1) * SAYFA_BOYUTU;
+      query = query.range(baslangic, baslangic + SAYFA_BOYUTU - 1);
+    }
 
     const { data, error, count } = await query;
 
@@ -552,17 +567,27 @@
       return;
     }
 
-    toplamKayit = count || 0;
+    let ilanlar = (data || []).map(ilan => ({ ...ilan, _uyum: uyumHesapla(ilan) }));
 
-    if (!data || data.length === 0) {
-      tbody.innerHTML = `<tr class="state-row"><td colspan="7">🔍 Filtrelerinize uyan ihale bulunamadı.</td></tr>`;
+    if (minUyum > 0) ilanlar = ilanlar.filter(i => i._uyum >= minUyum);
+    if (sort === 'uyum_desc') ilanlar.sort((a, b) => b._uyum - a._uyum);
+
+    if (uyumModu) {
+      toplamKayit = ilanlar.length;
+      const bas = (sayfa - 1) * SAYFA_BOYUTU;
+      ilanlar = ilanlar.slice(bas, bas + SAYFA_BOYUTU);
     } else {
-      tbody.innerHTML = data.map(satirOlustur).join('');
+      toplamKayit = count || 0;
     }
 
-    // Sonuç bilgisi
-    const baslangicNo = baslangic + 1;
-    const bitisNo = Math.min(baslangic + SAYFA_BOYUTU, toplamKayit);
+    if (ilanlar.length === 0) {
+      tbody.innerHTML = `<tr class="state-row"><td colspan="7">🔍 Filtrelerinize uyan ihale bulunamadı.</td></tr>`;
+    } else {
+      tbody.innerHTML = ilanlar.map(satirOlustur).join('');
+    }
+
+    const baslangicNo = (sayfa - 1) * SAYFA_BOYUTU + 1;
+    const bitisNo = Math.min((sayfa - 1) * SAYFA_BOYUTU + ilanlar.length, toplamKayit);
     document.getElementById('result-count').innerHTML = `<strong>${toplamKayit.toLocaleString('tr')}</strong> ihale bulundu — ${baslangicNo}-${bitisNo} gösteriliyor`;
     document.getElementById('pag-info').textContent = `${baslangicNo}–${bitisNo} / ${toplamKayit}`;
     document.getElementById('sb-count').textContent = toplamKayit > 999 ? Math.round(toplamKayit/1000*10)/10+'K' : toplamKayit;
@@ -592,7 +617,8 @@
     document.getElementById('f-tur').value = '';
     document.getElementById('f-durum').value = '';
     document.getElementById('f-min-bedel').value = '';
-    document.getElementById('sort-select').value = 'son_teklif_tarihi';
+    document.getElementById('f-min-uyum').value = '0';
+    document.getElementById('sort-select').value = 'uyum_desc';
     ilanlariYukle(1);
   }
 
