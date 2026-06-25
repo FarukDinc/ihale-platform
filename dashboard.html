@@ -610,7 +610,7 @@
       </a>
 
       <div class="nav-section-label">Ayarlar</div>
-      <a href="#" class="nav-item">
+      <a href="profil.html" class="nav-item">
         <span class="icon">⚙</span> Profil & Filtreler
       </a>
       <a href="#" class="nav-item">
@@ -815,7 +815,7 @@
 
   // ── Satır oluştur ────────────────────────────────────
   function satirOlustur(ilan) {
-    const uyum = Math.floor(Math.random() * 40 + 60); // Geçici — profil uyumu hesabı
+    const uyum = uyumHesapla(ilan);
     return `
       <tr>
         <td><input type="checkbox" /></td>
@@ -843,7 +843,45 @@
       </tr>`;
   }
 
-  // ── İlanları yükle ───────────────────────────────────
+  // ── Kullanıcı profili ─────────────────────────────────
+  let kullaniciProfil = null;
+
+  async function profilCek() {
+    const { data: { user } } = await sb.auth.getUser();
+    if (!user) return;
+    const { data } = await sb.from('profil').select('sektorler,tercih_iller,tercih_turler,min_bedel,max_bedel').eq('user_id', user.id).single();
+    kullaniciProfil = data;
+  }
+
+  function uyumHesapla(ilan) {
+    if (!kullaniciProfil) return Math.floor(Math.random() * 20 + 55);
+    let puan = 0;
+    const sektorler = kullaniciProfil.sektorler || [];
+    if (sektorler.length > 0 && ilan.tur) {
+      const turSektorMap = {
+        'Hizmet': ['saglik','temizlik','guvenlik','egitim','tasimacilik','gida','diger'],
+        'Mal': ['teknoloji','gida','saglik','diger'],
+        'Yapım': ['insaat','enerji','su','cevre'],
+        'Danismanlik': ['teknoloji','egitim','cevre','diger']
+      };
+      const eslesen = (turSektorMap[ilan.tur] || []).some(s => sektorler.includes(s));
+      puan += eslesen ? 40 : 10;
+    }
+    const iller = kullaniciProfil.tercih_iller || [];
+    if (iller.length === 0 || iller.includes('Tüm Türkiye')) puan += 15;
+    else if (ilan.il && iller.includes(ilan.il)) puan += 25;
+    const turler = kullaniciProfil.tercih_turler || [];
+    if (turler.length === 0) puan += 10;
+    else if (ilan.tur && turler.includes(ilan.tur)) puan += 20;
+    const min = kullaniciProfil.min_bedel || 0;
+    const max = kullaniciProfil.max_bedel || 0;
+    const bedel = ilan.tahmini_bedel || 0;
+    if (max === 0 || (bedel >= min && bedel <= max)) puan += 15;
+    else if (bedel >= min * 0.5 && bedel <= max * 1.5) puan += 7;
+    return Math.min(puan, 100);
+  }
+
+
   async function ilanlariYukle() {
     const tbody = document.getElementById('ihale-tbody');
     tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:32px; color:var(--muted);">Yükleniyor...</td></tr>`;
@@ -903,7 +941,7 @@
   });
 
   // ── Sayfa yüklenince ilanları çek ───────────────────
-  ilanlariYukle();
+  profilCek().then(() => ilanlariYukle());
 </script>
 </body>
 </html>

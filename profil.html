@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Profil & Filtreler — İhalePlatform</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    body { background: var(--navy); }
+    .app { display: flex; min-height: 100vh; }
+
+    /* SIDEBAR */
+    .sidebar {
+      background: var(--navy-mid); border-right: 1px solid var(--border);
+      width: 240px; flex-shrink: 0; position: sticky; top: 0;
+      height: 100vh; display: flex; flex-direction: column; overflow-y: auto;
+    }
+    .sidebar-logo { padding: 20px 20px 16px; border-bottom: 1px solid var(--border); }
+    .sidebar-logo a {
+      font-family: var(--font-display); font-size: 18px; font-weight: 800;
+      color: var(--white); text-decoration: none; display: flex; align-items: center; gap: 8px;
+    }
+    .sidebar-logo span { color: var(--amber); }
+    .sidebar-nav { flex: 1; padding: 16px 12px; overflow-y: auto; }
+    .nav-section-label {
+      font-size: 10px; font-weight: 700; letter-spacing: .1em;
+      text-transform: uppercase; color: var(--muted); padding: 12px 8px 6px;
+    }
+    .nav-item {
+      display: flex; align-items: center; gap: 10px; padding: 9px 12px;
+      border-radius: 6px; color: var(--muted); text-decoration: none;
+      font-size: 13px; font-weight: 500; transition: all .15s; margin-bottom: 2px;
+    }
+    .nav-item:hover { background: var(--card-bg); color: var(--white); }
+    .nav-item.active { background: rgba(240,165,0,0.12); color: var(--amber); }
+    .nav-item .icon { font-size: 16px; width: 20px; text-align: center; }
+    .nav-badge {
+      margin-left: auto; background: var(--amber); color: var(--navy);
+      font-size: 10px; font-weight: 800; padding: 2px 6px; border-radius: 10px;
+    }
+    .sidebar-footer { padding: 16px; border-top: 1px solid var(--border); }
+    .user-row { display: flex; align-items: center; gap: 10px; }
+    .user-avatar {
+      width: 32px; height: 32px; border-radius: 50%;
+      background: var(--amber); color: var(--navy);
+      font-size: 12px; font-weight: 800; display: flex; align-items: center; justify-content: center;
+    }
+    .user-name { font-size: 13px; font-weight: 600; color: var(--white); }
+    .user-plan { font-size: 11px; color: var(--muted); }
+
+    /* MAIN */
+    .main { display: flex; flex-direction: column; flex: 1; min-width: 0; height: 100vh; overflow-y: auto; }
+
+    /* TOPBAR */
+    .topbar {
+      background: var(--navy-mid); border-bottom: 1px solid var(--border);
+      padding: 0 24px; height: 56px; display: flex; align-items: center;
+      justify-content: space-between; position: sticky; top: 0; z-index: 10;
+    }
+    .topbar-title { font-size: 15px; font-weight: 700; color: var(--white); }
+    .btn-kaydet {
+      background: var(--amber); color: var(--navy); border: none;
+      padding: 9px 24px; border-radius: 6px; font-size: 14px;
+      font-weight: 700; cursor: pointer; transition: all .2s;
+    }
+    .btn-kaydet:hover { background: var(--amber-dim); transform: translateY(-1px); }
+    .btn-kaydet:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+
+    /* PAGE */
+    .page-body { padding: 28px; max-width: 860px; }
+    .page-header { margin-bottom: 28px; }
+    .page-header h1 { font-size: 22px; font-weight: 800; color: var(--white); margin-bottom: 6px; }
+    .page-header p { font-size: 14px; color: var(--muted); line-height: 1.6; }
+
+    /* SECTION CARD */
+    .section-card {
+      background: var(--navy-mid); border: 1px solid var(--border);
+      border-radius: 12px; padding: 28px; margin-bottom: 20px;
+    }
+    .section-header {
+      display: flex; align-items: center; gap: 12px; margin-bottom: 20px;
+      padding-bottom: 16px; border-bottom: 1px solid var(--border);
+    }
+    .section-icon {
+      width: 38px; height: 38px; border-radius: 8px;
+      background: rgba(240,165,0,0.12); display: flex; align-items: center;
+      justify-content: center; font-size: 18px;
+    }
+    .section-title { font-size: 15px; font-weight: 700; color: var(--white); }
+    .section-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+    /* SEKTÖR GRİD */
+    .sektor-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
+    }
+    .sektor-kart {
+      border: 2px solid var(--border); border-radius: 10px;
+      padding: 14px 16px; cursor: pointer; transition: all .2s;
+      display: flex; align-items: center; gap: 12px; position: relative;
+    }
+    .sektor-kart:hover { border-color: rgba(240,165,0,0.4); background: rgba(240,165,0,0.04); }
+    .sektor-kart.secili {
+      border-color: var(--amber); background: rgba(240,165,0,0.08);
+    }
+    .sektor-kart.secili .sektor-check { opacity: 1; }
+    .sektor-emoji { font-size: 22px; flex-shrink: 0; }
+    .sektor-adi { font-size: 13px; font-weight: 600; color: var(--white); }
+    .sektor-aciklama { font-size: 11px; color: var(--muted); margin-top: 2px; }
+    .sektor-check {
+      position: absolute; top: 10px; right: 10px;
+      width: 18px; height: 18px; border-radius: 50%;
+      background: var(--amber); color: var(--navy);
+      font-size: 10px; font-weight: 800;
+      display: flex; align-items: center; justify-content: center;
+      opacity: 0; transition: opacity .15s;
+    }
+
+    /* İL GRID */
+    .il-grid {
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;
+    }
+    .il-chip {
+      border: 1.5px solid var(--border); border-radius: 7px;
+      padding: 9px 12px; cursor: pointer; transition: all .15s;
+      font-size: 13px; font-weight: 500; color: var(--muted);
+      text-align: center;
+    }
+    .il-chip:hover { border-color: rgba(240,165,0,0.4); color: var(--white); }
+    .il-chip.secili {
+      border-color: var(--amber); background: rgba(240,165,0,0.1);
+      color: var(--amber); font-weight: 700;
+    }
+
+    /* TÜR GRID */
+    .tur-grid { display: flex; gap: 10px; flex-wrap: wrap; }
+    .tur-chip {
+      border: 1.5px solid var(--border); border-radius: 8px;
+      padding: 10px 20px; cursor: pointer; transition: all .15s;
+      font-size: 13px; font-weight: 600; color: var(--muted);
+      display: flex; align-items: center; gap: 8px;
+    }
+    .tur-chip:hover { border-color: rgba(240,165,0,0.4); color: var(--white); }
+    .tur-chip.secili {
+      border-color: var(--amber); background: rgba(240,165,0,0.1);
+      color: var(--amber);
+    }
+    .tur-icon { font-size: 16px; }
+
+    /* BÜTÇE RANGE */
+    .bedel-row { display: flex; gap: 16px; align-items: center; }
+    .bedel-input-wrap { flex: 1; }
+    .bedel-label { font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; margin-bottom: 8px; }
+    .bedel-input {
+      width: 100%; background: var(--navy); border: 1.5px solid var(--border);
+      border-radius: 8px; padding: 11px 14px; color: var(--white);
+      font-family: var(--font); font-size: 14px; font-weight: 600; outline: none;
+      transition: border-color .15s;
+    }
+    .bedel-input:focus { border-color: var(--amber); }
+    .bedel-input::placeholder { color: var(--muted); font-weight: 400; }
+    .bedel-ayrac { color: var(--muted); font-size: 18px; margin-top: 24px; }
+
+    /* UYUM ÖNIZLEME */
+    .onizleme-kart {
+      background: var(--navy); border: 1px solid var(--border);
+      border-radius: 10px; padding: 20px; margin-top: 20px;
+    }
+    .onizleme-baslik { font-size: 12px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; margin-bottom: 14px; }
+    .onizleme-row { display: flex; align-items: center; gap: 12px; margin-bottom: 10px; }
+    .onizleme-label { font-size: 13px; color: var(--muted); min-width: 120px; }
+    .onizleme-bar-wrap { flex: 1; background: var(--border); height: 6px; border-radius: 3px; overflow: hidden; }
+    .onizleme-bar { height: 100%; background: var(--amber); border-radius: 3px; transition: width .4s ease; }
+    .onizleme-puan { font-size: 13px; font-weight: 700; color: var(--amber); min-width: 40px; text-align: right; }
+    .onizleme-toplam {
+      border-top: 1px solid var(--border); padding-top: 14px; margin-top: 4px;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+    .onizleme-toplam-label { font-size: 14px; color: var(--white); font-weight: 600; }
+    .onizleme-toplam-puan { font-size: 28px; font-weight: 800; color: var(--amber); }
+
+    /* TOAST */
+    #toast {
+      position: fixed; bottom: 24px; right: 24px;
+      padding: 12px 20px; border-radius: 8px; font-size: 14px; font-weight: 600;
+      opacity: 0; transform: translateY(10px); transition: all .3s;
+      pointer-events: none; z-index: 999;
+    }
+    #toast.show { opacity: 1; transform: translateY(0); }
+    #toast.basari { background: #16a34a; color: #fff; }
+    #toast.hata { background: #dc2626; color: #fff; }
+
+    @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.5;transform:scale(.8)} }
+
+    @media (max-width: 768px) {
+      .sektor-grid { grid-template-columns: 1fr 1fr; }
+      .il-grid { grid-template-columns: repeat(3, 1fr); }
+    }
+  </style>
+</head>
+<body>
+<div class="app">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <a href="index.html">
+        <span style="width:6px;height:6px;background:var(--amber);border-radius:50%;display:inline-block;animation:pulse 2s infinite;"></span>
+        İhale<span>Platform</span>
+      </a>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">Genel</div>
+      <a href="dashboard.html" class="nav-item"><span class="icon">◉</span> Dashboard</a>
+      <a href="ihaleler.html" class="nav-item"><span class="icon">⊞</span> İhaleler</a>
+      <a href="#" class="nav-item"><span class="icon">☆</span> Takipte</a>
+      <a href="#" class="nav-item"><span class="icon">🔔</span> Bildirimler <span class="nav-badge">4</span></a>
+      <div class="nav-section-label">Analiz</div>
+      <a href="#" class="nav-item"><span class="icon">📊</span> Rekabet Analizi</a>
+      <a href="#" class="nav-item"><span class="icon">✓</span> Uyumluluk</a>
+      <a href="#" class="nav-item"><span class="icon">📁</span> Dökümanlar</a>
+      <div class="nav-section-label">Ayarlar</div>
+      <a href="profil.html" class="nav-item active"><span class="icon">⚙</span> Profil & Filtreler</a>
+      <a href="#" class="nav-item"><span class="icon">💳</span> Abonelik</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-row">
+        <div class="user-avatar" id="avatar-text">FD</div>
+        <div class="user-info">
+          <div class="user-name" id="sidebar-firma">Yükleniyor...</div>
+          <div class="user-plan">Ücretsiz Plan</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <div class="main">
+
+    <!-- TOPBAR -->
+    <div class="topbar">
+      <div class="topbar-title">⚙ Profil & Filtreler</div>
+      <button class="btn-kaydet" id="btn-kaydet" onclick="kaydet()">Değişiklikleri Kaydet</button>
+    </div>
+
+    <!-- PAGE BODY -->
+    <div class="page-body">
+
+      <div class="page-header">
+        <h1>Firma Profili</h1>
+        <p>Sektör, il ve ihale türü tercihlerinizi belirleyin. Bu bilgiler her ihalede size özel <strong style="color:var(--amber)">uyum skoru</strong> hesaplamak için kullanılır.</p>
+      </div>
+
+      <!-- 1. SEKTÖRLER -->
+      <div class="section-card">
+        <div class="section-header">
+          <div class="section-icon">🏭</div>
+          <div>
+            <div class="section-title">Faaliyet Sektörleriniz</div>
+            <div class="section-sub">Firmanızın faaliyet gösterdiği sektörleri seçin — birden fazla seçebilirsiniz</div>
+          </div>
+        </div>
+
+        <div class="sektor-grid" id="sektor-grid">
+          <!-- JS ile doldurulur -->
+        </div>
+      </div>
+
+      <!-- 2. TERCİH EDİLEN İLLER -->
+      <div class="section-card">
+        <div class="section-header">
+          <div class="section-icon">📍</div>
+          <div>
+            <div class="section-title">Tercih Ettiğiniz İller</div>
+            <div class="section-sub">Hangi illerdeki ihaleleri takip etmek istiyorsunuz?</div>
+          </div>
+        </div>
+
+        <div class="il-grid" id="il-grid">
+          <!-- JS ile doldurulur -->
+        </div>
+      </div>
+
+      <!-- 3. İHALE TÜRLERİ -->
+      <div class="section-card">
+        <div class="section-header">
+          <div class="section-icon">📋</div>
+          <div>
+            <div class="section-title">İhale Türleri</div>
+            <div class="section-sub">Hangi tür ihalelere katılıyorsunuz?</div>
+          </div>
+        </div>
+
+        <div class="tur-grid" id="tur-grid">
+          <!-- JS ile doldurulur -->
+        </div>
+      </div>
+
+      <!-- 4. BÜTÇE ARALIĞI -->
+      <div class="section-card">
+        <div class="section-header">
+          <div class="section-icon">💰</div>
+          <div>
+            <div class="section-title">Yaklaşık Maliyet Aralığı</div>
+            <div class="section-sub">Firmanızın katılabileceği ihale bütçe aralığı (TL)</div>
+          </div>
+        </div>
+
+        <div class="bedel-row">
+          <div class="bedel-input-wrap">
+            <div class="bedel-label">Minimum</div>
+            <input type="number" class="bedel-input" id="min-bedel" placeholder="ör: 500.000" />
+          </div>
+          <div class="bedel-ayrac">—</div>
+          <div class="bedel-input-wrap">
+            <div class="bedel-label">Maksimum</div>
+            <input type="number" class="bedel-input" id="max-bedel" placeholder="ör: 10.000.000" />
+          </div>
+        </div>
+      </div>
+
+      <!-- UYUM SKORU ÖNİZLEME -->
+      <div class="section-card">
+        <div class="section-header">
+          <div class="section-icon">📊</div>
+          <div>
+            <div class="section-title">Uyum Skoru Hesaplama Mantığı</div>
+            <div class="section-sub">Seçimlerinize göre her ihale bu kriterlere göre puanlanır</div>
+          </div>
+        </div>
+
+        <div class="onizleme-kart">
+          <div class="onizleme-baslik">Puan Dağılımı</div>
+          <div class="onizleme-row">
+            <div class="onizleme-label">🏭 Sektör eşleşmesi</div>
+            <div class="onizleme-bar-wrap"><div class="onizleme-bar" style="width:40%"></div></div>
+            <div class="onizleme-puan">40 pt</div>
+          </div>
+          <div class="onizleme-row">
+            <div class="onizleme-label">📍 İl eşleşmesi</div>
+            <div class="onizleme-bar-wrap"><div class="onizleme-bar" style="width:25%"></div></div>
+            <div class="onizleme-puan">25 pt</div>
+          </div>
+          <div class="onizleme-row">
+            <div class="onizleme-label">📋 İhale türü</div>
+            <div class="onizleme-bar-wrap"><div class="onizleme-bar" style="width:20%"></div></div>
+            <div class="onizleme-puan">20 pt</div>
+          </div>
+          <div class="onizleme-row">
+            <div class="onizleme-label">💰 Bütçe aralığı</div>
+            <div class="onizleme-bar-wrap"><div class="onizleme-bar" style="width:15%"></div></div>
+            <div class="onizleme-puan">15 pt</div>
+          </div>
+          <div class="onizleme-toplam">
+            <div class="onizleme-toplam-label">Maksimum uyum skoru</div>
+            <div class="onizleme-toplam-puan">100%</div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- /page-body -->
+  </div><!-- /main -->
+</div><!-- /app -->
+
+<div id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="js/api.js"></script>
+<script>
+  const SUPABASE_URL = "https://lpgelwfoarhouollhwur.supabase.co";
+  const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxwZ2Vsd2ZvYXJob3VvbGxod3VyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIyMzI4MjAsImV4cCI6MjA5NzgwODgyMH0.GqTZkeoOAomuur4JSyW2pTR-8Zzg8OTv394JtP7DoXM";
+  const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+  // ── Veri tanımları ─────────────────────────────────────────────────────
+  const SEKTORLER = [
+    { id: 'saglik',     emoji: '🏥', ad: 'Sağlık',          aciklama: 'Hastane, tıbbi ekipman, ilaç' },
+    { id: 'insaat',     emoji: '🏗️', ad: 'İnşaat & Yapım',  aciklama: 'Bina, altyapı, yol, köprü' },
+    { id: 'teknoloji',  emoji: '💻', ad: 'Teknoloji & BT',  aciklama: 'Yazılım, donanım, ağ' },
+    { id: 'enerji',     emoji: '⚡', ad: 'Enerji',           aciklama: 'Elektrik, doğalgaz, yenilenebilir' },
+    { id: 'temizlik',   emoji: '🧹', ad: 'Temizlik & Bakım', aciklama: 'İş yeri temizlik hizmetleri' },
+    { id: 'guvenlik',   emoji: '🛡️', ad: 'Güvenlik',         aciklama: 'Özel güvenlik hizmetleri' },
+    { id: 'egitim',     emoji: '📚', ad: 'Eğitim',           aciklama: 'Okul, kurs, yazılım eğitimi' },
+    { id: 'tasimacilik',emoji: '🚛', ad: 'Taşımacılık',      aciklama: 'Lojistik, kargo, araç kiralama' },
+    { id: 'gida',       emoji: '🍽️', ad: 'Gıda & Yemek',    aciklama: 'Toplu yemek, catering' },
+    { id: 'cevre',      emoji: '♻️', ad: 'Çevre & Atık',     aciklama: 'Atık yönetimi, çevre danışmanlığı' },
+    { id: 'su',         emoji: '💧', ad: 'Su & Kanalizasyon', aciklama: 'Su arıtma, altyapı' },
+    { id: 'diger',      emoji: '📦', ad: 'Diğer',            aciklama: 'Diğer sektörler' },
+  ];
+
+  const ILLER = [
+    'Ankara','İstanbul','İzmir','Bursa','Antalya','Adana',
+    'Konya','Gaziantep','Mersin','Kayseri','Eskişehir','Samsun',
+    'Trabzon','Diyarbakır','Kocaeli','Tüm Türkiye'
+  ];
+
+  const TURLER = [
+    { id: 'Hizmet',      emoji: '🔧', aciklama: 'Hizmet alımı' },
+    { id: 'Mal',         emoji: '📦', aciklama: 'Mal alımı' },
+    { id: 'Yapım',       emoji: '🏗️', aciklama: 'Yapım işleri' },
+    { id: 'Danismanlik', emoji: '💼', aciklama: 'Danışmanlık' },
+  ];
+
+  // ── State ───────────────────────────────────────────────────────────────
+  let seciliSektorler  = new Set();
+  let seciliIller      = new Set();
+  let seciliTurler     = new Set();
+
+  // ── Grid'leri oluştur ───────────────────────────────────────────────────
+  function sektorGridOlustur() {
+    document.getElementById('sektor-grid').innerHTML = SEKTORLER.map(s => `
+      <div class="sektor-kart" id="sektor-${s.id}" onclick="sektorToggle('${s.id}')">
+        <div class="sektor-emoji">${s.emoji}</div>
+        <div>
+          <div class="sektor-adi">${s.ad}</div>
+          <div class="sektor-aciklama">${s.aciklama}</div>
+        </div>
+        <div class="sektor-check">✓</div>
+      </div>`).join('');
+  }
+
+  function ilGridOlustur() {
+    document.getElementById('il-grid').innerHTML = ILLER.map(il => `
+      <div class="il-chip" id="il-${il}" onclick="ilToggle('${il}')">${il}</div>`).join('');
+  }
+
+  function turGridOlustur() {
+    document.getElementById('tur-grid').innerHTML = TURLER.map(t => `
+      <div class="tur-chip" id="tur-${t.id}" onclick="turToggle('${t.id}')">
+        <span class="tur-icon">${t.emoji}</span> ${t.id}
+        <span style="font-size:11px;color:var(--muted);font-weight:400;">— ${t.aciklama}</span>
+      </div>`).join('');
+  }
+
+  // ── Toggle fonksiyonları ────────────────────────────────────────────────
+  function sektorToggle(id) {
+    if (seciliSektorler.has(id)) seciliSektorler.delete(id);
+    else seciliSektorler.add(id);
+    document.getElementById('sektor-' + id).classList.toggle('secili', seciliSektorler.has(id));
+  }
+
+  function ilToggle(il) {
+    if (seciliIller.has(il)) seciliIller.delete(il);
+    else seciliIller.add(il);
+    document.getElementById('il-' + il).classList.toggle('secili', seciliIller.has(il));
+  }
+
+  function turToggle(id) {
+    if (seciliTurler.has(id)) seciliTurler.delete(id);
+    else seciliTurler.add(id);
+    document.getElementById('tur-' + id).classList.toggle('secili', seciliTurler.has(id));
+  }
+
+  // ── Profili yükle ───────────────────────────────────────────────────────
+  async function profilYukle() {
+    const { data: { user } } = await sb.auth.getUser();
+    if (!user) { window.location.href = 'login.html'; return; }
+
+    // Sidebar güncelle
+    const email = user.email || '';
+    const initials = email.substring(0, 2).toUpperCase();
+    document.getElementById('avatar-text').textContent = initials;
+
+    const { data } = await sb.from('profil').select('*').eq('user_id', user.id).single();
+
+    if (data) {
+      document.getElementById('sidebar-firma').textContent = data.firma_adi || email;
+      if (data.min_bedel) document.getElementById('min-bedel').value = data.min_bedel;
+      if (data.max_bedel) document.getElementById('max-bedel').value = data.max_bedel;
+
+      // Seçimleri geri yükle
+      (data.sektorler || []).forEach(s => {
+        seciliSektorler.add(s);
+        const el = document.getElementById('sektor-' + s);
+        if (el) el.classList.add('secili');
+      });
+      (data.tercih_iller || []).forEach(il => {
+        seciliIller.add(il);
+        const el = document.getElementById('il-' + il);
+        if (el) el.classList.add('secili');
+      });
+      (data.tercih_turler || []).forEach(t => {
+        seciliTurler.add(t);
+        const el = document.getElementById('tur-' + t);
+        if (el) el.classList.add('secili');
+      });
+    } else {
+      document.getElementById('sidebar-firma').textContent = email;
+    }
+  }
+
+  // ── Kaydet ─────────────────────────────────────────────────────────────
+  async function kaydet() {
+    const btn = document.getElementById('btn-kaydet');
+    btn.disabled = true;
+    btn.textContent = 'Kaydediliyor...';
+
+    const { data: { user } } = await sb.auth.getUser();
+    if (!user) { window.location.href = 'login.html'; return; }
+
+    if (seciliSektorler.size === 0) {
+      toast('En az bir sektör seçmelisiniz!', 'hata');
+      btn.disabled = false; btn.textContent = 'Değişiklikleri Kaydet'; return;
+    }
+
+    const veri = {
+      user_id: user.id,
+      sektorler: [...seciliSektorler],
+      tercih_iller: [...seciliIller],
+      tercih_turler: [...seciliTurler],
+      min_bedel: parseInt(document.getElementById('min-bedel').value) || 0,
+      max_bedel: parseInt(document.getElementById('max-bedel').value) || 0,
+      guncelleme: new Date().toISOString()
+    };
+
+    const { error } = await sb.from('profil').upsert(veri, { onConflict: 'user_id' });
+
+    if (error) {
+      toast('Kayıt hatası: ' + error.message, 'hata');
+    } else {
+      toast('✓ Profil kaydedildi! Uyum skorları güncelleniyor...', 'basari');
+    }
+
+    btn.disabled = false;
+    btn.textContent = 'Değişiklikleri Kaydet';
+  }
+
+  // ── Toast ───────────────────────────────────────────────────────────────
+  function toast(mesaj, tip = 'basari') {
+    const el = document.getElementById('toast');
+    el.textContent = mesaj;
+    el.className = `show ${tip}`;
+    setTimeout(() => el.className = '', 3500);
+  }
+
+  // ── Başlat ──────────────────────────────────────────────────────────────
+  sektorGridOlustur();
+  ilGridOlustur();
+  turGridOlustur();
+  profilYukle();
+</script>
+</body>
+</html>

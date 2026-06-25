@@ -372,7 +372,54 @@
   const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxwZ2Vsd2ZvYXJob3VvbGxod3VyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIyMzI4MjAsImV4cCI6MjA5NzgwODgyMH0.GqTZkeoOAomuur4JSyW2pTR-8Zzg8OTv394JtP7DoXM";
   const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-  const SAYFA_BOYUTU = 20;
+  // ── Kullanıcı profili (sayfa yüklenince çekilir) ─────
+  let kullaniciProfil = null;
+
+  async function profilCek() {
+    const { data: { user } } = await sb.auth.getUser();
+    if (!user) return;
+    const { data } = await sb.from('profil').select('sektorler,tercih_iller,tercih_turler,min_bedel,max_bedel').eq('user_id', user.id).single();
+    kullaniciProfil = data;
+  }
+
+  // ── Uyum skoru hesabı ─────────────────────────────────
+  function uyumHesapla(ilan) {
+    if (!kullaniciProfil) return Math.floor(Math.random() * 20 + 55);
+    let puan = 0;
+
+    // Sektör eşleşmesi (40 puan)
+    const sektorler = kullaniciProfil.sektorler || [];
+    if (sektorler.length > 0 && ilan.tur) {
+      const turSektorMap = {
+        'Hizmet': ['saglik','temizlik','guvenlik','egitim','tasimacilik','gida','diger'],
+        'Mal': ['teknoloji','gida','saglik','diger'],
+        'Yapım': ['insaat','enerji','su','cevre'],
+        'Danismanlik': ['teknoloji','egitim','cevre','diger']
+      };
+      const eslesen = (turSektorMap[ilan.tur] || []).some(s => sektorler.includes(s));
+      if (eslesen) puan += 40;
+      else puan += 10; // kısmi puan
+    }
+
+    // İl eşleşmesi (25 puan)
+    const iller = kullaniciProfil.tercih_iller || [];
+    if (iller.length === 0 || iller.includes('Tüm Türkiye')) puan += 15;
+    else if (ilan.il && iller.includes(ilan.il)) puan += 25;
+
+    // İhale türü (20 puan)
+    const turler = kullaniciProfil.tercih_turler || [];
+    if (turler.length === 0) puan += 10;
+    else if (ilan.tur && turler.includes(ilan.tur)) puan += 20;
+
+    // Bütçe aralığı (15 puan)
+    const min = kullaniciProfil.min_bedel || 0;
+    const max = kullaniciProfil.max_bedel || 0;
+    const bedel = ilan.tahmini_bedel || 0;
+    if (max === 0 || (bedel >= min && bedel <= max)) puan += 15;
+    else if (bedel >= min * 0.5 && bedel <= max * 1.5) puan += 7;
+
+    return Math.min(puan, 100);
+  }
   let mevcutSayfa = 1;
   let toplamKayit = 0;
 
@@ -399,7 +446,7 @@
   }
 
   function satirOlustur(ilan) {
-    const uyum = Math.floor(Math.random() * 35 + 60);
+    const uyum = uyumHesapla(ilan);
     return `
       <tr>
         <td><input type="checkbox" /></td>
@@ -525,7 +572,7 @@
   document.getElementById('f-arama').addEventListener('keydown', e => { if (e.key === 'Enter') filtreUygula(); });
 
   // Sayfa yüklenince
-  ilanlariYukle();
+  profilCek().then(() => ilanlariYukle());
 </script>
 </body>
 </html>
