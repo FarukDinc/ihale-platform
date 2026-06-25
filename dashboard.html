@@ -747,132 +747,8 @@
               <th></th>
             </tr>
           </thead>
-          <tbody>
-            <!-- ROW 1 -->
-            <tr>
-              <td><input type="checkbox" /></td>
-              <td class="ihale-title-cell">
-                <a href="#">Hemşirelik ve Yardımcı Sağlık Hizmetleri Alımı</a>
-                <div class="ihale-kurrum-cell">Ankara Şehir Hastanesi — EKAP #2024/784231</div>
-              </td>
-              <td><span class="badge badge-soon">● Son 3 Gün</span></td>
-              <td class="budget-cell">₺4.2M</td>
-              <td style="color:var(--amber); font-size:13px;">24 Haz 2025</td>
-              <td>
-                <div class="compat-bar">
-                  <div style="flex:1; background:var(--border); height:4px; border-radius:2px; overflow:hidden;">
-                    <div class="compat-fill" style="width:88%;"></div>
-                  </div>
-                  <span class="compat-num">88%</span>
-                </div>
-              </td>
-              <td>
-                <div class="action-btns">
-                  <button class="action-btn primary">Takibe Al</button>
-                  <button class="action-btn">Detay</button>
-                </div>
-              </td>
-            </tr>
-            <!-- ROW 2 -->
-            <tr>
-              <td><input type="checkbox" /></td>
-              <td class="ihale-title-cell">
-                <a href="#">Atık Su Arıtma Tesisi Periyodik Bakım ve Onarım Hizmetleri</a>
-                <div class="ihale-kurrum-cell">ASKİ Genel Müdürlüğü — EKAP #2024/782100</div>
-              </td>
-              <td><span class="badge badge-open">● Açık</span></td>
-              <td class="budget-cell">₺8.7M</td>
-              <td style="font-size:13px; color:var(--off-white);">5 Tem 2025</td>
-              <td>
-                <div class="compat-bar">
-                  <div style="flex:1; background:var(--border); height:4px; border-radius:2px; overflow:hidden;">
-                    <div class="compat-fill" style="width:72%;"></div>
-                  </div>
-                  <span class="compat-num">72%</span>
-                </div>
-              </td>
-              <td>
-                <div class="action-btns">
-                  <button class="action-btn primary">Takibe Al</button>
-                  <button class="action-btn">Detay</button>
-                </div>
-              </td>
-            </tr>
-            <!-- ROW 3 -->
-            <tr>
-              <td><input type="checkbox" /></td>
-              <td class="ihale-title-cell">
-                <a href="#">İl Geneli Bina Elektrik Altyapı Yenileme İşleri</a>
-                <div class="ihale-kurrum-cell">MEB Ankara İl Müdürlüğü — EKAP #2024/779854</div>
-              </td>
-              <td><span class="badge badge-open">● Açık</span></td>
-              <td class="budget-cell">₺1.9M</td>
-              <td style="font-size:13px; color:var(--off-white);">8 Tem 2025</td>
-              <td>
-                <div class="compat-bar">
-                  <div style="flex:1; background:var(--border); height:4px; border-radius:2px; overflow:hidden;">
-                    <div class="compat-fill" style="width:65%;"></div>
-                  </div>
-                  <span class="compat-num">65%</span>
-                </div>
-              </td>
-              <td>
-                <div class="action-btns">
-                  <button class="action-btn primary">Takibe Al</button>
-                  <button class="action-btn">Detay</button>
-                </div>
-              </td>
-            </tr>
-            <!-- ROW 4 -->
-            <tr>
-              <td><input type="checkbox" /></td>
-              <td class="ihale-title-cell">
-                <a href="#">Merkezi Sterilizasyon Ünitesi Cihaz Bakım Hizmetleri</a>
-                <div class="ihale-kurrum-cell">Gazi Üniversitesi Hastanesi — EKAP #2024/781002</div>
-              </td>
-              <td><span class="badge badge-open">● Açık</span></td>
-              <td class="budget-cell">₺2.4M</td>
-              <td style="font-size:13px; color:var(--off-white);">11 Tem 2025</td>
-              <td>
-                <div class="compat-bar">
-                  <div style="flex:1; background:var(--border); height:4px; border-radius:2px; overflow:hidden;">
-                    <div class="compat-fill" style="width:91%;"></div>
-                  </div>
-                  <span class="compat-num">91%</span>
-                </div>
-              </td>
-              <td>
-                <div class="action-btns">
-                  <button class="action-btn primary">Takibe Al</button>
-                  <button class="action-btn">Detay</button>
-                </div>
-              </td>
-            </tr>
-            <!-- ROW 5 (blurred/premium) -->
-            <tr style="opacity:0.35; pointer-events:none; user-select:none;">
-              <td><input type="checkbox" disabled /></td>
-              <td class="ihale-title-cell">
-                <span>████████████████████████████</span>
-                <div class="ihale-kurrum-cell">████████████ — EKAP #████████</div>
-              </td>
-              <td><span class="badge badge-open">● Açık</span></td>
-              <td class="budget-cell">₺██M</td>
-              <td style="font-size:13px;">██ Tem 2025</td>
-              <td><span>%%</span></td>
-              <td></td>
-            </tr>
-            <tr style="opacity:0.2; pointer-events:none; user-select:none;">
-              <td><input type="checkbox" disabled /></td>
-              <td class="ihale-title-cell">
-                <span>██████████████████</span>
-                <div class="ihale-kurrum-cell">████████████</div>
-              </td>
-              <td><span class="badge badge-open">● Açık</span></td>
-              <td class="budget-cell">₺██M</td>
-              <td style="font-size:13px;">██ Tem 2025</td>
-              <td></td>
-              <td></td>
-            </tr>
+          <tbody id="ihale-tbody">
+          <tbody id="ihale-tbody">
           </tbody>
         </table>
 
@@ -903,9 +779,117 @@
   </div><!-- /main -->
 </div><!-- /app -->
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/main.js"></script>
 <script>
-  // View toggle
+  // ── Supabase config ──────────────────────────────────
+  const SUPABASE_URL  = "https://lpgelwfoarhouollhwur.supabase.co";
+  const SUPABASE_KEY  = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxwZ2Vsd2ZvYXJob3VvbGxod3VyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIyMzI4MjAsImV4cCI6MjA5NzgwODgyMH0.GqTZkeoOAomuur4JSyW2pTR-8Zzg8OTv394JtP7DoXM";
+  const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+  // ── Tarih formatlama ─────────────────────────────────
+  function tarihFormatla(tarih) {
+    if (!tarih) return '—';
+    const d = new Date(tarih);
+    const aylar = ['Oca','Şub','Mar','Nis','May','Haz','Tem','Ağu','Eyl','Eki','Kas','Ara'];
+    return `${d.getDate()} ${aylar[d.getMonth()]} ${d.getFullYear()}`;
+  }
+
+  // ── Durum badge ──────────────────────────────────────
+  function durumBadge(durum, bitis) {
+    const gun = bitis ? Math.ceil((new Date(bitis) - new Date()) / 86400000) : null;
+    if (gun !== null && gun <= 3 && gun >= 0) {
+      return `<span class="badge badge-soon">● Son ${gun} Gün</span>`;
+    }
+    if (durum === 'aktif') return `<span class="badge badge-open">● Açık</span>`;
+    return `<span class="badge">${durum}</span>`;
+  }
+
+  // ── Bütçe formatlama ─────────────────────────────────
+  function butceFormatla(bedel) {
+    if (!bedel) return '—';
+    if (bedel >= 1000000) return `₺${(bedel/1000000).toFixed(1)}M`;
+    if (bedel >= 1000) return `₺${(bedel/1000).toFixed(0)}K`;
+    return `₺${bedel}`;
+  }
+
+  // ── Satır oluştur ────────────────────────────────────
+  function satirOlustur(ilan) {
+    const uyum = Math.floor(Math.random() * 40 + 60); // Geçici — profil uyumu hesabı
+    return `
+      <tr>
+        <td><input type="checkbox" /></td>
+        <td class="ihale-title-cell">
+          <a href="#">${ilan.baslik || '—'}</a>
+          <div class="ihale-kurrum-cell">${ilan.idare || '—'} — EKAP #${ilan.ekap_id || '—'}</div>
+        </td>
+        <td>${durumBadge(ilan.durum, ilan.son_teklif_tarihi)}</td>
+        <td class="budget-cell">${butceFormatla(ilan.tahmini_bedel)}</td>
+        <td style="font-size:13px; color:var(--off-white);">${tarihFormatla(ilan.son_teklif_tarihi)}</td>
+        <td>
+          <div class="compat-bar">
+            <div style="flex:1; background:var(--border); height:4px; border-radius:2px; overflow:hidden;">
+              <div class="compat-fill" style="width:${uyum}%;"></div>
+            </div>
+            <span class="compat-num">${uyum}%</span>
+          </div>
+        </td>
+        <td>
+          <div class="action-btns">
+            <button class="action-btn primary" onclick="takibeAl(this, '${ilan.id}')">Takibe Al</button>
+            <button class="action-btn">Detay</button>
+          </div>
+        </td>
+      </tr>`;
+  }
+
+  // ── İlanları yükle ───────────────────────────────────
+  async function ilanlariYukle() {
+    const tbody = document.getElementById('ihale-tbody');
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:32px; color:var(--muted);">Yükleniyor...</td></tr>`;
+
+    const { data, error } = await sb
+      .from('ilanlar')
+      .select('id, ekap_id, baslik, idare, il, tur, durum, son_teklif_tarihi, tahmini_bedel')
+      .eq('durum', 'aktif')
+      .order('son_teklif_tarihi', { ascending: true })
+      .limit(10);
+
+    if (error || !data || data.length === 0) {
+      tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:32px; color:var(--muted);">
+        ${error ? 'Bağlantı hatası: ' + error.message : 'Henüz ilan bulunmuyor.'}
+      </td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = data.map(satirOlustur).join('');
+
+    // Tablo altı güncelle
+    const footer = document.querySelector('.table-footer span');
+    if (footer) footer.textContent = `${data.length} ihale gösteriliyor`;
+
+    // Takibe al butonlarını aktif et (dinamik satırlar için)
+    document.querySelectorAll('.action-btn.primary').forEach(btn => {
+      btn.addEventListener('click', function() {
+        if (this.textContent === 'Takibe Al') {
+          this.textContent = '✓ Takipte';
+          this.style.background = 'rgba(76,175,80,0.1)';
+          this.style.color = '#4CAF50';
+          this.style.borderColor = 'rgba(76,175,80,0.3)';
+        }
+      });
+    });
+  }
+
+  // Takibe al fonksiyonu
+  function takibeAl(btn, id) {
+    btn.textContent = '✓ Takipte';
+    btn.style.background = 'rgba(76,175,80,0.1)';
+    btn.style.color = '#4CAF50';
+    btn.style.borderColor = 'rgba(76,175,80,0.3)';
+  }
+
+  // ── View toggle ──────────────────────────────────────
   document.querySelectorAll('.view-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       document.querySelectorAll('.view-btn').forEach(b => b.classList.remove('active'));
@@ -913,20 +897,13 @@
     });
   });
 
-  // Filter chip remove
+  // ── Filter chip remove ───────────────────────────────
   document.querySelectorAll('.filter-chip .remove').forEach(el => {
     el.addEventListener('click', () => el.closest('.filter-chip').remove());
   });
 
-  // Takibe al button
-  document.querySelectorAll('.action-btn.primary').forEach(btn => {
-    btn.addEventListener('click', () => {
-      btn.textContent = '✓ Takipte';
-      btn.style.background = 'rgba(76,175,80,0.1)';
-      btn.style.color = '#4CAF50';
-      btn.style.borderColor = 'rgba(76,175,80,0.3)';
-    });
-  });
+  // ── Sayfa yüklenince ilanları çek ───────────────────
+  ilanlariYukle();
 </script>
 </body>
 </html>
