@@ -171,7 +171,7 @@
     <!-- GİRİŞ PANELİ -->
     <div id="panel-giris" class="panel aktif">
       <h1>Hoş geldiniz</h1>
-      <p class="subtitle">Hesabınız yok mu? <a onclick="panelGoster('kayit')">Ücretsiz kayıt olun</a></p>
+      <p class="subtitle">Hesabınız yok mu? <a onclick="panelGoster('kayit')" style="cursor:pointer">Ücretsiz kayıt olun</a></p>
 
       <form id="giris-form" onsubmit="girisYap(event)">
         <div class="field">
@@ -182,7 +182,7 @@
           <label for="giris-sifre">Şifre</label>
           <input type="password" id="giris-sifre" placeholder="••••••••" required />
         </div>
-        <div class="forgot"><a href="#">Şifremi unuttum</a></div>
+        <div class="forgot"><a href="#" onclick="return false;" style="cursor:pointer">Şifremi unuttum</a></div>
         <button type="submit" class="btn-submit" id="giris-btn">Giriş Yap</button>
       </form>
 
@@ -197,7 +197,7 @@
     <!-- KAYIT PANELİ -->
     <div id="panel-kayit" class="panel">
       <h1>Hesap Oluştur</h1>
-      <p class="subtitle">Zaten hesabınız var mı? <a onclick="panelGoster('giris')">Giriş yapın</a></p>
+      <p class="subtitle">Zaten hesabınız var mı? <a onclick="panelGoster('giris')" style="cursor:pointer">Giriş yapın</a></p>
 
       <form id="kayit-form" onsubmit="kayitOl(event)">
         <div class="field">
@@ -231,7 +231,8 @@
 
 <script>
   // Panel geçişi
-  function panelGoster(panel) {
+  function panelGoster(panel, e) {
+    if (e && e.preventDefault) e.preventDefault();
     document.getElementById('panel-giris').classList.toggle('aktif', panel === 'giris');
     document.getElementById('panel-kayit').classList.toggle('aktif', panel === 'kayit');
   }
