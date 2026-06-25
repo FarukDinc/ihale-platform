@@ -93,7 +93,7 @@ def ihaleleri_listele(
     İhale listesi — herkese açık, auth gerekmez.
     """
     try:
-        sorgu = supabase.table("ihaleler").select(
+        sorgu = supabase.table("ilanlar").select(
             "id, ikn, baslik, idare, il, tur, durum, ihale_tarihi, "
             "tahmini_bedel, analiz_tarihi"
         ).eq("durum", "Teklif Vermeye Açık")
@@ -126,7 +126,7 @@ def ihaleleri_listele(
 def ihale_detay(ihale_id: str):
     """Tek ihale detayı."""
     try:
-        sonuc = supabase.table("ihaleler").select("*").eq(
+        sonuc = supabase.table("ilanlar").select("*").eq(
             "id", ihale_id
         ).single().execute()
         return {"basari": True, "veri": sonuc.data}
@@ -207,7 +207,7 @@ def takipleri_getir(authorization: str = Header(None)):
 
     try:
         sonuc = supabase.table("takipler").select(
-            "*, ihaleler(ikn, baslik, idare, il, ihale_tarihi, durum)"
+            "*, ilanlar(ikn, baslik, idare, il, ihale_tarihi, durum)"
         ).eq("kullanici_id", kullanici_id).eq("durum", "aktif").execute()
         return {"basari": True, "veri": sonuc.data}
     except Exception as e:
@@ -289,7 +289,7 @@ def analiz_gecmisi_getir(authorization: str = Header(None)):
 
     try:
         sonuc = supabase.table("analiz_gecmisi").select(
-            "*, ihaleler(ikn, baslik)"
+            "*, ilanlar(ikn, baslik)"
         ).eq("kullanici_id", kullanici_id).order(
             "olusturulma", desc=True
         ).limit(20).execute()
