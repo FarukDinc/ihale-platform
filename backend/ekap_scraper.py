@@ -145,7 +145,7 @@ def ihaleleri_isle(ham_liste):
         "tur":               tur_donustur(i.get("ihaleTipAciklama")),
         "durum":             durum_donustur(i.get("ihaleDurumAciklama")),
         "son_teklif_tarihi": i.get("ihaleTarihSaat"),
-        "kaynak":            "EKAP",
+        "kaynak":            "ekap",
         "olusturulma":       simdi,
     } for i in ham_liste if i.get("ihaleAdi")]
 
