@@ -1,0 +1,1741 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Teklif Oluştur — İhalePlatform</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    body { background: var(--navy); }
+    .app { display: flex; min-height: 100vh; }
+
+    /* ── SIDEBAR ─────────────────────────────────────── */
+    .sidebar {
+      background: var(--navy-mid); border-right: 1px solid var(--border);
+      width: 240px; flex-shrink: 0; position: sticky; top: 0;
+      height: 100vh; display: flex; flex-direction: column; overflow-y: auto;
+    }
+    .sidebar-logo { padding: 20px 20px 16px; border-bottom: 1px solid var(--border); }
+    .sidebar-logo a {
+      font-family: var(--font-display); font-size: 18px; font-weight: 800;
+      color: var(--white); text-decoration: none; display: flex; align-items: center; gap: 8px;
+    }
+    .sidebar-logo span { color: var(--amber); }
+    .sidebar-nav { flex: 1; padding: 16px 12px; }
+    .nav-section-label {
+      font-size: 10px; font-weight: 700; letter-spacing: .1em;
+      text-transform: uppercase; color: var(--muted); padding: 12px 8px 6px;
+    }
+    .nav-item {
+      display: flex; align-items: center; gap: 10px; padding: 9px 12px;
+      border-radius: 6px; color: var(--muted); text-decoration: none;
+      font-size: 13px; font-weight: 500; transition: all .15s; margin-bottom: 2px;
+    }
+    .nav-item:hover { background: var(--card-bg); color: var(--white); }
+    .nav-item.active { background: rgba(240,165,0,0.12); color: var(--amber); }
+    .nav-item .icon { font-size: 16px; width: 20px; text-align: center; }
+    .sidebar-footer { padding: 16px; border-top: 1px solid var(--border); }
+    .user-row { display: flex; align-items: center; gap: 10px; }
+    .user-avatar {
+      width: 32px; height: 32px; border-radius: 50%;
+      background: var(--amber); color: var(--navy);
+      font-size: 12px; font-weight: 800; display: flex; align-items: center; justify-content: center;
+    }
+    .user-name { font-size: 13px; font-weight: 600; color: var(--white); }
+    .user-plan { font-size: 11px; color: var(--muted); }
+
+    /* ── MAIN ────────────────────────────────────────── */
+    .main { display: flex; flex-direction: column; flex: 1; min-width: 0; height: 100vh; overflow-y: auto; }
+
+    /* ── TOPBAR ──────────────────────────────────────── */
+    .topbar {
+      background: var(--navy-mid); border-bottom: 1px solid var(--border);
+      padding: 0 28px; height: 56px; display: flex; align-items: center;
+      justify-content: space-between; position: sticky; top: 0; z-index: 50;
+    }
+    .topbar-left { display: flex; align-items: center; gap: 12px; }
+    .back-btn {
+      display: flex; align-items: center; gap: 6px; color: var(--muted);
+      text-decoration: none; font-size: 13px; font-weight: 500; transition: color .15s;
+    }
+    .back-btn:hover { color: var(--white); }
+    .breadcrumb { font-size: 13px; color: var(--muted); }
+    .breadcrumb span { color: var(--white); }
+
+    /* ── İÇERİK ──────────────────────────────────────── */
+    .page-wrap { display: flex; gap: 28px; padding: 28px; max-width: 1100px; width: 100%; }
+
+    /* ── ADIM ÇUBUĞU (sol) ───────────────────────────── */
+    .steps-panel {
+      width: 220px; flex-shrink: 0;
+    }
+    .steps-sticky { position: sticky; top: 84px; }
+    .steps-title {
+      font-size: 11px; font-weight: 700; letter-spacing: .1em;
+      text-transform: uppercase; color: var(--muted); margin-bottom: 16px;
+    }
+    .step-item {
+      display: flex; align-items: flex-start; gap: 12px;
+      padding: 10px 0; cursor: pointer; transition: all .15s;
+    }
+    .step-item:not(:last-child) { border-bottom: 1px solid var(--border); }
+    .step-dot {
+      width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px; font-weight: 700;
+      border: 2px solid var(--border); color: var(--muted);
+      background: var(--navy-mid); transition: all .2s;
+    }
+    .step-item.active .step-dot {
+      border-color: var(--amber); color: var(--amber);
+      background: rgba(240,165,0,0.1);
+    }
+    .step-item.done .step-dot {
+      border-color: #4ade80; color: #4ade80;
+      background: rgba(74,222,128,0.08);
+    }
+    .step-info { flex: 1; padding-top: 3px; }
+    .step-label {
+      font-size: 13px; font-weight: 600; color: var(--muted); transition: color .15s;
+    }
+    .step-item.active .step-label { color: var(--white); }
+    .step-item.done .step-label { color: #4ade80; }
+    .step-desc { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+    /* Kredi göstergesi */
+    .kredi-box {
+      margin-top: 20px; padding: 14px; border-radius: 8px;
+      background: rgba(240,165,0,0.07); border: 1px solid rgba(240,165,0,0.2);
+    }
+    .kredi-label { font-size: 11px; color: var(--muted); margin-bottom: 6px; }
+    .kredi-sayi { font-size: 22px; font-weight: 800; color: var(--amber); }
+    .kredi-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+    /* ── FORM ALANI (sağ) ────────────────────────────── */
+    .form-panel { flex: 1; min-width: 0; }
+
+    .form-section { display: none; }
+    .form-section.active { display: block; }
+
+    /* Bölüm başlığı */
+    .section-head { margin-bottom: 24px; }
+    .section-head h2 { font-size: 20px; font-weight: 800; color: var(--white); margin-bottom: 6px; }
+    .section-head p { font-size: 13px; color: var(--muted); }
+
+    /* Kart */
+    .card {
+      background: var(--navy-mid); border: 1px solid var(--border);
+      border-radius: 12px; padding: 24px; margin-bottom: 16px;
+    }
+    .card-title {
+      font-size: 12px; font-weight: 700; color: var(--muted);
+      text-transform: uppercase; letter-spacing: .08em;
+      padding-bottom: 14px; border-bottom: 1px solid var(--border); margin-bottom: 18px;
+    }
+
+    /* İhale özet bilgileri */
+    .ihale-ozet-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0; }
+    .ozet-row {
+      display: flex; flex-direction: column; padding: 12px 0;
+      border-bottom: 1px solid rgba(255,255,255,.04);
+    }
+    .ozet-row:nth-child(odd) { padding-right: 24px; border-right: 1px solid rgba(255,255,255,.04); }
+    .ozet-row:nth-child(even) { padding-left: 24px; }
+    .ozet-label { font-size: 11px; color: var(--muted); margin-bottom: 4px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; }
+    .ozet-value { font-size: 14px; color: var(--white); font-weight: 600; }
+    .ozet-value.amber { color: var(--amber); }
+
+    /* Süre uyarısı */
+    .sure-uyari {
+      display: flex; align-items: center; gap: 10px;
+      background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.2);
+      border-radius: 8px; padding: 12px 16px; margin-top: 16px;
+      font-size: 13px; color: var(--amber);
+    }
+
+    /* Form elemanları */
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    .form-grid.cols-1 { grid-template-columns: 1fr; }
+    .form-grid.cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+
+    .form-group { display: flex; flex-direction: column; gap: 6px; }
+    .form-group.full { grid-column: 1 / -1; }
+
+    label {
+      font-size: 12px; font-weight: 600; color: var(--muted);
+      text-transform: uppercase; letter-spacing: .06em;
+    }
+    label .required { color: #f87171; margin-left: 2px; }
+
+    input[type="text"],
+    input[type="number"],
+    input[type="email"],
+    input[type="tel"],
+    select,
+    textarea {
+      background: var(--navy); border: 1px solid var(--border);
+      border-radius: 7px; padding: 10px 14px;
+      color: var(--white); font-size: 14px; font-family: var(--font-body);
+      outline: none; transition: border-color .15s, box-shadow .15s;
+      width: 100%;
+    }
+    input:focus, select:focus, textarea:focus {
+      border-color: rgba(240,165,0,0.5);
+      box-shadow: 0 0 0 3px rgba(240,165,0,0.08);
+    }
+    input::placeholder, textarea::placeholder { color: var(--muted); }
+    select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238A96A8' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 12px center; padding-right: 36px; }
+    select option { background: var(--navy-mid); }
+    textarea { resize: vertical; min-height: 120px; line-height: 1.6; }
+
+    /* Input prefix/suffix */
+    .input-wrap { position: relative; }
+    .input-prefix {
+      position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
+      color: var(--muted); font-size: 14px; font-weight: 600; pointer-events: none;
+    }
+    .input-wrap input { padding-left: 32px; }
+
+    /* Teknik teklif - AI bölümü */
+    .ai-panel {
+      background: linear-gradient(135deg, rgba(240,165,0,0.06) 0%, rgba(240,165,0,0.02) 100%);
+      border: 1px solid rgba(240,165,0,0.2); border-radius: 10px;
+      padding: 20px; margin-bottom: 16px;
+    }
+    .ai-panel-header { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+    .ai-icon {
+      width: 36px; height: 36px; background: rgba(240,165,0,0.12);
+      border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 18px;
+    }
+    .ai-panel-title { font-size: 14px; font-weight: 700; color: var(--white); }
+    .ai-panel-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+    .ai-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+
+    .btn-ai {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: var(--amber); color: var(--navy);
+      border: none; border-radius: 7px; padding: 10px 18px;
+      font-size: 13px; font-weight: 700; cursor: pointer; transition: all .2s;
+    }
+    .btn-ai:hover { background: var(--amber-dim); transform: translateY(-1px); }
+    .btn-ai:disabled { opacity: .5; cursor: not-allowed; transform: none; }
+
+    .btn-outline {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: transparent; color: var(--white);
+      border: 1px solid var(--border); border-radius: 7px; padding: 10px 18px;
+      font-size: 13px; font-weight: 600; cursor: pointer; transition: all .2s;
+    }
+    .btn-outline:hover { border-color: rgba(255,255,255,.3); background: rgba(255,255,255,.04); }
+
+    /* AI yükleniyor animasyonu */
+    .ai-loading {
+      display: none; align-items: center; gap: 12px;
+      background: rgba(240,165,0,0.05); border: 1px solid rgba(240,165,0,0.15);
+      border-radius: 8px; padding: 16px; margin-top: 12px;
+    }
+    .ai-loading.show { display: flex; }
+    .ai-spinner {
+      width: 20px; height: 20px; border: 2px solid rgba(240,165,0,0.2);
+      border-top-color: var(--amber); border-radius: 50%;
+      animation: spin .8s linear infinite; flex-shrink: 0;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .ai-loading-text { font-size: 13px; color: var(--amber); }
+
+    /* Teklif bölüm sekmeler */
+    .tabs { display: flex; gap: 4px; background: var(--navy); border-radius: 8px; padding: 4px; margin-bottom: 16px; }
+    .tab-btn {
+      flex: 1; padding: 8px 12px; border-radius: 6px; border: none;
+      font-size: 13px; font-weight: 600; cursor: pointer; transition: all .15s;
+      color: var(--muted); background: transparent;
+    }
+    .tab-btn.active { background: var(--navy-mid); color: var(--white); }
+
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    /* Mali teklif tablosu */
+    .fiyat-table { width: 100%; border-collapse: collapse; }
+    .fiyat-table th {
+      font-size: 11px; font-weight: 700; color: var(--muted);
+      text-transform: uppercase; letter-spacing: .06em;
+      padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--border);
+    }
+    .fiyat-table td { padding: 8px 12px; border-bottom: 1px solid rgba(255,255,255,.04); }
+    .fiyat-table tr:last-child td { border-bottom: none; }
+    .fiyat-table input[type="text"],
+    .fiyat-table input[type="number"] {
+      background: var(--navy); border: 1px solid var(--border); border-radius: 5px;
+      padding: 6px 10px; color: var(--white); font-size: 13px;
+      width: 100%; min-width: 80px;
+    }
+    .fiyat-table input:focus { border-color: rgba(240,165,0,0.5); }
+    .fiyat-total-row td {
+      border-top: 2px solid var(--border); padding-top: 14px;
+      font-weight: 700; font-size: 14px;
+    }
+    .fiyat-total-row .tutar { color: var(--amber); font-size: 18px; }
+
+    .btn-add-row {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: rgba(255,255,255,.04); border: 1px dashed var(--border);
+      border-radius: 6px; padding: 8px 14px; font-size: 13px;
+      color: var(--muted); cursor: pointer; transition: all .15s; margin-top: 10px;
+    }
+    .btn-add-row:hover { border-color: var(--amber); color: var(--amber); }
+
+    /* Ekler */
+    .ek-listesi { display: flex; flex-direction: column; gap: 10px; }
+    .ek-item {
+      display: flex; align-items: center; gap: 12px; padding: 14px 16px;
+      background: var(--navy); border: 1px solid var(--border); border-radius: 8px;
+      transition: border-color .15s;
+    }
+    .ek-item:hover { border-color: rgba(255,255,255,.15); }
+    .ek-check {
+      width: 20px; height: 20px; border-radius: 4px;
+      border: 2px solid var(--border); background: transparent;
+      flex-shrink: 0; cursor: pointer; accent-color: var(--amber);
+    }
+    .ek-icon { font-size: 18px; flex-shrink: 0; }
+    .ek-info { flex: 1; }
+    .ek-ad { font-size: 13px; font-weight: 600; color: var(--white); }
+    .ek-aciklama { font-size: 11px; color: var(--muted); margin-top: 2px; }
+    .ek-zorunlu {
+      font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 10px;
+      background: rgba(239,68,68,0.1); color: #f87171;
+    }
+    .ek-opsiyonel {
+      font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 10px;
+      background: rgba(255,255,255,.06); color: var(--muted);
+    }
+
+    /* Yükleme alanı */
+    .upload-zone {
+      border: 2px dashed var(--border); border-radius: 10px; padding: 32px;
+      text-align: center; cursor: pointer; transition: all .2s;
+      background: rgba(255,255,255,.02);
+    }
+    .upload-zone:hover { border-color: var(--amber); background: rgba(240,165,0,.03); }
+    .upload-zone-icon { font-size: 28px; margin-bottom: 10px; }
+    .upload-zone-text { font-size: 13px; color: var(--muted); }
+    .upload-zone-text strong { color: var(--white); }
+
+    /* Önizleme */
+    .onizleme-header {
+      display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;
+    }
+    .onizleme-baslik { font-size: 18px; font-weight: 800; color: var(--white); }
+    .onizleme-meta { font-size: 12px; color: var(--muted); margin-top: 4px; }
+
+    .onizleme-belge {
+      background: #fff; border-radius: 10px; padding: 48px;
+      color: #1a1a2e; font-family: 'Times New Roman', serif;
+      line-height: 1.8; min-height: 600px;
+    }
+    .belge-logo-row {
+      display: flex; justify-content: space-between; align-items: flex-start;
+      margin-bottom: 32px; padding-bottom: 20px; border-bottom: 2px solid #e5e7eb;
+    }
+    .belge-firma-adi { font-size: 18px; font-weight: 700; color: #111; font-family: 'Plus Jakarta Sans', sans-serif; }
+    .belge-firma-alt { font-size: 12px; color: #6b7280; margin-top: 4px; }
+    .belge-tarih { font-size: 12px; color: #6b7280; text-align: right; }
+
+    .belge-konu {
+      background: #f8f9fa; border-left: 4px solid #F0A500;
+      padding: 16px 20px; margin-bottom: 28px; border-radius: 0 8px 8px 0;
+    }
+    .belge-konu-label { font-size: 11px; font-weight: 700; color: #6b7280; text-transform: uppercase; letter-spacing: .05em; }
+    .belge-konu-text { font-size: 15px; font-weight: 700; color: #111; margin-top: 4px; font-family: 'Plus Jakarta Sans', sans-serif; }
+
+    .belge-section { margin-bottom: 24px; }
+    .belge-section h3 { font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: #374151; border-bottom: 1px solid #e5e7eb; padding-bottom: 8px; margin-bottom: 12px; font-family: 'Plus Jakarta Sans', sans-serif; }
+    .belge-section p { font-size: 13px; color: #374151; }
+
+    .belge-tablo { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+    .belge-tablo th { background: #f3f4f6; padding: 8px 12px; text-align: left; font-size: 12px; font-weight: 700; color: #374151; border: 1px solid #e5e7eb; }
+    .belge-tablo td { padding: 8px 12px; font-size: 13px; border: 1px solid #e5e7eb; }
+    .belge-tablo .tutar { text-align: right; font-weight: 700; }
+    .belge-tablo .toplam-row { background: #fef3c7; font-weight: 700; }
+
+    .belge-imza { margin-top: 48px; display: flex; justify-content: space-between; }
+    .imza-blok { text-align: center; }
+    .imza-cizgi { width: 180px; border-top: 1px solid #9ca3af; margin: 0 auto 8px; }
+    .imza-ad { font-size: 13px; font-weight: 700; color: #111; }
+    .imza-unvan { font-size: 11px; color: #6b7280; }
+
+    /* İndirme butonları */
+    .indirme-row { display: flex; gap: 12px; flex-wrap: wrap; }
+    .btn-indir {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 12px 20px; border-radius: 8px; font-size: 14px; font-weight: 700;
+      cursor: pointer; transition: all .2s; border: none; text-decoration: none;
+    }
+    .btn-indir-word { background: #2563eb; color: #fff; }
+    .btn-indir-word:hover { background: #1d4ed8; }
+    .btn-indir-pdf { background: #dc2626; color: #fff; }
+    .btn-indir-pdf:hover { background: #b91c1c; }
+    .btn-indir-kaydet { background: var(--amber); color: var(--navy); }
+    .btn-indir-kaydet:hover { background: var(--amber-dim); }
+
+    /* Alt buton çubuğu */
+    .form-footer {
+      display: flex; justify-content: space-between; align-items: center;
+      padding-top: 20px; margin-top: 8px; border-top: 1px solid var(--border);
+    }
+    .btn-prev {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: transparent; color: var(--muted);
+      border: 1px solid var(--border); border-radius: 7px; padding: 10px 18px;
+      font-size: 13px; font-weight: 600; cursor: pointer; transition: all .2s;
+    }
+    .btn-prev:hover { color: var(--white); border-color: rgba(255,255,255,.2); }
+    .btn-next {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: var(--amber); color: var(--navy);
+      border: none; border-radius: 7px; padding: 11px 24px;
+      font-size: 14px; font-weight: 700; cursor: pointer; transition: all .2s;
+    }
+    .btn-next:hover { background: var(--amber-dim); transform: translateY(-1px); }
+
+    /* Bildirim toast */
+    .toast {
+      position: fixed; bottom: 24px; right: 24px;
+      background: var(--navy-mid); border: 1px solid var(--border);
+      border-radius: 10px; padding: 14px 18px;
+      font-size: 13px; color: var(--white);
+      display: flex; align-items: center; gap: 10px;
+      box-shadow: 0 8px 32px rgba(0,0,0,.4);
+      transform: translateY(80px); opacity: 0; transition: all .3s;
+      z-index: 1000; max-width: 340px;
+    }
+    .toast.show { transform: translateY(0); opacity: 1; }
+    .toast.basari { border-color: rgba(74,222,128,.3); }
+    .toast.hata { border-color: rgba(248,113,113,.3); }
+
+    /* Loading state */
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.5} }
+    .skeleton {
+      background: linear-gradient(90deg, var(--border) 25%, rgba(255,255,255,.06) 50%, var(--border) 75%);
+      background-size: 200% 100%; animation: shimmer 1.5s infinite;
+      border-radius: 4px; height: 16px;
+    }
+    @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+
+    /* Responsive */
+    @media (max-width: 900px) {
+      .page-wrap { flex-direction: column; padding: 16px; }
+      .steps-panel { width: 100%; }
+      .steps-sticky { position: static; }
+      .form-grid { grid-template-columns: 1fr; }
+      .ihale-ozet-grid { grid-template-columns: 1fr; }
+      .ozet-row:nth-child(odd) { padding-right: 0; border-right: none; }
+      .ozet-row:nth-child(even) { padding-left: 0; }
+    }
+  </style>
+</head>
+<body>
+<div class="app">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <a href="index.html">
+        <span style="width:6px;height:6px;background:var(--amber);border-radius:50%;display:inline-block;animation:pulse 2s infinite;"></span>
+        İhale<span>Platform</span>
+      </a>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">Genel</div>
+      <a href="dashboard.html" class="nav-item"><span class="icon">◉</span> Dashboard</a>
+      <a href="ihaleler.html" class="nav-item"><span class="icon">⊞</span> İhaleler</a>
+      <a href="#" class="nav-item"><span class="icon">☆</span> Takipte</a>
+      <a href="#" class="nav-item"><span class="icon">🔔</span> Bildirimler</a>
+      <div class="nav-section-label">Teklif</div>
+      <a href="#" class="nav-item active"><span class="icon">✏</span> Teklif Oluştur</a>
+      <a href="#" class="nav-item"><span class="icon">📄</span> Tekliflerim</a>
+      <div class="nav-section-label">Analiz</div>
+      <a href="#" class="nav-item"><span class="icon">📊</span> Rekabet Analizi</a>
+      <a href="#" class="nav-item"><span class="icon">📁</span> Dökümanlar</a>
+      <div class="nav-section-label">Ayarlar</div>
+      <a href="profil.html" class="nav-item"><span class="icon">⚙</span> Profil</a>
+      <a href="fiyatlandirma_odeme_bolumu.html" class="nav-item"><span class="icon">💳</span> Abonelik</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-row">
+        <div class="user-avatar" id="sidebar-avatar">FD</div>
+        <div>
+          <div class="user-name" id="sidebar-isim">Yükleniyor...</div>
+          <div class="user-plan" id="sidebar-plan">—</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <div class="main">
+
+    <!-- TOPBAR -->
+    <div class="topbar">
+      <div class="topbar-left">
+        <a class="back-btn" id="back-btn" href="ihaleler.html">← Geri</a>
+        <div class="breadcrumb">İhaleler / <span id="bc-ihale">Teklif Oluştur</span></div>
+      </div>
+      <div style="display:flex;gap:10px;align-items:center;">
+        <span style="font-size:12px;color:var(--muted);">Otomatik kaydediliyor</span>
+        <span id="kayit-durum" style="font-size:12px;color:#4ade80;display:none;">✓ Kaydedildi</span>
+      </div>
+    </div>
+
+    <!-- İÇERİK -->
+    <div class="page-wrap">
+
+      <!-- ADIM PANELİ -->
+      <div class="steps-panel">
+        <div class="steps-sticky">
+          <div class="steps-title">Teklif Adımları</div>
+
+          <div class="step-item active" data-step="1" onclick="adimGit(1)">
+            <div class="step-dot">1</div>
+            <div class="step-info">
+              <div class="step-label">İhale Özeti</div>
+              <div class="step-desc">Seçilen ihale bilgileri</div>
+            </div>
+          </div>
+
+          <div class="step-item" data-step="2" onclick="adimGit(2)">
+            <div class="step-dot">2</div>
+            <div class="step-info">
+              <div class="step-label">Firma Bilgileri</div>
+              <div class="step-desc">Teklif verenin bilgileri</div>
+            </div>
+          </div>
+
+          <div class="step-item" data-step="3" onclick="adimGit(3)">
+            <div class="step-dot">3</div>
+            <div class="step-info">
+              <div class="step-label">Teknik Teklif</div>
+              <div class="step-desc">AI destekli içerik</div>
+            </div>
+          </div>
+
+          <div class="step-item" data-step="4" onclick="adimGit(4)">
+            <div class="step-dot">4</div>
+            <div class="step-info">
+              <div class="step-label">Mali Teklif</div>
+              <div class="step-desc">Fiyat & birim tablosu</div>
+            </div>
+          </div>
+
+          <div class="step-item" data-step="5" onclick="adimGit(5)">
+            <div class="step-dot">5</div>
+            <div class="step-info">
+              <div class="step-label">Ekler</div>
+              <div class="step-desc">Belgeler & dosyalar</div>
+            </div>
+          </div>
+
+          <div class="step-item" data-step="6" onclick="adimGit(6)">
+            <div class="step-dot">6</div>
+            <div class="step-info">
+              <div class="step-label">Önizleme & İndir</div>
+              <div class="step-desc">Son kontrol & çıktı</div>
+            </div>
+          </div>
+
+          <!-- Kredi göstergesi -->
+          <div class="kredi-box">
+            <div class="kredi-label">Kalan Krediniz</div>
+            <div class="kredi-sayi" id="kredi-sayi">—</div>
+            <div class="kredi-sub">AI teklif yazımı: 1 kredi</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- FORM PANELİ -->
+      <div class="form-panel">
+
+        <!-- ═══ ADIM 1: İHALE ÖZETİ ═══ -->
+        <div class="form-section active" id="adim-1">
+          <div class="section-head">
+            <h2>İhale Özeti</h2>
+            <p>Teklif hazırlayacağınız ihaleye ait temel bilgiler aşağıda gösterilmektedir.</p>
+          </div>
+
+          <div class="card">
+            <div class="card-title">İhale Bilgileri</div>
+            <div class="ihale-ozet-grid" id="ozet-grid">
+              <!-- JS ile doldurulacak -->
+              <div class="ozet-row"><div class="ozet-label">İhale Adı</div><div class="ozet-value skeleton" style="height:18px;width:80%;border-radius:4px;"></div></div>
+              <div class="ozet-row"><div class="ozet-label">İdare</div><div class="ozet-value skeleton" style="height:18px;width:70%;border-radius:4px;"></div></div>
+              <div class="ozet-row"><div class="ozet-label">İhale Türü</div><div class="ozet-value skeleton" style="height:16px;width:60%;border-radius:4px;"></div></div>
+              <div class="ozet-row"><div class="ozet-label">Son Teklif Tarihi</div><div class="ozet-value skeleton" style="height:16px;width:50%;border-radius:4px;"></div></div>
+              <div class="ozet-row"><div class="ozet-label">Tahmini Bedel</div><div class="ozet-value skeleton" style="height:18px;width:55%;border-radius:4px;"></div></div>
+              <div class="ozet-row"><div class="ozet-label">İhale Usulü</div><div class="ozet-value skeleton" style="height:16px;width:65%;border-radius:4px;"></div></div>
+            </div>
+            <div id="sure-uyari" style="display:none;"></div>
+          </div>
+
+          <div class="card">
+            <div class="card-title">Teklif Başlığı</div>
+            <div class="form-group">
+              <label>Teklif Dosyası Adı <span class="required">*</span></label>
+              <input type="text" id="teklif-adi" placeholder="Örn: İSKİ Boru Döşeme İhalesi Teknik Teklif — Acme İnşaat A.Ş." />
+            </div>
+          </div>
+
+          <div class="form-footer">
+            <div></div>
+            <button class="btn-next" onclick="adimIleri()">Firma Bilgileri → </button>
+          </div>
+        </div>
+
+        <!-- ═══ ADIM 2: FİRMA BİLGİLERİ ═══ -->
+        <div class="form-section" id="adim-2">
+          <div class="section-head">
+            <h2>Firma Bilgileri</h2>
+            <p>Profilinizden otomatik dolduruldu. Gerekirse düzenleyebilirsiniz.</p>
+          </div>
+
+          <div class="card">
+            <div class="card-title">Firma Kimlik Bilgileri</div>
+            <div class="form-grid">
+              <div class="form-group">
+                <label>Firma Unvanı <span class="required">*</span></label>
+                <input type="text" id="firma-adi" placeholder="Acme İnşaat Taahhüt A.Ş." />
+              </div>
+              <div class="form-group">
+                <label>Vergi No <span class="required">*</span></label>
+                <input type="text" id="firma-vergi" placeholder="1234567890" maxlength="10" />
+              </div>
+              <div class="form-group">
+                <label>Vergi Dairesi <span class="required">*</span></label>
+                <input type="text" id="firma-vergi-dairesi" placeholder="Kadıköy" />
+              </div>
+              <div class="form-group">
+                <label>Ticaret Sicil No</label>
+                <input type="text" id="firma-ticaret-sicil" placeholder="İstanbul — 123456" />
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-title">İletişim Bilgileri</div>
+            <div class="form-grid">
+              <div class="form-group">
+                <label>Yetkili Adı Soyadı <span class="required">*</span></label>
+                <input type="text" id="yetkili-ad" placeholder="Ahmet Yılmaz" />
+              </div>
+              <div class="form-group">
+                <label>Unvanı</label>
+                <input type="text" id="yetkili-unvan" placeholder="Genel Müdür" />
+              </div>
+              <div class="form-group">
+                <label>Telefon <span class="required">*</span></label>
+                <input type="tel" id="firma-tel" placeholder="+90 212 555 00 00" />
+              </div>
+              <div class="form-group">
+                <label>E-posta <span class="required">*</span></label>
+                <input type="email" id="firma-email" placeholder="teklif@firma.com.tr" />
+              </div>
+              <div class="form-group full">
+                <label>Adres <span class="required">*</span></label>
+                <textarea id="firma-adres" rows="2" placeholder="Firma açık adresi..."></textarea>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-title">Deneyim & Kapasite</div>
+            <div class="form-grid">
+              <div class="form-group">
+                <label>Sektör Deneyimi (yıl)</label>
+                <input type="number" id="deneyim-yil" placeholder="15" min="0" />
+              </div>
+              <div class="form-group">
+                <label>Çalışan Sayısı</label>
+                <input type="number" id="calisan-sayisi" placeholder="120" min="1" />
+              </div>
+              <div class="form-group full">
+                <label>Daha Önce Tamamlanan Benzer Projeler</label>
+                <textarea id="benzer-projeler" rows="3" placeholder="1. İstanbul Büyükşehir Belediyesi — Su Altyapı Yenileme Projesi (2022) — 18 Ay&#10;2. DSİ — Kanal Rehabilitasyon Çalışmaları (2021) — 12 Ay"></textarea>
+              </div>
+            </div>
+          </div>
+
+          <div class="form-footer">
+            <button class="btn-prev" onclick="adimGeri()">← İhale Özeti</button>
+            <button class="btn-next" onclick="adimIleri()">Teknik Teklif → </button>
+          </div>
+        </div>
+
+        <!-- ═══ ADIM 3: TEKNİK TEKLİF ═══ -->
+        <div class="form-section" id="adim-3">
+          <div class="section-head">
+            <h2>Teknik Teklif</h2>
+            <p>AI, ihale şartnamesini analiz ederek teknik teklif metnini otomatik oluşturur. Düzenleyebilirsiniz.</p>
+          </div>
+
+          <!-- AI Panel -->
+          <div class="ai-panel">
+            <div class="ai-panel-header">
+              <div class="ai-icon">✨</div>
+              <div>
+                <div class="ai-panel-title">Gemini ile Otomatik Oluştur</div>
+                <div class="ai-panel-sub">İhale şartnamesi + firma profiliniz analiz edilerek teklif metni yazılır (1 kredi)</div>
+              </div>
+            </div>
+            <div class="ai-actions">
+              <button class="btn-ai" id="ai-olustur-btn" onclick="aiTeklifOlustur()">
+                ✨ Teknik Teklif Oluştur (1 Kredi)
+              </button>
+              <button class="btn-outline" onclick="sablonSec()">
+                📋 Şablon Seç
+              </button>
+            </div>
+            <div class="ai-loading" id="ai-loading">
+              <div class="ai-spinner"></div>
+              <div class="ai-loading-text" id="ai-loading-text">Şartname analiz ediliyor...</div>
+            </div>
+          </div>
+
+          <!-- Sekmeler -->
+          <div class="tabs">
+            <button class="tab-btn active" onclick="tabSec(this,'teknik-genel')">Genel Bilgiler</button>
+            <button class="tab-btn" onclick="tabSec(this,'teknik-yontem')">Çalışma Yöntemi</button>
+            <button class="tab-btn" onclick="tabSec(this,'teknik-takvim')">İş Takvimi</button>
+            <button class="tab-btn" onclick="tabSec(this,'teknik-ekip')">Ekip & Makine</button>
+          </div>
+
+          <!-- Genel Bilgiler -->
+          <div class="tab-content active" id="teknik-genel">
+            <div class="card">
+              <div class="card-title">İşin Genel Tanımı & Kapsam</div>
+              <div class="form-group">
+                <textarea id="teknik-kapsam" rows="6"
+                  placeholder="İhale konusu işin kapsamını ve teknik gereksinimlerini buraya yazın...&#10;&#10;AI butonu ile otomatik oluşturabilirsiniz."></textarea>
+              </div>
+            </div>
+            <div class="card">
+              <div class="card-title">Neden Firmamız?</div>
+              <div class="form-group">
+                <textarea id="teknik-neden" rows="4"
+                  placeholder="Firmanızın bu ihale için öne çıkan güçlü yönlerini açıklayın..."></textarea>
+              </div>
+            </div>
+          </div>
+
+          <!-- Çalışma Yöntemi -->
+          <div class="tab-content" id="teknik-yontem">
+            <div class="card">
+              <div class="card-title">Uygulama Yöntemi & Teknik Yaklaşım</div>
+              <div class="form-group">
+                <textarea id="teknik-yontem-text" rows="8"
+                  placeholder="İşin nasıl yürütüleceğini, hangi teknik yöntemlerin kullanılacağını açıklayın...&#10;&#10;• Mobilizasyon ve hazırlık&#10;• Uygulama aşamaları&#10;• Kalite kontrol prosedürleri&#10;• İş güvenliği önlemleri"></textarea>
+              </div>
+            </div>
+          </div>
+
+          <!-- İş Takvimi -->
+          <div class="tab-content" id="teknik-takvim">
+            <div class="card">
+              <div class="card-title">İş Programı & Teslim Takvimi</div>
+              <table class="fiyat-table" id="takvim-tablo">
+                <thead>
+                  <tr>
+                    <th style="width:40px;">#</th>
+                    <th>Faaliyet</th>
+                    <th style="width:120px;">Başlangıç</th>
+                    <th style="width:120px;">Bitiş</th>
+                    <th style="width:36px;"></th>
+                  </tr>
+                </thead>
+                <tbody id="takvim-body">
+                  <tr>
+                    <td style="color:var(--muted);">1</td>
+                    <td><input type="text" placeholder="Mobilizasyon ve saha hazırlığı" /></td>
+                    <td><input type="text" placeholder="1. Ay" /></td>
+                    <td><input type="text" placeholder="1. Ay" /></td>
+                    <td><button onclick="satirSil(this)" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;">×</button></td>
+                  </tr>
+                  <tr>
+                    <td style="color:var(--muted);">2</td>
+                    <td><input type="text" placeholder="Temel altyapı çalışmaları" /></td>
+                    <td><input type="text" placeholder="2. Ay" /></td>
+                    <td><input type="text" placeholder="4. Ay" /></td>
+                    <td><button onclick="satirSil(this)" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;">×</button></td>
+                  </tr>
+                  <tr>
+                    <td style="color:var(--muted);">3</td>
+                    <td><input type="text" placeholder="Kontrol, test ve kabul" /></td>
+                    <td><input type="text" placeholder="5. Ay" /></td>
+                    <td><input type="text" placeholder="6. Ay" /></td>
+                    <td><button onclick="satirSil(this)" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;">×</button></td>
+                  </tr>
+                </tbody>
+              </table>
+              <button class="btn-add-row" onclick="takvimSatirEkle()">+ Faaliyet Ekle</button>
+            </div>
+          </div>
+
+          <!-- Ekip & Makine -->
+          <div class="tab-content" id="teknik-ekip">
+            <div class="card">
+              <div class="card-title">Anahtar Personel</div>
+              <table class="fiyat-table" id="personel-tablo">
+                <thead>
+                  <tr>
+                    <th>Ad Soyad</th>
+                    <th>Görev / Unvan</th>
+                    <th style="width:100px;">Deneyim (yıl)</th>
+                    <th style="width:36px;"></th>
+                  </tr>
+                </thead>
+                <tbody id="personel-body">
+                  <tr>
+                    <td><input type="text" placeholder="Ahmet Yılmaz" /></td>
+                    <td><input type="text" placeholder="Proje Müdürü" /></td>
+                    <td><input type="number" placeholder="20" min="0" /></td>
+                    <td><button onclick="satirSil(this)" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;">×</button></td>
+                  </tr>
+                  <tr>
+                    <td><input type="text" placeholder="Fatma Kaya" /></td>
+                    <td><input type="text" placeholder="İnşaat Mühendisi" /></td>
+                    <td><input type="number" placeholder="12" min="0" /></td>
+                    <td><button onclick="satirSil(this)" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;">×</button></td>
+                  </tr>
+                </tbody>
+              </table>
+              <button class="btn-add-row" onclick="personelEkle()">+ Personel Ekle</button>
+            </div>
+
+            <div class="card">
+              <div class="card-title">İş Makineleri & Ekipman</div>
+              <table class="fiyat-table" id="makine-tablo">
+                <thead>
+                  <tr>
+                    <th>Ekipman</th>
+                    <th style="width:80px;">Adet</th>
+                    <th>Marka / Model</th>
+                    <th>Durum</th>
+                    <th style="width:36px;"></th>
+                  </tr>
+                </thead>
+                <tbody id="makine-body">
+                  <tr>
+                    <td><input type="text" placeholder="Ekskavatör" /></td>
+                    <td><input type="number" placeholder="3" min="1" /></td>
+                    <td><input type="text" placeholder="Caterpillar 320D" /></td>
+                    <td>
+                      <select>
+                        <option>Mülkiyet</option>
+                        <option>Kiralık</option>
+                        <option>Temin edilecek</option>
+                      </select>
+                    </td>
+                    <td><button onclick="satirSil(this)" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;">×</button></td>
+                  </tr>
+                  <tr>
+                    <td><input type="text" placeholder="Kamyon" /></td>
+                    <td><input type="number" placeholder="5" min="1" /></td>
+                    <td><input type="text" placeholder="Ford Cargo" /></td>
+                    <td>
+                      <select>
+                        <option>Mülkiyet</option>
+                        <option>Kiralık</option>
+                        <option>Temin edilecek</option>
+                      </select>
+                    </td>
+                    <td><button onclick="satirSil(this)" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;">×</button></td>
+                  </tr>
+                </tbody>
+              </table>
+              <button class="btn-add-row" onclick="makineEkle()">+ Ekipman Ekle</button>
+            </div>
+          </div>
+
+          <div class="form-footer">
+            <button class="btn-prev" onclick="adimGeri()">← Firma Bilgileri</button>
+            <button class="btn-next" onclick="adimIleri()">Mali Teklif → </button>
+          </div>
+        </div>
+
+        <!-- ═══ ADIM 4: MALİ TEKLİF ═══ -->
+        <div class="form-section" id="adim-4">
+          <div class="section-head">
+            <h2>Mali Teklif</h2>
+            <p>Birim fiyat tablosunu doldurun. Toplam teklif bedeli otomatik hesaplanır.</p>
+          </div>
+
+          <div class="card">
+            <div class="card-title">Para Birimi & KDV</div>
+            <div class="form-grid cols-3">
+              <div class="form-group">
+                <label>Para Birimi</label>
+                <select id="para-birimi">
+                  <option value="TRY">₺ Türk Lirası (TRY)</option>
+                  <option value="USD">$ ABD Doları (USD)</option>
+                  <option value="EUR">€ Euro (EUR)</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>KDV Oranı (%)</label>
+                <select id="kdv-orani">
+                  <option value="0">%0 — KDV'den Muaf</option>
+                  <option value="10">%10</option>
+                  <option value="20" selected>%20</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Teklif Geçerlilik Süresi</label>
+                <select id="gecerlilik">
+                  <option>30 Gün</option>
+                  <option>60 Gün</option>
+                  <option selected>90 Gün</option>
+                  <option>120 Gün</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-title">Birim Fiyat Teklif Cetveli</div>
+            <table class="fiyat-table" id="fiyat-tablo">
+              <thead>
+                <tr>
+                  <th style="width:36px;">#</th>
+                  <th>İş Kalemi / Açıklama</th>
+                  <th style="width:80px;">Miktar</th>
+                  <th style="width:80px;">Birim</th>
+                  <th style="width:130px;">Birim Fiyat (₺)</th>
+                  <th style="width:130px;">Toplam (₺)</th>
+                  <th style="width:36px;"></th>
+                </tr>
+              </thead>
+              <tbody id="fiyat-body">
+                <tr>
+                  <td style="color:var(--muted);font-size:12px;">1</td>
+                  <td><input type="text" placeholder="Zemin etüdü ve hazırlık" /></td>
+                  <td><input type="number" placeholder="1" min="0" step="0.01" oninput="toplamHesapla()" /></td>
+                  <td>
+                    <select oninput="toplamHesapla()">
+                      <option>Adet</option><option>m²</option><option>m³</option><option>m</option>
+                      <option>ton</option><option>kg</option><option>LS</option>
+                    </select>
+                  </td>
+                  <td>
+                    <div class="input-wrap">
+                      <span class="input-prefix">₺</span>
+                      <input type="number" placeholder="0,00" min="0" step="0.01" oninput="toplamHesapla()" />
+                    </div>
+                  </td>
+                  <td style="color:var(--amber);font-weight:700;" class="satir-toplam">₺0,00</td>
+                  <td><button onclick="satirSil(this)" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;">×</button></td>
+                </tr>
+                <tr>
+                  <td style="color:var(--muted);font-size:12px;">2</td>
+                  <td><input type="text" placeholder="Boru döşeme işleri" /></td>
+                  <td><input type="number" placeholder="500" min="0" step="0.01" oninput="toplamHesapla()" /></td>
+                  <td>
+                    <select oninput="toplamHesapla()">
+                      <option>Adet</option><option selected>m</option><option>m²</option><option>m³</option>
+                      <option>ton</option><option>kg</option><option>LS</option>
+                    </select>
+                  </td>
+                  <td>
+                    <div class="input-wrap">
+                      <span class="input-prefix">₺</span>
+                      <input type="number" placeholder="0,00" min="0" step="0.01" oninput="toplamHesapla()" />
+                    </div>
+                  </td>
+                  <td style="color:var(--amber);font-weight:700;" class="satir-toplam">₺0,00</td>
+                  <td><button onclick="satirSil(this)" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;">×</button></td>
+                </tr>
+              </tbody>
+              <tfoot>
+                <tr class="fiyat-total-row">
+                  <td colspan="5" style="color:var(--muted);">Ara Toplam (KDV Hariç)</td>
+                  <td class="tutar" id="ara-toplam">₺0,00</td>
+                  <td></td>
+                </tr>
+                <tr class="fiyat-total-row">
+                  <td colspan="5" style="color:var(--muted);">KDV (<span id="kdv-label">%20</span>)</td>
+                  <td class="tutar" id="kdv-tutar">₺0,00</td>
+                  <td></td>
+                </tr>
+                <tr class="fiyat-total-row" style="background:rgba(240,165,0,.05);">
+                  <td colspan="5" style="color:var(--white);font-size:15px;">TOPLAM TEKLİF BEDELİ</td>
+                  <td class="tutar" id="genel-toplam" style="font-size:20px;">₺0,00</td>
+                  <td></td>
+                </tr>
+              </tfoot>
+            </table>
+            <button class="btn-add-row" onclick="fiyatSatirEkle()">+ İş Kalemi Ekle</button>
+          </div>
+
+          <div class="card">
+            <div class="card-title">Ödeme Planı & Koşullar</div>
+            <div class="form-group">
+              <label>Ödeme Koşulları</label>
+              <textarea id="odeme-kosullari" rows="3"
+                placeholder="Örn: Avans %20, aylık hakediş ödemeleri, kesin kabul sonrası kalan %10 ödenecektir."></textarea>
+            </div>
+          </div>
+
+          <div class="form-footer">
+            <button class="btn-prev" onclick="adimGeri()">← Teknik Teklif</button>
+            <button class="btn-next" onclick="adimIleri()">Ekler → </button>
+          </div>
+        </div>
+
+        <!-- ═══ ADIM 5: EKLER ═══ -->
+        <div class="form-section" id="adim-5">
+          <div class="section-head">
+            <h2>Ekler & Belgeler</h2>
+            <p>Teklif dosyasına eklenecek belgeleri seçin ve yükleyin.</p>
+          </div>
+
+          <div class="card">
+            <div class="card-title">Zorunlu Belgeler</div>
+            <div class="ek-listesi">
+              <div class="ek-item">
+                <input type="checkbox" class="ek-check" checked />
+                <span class="ek-icon">📄</span>
+                <div class="ek-info">
+                  <div class="ek-ad">Vergi Levhası</div>
+                  <div class="ek-aciklama">Son 1 yıl içinde alınmış vergi levhası fotokopisi</div>
+                </div>
+                <span class="ek-zorunlu">Zorunlu</span>
+              </div>
+              <div class="ek-item">
+                <input type="checkbox" class="ek-check" checked />
+                <span class="ek-icon">📋</span>
+                <div class="ek-info">
+                  <div class="ek-ad">Ticaret Sicil Gazetesi</div>
+                  <div class="ek-aciklama">Son 6 ay içindeki yetki belgesi veya imza sirküleri</div>
+                </div>
+                <span class="ek-zorunlu">Zorunlu</span>
+              </div>
+              <div class="ek-item">
+                <input type="checkbox" class="ek-check" checked />
+                <span class="ek-icon">🏅</span>
+                <div class="ek-info">
+                  <div class="ek-ad">İş Deneyim Belgesi</div>
+                  <div class="ek-aciklama">Benzer iş deneyim belgesi (son 15 yıl içinde)</div>
+                </div>
+                <span class="ek-zorunlu">Zorunlu</span>
+              </div>
+              <div class="ek-item">
+                <input type="checkbox" class="ek-check" checked />
+                <span class="ek-icon">🏦</span>
+                <div class="ek-info">
+                  <div class="ek-ad">Geçici Teminat Mektubu</div>
+                  <div class="ek-aciklama">Tahmini bedelin %3'ü tutarında banka teminat mektubu</div>
+                </div>
+                <span class="ek-zorunlu">Zorunlu</span>
+              </div>
+              <div class="ek-item">
+                <input type="checkbox" class="ek-check" checked />
+                <span class="ek-icon">📊</span>
+                <div class="ek-info">
+                  <div class="ek-ad">Bilanço Bilgileri</div>
+                  <div class="ek-aciklama">Son 3 yıla ait bilanço ve gelir tablosu</div>
+                </div>
+                <span class="ek-zorunlu">Zorunlu</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-title">Opsiyonel Belgeler</div>
+            <div class="ek-listesi">
+              <div class="ek-item">
+                <input type="checkbox" class="ek-check" />
+                <span class="ek-icon">🏆</span>
+                <div class="ek-info">
+                  <div class="ek-ad">ISO Sertifikaları</div>
+                  <div class="ek-aciklama">ISO 9001, ISO 14001 veya diğer kalite belgeleri</div>
+                </div>
+                <span class="ek-opsiyonel">Opsiyonel</span>
+              </div>
+              <div class="ek-item">
+                <input type="checkbox" class="ek-check" />
+                <span class="ek-icon">📸</span>
+                <div class="ek-info">
+                  <div class="ek-ad">Referans Projelere Ait Fotoğraflar</div>
+                  <div class="ek-aciklama">Tamamlanan benzer projelerin görsel belgeleri</div>
+                </div>
+                <span class="ek-opsiyonel">Opsiyonel</span>
+              </div>
+              <div class="ek-item">
+                <input type="checkbox" class="ek-check" />
+                <span class="ek-icon">👥</span>
+                <div class="ek-info">
+                  <div class="ek-ad">Personel Özgeçmişleri</div>
+                  <div class="ek-aciklama">Anahtar personele ait detaylı CV ve diplomalar</div>
+                </div>
+                <span class="ek-opsiyonel">Opsiyonel</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-title">Ek Dosya Yükle</div>
+            <div class="upload-zone" onclick="document.getElementById('dosya-input').click()">
+              <div class="upload-zone-icon">📎</div>
+              <div class="upload-zone-text">
+                <strong>Tıklayın</strong> veya sürükleyip bırakın<br>
+                PDF, Word, Excel, JPEG — Maks. 10MB
+              </div>
+              <input type="file" id="dosya-input" style="display:none;" multiple accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png" onchange="dosyaYukle(event)" />
+            </div>
+            <div id="yuklenen-dosyalar" style="margin-top:12px;display:flex;flex-direction:column;gap:8px;"></div>
+          </div>
+
+          <div class="form-footer">
+            <button class="btn-prev" onclick="adimGeri()">← Mali Teklif</button>
+            <button class="btn-next" onclick="adimIleri()">Önizleme & İndir → </button>
+          </div>
+        </div>
+
+        <!-- ═══ ADIM 6: ÖNİZLEME & İNDİR ═══ -->
+        <div class="form-section" id="adim-6">
+          <div class="section-head">
+            <h2>Önizleme & İndir</h2>
+            <p>Teklif dosyanızın önizlemesini görüntüleyin. Word veya PDF olarak indirin.</p>
+          </div>
+
+          <div class="card">
+            <div class="onizleme-header">
+              <div>
+                <div class="onizleme-baslik" id="onizleme-baslik">Teknik & Mali Teklif</div>
+                <div class="onizleme-meta" id="onizleme-meta">Oluşturulacak</div>
+              </div>
+              <div class="indirme-row">
+                <button class="btn-indir btn-indir-word" onclick="wordIndir()">
+                  📝 Word İndir
+                </button>
+                <button class="btn-indir btn-indir-pdf" onclick="pdfIndir()">
+                  📄 PDF İndir
+                </button>
+                <button class="btn-indir btn-indir-kaydet" onclick="kaydEt()">
+                  💾 Kaydet
+                </button>
+              </div>
+            </div>
+
+            <!-- Belge önizleme -->
+            <div class="onizleme-belge" id="belge-onizleme">
+
+              <div class="belge-logo-row">
+                <div>
+                  <div class="belge-firma-adi" id="belge-firma-adi">Firma Adı</div>
+                  <div class="belge-firma-alt" id="belge-firma-alt">Vergi No: —</div>
+                  <div class="belge-firma-alt" id="belge-firma-adres-onizleme">—</div>
+                </div>
+                <div class="belge-tarih">
+                  <div id="belge-tarih">Tarih: —</div>
+                  <div id="belge-ref">Ref: TKL-2026-001</div>
+                </div>
+              </div>
+
+              <div class="belge-konu">
+                <div class="belge-konu-label">Konu</div>
+                <div class="belge-konu-text" id="belge-konu-text">İhale Adı Yükleniyor...</div>
+              </div>
+
+              <div class="belge-section">
+                <h3>1. Teklif Veren Firmaya İlişkin Bilgiler</h3>
+                <p id="belge-firma-bilgi">—</p>
+              </div>
+
+              <div class="belge-section">
+                <h3>2. Teknik Teklif Özeti</h3>
+                <p id="belge-teknik-ozet">Teknik teklif bilgileri Adım 3'te doldurulduğunda burada görünecektir.</p>
+              </div>
+
+              <div class="belge-section">
+                <h3>3. Mali Teklif Cetveli</h3>
+                <table class="belge-tablo" id="belge-fiyat-tablo">
+                  <thead>
+                    <tr>
+                      <th>#</th>
+                      <th>İş Kalemi</th>
+                      <th>Miktar</th>
+                      <th>Birim</th>
+                      <th>Birim Fiyat</th>
+                      <th>Toplam</th>
+                    </tr>
+                  </thead>
+                  <tbody id="belge-fiyat-body">
+                    <tr><td colspan="6" style="text-align:center;color:#9ca3af;">Fiyat cetveli Adım 4'te doldurulduğunda burada görünecektir.</td></tr>
+                  </tbody>
+                  <tfoot>
+                    <tr><td colspan="5" style="font-weight:700;">Toplam (KDV Dahil)</td><td class="tutar" id="belge-toplam">—</td></tr>
+                  </tfoot>
+                </table>
+              </div>
+
+              <div class="belge-section">
+                <h3>4. Teklif Koşulları</h3>
+                <p>Teklifimiz <strong id="belge-gecerlilik">90 gün</strong> süreyle geçerlidir. Şartname koşullarını tamamen kabul etmekteyiz.</p>
+              </div>
+
+              <div class="belge-imza">
+                <div class="imza-blok">
+                  <div class="imza-cizgi"></div>
+                  <div class="imza-ad" id="imza-yetkili">Yetkili Adı</div>
+                  <div class="imza-unvan" id="imza-unvan">Unvan</div>
+                </div>
+                <div class="imza-blok">
+                  <div class="imza-cizgi"></div>
+                  <div class="imza-ad" id="imza-firma">Firma Adı</div>
+                  <div class="imza-unvan">Kaşe & İmza</div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <div class="form-footer">
+            <button class="btn-prev" onclick="adimGeri()">← Ekler</button>
+            <button class="btn-next" onclick="kaydEt()" style="background:#4ade80;color:#0a1628;">
+              ✓ Teklifi Tamamla & Kaydet
+            </button>
+          </div>
+        </div>
+
+      </div><!-- /form-panel -->
+    </div><!-- /page-wrap -->
+  </div><!-- /main -->
+</div><!-- /app -->
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="js/api.js"></script>
+<script>
+  const SUPABASE_URL = "https://lpgelwfoarhouollhwur.supabase.co";
+  const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxwZ2Vsd2ZvYXJob3VvbGxod3VyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIyMzI4MjAsImV4cCI6MjA5NzgwODgyMH0.GqTZkeoOAomuur4JSyW2pTR-8Zzg8OTv394JtP7DoXM";
+  const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+  // ── URL & global state ────────────────────────────────
+  const params   = new URLSearchParams(window.location.search);
+  const ihaleId  = params.get('ihale_id');
+  let mevcutAdim = 1;
+  let ihaleData  = null;
+  let satirSayaci = { fiyat: 2, takvim: 3, personel: 2, makine: 2 };
+
+  // ── Yardımcı formatlama ───────────────────────────────
+  function tarihFmt(t) {
+    if (!t) return '—';
+    const d = new Date(t);
+    const ay = ['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
+    return `${d.getDate()} ${ay[d.getMonth()]} ${d.getFullYear()}`;
+  }
+  function butceFmt(b) {
+    if (!b) return '—';
+    if (b >= 1000000) return `₺${(b/1000000).toFixed(2)}M`;
+    if (b >= 1000) return `₺${(b/1000).toFixed(0)}K`;
+    return `₺${Number(b).toLocaleString('tr-TR')}`;
+  }
+  function gunKaldi(bitis) {
+    if (!bitis) return null;
+    return Math.ceil((new Date(bitis) - new Date()) / 86400000);
+  }
+  function paraCikti(sayi) {
+    return `₺${Number(sayi||0).toLocaleString('tr-TR', {minimumFractionDigits:2, maximumFractionDigits:2})}`;
+  }
+
+  // ── Toast bildirimi ───────────────────────────────────
+  function toast(mesaj, tur = 'bilgi') {
+    const el = document.getElementById('toast');
+    const ikon = tur === 'basari' ? '✓' : tur === 'hata' ? '✗' : 'ℹ';
+    el.className = `toast ${tur}`;
+    el.innerHTML = `<span>${ikon}</span> ${mesaj}`;
+    el.classList.add('show');
+    setTimeout(() => el.classList.remove('show'), 3000);
+  }
+
+  // ── Adım yönetimi ─────────────────────────────────────
+  function adimGit(no) {
+    if (no > mevcutAdim) {
+      // İleriye gitmek için mevcut adımı validate et
+      if (!adimValidate(mevcutAdim)) return;
+    }
+    mevcutAdim = no;
+    renderAdim();
+    if (no === 6) onizlemeGuncelle();
+  }
+
+  function adimIleri() {
+    if (!adimValidate(mevcutAdim)) return;
+    if (mevcutAdim < 6) {
+      mevcutAdim++;
+      renderAdim();
+      if (mevcutAdim === 6) onizlemeGuncelle();
+    }
+  }
+  function adimGeri() {
+    if (mevcutAdim > 1) { mevcutAdim--; renderAdim(); }
+  }
+
+  function renderAdim() {
+    document.querySelectorAll('.form-section').forEach(s => s.classList.remove('active'));
+    document.getElementById(`adim-${mevcutAdim}`).classList.add('active');
+
+    document.querySelectorAll('.step-item').forEach(item => {
+      const no = parseInt(item.dataset.step);
+      item.classList.remove('active','done');
+      if (no === mevcutAdim) item.classList.add('active');
+      else if (no < mevcutAdim) item.classList.add('done');
+      // done ise ✓ göster
+      const dot = item.querySelector('.step-dot');
+      if (no < mevcutAdim) dot.textContent = '✓';
+      else dot.textContent = no;
+    });
+
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function adimValidate(adim) {
+    if (adim === 1) {
+      const ad = document.getElementById('teklif-adi').value.trim();
+      if (!ad) { toast('Teklif dosyası adı giriniz.', 'hata'); return false; }
+    }
+    if (adim === 2) {
+      if (!document.getElementById('firma-adi').value.trim()) { toast('Firma unvanı zorunludur.', 'hata'); return false; }
+      if (!document.getElementById('yetkili-ad').value.trim()) { toast('Yetkili adı soyadı zorunludur.', 'hata'); return false; }
+    }
+    return true;
+  }
+
+  // ── İhale verisi yükle ────────────────────────────────
+  async function ihaleYukle() {
+    if (!ihaleId) {
+      ozetGrid([
+        ['İhale Adı','Demo İhale — Gerçek sayfada ?ihale_id=xxx ile açın'],
+        ['İdare','Örnek Belediyesi'],
+        ['İhale Türü','Yapım İşi'],
+        ['Son Teklif Tarihi','15 Temmuz 2026'],
+        ['Tahmini Bedel','₺12.500.000'],
+        ['İhale Usulü','Açık İhale Usulü'],
+      ]);
+      document.getElementById('teklif-adi').value = 'Demo İhale — Teknik & Mali Teklif';
+      document.getElementById('bc-ihale').textContent = 'Demo İhale';
+      return;
+    }
+
+    const { data, error } = await sb.from('ilanlar').select('*').eq('id', ihaleId).single();
+    if (error || !data) { toast('İhale bulunamadı.', 'hata'); return; }
+
+    ihaleData = data;
+    const gun = gunKaldi(data.son_teklif_tarihi);
+
+    ozetGrid([
+      ['İhale Adı', data.baslik || '—'],
+      ['İdare', data.idare || '—'],
+      ['İhale Türü', data.tur || '—'],
+      ['Son Teklif Tarihi', tarihFmt(data.son_teklif_tarihi)],
+      ['Tahmini Bedel', butceFmt(data.tahmini_bedel)],
+      ['İhale Usulü', data.usul || '—'],
+    ]);
+
+    document.getElementById('teklif-adi').value = `${data.baslik || 'İhale'} — Teknik & Mali Teklif`;
+    document.getElementById('bc-ihale').textContent = (data.baslik||'').substring(0,40);
+    document.getElementById('back-btn').href = `ihale-detay.html?id=${ihaleId}`;
+
+    if (gun !== null && gun <= 7 && gun >= 0) {
+      document.getElementById('sure-uyari').style.display = 'flex';
+      document.getElementById('sure-uyari').className = 'sure-uyari';
+      document.getElementById('sure-uyari').innerHTML =
+        `⚠ Son teklif tarihine <strong>${gun} gün</strong> kaldı. Acele ediniz!`;
+    }
+  }
+
+  function ozetGrid(satirlar) {
+    const grid = document.getElementById('ozet-grid');
+    grid.innerHTML = satirlar.map(([l,v]) => `
+      <div class="ozet-row">
+        <div class="ozet-label">${l}</div>
+        <div class="ozet-value ${l==='Tahmini Bedel'?'amber':''}">${v}</div>
+      </div>`).join('');
+  }
+
+  // ── Kredi yükle ───────────────────────────────────────
+  async function krediYukle() {
+    const { data: { user } } = await sb.auth.getUser();
+    if (!user) { document.getElementById('kredi-sayi').textContent = 'Giriş yok'; return; }
+
+    const { data } = await sb.from('kullanici_krediler')
+      .select('kalan_kredi').eq('kullanici_id', user.id).single();
+    document.getElementById('kredi-sayi').textContent = data ? `${data.kalan_kredi} Kredi` : '—';
+
+    // Sidebar kullanıcı
+    const { data: profil } = await sb.from('kullanici_profiller')
+      .select('firma_adi, aktif_plan').eq('id', user.id).single();
+    if (profil) {
+      const kisa = (profil.firma_adi||user.email||'').substring(0,2).toUpperCase();
+      document.getElementById('sidebar-avatar').textContent = kisa;
+      document.getElementById('sidebar-isim').textContent = profil.firma_adi || user.email;
+      document.getElementById('sidebar-plan').textContent = profil.aktif_plan || 'Free';
+
+      // Firma bilgilerini doldur
+      document.getElementById('firma-adi').value = profil.firma_adi || '';
+    }
+  }
+
+  // ── AI Teklif Oluştur ─────────────────────────────────
+  async function aiTeklifOlustur() {
+    const btn = document.getElementById('ai-olustur-btn');
+    const loading = document.getElementById('ai-loading');
+    const mesajlar = [
+      'Şartname analiz ediliyor...',
+      'Teknik gereksinimler çıkarılıyor...',
+      'Firma profiliniz değerlendiriliyor...',
+      'Teklif metni yazılıyor...',
+    ];
+    let mi = 0;
+
+    btn.disabled = true;
+    loading.classList.add('show');
+
+    const interval = setInterval(() => {
+      mi = (mi + 1) % mesajlar.length;
+      document.getElementById('ai-loading-text').textContent = mesajlar[mi];
+    }, 1800);
+
+    try {
+      // Backend'e istek (henüz endpoint yoksa mock)
+      let teknikMetin, nedenMetin, yontemMetin;
+
+      if (ihaleId) {
+        const res = await fetch(`https://ihaleplatform-backend.onrender.com/api/teklif-olustur`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ihale_id: ihaleId })
+        }).catch(() => null);
+
+        if (res && res.ok) {
+          const json = await res.json();
+          teknikMetin = json.kapsam || '';
+          nedenMetin  = json.neden || '';
+          yontemMetin = json.yontem || '';
+        }
+      }
+
+      // Fallback: örnek metin
+      if (!teknikMetin) {
+        const baslik = ihaleData?.baslik || 'İhale Konusu İş';
+        const idare  = ihaleData?.idare  || 'İdare';
+        teknikMetin = `${idare} tarafından ihaleye çıkarılan "${baslik}" kapsamında firmamız aşağıdaki teknik hizmetleri sunmayı taahhüt etmektedir:\n\n• Şartname ve teknik özelliklere tam uygun malzeme ve işçilik\n• Deneyimli kadromuz ile zamanında ve eksiksiz teslim\n• Sektörde 15+ yıllık iş deneyimi ve referans projeler\n• Kalite güvence sistemi kapsamında sürekli denetim ve kontrol`;
+        nedenMetin  = `Firmamız bu alanda 15 yılı aşkın deneyime sahip olup benzer büyüklükteki projeleri başarıyla tamamlamıştır. ISO 9001 kalite yönetim sistemimiz ve uzman kadromuzla bu ihaleyi en verimli ve kaliteli şekilde gerçekleştirmeye hazırız.`;
+        yontemMetin = `İşin yürütülmesinde aşağıdaki teknik yaklaşım benimsenecektir:\n\n1. Mobilizasyon ve Hazırlık (1. Ay): Saha teslimi, iş programı kesinleştirilmesi, ekipman temini\n2. Uygulama Aşaması (2–5. Ay): Teknik şartnameye uygun sıra ve yöntemlerle uygulama\n3. Kontrol ve Kabul (6. Ay): İş tamamlama, test ve ölçümler, kesin kabul`;
+      }
+
+      document.getElementById('teknik-kapsam').value = teknikMetin;
+      document.getElementById('teknik-neden').value  = nedenMetin;
+      document.getElementById('teknik-yontem-text').value = yontemMetin;
+
+      toast('Teknik teklif metni oluşturuldu! İnceleyip düzenleyebilirsiniz.', 'basari');
+    } catch(e) {
+      toast('Bir hata oluştu. Tekrar deneyin.', 'hata');
+    } finally {
+      clearInterval(interval);
+      loading.classList.remove('show');
+      btn.disabled = false;
+      btn.textContent = '✨ Yeniden Oluştur (1 Kredi)';
+    }
+  }
+
+  // ── Tab seçimi ────────────────────────────────────────
+  function tabSec(btn, id) {
+    btn.closest('.form-section').querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    btn.closest('.form-section').querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+  }
+
+  // ── Tablo satır işlemleri ─────────────────────────────
+  function satirSil(btn) {
+    const tr = btn.closest('tr');
+    const tbody = tr.closest('tbody');
+    if (tbody.rows.length > 1) {
+      tr.remove();
+      toplamHesapla();
+      numaralandir(tbody);
+    } else {
+      toast('En az bir satır kalmalı.', 'hata');
+    }
+  }
+
+  function numaralandir(tbody) {
+    Array.from(tbody.rows).forEach((tr, i) => {
+      const ilk = tr.cells[0];
+      if (ilk && !isNaN(parseInt(ilk.textContent))) ilk.textContent = i + 1;
+    });
+  }
+
+  function fiyatSatirEkle() {
+    satirSayaci.fiyat++;
+    const no = satirSayaci.fiyat;
+    const tbody = document.getElementById('fiyat-body');
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td style="color:var(--muted);font-size:12px;">${no}</td>
+      <td><input type="text" placeholder="İş kalemi açıklaması" /></td>
+      <td><input type="number" placeholder="1" min="0" step="0.01" oninput="toplamHesapla()" /></td>
+      <td>
+        <select oninput="toplamHesapla()">
+          <option>Adet</option><option>m²</option><option>m³</option><option>m</option>
+          <option>ton</option><option>kg</option><option>LS</option>
+        </select>
+      </td>
+      <td>
+        <div class="input-wrap">
+          <span class="input-prefix">₺</span>
+          <input type="number" placeholder="0,00" min="0" step="0.01" oninput="toplamHesapla()" />
+        </div>
+      </td>
+      <td style="color:var(--amber);font-weight:700;" class="satir-toplam">₺0,00</td>
+      <td><button onclick="satirSil(this)" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;">×</button></td>`;
+    tbody.appendChild(tr);
+  }
+
+  function takvimSatirEkle() {
+    satirSayaci.takvim++;
+    const no = satirSayaci.takvim;
+    const tbody = document.getElementById('takvim-body');
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td style="color:var(--muted);">${no}</td>
+      <td><input type="text" placeholder="Faaliyet açıklaması" /></td>
+      <td><input type="text" placeholder="${no}. Ay" /></td>
+      <td><input type="text" placeholder="${no}. Ay" /></td>
+      <td><button onclick="satirSil(this)" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;">×</button></td>`;
+    tbody.appendChild(tr);
+  }
+
+  function personelEkle() {
+    satirSayaci.personel++;
+    const tbody = document.getElementById('personel-body');
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><input type="text" placeholder="Ad Soyad" /></td>
+      <td><input type="text" placeholder="Görev / Unvan" /></td>
+      <td><input type="number" placeholder="0" min="0" /></td>
+      <td><button onclick="satirSil(this)" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;">×</button></td>`;
+    tbody.appendChild(tr);
+  }
+
+  function makineEkle() {
+    satirSayaci.makine++;
+    const tbody = document.getElementById('makine-body');
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><input type="text" placeholder="Ekipman adı" /></td>
+      <td><input type="number" placeholder="1" min="1" /></td>
+      <td><input type="text" placeholder="Marka / Model" /></td>
+      <td>
+        <select>
+          <option>Mülkiyet</option><option>Kiralık</option><option>Temin edilecek</option>
+        </select>
+      </td>
+      <td><button onclick="satirSil(this)" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;">×</button></td>`;
+    tbody.appendChild(tr);
+  }
+
+  // ── Mali teklif toplamı ───────────────────────────────
+  function toplamHesapla() {
+    let ara = 0;
+    const satirlar = document.getElementById('fiyat-body').rows;
+    Array.from(satirlar).forEach(tr => {
+      const inputs = tr.querySelectorAll('input[type="number"]');
+      const miktar = parseFloat(inputs[0]?.value) || 0;
+      const birimFiyat = parseFloat(inputs[1]?.value) || 0;
+      const satirToplam = miktar * birimFiyat;
+      ara += satirToplam;
+      const toplamCell = tr.querySelector('.satir-toplam');
+      if (toplamCell) toplamCell.textContent = paraCikti(satirToplam);
+    });
+
+    const kdvOran = parseInt(document.getElementById('kdv-orani').value) || 0;
+    const kdv = ara * (kdvOran / 100);
+    const genel = ara + kdv;
+
+    document.getElementById('ara-toplam').textContent = paraCikti(ara);
+    document.getElementById('kdv-tutar').textContent  = paraCikti(kdv);
+    document.getElementById('genel-toplam').textContent = paraCikti(genel);
+    document.getElementById('kdv-label').textContent  = `%${kdvOran}`;
+  }
+
+  // ── Dosya yükle ───────────────────────────────────────
+  function dosyaYukle(event) {
+    const files = Array.from(event.target.files);
+    const kap = document.getElementById('yuklenen-dosyalar');
+    files.forEach(f => {
+      const div = document.createElement('div');
+      div.style.cssText = 'display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--navy);border:1px solid var(--border);border-radius:7px;';
+      div.innerHTML = `
+        <span>📎</span>
+        <span style="flex:1;font-size:13px;color:var(--white);">${f.name}</span>
+        <span style="font-size:11px;color:var(--muted);">${(f.size/1024).toFixed(0)} KB</span>
+        <button onclick="this.closest('div').remove()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;">×</button>`;
+      kap.appendChild(div);
+    });
+    toast(`${files.length} dosya eklendi.`, 'basari');
+  }
+
+  // ── Şablon seç (placeholder) ──────────────────────────
+  function sablonSec() {
+    toast('Şablon kütüphanesi yakında eklenecek!', 'bilgi');
+  }
+
+  // ── Önizleme güncelle ─────────────────────────────────
+  function onizlemeGuncelle() {
+    const firmaAdi  = document.getElementById('firma-adi').value   || 'Firma Adı';
+    const vergiNo   = document.getElementById('firma-vergi').value  || '—';
+    const adres     = document.getElementById('firma-adres').value  || '—';
+    const yetkiliAd = document.getElementById('yetkili-ad').value   || '—';
+    const yetkiliUn = document.getElementById('yetkili-unvan').value|| '—';
+    const teknikOzet= document.getElementById('teknik-kapsam').value|| '—';
+    const gecerlilik= document.getElementById('gecerlilik').value   || '90 Gün';
+    const teklifAdi = document.getElementById('teklif-adi').value   || 'Teklif';
+    const ihaleBaslik = ihaleData?.baslik || teklifAdi;
+
+    document.getElementById('onizleme-baslik').textContent = teklifAdi;
+    document.getElementById('onizleme-meta').textContent   = `${tarihFmt(new Date())} tarihinde oluşturuldu`;
+
+    document.getElementById('belge-firma-adi').textContent = firmaAdi;
+    document.getElementById('belge-firma-alt').textContent = `Vergi No: ${vergiNo}`;
+    document.getElementById('belge-firma-adres-onizleme').textContent = adres;
+    document.getElementById('belge-tarih').textContent = `Tarih: ${tarihFmt(new Date())}`;
+    document.getElementById('belge-konu-text').textContent = `${ihaleBaslik} — Teknik & Mali Teklif`;
+    document.getElementById('belge-firma-bilgi').textContent =
+      `${firmaAdi} — ${adres} — Yetkili: ${yetkiliAd} (${yetkiliUn})`;
+    document.getElementById('belge-teknik-ozet').textContent = teknikOzet;
+    document.getElementById('belge-gecerlilik').textContent = gecerlilik;
+    document.getElementById('imza-yetkili').textContent = yetkiliAd;
+    document.getElementById('imza-unvan').textContent   = yetkiliUn;
+    document.getElementById('imza-firma').textContent   = firmaAdi;
+
+    // Fiyat tablosu
+    const satirlar = document.getElementById('fiyat-body').rows;
+    let tblHTML = '';
+    let toplam = 0;
+    Array.from(satirlar).forEach((tr, i) => {
+      const td = tr.querySelectorAll('td');
+      const inputs = tr.querySelectorAll('input[type="number"]');
+      const aciklama = tr.querySelector('input[type="text"]')?.value || '—';
+      const miktar = parseFloat(inputs[0]?.value) || 0;
+      const birim  = tr.querySelector('select')?.value || '';
+      const birimFiyat = parseFloat(inputs[1]?.value) || 0;
+      const satirToplam = miktar * birimFiyat;
+      toplam += satirToplam;
+      if (aciklama !== '—' || miktar > 0) {
+        tblHTML += `<tr>
+          <td>${i+1}</td>
+          <td>${aciklama}</td>
+          <td>${miktar}</td>
+          <td>${birim}</td>
+          <td class="tutar">${paraCikti(birimFiyat)}</td>
+          <td class="tutar">${paraCikti(satirToplam)}</td>
+        </tr>`;
+      }
+    });
+
+    if (!tblHTML) tblHTML = '<tr><td colspan="6" style="text-align:center;color:#9ca3af;">Fiyat kalemi girilmedi.</td></tr>';
+    document.getElementById('belge-fiyat-body').innerHTML = tblHTML;
+
+    const kdvOran  = parseInt(document.getElementById('kdv-orani').value) || 0;
+    const genel    = toplam * (1 + kdvOran/100);
+    document.getElementById('belge-toplam').textContent = paraCikti(genel);
+  }
+
+  // ── Word / PDF indirme ────────────────────────────────
+  function wordIndir() {
+    toast('Word dosyası hazırlanıyor... (Backend entegrasyonu ile aktif olacak)', 'bilgi');
+    // TODO: backend /api/teklif/word endpoint'ine POST
+  }
+
+  function pdfIndir() {
+    // Tarayıcı print ile PDF kaydet
+    const el = document.getElementById('belge-onizleme');
+    const w = window.open('', '_blank');
+    w.document.write(`
+      <!DOCTYPE html><html><head>
+      <meta charset="UTF-8">
+      <title>${document.getElementById('teklif-adi').value || 'Teklif'}</title>
+      <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+      <style>
+        body { font-family: 'Times New Roman',serif; margin: 0; padding: 40px; color: #111; font-size: 13px; line-height: 1.7; }
+        * { box-sizing: border-box; }
+        .belge-logo-row { display:flex; justify-content:space-between; margin-bottom:24px; padding-bottom:16px; border-bottom:2px solid #e5e7eb; }
+        .belge-firma-adi { font-size:18px; font-weight:700; font-family:'Plus Jakarta Sans',sans-serif; }
+        .belge-firma-alt,.belge-tarih { font-size:11px; color:#6b7280; }
+        .belge-konu { background:#f8f9fa; border-left:4px solid #F0A500; padding:12px 16px; margin-bottom:24px; }
+        .belge-konu-label { font-size:10px; font-weight:700; color:#6b7280; text-transform:uppercase; }
+        .belge-konu-text { font-size:15px; font-weight:700; font-family:'Plus Jakarta Sans',sans-serif; }
+        .belge-section { margin-bottom:20px; }
+        .belge-section h3 { font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:#374151; border-bottom:1px solid #e5e7eb; padding-bottom:6px; margin-bottom:10px; }
+        table { width:100%; border-collapse:collapse; margin-bottom:16px; }
+        th { background:#f3f4f6; padding:7px 10px; text-align:left; font-size:11px; border:1px solid #e5e7eb; }
+        td { padding:7px 10px; font-size:12px; border:1px solid #e5e7eb; }
+        .tutar { text-align:right; font-weight:700; }
+        .toplam-row { background:#fef3c7; font-weight:700; }
+        .belge-imza { margin-top:48px; display:flex; justify-content:space-between; }
+        .imza-blok { text-align:center; }
+        .imza-cizgi { width:180px; border-top:1px solid #9ca3af; margin:0 auto 6px; }
+        @media print { body { padding: 20px; } }
+      </style></head><body>
+      ${el.innerHTML}
+      </body></html>`);
+    w.document.close();
+    setTimeout(() => { w.focus(); w.print(); }, 500);
+  }
+
+  // ── Kaydet ────────────────────────────────────────────
+  async function kaydEt() {
+    const { data: { user } } = await sb.auth.getUser();
+    if (!user) { toast('Kaydetmek için giriş yapmalısınız.', 'hata'); return; }
+
+    const teklif = {
+      kullanici_id: user.id,
+      ihale_id: ihaleId || null,
+      teklif_adi: document.getElementById('teklif-adi').value,
+      firma_adi: document.getElementById('firma-adi').value,
+      yetkili: document.getElementById('yetkili-ad').value,
+      teknik_teklif: {
+        kapsam: document.getElementById('teknik-kapsam').value,
+        neden: document.getElementById('teknik-neden').value,
+        yontem: document.getElementById('teknik-yontem-text').value,
+      },
+      toplam_bedel: parseFloat(document.getElementById('genel-toplam').textContent.replace(/[^0-9.,]/g,'').replace(',','.')) || 0,
+      durum: 'taslak',
+      olusturulma: new Date().toISOString(),
+    };
+
+    const { error } = await sb.from('teklifler').insert([teklif]);
+    if (error) {
+      toast('Kaydedilirken hata: ' + error.message, 'hata');
+      return;
+    }
+
+    document.getElementById('kayit-durum').style.display = 'inline';
+    toast('Teklif başarıyla kaydedildi! Dashboard\'dan görüntüleyebilirsiniz.', 'basari');
+    setTimeout(() => {
+      document.getElementById('kayit-durum').style.display = 'none';
+    }, 3000);
+  }
+
+  // ── Başlat ────────────────────────────────────────────
+  ihaleYukle();
+  krediYukle();
+  document.getElementById('kdv-orani').addEventListener('change', toplamHesapla);
+</script>
+</body>
+</html>
