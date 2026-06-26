@@ -721,6 +721,43 @@
   </div>
 </footer>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/main.js"></script>
+<script>
+  (async () => {
+    const sb = window.supabase.createClient(
+      "https://lpgelwfoarhouollhwur.supabase.co",
+      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxwZ2Vsd2ZvYXJob3VvbGxod3VyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIyMzI4MjAsImV4cCI6MjA5NzgwODgyMH0.GqTZkeoOAomuur4JSyW2pTR-8Zzg8OTv394JtP7DoXM"
+    );
+    try {
+      const simdi = new Date();
+      const bugunBaslangic = new Date(simdi); bugunBaslangic.setHours(0,0,0,0);
+
+      const [aktif, bugun, butce] = await Promise.all([
+        sb.from('ilanlar').select('id', { count: 'exact', head: true }).eq('durum', 'aktif'),
+        sb.from('ilanlar').select('id', { count: 'exact', head: true })
+          .gte('created_at', bugunBaslangic.toISOString()),
+        sb.from('ilanlar').select('yaklasik_maliyet_min').eq('durum', 'aktif').not('yaklasik_maliyet_min', 'is', null),
+      ]);
+
+      const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+
+      set('cnt-active', (aktif.count ?? 0).toLocaleString('tr'));
+      set('cnt-today',  (bugun.count  ?? 0).toLocaleString('tr'));
+
+      if (butce.data && butce.data.length > 0) {
+        const toplamTL = butce.data.reduce((s, r) => s + (r.yaklasik_maliyet_min || 0), 0);
+        const milyar = toplamTL / 1_000_000_000;
+        set('cnt-budget', milyar >= 1 ? milyar.toFixed(1) : (toplamTL / 1_000_000).toFixed(0) + 'M TL');
+      } else {
+        set('cnt-budget', '—');
+      }
+
+      set('cnt-win', '34%');
+    } catch (e) {
+      console.warn('Sayaç yüklenemedi:', e);
+    }
+  })();
+</script>
 </body>
 </html>

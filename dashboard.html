@@ -654,7 +654,7 @@
       <div class="page-header">
         <div>
           <h1>Merhaba, Faruk 👋</h1>
-          <p>Profilinize uygun <strong style="color:var(--white);">47 yeni ihale</strong> eklendi. Bugün son gün olan <strong style="color:var(--amber);">3 ihale</strong> var.</p>
+          <p>Bugün <strong style="color:var(--white);" id="hdr-bugun">—</strong> yeni ihale eklendi. Bugün son gün olan <strong style="color:var(--amber);" id="hdr-songun">—</strong> ihale var.</p>
         </div>
         <div style="display:flex; gap:8px;">
           <a href="#" class="btn btn-ghost" style="font-size:13px; padding:9px 16px;">+ Filtre Ekle</a>
@@ -1001,18 +1001,27 @@
     const simdi = new Date();
     const birHaftaSonra = new Date(simdi.getTime() + 7 * 86400000).toISOString();
 
+    const bugunBaslangic = new Date(simdi); bugunBaslangic.setHours(0,0,0,0);
+    const bugunBitis     = new Date(simdi); bugunBitis.setHours(23,59,59,999);
+
     try {
-      const [aktif, yaklasan, buyuk] = await Promise.all([
+      const [aktif, yaklasan, buyuk, bugunEklenen, bugunSonGun] = await Promise.all([
         sb.from('ilanlar').select('id', { count: 'exact', head: true }).eq('durum', 'aktif'),
         sb.from('ilanlar').select('id', { count: 'exact', head: true })
           .eq('durum', 'aktif').gte('son_teklif_tarihi', simdi.toISOString()).lte('son_teklif_tarihi', birHaftaSonra),
         sb.from('ilanlar').select('id', { count: 'exact', head: true })
           .eq('durum', 'aktif').gte('yaklasik_maliyet_min', 43142132),
+        sb.from('ilanlar').select('id', { count: 'exact', head: true })
+          .gte('created_at', bugunBaslangic.toISOString()).lte('created_at', bugunBitis.toISOString()),
+        sb.from('ilanlar').select('id', { count: 'exact', head: true })
+          .eq('durum', 'aktif').gte('son_teklif_tarihi', bugunBaslangic.toISOString()).lte('son_teklif_tarihi', bugunBitis.toISOString()),
       ]);
       const setVal = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = (v ?? 0).toLocaleString('tr'); };
       setVal('kpi-aktif', aktif.count);
       setVal('kpi-yaklasan', yaklasan.count);
       setVal('kpi-buyuk', buyuk.count);
+      setVal('hdr-bugun', bugunEklenen.count);
+      setVal('hdr-songun', bugunSonGun.count);
       const rc = document.getElementById('results-count');
       if (rc) rc.textContent = `${(aktif.count ?? 0).toLocaleString('tr')} sonuç`;
     } catch (e) {

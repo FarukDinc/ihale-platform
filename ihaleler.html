@@ -559,7 +559,7 @@
     if (il)       query = query.eq('il', il);
     if (tur)      query = query.eq('tur', tur);
     if (durum)    query = query.eq('durum', durum);
-    if (minBedel) query = query.gte('tahmini_bedel', minBedel);
+    if (minBedel) query = query.gte('yaklasik_maliyet_min', minBedel);
 
     if (sort === 'tahmini_bedel_desc') query = query.order('tahmini_bedel', { ascending: false });
     else if (sort === 'tahmini_bedel_asc') query = query.order('tahmini_bedel', { ascending: true });
