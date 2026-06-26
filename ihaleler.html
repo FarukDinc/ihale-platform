@@ -505,7 +505,7 @@
       <tr>
         <td><input type="checkbox" /></td>
         <td>
-          <a class="ihale-title" href="ihale-detay.html?id=${ilan.id}">${ilan.baslik || '—'}</a>
+          <a class="ihale-title" href="ihale-detay?id=${ilan.id}">${ilan.baslik || '—'}</a>
           <div class="ihale-meta">${ilan.idare || '—'} — EKAP #${ilan.ekap_id || '—'}</div>
         </td>
         <td>${durumBadge(ilan.durum, ilan.son_teklif_tarihi)}</td>
@@ -520,7 +520,7 @@
         <td>
           <div class="action-btns">
             <button class="action-btn primary" onclick="takibeAl(this,'${ilan.id}')">Takibe Al</button>
-            <a class="action-btn" href="ihale-detay.html?id=${ilan.id}">Detay</a>
+            <a class="action-btn" href="ihale-detay?id=${ilan.id}">Detay</a>
           </div>
         </td>
       </tr>`;

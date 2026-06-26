@@ -455,7 +455,7 @@
       const tarih = dt ? `${dt.getDate()} ${aylar[dt.getMonth()]} ${dt.getFullYear()}` : '—';
       const bedel = b.tahmini_bedel >= 1000000 ? `₺${(b.tahmini_bedel/1000000).toFixed(1)}M` : b.tahmini_bedel >= 1000 ? `₺${(b.tahmini_bedel/1000).toFixed(0)}K` : '—';
       return `
-        <a class="benzer-item" href="ihale-detay.html?id=${b.id}">
+        <a class="benzer-item" href="ihale-detay?id=${b.id}">
           <div>
             <div class="benzer-baslik">${b.baslik}</div>
             <div class="benzer-meta">${b.idare || '—'} · Son: ${tarih}</div>
