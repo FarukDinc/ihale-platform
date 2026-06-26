@@ -4,41 +4,6 @@
 
 document.addEventListener('DOMContentLoaded', () => {
 
-  // ---- LIVE COUNTER ----
-  const counters = [
-    { id: 'cnt-active',  base: 2847, variance: 3,  label: '+3 son 1 saatte' },
-    { id: 'cnt-today',   base: 124,  variance: 1,  label: '+1 yeni eklendi' },
-    { id: 'cnt-budget',  base: 4.2,  variance: 0,  label: 'milyar TL toplam', decimal: 1 },
-    { id: 'cnt-win',     base: 68,   variance: 0,  label: 'ortalama kazanma %' },
-  ];
-
-  function formatNumber(n, decimal) {
-    if (decimal) return n.toFixed(decimal);
-    return n.toLocaleString('tr-TR');
-  }
-
-  // Initial render
-  counters.forEach(c => {
-    const el = document.getElementById(c.id);
-    if (el) el.textContent = formatNumber(c.base, c.decimal);
-  });
-
-  // Tick every ~4 seconds for active + today counters
-  setInterval(() => {
-    [counters[0], counters[1]].forEach(c => {
-      if (c.variance === 0) return;
-      const el = document.getElementById(c.id);
-      if (!el) return;
-      const shouldTick = Math.random() < 0.35;
-      if (shouldTick) {
-        c.base += 1;
-        el.textContent = formatNumber(c.base, c.decimal);
-        el.classList.add('tick');
-        setTimeout(() => el.classList.remove('tick'), 300);
-      }
-    });
-  }, 4000);
-
   // ---- ANIMATED COUNT-UP on scroll ----
   const statEls = document.querySelectorAll('[data-countup]');
 
@@ -100,15 +65,78 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // ---- MOBILE NAV ----
+  // ---- LANDING PAGE MOBILE NAV ----
   const hamburger = document.getElementById('hamburger');
   const mobileMenu = document.getElementById('mobile-menu');
-
   if (hamburger && mobileMenu) {
     hamburger.addEventListener('click', () => {
       mobileMenu.classList.toggle('open');
       hamburger.setAttribute('aria-expanded', mobileMenu.classList.contains('open'));
     });
+  }
+
+  // ---- APP SIDEBAR MOBILE TOGGLE ----
+  // Applies to dashboard, ihaleler, takipte, etc. — injects hamburger into .topbar
+  const sidebar = document.querySelector('.app > .sidebar, .app > aside.sidebar');
+  const topbar  = document.querySelector('.topbar');
+  if (sidebar && topbar) {
+    // Inject hamburger button
+    const hBtn = document.createElement('button');
+    hBtn.id = 'sidebar-toggle';
+    hBtn.setAttribute('aria-label', 'Menüyü Aç/Kapat');
+    hBtn.style.cssText = [
+      'display:none',
+      'background:var(--card-bg)',
+      'border:1px solid var(--border)',
+      'border-radius:6px',
+      'color:var(--white)',
+      'font-size:18px',
+      'width:36px',
+      'height:36px',
+      'cursor:pointer',
+      'align-items:center',
+      'justify-content:center',
+      'flex-shrink:0',
+    ].join(';');
+    hBtn.textContent = '☰';
+    topbar.insertBefore(hBtn, topbar.firstChild);
+
+    // Backdrop overlay
+    const backdrop = document.createElement('div');
+    backdrop.id = 'sidebar-backdrop';
+    backdrop.style.cssText = [
+      'display:none',
+      'position:fixed',
+      'inset:0',
+      'background:rgba(0,0,0,0.6)',
+      'z-index:99',
+    ].join(';');
+    document.body.appendChild(backdrop);
+
+    function sidebarAc() {
+      sidebar.style.cssText = 'display:flex;position:fixed;top:0;left:0;z-index:100;height:100vh;';
+      backdrop.style.display = 'block';
+    }
+    function sidebarKapat() {
+      sidebar.style.cssText = '';
+      backdrop.style.display = 'none';
+    }
+
+    hBtn.addEventListener('click', () => {
+      sidebar.style.display === 'flex' && sidebar.style.position === 'fixed'
+        ? sidebarKapat()
+        : sidebarAc();
+    });
+    backdrop.addEventListener('click', sidebarKapat);
+
+    // Show/hide button based on viewport
+    const mq = window.matchMedia('(max-width: 900px)');
+    function onResize(e) {
+      hBtn.style.display = e.matches ? 'flex' : 'none';
+      if (!e.matches) sidebarKapat();
+    }
+    mq.addEventListener('change', onResize);
+    onResize(mq);
   }
 
 });
