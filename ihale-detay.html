@@ -525,7 +525,7 @@
   async function benzerIhaleler(d) {
     const { data } = await sb
       .from('ilanlar')
-      .select('id, baslik, idare, tahmini_bedel, son_teklif_tarihi')
+      .select('id, baslik, idare, yaklasik_maliyet_min, yaklasik_maliyet_max, son_teklif_tarihi')
       .eq('tur', d.tur || 'Hizmet')
       .neq('id', d.id)
       .eq('durum', 'aktif')
@@ -543,7 +543,7 @@
     list.innerHTML = data.map(b => {
       const dt = b.son_teklif_tarihi ? new Date(b.son_teklif_tarihi) : null;
       const tarih = dt ? `${dt.getDate()} ${aylar[dt.getMonth()]} ${dt.getFullYear()}` : '—';
-      const bedel = b.tahmini_bedel >= 1000000 ? `₺${(b.tahmini_bedel/1000000).toFixed(1)}M` : b.tahmini_bedel >= 1000 ? `₺${(b.tahmini_bedel/1000).toFixed(0)}K` : '—';
+      const bedel = yaklasikMaliyet(b);
       return `
         <a class="benzer-item" href="ihale-detay?id=${b.id}">
           <div>

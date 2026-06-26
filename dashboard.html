@@ -741,7 +741,7 @@
               <th></th>
               <th class="sorted">İhale Adı <span class="sort-icon">↕</span></th>
               <th>Durum <span class="sort-icon">↕</span></th>
-              <th>Bütçe <span class="sort-icon">↕</span></th>
+              <th>Yaklaşık Maliyet <span class="sort-icon">↕</span></th>
               <th>Son Tarih <span class="sort-icon">↕</span></th>
               <th>Uyum <span class="sort-icon">↕</span></th>
               <th></th>
@@ -813,6 +813,16 @@
     return `₺${bedel}`;
   }
 
+  // ── Yaklaşık maliyet aralığı (itiraz bedeli eşiklerinden) ──
+  function yaklasikMaliyet(ilan) {
+    const mn = ilan.yaklasik_maliyet_min, mx = ilan.yaklasik_maliyet_max;
+    if (mn == null && mx == null) return '—';
+    if (mn === 0 && mx) return `${butceFormatla(mx)} altı`;
+    if (mn && mx == null) return `${butceFormatla(mn)} üzeri`;
+    if (mn != null && mx != null) return `${butceFormatla(mn)} – ${butceFormatla(mx)}`;
+    return '—';
+  }
+
   // ── Satır oluştur ────────────────────────────────────
   function satirOlustur(ilan) {
     const uyum = uyumHesapla(ilan);
@@ -824,7 +834,7 @@
           <div class="ihale-kurrum-cell">${ilan.idare || '—'} — EKAP #${ilan.ekap_id || '—'}</div>
         </td>
         <td>${durumBadge(ilan.durum, ilan.son_teklif_tarihi)}</td>
-        <td class="budget-cell">${butceFormatla(ilan.tahmini_bedel)}</td>
+        <td class="budget-cell">${yaklasikMaliyet(ilan)}</td>
         <td style="font-size:13px; color:var(--off-white);">${tarihFormatla(ilan.son_teklif_tarihi)}</td>
         <td>
           <div class="compat-bar">
@@ -940,7 +950,7 @@
 
     const { data, error } = await sb
       .from('ilanlar')
-      .select('id, ekap_id, baslik, idare, il, tur, durum, son_teklif_tarihi, tahmini_bedel')
+      .select('id, ekap_id, baslik, idare, il, tur, durum, son_teklif_tarihi, tahmini_bedel, yaklasik_maliyet_min, yaklasik_maliyet_max, itiraz_bedeli')
       .eq('durum', 'aktif')
       .order('son_teklif_tarihi', { ascending: true })
       .limit(10);
