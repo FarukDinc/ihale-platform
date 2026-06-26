@@ -257,6 +257,7 @@
         <input type="text" placeholder="İhale ara... (Ctrl + K)" id="topbar-search" />
       </div>
       <div class="topbar-actions">
+        <button onclick="csvIndir()" style="background:var(--card-bg);border:1px solid var(--border);color:var(--white);padding:7px 14px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;">↓ CSV</button>
         <a href="/" class="btn-primary">Pro'ya Geç ↑</a>
       </div>
     </div>
@@ -477,6 +478,7 @@
   const SAYFA_BOYUTU = 25;
   let mevcutSayfa = 1;
   let toplamKayit = 0;
+  let yukluIlanlar = [];
 
   function tarihFormatla(t) {
     if (!t) return '—';
@@ -581,6 +583,7 @@
     }
 
     let ilanlar = (data || []).map(ilan => ({ ...ilan, _uyum: uyumHesapla(ilan) }));
+    yukluIlanlar = ilanlar;
 
     if (minUyum > 0) ilanlar = ilanlar.filter(i => i._uyum >= minUyum);
     if (sort === 'uyum_desc') ilanlar.sort((a, b) => b._uyum - a._uyum);
@@ -623,6 +626,29 @@
   }
 
   function filtreUygula() { ilanlariYukle(1); }
+
+  function csvIndir() {
+    if (!yukluIlanlar.length) return;
+    const basliklar = ['EKAP ID','İhale Adı','İdare','İl','Tür','Durum','Son Teklif Tarihi','Yak. Maliyet Min (₺)','Yak. Maliyet Max (₺)','Uyum %'];
+    const satirlar = yukluIlanlar.map(i => [
+      i.ekap_id || '',
+      `"${(i.baslik || '').replace(/"/g,'""')}"`,
+      `"${(i.idare  || '').replace(/"/g,'""')}"`,
+      i.il   || '',
+      i.tur  || '',
+      i.durum || '',
+      i.son_teklif_tarihi ? i.son_teklif_tarihi.split('T')[0] : '',
+      i.yaklasik_maliyet_min || '',
+      i.yaklasik_maliyet_max || '',
+      i._uyum || '',
+    ].join(','));
+    const icerik = '﻿' + basliklar.join(',') + '\n' + satirlar.join('\n');
+    const blob = new Blob([icerik], { type: 'text/csv;charset=utf-8;' });
+    const url  = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = `ihaleler_${new Date().toISOString().split('T')[0]}.csv`;
+    a.click(); URL.revokeObjectURL(url);
+  }
 
   function filtreleriSifirla() {
     document.getElementById('f-arama').value = '';
