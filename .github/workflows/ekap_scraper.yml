@@ -20,7 +20,7 @@ jobs:
 
       - name: Bağımlılıkları yükle
         run: |
-          pip install playwright supabase
+          pip install playwright supabase pycryptodome
           playwright install chromium
           playwright install-deps
 

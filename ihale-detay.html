@@ -131,6 +131,38 @@
     .kpi-value.amber { color: var(--amber); }
     .kpi-sub { font-size: 12px; color: var(--muted); margin-top: 4px; }
 
+    /* TABS */
+    .tabs {
+      display: flex; gap: 4px; border-bottom: 1px solid var(--border);
+      margin-bottom: 20px; flex-wrap: wrap;
+    }
+    .tab-btn {
+      padding: 12px 20px; font-size: 14px; font-weight: 600; color: var(--muted);
+      background: none; border: none; border-bottom: 2px solid transparent;
+      cursor: pointer; transition: all .15s; margin-bottom: -1px;
+    }
+    .tab-btn:hover { color: var(--white); }
+    .tab-btn.active { color: var(--amber); border-bottom-color: var(--amber); }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* İLAN METNİ */
+    .ilan-metni {
+      font-size: 14px; color: var(--off-white); line-height: 1.9;
+      white-space: pre-wrap; word-break: break-word;
+    }
+
+    /* BELGELER */
+    .belge-item {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 14px 16px; border-radius: 8px; background: rgba(255,255,255,.03);
+      border: 1px solid var(--border); margin-bottom: 10px;
+    }
+    .belge-info { display: flex; align-items: center; gap: 12px; }
+    .belge-icon { font-size: 22px; }
+    .belge-ad { font-size: 13px; font-weight: 600; color: var(--white); }
+    .belge-tarih { font-size: 11px; color: var(--muted); }
+
     /* DETAY GRID */
     .detay-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
 
@@ -274,6 +306,21 @@
     return `₺${b.toLocaleString('tr')}`;
   }
 
+  // Yaklaşık maliyet aralığı (itiraz bedeli eşiklerinden)
+  function yaklasikMaliyet(d) {
+    const mn = d.yaklasik_maliyet_min, mx = d.yaklasik_maliyet_max;
+    if (mn == null && mx == null) return '—';
+    if (mn === 0 && mx) return `${butceFormatla(mx)} altı`;
+    if (mn && mx == null) return `${butceFormatla(mn)} üzeri`;
+    if (mn != null && mx != null) return `${butceFormatla(mn)} – ${butceFormatla(mx)}`;
+    return '—';
+  }
+
+  function itirazFormatla(b) {
+    if (!b) return '—';
+    return `₺${Number(b).toLocaleString('tr')}`;
+  }
+
   function gunHesapla(bitis) {
     if (!bitis) return null;
     return Math.ceil((new Date(bitis) - new Date()) / 86400000);
@@ -314,9 +361,17 @@
     benzerIhaleler(data);
   }
 
+  function sekmeAc(ev, panelId) {
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    ev.currentTarget.classList.add('active');
+    document.getElementById(panelId).classList.add('active');
+  }
+
   function sayfaOlustur(d) {
     const uyum = Math.floor(Math.random() * 30 + 65);
     const gun = gunHesapla(d.son_teklif_tarihi);
+    const belgeler = Array.isArray(d.belgeler) ? d.belgeler : [];
 
     document.title = `${d.baslik} — İhalePlatform`;
     document.getElementById('bc-baslik').textContent = d.baslik ? d.baslik.substring(0, 40) + (d.baslik.length > 40 ? '…' : '') : 'Detay';
@@ -344,9 +399,9 @@
       <!-- KPI GRID -->
       <div class="kpi-grid">
         <div class="kpi-card">
-          <div class="kpi-label">Tahmini Bedel</div>
-          <div class="kpi-value amber">${butceFormatla(d.tahmini_bedel)}</div>
-          <div class="kpi-sub">${d.para_birimi || 'TRY'}</div>
+          <div class="kpi-label">Yaklaşık Maliyet</div>
+          <div class="kpi-value amber" style="font-size:18px;">${yaklasikMaliyet(d)}</div>
+          <div class="kpi-sub">${d.itiraz_bedeli ? 'İtiraz bedeli: ' + itirazFormatla(d.itiraz_bedeli) : (d.para_birimi || 'TRY')}</div>
         </div>
         <div class="kpi-card">
           <div class="kpi-label">Son Teklif Tarihi</div>
@@ -384,44 +439,79 @@
         </div>
       </div>
 
-      <!-- DETAY GRID -->
-      <div class="detay-grid">
+      <!-- SEKMELER -->
+      <div class="tabs">
+        <button class="tab-btn active" onclick="sekmeAc(event,'tab-bilgi')">İhale Bilgileri</button>
+        <button class="tab-btn" onclick="sekmeAc(event,'tab-ilan')">İlan Bilgileri</button>
+        <button class="tab-btn" onclick="sekmeAc(event,'tab-belge')">Belgeler${belgeler.length ? ' (' + belgeler.length + ')' : ''}</button>
+      </div>
 
-        <!-- İhale Bilgileri -->
-        <div class="detay-card">
-          <div class="card-title">İhale Bilgileri</div>
-          <div class="info-row"><span class="info-label">İdare</span><span class="info-value">${d.idare || '—'}</span></div>
-          <div class="info-row"><span class="info-label">İl</span><span class="info-value">${d.il || '—'}</span></div>
-          <div class="info-row"><span class="info-label">İhale Türü</span><span class="info-value">${d.tur || '—'}</span></div>
-          <div class="info-row"><span class="info-label">İhale Usulü</span><span class="info-value">${d.usul || '—'}</span></div>
-          <div class="info-row"><span class="info-label">Kaynak</span><span class="info-value">${d.kaynak ? d.kaynak.toUpperCase() : '—'}</span></div>
-        </div>
-
-        <!-- Tarih ve Bütçe -->
-        <div class="detay-card">
-          <div class="card-title">Tarih & Bütçe</div>
-          <div class="info-row"><span class="info-label">İlan Tarihi</span><span class="info-value">${tarihFormatla(d.ilan_tarihi)}</span></div>
-          <div class="info-row"><span class="info-label">Son Teklif</span><span class="info-value">${tarihFormatla(d.son_teklif_tarihi)}</span></div>
-          <div class="info-row"><span class="info-label">İhale Tarihi</span><span class="info-value">${tarihFormatla(d.ihale_tarihi)}</span></div>
-          <div class="info-row"><span class="info-label">Tahmini Bedel</span><span class="info-value" style="color:var(--amber);">${butceFormatla(d.tahmini_bedel)}</span></div>
-          <div class="info-row"><span class="info-label">Para Birimi</span><span class="info-value">${d.para_birimi || 'TRY'}</span></div>
-        </div>
-
-        <!-- Açıklama -->
-        ${d.aciklama ? `
-        <div class="detay-card full">
-          <div class="card-title">Açıklama</div>
-          <div class="aciklama-text">${d.aciklama}</div>
-        </div>` : ''}
-
-        <!-- Benzer İhaleler -->
-        <div class="detay-card full" id="benzer-kart">
-          <div class="card-title">Benzer İhaleler</div>
-          <div class="benzer-list" id="benzer-list">
-            <div style="color:var(--muted);font-size:13px;">Yükleniyor...</div>
+      <!-- TAB: İHALE BİLGİLERİ -->
+      <div class="tab-panel active" id="tab-bilgi">
+        <div class="detay-grid">
+          <div class="detay-card">
+            <div class="card-title">İhale Bilgileri</div>
+            <div class="info-row"><span class="info-label">İdare</span><span class="info-value">${d.idare || '—'}</span></div>
+            <div class="info-row"><span class="info-label">İl</span><span class="info-value">${d.il || '—'}</span></div>
+            <div class="info-row"><span class="info-label">İhale Türü</span><span class="info-value">${d.tur || '—'}</span></div>
+            <div class="info-row"><span class="info-label">İhale Usulü</span><span class="info-value">${d.usul || '—'}</span></div>
+            <div class="info-row"><span class="info-label">OKAS Kodu</span><span class="info-value">${d.okas || '—'}</span></div>
+            <div class="info-row"><span class="info-label">Kaynak</span><span class="info-value">${d.kaynak ? d.kaynak.toUpperCase() : '—'}</span></div>
           </div>
-        </div>
 
+          <div class="detay-card">
+            <div class="card-title">Tarih & Maliyet</div>
+            <div class="info-row"><span class="info-label">İlan Tarihi</span><span class="info-value">${tarihFormatla(d.ilan_tarihi)}</span></div>
+            <div class="info-row"><span class="info-label">Son Teklif</span><span class="info-value">${tarihFormatla(d.son_teklif_tarihi)}</span></div>
+            <div class="info-row"><span class="info-label">İhale Tarihi</span><span class="info-value">${tarihFormatla(d.ihale_tarihi)}</span></div>
+            <div class="info-row"><span class="info-label">Yaklaşık Maliyet</span><span class="info-value" style="color:var(--amber);">${yaklasikMaliyet(d)}</span></div>
+            <div class="info-row"><span class="info-label">İtirazen Şikayet Bedeli</span><span class="info-value">${itirazFormatla(d.itiraz_bedeli)}</span></div>
+          </div>
+
+          ${d.isin_yapilacagi_yer || d.ihale_yeri ? `
+          <div class="detay-card full">
+            <div class="card-title">Yer Bilgileri</div>
+            ${d.isin_yapilacagi_yer ? `<div class="info-row"><span class="info-label">İşin Yapılacağı Yer</span><span class="info-value" style="max-width:70%;">${d.isin_yapilacagi_yer}</span></div>` : ''}
+            ${d.ihale_yeri ? `<div class="info-row"><span class="info-label">İhale Yeri</span><span class="info-value" style="max-width:70%;">${d.ihale_yeri}</span></div>` : ''}
+          </div>` : ''}
+        </div>
+      </div>
+
+      <!-- TAB: İLAN BİLGİLERİ -->
+      <div class="tab-panel" id="tab-ilan">
+        <div class="detay-card full">
+          <div class="card-title">İhale İlanı</div>
+          <div class="ilan-metni">${d.ilan_metni || d.aciklama || 'İlan metni bulunamadı.'}</div>
+        </div>
+      </div>
+
+      <!-- TAB: BELGELER -->
+      <div class="tab-panel" id="tab-belge">
+        <div class="detay-card full">
+          <div class="card-title">İhale Belgeleri</div>
+          ${belgeler.length ? belgeler.map((b,i) => `
+            <div class="belge-item">
+              <div class="belge-info">
+                <span class="belge-icon">📄</span>
+                <div>
+                  <div class="belge-ad">İhale Dokümanı ${i+1}</div>
+                  <div class="belge-tarih">${b.tarih ? tarihFormatla(b.tarih) : ''}</div>
+                </div>
+              </div>
+              <a class="btn-ekap" href="https://ekap.kik.gov.tr/EKAP/" target="_blank" rel="noopener">↓ EKAP'tan İndir</a>
+            </div>`).join('') : `
+            <div style="color:var(--muted);font-size:13px;padding:8px 0;">
+              Bu ihale için belge listesi bulunamadı. Dokümanlar EKAP'ta giriş yapılarak indirilebilir.
+            </div>`}
+        </div>
+      </div>
+
+      <!-- BENZER İHALELER -->
+      <div class="detay-card full" id="benzer-kart" style="margin-top:20px;">
+        <div class="card-title">Benzer İhaleler</div>
+        <div class="benzer-list" id="benzer-list">
+          <div style="color:var(--muted);font-size:13px;">Yükleniyor...</div>
+        </div>
       </div>
     `;
 
