@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Takip Listesi — İhalePlatform</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    body { background: var(--navy); }
+
+    .app { display: flex; min-height: 100vh; }
+
+    /* ---- SIDEBAR ---- */
+    .sidebar {
+      background: var(--navy-mid);
+      border-right: 1px solid var(--border);
+      width: 240px;
+      flex-shrink: 0;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+    }
+    .sidebar-logo {
+      padding: 20px 20px 16px;
+      border-bottom: 1px solid var(--border);
+    }
+    .sidebar-logo a {
+      font-family: var(--font-display);
+      font-size: 18px;
+      font-weight: 800;
+      color: var(--white);
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .sidebar-logo span { color: var(--amber); }
+    .sidebar-nav { padding: 16px 12px; flex: 1; }
+    .nav-section-label {
+      font-size: 10px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      padding: 8px 10px 4px;
+      margin-top: 12px;
+    }
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 10px;
+      border-radius: var(--radius-sm);
+      color: var(--muted);
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 500;
+      transition: all var(--transition);
+      margin-bottom: 2px;
+    }
+    .nav-item:hover { background: var(--card-bg); color: var(--white); }
+    .nav-item.active { background: rgba(240,165,0,0.1); color: var(--amber); }
+    .nav-item .icon { font-size: 16px; width: 20px; text-align: center; }
+    .nav-badge {
+      margin-left: auto;
+      background: var(--amber);
+      color: var(--navy);
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 6px;
+      border-radius: 20px;
+    }
+    .sidebar-footer { padding: 16px 12px; border-top: 1px solid var(--border); }
+    .user-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 10px;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: background var(--transition);
+    }
+    .user-row:hover { background: var(--card-bg); }
+    .user-avatar {
+      width: 32px; height: 32px;
+      border-radius: 50%;
+      background: rgba(240,165,0,0.2);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px; font-weight: 700;
+      color: var(--amber); flex-shrink: 0;
+    }
+    .user-info .user-name { font-size: 13px; font-weight: 600; color: var(--white); }
+    .user-info .user-plan { font-size: 11px; color: var(--muted); }
+
+    /* ---- MAIN ---- */
+    .main { display: flex; flex-direction: column; flex: 1; min-width: 0; height: 100vh; overflow-y: auto; }
+
+    /* ---- TOPBAR ---- */
+    .topbar {
+      background: var(--navy-mid);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 28px;
+      display: flex; align-items: center; gap: 16px;
+      position: sticky; top: 0; z-index: 10;
+    }
+    .topbar-search {
+      flex: 1; max-width: 480px;
+      display: flex; align-items: center; gap: 10px;
+      background: var(--navy);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 9px 14px;
+    }
+    .topbar-search input {
+      flex: 1; background: none; border: none; outline: none;
+      color: var(--white); font-size: 14px; font-family: var(--font-body);
+    }
+    .topbar-search input::placeholder { color: var(--muted); }
+    .topbar-actions { margin-left: auto; display: flex; gap: 12px; align-items: center; }
+    .icon-btn {
+      width: 36px; height: 36px;
+      background: var(--card-bg); border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; color: var(--muted); font-size: 16px;
+      transition: all var(--transition); position: relative;
+    }
+    .icon-btn:hover { color: var(--white); border-color: rgba(255,255,255,0.2); }
+
+    /* ---- PAGE BODY ---- */
+    .page-body { padding: 28px; flex: 1; }
+    .page-header {
+      display: flex; align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: 24px; gap: 16px; flex-wrap: wrap;
+    }
+    .page-header h1 { font-size: 24px; font-weight: 700; margin-bottom: 4px; }
+    .page-header p { font-size: 14px; color: var(--muted); }
+
+    /* ---- ÖZET STAT ---- */
+    .stat-row {
+      display: flex; gap: 16px; margin-bottom: 24px; flex-wrap: wrap;
+    }
+    .stat-card {
+      background: var(--navy-mid);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 16px 24px;
+      display: flex; align-items: center; gap: 14px;
+      min-width: 180px;
+    }
+    .stat-icon { font-size: 24px; }
+    .stat-label { font-size: 11px; color: var(--muted); margin-bottom: 2px; }
+    .stat-value { font-size: 22px; font-weight: 700; font-family: var(--font-display); }
+
+    /* ---- TABLE ---- */
+    .table-wrap {
+      background: var(--navy-mid);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+    }
+    .table-header {
+      display: flex; align-items: center;
+      justify-content: space-between;
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+    }
+    .table-title { font-size: 14px; font-weight: 600; }
+    table { width: 100%; border-collapse: collapse; }
+    thead th {
+      background: rgba(255,255,255,0.03);
+      text-align: left;
+      padding: 12px 16px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--muted);
+      border-bottom: 1px solid var(--border);
+    }
+    tbody tr { border-bottom: 1px solid rgba(255,255,255,0.04); transition: background var(--transition); }
+    tbody tr:hover { background: rgba(255,255,255,0.02); }
+    tbody td { padding: 14px 16px; font-size: 13px; vertical-align: middle; }
+    .ihale-title-cell a { font-weight: 600; color: var(--white); text-decoration: none; font-size: 13px; }
+    .ihale-title-cell a:hover { color: var(--amber); }
+    .ihale-kurrum-cell { font-size: 11px; color: var(--muted); margin-top: 3px; }
+    .budget-cell { font-weight: 600; color: var(--amber); }
+    .badge { display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border-radius: 20px; font-size: 11px; font-weight: 600; background: rgba(255,255,255,0.06); color: var(--muted); }
+    .badge-open { background: rgba(76,175,80,0.1); color: #4CAF50; }
+    .badge-soon { background: rgba(240,165,0,0.1); color: var(--amber); }
+    .compat-bar { display: flex; align-items: center; gap: 8px; min-width: 90px; }
+    .compat-fill { background: var(--amber); height: 100%; border-radius: 2px; transition: width 0.4s; }
+    .compat-num { font-size: 12px; font-weight: 600; color: var(--white); min-width: 30px; }
+    .action-btns { display: flex; gap: 6px; }
+    .action-btn {
+      padding: 6px 12px; border-radius: var(--radius-sm);
+      font-size: 12px; font-weight: 600; cursor: pointer;
+      border: 1px solid var(--border); background: var(--card-bg);
+      color: var(--white); text-decoration: none; display: inline-flex;
+      align-items: center; transition: all var(--transition);
+    }
+    .action-btn:hover { border-color: rgba(255,255,255,0.2); background: rgba(255,255,255,0.05); }
+    .action-btn.remove-btn { color: #F44336; border-color: rgba(244,67,54,0.3); background: rgba(244,67,54,0.05); }
+    .action-btn.remove-btn:hover { background: rgba(244,67,54,0.1); }
+
+    /* ---- BOŞ DURUM ---- */
+    .empty-state {
+      text-align: center;
+      padding: 64px 24px;
+    }
+    .empty-icon { font-size: 48px; margin-bottom: 16px; }
+    .empty-title { font-size: 20px; font-weight: 700; margin-bottom: 8px; }
+    .empty-desc { font-size: 14px; color: var(--muted); margin-bottom: 24px; max-width: 400px; margin-left: auto; margin-right: auto; }
+
+    /* ---- RESPONSIVE ---- */
+    @media (max-width: 900px) {
+      .sidebar { display: none; }
+      .stat-row { gap: 10px; }
+      .stat-card { min-width: 140px; padding: 12px 16px; }
+    }
+  </style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ========== SIDEBAR ========== -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <a href="/">
+        <span style="width:6px;height:6px;background:var(--amber);border-radius:50%;display:inline-block;animation:pulse 2s infinite;"></span>
+        İhale<span>Platform</span>
+      </a>
+    </div>
+
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">Genel</div>
+      <a href="dashboard" class="nav-item">
+        <span class="icon">◉</span> Dashboard
+      </a>
+      <a href="ihaleler" class="nav-item">
+        <span class="icon">⊞</span> İhaleler
+      </a>
+      <a href="takipte" class="nav-item active">
+        <span class="icon">☆</span> Takipte
+        <span class="nav-badge" id="sidebar-takip-sayi">0</span>
+      </a>
+      <a href="#" class="nav-item">
+        <span class="icon">🔔</span> Bildirimler
+        <span class="nav-badge">4</span>
+      </a>
+
+      <div class="nav-section-label">Analiz</div>
+      <a href="#" class="nav-item">
+        <span class="icon">📊</span> Rekabet Analizi
+      </a>
+      <a href="#" class="nav-item">
+        <span class="icon">✓</span> Uyumluluk
+      </a>
+      <a href="#" class="nav-item">
+        <span class="icon">📁</span> Dökümanlar
+      </a>
+
+      <div class="nav-section-label">Ayarlar</div>
+      <a href="profil" class="nav-item">
+        <span class="icon">⚙</span> Profil & Filtreler
+      </a>
+      <a href="fiyatlandirma_odeme_bolumu" class="nav-item">
+        <span class="icon">💳</span> Abonelik
+      </a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="user-row">
+        <div class="user-avatar">FD</div>
+        <div class="user-info">
+          <div class="user-name">Faruk D.</div>
+          <div class="user-plan">Ücretsiz Plan</div>
+        </div>
+        <span style="color:var(--muted);font-size:12px;">⋮</span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- ========== MAIN ========== -->
+  <div class="main">
+
+    <!-- TOP BAR -->
+    <div class="topbar">
+      <div class="topbar-search">
+        <span style="color:var(--muted);">⌕</span>
+        <input type="text" placeholder="Takip listesinde ara..." id="takip-search" oninput="aramaYap(this.value)" />
+      </div>
+      <div class="topbar-actions">
+        <div class="icon-btn" title="Bildirimler">🔔</div>
+        <a href="/" class="btn btn-primary" style="padding:8px 16px; font-size:13px;">Pro'ya Geç ↑</a>
+      </div>
+    </div>
+
+    <!-- PAGE BODY -->
+    <div class="page-body">
+
+      <div class="page-header">
+        <div>
+          <h1>Takip Listesi</h1>
+          <p>Takibe aldığınız ihaleler burada listelenir. Veriler tarayıcınızda saklanır.</p>
+        </div>
+        <div style="display:flex; gap:8px;">
+          <button class="btn btn-ghost" style="font-size:13px; padding:9px 16px;" onclick="tumunuTemizle()">Listeyi Temizle</button>
+          <a href="ihaleler" class="btn btn-primary" style="font-size:13px; padding:9px 16px;">+ İhale Ekle</a>
+        </div>
+      </div>
+
+      <!-- ÖZET İSTATİSTİKLER -->
+      <div class="stat-row" id="stat-row">
+        <div class="stat-card">
+          <div class="stat-icon">☆</div>
+          <div>
+            <div class="stat-label">Takip Edilen</div>
+            <div class="stat-value" id="stat-toplam" style="color:var(--amber);">—</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">⏰</div>
+          <div>
+            <div class="stat-label">7 Gün İçinde Bitiyor</div>
+            <div class="stat-value" id="stat-yaklasan" style="color:#F44336;">—</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">✓</div>
+          <div>
+            <div class="stat-label">Açık İhale</div>
+            <div class="stat-value" id="stat-aktif" style="color:#4CAF50;">—</div>
+          </div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-icon">₺</div>
+          <div>
+            <div class="stat-label">Toplam Tahmini Değer</div>
+            <div class="stat-value" id="stat-toplam-bedel" style="color:var(--white); font-size:16px;">—</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- TABLE -->
+      <div class="table-wrap">
+        <div class="table-header">
+          <span class="table-title">Takip Ettiğim İhaleler</span>
+          <span style="font-size:12px; color:var(--muted);" id="results-count">Yükleniyor...</span>
+        </div>
+
+        <table>
+          <thead>
+            <tr>
+              <th>İhale Adı</th>
+              <th>Durum</th>
+              <th>Yaklaşık Maliyet</th>
+              <th>Son Tarih</th>
+              <th>Uyum</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="takip-tbody"></tbody>
+        </table>
+      </div>
+
+    </div><!-- /page-body -->
+  </div><!-- /main -->
+</div><!-- /app -->
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="js/main.js"></script>
+<script src="js/takip.js"></script>
+<script>
+  const SUPABASE_URL = "https://lpgelwfoarhouollhwur.supabase.co";
+  const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxwZ2Vsd2ZvYXJob3VvbGxod3VyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIyMzI4MjAsImV4cCI6MjA5NzgwODgyMH0.GqTZkeoOAomuur4JSyW2pTR-8Zzg8OTv394JtP7DoXM";
+  const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+  let tumIlanlar = [];
+
+  function tarihFormatla(tarih) {
+    if (!tarih) return '—';
+    const d = new Date(tarih);
+    const aylar = ['Oca','Şub','Mar','Nis','May','Haz','Tem','Ağu','Eyl','Eki','Kas','Ara'];
+    return `${d.getDate()} ${aylar[d.getMonth()]} ${d.getFullYear()}`;
+  }
+
+  function durumBadge(durum, bitis) {
+    const gun = bitis ? Math.ceil((new Date(bitis) - new Date()) / 86400000) : null;
+    if (gun !== null && gun <= 3 && gun >= 0)
+      return `<span class="badge badge-soon">● Son ${gun} Gün</span>`;
+    if (durum === 'aktif') return `<span class="badge badge-open">● Açık</span>`;
+    return `<span class="badge">${durum || '—'}</span>`;
+  }
+
+  function butceFormatla(bedel) {
+    if (!bedel) return '—';
+    if (bedel >= 1_000_000_000) return `₺${(bedel/1_000_000_000).toFixed(1)}Mr`;
+    if (bedel >= 1_000_000) return `₺${(bedel/1_000_000).toFixed(1)}M`;
+    if (bedel >= 1_000) return `₺${(bedel/1_000).toFixed(0)}K`;
+    return `₺${bedel.toLocaleString('tr')}`;
+  }
+
+  function yaklasikMaliyet(ilan) {
+    const mn = ilan.yaklasik_maliyet_min, mx = ilan.yaklasik_maliyet_max;
+    if (mn == null && mx == null) return '—';
+    if (mn === 0 && mx) return `${butceFormatla(mx)} altı`;
+    if (mn != null && mx == null) return `${butceFormatla(mn)} üzeri`;
+    if (mn != null && mx != null) return `${butceFormatla(mn)} – ${butceFormatla(mx)}`;
+    return '—';
+  }
+
+  function uyumSkoru(ilan) {
+    return Math.floor(Math.random() * 25 + 60);
+  }
+
+  function satirOlustur(ilan) {
+    const uyum = uyumSkoru(ilan);
+    return `
+      <tr data-id="${ilan.id}" data-baslik="${(ilan.baslik || '').toLowerCase()}">
+        <td class="ihale-title-cell">
+          <a href="ihale-detay?id=${ilan.id}">${ilan.baslik || '—'}</a>
+          <div class="ihale-kurrum-cell">${ilan.idare || '—'}${ilan.ekap_id ? ' — EKAP #' + ilan.ekap_id : ''}</div>
+        </td>
+        <td>${durumBadge(ilan.durum, ilan.son_teklif_tarihi)}</td>
+        <td class="budget-cell">${yaklasikMaliyet(ilan)}</td>
+        <td style="font-size:13px; color:var(--off-white);">${tarihFormatla(ilan.son_teklif_tarihi)}</td>
+        <td>
+          <div class="compat-bar">
+            <div style="flex:1; background:var(--border); height:4px; border-radius:2px; overflow:hidden;">
+              <div class="compat-fill" style="width:${uyum}%;"></div>
+            </div>
+            <span class="compat-num">${uyum}%</span>
+          </div>
+        </td>
+        <td>
+          <div class="action-btns">
+            <a class="action-btn" href="ihale-detay?id=${ilan.id}">Detay</a>
+            <button class="action-btn remove-btn" onclick="takiptenCikar(this, '${ilan.id}')">✕ Çıkar</button>
+          </div>
+        </td>
+      </tr>`;
+  }
+
+  function takiptenCikar(btn, id) {
+    Takip.toggle(id);
+    const tr = btn.closest('tr');
+    tr.style.opacity = '0';
+    tr.style.transition = 'opacity 0.2s';
+    setTimeout(() => {
+      tr.remove();
+      tumIlanlar = tumIlanlar.filter(i => String(i.id) !== String(id));
+      istatistikleriGuncelle();
+      const tbody = document.getElementById('takip-tbody');
+      if (!tbody.querySelector('tr')) bosEkranGoster();
+    }, 200);
+  }
+
+  function tumunuTemizle() {
+    if (!confirm('Takip listenizdeki tüm ihaleler kaldırılacak. Emin misiniz?')) return;
+    Takip.liste().forEach(id => Takip.toggle(id));
+    tumIlanlar = [];
+    istatistikleriGuncelle();
+    bosEkranGoster();
+  }
+
+  function bosEkranGoster() {
+    const tbody = document.getElementById('takip-tbody');
+    tbody.innerHTML = `
+      <tr><td colspan="6">
+        <div class="empty-state">
+          <div class="empty-icon">☆</div>
+          <div class="empty-title">Takip listeniz boş</div>
+          <div class="empty-desc">İhale listesine gidip "Takibe Al" butonuna tıklayarak ihaleleri buraya ekleyebilirsiniz.</div>
+          <a href="ihaleler" class="btn btn-primary">İhalelere Git</a>
+        </div>
+      </td></tr>`;
+    document.getElementById('results-count').textContent = '0 ihale';
+  }
+
+  function istatistikleriGuncelle() {
+    const sayi = Takip.sayi();
+    const el = document.getElementById('sidebar-takip-sayi');
+    if (el) el.textContent = sayi;
+
+    document.getElementById('stat-toplam').textContent = tumIlanlar.length;
+
+    const simdi = new Date();
+    const bir_hafta = new Date(simdi.getTime() + 7 * 86400000);
+    const yaklasan = tumIlanlar.filter(i => {
+      if (!i.son_teklif_tarihi) return false;
+      const t = new Date(i.son_teklif_tarihi);
+      return t >= simdi && t <= bir_hafta;
+    }).length;
+    document.getElementById('stat-yaklasan').textContent = yaklasan;
+
+    const aktif = tumIlanlar.filter(i => i.durum === 'aktif').length;
+    document.getElementById('stat-aktif').textContent = aktif;
+
+    const toplamBedel = tumIlanlar.reduce((sum, i) => sum + (i.yaklasik_maliyet_min || i.tahmini_bedel || 0), 0);
+    document.getElementById('stat-toplam-bedel').textContent = toplamBedel > 0 ? butceFormatla(toplamBedel) : '—';
+
+    document.getElementById('results-count').textContent = `${tumIlanlar.length} ihale`;
+  }
+
+  function aramaYap(q) {
+    const tbody = document.getElementById('takip-tbody');
+    const rows = tbody.querySelectorAll('tr[data-id]');
+    const aranan = q.toLowerCase().trim();
+    rows.forEach(row => {
+      const baslik = row.getAttribute('data-baslik') || '';
+      row.style.display = (!aranan || baslik.includes(aranan)) ? '' : 'none';
+    });
+  }
+
+  async function takipListesiniYukle() {
+    const tbody = document.getElementById('takip-tbody');
+    const ids = Takip.liste();
+
+    // Sidebar badge
+    const sidebarEl = document.getElementById('sidebar-takip-sayi');
+    if (sidebarEl) sidebarEl.textContent = ids.length;
+
+    if (ids.length === 0) {
+      bosEkranGoster();
+      // istatistik sıfırla
+      ['stat-toplam','stat-yaklasan','stat-aktif'].forEach(id => {
+        const el = document.getElementById(id); if (el) el.textContent = '0';
+      });
+      document.getElementById('stat-toplam-bedel').textContent = '—';
+      return;
+    }
+
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:32px; color:var(--muted);">Yükleniyor...</td></tr>`;
+
+    const { data, error } = await sb
+      .from('ilanlar')
+      .select('id, ekap_id, baslik, idare, il, tur, durum, son_teklif_tarihi, tahmini_bedel, yaklasik_maliyet_min, yaklasik_maliyet_max, itiraz_bedeli')
+      .in('id', ids);
+
+    if (error) {
+      tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:32px; color:var(--muted);">
+        Bağlantı hatası: ${error.message}
+      </td></tr>`;
+      return;
+    }
+
+    if (!data || data.length === 0) {
+      bosEkranGoster();
+      return;
+    }
+
+    // Takip listesinin sıralamasını koru (en son eklenen en üstte)
+    const siralanmis = ids
+      .map(id => data.find(d => String(d.id) === String(id)))
+      .filter(Boolean)
+      .reverse();
+
+    tumIlanlar = siralanmis;
+    tbody.innerHTML = siralanmis.map(satirOlustur).join('');
+    istatistikleriGuncelle();
+  }
+
+  takipListesiniYukle();
+</script>
+</body>
+</html>
