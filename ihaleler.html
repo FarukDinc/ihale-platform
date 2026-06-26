@@ -378,6 +378,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/api.js"></script>
+<script src="js/takip.js"></script>
 <script>
   const SUPABASE_URL = "https://lpgelwfoarhouollhwur.supabase.co";
   const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxwZ2Vsd2ZvYXJob3VvbGxod3VyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIyMzI4MjAsImV4cCI6MjA5NzgwODgyMH0.GqTZkeoOAomuur4JSyW2pTR-8Zzg8OTv394JtP7DoXM";
@@ -511,6 +512,7 @@
 
   function satirOlustur(ilan) {
     const uyum = ilan._uyum !== undefined ? ilan._uyum : uyumHesapla(ilan);
+    const takipte = Takip.var(ilan.id);
     return `
       <tr>
         <td><input type="checkbox" /></td>
@@ -529,7 +531,7 @@
         </td>
         <td>
           <div class="action-btns">
-            <button class="action-btn primary" onclick="takibeAl(this,'${ilan.id}')">Takibe Al</button>
+            <button class="action-btn ${takipte ? 'takipte' : 'primary'}" onclick="takibeAl(this,'${ilan.id}')">${takipte ? '✓ Takipte' : 'Takibe Al'}</button>
             <a class="action-btn" href="ihale-detay?id=${ilan.id}">Detay</a>
           </div>
         </td>
@@ -634,9 +636,18 @@
   }
 
   function takibeAl(btn, id) {
-    btn.textContent = '✓ Takipte';
-    btn.className = 'action-btn takipte';
-    btn.onclick = null;
+    const takipte = Takip.toggle(id);
+    takipButonGuncelle(btn, takipte);
+  }
+
+  function takipButonGuncelle(btn, takipte) {
+    if (takipte) {
+      btn.textContent = '✓ Takipte';
+      btn.className = 'action-btn takipte';
+    } else {
+      btn.textContent = 'Takibe Al';
+      btn.className = 'action-btn primary';
+    }
   }
 
   // Topbar arama — 400ms debounce

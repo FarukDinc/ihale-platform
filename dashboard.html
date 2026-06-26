@@ -666,23 +666,23 @@
       <div class="kpi-grid">
         <div class="kpi-card">
           <div class="kpi-label">Takipteki İhale</div>
-          <div class="kpi-value" style="color:var(--amber);">12</div>
-          <div class="kpi-delta up">↑ 3 bu hafta eklendi</div>
+          <div class="kpi-value" style="color:var(--amber);" id="kpi-takip">—</div>
+          <div class="kpi-delta" style="color:var(--muted);">Takip listenizde</div>
         </div>
         <div class="kpi-card">
           <div class="kpi-label">Aktif Türkiye İhalesi</div>
-          <div class="kpi-value">2.847</div>
-          <div class="kpi-delta up">↑ +124 bugün eklendi</div>
+          <div class="kpi-value" id="kpi-aktif">—</div>
+          <div class="kpi-delta up">EKAP'tan güncel</div>
         </div>
         <div class="kpi-card">
-          <div class="kpi-label">Profil Uyumu</div>
-          <div class="kpi-value" style="color:#4CAF50;">%78</div>
-          <div class="kpi-delta" style="color:var(--muted);">Sağlık + Su sektörü</div>
+          <div class="kpi-label">7 Gün İçinde Bitecek</div>
+          <div class="kpi-value" style="color:var(--amber);" id="kpi-yaklasan">—</div>
+          <div class="kpi-delta" style="color:var(--muted);">Teklif süresi yaklaşıyor</div>
         </div>
         <div class="kpi-card">
-          <div class="kpi-label">Bu Hafta Biten</div>
-          <div class="kpi-value" style="color:#F44336;">3</div>
-          <div class="kpi-delta down">⚠ Dikkat gerektiriyor</div>
+          <div class="kpi-label">Büyük İhale (₺43M+)</div>
+          <div class="kpi-value" style="color:#4CAF50;" id="kpi-buyuk">—</div>
+          <div class="kpi-delta" style="color:var(--muted);">Yüksek yaklaşık maliyet</div>
         </div>
       </div>
 
@@ -722,7 +722,7 @@
           Sağlık Teknik <span class="remove">×</span>
         </div>
 
-        <span class="results-count">2.847 sonuç</span>
+        <span class="results-count" id="results-count">— sonuç</span>
       </div>
 
       <!-- TABLE -->
@@ -781,6 +781,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/main.js"></script>
+<script src="js/takip.js"></script>
 <script>
   // ── Supabase config ──────────────────────────────────
   const SUPABASE_URL  = "https://lpgelwfoarhouollhwur.supabase.co";
@@ -826,11 +827,12 @@
   // ── Satır oluştur ────────────────────────────────────
   function satirOlustur(ilan) {
     const uyum = uyumHesapla(ilan);
+    const takipte = Takip.var(ilan.id);
     return `
       <tr>
         <td><input type="checkbox" /></td>
         <td class="ihale-title-cell">
-          <a href="#">${ilan.baslik || '—'}</a>
+          <a href="ihale-detay?id=${ilan.id}">${ilan.baslik || '—'}</a>
           <div class="ihale-kurrum-cell">${ilan.idare || '—'} — EKAP #${ilan.ekap_id || '—'}</div>
         </td>
         <td>${durumBadge(ilan.durum, ilan.son_teklif_tarihi)}</td>
@@ -846,7 +848,7 @@
         </td>
         <td>
           <div class="action-btns">
-            <button class="action-btn primary" onclick="takibeAl(this, '${ilan.id}')">Takibe Al</button>
+            <button class="action-btn primary" onclick="takibeAl(this, '${ilan.id}')" ${takipte ? 'style="background:rgba(76,175,80,0.1);color:#4CAF50;border-color:rgba(76,175,80,0.3);"' : ''}>${takipte ? '✓ Takipte' : 'Takibe Al'}</button>
             <a class="action-btn" href="ihale-detay?id=${ilan.id}">Detay</a>
           </div>
         </td>
@@ -967,26 +969,55 @@
     // Tablo altı güncelle
     const footer = document.querySelector('.table-footer span');
     if (footer) footer.textContent = `${data.length} ihale gösteriliyor`;
-
-    // Takibe al butonlarını aktif et (dinamik satırlar için)
-    document.querySelectorAll('.action-btn.primary').forEach(btn => {
-      btn.addEventListener('click', function() {
-        if (this.textContent === 'Takibe Al') {
-          this.textContent = '✓ Takipte';
-          this.style.background = 'rgba(76,175,80,0.1)';
-          this.style.color = '#4CAF50';
-          this.style.borderColor = 'rgba(76,175,80,0.3)';
-        }
-      });
-    });
   }
 
-  // Takibe al fonksiyonu
+  // Takibe al fonksiyonu (localStorage tabanlı kalıcı takip)
   function takibeAl(btn, id) {
-    btn.textContent = '✓ Takipte';
-    btn.style.background = 'rgba(76,175,80,0.1)';
-    btn.style.color = '#4CAF50';
-    btn.style.borderColor = 'rgba(76,175,80,0.3)';
+    const takipte = Takip.toggle(id);
+    takipButonGuncelle(btn, takipte);
+    kpiYukle();  // takip sayısını tazele
+  }
+
+  function takipButonGuncelle(btn, takipte) {
+    if (takipte) {
+      btn.textContent = '✓ Takipte';
+      btn.style.background = 'rgba(76,175,80,0.1)';
+      btn.style.color = '#4CAF50';
+      btn.style.borderColor = 'rgba(76,175,80,0.3)';
+    } else {
+      btn.textContent = 'Takibe Al';
+      btn.style.background = '';
+      btn.style.color = '';
+      btn.style.borderColor = '';
+    }
+  }
+
+  // ── KPI kartları (gerçek veri) ──────────────────────
+  async function kpiYukle() {
+    // Takipteki ihale (localStorage)
+    const takipEl = document.getElementById('kpi-takip');
+    if (takipEl) takipEl.textContent = Takip.sayi();
+
+    const simdi = new Date();
+    const birHaftaSonra = new Date(simdi.getTime() + 7 * 86400000).toISOString();
+
+    try {
+      const [aktif, yaklasan, buyuk] = await Promise.all([
+        sb.from('ilanlar').select('id', { count: 'exact', head: true }).eq('durum', 'aktif'),
+        sb.from('ilanlar').select('id', { count: 'exact', head: true })
+          .eq('durum', 'aktif').gte('son_teklif_tarihi', simdi.toISOString()).lte('son_teklif_tarihi', birHaftaSonra),
+        sb.from('ilanlar').select('id', { count: 'exact', head: true })
+          .eq('durum', 'aktif').gte('yaklasik_maliyet_min', 43142132),
+      ]);
+      const setVal = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = (v ?? 0).toLocaleString('tr'); };
+      setVal('kpi-aktif', aktif.count);
+      setVal('kpi-yaklasan', yaklasan.count);
+      setVal('kpi-buyuk', buyuk.count);
+      const rc = document.getElementById('results-count');
+      if (rc) rc.textContent = `${(aktif.count ?? 0).toLocaleString('tr')} sonuç`;
+    } catch (e) {
+      console.warn('KPI yüklenemedi:', e);
+    }
   }
 
   // ── View toggle ──────────────────────────────────────
@@ -1003,6 +1034,7 @@
   });
 
   // ── Sayfa yüklenince ilanları çek ───────────────────
+  kpiYukle();
   profilCek().then(() => ilanlariYukle());
 </script>
 </body>
