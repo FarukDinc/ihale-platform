@@ -209,7 +209,7 @@ def ozet(liste):
         print(f"\nÖrnek:")
         print(f"  IKN   : {o['ikn']}")
         print(f"  Başlık: {o['baslik'][:65]}")
-        print(f"  Tarih : {o['tarih']}")
+        print(f"  Tarih : {o['son_teklif_tarihi']}")
     print("=" * 55)
 
 
