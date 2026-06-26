@@ -31,7 +31,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     function plan_sec(plan_kodu) {
         if (!API.auth.girisli_mi()) {
             UI.bildirim_goster("Satın almak için giriş yapmalısınız", "uyari");
-            setTimeout(() => window.location.href = "/login.html", 1500);
+            setTimeout(() => window.location.href = "/login", 1500);
             return;
         }
 

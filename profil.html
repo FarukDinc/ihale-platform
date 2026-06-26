@@ -474,7 +474,7 @@
   // ── Profili yükle ───────────────────────────────────────────────────────
   async function profilYukle() {
     const { data: { user } } = await sb.auth.getUser();
-    if (!user) { window.location.href = 'login.html'; return; }
+    if (!user) { window.location.href = 'login'; return; }
 
     // Sidebar güncelle
     const email = user.email || '';
@@ -516,7 +516,7 @@
     btn.textContent = 'Kaydediliyor...';
 
     const { data: { user } } = await sb.auth.getUser();
-    if (!user) { window.location.href = 'login.html'; return; }
+    if (!user) { window.location.href = 'login'; return; }
 
     if (seciliSektorler.size === 0) {
       toast('En az bir sektör seçmelisiniz!', 'hata');

@@ -19,7 +19,7 @@ document.addEventListener("DOMContentLoaded", () => {
             try {
                 await API.auth.giris(email, sifre);
                 UI.bildirim_goster("Başarıyla giriş yapıldı!", "basari");
-                setTimeout(() => window.location.href = "/dashboard.html", 800);
+                setTimeout(() => window.location.href = "/dashboard", 800);
             } catch (err) {
                 UI.bildirim_goster(err.message || "Giriş başarısız", "hata");
                 btn.textContent = "Giriş Yap";
@@ -49,7 +49,7 @@ document.addEventListener("DOMContentLoaded", () => {
             try {
                 await API.auth.kayit(email, sifre, firma_adi);
                 UI.bildirim_goster("Kayıt başarılı! E-postanızı onaylayın.", "basari");
-                setTimeout(() => window.location.href = "/login.html", 2000);
+                setTimeout(() => window.location.href = "/login", 2000);
             } catch (err) {
                 UI.bildirim_goster(err.message || "Kayıt başarısız", "hata");
                 btn.textContent = "Kayıt Ol";
@@ -60,7 +60,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Zaten giriş yapılmışsa dashboard'a yönlendir
     if (API.auth.girisli_mi()) {
-        window.location.href = "/dashboard.html";
+        window.location.href = "/dashboard";
     }
 
 });

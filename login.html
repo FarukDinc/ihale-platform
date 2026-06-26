@@ -258,7 +258,7 @@
     try {
       await API.auth.giris(email, sifre);
       toast('Başarıyla giriş yapıldı!', 'basari');
-      setTimeout(() => window.location.href = 'dashboard.html', 800);
+      setTimeout(() => window.location.href = 'dashboard', 800);
     } catch (err) {
       toast(err.message || 'Giriş başarısız', 'hata');
       btn.textContent = 'Giriş Yap';
@@ -290,7 +290,7 @@
 
   // Zaten giriş yapılmışsa dashboard'a
   if (typeof API !== 'undefined' && API.auth.girisli_mi()) {
-    window.location.href = 'dashboard.html';
+    window.location.href = 'dashboard';
   }
 </script>
 

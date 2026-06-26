@@ -33,7 +33,7 @@ const API = (() => {
         if (auth) {
             const t = token.al();
             if (!t) {
-                window.location.href = "/login.html";
+                window.location.href = "/login";
                 return null;
             }
             basliklar["Authorization"] = `Bearer ${t}`;
@@ -49,7 +49,7 @@ const API = (() => {
             // Token süresi dolduysa login'e yönlendir
             if (yanit.status === 401) {
                 token.sil();
-                window.location.href = "/login.html";
+                window.location.href = "/login";
                 return null;
             }
 
@@ -106,7 +106,7 @@ const API = (() => {
 
         cikis() {
             token.sil();
-            window.location.href = "/login.html";
+            window.location.href = "/login";
         },
 
         girisli_mi() {

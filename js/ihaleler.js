@@ -61,7 +61,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             "
             onmouseenter="this.style.background='#fafafa'"
             onmouseleave="this.style.background='white'"
-            onclick="window.location.href='/ihale-detay.html?id=${ihale.id}'">
+            onclick="window.location.href='/ihale-detay?id=${ihale.id}'">
 
                 <div>
                     <div style="font-weight:600;font-size:14px;color:#0A1628;margin-bottom:5px">

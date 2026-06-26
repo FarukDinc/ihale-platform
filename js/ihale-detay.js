@@ -11,7 +11,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     const ihale_id = params.get("id");
 
     if (!ihale_id) {
-        window.location.href = "/ihaleler.html";
+        window.location.href = "/ihaleler";
         return;
     }
 
@@ -41,7 +41,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         const sonuc = await API.ihaleler.detay(ihale_id);
         if (!sonuc?.veri) {
             UI.bildirim_goster("İhale bulunamadı", "hata");
-            setTimeout(() => window.location.href = "/ihaleler.html", 1500);
+            setTimeout(() => window.location.href = "/ihaleler", 1500);
             return;
         }
 
@@ -90,7 +90,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
             if (!API.auth.girisli_mi()) {
                 UI.bildirim_goster("Analiz için giriş yapmalısınız", "uyari");
-                setTimeout(() => window.location.href = "/login.html", 1500);
+                setTimeout(() => window.location.href = "/login", 1500);
                 return;
             }
 
@@ -104,7 +104,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                 UI.bildirim_goster(
                     "Krediniz yetersiz! Paket yükseltin.",
                     "uyari",
-                    "/fiyatlandirma.html"
+                    "/fiyatlandirma"
                 );
                 return;
             }

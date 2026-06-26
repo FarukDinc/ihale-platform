@@ -7,7 +7,7 @@
 document.addEventListener("DOMContentLoaded", async () => {
 
     if (!API.auth.girisli_mi()) {
-        window.location.href = "/login.html";
+        window.location.href = "/login";
         return;
     }
 

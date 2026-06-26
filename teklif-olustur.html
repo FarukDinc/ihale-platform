@@ -1347,7 +1347,7 @@
 
     document.getElementById('teklif-adi').value = `${data.baslik || 'İhale'} — Teknik & Mali Teklif`;
     document.getElementById('bc-ihale').textContent = (data.baslik||'').substring(0,40);
-    document.getElementById('back-btn').href = `ihale-detay.html?id=${ihaleId}`;
+    document.getElementById('back-btn').href = `ihale-detay?id=${ihaleId}`;
 
     if (gun !== null && gun <= 7 && gun >= 0) {
       document.getElementById('sure-uyari').style.display = 'flex';

@@ -11,7 +11,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     // Auth kontrolü
     if (!API.auth.girisli_mi()) {
-        window.location.href = "/login.html";
+        window.location.href = "/login";
         return;
     }
 
@@ -150,7 +150,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     // ── Global fonksiyonlar (onclick'ler için) ──────────
     window.ihale_detaya_git = (id) => {
-        window.location.href = `/ihale-detay.html?id=${id}`;
+        window.location.href = `/ihale-detay?id=${id}`;
     };
 
     window.hizli_analiz = async (ihale_id, btn) => {
