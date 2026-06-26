@@ -1341,7 +1341,13 @@
       ['İdare', data.idare || '—'],
       ['İhale Türü', data.tur || '—'],
       ['Son Teklif Tarihi', tarihFmt(data.son_teklif_tarihi)],
-      ['Tahmini Bedel', butceFmt(data.tahmini_bedel)],
+      ['Yaklaşık Maliyet', (() => {
+        const mn = data.yaklasik_maliyet_min, mx = data.yaklasik_maliyet_max;
+        if (mn != null && mx != null) return `${butceFmt(mn)} – ${butceFmt(mx)}`;
+        if (mn != null) return `${butceFmt(mn)} üzeri`;
+        if (data.tahmini_bedel) return butceFmt(data.tahmini_bedel);
+        return '—';
+      })()],
       ['İhale Usulü', data.usul || '—'],
     ]);
 
