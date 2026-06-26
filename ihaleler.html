@@ -561,8 +561,8 @@
     if (durum)    query = query.eq('durum', durum);
     if (minBedel) query = query.gte('yaklasik_maliyet_min', minBedel);
 
-    if (sort === 'tahmini_bedel_desc') query = query.order('tahmini_bedel', { ascending: false });
-    else if (sort === 'tahmini_bedel_asc') query = query.order('tahmini_bedel', { ascending: true });
+    if (sort === 'tahmini_bedel_desc') query = query.order('yaklasik_maliyet_min', { ascending: false, nullsFirst: false });
+    else if (sort === 'tahmini_bedel_asc') query = query.order('yaklasik_maliyet_min', { ascending: true, nullsFirst: false });
     else if (sort === 'ilan_tarihi') query = query.order('ilan_tarihi', { ascending: false });
     else query = query.order('son_teklif_tarihi', { ascending: true });
 
@@ -661,8 +661,18 @@
   // Enter ile filtrele
   document.getElementById('f-arama').addEventListener('keydown', e => { if (e.key === 'Enter') filtreUygula(); });
 
+  async function ilDropdownDoldur() {
+    const { data } = await sb.from('ilanlar').select('il').not('il', 'is', null).order('il');
+    if (!data) return;
+    const iller = [...new Set(data.map(r => r.il).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'tr'));
+    const sel = document.getElementById('f-il');
+    sel.innerHTML = '<option value="">Tüm İller</option>' +
+      iller.map(il => `<option value="${il}">${il}</option>`).join('');
+  }
+
   // Sayfa yüklenince
   profilCek().then(() => ilanlariYukle());
+  ilDropdownDoldur();
 </script>
 </body>
 </html>

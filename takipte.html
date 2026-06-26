@@ -375,12 +375,21 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/main.js"></script>
 <script src="js/takip.js"></script>
+<script src="js/uyum.js"></script>
 <script>
   const SUPABASE_URL = "https://lpgelwfoarhouollhwur.supabase.co";
   const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxwZ2Vsd2ZvYXJob3VvbGxod3VyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIyMzI4MjAsImV4cCI6MjA5NzgwODgyMH0.GqTZkeoOAomuur4JSyW2pTR-8Zzg8OTv394JtP7DoXM";
   const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
   let tumIlanlar = [];
+  let kullaniciProfil = null;
+
+  async function profilCek() {
+    const { data: { user } } = await sb.auth.getUser();
+    if (!user) return;
+    const { data } = await sb.from('profil').select('sektorler,tercih_iller,tercih_turler,min_bedel,max_bedel').eq('user_id', user.id).single();
+    kullaniciProfil = data;
+  }
 
   function tarihFormatla(tarih) {
     if (!tarih) return '—';
@@ -415,6 +424,7 @@
   }
 
   function uyumSkoru(ilan) {
+    if (window.Uyum) return Uyum.hesapla(ilan, kullaniciProfil);
     return Math.floor(Math.random() * 25 + 60);
   }
 
@@ -565,7 +575,7 @@
     istatistikleriGuncelle();
   }
 
-  takipListesiniYukle();
+  profilCek().then(() => takipListesiniYukle());
 </script>
 </body>
 </html>
