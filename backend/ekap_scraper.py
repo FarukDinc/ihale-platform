@@ -25,15 +25,7 @@ from supabase import create_client
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "https://lpgelwfoarhouollhwur.supabase.co")
 SUPABASE_KEY = os.environ.get("SUPABASE_SERVICE_KEY", "")
 
-# ── Arama listesi ─────────────────────────────────────────
-SEKTOR_ARAMA_LISTESI = [
-    "hemşirelik hizmet",
-    "sağlık teknik bakım",
-    "atık su arıtma",
-    "su tesisi bakım",
-    "elektrik altyapı",
-    "teknik hizmet alımı",
-]
+SAYFA_BOYUTU = 100  # EKAP'ın izin verdiği max
 
 EKAP_SEARCH_URL = "https://ekapv2.kik.gov.tr/ekap/search"
 API_ENDPOINT    = "https://ekapv2.kik.gov.tr/b_ihalearama/api/Ihale/GetListByParameters"
@@ -75,16 +67,13 @@ async def ekap_token_yakala(page, context):
     return captured["headers"], captured["payload"], captured["url"]
 
 
-# ── Tek bir arama ─────────────────────────────────────────
-async def ihale_ara(context, headers, payload_sablonu, url, arama_metni,
-                    sayfa_atla=0, sayfa_boyutu=50):
+# ── Tek sayfa çek ────────────────────────────────────────
+async def sayfa_cek(context, headers, payload_sablonu, url, sayfa_atla=0):
     payload = dict(payload_sablonu)
-    payload["searchText"]    = arama_metni
-    payload["ikNdeAra"]      = True
-    payload["ihaleAdindaAra"] = True
-    payload["paginationSkip"] = sayfa_atla
-    payload["paginationTake"] = sayfa_boyutu
-    payload["ihaleDurumIdList"] = [2]   # Katılıma açık
+    payload["searchText"]      = ""
+    payload["paginationSkip"]  = sayfa_atla
+    payload["paginationTake"]  = SAYFA_BOYUTU
+    payload["ihaleDurumIdList"] = [2]  # Katılıma açık
 
     temiz = {k: v for k, v in headers.items() if k.lower() != "content-length"}
 
@@ -100,30 +89,29 @@ async def ihale_ara(context, headers, payload_sablonu, url, arama_metni,
     return {"list": [], "totalCount": 0}
 
 
-# ── Tüm sayfaları çek ─────────────────────────────────────
-async def tum_sonuclari_cek(context, headers, payload, url, arama_metni):
-    sayfa_boyutu = 50
-    tum_liste    = []
-    sayfa        = 0
+# ── Tüm ihaleleri çek ─────────────────────────────────────
+async def tum_ihaleleri_cek(context, headers, payload, url):
+    tum_liste = []
 
-    print(f"\n  → '{arama_metni}' aranıyor...", end=" ", flush=True)
-    sonuc = await ihale_ara(context, headers, payload, url, arama_metni,
-                             sayfa_atla=0, sayfa_boyutu=sayfa_boyutu)
+    # İlk sayfa — toplam sayıyı öğren
+    print("\n  → Tüm aktif ihaleler çekiliyor...", flush=True)
+    sonuc  = await sayfa_cek(context, headers, payload, url, sayfa_atla=0)
     toplam = sonuc.get("totalCount", 0)
     tum_liste.extend(sonuc.get("list", []))
-    print(f"{toplam} sonuç")
+    print(f"  Toplam: {toplam} ihale | İlk sayfa: {len(tum_liste)}")
 
+    # Geri kalan sayfalar
+    sayfa = 1
     while len(tum_liste) < toplam:
-        sayfa += 1
-        await asyncio.sleep(0.5)
-        sonuc = await ihale_ara(context, headers, payload, url, arama_metni,
-                                 sayfa_atla=sayfa * sayfa_boyutu,
-                                 sayfa_boyutu=sayfa_boyutu)
+        await asyncio.sleep(0.3)
+        sonuc = await sayfa_cek(context, headers, payload, url,
+                                sayfa_atla=sayfa * SAYFA_BOYUTU)
         yeni = sonuc.get("list", [])
         if not yeni:
             break
         tum_liste.extend(yeni)
-        print(f"    Sayfa {sayfa + 1}: {len(tum_liste)}/{toplam}")
+        print(f"  Sayfa {sayfa + 1}: {len(tum_liste)}/{toplam}")
+        sayfa += 1
 
     return tum_liste
 
@@ -244,12 +232,9 @@ async def main():
             await browser.close()
             return
 
-        # Tüm aramaları çek
-        tum_ham = []
-        for arama in SEKTOR_ARAMA_LISTESI:
-            sonuclar = await tum_sonuclari_cek(context, headers, payload, url, arama)
-            tum_ham.extend(ihaleleri_isle(sonuclar))
-            await asyncio.sleep(1)
+        # Tüm aktif ihaleleri çek
+        tum_ham_liste = await tum_ihaleleri_cek(context, headers, payload, url)
+        tum_ham = ihaleleri_isle(tum_ham_liste)
 
         await browser.close()
 
