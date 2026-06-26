@@ -602,10 +602,10 @@
       <a href="#" class="nav-item">
         <span class="icon">📊</span> Rekabet Analizi
       </a>
-      <a href="#" class="nav-item">
+      <a href="uyumluluk" class="nav-item">
         <span class="icon">✓</span> Uyumluluk
       </a>
-      <a href="#" class="nav-item">
+      <a href="dokumanlar" class="nav-item">
         <span class="icon">📁</span> Dökümanlar
       </a>
 
@@ -653,7 +653,7 @@
 
       <div class="page-header">
         <div>
-          <h1>Merhaba, Faruk 👋</h1>
+          <h1>Merhaba, <span id="greeting-name">—</span> 👋</h1>
           <p>Bugün <strong style="color:var(--white);" id="hdr-bugun">—</strong> yeni ihale eklendi. Bugün son gün olan <strong style="color:var(--amber);" id="hdr-songun">—</strong> ihale var.</p>
         </div>
         <div style="display:flex; gap:8px;">
@@ -848,8 +848,11 @@
   async function profilCek() {
     const { data: { user } } = await sb.auth.getUser();
     if (!user) return;
-    const { data } = await sb.from('profil').select('sektorler,tercih_iller,tercih_turler,min_bedel,max_bedel').eq('user_id', user.id).single();
+    const { data } = await sb.from('profil').select('sektorler,tercih_iller,tercih_turler,min_bedel,max_bedel,firma_adi').eq('user_id', user.id).single();
     kullaniciProfil = data;
+    const isim = data?.firma_adi || user.email?.split('@')[0] || 'Hoş Geldiniz';
+    const el = document.getElementById('greeting-name');
+    if (el) el.textContent = isim;
   }
 
 

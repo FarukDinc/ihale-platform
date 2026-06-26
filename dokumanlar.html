@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dökümanlar — İhalePlatform</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    body { background: var(--navy); }
+    .app { display: flex; min-height: 100vh; }
+
+    .sidebar {
+      background: var(--navy-mid); border-right: 1px solid var(--border);
+      width: 240px; flex-shrink: 0; position: sticky; top: 0;
+      height: 100vh; display: flex; flex-direction: column; overflow-y: auto;
+    }
+    .sidebar-logo { padding: 20px 20px 16px; border-bottom: 1px solid var(--border); }
+    .sidebar-logo a { font-family: var(--font-display); font-size: 18px; font-weight: 800; color: var(--white); text-decoration: none; display: flex; align-items: center; gap: 8px; }
+    .sidebar-logo span { color: var(--amber); }
+    .sidebar-nav { flex: 1; padding: 16px 12px; overflow-y: auto; }
+    .nav-section-label { font-size: 10px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); padding: 12px 8px 6px; }
+    .nav-item { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 6px; color: var(--muted); text-decoration: none; font-size: 13px; font-weight: 500; transition: all .15s; margin-bottom: 2px; }
+    .nav-item:hover { background: var(--card-bg); color: var(--white); }
+    .nav-item.active { background: rgba(240,165,0,0.12); color: var(--amber); }
+    .nav-item .icon { font-size: 16px; width: 20px; text-align: center; }
+    .sidebar-footer { padding: 16px; border-top: 1px solid var(--border); }
+    .user-row { display: flex; align-items: center; gap: 10px; }
+    .user-avatar { width: 32px; height: 32px; border-radius: 50%; background: var(--amber); color: var(--navy); font-size: 12px; font-weight: 800; display: flex; align-items: center; justify-content: center; }
+    .user-name { font-size: 13px; font-weight: 600; color: var(--white); }
+    .user-plan { font-size: 11px; color: var(--muted); }
+
+    .main { display: flex; flex-direction: column; flex: 1; min-width: 0; height: 100vh; overflow-y: auto; }
+    .topbar { background: var(--navy-mid); border-bottom: 1px solid var(--border); padding: 0 24px; height: 56px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 10; }
+    .topbar-actions { display: flex; align-items: center; gap: 12px; }
+    .page-body { padding: 28px; flex: 1; }
+    .page-header { margin-bottom: 24px; }
+    .page-header h1 { font-size: 24px; font-weight: 700; margin-bottom: 4px; }
+    .page-header p { font-size: 14px; color: var(--muted); }
+
+    /* SEKMELİ NAVİGASYON */
+    .tab-bar { display: flex; gap: 4px; border-bottom: 1px solid var(--border); margin-bottom: 24px; }
+    .tab { padding: 10px 18px; font-size: 13px; font-weight: 600; color: var(--muted); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px; transition: all .15s; user-select: none; }
+    .tab:hover { color: var(--white); }
+    .tab.active { color: var(--amber); border-bottom-color: var(--amber); }
+
+    /* TAKİP EDİLEN İHALE DÖKÜMANLAR */
+    .ihale-kart {
+      background: var(--navy-mid); border: 1px solid var(--border);
+      border-radius: 10px; margin-bottom: 16px; overflow: hidden;
+    }
+    .kart-header {
+      padding: 16px 20px; display: flex; align-items: center; justify-content: space-between;
+      cursor: pointer; transition: background .15s; gap: 12px;
+    }
+    .kart-header:hover { background: rgba(255,255,255,0.02); }
+    .kart-baslik { font-size: 14px; font-weight: 600; color: var(--white); flex: 1; }
+    .kart-meta { font-size: 12px; color: var(--muted); margin-top: 3px; }
+    .kart-toggle { font-size: 18px; color: var(--muted); transition: transform .2s; flex-shrink: 0; }
+    .kart-toggle.acik { transform: rotate(90deg); }
+    .kart-body { border-top: 1px solid var(--border); padding: 16px 20px; display: none; }
+    .kart-body.acik { display: block; }
+
+    /* DÖKÜMAN SATIRI */
+    .dok-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 10px; }
+    .dok-item {
+      background: var(--card-bg); border: 1px solid var(--border); border-radius: 8px;
+      padding: 12px 14px; display: flex; align-items: flex-start; gap: 10px;
+      text-decoration: none; transition: border-color .15s;
+    }
+    .dok-item:hover { border-color: rgba(240,165,0,0.4); }
+    .dok-icon { font-size: 22px; flex-shrink: 0; margin-top: 1px; }
+    .dok-info { flex: 1; min-width: 0; }
+    .dok-adi { font-size: 13px; font-weight: 600; color: var(--white); word-break: break-word; margin-bottom: 3px; }
+    .dok-tur { font-size: 11px; color: var(--muted); }
+    .dok-badge { font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 10px; background: rgba(240,165,0,0.1); color: var(--amber); white-space: nowrap; }
+
+    /* BOŞ DURUM */
+    .empty-state { text-align: center; padding: 64px 24px; color: var(--muted); }
+    .empty-state .empty-icon { font-size: 48px; margin-bottom: 16px; }
+    .empty-state h3 { font-size: 18px; font-weight: 700; color: var(--white); margin-bottom: 8px; }
+    .empty-state p { font-size: 14px; line-height: 1.6; max-width: 380px; margin: 0 auto 24px; }
+
+    /* ARAMA */
+    .search-bar { position: relative; margin-bottom: 20px; }
+    .search-bar input { width: 100%; background: var(--navy-mid); border: 1px solid var(--border); color: var(--white); padding: 10px 16px 10px 40px; border-radius: 8px; font-size: 13px; outline: none; transition: border-color .15s; }
+    .search-bar input:focus { border-color: rgba(240,165,0,0.4); }
+    .search-bar::before { content: '🔍'; position: absolute; left: 12px; top: 50%; transform: translateY(-50%); font-size: 14px; pointer-events: none; }
+
+    /* EKAP LİNK BUTONU */
+    .btn-ekap { display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: 6px; font-size: 12px; font-weight: 600; background: rgba(255,255,255,0.05); color: var(--off-white); border: 1px solid var(--border); text-decoration: none; transition: all .15s; }
+    .btn-ekap:hover { border-color: rgba(255,255,255,.2); background: rgba(255,255,255,.08); }
+
+    .bilgi-kutu { background: rgba(240,165,0,0.07); border: 1px solid rgba(240,165,0,0.2); border-radius: 8px; padding: 12px 16px; font-size: 13px; color: var(--off-white); line-height: 1.6; margin-bottom: 20px; }
+
+    @media (max-width: 900px) {
+      .sidebar { display: none; }
+      .dok-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <a href="/"><span style="width:6px;height:6px;background:var(--amber);border-radius:50%;display:inline-block;animation:pulse 2s infinite;"></span>İhale<span>Platform</span></a>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">Genel</div>
+      <a href="dashboard" class="nav-item"><span class="icon">◉</span> Dashboard</a>
+      <a href="ihaleler" class="nav-item"><span class="icon">⊞</span> İhaleler</a>
+      <a href="takipte" class="nav-item"><span class="icon">☆</span> Takipte</a>
+      <a href="bildirimler" class="nav-item"><span class="icon">🔔</span> Bildirimler</a>
+      <div class="nav-section-label">Analiz</div>
+      <a href="#" class="nav-item"><span class="icon">📊</span> Rekabet Analizi</a>
+      <a href="uyumluluk" class="nav-item"><span class="icon">✓</span> Uyumluluk</a>
+      <a href="dokumanlar" class="nav-item active"><span class="icon">📁</span> Dökümanlar</a>
+      <div class="nav-section-label">Ayarlar</div>
+      <a href="profil" class="nav-item"><span class="icon">⚙</span> Profil & Filtreler</a>
+      <a href="fiyatlandirma_odeme_bolumu" class="nav-item"><span class="icon">💳</span> Abonelik</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-row">
+        <div class="user-avatar">—</div>
+        <div><div class="user-name">Yükleniyor...</div><div class="user-plan">—</div></div>
+      </div>
+    </div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <span style="font-size:15px;font-weight:600;">Dökümanlar</span>
+      <div class="topbar-actions">
+        <a href="takipte" class="action-btn" style="padding:7px 14px;font-size:12px;font-weight:600;border-radius:6px;border:1px solid var(--border);background:var(--card-bg);color:var(--white);text-decoration:none;">Takipte →</a>
+        <a href="fiyatlandirma_odeme_bolumu" class="btn btn-primary" style="padding:7px 16px;font-size:13px;">Pro'ya Geç ↑</a>
+      </div>
+    </div>
+
+    <div class="page-body">
+      <div class="page-header">
+        <h1>Dökümanlar</h1>
+        <p>Takip ettiğiniz ihalelerin dökümanlarını buradan görüntüleyin ve indirin.</p>
+      </div>
+
+      <div class="tab-bar">
+        <div class="tab active" onclick="sekmeAc('takip', this)">Takip Dökümanları</div>
+        <div class="tab" onclick="sekmeAc('teknik', this)">Teknik Şartnameler</div>
+        <div class="tab" onclick="sekmeAc('idari', this)">İdari Şartnameler</div>
+      </div>
+
+      <div id="panel-takip">
+        <div class="bilgi-kutu">
+          ℹ Dökümanlar EKAP'tan otomatik çekilir. Yeni ihaleler için dökümanlar 24 saat içinde güncellenir.
+          Döküman indirmek için EKAP hesabınızla giriş yapmanız gerekebilir.
+        </div>
+        <div class="search-bar">
+          <input type="text" id="dok-search" placeholder="Döküman veya ihale adı ara..." oninput="araFiltrele()" />
+        </div>
+        <div id="dok-icerik">
+          <div class="empty-state"><div class="empty-icon">⏳</div><p>Yükleniyor...</p></div>
+        </div>
+      </div>
+
+      <div id="panel-teknik" style="display:none;">
+        <div class="empty-state">
+          <div class="empty-icon">📋</div>
+          <h3>Teknik Şartnameler</h3>
+          <p>Takip ettiğiniz ihalelerin teknik şartnameleri burada listelenecek. Bu özellik yakında aktif olacak.</p>
+          <a href="takipte" style="display:inline-block;background:var(--amber);color:var(--navy);padding:10px 22px;border-radius:6px;font-size:13px;font-weight:700;text-decoration:none;">İhaleleri Takibe Al →</a>
+        </div>
+      </div>
+
+      <div id="panel-idari" style="display:none;">
+        <div class="empty-state">
+          <div class="empty-icon">📄</div>
+          <h3>İdari Şartnameler</h3>
+          <p>Takip ettiğiniz ihalelerin idari şartnameleri burada listelenecek. Bu özellik yakında aktif olacak.</p>
+          <a href="takipte" style="display:inline-block;background:var(--amber);color:var(--navy);padding:10px 22px;border-radius:6px;font-size:13px;font-weight:700;text-decoration:none;">İhaleleri Takibe Al →</a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="js/sidebar-user.js"></script>
+<script src="js/main.js"></script>
+<script src="js/takip.js"></script>
+<script>
+  const SB_URL = "https://lpgelwfoarhouollhwur.supabase.co";
+  const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxwZ2Vsd2ZvYXJob3VvbGxod3VyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIyMzI4MjAsImV4cCI6MjA5NzgwODgyMH0.GqTZkeoOAomuur4JSyW2pTR-8Zzg8OTv394JtP7DoXM";
+  const sb = window.supabase.createClient(SB_URL, SB_KEY);
+
+  let tumVeriler = []; // [{ihale, belgeler}]
+
+  function sekmeAc(id, el) {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    el.classList.add('active');
+    ['takip','teknik','idari'].forEach(p => {
+      document.getElementById('panel-'+p).style.display = p===id ? '' : 'none';
+    });
+  }
+
+  function dokIcon(tur) {
+    const t = (tur||'').toLowerCase();
+    if (t.includes('pdf')) return '📕';
+    if (t.includes('excel') || t.includes('xlsx') || t.includes('xls')) return '📗';
+    if (t.includes('word') || t.includes('docx') || t.includes('doc')) return '📘';
+    if (t.includes('zip') || t.includes('rar')) return '📦';
+    if (t.includes('teknik')) return '📋';
+    if (t.includes('idari')) return '📄';
+    if (t.includes('şartname')) return '📝';
+    return '📎';
+  }
+
+  function ihaleDokRender(item) {
+    const { ihale, belgeler } = item;
+    const liste = Array.isArray(belgeler) ? belgeler : [];
+    const ekap_id = ihale.ekap_id;
+
+    const ekapUrl = ekap_id
+      ? `https://ekap.kik.gov.tr/EKAP/ilandetay.aspx?ihale=${ekap_id}`
+      : null;
+
+    const dokContent = liste.length === 0
+      ? `<p style="font-size:13px;color:var(--muted);margin:0;">
+           Bu ihale için döküman kaydı bulunamadı.
+           ${ekapUrl ? `<a href="${ekapUrl}" target="_blank" rel="noopener" class="btn-ekap" style="margin-top:10px;display:inline-flex;">EKAP'ta Görüntüle ↗</a>` : ''}
+         </p>`
+      : `<div class="dok-grid">
+           ${liste.map(d => `
+             <a class="dok-item" href="${d.url||'#'}" ${d.url?'target="_blank" rel="noopener"':''}>
+               <span class="dok-icon">${dokIcon(d.tur || d.ad)}</span>
+               <div class="dok-info">
+                 <div class="dok-adi">${d.ad || d.baslik || 'Döküman'}</div>
+                 <div class="dok-tur">${d.tur || d.type || ''}</div>
+               </div>
+               ${d.url ? '<span style="font-size:10px;color:var(--muted);">↗</span>' : ''}
+             </a>
+           `).join('')}
+           ${ekapUrl ? `<a class="dok-item" href="${ekapUrl}" target="_blank" rel="noopener">
+             <span class="dok-icon">🌐</span>
+             <div class="dok-info"><div class="dok-adi">EKAP'ta Görüntüle</div><div class="dok-tur">Tüm dökümanlar için</div></div>
+             <span style="font-size:10px;color:var(--muted);">↗</span>
+           </a>` : ''}
+         </div>`;
+
+    const id = 'kart-'+ihale.id;
+    return `<div class="ihale-kart" data-baslik="${(ihale.baslik||'').toLowerCase()}">
+      <div class="kart-header" onclick="toggle('${id}')">
+        <div>
+          <div class="kart-baslik">${ihale.baslik||'—'}</div>
+          <div class="kart-meta">${ihale.idare||''}${ihale.il?' — '+ihale.il:''} &nbsp;·&nbsp; ${liste.length} döküman</div>
+        </div>
+        <span class="kart-toggle" id="tog-${id}">›</span>
+      </div>
+      <div class="kart-body" id="${id}">${dokContent}</div>
+    </div>`;
+  }
+
+  function toggle(id) {
+    const body = document.getElementById(id);
+    const tog = document.getElementById('tog-'+id);
+    const acik = body.classList.toggle('acik');
+    if (tog) tog.classList.toggle('acik', acik);
+  }
+
+  function araFiltrele() {
+    const q = document.getElementById('dok-search').value.toLowerCase().trim();
+    document.querySelectorAll('#dok-icerik .ihale-kart').forEach(el => {
+      el.style.display = (!q || el.dataset.baslik.includes(q)) ? '' : 'none';
+    });
+  }
+
+  async function yukle() {
+    const icerik = document.getElementById('dok-icerik');
+    const ids = Takip.liste();
+
+    if (ids.length === 0) {
+      icerik.innerHTML = `<div class="empty-state">
+        <div class="empty-icon">📁</div>
+        <h3>Takip listesi boş</h3>
+        <p>Dökümanları görmek için önce ihaleleri takip listesine ekleyin.</p>
+        <a href="ihaleler" style="display:inline-block;background:var(--amber);color:var(--navy);padding:10px 22px;border-radius:6px;font-size:13px;font-weight:700;text-decoration:none;">İhalelere Göz At →</a>
+      </div>`;
+      return;
+    }
+
+    const { data, error } = await sb
+      .from('ilanlar')
+      .select('id,ekap_id,baslik,idare,il,belgeler')
+      .in('id', ids);
+
+    if (error) {
+      icerik.innerHTML = `<div class="empty-state"><p style="color:var(--muted);">Hata: ${error.message}</p></div>`;
+      return;
+    }
+
+    tumVeriler = (data||[]).map(ihale => ({
+      ihale,
+      belgeler: ihale.belgeler || []
+    }));
+
+    if (tumVeriler.length === 0) {
+      icerik.innerHTML = `<div class="empty-state">
+        <div class="empty-icon">📁</div>
+        <h3>Veri bulunamadı</h3>
+        <p>Takip listenizde kayıtlı ihaleler bulunamadı.</p>
+      </div>`;
+      return;
+    }
+
+    icerik.innerHTML = tumVeriler.map(ihaleDokRender).join('');
+  }
+
+  yukle();
+</script>
+</body>
+</html>
