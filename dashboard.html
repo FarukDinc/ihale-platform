@@ -688,40 +688,26 @@
 
       <!-- FILTERS -->
       <div class="filters-bar">
-        <select class="filter-select">
-          <option>Tüm Durumlar</option>
-          <option>Açık</option>
-          <option>Son 3 Gün</option>
-          <option>Tamamlandı</option>
+        <select class="filter-select" id="f-durum" onchange="filtrele()">
+          <option value="">Tüm Durumlar</option>
+          <option value="aktif">Açık</option>
+          <option value="kapali">Kapandı</option>
         </select>
-        <select class="filter-select">
-          <option>Tüm Sektörler</option>
-          <option>Sağlık Teknik</option>
-          <option>Su / Altyapı</option>
-          <option>Enerji</option>
-          <option>İnşaat</option>
+        <select class="filter-select" id="f-il" onchange="filtrele()">
+          <option value="">Tüm İller</option>
         </select>
-        <select class="filter-select">
-          <option>Tüm İller</option>
-          <option>Ankara</option>
-          <option>İstanbul</option>
-          <option>İzmir</option>
+        <select class="filter-select" id="f-bedel" onchange="filtrele()">
+          <option value="">Bütçe (Tümü)</option>
+          <option value="1000000">1M TL üzeri</option>
+          <option value="5000000">5M TL üzeri</option>
+          <option value="20000000">20M TL üzeri</option>
+          <option value="43142132">43M TL üzeri</option>
         </select>
-        <select class="filter-select">
-          <option>Bütçe (Tümü)</option>
-          <option>1M TL altı</option>
-          <option>1M – 5M TL</option>
-          <option>5M – 20M TL</option>
-          <option>20M TL üzeri</option>
+        <select class="filter-select" id="f-sort" onchange="filtrele()">
+          <option value="son_teklif">Son Teklif ↑</option>
+          <option value="maliyet_desc">Yak. Maliyet ↓</option>
+          <option value="maliyet_asc">Yak. Maliyet ↑</option>
         </select>
-
-        <div class="filter-chip">
-          Ankara <span class="remove">×</span>
-        </div>
-        <div class="filter-chip">
-          Sağlık Teknik <span class="remove">×</span>
-        </div>
-
         <span class="results-count" id="results-count">— sonuç</span>
       </div>
 
@@ -952,25 +938,56 @@
     const tbody = document.getElementById('ihale-tbody');
     tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:32px; color:var(--muted);">Yükleniyor...</td></tr>`;
 
-    const { data, error } = await sb
-      .from('ilanlar')
-      .select('id, ekap_id, baslik, idare, il, tur, durum, son_teklif_tarihi, tahmini_bedel, yaklasik_maliyet_min, yaklasik_maliyet_max, itiraz_bedeli')
-      .eq('durum', 'aktif')
-      .order('son_teklif_tarihi', { ascending: true })
-      .limit(10);
+    const durum = document.getElementById('f-durum').value;
+    const il    = document.getElementById('f-il').value;
+    const bedel = parseInt(document.getElementById('f-bedel').value) || 0;
+    const sort  = document.getElementById('f-sort').value;
+    const arama = document.getElementById('main-search').value.trim();
+
+    let query = sb.from('ilanlar')
+      .select('id, ekap_id, baslik, idare, il, tur, durum, son_teklif_tarihi, tahmini_bedel, yaklasik_maliyet_min, yaklasik_maliyet_max, itiraz_bedeli', { count: 'exact' });
+
+    if (durum) query = query.eq('durum', durum);
+    else       query = query.eq('durum', 'aktif');
+    if (il)    query = query.eq('il', il);
+    if (bedel) query = query.gte('yaklasik_maliyet_min', bedel);
+    if (arama) query = query.or(`baslik.ilike.%${arama}%,idare.ilike.%${arama}%`);
+
+    if (sort === 'maliyet_desc') query = query.order('yaklasik_maliyet_min', { ascending: false, nullsFirst: false });
+    else if (sort === 'maliyet_asc') query = query.order('yaklasik_maliyet_min', { ascending: true, nullsFirst: false });
+    else query = query.order('son_teklif_tarihi', { ascending: true });
+
+    query = query.limit(25);
+
+    const { data, error, count } = await query;
 
     if (error || !data || data.length === 0) {
       tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:32px; color:var(--muted);">
-        ${error ? 'Bağlantı hatası: ' + error.message : 'Henüz ilan bulunmuyor.'}
+        ${error ? 'Bağlantı hatası: ' + error.message : 'Filtrelerinize uyan ihale bulunamadı.'}
       </td></tr>`;
+      document.getElementById('results-count').textContent = '0 sonuç';
       return;
     }
 
     yukluIlanlar = data;
     tbody.innerHTML = data.map(satirOlustur).join('');
 
+    const toplam = count ?? data.length;
+    document.getElementById('results-count').textContent = `${toplam.toLocaleString('tr')} sonuç`;
     const footer = document.querySelector('.table-footer span');
-    if (footer) footer.textContent = `${data.length} ihale gösteriliyor`;
+    if (footer) footer.textContent = `${data.length} / ${toplam.toLocaleString('tr')} ihale gösteriliyor`;
+  }
+
+  let aramaTimer;
+  function filtrele() { ilanlariYukle(); }
+
+  async function ilDropdownDoldur() {
+    const { data } = await sb.from('ilanlar').select('il').not('il','is',null).order('il');
+    if (!data) return;
+    const iller = [...new Set(data.map(r => r.il).filter(Boolean))].sort((a,b) => a.localeCompare(b,'tr'));
+    const sel = document.getElementById('f-il');
+    sel.innerHTML = '<option value="">Tüm İller</option>' +
+      iller.map(il => `<option value="${il}">${il}</option>`).join('');
   }
 
   function csvIndir() {
@@ -1066,8 +1083,15 @@
     el.addEventListener('click', () => el.closest('.filter-chip').remove());
   });
 
-  // ── Sayfa yüklenince ilanları çek ───────────────────
+  // ── Topbar search — debounce ─────────────────────────
+  document.getElementById('main-search').addEventListener('input', () => {
+    clearTimeout(aramaTimer);
+    aramaTimer = setTimeout(filtrele, 400);
+  });
+
+  // ── Sayfa yüklenince ─────────────────────────────────
   kpiYukle();
+  ilDropdownDoldur();
   profilCek().then(() => ilanlariYukle());
 </script>
 </body>
