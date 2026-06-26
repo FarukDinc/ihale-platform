@@ -1,21 +1,29 @@
 """
 EKAP Scraper - Playwright ile Token Yakalama Yaklaşımı
-Google Colab'da çalışan yöntemi prod scripte dönüştürüyoruz.
+EKAP'ın kendi API isteğini havada yakalar, Supabase'e yazar.
 
 Kurulum:
-    pip install playwright
+    pip install playwright supabase
     playwright install chromium
     playwright install-deps
 
 Çalıştırma:
     python ekap_scraper.py
+
+Env (GitHub Actions secrets veya .env):
+    SUPABASE_URL=https://xxx.supabase.co
+    SUPABASE_SERVICE_KEY=eyJ...
 """
 
 import asyncio
 import json
-import time
-from datetime import datetime
+import os
+from datetime import datetime, timezone
 from playwright.async_api import async_playwright
+from supabase import create_client
+
+SUPABASE_URL = os.environ.get("SUPABASE_URL", "https://lpgelwfoarhouollhwur.supabase.co")
+SUPABASE_KEY = os.environ.get("SUPABASE_SERVICE_KEY", "")
 
 # ── Arama listesi ─────────────────────────────────────────
 SEKTOR_ARAMA_LISTESI = [
@@ -117,36 +125,73 @@ async def tum_sonuclari_cek(context, headers, payload, url, arama_metni):
     return tum_liste
 
 
-# ── Veriyi temizle ────────────────────────────────────────
+# ── Veriyi temizle & Supabase formatına dönüştür ──────────
+def tur_donustur(tip):
+    eslesme = {
+        "Mal Alımı": "Mal", "Hizmet Alımı": "Hizmet",
+        "Yapım İşi": "Yapım", "Danışmanlık": "Danışmanlık",
+    }
+    for k, v in eslesme.items():
+        if k.lower() in (tip or "").lower():
+            return v
+    return tip or "Diğer"
+
+def durum_donustur(durum):
+    if not durum: return "aktif"
+    d = durum.lower()
+    if "açık" in d or "devam" in d or "katılım" in d: return "aktif"
+    if "sonuçland" in d or "tamamland" in d: return "sonuclandi"
+    return "aktif"
+
 def ihaleleri_isle(ham_liste):
+    simdi = datetime.now(timezone.utc).isoformat()
     return [{
-        "id":         i.get("id"),
-        "ikn":        i.get("ikn"),
-        "baslik":     i.get("ihaleAdi", "").strip(),
-        "idare":      i.get("idareAdi", "").strip(),
-        "il":         i.get("ihaleIlAdi", "").strip(),
-        "tur":        i.get("ihaleTipAciklama", "").strip(),
-        "durum":      i.get("ihaleDurumAciklama", "").strip(),
-        "tarih":      i.get("ihaleTarihSaat"),
-    } for i in ham_liste]
+        "ekap_id":           str(i.get("ikn") or i.get("id") or ""),
+        "ikn":               str(i.get("ikn") or ""),
+        "baslik":            (i.get("ihaleAdi") or "").strip(),
+        "idare":             (i.get("idareAdi") or "").strip(),
+        "il":                (i.get("ihaleIlAdi") or "").strip(),
+        "tur":               tur_donustur(i.get("ihaleTipAciklama")),
+        "durum":             durum_donustur(i.get("ihaleDurumAciklama")),
+        "son_teklif_tarihi": i.get("ihaleTarihSaat"),
+        "kaynak":            "EKAP",
+        "olusturulma":       simdi,
+    } for i in ham_liste if i.get("ihaleAdi")]
 
 
 def tekilleştir(liste):
     goruldu, tekil = set(), []
     for ihale in liste:
-        anahtar = ihale.get("ikn") or ihale.get("id")
-        if anahtar not in goruldu:
+        anahtar = ihale.get("ikn") or ihale.get("ekap_id")
+        if anahtar and anahtar not in goruldu:
             goruldu.add(anahtar)
             tekil.append(ihale)
     return tekil
 
 
-def kaydet(liste):
-    dosya = f"ekap_ihaleler_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
-    with open(dosya, "w", encoding="utf-8") as f:
-        json.dump(liste, f, ensure_ascii=False, indent=2)
-    print(f"\n  💾 {len(liste)} ihale → '{dosya}'")
-    return dosya
+def supabase_yaz(liste):
+    if not SUPABASE_KEY:
+        print("⚠ SUPABASE_SERVICE_KEY yok, JSON'a kaydediliyor...")
+        dosya = f"ekap_ihaleler_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+        with open(dosya, "w", encoding="utf-8") as f:
+            json.dump(liste, f, ensure_ascii=False, indent=2)
+        print(f"  💾 {len(liste)} ihale → '{dosya}'")
+        return
+
+    sb = create_client(SUPABASE_URL, SUPABASE_KEY)
+    toplam_eklendi = 0
+    batch = 50
+
+    for i in range(0, len(liste), batch):
+        parca = liste[i:i+batch]
+        try:
+            sb.table("ilanlar").upsert(parca, on_conflict="ekap_id").execute()
+            toplam_eklendi += len(parca)
+            print(f"  ✓ {toplam_eklendi}/{len(liste)} Supabase'e yazıldı")
+        except Exception as e:
+            print(f"  ✗ Yazma hatası: {e}")
+
+    print(f"\n✅ Toplam {toplam_eklendi} ihale Supabase'e aktarıldı")
 
 
 def ozet(liste):
@@ -209,9 +254,8 @@ async def main():
     print(f"\n✓ {len(tum_ham)} kayıt → {len(tekil)} tekil")
 
     if tekil:
-        kaydet(tekil)
         ozet(tekil)
-        print("\n✅ Test başarılı! Sonraki adım: Supabase kurulumu")
+        supabase_yaz(tekil)
     else:
         print("❌ Veri çekilemedi.")
 

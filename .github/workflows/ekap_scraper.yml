@@ -1,0 +1,31 @@
+name: EKAP Scraper
+
+on:
+  schedule:
+    - cron: '0 2 * * *'   # Her gece saat 05:00 TR (UTC+3 = UTC 02:00)
+  workflow_dispatch:        # Manuel tetikleme
+
+jobs:
+  scrape:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Python kur
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Bağımlılıkları yükle
+        run: |
+          pip install playwright supabase
+          playwright install chromium
+          playwright install-deps
+
+      - name: EKAP Scraper çalıştır
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+        run: python backend/ekap_scraper.py
