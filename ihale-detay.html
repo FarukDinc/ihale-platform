@@ -283,6 +283,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/api.js"></script>
+<script src="js/uyum.js"></script>
 <script>
   const SUPABASE_URL = "https://lpgelwfoarhouollhwur.supabase.co";
   const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxwZ2Vsd2ZvYXJob3VvbGxod3VyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIyMzI4MjAsImV4cCI6MjA5NzgwODgyMH0.GqTZkeoOAomuur4JSyW2pTR-8Zzg8OTv394JtP7DoXM";
@@ -321,6 +322,13 @@
     return `₺${Number(b).toLocaleString('tr')}`;
   }
 
+  // İKN'den (2026/1102593) EKAP detay linki üret
+  function ekapLink(ikn) {
+    if (!ikn || !ikn.includes('/')) return 'https://ekap.kik.gov.tr';
+    const [yil, sayi] = ikn.split('/');
+    return `https://ekapv2.kik.gov.tr/ekap/ihale-detay/${yil}/${sayi}`;
+  }
+
   function gunHesapla(bitis) {
     if (!bitis) return null;
     return Math.ceil((new Date(bitis) - new Date()) / 86400000);
@@ -336,6 +344,7 @@
 
   let mevcutIhale = null;
   let takipte = false;
+  let kullaniciProfil = null;
 
   async function ihaleYukle() {
     if (!ihaleId) {
@@ -357,6 +366,7 @@
     }
 
     mevcutIhale = data;
+    kullaniciProfil = await Uyum.profilCek(sb);
     sayfaOlustur(data);
     benzerIhaleler(data);
   }
@@ -369,7 +379,7 @@
   }
 
   function sayfaOlustur(d) {
-    const uyum = Math.floor(Math.random() * 30 + 65);
+    const uyum = Uyum.hesapla(d, kullaniciProfil);
     const gun = gunHesapla(d.son_teklif_tarihi);
     const belgeler = Array.isArray(d.belgeler) ? d.belgeler : [];
 
@@ -392,7 +402,7 @@
         <div class="detay-actions">
           <button class="btn-takip" id="main-takip" onclick="takibeAl()">☆ Takibe Al</button>
           <a class="btn-takip" href="teklif-olustur?ihale_id=${d.id}" style="background:linear-gradient(135deg,#F0A500,#C98A00);display:inline-flex;align-items:center;gap:6px;text-decoration:none;">✏ Teklif Hazırla</a>
-          ${d.ekap_id ? `<a class="btn-ekap" href="https://ekap.kik.gov.tr" target="_blank" rel="noopener">↗ EKAP'ta Görüntüle</a>` : ''}
+          ${d.ikn ? `<a class="btn-ekap" href="${ekapLink(d.ikn)}" target="_blank" rel="noopener">↗ EKAP'ta Görüntüle</a>` : ''}
         </div>
       </div>
 
@@ -498,7 +508,7 @@
                   <div class="belge-tarih">${b.tarih ? tarihFormatla(b.tarih) : ''}</div>
                 </div>
               </div>
-              <a class="btn-ekap" href="https://ekap.kik.gov.tr/EKAP/" target="_blank" rel="noopener">↓ EKAP'tan İndir</a>
+              <a class="btn-ekap" href="${ekapLink(d.ikn)}" target="_blank" rel="noopener">↓ EKAP'tan İndir</a>
             </div>`).join('') : `
             <div style="color:var(--muted);font-size:13px;padding:8px 0;">
               Bu ihale için belge listesi bulunamadı. Dokümanlar EKAP'ta giriş yapılarak indirilebilir.
