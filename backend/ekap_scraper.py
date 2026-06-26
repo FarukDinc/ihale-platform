@@ -60,10 +60,13 @@ async def ekap_token_yakala(page, context):
     page.on("request", handle_request)
 
     print("  → EKAP arama sayfası açılıyor...")
-    await page.goto(EKAP_SEARCH_URL, wait_until="networkidle", timeout=30000)
+    try:
+        await page.goto(EKAP_SEARCH_URL, wait_until="load", timeout=60000)
+    except Exception as e:
+        print(f"  ⚠ Sayfa yüklemesi: {e}")
 
-    # İlk arama tokenını bekle (max 20 sn)
-    for _ in range(20):
+    # İlk arama tokenını bekle (max 40 sn)
+    for _ in range(40):
         await page.wait_for_timeout(1000)
         if captured["headers"] and captured["payload"]:
             print("  ✓ Token yakalandı")
