@@ -278,7 +278,7 @@
       <div class="filter-bar">
         <div class="filter-group">
           <label>Arama</label>
-          <input type="text" class="filter-input" id="f-arama" placeholder="İhale adı veya idare..." />
+          <input type="text" class="filter-input" id="f-arama" placeholder="İhale adı, idare, OKAS, yer veya ilan metni..." />
         </div>
         <div class="filter-group">
           <label>İl</label>
@@ -553,7 +553,7 @@
 
     let query = sb.from('ilanlar').select('id,ekap_id,baslik,idare,il,tur,durum,son_teklif_tarihi,tahmini_bedel,yaklasik_maliyet_min,yaklasik_maliyet_max,itiraz_bedeli', { count: 'exact' });
 
-    if (arama)    query = query.or(`baslik.ilike.%${arama}%,idare.ilike.%${arama}%`);
+    if (arama)    query = query.or(`baslik.ilike.%${arama}%,idare.ilike.%${arama}%,okas.ilike.%${arama}%,isin_yapilacagi_yer.ilike.%${arama}%,ilan_metni.ilike.%${arama}%`);
     if (il)       query = query.eq('il', il);
     if (tur)      query = query.eq('tur', tur);
     if (durum)    query = query.eq('durum', durum);
