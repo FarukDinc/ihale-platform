@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bildirimler — İhalePlatform</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    body { background: var(--navy); }
+    .app { display: flex; min-height: 100vh; }
+
+    /* SIDEBAR */
+    .sidebar {
+      background: var(--navy-mid); border-right: 1px solid var(--border);
+      width: 240px; flex-shrink: 0; position: sticky; top: 0;
+      height: 100vh; display: flex; flex-direction: column; overflow-y: auto;
+    }
+    .sidebar-logo { padding: 20px 20px 16px; border-bottom: 1px solid var(--border); }
+    .sidebar-logo a {
+      font-family: var(--font-display); font-size: 18px; font-weight: 800;
+      color: var(--white); text-decoration: none; display: flex; align-items: center; gap: 8px;
+    }
+    .sidebar-logo span { color: var(--amber); }
+    .sidebar-nav { flex: 1; padding: 16px 12px; overflow-y: auto; }
+    .nav-section-label {
+      font-size: 10px; font-weight: 700; letter-spacing: .1em;
+      text-transform: uppercase; color: var(--muted); padding: 12px 8px 6px;
+    }
+    .nav-item {
+      display: flex; align-items: center; gap: 10px; padding: 9px 12px;
+      border-radius: 6px; color: var(--muted); text-decoration: none;
+      font-size: 13px; font-weight: 500; transition: all .15s; margin-bottom: 2px;
+    }
+    .nav-item:hover { background: var(--card-bg); color: var(--white); }
+    .nav-item.active { background: rgba(240,165,0,0.12); color: var(--amber); }
+    .nav-item .icon { font-size: 16px; width: 20px; text-align: center; }
+    .nav-badge {
+      margin-left: auto; background: var(--amber); color: var(--navy);
+      font-size: 10px; font-weight: 800; padding: 2px 6px; border-radius: 10px;
+    }
+    .sidebar-footer { padding: 16px; border-top: 1px solid var(--border); }
+    .user-row { display: flex; align-items: center; gap: 10px; }
+    .user-avatar {
+      width: 32px; height: 32px; border-radius: 50%;
+      background: var(--amber); color: var(--navy);
+      font-size: 12px; font-weight: 800; display: flex; align-items: center; justify-content: center;
+    }
+    .user-name { font-size: 13px; font-weight: 600; color: var(--white); }
+    .user-plan { font-size: 11px; color: var(--muted); }
+
+    /* MAIN */
+    .main { display: flex; flex-direction: column; flex: 1; min-width: 0; height: 100vh; overflow-y: auto; }
+
+    /* TOPBAR */
+    .topbar {
+      background: var(--navy-mid); border-bottom: 1px solid var(--border);
+      padding: 0 24px; height: 56px; display: flex; align-items: center;
+      justify-content: space-between; position: sticky; top: 0; z-index: 10;
+    }
+    .topbar-actions { display: flex; align-items: center; gap: 12px; }
+
+    /* PAGE */
+    .page-body { padding: 28px; flex: 1; }
+    .page-header { margin-bottom: 24px; }
+    .page-header h1 { font-size: 24px; font-weight: 700; margin-bottom: 4px; }
+    .page-header p { font-size: 14px; color: var(--muted); }
+
+    /* NOTIF LIST */
+    .notif-toolbar {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 16px; flex-wrap: wrap; gap: 10px;
+    }
+    .notif-tabs { display: flex; gap: 4px; }
+    .notif-tab {
+      padding: 6px 14px; border-radius: 6px; font-size: 13px; font-weight: 500;
+      cursor: pointer; border: 1px solid var(--border); background: none; color: var(--muted);
+      transition: all .15s;
+    }
+    .notif-tab.active { background: rgba(240,165,0,0.1); color: var(--amber); border-color: rgba(240,165,0,0.3); }
+    .btn-tumunu-oku {
+      padding: 6px 14px; border-radius: 6px; font-size: 12px; font-weight: 600;
+      cursor: pointer; border: 1px solid var(--border); background: var(--card-bg);
+      color: var(--muted); transition: all .15s;
+    }
+    .btn-tumunu-oku:hover { color: var(--white); }
+
+    .notif-list { display: flex; flex-direction: column; gap: 2px; }
+
+    .notif-item {
+      display: flex; align-items: flex-start; gap: 14px;
+      padding: 16px 20px; border-radius: 8px;
+      background: var(--navy-mid); border: 1px solid var(--border);
+      cursor: pointer; transition: background .15s; position: relative;
+    }
+    .notif-item:hover { background: var(--card-bg); }
+    .notif-item.okunmamis { border-left: 3px solid var(--amber); }
+    .notif-item.okunmamis::before {
+      content: ''; position: absolute; top: 18px; right: 16px;
+      width: 7px; height: 7px; border-radius: 50%; background: var(--amber);
+    }
+
+    .notif-ikon {
+      width: 38px; height: 38px; border-radius: 50%; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center; font-size: 18px;
+    }
+    .notif-ikon.yeni     { background: rgba(240,165,0,0.1); }
+    .notif-ikon.songun   { background: rgba(244,67,54,0.1); }
+    .notif-ikon.sistem   { background: rgba(99,102,241,0.1); }
+    .notif-ikon.basari   { background: rgba(76,175,80,0.1); }
+
+    .notif-icerik { flex: 1; min-width: 0; }
+    .notif-baslik { font-size: 13px; font-weight: 600; color: var(--white); margin-bottom: 4px; }
+    .notif-item.okunmus .notif-baslik { font-weight: 500; color: var(--off-white); }
+    .notif-aciklama { font-size: 12px; color: var(--muted); line-height: 1.5; }
+    .notif-zaman { font-size: 11px; color: var(--muted); margin-top: 6px; }
+    .notif-link { color: var(--amber); text-decoration: none; font-size: 12px; font-weight: 600; }
+    .notif-link:hover { text-decoration: underline; }
+
+    /* BOŞLUK */
+    .notif-bos {
+      text-align: center; padding: 64px 24px; color: var(--muted);
+    }
+    .notif-bos .bos-ikon { font-size: 40px; margin-bottom: 12px; }
+    .notif-bos p { font-size: 14px; }
+
+    /* AYARLAR KUTUSU */
+    .ayar-kart {
+      background: var(--navy-mid); border: 1px solid var(--border);
+      border-radius: var(--radius-md); padding: 20px 24px; margin-top: 32px;
+    }
+    .ayar-kart h3 { font-size: 15px; font-weight: 700; margin-bottom: 16px; }
+    .ayar-satir {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,0.04);
+    }
+    .ayar-satir:last-child { border-bottom: none; }
+    .ayar-etiket { font-size: 13px; }
+    .ayar-aciklama { font-size: 11px; color: var(--muted); margin-top: 2px; }
+    .toggle-pill {
+      width: 40px; height: 22px; border-radius: 11px; background: var(--border);
+      position: relative; cursor: pointer; transition: background .2s; flex-shrink: 0;
+    }
+    .toggle-pill.acik { background: var(--amber); }
+    .toggle-pill::after {
+      content: ''; position: absolute; top: 3px; left: 3px;
+      width: 16px; height: 16px; border-radius: 50%; background: var(--white);
+      transition: transform .2s;
+    }
+    .toggle-pill.acik::after { transform: translateX(18px); }
+
+    @media (max-width: 900px) { .sidebar { display: none; } }
+  </style>
+</head>
+<body>
+<div class="app">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <a href="/">
+        <span style="width:6px;height:6px;background:var(--amber);border-radius:50%;display:inline-block;animation:pulse 2s infinite;"></span>
+        İhale<span>Platform</span>
+      </a>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">Genel</div>
+      <a href="dashboard" class="nav-item"><span class="icon">◉</span> Dashboard</a>
+      <a href="ihaleler" class="nav-item"><span class="icon">⊞</span> İhaleler</a>
+      <a href="takipte" class="nav-item"><span class="icon">☆</span> Takipte</a>
+      <a href="bildirimler" class="nav-item active">
+        <span class="icon">🔔</span> Bildirimler
+        <span class="nav-badge" id="sb-okunmamis">0</span>
+      </a>
+      <div class="nav-section-label">Analiz</div>
+      <a href="#" class="nav-item"><span class="icon">📊</span> Rekabet Analizi</a>
+      <a href="#" class="nav-item"><span class="icon">✓</span> Uyumluluk</a>
+      <a href="#" class="nav-item"><span class="icon">📁</span> Dökümanlar</a>
+      <div class="nav-section-label">Ayarlar</div>
+      <a href="profil" class="nav-item"><span class="icon">⚙</span> Profil & Filtreler</a>
+      <a href="fiyatlandirma_odeme_bolumu" class="nav-item"><span class="icon">💳</span> Abonelik</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-row">
+        <div class="user-avatar">FD</div>
+        <div>
+          <div class="user-name">Faruk D.</div>
+          <div class="user-plan">Ücretsiz Plan</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <div class="main">
+    <div class="topbar">
+      <span style="font-size:15px; font-weight:600;">Bildirimler</span>
+      <div class="topbar-actions">
+        <a href="/" class="btn btn-primary" style="padding:7px 16px; font-size:13px;">Pro'ya Geç ↑</a>
+      </div>
+    </div>
+
+    <div class="page-body">
+      <div class="page-header">
+        <h1>Bildirimler</h1>
+        <p>Takip ettiğiniz ihaleler ve sistem bildirimleri.</p>
+      </div>
+
+      <div class="notif-toolbar">
+        <div class="notif-tabs">
+          <button class="notif-tab active" onclick="sekmeGoster('hepsi', this)">Tümü</button>
+          <button class="notif-tab" onclick="sekmeGoster('okunmamis', this)">Okunmamış <span id="tab-badge" style="background:var(--amber);color:var(--navy);font-size:10px;font-weight:700;padding:1px 5px;border-radius:10px;margin-left:4px;">0</span></button>
+          <button class="notif-tab" onclick="sekmeGoster('ihale', this)">İhale</button>
+          <button class="notif-tab" onclick="sekmeGoster('sistem', this)">Sistem</button>
+        </div>
+        <button class="btn-tumunu-oku" onclick="tumunuOku()">Tümünü okundu işaretle</button>
+      </div>
+
+      <div class="notif-list" id="notif-list"></div>
+
+      <!-- BİLDİRİM AYARLARI -->
+      <div class="ayar-kart">
+        <h3>Bildirim Tercihleri</h3>
+        <div class="ayar-satir">
+          <div>
+            <div class="ayar-etiket">Yeni İhale Bildirimi</div>
+            <div class="ayar-aciklama">Profilinize uygun yeni ihale eklendiğinde bildir</div>
+          </div>
+          <div class="toggle-pill acik" onclick="this.classList.toggle('acik')" title="Aç/Kapat"></div>
+        </div>
+        <div class="ayar-satir">
+          <div>
+            <div class="ayar-etiket">Son Teklif Tarihi Hatırlatıcı</div>
+            <div class="ayar-aciklama">Takip ettiğiniz ihalelerde 3 gün kala bildir</div>
+          </div>
+          <div class="toggle-pill acik" onclick="this.classList.toggle('acik')"></div>
+        </div>
+        <div class="ayar-satir">
+          <div>
+            <div class="ayar-etiket">E-posta Özeti</div>
+            <div class="ayar-aciklama">Her sabah günlük ihale özeti gönder</div>
+          </div>
+          <div class="toggle-pill" onclick="this.classList.toggle('acik')"></div>
+        </div>
+        <div class="ayar-satir">
+          <div>
+            <div class="ayar-etiket">Rekabet Uyarısı</div>
+            <div class="ayar-aciklama">Rakip firma aynı ihaleye katıldığında bildir <span style="font-size:10px;background:rgba(240,165,0,0.1);color:var(--amber);padding:1px 6px;border-radius:10px;font-weight:600;">PRO</span></div>
+          </div>
+          <div class="toggle-pill" onclick="this.classList.toggle('acik')" style="opacity:0.4;pointer-events:none;"></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="js/main.js"></script>
+<script src="js/takip.js"></script>
+<script>
+  const SUPABASE_URL = "https://lpgelwfoarhouollhwur.supabase.co";
+  const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxwZ2Vsd2ZvYXJob3VvbGxod3VyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIyMzI4MjAsImV4cCI6MjA5NzgwODgyMH0.GqTZkeoOAomuur4JSyW2pTR-8Zzg8OTv394JtP7DoXM";
+  const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+  const tarihFormatla = (iso) => {
+    if (!iso) return '';
+    const d = new Date(iso);
+    const fark = Math.floor((Date.now() - d) / 60000);
+    if (fark < 1)   return 'Az önce';
+    if (fark < 60)  return `${fark} dakika önce`;
+    if (fark < 1440) return `${Math.floor(fark/60)} saat önce`;
+    return `${Math.floor(fark/1440)} gün önce`;
+  };
+
+  // Takip listesinden bildirimleri üret + sistem bildirimleri
+  async function bildirimleriYukle() {
+    const takipIds = Takip.liste();
+    let bildirimler = [];
+
+    // Sistem bildirimleri (sabit örnek — ileride DB'den)
+    bildirimler.push({
+      id: 'sys-1', tip: 'sistem', okunmus: false,
+      ikon: '🚀', ikonKlass: 'sistem',
+      baslik: 'İhalePlatform\'a hoş geldiniz!',
+      aciklama: 'Takip listenize ihale ekleyerek bildirimleri aktifleştirin. Profil sayfasından sektörlerinizi seçin.',
+      zaman: new Date(Date.now() - 2*3600000).toISOString(),
+      link: null,
+    });
+    bildirimler.push({
+      id: 'sys-2', tip: 'sistem', okunmus: true,
+      ikon: '⚙', ikonKlass: 'sistem',
+      baslik: 'EKAP entegrasyonu aktif',
+      aciklama: 'Tüm Türkiye kamu ihaleleri otomatik olarak sisteme alınıyor.',
+      zaman: new Date(Date.now() - 24*3600000).toISOString(),
+      link: null,
+    });
+
+    // Takip edilen ihalelerin son tarih uyarıları
+    if (takipIds.length > 0) {
+      const { data } = await sb.from('ilanlar')
+        .select('id, baslik, son_teklif_tarihi, durum')
+        .in('id', takipIds)
+        .eq('durum', 'aktif');
+
+      if (data) {
+        const simdi = new Date();
+        data.forEach(ilan => {
+          if (!ilan.son_teklif_tarihi) return;
+          const kalan = Math.ceil((new Date(ilan.son_teklif_tarihi) - simdi) / 86400000);
+          if (kalan <= 7 && kalan >= 0) {
+            bildirimler.push({
+              id: 'son-' + ilan.id, tip: 'ihale', okunmus: false,
+              ikon: '⏰', ikonKlass: 'songun',
+              baslik: kalan === 0 ? 'Bugün son gün!' : `${kalan} gün kaldı`,
+              aciklama: ilan.baslik,
+              zaman: new Date().toISOString(),
+              link: `ihale-detay?id=${ilan.id}`,
+            });
+          } else if (kalan > 7) {
+            bildirimler.push({
+              id: 'takip-' + ilan.id, tip: 'ihale', okunmus: true,
+              ikon: '☆', ikonKlass: 'yeni',
+              baslik: 'Takip ettiğiniz ihale açık',
+              aciklama: ilan.baslik + ` — ${kalan} gün kaldı`,
+              zaman: new Date(Date.now() - Math.random()*3*86400000).toISOString(),
+              link: `ihale-detay?id=${ilan.id}`,
+            });
+          }
+        });
+      }
+    }
+
+    // Tarihe göre sırala (en yeni önce)
+    bildirimler.sort((a, b) => new Date(b.zaman) - new Date(a.zaman));
+
+    window._bildirimler = bildirimler;
+    render('hepsi');
+  }
+
+  function render(filtre) {
+    const list = document.getElementById('notif-list');
+    let gorunur = window._bildirimler || [];
+    if (filtre === 'okunmamis') gorunur = gorunur.filter(b => !b.okunmus);
+    if (filtre === 'ihale')    gorunur = gorunur.filter(b => b.tip === 'ihale');
+    if (filtre === 'sistem')   gorunur = gorunur.filter(b => b.tip === 'sistem');
+
+    if (gorunur.length === 0) {
+      list.innerHTML = `<div class="notif-bos"><div class="bos-ikon">🔕</div><p>Gösterilecek bildirim yok.</p></div>`;
+      return;
+    }
+
+    list.innerHTML = gorunur.map(b => `
+      <div class="notif-item ${b.okunmus ? 'okunmus' : 'okunmamis'}" id="notif-${b.id}" onclick="okunduIsaretle('${b.id}')">
+        <div class="notif-ikon ${b.ikonKlass}">${b.ikon}</div>
+        <div class="notif-icerik">
+          <div class="notif-baslik">${b.baslik}</div>
+          <div class="notif-aciklama">${b.aciklama}</div>
+          ${b.link ? `<a class="notif-link" href="${b.link}" onclick="event.stopPropagation()">İhaleye Git →</a>` : ''}
+          <div class="notif-zaman">${tarihFormatla(b.zaman)}</div>
+        </div>
+      </div>`).join('');
+
+    const okunmamisSayi = (window._bildirimler || []).filter(b => !b.okunmus).length;
+    const el = document.getElementById('tab-badge');
+    if (el) el.textContent = okunmamisSayi;
+    const sb2 = document.getElementById('sb-okunmamis');
+    if (sb2) sb2.textContent = okunmamisSayi;
+  }
+
+  let aktifFiltre = 'hepsi';
+  function sekmeGoster(filtre, btn) {
+    aktifFiltre = filtre;
+    document.querySelectorAll('.notif-tab').forEach(t => t.classList.remove('active'));
+    btn.classList.add('active');
+    render(filtre);
+  }
+
+  function okunduIsaretle(id) {
+    const b = (window._bildirimler || []).find(x => x.id === id);
+    if (b) { b.okunmus = true; render(aktifFiltre); }
+  }
+
+  function tumunuOku() {
+    (window._bildirimler || []).forEach(b => b.okunmus = true);
+    render(aktifFiltre);
+  }
+
+  bildirimleriYukle();
+</script>
+</body>
+</html>
