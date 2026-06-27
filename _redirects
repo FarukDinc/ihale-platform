@@ -1,0 +1,15 @@
+# ihaleglobal.com yönlendirme kuralları
+# Netlify bu dosyayı otomatik okur
+
+# HTML uzantısız URL'ler için
+/dashboard        /dashboard.html   200
+/ihaleler         /ihaleler.html    200
+/ihale-detay      /ihale-detay.html 200
+/profil           /profil.html      200
+/login            /login.html       200
+/kvkk             /kvkk.html        200
+/hakkimizda       /hakkimizda.html  200
+/iletisim         /iletisim.html    200
+/fiyatlandirma    /fiyatlandirma_odeme_bolumu.html  200
+/mesafeli-satis   /mesafeli-satis.html  200
+/teklif-olustur   /teklif-olustur.html  200

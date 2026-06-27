@@ -23,7 +23,9 @@ app = FastAPI(title="İhalePlatform API", version="1.0.0")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "https://astounding-speculoos-40e25c.netlify.app",
+        "https://ihaleglobal.com",
+        "https://www.ihaleglobal.com",
+        "https://astounding-speculoos-40e25c.netlify.app",  # Eski Netlify (geçiş süreci)
         "http://localhost:3000",   # Geliştirme
         "http://localhost:5500",
     ],
@@ -296,3 +298,29 @@ def analiz_gecmisi_getir(authorization: str = Header(None)):
         return {"basari": True, "veri": sonuc.data}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/admin/scraper-cron")
+async def scraper_tetikle(
+    authorization: str = Header(None)
+):
+    """
+    EKAP scraper'ı manuel tetikler.
+    Sadece service key ile çağrılabilir.
+    Render free tier'da cron job olmadığı için elle tetiklenir.
+    """
+    # Basit admin koruması — service key ile doğrula
+    if not authorization:
+        raise HTTPException(status_code=401, detail="Yetki gerekli")
+
+    token = authorization.replace("Bearer ", "")
+    if token != SUPABASE_KEY:
+        raise HTTPException(status_code=403, detail="Yetkisiz")
+
+    import asyncio
+    from worker import scraper_cron
+
+    # Background'da çalıştır (timeout vermez)
+    asyncio.create_task(scraper_cron())
+
+    return {"basari": True, "mesaj": "Scraper arka planda başlatıldı"}

@@ -9,39 +9,49 @@ services:
       pip install --upgrade pip
       pip install -r requirements.txt
       playwright install chromium
-      playwright install-deps chromium
     startCommand: uvicorn api:app --host 0.0.0.0 --port $PORT
     plan: free
 
     envVars:
       - key: PYTHON_VERSION
-        value: 3.11.9
+        value: "3.11.9"
       - key: GEMINI_API_KEY
         sync: false
       - key: SUPABASE_URL
         sync: false
       - key: SUPABASE_SERVICE_KEY
+        sync: false
+      - key: IYZICO_API_KEY
+        sync: false
+      - key: IYZICO_SECRET_KEY
+        sync: false
+      - key: IYZICO_BASE_URL
+        sync: false
+      - key: PROXY_KULLANICI
+        sync: false
+      - key: PROXY_SIFRE
         sync: false
 
   # ── Worker (Cron) ────────────────────────────────────────
-  - type: worker
-    name: ihale-worker
-    runtime: python
-    rootDir: backend
-    buildCommand: |
-      pip install --upgrade pip
-      pip install -r requirements.txt
-      playwright install chromium
-      playwright install-deps chromium
-    startCommand: python worker.py cron
-    plan: starter
-
-    envVars:
-      - key: PYTHON_VERSION
-        value: 3.11.9
-      - key: GEMINI_API_KEY
-        sync: false
-      - key: SUPABASE_URL
-        sync: false
-      - key: SUPABASE_SERVICE_KEY
-        sync: false
+  # NOT: Render free tier'da worker çalışmaz, starter+ gerekir.
+  # Şimdilik API üzerinden manuel tetiklenebilir.
+  # - type: cron
+  #   name: ihale-scraper
+  #   runtime: python
+  #   rootDir: backend
+  #   schedule: "0 7,13 * * *"   # Her gün 07:00 ve 13:00
+  #   buildCommand: |
+  #     pip install --upgrade pip
+  #     pip install -r requirements.txt
+  #     playwright install chromium
+  #   startCommand: python worker.py cron
+  #   plan: starter
+  #   envVars:
+  #     - key: PYTHON_VERSION
+  #       value: "3.11.9"
+  #     - key: GEMINI_API_KEY
+  #       sync: false
+  #     - key: SUPABASE_URL
+  #       sync: false
+  #     - key: SUPABASE_SERVICE_KEY
+  #       sync: false

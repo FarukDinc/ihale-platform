@@ -39,7 +39,7 @@ supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 # ── İhaleleri Supabase'e kaydet ───────────────────────────
 def ihaleleri_kaydet(ihaleler: list) -> tuple[int, int]:
     """
-    İhale listesini Supabase'e upsert eder.
+    İhale listesini Supabase ilanlar tablosuna upsert eder.
     Döndürür: (eklenen, guncellenen)
     """
     eklenen = 0
@@ -48,7 +48,7 @@ def ihaleleri_kaydet(ihaleler: list) -> tuple[int, int]:
     for ihale in ihaleler:
         try:
             # ikn varsa güncelle, yoksa ekle
-            sonuc = supabase.table("ihaleler").upsert({
+            sonuc = supabase.table("ilanlar").upsert({
                 "ekap_id":      str(ihale.get("id", "")),
                 "ikn":          ihale.get("ikn"),
                 "baslik":       ihale.get("baslik"),
@@ -57,6 +57,7 @@ def ihaleleri_kaydet(ihaleler: list) -> tuple[int, int]:
                 "tur":          ihale.get("tur"),
                 "durum":        ihale.get("durum"),
                 "ihale_tarihi": ihale.get("tarih"),
+                "kaynak":       "ekap",
                 "ekap_guncelleme": datetime.now().isoformat()
             }, on_conflict="ikn").execute()
 
@@ -78,7 +79,7 @@ def cache_kontrol(ihale_id: str) -> dict | None:
     Edilmişse cache'den döner.
     """
     try:
-        sonuc = supabase.table("ihaleler").select(
+        sonuc = supabase.table("ilanlar").select(
             "yapay_zeka_ozeti, analiz_tarihi, analiz_pdf_turu"
         ).eq("id", ihale_id).single().execute()
 
@@ -94,7 +95,7 @@ def cache_kontrol(ihale_id: str) -> dict | None:
 # ── Analiz sonucunu Supabase'e yaz ───────────────────────
 def analiz_kaydet(ihale_id: str, rapor: dict, pdf_turu: str):
     try:
-        supabase.table("ihaleler").update({
+        supabase.table("ilanlar").update({
             "yapay_zeka_ozeti": rapor,
             "analiz_tarihi": datetime.now().isoformat(),
             "analiz_pdf_turu": pdf_turu
@@ -128,7 +129,7 @@ def kullanici_analiz_isle(
             "*"
         ).eq("id", kullanici_id).single().execute()
 
-        ihale_bilgi = supabase.table("ihaleler").select(
+        ihale_bilgi = supabase.table("ilanlar").select(
             "id, ikn, baslik, pdf_url"
         ).eq("id", ihale_id).single().execute()
 
@@ -147,7 +148,7 @@ def kullanici_analiz_isle(
     if cache:
         print(f"  → Cache hit! Gemini'ye gitmiyor")
 
-        # Cache'den gelse bile kredi düş (1 kredi — taranmış fark yok)
+        # Cache'den gelse bile kredi düş (1 kredi)
         kredi_sonuc = supabase.rpc("kredi_dus", {
             "p_kullanici_id": kullanici_id,
             "p_miktar": 1,
@@ -175,7 +176,7 @@ def kullanici_analiz_isle(
             "cache": True
         }
 
-    # 3. Kredi ön kontrolü (en az 1 kredi lazım, taranmışsa 2)
+    # 3. Kredi ön kontrolü (en az 1 kredi lazım)
     if kalan_kredi < 1:
         return {"basari": False, "hata": "Yetersiz kredi", "kalan": kalan_kredi}
 
@@ -256,7 +257,12 @@ ARAMA_LISTESI = [
     "bina bakım onarım",
     "güvenlik hizmet",
     "temizlik hizmet",
-    "bilişim teknik"
+    "bilişim teknik",
+    "yemek hizmet",
+    "araç kiralama",
+    "tıbbi cihaz",
+    "yazılım geliştirme",
+    "peyzaj bahçe"
 ]
 
 async def scraper_cron():
@@ -298,7 +304,7 @@ async def scraper_cron():
                 context, headers, payload, url, arama
             )
             tum_ham.extend(ihaleleri_isle(sonuclar))
-            await asyncio.sleep(1)
+            await asyncio.sleep(2)  # EKAP'a nazik ol
 
         await browser.close()
 
