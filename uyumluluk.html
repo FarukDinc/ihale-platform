@@ -1,9 +1,9 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="tr">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Uyumluluk Analizi â€” Ä°halePlatform</title>
+  <title>Uyumluluk Analizi — İhalePlatform</title>
   <link rel="stylesheet" href="css/style.css" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
@@ -40,7 +40,7 @@
     .page-header h1 { font-size: 24px; font-weight: 700; margin-bottom: 4px; }
     .page-header p { font-size: 14px; color: var(--muted); }
 
-    /* PROFÄ°L Ã–ZET KARTI */
+    /* PROFİL ÖZET KARTI */
     .profil-ozet {
       background: var(--navy-mid); border: 1px solid var(--border);
       border-radius: var(--radius-md); padding: 20px 24px;
@@ -117,26 +117,26 @@
 <div class="app">
   <aside class="sidebar">
     <div class="sidebar-logo">
-      <a href="/"><span style="width:6px;height:6px;background:var(--amber);border-radius:50%;display:inline-block;animation:pulse 2s infinite;"></span>Ä°hale<span>Platform</span></a>
+      <a href="/"><span style="width:6px;height:6px;background:var(--amber);border-radius:50%;display:inline-block;animation:pulse 2s infinite;"></span>İhale<span>Platform</span></a>
     </div>
     <nav class="sidebar-nav">
       <div class="nav-section-label">Genel</div>
-      <a href="dashboard" class="nav-item"><span class="icon">â—‰</span> Dashboard</a>
-      <a href="ihaleler" class="nav-item"><span class="icon">âŠ</span> Ä°haleler</a>
-      <a href="takipte" class="nav-item"><span class="icon">â˜†</span> Takipte</a>
-      <a href="bildirimler" class="nav-item"><span class="icon">ğŸ””</span> Bildirimler</a>
+      <a href="dashboard" class="nav-item"><span class="icon">◉</span> Dashboard</a>
+      <a href="ihaleler" class="nav-item"><span class="icon">⊞</span> İhaleler</a>
+      <a href="takipte" class="nav-item"><span class="icon">☆</span> Takipte</a>
+      <a href="bildirimler" class="nav-item"><span class="icon">🔔</span> Bildirimler</a>
       <div class="nav-section-label">Analiz</div>
-      <a href="#" class="nav-item"><span class="icon">ğŸ“Š</span> Rekabet Analizi</a>
-      <a href="uyumluluk" class="nav-item active"><span class="icon">âœ“</span> Uyumluluk</a>
-      <a href="dokumanlar" class="nav-item"><span class="icon">ğŸ“</span> DÃ¶kÃ¼manlar</a>
+      <a href="#" class="nav-item"><span class="icon">📊</span> Rekabet Analizi</a>
+      <a href="uyumluluk" class="nav-item active"><span class="icon">✓</span> Uyumluluk</a>
+      <a href="dokumanlar" class="nav-item"><span class="icon">📁</span> Dökümanlar</a>
       <div class="nav-section-label">Ayarlar</div>
-      <a href="profil" class="nav-item"><span class="icon">âš™</span> Profil & Filtreler</a>
-      <a href="fiyatlandirma_odeme_bolumu" class="nav-item"><span class="icon">ğŸ’³</span> Abonelik</a>
+      <a href="profil" class="nav-item"><span class="icon">⚙</span> Profil & Filtreler</a>
+      <a href="fiyatlandirma_odeme_bolumu" class="nav-item"><span class="icon">💳</span> Abonelik</a>
     </nav>
     <div class="sidebar-footer">
       <div class="user-row">
-        <div class="user-avatar">â€”</div>
-        <div><div class="user-name">YÃ¼kleniyor...</div><div class="user-plan">â€”</div></div>
+        <div class="user-avatar">—</div>
+        <div><div class="user-name">Yükleniyor...</div><div class="user-plan">—</div></div>
       </div>
     </div>
   </aside>
@@ -145,8 +145,8 @@
     <div class="topbar">
       <span style="font-size:15px;font-weight:600;">Uyumluluk Analizi</span>
       <div class="topbar-actions">
-        <a href="profil" class="action-btn">Profili DÃ¼zenle</a>
-        <a href="fiyatlandirma_odeme_bolumu" class="btn btn-primary" style="padding:7px 16px;font-size:13px;">Pro'ya GeÃ§ â†‘</a>
+        <a href="profil" class="action-btn">Profili Düzenle</a>
+        <a href="fiyatlandirma_odeme_bolumu" class="btn btn-primary" style="padding:7px 16px;font-size:13px;">Pro'ya Geç ↑</a>
       </div>
     </div>
 
@@ -154,29 +154,29 @@
       <div class="page-header">
         <div>
           <h1>Uyumluluk Analizi</h1>
-          <p>Profilinize gÃ¶re her ihalenin uyum skoru hesaplanÄ±r. En yÃ¼ksek eÅŸleÅŸmeler en Ã¼stte.</p>
+          <p>Profilinize göre her ihalenin uyum skoru hesaplanır. En yüksek eşleşmeler en üstte.</p>
         </div>
       </div>
 
-      <!-- PROFÄ°L Ã–ZET -->
+      <!-- PROFİL ÖZET -->
       <div id="profil-ozet-wrap"></div>
 
-      <!-- TABLO ARAÃ‡ Ã‡UBUÄU -->
+      <!-- TABLO ARAÇ ÇUBUĞU -->
       <div class="tablo-toolbar">
-        <div class="result-info" id="result-info">YÃ¼kleniyor...</div>
+        <div class="result-info" id="result-info">Yükleniyor...</div>
         <div style="display:flex;gap:8px;align-items:center;">
           <label style="font-size:12px;color:var(--muted);">Min. Uyum:</label>
           <select class="sort-select" id="f-min-uyum" onchange="yukle(1)">
-            <option value="0">TÃ¼mÃ¼</option>
+            <option value="0">Tümü</option>
             <option value="40">%40+</option>
             <option value="60" selected>%60+</option>
             <option value="75">%75+</option>
             <option value="85">%85+</option>
           </select>
           <select class="sort-select" id="f-sort" onchange="yukle(1)">
-            <option value="uyum_desc">Uyum % â†“</option>
-            <option value="son_teklif">Son Teklif â†‘</option>
-            <option value="maliyet_desc">Maliyet â†“</option>
+            <option value="uyum_desc">Uyum % ↓</option>
+            <option value="son_teklif">Son Teklif ↑</option>
+            <option value="maliyet_desc">Maliyet ↓</option>
           </select>
         </div>
       </div>
@@ -185,9 +185,9 @@
         <table>
           <thead>
             <tr>
-              <th>Ä°hale</th>
+              <th>İhale</th>
               <th>Durum</th>
-              <th>YaklaÅŸÄ±k Maliyet</th>
+              <th>Yaklaşık Maliyet</th>
               <th>Son Tarih</th>
               <th>Uyum Skoru</th>
               <th></th>
@@ -196,7 +196,7 @@
           <tbody id="tbody"></tbody>
         </table>
         <div class="pag-bar">
-          <span id="pag-info">â€”</span>
+          <span id="pag-info">—</span>
           <div class="pagination" id="pagination"></div>
         </div>
       </div>
@@ -220,22 +220,22 @@
   let mevcutSayfa = 1;
 
   function tarihFmt(t) {
-    if (!t) return 'â€”';
+    if (!t) return '—';
     const d = new Date(t);
-    const ay = ['Oca','Åub','Mar','Nis','May','Haz','Tem','AÄŸu','Eyl','Eki','Kas','Ara'];
+    const ay = ['Oca','Şub','Mar','Nis','May','Haz','Tem','Ağu','Eyl','Eki','Kas','Ara'];
     return `${d.getDate()} ${ay[d.getMonth()]} ${d.getFullYear()}`;
   }
   function butceFmt(mn, mx) {
-    const f = v => v >= 1e9 ? `â‚º${(v/1e9).toFixed(1)}Mr` : v >= 1e6 ? `â‚º${(v/1e6).toFixed(1)}M` : v >= 1e3 ? `â‚º${(v/1e3).toFixed(0)}K` : `â‚º${v}`;
-    if (mn != null && mx != null) return `${f(mn)} â€“ ${f(mx)}`;
-    if (mn != null) return `${f(mn)} Ã¼zeri`;
-    return 'â€”';
+    const f = v => v >= 1e9 ? `₺${(v/1e9).toFixed(1)}Mr` : v >= 1e6 ? `₺${(v/1e6).toFixed(1)}M` : v >= 1e3 ? `₺${(v/1e3).toFixed(0)}K` : `₺${v}`;
+    if (mn != null && mx != null) return `${f(mn)} – ${f(mx)}`;
+    if (mn != null) return `${f(mn)} üzeri`;
+    return '—';
   }
   function durumBadge(durum, bitis) {
     const gun = bitis ? Math.ceil((new Date(bitis) - new Date()) / 86400000) : null;
-    if (gun !== null && gun <= 3 && gun >= 0) return `<span class="badge badge-soon">â— Son ${gun} GÃ¼n</span>`;
-    if (durum === 'aktif') return `<span class="badge badge-open">â— AÃ§Ä±k</span>`;
-    return `<span class="badge">${durum||'â€”'}</span>`;
+    if (gun !== null && gun <= 3 && gun >= 0) return `<span class="badge badge-soon">● Son ${gun} Gün</span>`;
+    if (durum === 'aktif') return `<span class="badge badge-open">● Açık</span>`;
+    return `<span class="badge">${durum||'—'}</span>`;
   }
 
   function uyumSinif(puan) {
@@ -249,8 +249,8 @@
     const sinif = uyumSinif(puan);
     return `<tr>
       <td>
-        <a class="ihale-title" href="ihale-detay?id=${ilan.id}">${ilan.baslik||'â€”'}</a>
-        <div class="ihale-meta">${ilan.idare||'â€”'}${ilan.il ? ' â€” '+ilan.il : ''}</div>
+        <a class="ihale-title" href="ihale-detay?id=${ilan.id}">${ilan.baslik||'—'}</a>
+        <div class="ihale-meta">${ilan.idare||'—'}${ilan.il ? ' — '+ilan.il : ''}</div>
       </td>
       <td>${durumBadge(ilan.durum, ilan.son_teklif_tarihi)}</td>
       <td class="budget-cell">${butceFmt(ilan.yaklasik_maliyet_min, ilan.yaklasik_maliyet_max)}</td>
@@ -272,8 +272,8 @@
   function profilOzetGoster() {
     const wrap = document.getElementById('profil-ozet-wrap');
     if (!profil || ((!profil.sektorler || profil.sektorler.length === 0) && (!profil.tercih_iller || profil.tercih_iller.length === 0))) {
-      wrap.innerHTML = `<div class="profil-eksik">âš  Profilinizde sektÃ¶r veya il tercihi seÃ§ilmemiÅŸ. Uyum skorlarÄ± genel tahmin kullanÄ±r.
-        <a href="profil">â†’ Profili DÃ¼zenle</a></div>`;
+      wrap.innerHTML = `<div class="profil-eksik">⚠ Profilinizde sektör veya il tercihi seçilmemiş. Uyum skorları genel tahmin kullanır.
+        <a href="profil">→ Profili Düzenle</a></div>`;
       return;
     }
     const sektorler = profil.sektorler || [];
@@ -281,30 +281,30 @@
     const turler = profil.tercih_turler || [];
     wrap.innerHTML = `<div class="profil-ozet">
       <div class="ozet-blok">
-        <div class="ozet-baslik">SektÃ¶rler (${sektorler.length})</div>
+        <div class="ozet-baslik">Sektörler (${sektorler.length})</div>
         <div class="ozet-chipler">${sektorler.slice(0,5).map(s => `<span class="chip-sm">${s}</span>`).join('')}${sektorler.length>5?`<span class="chip-sm muted">+${sektorler.length-5}</span>`:''}</div>
       </div>
       <div class="ozet-blok">
-        <div class="ozet-baslik">Ä°ller (${iller.length||'TÃ¼mÃ¼'})</div>
-        <div class="ozet-chipler">${iller.length===0?'<span class="chip-sm muted">TÃ¼m TÃ¼rkiye</span>':iller.slice(0,4).map(i=>`<span class="chip-sm">${i}</span>`).join('')}${iller.length>4?`<span class="chip-sm muted">+${iller.length-4}</span>`:''}</div>
+        <div class="ozet-baslik">İller (${iller.length||'Tümü'})</div>
+        <div class="ozet-chipler">${iller.length===0?'<span class="chip-sm muted">Tüm Türkiye</span>':iller.slice(0,4).map(i=>`<span class="chip-sm">${i}</span>`).join('')}${iller.length>4?`<span class="chip-sm muted">+${iller.length-4}</span>`:''}</div>
       </div>
       <div class="ozet-blok">
-        <div class="ozet-baslik">Ä°hale TÃ¼rleri</div>
-        <div class="ozet-chipler">${turler.length===0?'<span class="chip-sm muted">TÃ¼mÃ¼</span>':turler.map(t=>`<span class="chip-sm">${t}</span>`).join('')}</div>
+        <div class="ozet-baslik">İhale Türleri</div>
+        <div class="ozet-chipler">${turler.length===0?'<span class="chip-sm muted">Tümü</span>':turler.map(t=>`<span class="chip-sm">${t}</span>`).join('')}</div>
       </div>
-      <a href="profil" style="margin-left:auto;font-size:12px;color:var(--amber);text-decoration:none;font-weight:600;white-space:nowrap;">Profili GÃ¼ncelle â†’</a>
+      <a href="profil" style="margin-left:auto;font-size:12px;color:var(--amber);text-decoration:none;font-weight:600;white-space:nowrap;">Profili Güncelle →</a>
     </div>`;
   }
 
   async function yukle(sayfa = 1) {
     mevcutSayfa = sayfa;
     const tbody = document.getElementById('tbody');
-    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--muted);">YÃ¼kleniyor...</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--muted);">Yükleniyor...</td></tr>`;
 
     const minUyum = parseInt(document.getElementById('f-min-uyum').value) || 0;
     const sort = document.getElementById('f-sort').value;
 
-    // Uyum filtrelemesi iÃ§in tÃ¼m ilanlarÄ± Ã§ekiyoruz (limit yÃ¼ksek), client'ta filtrele
+    // Uyum filtrelemesi için tüm ilanları çekiyoruz (limit yüksek), client'ta filtrele
     let query = sb.from('ilanlar')
       .select('id,ekap_id,baslik,idare,il,tur,durum,son_teklif_tarihi,tahmini_bedel,yaklasik_maliyet_min,yaklasik_maliyet_max')
       .eq('durum', 'aktif');
@@ -330,13 +330,13 @@
     const sayfa_ilanlar = ilanlar.slice(bas, bas + SAYFA);
 
     if (sayfa_ilanlar.length === 0) {
-      tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--muted);">Filtrelere uyan ihale bulunamadÄ±. Min. uyum eÅŸiÄŸini dÃ¼ÅŸÃ¼rÃ¼n.</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--muted);">Filtrelere uyan ihale bulunamadı. Min. uyum eşiğini düşürün.</td></tr>`;
     } else {
       tbody.innerHTML = sayfa_ilanlar.map(satirOlustur).join('');
     }
 
-    document.getElementById('result-info').innerHTML = `<strong>${toplam.toLocaleString('tr')}</strong> eÅŸleÅŸme`;
-    document.getElementById('pag-info').textContent = `${bas+1}â€“${Math.min(bas+SAYFA, toplam)} / ${toplam}`;
+    document.getElementById('result-info').innerHTML = `<strong>${toplam.toLocaleString('tr')}</strong> eşleşme`;
+    document.getElementById('pag-info').textContent = `${bas+1}–${Math.min(bas+SAYFA, toplam)} / ${toplam}`;
     paginasyonOlustur(toplam);
   }
 
@@ -344,11 +344,11 @@
     const toplamSayfa = Math.ceil(toplam / SAYFA);
     const pag = document.getElementById('pagination');
     if (toplamSayfa <= 1) { pag.innerHTML = ''; return; }
-    let html = `<button class="page-btn" onclick="yukle(${mevcutSayfa-1})" ${mevcutSayfa===1?'disabled':''}>â€¹</button>`;
+    let html = `<button class="page-btn" onclick="yukle(${mevcutSayfa-1})" ${mevcutSayfa===1?'disabled':''}>‹</button>`;
     for (let i = 1; i <= Math.min(toplamSayfa, 7); i++)
       html += `<button class="page-btn ${i===mevcutSayfa?'active':''}" onclick="yukle(${i})">${i}</button>`;
-    if (toplamSayfa > 7) html += `<button class="page-btn" disabled>â€¦</button><button class="page-btn" onclick="yukle(${toplamSayfa})">${toplamSayfa}</button>`;
-    html += `<button class="page-btn" onclick="yukle(${mevcutSayfa+1})" ${mevcutSayfa===toplamSayfa?'disabled':''}>â€º</button>`;
+    if (toplamSayfa > 7) html += `<button class="page-btn" disabled>…</button><button class="page-btn" onclick="yukle(${toplamSayfa})">${toplamSayfa}</button>`;
+    html += `<button class="page-btn" onclick="yukle(${mevcutSayfa+1})" ${mevcutSayfa===toplamSayfa?'disabled':''}>›</button>`;
     pag.innerHTML = html;
   }
 
@@ -357,8 +357,8 @@
     if (planTur !== 'pro') {
       Plan.lockPage(
         document.querySelector('.page-body'),
-        'Uyumluluk Analizi — Pro Özelliği',
-        'Profilinize göre kişiselleştirilmiş uyumluluk skorları Pro plan kullanıcılarına özeldir.'
+        'Uyumluluk Analizi � Pro �zelliği',
+        'Profilinize g�re kişiselleştirilmiş uyumluluk skorları Pro plan kullanıcılarına �zeldir.'
       );
       return;
     }

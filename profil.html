@@ -1,9 +1,9 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="tr">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Profil & Filtreler â€” Ä°halePlatform</title>
+  <title>Profil & Filtreler — İhalePlatform</title>
   <link rel="stylesheet" href="css/style.css" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
@@ -91,7 +91,7 @@
     .section-title { font-size: 15px; font-weight: 700; color: var(--white); }
     .section-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
 
-    /* SEKTÃ–R GRÄ°D */
+    /* SEKTÖR GRİD */
     .sektor-grid {
       display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;
     }
@@ -117,7 +117,7 @@
       opacity: 0; transition: opacity .15s;
     }
 
-    /* Ä°L GRID */
+    /* İL GRID */
     .il-grid {
       display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px;
     }
@@ -133,7 +133,7 @@
       color: var(--amber); font-weight: 700;
     }
 
-    /* TÃœR GRID */
+    /* TÜR GRID */
     .tur-grid { display: flex; gap: 10px; flex-wrap: wrap; }
     .tur-chip {
       border: 1.5px solid var(--border); border-radius: 8px;
@@ -148,7 +148,7 @@
     }
     .tur-icon { font-size: 16px; }
 
-    /* BÃœTÃ‡E RANGE */
+    /* BÜTÇE RANGE */
     .bedel-row { display: flex; gap: 16px; align-items: center; }
     .bedel-input-wrap { flex: 1; }
     .bedel-label { font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; margin-bottom: 8px; }
@@ -162,7 +162,7 @@
     .bedel-input::placeholder { color: var(--muted); font-weight: 400; }
     .bedel-ayrac { color: var(--muted); font-size: 18px; margin-top: 24px; }
 
-    /* UYUM Ã–NIZLEME */
+    /* UYUM ÖNIZLEME */
     .onizleme-kart {
       background: var(--navy); border: 1px solid var(--border);
       border-radius: 10px; padding: 20px; margin-top: 20px;
@@ -207,29 +207,29 @@
     <div class="sidebar-logo">
       <a href="/">
         <span style="width:6px;height:6px;background:var(--amber);border-radius:50%;display:inline-block;animation:pulse 2s infinite;"></span>
-        Ä°hale<span>Platform</span>
+        İhale<span>Platform</span>
       </a>
     </div>
     <nav class="sidebar-nav">
       <div class="nav-section-label">Genel</div>
-      <a href="dashboard" class="nav-item"><span class="icon">â—‰</span> Dashboard</a>
-      <a href="ihaleler" class="nav-item"><span class="icon">âŠ</span> Ä°haleler</a>
-      <a href="takipte" class="nav-item"><span class="icon">â˜†</span> Takipte</a>
-      <a href="bildirimler" class="nav-item"><span class="icon">ğŸ””</span> Bildirimler <span class="nav-badge">4</span></a>
+      <a href="dashboard" class="nav-item"><span class="icon">◉</span> Dashboard</a>
+      <a href="ihaleler" class="nav-item"><span class="icon">⊞</span> İhaleler</a>
+      <a href="takipte" class="nav-item"><span class="icon">☆</span> Takipte</a>
+      <a href="bildirimler" class="nav-item"><span class="icon">🔔</span> Bildirimler <span class="nav-badge">4</span></a>
       <div class="nav-section-label">Analiz</div>
-      <a href="#" class="nav-item"><span class="icon">ğŸ“Š</span> Rekabet Analizi</a>
-      <a href="uyumluluk" class="nav-item"><span class="icon">âœ“</span> Uyumluluk</a>
-      <a href="dokumanlar" class="nav-item"><span class="icon">ğŸ“</span> DÃ¶kÃ¼manlar</a>
+      <a href="#" class="nav-item"><span class="icon">📊</span> Rekabet Analizi</a>
+      <a href="uyumluluk" class="nav-item"><span class="icon">✓</span> Uyumluluk</a>
+      <a href="dokumanlar" class="nav-item"><span class="icon">📁</span> Dökümanlar</a>
       <div class="nav-section-label">Ayarlar</div>
-      <a href="profil" class="nav-item active"><span class="icon">âš™</span> Profil & Filtreler</a>
-      <a href="fiyatlandirma_odeme_bolumu" class="nav-item"><span class="icon">ğŸ’³</span> Abonelik</a>
+      <a href="profil" class="nav-item active"><span class="icon">⚙</span> Profil & Filtreler</a>
+      <a href="fiyatlandirma_odeme_bolumu" class="nav-item"><span class="icon">💳</span> Abonelik</a>
     </nav>
     <div class="sidebar-footer">
       <div class="user-row">
         <div class="user-avatar" id="avatar-text">FD</div>
         <div class="user-info">
-          <div class="user-name" id="sidebar-firma">YÃ¼kleniyor...</div>
-          <div class="user-plan">Ãœcretsiz Plan</div>
+          <div class="user-name" id="sidebar-firma">Yükleniyor...</div>
+          <div class="user-plan">Ücretsiz Plan</div>
         </div>
       </div>
     </div>
@@ -240,8 +240,8 @@
 
     <!-- TOPBAR -->
     <div class="topbar">
-      <div class="topbar-title">âš™ Profil & Filtreler</div>
-      <button class="btn-kaydet" id="btn-kaydet" onclick="kaydet()">DeÄŸiÅŸiklikleri Kaydet</button>
+      <div class="topbar-title">⚙ Profil & Filtreler</div>
+      <button class="btn-kaydet" id="btn-kaydet" onclick="kaydet()">Değişiklikleri Kaydet</button>
     </div>
 
     <!-- PAGE BODY -->
@@ -249,16 +249,16 @@
 
       <div class="page-header">
         <h1>Firma Profili</h1>
-        <p>SektÃ¶r, il ve ihale tÃ¼rÃ¼ tercihlerinizi belirleyin. Bu bilgiler her ihalede size Ã¶zel <strong style="color:var(--amber)">uyum skoru</strong> hesaplamak iÃ§in kullanÄ±lÄ±r.</p>
+        <p>Sektör, il ve ihale türü tercihlerinizi belirleyin. Bu bilgiler her ihalede size özel <strong style="color:var(--amber)">uyum skoru</strong> hesaplamak için kullanılır.</p>
       </div>
 
-      <!-- 1. SEKTÃ–RLER -->
+      <!-- 1. SEKTÖRLER -->
       <div class="section-card">
         <div class="section-header">
-          <div class="section-icon">ğŸ­</div>
+          <div class="section-icon">🏢</div>
           <div>
-            <div class="section-title">Faaliyet SektÃ¶rleriniz</div>
-            <div class="section-sub">FirmanÄ±zÄ±n faaliyet gÃ¶sterdiÄŸi sektÃ¶rleri seÃ§in â€” birden fazla seÃ§ebilirsiniz</div>
+            <div class="section-title">Faaliyet Sektörleriniz</div>
+            <div class="section-sub">Firmanızın faaliyet gösterdiği sektörleri seçin — birden fazla seçebilirsiniz</div>
           </div>
         </div>
 
@@ -267,12 +267,12 @@
         </div>
       </div>
 
-      <!-- 2. TERCÄ°H EDÄ°LEN Ä°LLER -->
+      <!-- 2. TERCİH EDİLEN İLLER -->
       <div class="section-card">
         <div class="section-header">
-          <div class="section-icon">ğŸ“</div>
+          <div class="section-icon">📍</div>
           <div>
-            <div class="section-title">Tercih EttiÄŸiniz Ä°ller</div>
+            <div class="section-title">Tercih Ettiğiniz İller</div>
             <div class="section-sub">Hangi illerdeki ihaleleri takip etmek istiyorsunuz?</div>
           </div>
         </div>
@@ -282,13 +282,13 @@
         </div>
       </div>
 
-      <!-- 3. Ä°HALE TÃœRLERÄ° -->
+      <!-- 3. İHALE TÜRLERİ -->
       <div class="section-card">
         <div class="section-header">
-          <div class="section-icon">ğŸ“‹</div>
+          <div class="section-icon">📋</div>
           <div>
-            <div class="section-title">Ä°hale TÃ¼rleri</div>
-            <div class="section-sub">Hangi tÃ¼r ihalelere katÄ±lÄ±yorsunuz?</div>
+            <div class="section-title">İhale Türleri</div>
+            <div class="section-sub">Hangi tür ihalelere katılıyorsunuz?</div>
           </div>
         </div>
 
@@ -297,58 +297,58 @@
         </div>
       </div>
 
-      <!-- 4. BÃœTÃ‡E ARALIÄI -->
+      <!-- 4. BÜTÇE ARALIĞI -->
       <div class="section-card">
         <div class="section-header">
-          <div class="section-icon">ğŸ’°</div>
+          <div class="section-icon">💰</div>
           <div>
-            <div class="section-title">YaklaÅŸÄ±k Maliyet AralÄ±ÄŸÄ±</div>
-            <div class="section-sub">FirmanÄ±zÄ±n katÄ±labileceÄŸi ihale bÃ¼tÃ§e aralÄ±ÄŸÄ± (TL)</div>
+            <div class="section-title">Yaklaşık Maliyet Aralığı</div>
+            <div class="section-sub">Firmanızın katılabileceği ihale bütçe aralığı (TL)</div>
           </div>
         </div>
 
         <div class="bedel-row">
           <div class="bedel-input-wrap">
             <div class="bedel-label">Minimum</div>
-            <input type="number" class="bedel-input" id="min-bedel" placeholder="Ã¶r: 500.000" />
+            <input type="number" class="bedel-input" id="min-bedel" placeholder="ör: 500.000" />
           </div>
-          <div class="bedel-ayrac">â€”</div>
+          <div class="bedel-ayrac">—</div>
           <div class="bedel-input-wrap">
             <div class="bedel-label">Maksimum</div>
-            <input type="number" class="bedel-input" id="max-bedel" placeholder="Ã¶r: 10.000.000" />
+            <input type="number" class="bedel-input" id="max-bedel" placeholder="ör: 10.000.000" />
           </div>
         </div>
       </div>
 
-      <!-- UYUM SKORU Ã–NÄ°ZLEME -->
+      <!-- UYUM SKORU ÖNİZLEME -->
       <div class="section-card">
         <div class="section-header">
-          <div class="section-icon">ğŸ“Š</div>
+          <div class="section-icon">📊</div>
           <div>
-            <div class="section-title">Uyum Skoru Hesaplama MantÄ±ÄŸÄ±</div>
-            <div class="section-sub">SeÃ§imlerinize gÃ¶re her ihale bu kriterlere gÃ¶re puanlanÄ±r</div>
+            <div class="section-title">Uyum Skoru Hesaplama Mantığı</div>
+            <div class="section-sub">Seçimlerinize göre her ihale bu kriterlere göre puanlanır</div>
           </div>
         </div>
 
         <div class="onizleme-kart">
-          <div class="onizleme-baslik">Puan DaÄŸÄ±lÄ±mÄ±</div>
+          <div class="onizleme-baslik">Puan Dağılımı</div>
           <div class="onizleme-row">
-            <div class="onizleme-label">ğŸ­ SektÃ¶r eÅŸleÅŸmesi</div>
+            <div class="onizleme-label">🎯 Sektör eşleşmesi</div>
             <div class="onizleme-bar-wrap"><div class="onizleme-bar" style="width:40%"></div></div>
             <div class="onizleme-puan">%40</div>
           </div>
           <div class="onizleme-row">
-            <div class="onizleme-label">ğŸ“ Ä°l eÅŸleÅŸmesi</div>
+            <div class="onizleme-label">📍 İl eşleşmesi</div>
             <div class="onizleme-bar-wrap"><div class="onizleme-bar" style="width:25%"></div></div>
             <div class="onizleme-puan">%25</div>
           </div>
           <div class="onizleme-row">
-            <div class="onizleme-label">ğŸ“‹ Ä°hale tÃ¼rÃ¼</div>
+            <div class="onizleme-label">📋 İhale türü</div>
             <div class="onizleme-bar-wrap"><div class="onizleme-bar" style="width:20%"></div></div>
             <div class="onizleme-puan">%20</div>
           </div>
           <div class="onizleme-row">
-            <div class="onizleme-label">ğŸ’° BÃ¼tÃ§e aralÄ±ÄŸÄ±</div>
+            <div class="onizleme-label">💰 Bütçe aralığı</div>
             <div class="onizleme-bar-wrap"><div class="onizleme-bar" style="width:15%"></div></div>
             <div class="onizleme-puan">%15</div>
           </div>
@@ -372,61 +372,61 @@
   const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxwZ2Vsd2ZvYXJob3VvbGxod3VyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIyMzI4MjAsImV4cCI6MjA5NzgwODgyMH0.GqTZkeoOAomuur4JSyW2pTR-8Zzg8OTv394JtP7DoXM";
   const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-  // â”€â”€ Veri tanÄ±mlarÄ± â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Veri tanımları ─────────────────────────────────────────────────────
   const SEKTORLER = [
-    { id: 'insaat',       emoji: 'ğŸ—ï¸', ad: 'Ä°nÅŸaat - AltyapÄ± - YapÄ±m',        aciklama: 'Bina, yol, kÃ¶prÃ¼, yÄ±kÄ±m iÅŸleri' },
-    { id: 'saglik',       emoji: 'ğŸ¥', ad: 'SaÄŸlÄ±k - Medikal - Ä°laÃ§',          aciklama: 'Hastane, ilaÃ§, kozmetik' },
-    { id: 'tibbi_cihaz',  emoji: 'ğŸ”¬', ad: 'TÄ±bbi Cihaz - Laboratuvar',        aciklama: 'Hastane ekipmanlarÄ±, lab malzemeleri' },
-    { id: 'elektronik',   emoji: 'ğŸ’»', ad: 'Elektronik - Bilgisayar - BT',     aciklama: 'DonanÄ±m, iletiÅŸim, Ã¶lÃ§Ã¼ aletleri' },
-    { id: 'yazilim',      emoji: 'ğŸ–¥ï¸', ad: 'YazÄ±lÄ±m - BiliÅŸim - BYH',          aciklama: 'YazÄ±lÄ±m, bilgi yÃ¶netim hizmetleri' },
-    { id: 'enerji',       emoji: 'âš¡', ad: 'Enerji - Elektrik - AydÄ±nlatma',   aciklama: 'Elektrik tesisatÄ±, sinyalizasyon' },
-    { id: 'kanalizasyon', emoji: 'ğŸ’§', ad: 'Kanalizasyon - Su - DoÄŸalgaz',     aciklama: 'Boru, sÄ±hhi tesisat' },
-    { id: 'temizlik',     emoji: 'ğŸ§¹', ad: 'Temizlik - Ä°laÃ§lama - Geri DÃ¶nÃ¼ÅŸÃ¼m', aciklama: 'Temizlik hizmetleri' },
-    { id: 'guvenlik',     emoji: 'ğŸ›¡ï¸', ad: 'Ã–zel GÃ¼venlik - Koruma',           aciklama: 'GÃ¼venlik, bekÃ§ilik hizmetleri' },
-    { id: 'hirdavat',     emoji: 'ğŸ”§', ad: 'HÄ±rdavat - Metal - Plastik',       aciklama: 'Nalburiye, metal ve plastik Ã¼rÃ¼nler' },
-    { id: 'makine',       emoji: 'âš™ï¸', ad: 'EndÃ¼striyel Makine - Motor',       aciklama: 'KonveyÃ¶r, motor, sanayi makineleri' },
-    { id: 'tasit',        emoji: 'ğŸš›', ad: 'TaÅŸÄ±t - Ä°ÅŸ Makinesi - Yedek ParÃ§a', aciklama: 'AraÃ§, yedek parÃ§a alÄ±mÄ±' },
-    { id: 'nakliye',      emoji: 'ğŸ“¦', ad: 'Nakliye - Servis - TaÅŸÄ±macÄ±lÄ±k',   aciklama: 'Lojistik, kargo, servis hizmetleri' },
-    { id: 'gida',         emoji: 'ğŸ½ï¸', ad: 'GÄ±da - TarÄ±m - Yiyecek - Ä°Ã§ecek', aciklama: 'GÄ±da Ã¼rÃ¼nleri, tarÄ±m malzemeleri' },
-    { id: 'hazir_yemek',  emoji: 'ğŸ²', ad: 'HazÄ±r Yemek - LokantacÄ±lÄ±k',       aciklama: 'Toplu yemek, catering hizmetleri' },
-    { id: 'klima',        emoji: 'â„ï¸', ad: 'Klima - SoÄŸutma - IsÄ±tma - HVAC', aciklama: 'HavalandÄ±rma, iklimlendirme' },
-    { id: 'yangin',       emoji: 'ğŸš’', ad: 'YangÄ±n AlgÄ±lama - SÃ¶ndÃ¼rme',       aciklama: 'Ä°hbar sistemleri, yangÄ±n ekipmanÄ±' },
-    { id: 'asansor',      emoji: 'ğŸ›—', ad: 'AsansÃ¶r - YapÄ± Otomasyonu',        aciklama: 'Mekanik gÃ¼venlik sistemleri' },
-    { id: 'kimyasal',     emoji: 'ğŸ§ª', ad: 'Kimyasal - Dezenfektan - GÃ¼bre',   aciklama: 'Kimyasal maddeler' },
-    { id: 'tekstil',      emoji: 'ğŸ‘•', ad: 'Tekstil - Giyim - Spor',           aciklama: 'KÄ±yafet, spor ekipmanlarÄ±' },
-    { id: 'mobilya',      emoji: 'ğŸª‘', ad: 'Mobilya - Beyaz EÅŸya - Mutfak',    aciklama: 'BÃ¼ro mobilyalarÄ±, zÃ¼ccaciye' },
-    { id: 'matbaa',       emoji: 'ğŸ–¨ï¸', ad: 'Matbaa - KÄ±rtasiye - Ambalaj',     aciklama: 'Toner, kartuÅŸ, baskÄ± malzemeleri' },
-    { id: 'egitim',       emoji: 'ğŸ“š', ad: 'EÄŸitim - AraÅŸtÄ±rma - TercÃ¼manlÄ±k', aciklama: 'Kurs, anket, eÄŸitim hizmetleri' },
-    { id: 'is_sagligi',   emoji: 'â›‘ï¸', ad: 'Ä°ÅŸ SaÄŸlÄ±ÄŸÄ± - Ä°ÅŸ GÃ¼venliÄŸi',       aciklama: 'Ekipman, danÄ±ÅŸmanlÄ±k' },
-    { id: 'uydu',         emoji: 'ğŸ“¡', ad: 'Uydu - Kamera - SCADA',            aciklama: 'HaberleÅŸme, izleme sistemleri' },
-    { id: 'muhendislik',  emoji: 'ğŸ“', ad: 'MÃ¼hendislik - MimarlÄ±k - DanÄ±ÅŸmanlÄ±k', aciklama: 'Teknik danÄ±ÅŸmanlÄ±k hizmetleri' },
-    { id: 'isletmecilik', emoji: 'ğŸ’¼', ad: 'Ä°ÅŸletmecilik - Ä°ÅŸÃ§ilik - Sosyal', aciklama: 'Sosyal hizmetler, iÅŸÃ§ilik' },
-    { id: 'tarim',        emoji: 'ğŸŒ¿', ad: 'OrmancÄ±lÄ±k - BahÃ§Ä±vanlÄ±k - Peyzaj', aciklama: 'Bitki, kozlak, peyzaj' },
-    { id: 'sigortacilik', emoji: 'ğŸ“‹', ad: 'SigortacÄ±lÄ±k - Mali - Hukuki',     aciklama: 'Hukuki ve mali hizmetler' },
-    { id: 'gayrimenkul',  emoji: 'ğŸ¢', ad: 'Gayrimenkul - Arsa - Ä°ÅŸyeri',      aciklama: 'Kiralama, satÄ±ÅŸ ihaleleri' },
-    { id: 'akaryakit',    emoji: 'â›½', ad: 'AkaryakÄ±t - GazyakÄ±t - Madeni YaÄŸ', aciklama: 'YakÄ±t ve yaÄŸ alÄ±mlarÄ±' },
-    { id: 'diger',        emoji: 'ğŸ“¦', ad: 'DiÄŸer',                             aciklama: 'DiÄŸer kategoriler' },
+    { id: 'insaat',       emoji: '🏗️', ad: 'İnşaat - Altyapı - Yapım',        aciklama: 'Bina, yol, köprü, yıkım işleri' },
+    { id: 'saglik',       emoji: '🏥', ad: 'Sağlık - Medikal - İlaç',          aciklama: 'Hastane, ilaç, kozmetik' },
+    { id: 'tibbi_cihaz',  emoji: '🔬', ad: 'Tıbbi Cihaz - Laboratuvar',        aciklama: 'Hastane ekipmanları, lab malzemeleri' },
+    { id: 'elektronik',   emoji: '💻', ad: 'Elektronik - Bilgisayar - BT',     aciklama: 'Donanım, iletişim, ölçü aletleri' },
+    { id: 'yazilim',      emoji: '🖥️', ad: 'Yazılım - Bilişim - BYH',          aciklama: 'Yazılım, bilgi yönetim hizmetleri' },
+    { id: 'enerji',       emoji: '⚡', ad: 'Enerji - Elektrik - Aydınlatma',   aciklama: 'Elektrik tesisatı, sinyalizasyon' },
+    { id: 'kanalizasyon', emoji: '🚰', ad: 'Kanalizasyon - Su - Doğalgaz',     aciklama: 'Boru, sıhhi tesisat' },
+    { id: 'temizlik',     emoji: '🧹', ad: 'Temizlik - İlaçlama - Geri Dönüşüm', aciklama: 'Temizlik hizmetleri' },
+    { id: 'guvenlik',     emoji: '🛡️', ad: 'Özel Güvenlik - Koruma',           aciklama: 'Güvenlik, bekçilik hizmetleri' },
+    { id: 'hirdavat',     emoji: '🔧', ad: 'Hırdavat - Metal - Plastik',       aciklama: 'Nalburiye, metal ve plastik ürünler' },
+    { id: 'makine',       emoji: '⚙️', ad: 'Endüstriyel Makine - Motor',       aciklama: 'Konveyör, motor, sanayi makineleri' },
+    { id: 'tasit',        emoji: '🚗', ad: 'Taşıt - İş Makinesi - Yedek Parça', aciklama: 'Araç, yedek parça alımı' },
+    { id: 'nakliye',      emoji: '🚚', ad: 'Nakliye - Servis - Taşımacılık',   aciklama: 'Lojistik, kargo, servis hizmetleri' },
+    { id: 'gida',         emoji: '🌾', ad: 'Gıda - Tarım - Yiyecek - İçecek', aciklama: 'Gıda ürünleri, tarım malzemeleri' },
+    { id: 'hazir_yemek',  emoji: '🍽️', ad: 'Hazır Yemek - Lokantacılık',       aciklama: 'Toplu yemek, catering hizmetleri' },
+    { id: 'klima',        emoji: '❄️', ad: 'Klima - Soğutma - Isıtma - HVAC', aciklama: 'Havalandırma, iklimlendirme' },
+    { id: 'yangin',       emoji: '🔥', ad: 'Yangın Algılama - Söndürme',       aciklama: 'İhbar sistemleri, yangın ekipmanı' },
+    { id: 'asansor',      emoji: '🏢', ad: 'Asansör - Yapı Otomasyonu',        aciklama: 'Mekanik güvenlik sistemleri' },
+    { id: 'kimyasal',     emoji: '🧪', ad: 'Kimyasal - Dezenfektan - Gübre',   aciklama: 'Kimyasal maddeler' },
+    { id: 'tekstil',      emoji: '👕', ad: 'Tekstil - Giyim - Spor',           aciklama: 'Kıyafet, spor ekipmanları' },
+    { id: 'mobilya',      emoji: '🛋️', ad: 'Mobilya - Beyaz Eşya - Mutfak',    aciklama: 'Büro mobilyaları, züccaciye' },
+    { id: 'matbaa',       emoji: '🖨️', ad: 'Matbaa - Kırtasiye - Ambalaj',     aciklama: 'Toner, kartuş, baskı malzemeleri' },
+    { id: 'egitim',       emoji: '📚', ad: 'Eğitim - Araştırma - Tercümanlık', aciklama: 'Kurs, anket, eğitim hizmetleri' },
+    { id: 'is_sagligi',   emoji: '⛑️', ad: 'İş Sağlığı - İş Güvenliği',       aciklama: 'Ekipman, danışmanlık' },
+    { id: 'uydu',         emoji: '📡', ad: 'Uydu - Kamera - SCADA',            aciklama: 'Haberleşme, izleme sistemleri' },
+    { id: 'muhendislik',  emoji: '📐', ad: 'Mühendislik - Mimarlık - Danışmanlık', aciklama: 'Teknik danışmanlık hizmetleri' },
+    { id: 'isletmecilik', emoji: '👷', ad: 'İşletmecilik - İşçilik - Sosyal', aciklama: 'Sosyal hizmetler, işçilik' },
+    { id: 'tarim',        emoji: '🌳', ad: 'Ormancılık - Bahçıvanlık - Peyzaj', aciklama: 'Bitki, kozlak, peyzaj' },
+    { id: 'sigortacilik', emoji: '⚖️', ad: 'Sigortacılık - Mali - Hukuki',     aciklama: 'Hukuki ve mali hizmetler' },
+    { id: 'gayrimenkul',  emoji: '🏠', ad: 'Gayrimenkul - Arsa - İşyeri',      aciklama: 'Kiralama, satış ihaleleri' },
+    { id: 'akaryakit',    emoji: '⛽', ad: 'Akaryakıt - Gazyakıt - Madeni Yağ', aciklama: 'Yakıt ve yağ alımları' },
+    { id: 'diger',        emoji: '📦', ad: 'Diğer',                             aciklama: 'Diğer kategoriler' },
   ];
 
   const ILLER = [
-    'Ankara','Ä°stanbul','Ä°zmir','Bursa','Antalya','Adana',
-    'Konya','Gaziantep','Mersin','Kayseri','EskiÅŸehir','Samsun',
-    'Trabzon','DiyarbakÄ±r','Kocaeli','TÃ¼m TÃ¼rkiye'
+    'Ankara','İstanbul','İzmir','Bursa','Antalya','Adana',
+    'Konya','Gaziantep','Mersin','Kayseri','Eskişehir','Samsun',
+    'Trabzon','Diyarbakır','Kocaeli','Tüm Türkiye'
   ];
 
   const TURLER = [
-    { id: 'Hizmet',      emoji: 'ğŸ”§', aciklama: 'Hizmet alÄ±mÄ±' },
-    { id: 'Mal',         emoji: 'ğŸ“¦', aciklama: 'Mal alÄ±mÄ±' },
-    { id: 'YapÄ±m',       emoji: 'ğŸ—ï¸', aciklama: 'YapÄ±m iÅŸleri' },
-    { id: 'Danismanlik', emoji: 'ğŸ’¼', aciklama: 'DanÄ±ÅŸmanlÄ±k' },
+    { id: 'Hizmet',      emoji: '🛎️', aciklama: 'Hizmet alımı' },
+    { id: 'Mal',         emoji: '📦', aciklama: 'Mal alımı' },
+    { id: 'Yapım',       emoji: '🏗️', aciklama: 'Yapım işleri' },
+    { id: 'Danismanlik', emoji: '💼', aciklama: 'Danışmanlık' },
   ];
 
-  // â”€â”€ State â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── State ───────────────────────────────────────────────────────────────
   let seciliSektorler  = new Set();
   let seciliIller      = new Set();
   let seciliTurler     = new Set();
 
-  // â”€â”€ Grid'leri oluÅŸtur â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Grid'leri oluştur ───────────────────────────────────────────────────
   function sektorGridOlustur() {
     document.getElementById('sektor-grid').innerHTML = SEKTORLER.map(s => `
       <div class="sektor-kart" id="sektor-${s.id}" onclick="sektorToggle('${s.id}')">
@@ -435,7 +435,7 @@
           <div class="sektor-adi">${s.ad}</div>
           <div class="sektor-aciklama">${s.aciklama}</div>
         </div>
-        <div class="sektor-check">âœ“</div>
+        <div class="sektor-check">✓</div>
       </div>`).join('');
   }
 
@@ -448,11 +448,11 @@
     document.getElementById('tur-grid').innerHTML = TURLER.map(t => `
       <div class="tur-chip" id="tur-${t.id}" onclick="turToggle('${t.id}')">
         <span class="tur-icon">${t.emoji}</span> ${t.id}
-        <span style="font-size:11px;color:var(--muted);font-weight:400;">â€” ${t.aciklama}</span>
+        <span style="font-size:11px;color:var(--muted);font-weight:400;">— ${t.aciklama}</span>
       </div>`).join('');
   }
 
-  // â”€â”€ Toggle fonksiyonlarÄ± â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Toggle fonksiyonları ────────────────────────────────────────────────
   function sektorToggle(id) {
     if (seciliSektorler.has(id)) seciliSektorler.delete(id);
     else seciliSektorler.add(id);
@@ -471,12 +471,12 @@
     document.getElementById('tur-' + id).classList.toggle('secili', seciliTurler.has(id));
   }
 
-  // â”€â”€ Profili yÃ¼kle â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Profili yükle ───────────────────────────────────────────────────────
   async function profilYukle() {
     const { data: { user } } = await sb.auth.getUser();
     if (!user) { window.location.href = 'login'; return; }
 
-    // Sidebar gÃ¼ncelle
+    // Sidebar güncelle
     const email = user.email || '';
     const initials = email.substring(0, 2).toUpperCase();
     document.getElementById('avatar-text').textContent = initials;
@@ -488,7 +488,7 @@
       if (data.min_bedel) document.getElementById('min-bedel').value = data.min_bedel;
       if (data.max_bedel) document.getElementById('max-bedel').value = data.max_bedel;
 
-      // SeÃ§imleri geri yÃ¼kle
+      // Seçimleri geri yükle
       (data.sektorler || []).forEach(s => {
         seciliSektorler.add(s);
         const el = document.getElementById('sektor-' + s);
@@ -509,7 +509,7 @@
     }
   }
 
-  // â”€â”€ Kaydet â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Kaydet ─────────────────────────────────────────────────────────────
   async function kaydet() {
     const btn = document.getElementById('btn-kaydet');
     btn.disabled = true;
@@ -519,8 +519,8 @@
     if (!user) { window.location.href = 'login'; return; }
 
     if (seciliSektorler.size === 0) {
-      toast('En az bir sektÃ¶r seÃ§melisiniz!', 'hata');
-      btn.disabled = false; btn.textContent = 'DeÄŸiÅŸiklikleri Kaydet'; return;
+      toast('En az bir sektör seçmelisiniz!', 'hata');
+      btn.disabled = false; btn.textContent = 'Değişiklikleri Kaydet'; return;
     }
 
     const veri = {
@@ -537,16 +537,16 @@
     const { error } = await sb.from('profil').upsert(veri, { onConflict: 'user_id' });
 
     if (error) {
-      toast('KayÄ±t hatasÄ±: ' + error.message, 'hata');
+      toast('Kayıt hatası: ' + error.message, 'hata');
     } else {
-      toast('âœ“ Profil kaydedildi! Uyum skorlarÄ± gÃ¼ncelleniyor...', 'basari');
+      toast('✓ Profil kaydedildi! Uyum skorları güncelleniyor...', 'basari');
     }
 
     btn.disabled = false;
-    btn.textContent = 'DeÄŸiÅŸiklikleri Kaydet';
+    btn.textContent = 'Değişiklikleri Kaydet';
   }
 
-  // â”€â”€ Toast â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Toast ───────────────────────────────────────────────────────────────
   function toast(mesaj, tip = 'basari') {
     const el = document.getElementById('toast');
     el.textContent = mesaj;
@@ -554,7 +554,7 @@
     setTimeout(() => el.className = '', 3500);
   }
 
-  // â”€â”€ BaÅŸlat â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Başlat ──────────────────────────────────────────────────────────────
   sektorGridOlustur();
   ilGridOlustur();
   turGridOlustur();
@@ -562,4 +562,5 @@
 </script>
 </body>
 </html>
+
 

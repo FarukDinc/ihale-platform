@@ -1,9 +1,9 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="tr">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Teklif OluÅŸtur â€” Ä°halePlatform</title>
+  <title>Teklif Oluştur — İhalePlatform</title>
   <link rel="stylesheet" href="css/style.css" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
@@ -11,7 +11,7 @@
     body { background: var(--navy); }
     .app { display: flex; min-height: 100vh; }
 
-    /* â”€â”€ SIDEBAR â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+    /* ── SIDEBAR ─────────────────────────────────────── */
     .sidebar {
       background: var(--navy-mid); border-right: 1px solid var(--border);
       width: 240px; flex-shrink: 0; position: sticky; top: 0;
@@ -46,10 +46,10 @@
     .user-name { font-size: 13px; font-weight: 600; color: var(--white); }
     .user-plan { font-size: 11px; color: var(--muted); }
 
-    /* â”€â”€ MAIN â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+    /* ── MAIN ────────────────────────────────────────── */
     .main { display: flex; flex-direction: column; flex: 1; min-width: 0; height: 100vh; overflow-y: auto; }
 
-    /* â”€â”€ TOPBAR â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+    /* ── TOPBAR ──────────────────────────────────────── */
     .topbar {
       background: var(--navy-mid); border-bottom: 1px solid var(--border);
       padding: 0 28px; height: 56px; display: flex; align-items: center;
@@ -64,10 +64,10 @@
     .breadcrumb { font-size: 13px; color: var(--muted); }
     .breadcrumb span { color: var(--white); }
 
-    /* â”€â”€ Ä°Ã‡ERÄ°K â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+    /* ── İÇERİK ──────────────────────────────────────── */
     .page-wrap { display: flex; gap: 28px; padding: 28px; max-width: 1100px; width: 100%; }
 
-    /* â”€â”€ ADIM Ã‡UBUÄU (sol) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+    /* ── ADIM ÇUBUĞU (sol) ───────────────────────────── */
     .steps-panel {
       width: 220px; flex-shrink: 0;
     }
@@ -104,7 +104,7 @@
     .step-item.done .step-label { color: #4ade80; }
     .step-desc { font-size: 11px; color: var(--muted); margin-top: 2px; }
 
-    /* Kredi gÃ¶stergesi */
+    /* Kredi göstergesi */
     .kredi-box {
       margin-top: 20px; padding: 14px; border-radius: 8px;
       background: rgba(240,165,0,0.07); border: 1px solid rgba(240,165,0,0.2);
@@ -113,13 +113,13 @@
     .kredi-sayi { font-size: 22px; font-weight: 800; color: var(--amber); }
     .kredi-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
 
-    /* â”€â”€ FORM ALANI (saÄŸ) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+    /* ── FORM ALANI (sağ) ────────────────────────────── */
     .form-panel { flex: 1; min-width: 0; }
 
     .form-section { display: none; }
     .form-section.active { display: block; }
 
-    /* BÃ¶lÃ¼m baÅŸlÄ±ÄŸÄ± */
+    /* Bölüm başlığı */
     .section-head { margin-bottom: 24px; }
     .section-head h2 { font-size: 20px; font-weight: 800; color: var(--white); margin-bottom: 6px; }
     .section-head p { font-size: 13px; color: var(--muted); }
@@ -135,7 +135,7 @@
       padding-bottom: 14px; border-bottom: 1px solid var(--border); margin-bottom: 18px;
     }
 
-    /* Ä°hale Ã¶zet bilgileri */
+    /* İhale özet bilgileri */
     .ihale-ozet-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0; }
     .ozet-row {
       display: flex; flex-direction: column; padding: 12px 0;
@@ -147,7 +147,7 @@
     .ozet-value { font-size: 14px; color: var(--white); font-weight: 600; }
     .ozet-value.amber { color: var(--amber); }
 
-    /* SÃ¼re uyarÄ±sÄ± */
+    /* Süre uyarısı */
     .sure-uyari {
       display: flex; align-items: center; gap: 10px;
       background: rgba(245,158,11,0.08); border: 1px solid rgba(245,158,11,0.2);
@@ -155,7 +155,7 @@
       font-size: 13px; color: var(--amber);
     }
 
-    /* Form elemanlarÄ± */
+    /* Form elemanları */
     .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
     .form-grid.cols-1 { grid-template-columns: 1fr; }
     .form-grid.cols-3 { grid-template-columns: 1fr 1fr 1fr; }
@@ -198,7 +198,7 @@
     }
     .input-wrap input { padding-left: 32px; }
 
-    /* Teknik teklif - AI bÃ¶lÃ¼mÃ¼ */
+    /* Teknik teklif - AI bölümü */
     .ai-panel {
       background: linear-gradient(135deg, rgba(240,165,0,0.06) 0%, rgba(240,165,0,0.02) 100%);
       border: 1px solid rgba(240,165,0,0.2); border-radius: 10px;
@@ -230,7 +230,7 @@
     }
     .btn-outline:hover { border-color: rgba(255,255,255,.3); background: rgba(255,255,255,.04); }
 
-    /* AI yÃ¼kleniyor animasyonu */
+    /* AI yükleniyor animasyonu */
     .ai-loading {
       display: none; align-items: center; gap: 12px;
       background: rgba(240,165,0,0.05); border: 1px solid rgba(240,165,0,0.15);
@@ -245,7 +245,7 @@
     @keyframes spin { to { transform: rotate(360deg); } }
     .ai-loading-text { font-size: 13px; color: var(--amber); }
 
-    /* Teklif bÃ¶lÃ¼m sekmeler */
+    /* Teklif bölüm sekmeler */
     .tabs { display: flex; gap: 4px; background: var(--navy); border-radius: 8px; padding: 4px; margin-bottom: 16px; }
     .tab-btn {
       flex: 1; padding: 8px 12px; border-radius: 6px; border: none;
@@ -313,7 +313,7 @@
       background: rgba(255,255,255,.06); color: var(--muted);
     }
 
-    /* YÃ¼kleme alanÄ± */
+    /* Yükleme alanı */
     .upload-zone {
       border: 2px dashed var(--border); border-radius: 10px; padding: 32px;
       text-align: center; cursor: pointer; transition: all .2s;
@@ -324,7 +324,7 @@
     .upload-zone-text { font-size: 13px; color: var(--muted); }
     .upload-zone-text strong { color: var(--white); }
 
-    /* Ã–nizleme */
+    /* Önizleme */
     .onizleme-header {
       display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;
     }
@@ -367,7 +367,7 @@
     .imza-ad { font-size: 13px; font-weight: 700; color: #111; }
     .imza-unvan { font-size: 11px; color: #6b7280; }
 
-    /* Ä°ndirme butonlarÄ± */
+    /* İndirme butonları */
     .indirme-row { display: flex; gap: 12px; flex-wrap: wrap; }
     .btn-indir {
       display: inline-flex; align-items: center; gap: 8px;
@@ -381,7 +381,7 @@
     .btn-indir-kaydet { background: var(--amber); color: var(--navy); }
     .btn-indir-kaydet:hover { background: var(--amber-dim); }
 
-    /* Alt buton Ã§ubuÄŸu */
+    /* Alt buton çubuğu */
     .form-footer {
       display: flex; justify-content: space-between; align-items: center;
       padding-top: 20px; margin-top: 8px; border-top: 1px solid var(--border);
@@ -445,31 +445,31 @@
     <div class="sidebar-logo">
       <a href="/">
         <span style="width:6px;height:6px;background:var(--amber);border-radius:50%;display:inline-block;animation:pulse 2s infinite;"></span>
-        Ä°hale<span>Platform</span>
+        İhale<span>Platform</span>
       </a>
     </div>
     <nav class="sidebar-nav">
       <div class="nav-section-label">Genel</div>
-      <a href="dashboard" class="nav-item"><span class="icon">â—‰</span> Dashboard</a>
-      <a href="ihaleler" class="nav-item"><span class="icon">âŠ</span> Ä°haleler</a>
-      <a href="takipte" class="nav-item"><span class="icon">â˜†</span> Takipte</a>
-      <a href="bildirimler" class="nav-item"><span class="icon">ğŸ””</span> Bildirimler</a>
+      <a href="dashboard" class="nav-item"><span class="icon">◉</span> Dashboard</a>
+      <a href="ihaleler" class="nav-item"><span class="icon">⊞</span> İhaleler</a>
+      <a href="takipte" class="nav-item"><span class="icon">☆</span> Takipte</a>
+      <a href="bildirimler" class="nav-item"><span class="icon">🔔</span> Bildirimler</a>
       <div class="nav-section-label">Teklif</div>
-      <a href="#" class="nav-item active"><span class="icon">âœ</span> Teklif OluÅŸtur</a>
-      <a href="#" class="nav-item"><span class="icon">ğŸ“„</span> Tekliflerim</a>
+      <a href="#" class="nav-item active"><span class="icon">✏</span> Teklif Oluştur</a>
+      <a href="#" class="nav-item"><span class="icon">✏</span> Tekliflerim</a>
       <div class="nav-section-label">Analiz</div>
-      <a href="#" class="nav-item"><span class="icon">ğŸ“Š</span> Rekabet Analizi</a>
-      <a href="dokumanlar" class="nav-item"><span class="icon">ğŸ“</span> DÃ¶kÃ¼manlar</a>
+      <a href="#" class="nav-item"><span class="icon">📊</span> Rekabet Analizi</a>
+      <a href="dokumanlar" class="nav-item"><span class="icon">📁</span> Dökümanlar</a>
       <div class="nav-section-label">Ayarlar</div>
-      <a href="profil" class="nav-item"><span class="icon">âš™</span> Profil</a>
-      <a href="fiyatlandirma_odeme_bolumu" class="nav-item"><span class="icon">ğŸ’³</span> Abonelik</a>
+      <a href="profil" class="nav-item"><span class="icon">⚙</span> Profil</a>
+      <a href="fiyatlandirma_odeme_bolumu" class="nav-item"><span class="icon">💳</span> Abonelik</a>
     </nav>
     <div class="sidebar-footer">
       <div class="user-row">
         <div class="user-avatar" id="sidebar-avatar">FD</div>
         <div>
-          <div class="user-name" id="sidebar-isim">YÃ¼kleniyor...</div>
-          <div class="user-plan" id="sidebar-plan">â€”</div>
+          <div class="user-name" id="sidebar-isim">Yükleniyor...</div>
+          <div class="user-plan" id="sidebar-plan">—</div>
         </div>
       </div>
     </div>
@@ -481,28 +481,28 @@
     <!-- TOPBAR -->
     <div class="topbar">
       <div class="topbar-left">
-        <a class="back-btn" id="back-btn" href="ihaleler">â† Geri</a>
-        <div class="breadcrumb">Ä°haleler / <span id="bc-ihale">Teklif OluÅŸtur</span></div>
+        <a class="back-btn" id="back-btn" href="ihaleler">← Geri</a>
+        <div class="breadcrumb">İhaleler / <span id="bc-ihale">Teklif Oluştur</span></div>
       </div>
       <div style="display:flex;gap:10px;align-items:center;">
         <span style="font-size:12px;color:var(--muted);">Otomatik kaydediliyor</span>
-        <span id="kayit-durum" style="font-size:12px;color:#4ade80;display:none;">âœ“ Kaydedildi</span>
+        <span id="kayit-durum" style="font-size:12px;color:#4ade80;display:none;">✓ Kaydedildi</span>
       </div>
     </div>
 
-    <!-- Ä°Ã‡ERÄ°K -->
+    <!-- İÇERİK -->
     <div class="page-wrap">
 
-      <!-- ADIM PANELÄ° -->
+      <!-- ADIM PANELİ -->
       <div class="steps-panel">
         <div class="steps-sticky">
-          <div class="steps-title">Teklif AdÄ±mlarÄ±</div>
+          <div class="steps-title">Teklif Adımları</div>
 
           <div class="step-item active" data-step="1" onclick="adimGit(1)">
             <div class="step-dot">1</div>
             <div class="step-info">
-              <div class="step-label">Ä°hale Ã–zeti</div>
-              <div class="step-desc">SeÃ§ilen ihale bilgileri</div>
+              <div class="step-label">İhale Özeti</div>
+              <div class="step-desc">Seçilen ihale bilgileri</div>
             </div>
           </div>
 
@@ -518,7 +518,7 @@
             <div class="step-dot">3</div>
             <div class="step-info">
               <div class="step-label">Teknik Teklif</div>
-              <div class="step-desc">AI destekli iÃ§erik</div>
+              <div class="step-desc">AI destekli içerik</div>
             </div>
           </div>
 
@@ -541,71 +541,71 @@
           <div class="step-item" data-step="6" onclick="adimGit(6)">
             <div class="step-dot">6</div>
             <div class="step-info">
-              <div class="step-label">Ã–nizleme & Ä°ndir</div>
-              <div class="step-desc">Son kontrol & Ã§Ä±ktÄ±</div>
+              <div class="step-label">Önizleme & İndir</div>
+              <div class="step-desc">Son kontrol & çıktı</div>
             </div>
           </div>
 
-          <!-- Kredi gÃ¶stergesi -->
+          <!-- Kredi göstergesi -->
           <div class="kredi-box">
             <div class="kredi-label">Kalan Krediniz</div>
-            <div class="kredi-sayi" id="kredi-sayi">â€”</div>
-            <div class="kredi-sub">AI teklif yazÄ±mÄ±: 1 kredi</div>
+            <div class="kredi-sayi" id="kredi-sayi">—</div>
+            <div class="kredi-sub">AI teklif yazımı: 1 kredi</div>
           </div>
         </div>
       </div>
 
-      <!-- FORM PANELÄ° -->
+      <!-- FORM PANELİ -->
       <div class="form-panel">
 
-        <!-- â•â•â• ADIM 1: Ä°HALE Ã–ZETÄ° â•â•â• -->
+        <!-- ═══ ADIM 1: İHALE ÖZETİ ═══ -->
         <div class="form-section active" id="adim-1">
           <div class="section-head">
-            <h2>Ä°hale Ã–zeti</h2>
-            <p>Teklif hazÄ±rlayacaÄŸÄ±nÄ±z ihaleye ait temel bilgiler aÅŸaÄŸÄ±da gÃ¶sterilmektedir.</p>
+            <h2>İhale Özeti</h2>
+            <p>Teklif hazırlayacağınız ihaleye ait temel bilgiler aşağıda gösterilmektedir.</p>
           </div>
 
           <div class="card">
-            <div class="card-title">Ä°hale Bilgileri</div>
+            <div class="card-title">İhale Bilgileri</div>
             <div class="ihale-ozet-grid" id="ozet-grid">
               <!-- JS ile doldurulacak -->
-              <div class="ozet-row"><div class="ozet-label">Ä°hale AdÄ±</div><div class="ozet-value skeleton" style="height:18px;width:80%;border-radius:4px;"></div></div>
-              <div class="ozet-row"><div class="ozet-label">Ä°dare</div><div class="ozet-value skeleton" style="height:18px;width:70%;border-radius:4px;"></div></div>
-              <div class="ozet-row"><div class="ozet-label">Ä°hale TÃ¼rÃ¼</div><div class="ozet-value skeleton" style="height:16px;width:60%;border-radius:4px;"></div></div>
+              <div class="ozet-row"><div class="ozet-label">İhale Adı</div><div class="ozet-value skeleton" style="height:18px;width:80%;border-radius:4px;"></div></div>
+              <div class="ozet-row"><div class="ozet-label">İdare</div><div class="ozet-value skeleton" style="height:18px;width:70%;border-radius:4px;"></div></div>
+              <div class="ozet-row"><div class="ozet-label">İhale Türü</div><div class="ozet-value skeleton" style="height:16px;width:60%;border-radius:4px;"></div></div>
               <div class="ozet-row"><div class="ozet-label">Son Teklif Tarihi</div><div class="ozet-value skeleton" style="height:16px;width:50%;border-radius:4px;"></div></div>
               <div class="ozet-row"><div class="ozet-label">Tahmini Bedel</div><div class="ozet-value skeleton" style="height:18px;width:55%;border-radius:4px;"></div></div>
-              <div class="ozet-row"><div class="ozet-label">Ä°hale UsulÃ¼</div><div class="ozet-value skeleton" style="height:16px;width:65%;border-radius:4px;"></div></div>
+              <div class="ozet-row"><div class="ozet-label">İhale Usulü</div><div class="ozet-value skeleton" style="height:16px;width:65%;border-radius:4px;"></div></div>
             </div>
             <div id="sure-uyari" style="display:none;"></div>
           </div>
 
           <div class="card">
-            <div class="card-title">Teklif BaÅŸlÄ±ÄŸÄ±</div>
+            <div class="card-title">Teklif Başlığı</div>
             <div class="form-group">
-              <label>Teklif DosyasÄ± AdÄ± <span class="required">*</span></label>
-              <input type="text" id="teklif-adi" placeholder="Ã–rn: Ä°SKÄ° Boru DÃ¶ÅŸeme Ä°halesi Teknik Teklif â€” Acme Ä°nÅŸaat A.Å." />
+              <label>Teklif Dosyası Adı <span class="required">*</span></label>
+              <input type="text" id="teklif-adi" placeholder="Örn: İSKİ Boru Döşeme İhalesi Teknik Teklif — Acme İnşaat A.Ş." />
             </div>
           </div>
 
           <div class="form-footer">
             <div></div>
-            <button class="btn-next" onclick="adimIleri()">Firma Bilgileri â†’ </button>
+            <button class="btn-next" onclick="adimIleri()">Firma Bilgileri → </button>
           </div>
         </div>
 
-        <!-- â•â•â• ADIM 2: FÄ°RMA BÄ°LGÄ°LERÄ° â•â•â• -->
+        <!-- ═══ ADIM 2: FİRMA BİLGİLERİ ═══ -->
         <div class="form-section" id="adim-2">
           <div class="section-head">
             <h2>Firma Bilgileri</h2>
-            <p>Profilinizden otomatik dolduruldu. Gerekirse dÃ¼zenleyebilirsiniz.</p>
+            <p>Profilinizden otomatik dolduruldu. Gerekirse düzenleyebilirsiniz.</p>
           </div>
 
           <div class="card">
             <div class="card-title">Firma Kimlik Bilgileri</div>
             <div class="form-grid">
               <div class="form-group">
-                <label>Firma UnvanÄ± <span class="required">*</span></label>
-                <input type="text" id="firma-adi" placeholder="Acme Ä°nÅŸaat TaahhÃ¼t A.Å." />
+                <label>Firma Unvanı <span class="required">*</span></label>
+                <input type="text" id="firma-adi" placeholder="Acme İnşaat Taahhüt A.Ş." />
               </div>
               <div class="form-group">
                 <label>Vergi No <span class="required">*</span></label>
@@ -613,25 +613,25 @@
               </div>
               <div class="form-group">
                 <label>Vergi Dairesi <span class="required">*</span></label>
-                <input type="text" id="firma-vergi-dairesi" placeholder="KadÄ±kÃ¶y" />
+                <input type="text" id="firma-vergi-dairesi" placeholder="Kadıköy" />
               </div>
               <div class="form-group">
                 <label>Ticaret Sicil No</label>
-                <input type="text" id="firma-ticaret-sicil" placeholder="Ä°stanbul â€” 123456" />
+                <input type="text" id="firma-ticaret-sicil" placeholder="İstanbul — 123456" />
               </div>
             </div>
           </div>
 
           <div class="card">
-            <div class="card-title">Ä°letiÅŸim Bilgileri</div>
+            <div class="card-title">İletişim Bilgileri</div>
             <div class="form-grid">
               <div class="form-group">
-                <label>Yetkili AdÄ± SoyadÄ± <span class="required">*</span></label>
-                <input type="text" id="yetkili-ad" placeholder="Ahmet YÄ±lmaz" />
+                <label>Yetkili Adı Soyadı <span class="required">*</span></label>
+                <input type="text" id="yetkili-ad" placeholder="Ahmet Yılmaz" />
               </div>
               <div class="form-group">
-                <label>UnvanÄ±</label>
-                <input type="text" id="yetkili-unvan" placeholder="Genel MÃ¼dÃ¼r" />
+                <label>Unvanı</label>
+                <input type="text" id="yetkili-unvan" placeholder="Genel Müdür" />
               </div>
               <div class="form-group">
                 <label>Telefon <span class="required">*</span></label>
@@ -643,7 +643,7 @@
               </div>
               <div class="form-group full">
                 <label>Adres <span class="required">*</span></label>
-                <textarea id="firma-adres" rows="2" placeholder="Firma aÃ§Ä±k adresi..."></textarea>
+                <textarea id="firma-adres" rows="2" placeholder="Firma açık adresi..."></textarea>
               </div>
             </div>
           </div>
@@ -652,128 +652,128 @@
             <div class="card-title">Deneyim & Kapasite</div>
             <div class="form-grid">
               <div class="form-group">
-                <label>SektÃ¶r Deneyimi (yÄ±l)</label>
+                <label>Sektör Deneyimi (yıl)</label>
                 <input type="number" id="deneyim-yil" placeholder="15" min="0" />
               </div>
               <div class="form-group">
-                <label>Ã‡alÄ±ÅŸan SayÄ±sÄ±</label>
+                <label>Çalışan Sayısı</label>
                 <input type="number" id="calisan-sayisi" placeholder="120" min="1" />
               </div>
               <div class="form-group full">
-                <label>Daha Ã–nce Tamamlanan Benzer Projeler</label>
-                <textarea id="benzer-projeler" rows="3" placeholder="1. Ä°stanbul BÃ¼yÃ¼kÅŸehir Belediyesi â€” Su AltyapÄ± Yenileme Projesi (2022) â€” 18 Ay&#10;2. DSÄ° â€” Kanal Rehabilitasyon Ã‡alÄ±ÅŸmalarÄ± (2021) â€” 12 Ay"></textarea>
+                <label>Daha Önce Tamamlanan Benzer Projeler</label>
+                <textarea id="benzer-projeler" rows="3" placeholder="1. İstanbul Büyükşehir Belediyesi — Su Altyapı Yenileme Projesi (2022) — 18 Ay&#10;2. DSİ — Kanal Rehabilitasyon Çalışmaları (2021) — 12 Ay"></textarea>
               </div>
             </div>
           </div>
 
           <div class="form-footer">
-            <button class="btn-prev" onclick="adimGeri()">â† Ä°hale Ã–zeti</button>
-            <button class="btn-next" onclick="adimIleri()">Teknik Teklif â†’ </button>
+            <button class="btn-prev" onclick="adimGeri()">← İhale Özeti</button>
+            <button class="btn-next" onclick="adimIleri()">Teknik Teklif → </button>
           </div>
         </div>
 
-        <!-- â•â•â• ADIM 3: TEKNÄ°K TEKLÄ°F â•â•â• -->
+        <!-- ═══ ADIM 3: TEKNİK TEKLİF ═══ -->
         <div class="form-section" id="adim-3">
           <div class="section-head">
             <h2>Teknik Teklif</h2>
-            <p>AI, ihale ÅŸartnamesini analiz ederek teknik teklif metnini otomatik oluÅŸturur. DÃ¼zenleyebilirsiniz.</p>
+            <p>AI, ihale şartnamesini analiz ederek teknik teklif metnini otomatik oluşturur. Düzenleyebilirsiniz.</p>
           </div>
 
           <!-- AI Panel -->
           <div class="ai-panel">
             <div class="ai-panel-header">
-              <div class="ai-icon">âœ¨</div>
+              <div class="ai-icon">✨</div>
               <div>
-                <div class="ai-panel-title">Gemini ile Otomatik OluÅŸtur</div>
-                <div class="ai-panel-sub">Ä°hale ÅŸartnamesi + firma profiliniz analiz edilerek teklif metni yazÄ±lÄ±r (1 kredi)</div>
+                <div class="ai-panel-title">Gemini ile Otomatik Oluştur</div>
+                <div class="ai-panel-sub">İhale şartnamesi + firma profiliniz analiz edilerek teklif metni yazılır (1 kredi)</div>
               </div>
             </div>
             <div class="ai-actions">
               <button class="btn-ai" id="ai-olustur-btn" onclick="aiTeklifOlustur()">
-                âœ¨ Teknik Teklif OluÅŸtur (1 Kredi)
+                ✨ Teknik Teklif Oluştur (1 Kredi)
               </button>
               <button class="btn-outline" onclick="sablonSec()">
-                ğŸ“‹ Åablon SeÃ§
+                📂 Şablon Seç
               </button>
             </div>
             <div class="ai-loading" id="ai-loading">
               <div class="ai-spinner"></div>
-              <div class="ai-loading-text" id="ai-loading-text">Åartname analiz ediliyor...</div>
+              <div class="ai-loading-text" id="ai-loading-text">Şartname analiz ediliyor...</div>
             </div>
           </div>
 
           <!-- Sekmeler -->
           <div class="tabs">
             <button class="tab-btn active" onclick="tabSec(this,'teknik-genel')">Genel Bilgiler</button>
-            <button class="tab-btn" onclick="tabSec(this,'teknik-yontem')">Ã‡alÄ±ÅŸma YÃ¶ntemi</button>
-            <button class="tab-btn" onclick="tabSec(this,'teknik-takvim')">Ä°ÅŸ Takvimi</button>
+            <button class="tab-btn" onclick="tabSec(this,'teknik-yontem')">Çalışma Yöntemi</button>
+            <button class="tab-btn" onclick="tabSec(this,'teknik-takvim')">İş Takvimi</button>
             <button class="tab-btn" onclick="tabSec(this,'teknik-ekip')">Ekip & Makine</button>
           </div>
 
           <!-- Genel Bilgiler -->
           <div class="tab-content active" id="teknik-genel">
             <div class="card">
-              <div class="card-title">Ä°ÅŸin Genel TanÄ±mÄ± & Kapsam</div>
+              <div class="card-title">İşin Genel Tanımı & Kapsam</div>
               <div class="form-group">
                 <textarea id="teknik-kapsam" rows="6"
-                  placeholder="Ä°hale konusu iÅŸin kapsamÄ±nÄ± ve teknik gereksinimlerini buraya yazÄ±n...&#10;&#10;AI butonu ile otomatik oluÅŸturabilirsiniz."></textarea>
+                  placeholder="İhale konusu işin kapsamını ve teknik gereksinimlerini buraya yazın...&#10;&#10;AI butonu ile otomatik oluşturabilirsiniz."></textarea>
               </div>
             </div>
             <div class="card">
-              <div class="card-title">Neden FirmamÄ±z?</div>
+              <div class="card-title">Neden Firmamız?</div>
               <div class="form-group">
                 <textarea id="teknik-neden" rows="4"
-                  placeholder="FirmanÄ±zÄ±n bu ihale iÃ§in Ã¶ne Ã§Ä±kan gÃ¼Ã§lÃ¼ yÃ¶nlerini aÃ§Ä±klayÄ±n..."></textarea>
+                  placeholder="Firmanızın bu ihale için öne çıkan güçlü yönlerini açıklayın..."></textarea>
               </div>
             </div>
           </div>
 
-          <!-- Ã‡alÄ±ÅŸma YÃ¶ntemi -->
+          <!-- Çalışma Yöntemi -->
           <div class="tab-content" id="teknik-yontem">
             <div class="card">
-              <div class="card-title">Uygulama YÃ¶ntemi & Teknik YaklaÅŸÄ±m</div>
+              <div class="card-title">Uygulama Yöntemi & Teknik Yaklaşım</div>
               <div class="form-group">
                 <textarea id="teknik-yontem-text" rows="8"
-                  placeholder="Ä°ÅŸin nasÄ±l yÃ¼rÃ¼tÃ¼leceÄŸini, hangi teknik yÃ¶ntemlerin kullanÄ±lacaÄŸÄ±nÄ± aÃ§Ä±klayÄ±n...&#10;&#10;â€¢ Mobilizasyon ve hazÄ±rlÄ±k&#10;â€¢ Uygulama aÅŸamalarÄ±&#10;â€¢ Kalite kontrol prosedÃ¼rleri&#10;â€¢ Ä°ÅŸ gÃ¼venliÄŸi Ã¶nlemleri"></textarea>
+                  placeholder="İşin nasıl yürütüleceğini, hangi teknik yöntemlerin kullanılacağını açıklayın...&#10;&#10;• Mobilizasyon ve hazırlık&#10;• Uygulama aşamaları&#10;• Kalite kontrol prosedürleri&#10;• İş güvenliği önlemleri"></textarea>
               </div>
             </div>
           </div>
 
-          <!-- Ä°ÅŸ Takvimi -->
+          <!-- İş Takvimi -->
           <div class="tab-content" id="teknik-takvim">
             <div class="card">
-              <div class="card-title">Ä°ÅŸ ProgramÄ± & Teslim Takvimi</div>
+              <div class="card-title">İş Programı & Teslim Takvimi</div>
               <table class="fiyat-table" id="takvim-tablo">
                 <thead>
                   <tr>
                     <th style="width:40px;">#</th>
                     <th>Faaliyet</th>
-                    <th style="width:120px;">BaÅŸlangÄ±Ã§</th>
-                    <th style="width:120px;">BitiÅŸ</th>
+                    <th style="width:120px;">Başlangıç</th>
+                    <th style="width:120px;">Bitiş</th>
                     <th style="width:36px;"></th>
                   </tr>
                 </thead>
                 <tbody id="takvim-body">
                   <tr>
                     <td style="color:var(--muted);">1</td>
-                    <td><input type="text" placeholder="Mobilizasyon ve saha hazÄ±rlÄ±ÄŸÄ±" /></td>
+                    <td><input type="text" placeholder="Mobilizasyon ve saha hazırlığı" /></td>
                     <td><input type="text" placeholder="1. Ay" /></td>
                     <td><input type="text" placeholder="1. Ay" /></td>
-                    <td><button onclick="satirSil(this)" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;">Ã—</button></td>
+                    <td><button onclick="satirSil(this)" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;">×</button></td>
                   </tr>
                   <tr>
                     <td style="color:var(--muted);">2</td>
-                    <td><input type="text" placeholder="Temel altyapÄ± Ã§alÄ±ÅŸmalarÄ±" /></td>
+                    <td><input type="text" placeholder="Temel altyapı çalışmaları" /></td>
                     <td><input type="text" placeholder="2. Ay" /></td>
                     <td><input type="text" placeholder="4. Ay" /></td>
-                    <td><button onclick="satirSil(this)" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;">Ã—</button></td>
+                    <td><button onclick="satirSil(this)" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;">×</button></td>
                   </tr>
                   <tr>
                     <td style="color:var(--muted);">3</td>
                     <td><input type="text" placeholder="Kontrol, test ve kabul" /></td>
                     <td><input type="text" placeholder="5. Ay" /></td>
                     <td><input type="text" placeholder="6. Ay" /></td>
-                    <td><button onclick="satirSil(this)" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;">Ã—</button></td>
+                    <td><button onclick="satirSil(this)" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;">×</button></td>
                   </tr>
                 </tbody>
               </table>
@@ -789,23 +789,23 @@
                 <thead>
                   <tr>
                     <th>Ad Soyad</th>
-                    <th>GÃ¶rev / Unvan</th>
-                    <th style="width:100px;">Deneyim (yÄ±l)</th>
+                    <th>Görev / Unvan</th>
+                    <th style="width:100px;">Deneyim (yıl)</th>
                     <th style="width:36px;"></th>
                   </tr>
                 </thead>
                 <tbody id="personel-body">
                   <tr>
-                    <td><input type="text" placeholder="Ahmet YÄ±lmaz" /></td>
-                    <td><input type="text" placeholder="Proje MÃ¼dÃ¼rÃ¼" /></td>
+                    <td><input type="text" placeholder="Ahmet Yılmaz" /></td>
+                    <td><input type="text" placeholder="Proje Müdürü" /></td>
                     <td><input type="number" placeholder="20" min="0" /></td>
-                    <td><button onclick="satirSil(this)" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;">Ã—</button></td>
+                    <td><button onclick="satirSil(this)" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;">×</button></td>
                   </tr>
                   <tr>
                     <td><input type="text" placeholder="Fatma Kaya" /></td>
-                    <td><input type="text" placeholder="Ä°nÅŸaat MÃ¼hendisi" /></td>
+                    <td><input type="text" placeholder="İnşaat Mühendisi" /></td>
                     <td><input type="number" placeholder="12" min="0" /></td>
-                    <td><button onclick="satirSil(this)" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;">Ã—</button></td>
+                    <td><button onclick="satirSil(this)" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;">×</button></td>
                   </tr>
                 </tbody>
               </table>
@@ -813,7 +813,7 @@
             </div>
 
             <div class="card">
-              <div class="card-title">Ä°ÅŸ Makineleri & Ekipman</div>
+              <div class="card-title">İş Makineleri & Ekipman</div>
               <table class="fiyat-table" id="makine-tablo">
                 <thead>
                   <tr>
@@ -826,17 +826,17 @@
                 </thead>
                 <tbody id="makine-body">
                   <tr>
-                    <td><input type="text" placeholder="EkskavatÃ¶r" /></td>
+                    <td><input type="text" placeholder="Ekskavatör" /></td>
                     <td><input type="number" placeholder="3" min="1" /></td>
                     <td><input type="text" placeholder="Caterpillar 320D" /></td>
                     <td>
                       <select>
-                        <option>MÃ¼lkiyet</option>
-                        <option>KiralÄ±k</option>
+                        <option>Mülkiyet</option>
+                        <option>Kiralık</option>
                         <option>Temin edilecek</option>
                       </select>
                     </td>
-                    <td><button onclick="satirSil(this)" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;">Ã—</button></td>
+                    <td><button onclick="satirSil(this)" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;">×</button></td>
                   </tr>
                   <tr>
                     <td><input type="text" placeholder="Kamyon" /></td>
@@ -844,12 +844,12 @@
                     <td><input type="text" placeholder="Ford Cargo" /></td>
                     <td>
                       <select>
-                        <option>MÃ¼lkiyet</option>
-                        <option>KiralÄ±k</option>
+                        <option>Mülkiyet</option>
+                        <option>Kiralık</option>
                         <option>Temin edilecek</option>
                       </select>
                     </td>
-                    <td><button onclick="satirSil(this)" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;">Ã—</button></td>
+                    <td><button onclick="satirSil(this)" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;">×</button></td>
                   </tr>
                 </tbody>
               </table>
@@ -858,16 +858,16 @@
           </div>
 
           <div class="form-footer">
-            <button class="btn-prev" onclick="adimGeri()">â† Firma Bilgileri</button>
-            <button class="btn-next" onclick="adimIleri()">Mali Teklif â†’ </button>
+            <button class="btn-prev" onclick="adimGeri()">← Firma Bilgileri</button>
+            <button class="btn-next" onclick="adimIleri()">Mali Teklif → </button>
           </div>
         </div>
 
-        <!-- â•â•â• ADIM 4: MALÄ° TEKLÄ°F â•â•â• -->
+        <!-- ═══ ADIM 4: MALİ TEKLİF ═══ -->
         <div class="form-section" id="adim-4">
           <div class="section-head">
             <h2>Mali Teklif</h2>
-            <p>Birim fiyat tablosunu doldurun. Toplam teklif bedeli otomatik hesaplanÄ±r.</p>
+            <p>Birim fiyat tablosunu doldurun. Toplam teklif bedeli otomatik hesaplanır.</p>
           </div>
 
           <div class="card">
@@ -876,26 +876,26 @@
               <div class="form-group">
                 <label>Para Birimi</label>
                 <select id="para-birimi">
-                  <option value="TRY">â‚º TÃ¼rk LirasÄ± (TRY)</option>
-                  <option value="USD">$ ABD DolarÄ± (USD)</option>
-                  <option value="EUR">â‚¬ Euro (EUR)</option>
+                  <option value="TRY">₺ Türk Lirası (TRY)</option>
+                  <option value="USD">$ ABD Doları (USD)</option>
+                  <option value="EUR">€ Euro (EUR)</option>
                 </select>
               </div>
               <div class="form-group">
-                <label>KDV OranÄ± (%)</label>
+                <label>KDV Oranı (%)</label>
                 <select id="kdv-orani">
-                  <option value="0">%0 â€” KDV'den Muaf</option>
+                  <option value="0">%0 — KDV'den Muaf</option>
                   <option value="10">%10</option>
                   <option value="20" selected>%20</option>
                 </select>
               </div>
               <div class="form-group">
-                <label>Teklif GeÃ§erlilik SÃ¼resi</label>
+                <label>Teklif Geçerlilik Süresi</label>
                 <select id="gecerlilik">
-                  <option>30 GÃ¼n</option>
-                  <option>60 GÃ¼n</option>
-                  <option selected>90 GÃ¼n</option>
-                  <option>120 GÃ¼n</option>
+                  <option>30 Gün</option>
+                  <option>60 Gün</option>
+                  <option selected>90 Gün</option>
+                  <option>120 Gün</option>
                 </select>
               </div>
             </div>
@@ -907,95 +907,95 @@
               <thead>
                 <tr>
                   <th style="width:36px;">#</th>
-                  <th>Ä°ÅŸ Kalemi / AÃ§Ä±klama</th>
+                  <th>İş Kalemi / Açıklama</th>
                   <th style="width:80px;">Miktar</th>
                   <th style="width:80px;">Birim</th>
-                  <th style="width:130px;">Birim Fiyat (â‚º)</th>
-                  <th style="width:130px;">Toplam (â‚º)</th>
+                  <th style="width:130px;">Birim Fiyat (₺)</th>
+                  <th style="width:130px;">Toplam (₺)</th>
                   <th style="width:36px;"></th>
                 </tr>
               </thead>
               <tbody id="fiyat-body">
                 <tr>
                   <td style="color:var(--muted);font-size:12px;">1</td>
-                  <td><input type="text" placeholder="Zemin etÃ¼dÃ¼ ve hazÄ±rlÄ±k" /></td>
+                  <td><input type="text" placeholder="Zemin etüdü ve hazırlık" /></td>
                   <td><input type="number" placeholder="1" min="0" step="0.01" oninput="toplamHesapla()" /></td>
                   <td>
                     <select oninput="toplamHesapla()">
-                      <option>Adet</option><option>mÂ²</option><option>mÂ³</option><option>m</option>
+                      <option>Adet</option><option>m²</option><option>m³</option><option>m</option>
                       <option>ton</option><option>kg</option><option>LS</option>
                     </select>
                   </td>
                   <td>
                     <div class="input-wrap">
-                      <span class="input-prefix">â‚º</span>
+                      <span class="input-prefix">₺</span>
                       <input type="number" placeholder="0,00" min="0" step="0.01" oninput="toplamHesapla()" />
                     </div>
                   </td>
-                  <td style="color:var(--amber);font-weight:700;" class="satir-toplam">â‚º0,00</td>
-                  <td><button onclick="satirSil(this)" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;">Ã—</button></td>
+                  <td style="color:var(--amber);font-weight:700;" class="satir-toplam">₺0,00</td>
+                  <td><button onclick="satirSil(this)" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;">×</button></td>
                 </tr>
                 <tr>
                   <td style="color:var(--muted);font-size:12px;">2</td>
-                  <td><input type="text" placeholder="Boru dÃ¶ÅŸeme iÅŸleri" /></td>
+                  <td><input type="text" placeholder="Boru döşeme işleri" /></td>
                   <td><input type="number" placeholder="500" min="0" step="0.01" oninput="toplamHesapla()" /></td>
                   <td>
                     <select oninput="toplamHesapla()">
-                      <option>Adet</option><option selected>m</option><option>mÂ²</option><option>mÂ³</option>
+                      <option>Adet</option><option selected>m</option><option>m²</option><option>m³</option>
                       <option>ton</option><option>kg</option><option>LS</option>
                     </select>
                   </td>
                   <td>
                     <div class="input-wrap">
-                      <span class="input-prefix">â‚º</span>
+                      <span class="input-prefix">₺</span>
                       <input type="number" placeholder="0,00" min="0" step="0.01" oninput="toplamHesapla()" />
                     </div>
                   </td>
-                  <td style="color:var(--amber);font-weight:700;" class="satir-toplam">â‚º0,00</td>
-                  <td><button onclick="satirSil(this)" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;">Ã—</button></td>
+                  <td style="color:var(--amber);font-weight:700;" class="satir-toplam">₺0,00</td>
+                  <td><button onclick="satirSil(this)" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;">×</button></td>
                 </tr>
               </tbody>
               <tfoot>
                 <tr class="fiyat-total-row">
-                  <td colspan="5" style="color:var(--muted);">Ara Toplam (KDV HariÃ§)</td>
-                  <td class="tutar" id="ara-toplam">â‚º0,00</td>
+                  <td colspan="5" style="color:var(--muted);">Ara Toplam (KDV Hariç)</td>
+                  <td class="tutar" id="ara-toplam">₺0,00</td>
                   <td></td>
                 </tr>
                 <tr class="fiyat-total-row">
                   <td colspan="5" style="color:var(--muted);">KDV (<span id="kdv-label">%20</span>)</td>
-                  <td class="tutar" id="kdv-tutar">â‚º0,00</td>
+                  <td class="tutar" id="kdv-tutar">₺0,00</td>
                   <td></td>
                 </tr>
                 <tr class="fiyat-total-row" style="background:rgba(240,165,0,.05);">
-                  <td colspan="5" style="color:var(--white);font-size:15px;">TOPLAM TEKLÄ°F BEDELÄ°</td>
-                  <td class="tutar" id="genel-toplam" style="font-size:20px;">â‚º0,00</td>
+                  <td colspan="5" style="color:var(--white);font-size:15px;">TOPLAM TEKLİF BEDELİ</td>
+                  <td class="tutar" id="genel-toplam" style="font-size:20px;">₺0,00</td>
                   <td></td>
                 </tr>
               </tfoot>
             </table>
-            <button class="btn-add-row" onclick="fiyatSatirEkle()">+ Ä°ÅŸ Kalemi Ekle</button>
+            <button class="btn-add-row" onclick="fiyatSatirEkle()">+ İş Kalemi Ekle</button>
           </div>
 
           <div class="card">
-            <div class="card-title">Ã–deme PlanÄ± & KoÅŸullar</div>
+            <div class="card-title">Ödeme Planı & Koşullar</div>
             <div class="form-group">
-              <label>Ã–deme KoÅŸullarÄ±</label>
+              <label>Ödeme Koşulları</label>
               <textarea id="odeme-kosullari" rows="3"
-                placeholder="Ã–rn: Avans %20, aylÄ±k hakediÅŸ Ã¶demeleri, kesin kabul sonrasÄ± kalan %10 Ã¶denecektir."></textarea>
+                placeholder="Örn: Avans %20, aylık hakediş ödemeleri, kesin kabul sonrası kalan %10 ödenecektir."></textarea>
             </div>
           </div>
 
           <div class="form-footer">
-            <button class="btn-prev" onclick="adimGeri()">â† Teknik Teklif</button>
-            <button class="btn-next" onclick="adimIleri()">Ekler â†’ </button>
+            <button class="btn-prev" onclick="adimGeri()">← Teknik Teklif</button>
+            <button class="btn-next" onclick="adimIleri()">Ekler → </button>
           </div>
         </div>
 
-        <!-- â•â•â• ADIM 5: EKLER â•â•â• -->
+        <!-- ═══ ADIM 5: EKLER ═══ -->
         <div class="form-section" id="adim-5">
           <div class="section-head">
             <h2>Ekler & Belgeler</h2>
-            <p>Teklif dosyasÄ±na eklenecek belgeleri seÃ§in ve yÃ¼kleyin.</p>
+            <p>Teklif dosyasına eklenecek belgeleri seçin ve yükleyin.</p>
           </div>
 
           <div class="card">
@@ -1003,46 +1003,46 @@
             <div class="ek-listesi">
               <div class="ek-item">
                 <input type="checkbox" class="ek-check" checked />
-                <span class="ek-icon">ğŸ“„</span>
+                <span class="ek-icon">📎</span>
                 <div class="ek-info">
-                  <div class="ek-ad">Vergi LevhasÄ±</div>
-                  <div class="ek-aciklama">Son 1 yÄ±l iÃ§inde alÄ±nmÄ±ÅŸ vergi levhasÄ± fotokopisi</div>
+                  <div class="ek-ad">Vergi Levhası</div>
+                  <div class="ek-aciklama">Son 1 yıl içinde alınmış vergi levhası fotokopisi</div>
                 </div>
                 <span class="ek-zorunlu">Zorunlu</span>
               </div>
               <div class="ek-item">
                 <input type="checkbox" class="ek-check" checked />
-                <span class="ek-icon">ğŸ“‹</span>
+                <span class="ek-icon">📎</span>
                 <div class="ek-info">
                   <div class="ek-ad">Ticaret Sicil Gazetesi</div>
-                  <div class="ek-aciklama">Son 6 ay iÃ§indeki yetki belgesi veya imza sirkÃ¼leri</div>
+                  <div class="ek-aciklama">Son 6 ay içindeki yetki belgesi veya imza sirküleri</div>
                 </div>
                 <span class="ek-zorunlu">Zorunlu</span>
               </div>
               <div class="ek-item">
                 <input type="checkbox" class="ek-check" checked />
-                <span class="ek-icon">ğŸ…</span>
+                <span class="ek-icon">📎</span>
                 <div class="ek-info">
-                  <div class="ek-ad">Ä°ÅŸ Deneyim Belgesi</div>
-                  <div class="ek-aciklama">Benzer iÅŸ deneyim belgesi (son 15 yÄ±l iÃ§inde)</div>
+                  <div class="ek-ad">İş Deneyim Belgesi</div>
+                  <div class="ek-aciklama">Benzer iş deneyim belgesi (son 15 yıl içinde)</div>
                 </div>
                 <span class="ek-zorunlu">Zorunlu</span>
               </div>
               <div class="ek-item">
                 <input type="checkbox" class="ek-check" checked />
-                <span class="ek-icon">ğŸ¦</span>
+                <span class="ek-icon">📎</span>
                 <div class="ek-info">
-                  <div class="ek-ad">GeÃ§ici Teminat Mektubu</div>
-                  <div class="ek-aciklama">Tahmini bedelin %3'Ã¼ tutarÄ±nda banka teminat mektubu</div>
+                  <div class="ek-ad">Geçici Teminat Mektubu</div>
+                  <div class="ek-aciklama">Tahmini bedelin %3'ü tutarında banka teminat mektubu</div>
                 </div>
                 <span class="ek-zorunlu">Zorunlu</span>
               </div>
               <div class="ek-item">
                 <input type="checkbox" class="ek-check" checked />
-                <span class="ek-icon">ğŸ“Š</span>
+                <span class="ek-icon">📎</span>
                 <div class="ek-info">
-                  <div class="ek-ad">BilanÃ§o Bilgileri</div>
-                  <div class="ek-aciklama">Son 3 yÄ±la ait bilanÃ§o ve gelir tablosu</div>
+                  <div class="ek-ad">Bilanço Bilgileri</div>
+                  <div class="ek-aciklama">Son 3 yıla ait bilanço ve gelir tablosu</div>
                 </div>
                 <span class="ek-zorunlu">Zorunlu</span>
               </div>
@@ -1054,28 +1054,28 @@
             <div class="ek-listesi">
               <div class="ek-item">
                 <input type="checkbox" class="ek-check" />
-                <span class="ek-icon">ğŸ†</span>
+                <span class="ek-icon">📎</span>
                 <div class="ek-info">
-                  <div class="ek-ad">ISO SertifikalarÄ±</div>
-                  <div class="ek-aciklama">ISO 9001, ISO 14001 veya diÄŸer kalite belgeleri</div>
+                  <div class="ek-ad">ISO Sertifikaları</div>
+                  <div class="ek-aciklama">ISO 9001, ISO 14001 veya diğer kalite belgeleri</div>
                 </div>
                 <span class="ek-opsiyonel">Opsiyonel</span>
               </div>
               <div class="ek-item">
                 <input type="checkbox" class="ek-check" />
-                <span class="ek-icon">ğŸ“¸</span>
+                <span class="ek-icon">📎</span>
                 <div class="ek-info">
-                  <div class="ek-ad">Referans Projelere Ait FotoÄŸraflar</div>
-                  <div class="ek-aciklama">Tamamlanan benzer projelerin gÃ¶rsel belgeleri</div>
+                  <div class="ek-ad">Referans Projelere Ait Fotoğraflar</div>
+                  <div class="ek-aciklama">Tamamlanan benzer projelerin görsel belgeleri</div>
                 </div>
                 <span class="ek-opsiyonel">Opsiyonel</span>
               </div>
               <div class="ek-item">
                 <input type="checkbox" class="ek-check" />
-                <span class="ek-icon">ğŸ‘¥</span>
+                <span class="ek-icon">📎</span>
                 <div class="ek-info">
-                  <div class="ek-ad">Personel Ã–zgeÃ§miÅŸleri</div>
-                  <div class="ek-aciklama">Anahtar personele ait detaylÄ± CV ve diplomalar</div>
+                  <div class="ek-ad">Personel Özgeçmişleri</div>
+                  <div class="ek-aciklama">Anahtar personele ait detaylı CV ve diplomalar</div>
                 </div>
                 <span class="ek-opsiyonel">Opsiyonel</span>
               </div>
@@ -1083,12 +1083,12 @@
           </div>
 
           <div class="card">
-            <div class="card-title">Ek Dosya YÃ¼kle</div>
+            <div class="card-title">Ek Dosya Yükle</div>
             <div class="upload-zone" onclick="document.getElementById('dosya-input').click()">
-              <div class="upload-zone-icon">ğŸ“</div>
+              <div class="upload-zone-icon">📁</div>
               <div class="upload-zone-text">
-                <strong>TÄ±klayÄ±n</strong> veya sÃ¼rÃ¼kleyip bÄ±rakÄ±n<br>
-                PDF, Word, Excel, JPEG â€” Maks. 10MB
+                <strong>Tıklayın</strong> veya sürükleyip bırakın<br>
+                PDF, Word, Excel, JPEG — Maks. 10MB
               </div>
               <input type="file" id="dosya-input" style="display:none;" multiple accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png" onchange="dosyaYukle(event)" />
             </div>
@@ -1096,65 +1096,65 @@
           </div>
 
           <div class="form-footer">
-            <button class="btn-prev" onclick="adimGeri()">â† Mali Teklif</button>
-            <button class="btn-next" onclick="adimIleri()">Ã–nizleme & Ä°ndir â†’ </button>
+            <button class="btn-prev" onclick="adimGeri()">← Mali Teklif</button>
+            <button class="btn-next" onclick="adimIleri()">Önizleme & İndir → </button>
           </div>
         </div>
 
-        <!-- â•â•â• ADIM 6: Ã–NÄ°ZLEME & Ä°NDÄ°R â•â•â• -->
+        <!-- ═══ ADIM 6: ÖNİZLEME & İNDİR ═══ -->
         <div class="form-section" id="adim-6">
           <div class="section-head">
-            <h2>Ã–nizleme & Ä°ndir</h2>
-            <p>Teklif dosyanÄ±zÄ±n Ã¶nizlemesini gÃ¶rÃ¼ntÃ¼leyin. Word veya PDF olarak indirin.</p>
+            <h2>Önizleme & İndir</h2>
+            <p>Teklif dosyanızın önizlemesini görüntüleyin. Word veya PDF olarak indirin.</p>
           </div>
 
           <div class="card">
             <div class="onizleme-header">
               <div>
                 <div class="onizleme-baslik" id="onizleme-baslik">Teknik & Mali Teklif</div>
-                <div class="onizleme-meta" id="onizleme-meta">OluÅŸturulacak</div>
+                <div class="onizleme-meta" id="onizleme-meta">Oluşturulacak</div>
               </div>
               <div class="indirme-row">
                 <button class="btn-indir btn-indir-word" onclick="wordIndir()">
-                  ğŸ“ Word Ä°ndir
+                  📝 Word İndir
                 </button>
                 <button class="btn-indir btn-indir-pdf" onclick="pdfIndir()">
-                  ğŸ“„ PDF Ä°ndir
+                  📄 PDF İndir
                 </button>
                 <button class="btn-indir btn-indir-kaydet" onclick="kaydEt()">
-                  ğŸ’¾ Kaydet
+                  💾 Kaydet
                 </button>
               </div>
             </div>
 
-            <!-- Belge Ã¶nizleme -->
+            <!-- Belge önizleme -->
             <div class="onizleme-belge" id="belge-onizleme">
 
               <div class="belge-logo-row">
                 <div>
-                  <div class="belge-firma-adi" id="belge-firma-adi">Firma AdÄ±</div>
-                  <div class="belge-firma-alt" id="belge-firma-alt">Vergi No: â€”</div>
-                  <div class="belge-firma-alt" id="belge-firma-adres-onizleme">â€”</div>
+                  <div class="belge-firma-adi" id="belge-firma-adi">Firma Adı</div>
+                  <div class="belge-firma-alt" id="belge-firma-alt">Vergi No: —</div>
+                  <div class="belge-firma-alt" id="belge-firma-adres-onizleme">—</div>
                 </div>
                 <div class="belge-tarih">
-                  <div id="belge-tarih">Tarih: â€”</div>
+                  <div id="belge-tarih">Tarih: —</div>
                   <div id="belge-ref">Ref: TKL-2026-001</div>
                 </div>
               </div>
 
               <div class="belge-konu">
                 <div class="belge-konu-label">Konu</div>
-                <div class="belge-konu-text" id="belge-konu-text">Ä°hale AdÄ± YÃ¼kleniyor...</div>
+                <div class="belge-konu-text" id="belge-konu-text">İhale Adı Yükleniyor...</div>
               </div>
 
               <div class="belge-section">
-                <h3>1. Teklif Veren Firmaya Ä°liÅŸkin Bilgiler</h3>
-                <p id="belge-firma-bilgi">â€”</p>
+                <h3>1. Teklif Veren Firmaya İlişkin Bilgiler</h3>
+                <p id="belge-firma-bilgi">—</p>
               </div>
 
               <div class="belge-section">
-                <h3>2. Teknik Teklif Ã–zeti</h3>
-                <p id="belge-teknik-ozet">Teknik teklif bilgileri AdÄ±m 3'te doldurulduÄŸunda burada gÃ¶rÃ¼necektir.</p>
+                <h3>2. Teknik Teklif Özeti</h3>
+                <p id="belge-teknik-ozet">Teknik teklif bilgileri Adım 3'te doldurulduğunda burada görünecektir.</p>
               </div>
 
               <div class="belge-section">
@@ -1163,7 +1163,7 @@
                   <thead>
                     <tr>
                       <th>#</th>
-                      <th>Ä°ÅŸ Kalemi</th>
+                      <th>İş Kalemi</th>
                       <th>Miktar</th>
                       <th>Birim</th>
                       <th>Birim Fiyat</th>
@@ -1171,29 +1171,29 @@
                     </tr>
                   </thead>
                   <tbody id="belge-fiyat-body">
-                    <tr><td colspan="6" style="text-align:center;color:#9ca3af;">Fiyat cetveli AdÄ±m 4'te doldurulduÄŸunda burada gÃ¶rÃ¼necektir.</td></tr>
+                    <tr><td colspan="6" style="text-align:center;color:#9ca3af;">Fiyat cetveli Adım 4'te doldurulduğunda burada görünecektir.</td></tr>
                   </tbody>
                   <tfoot>
-                    <tr><td colspan="5" style="font-weight:700;">Toplam (KDV Dahil)</td><td class="tutar" id="belge-toplam">â€”</td></tr>
+                    <tr><td colspan="5" style="font-weight:700;">Toplam (KDV Dahil)</td><td class="tutar" id="belge-toplam">—</td></tr>
                   </tfoot>
                 </table>
               </div>
 
               <div class="belge-section">
-                <h3>4. Teklif KoÅŸullarÄ±</h3>
-                <p>Teklifimiz <strong id="belge-gecerlilik">90 gÃ¼n</strong> sÃ¼reyle geÃ§erlidir. Åartname koÅŸullarÄ±nÄ± tamamen kabul etmekteyiz.</p>
+                <h3>4. Teklif Koşulları</h3>
+                <p>Teklifimiz <strong id="belge-gecerlilik">90 gün</strong> süreyle geçerlidir. Şartname koşullarını tamamen kabul etmekteyiz.</p>
               </div>
 
               <div class="belge-imza">
                 <div class="imza-blok">
                   <div class="imza-cizgi"></div>
-                  <div class="imza-ad" id="imza-yetkili">Yetkili AdÄ±</div>
+                  <div class="imza-ad" id="imza-yetkili">Yetkili Adı</div>
                   <div class="imza-unvan" id="imza-unvan">Unvan</div>
                 </div>
                 <div class="imza-blok">
                   <div class="imza-cizgi"></div>
-                  <div class="imza-ad" id="imza-firma">Firma AdÄ±</div>
-                  <div class="imza-unvan">KaÅŸe & Ä°mza</div>
+                  <div class="imza-ad" id="imza-firma">Firma Adı</div>
+                  <div class="imza-unvan">Kaşe & İmza</div>
                 </div>
               </div>
 
@@ -1201,9 +1201,9 @@
           </div>
 
           <div class="form-footer">
-            <button class="btn-prev" onclick="adimGeri()">â† Ekler</button>
+            <button class="btn-prev" onclick="adimGeri()">← Ekler</button>
             <button class="btn-next" onclick="kaydEt()" style="background:#4ade80;color:#0a1628;">
-              âœ“ Teklifi Tamamla & Kaydet
+              ✓ Teklifi Tamamla & Kaydet
             </button>
           </div>
         </div>
@@ -1224,48 +1224,48 @@
   const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxwZ2Vsd2ZvYXJob3VvbGxod3VyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIyMzI4MjAsImV4cCI6MjA5NzgwODgyMH0.GqTZkeoOAomuur4JSyW2pTR-8Zzg8OTv394JtP7DoXM";
   const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-  // â”€â”€ URL & global state â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── URL & global state ────────────────────────────────
   const params   = new URLSearchParams(window.location.search);
   const ihaleId  = params.get('ihale_id');
   let mevcutAdim = 1;
   let ihaleData  = null;
   let satirSayaci = { fiyat: 2, takvim: 3, personel: 2, makine: 2 };
 
-  // â”€â”€ YardÄ±mcÄ± formatlama â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Yardımcı formatlama ───────────────────────────────
   function tarihFmt(t) {
-    if (!t) return 'â€”';
+    if (!t) return '—';
     const d = new Date(t);
-    const ay = ['Ocak','Åubat','Mart','Nisan','MayÄ±s','Haziran','Temmuz','AÄŸustos','EylÃ¼l','Ekim','KasÄ±m','AralÄ±k'];
+    const ay = ['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
     return `${d.getDate()} ${ay[d.getMonth()]} ${d.getFullYear()}`;
   }
   function butceFmt(b) {
-    if (!b) return 'â€”';
-    if (b >= 1000000) return `â‚º${(b/1000000).toFixed(2)}M`;
-    if (b >= 1000) return `â‚º${(b/1000).toFixed(0)}K`;
-    return `â‚º${Number(b).toLocaleString('tr-TR')}`;
+    if (!b) return '—';
+    if (b >= 1000000) return `₺${(b/1000000).toFixed(2)}M`;
+    if (b >= 1000) return `₺${(b/1000).toFixed(0)}K`;
+    return `₺${Number(b).toLocaleString('tr-TR')}`;
   }
   function gunKaldi(bitis) {
     if (!bitis) return null;
     return Math.ceil((new Date(bitis) - new Date()) / 86400000);
   }
   function paraCikti(sayi) {
-    return `â‚º${Number(sayi||0).toLocaleString('tr-TR', {minimumFractionDigits:2, maximumFractionDigits:2})}`;
+    return `₺${Number(sayi||0).toLocaleString('tr-TR', {minimumFractionDigits:2, maximumFractionDigits:2})}`;
   }
 
-  // â”€â”€ Toast bildirimi â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Toast bildirimi ───────────────────────────────────
   function toast(mesaj, tur = 'bilgi') {
     const el = document.getElementById('toast');
-    const ikon = tur === 'basari' ? 'âœ“' : tur === 'hata' ? 'âœ—' : 'â„¹';
+    const ikon = tur === 'basari' ? '✓' : tur === 'hata' ? '✗' : 'ℹ';
     el.className = `toast ${tur}`;
     el.innerHTML = `<span>${ikon}</span> ${mesaj}`;
     el.classList.add('show');
     setTimeout(() => el.classList.remove('show'), 3000);
   }
 
-  // â”€â”€ AdÄ±m yÃ¶netimi â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Adım yönetimi ─────────────────────────────────────
   function adimGit(no) {
     if (no > mevcutAdim) {
-      // Ä°leriye gitmek iÃ§in mevcut adÄ±mÄ± validate et
+      // İleriye gitmek için mevcut adımı validate et
       if (!adimValidate(mevcutAdim)) return;
     }
     mevcutAdim = no;
@@ -1294,9 +1294,9 @@
       item.classList.remove('active','done');
       if (no === mevcutAdim) item.classList.add('active');
       else if (no < mevcutAdim) item.classList.add('done');
-      // done ise âœ“ gÃ¶ster
+      // done ise ✓ göster
       const dot = item.querySelector('.step-dot');
-      if (no < mevcutAdim) dot.textContent = 'âœ“';
+      if (no < mevcutAdim) dot.textContent = '✓';
       else dot.textContent = no;
     });
 
@@ -1306,53 +1306,53 @@
   function adimValidate(adim) {
     if (adim === 1) {
       const ad = document.getElementById('teklif-adi').value.trim();
-      if (!ad) { toast('Teklif dosyasÄ± adÄ± giriniz.', 'hata'); return false; }
+      if (!ad) { toast('Teklif dosyası adı giriniz.', 'hata'); return false; }
     }
     if (adim === 2) {
-      if (!document.getElementById('firma-adi').value.trim()) { toast('Firma unvanÄ± zorunludur.', 'hata'); return false; }
-      if (!document.getElementById('yetkili-ad').value.trim()) { toast('Yetkili adÄ± soyadÄ± zorunludur.', 'hata'); return false; }
+      if (!document.getElementById('firma-adi').value.trim()) { toast('Firma unvanı zorunludur.', 'hata'); return false; }
+      if (!document.getElementById('yetkili-ad').value.trim()) { toast('Yetkili adı soyadı zorunludur.', 'hata'); return false; }
     }
     return true;
   }
 
-  // â”€â”€ Ä°hale verisi yÃ¼kle â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── İhale verisi yükle ────────────────────────────────
   async function ihaleYukle() {
     if (!ihaleId) {
       ozetGrid([
-        ['Ä°hale AdÄ±','Demo Ä°hale â€” GerÃ§ek sayfada ?ihale_id=xxx ile aÃ§Ä±n'],
-        ['Ä°dare','Ã–rnek Belediyesi'],
-        ['Ä°hale TÃ¼rÃ¼','YapÄ±m Ä°ÅŸi'],
+        ['İhale Adı','Demo İhale — Gerçek sayfada ?ihale_id=xxx ile açın'],
+        ['İdare','Örnek Belediyesi'],
+        ['İhale Türü','Yapım İşi'],
         ['Son Teklif Tarihi','15 Temmuz 2026'],
-        ['Tahmini Bedel','â‚º12.500.000'],
-        ['Ä°hale UsulÃ¼','AÃ§Ä±k Ä°hale UsulÃ¼'],
+        ['Tahmini Bedel','₺12.500.000'],
+        ['İhale Usulü','Açık İhale Usulü'],
       ]);
-      document.getElementById('teklif-adi').value = 'Demo Ä°hale â€” Teknik & Mali Teklif';
-      document.getElementById('bc-ihale').textContent = 'Demo Ä°hale';
+      document.getElementById('teklif-adi').value = 'Demo İhale — Teknik & Mali Teklif';
+      document.getElementById('bc-ihale').textContent = 'Demo İhale';
       return;
     }
 
     const { data, error } = await sb.from('ilanlar').select('*').eq('id', ihaleId).single();
-    if (error || !data) { toast('Ä°hale bulunamadÄ±.', 'hata'); return; }
+    if (error || !data) { toast('İhale bulunamadı.', 'hata'); return; }
 
     ihaleData = data;
     const gun = gunKaldi(data.son_teklif_tarihi);
 
     ozetGrid([
-      ['Ä°hale AdÄ±', data.baslik || 'â€”'],
-      ['Ä°dare', data.idare || 'â€”'],
-      ['Ä°hale TÃ¼rÃ¼', data.tur || 'â€”'],
+      ['İhale Adı', data.baslik || '—'],
+      ['İdare', data.idare || '—'],
+      ['İhale Türü', data.tur || '—'],
       ['Son Teklif Tarihi', tarihFmt(data.son_teklif_tarihi)],
-      ['YaklaÅŸÄ±k Maliyet', (() => {
+      ['Yaklaşık Maliyet', (() => {
         const mn = data.yaklasik_maliyet_min, mx = data.yaklasik_maliyet_max;
-        if (mn != null && mx != null) return `${butceFmt(mn)} â€“ ${butceFmt(mx)}`;
-        if (mn != null) return `${butceFmt(mn)} Ã¼zeri`;
+        if (mn != null && mx != null) return `${butceFmt(mn)} – ${butceFmt(mx)}`;
+        if (mn != null) return `${butceFmt(mn)} üzeri`;
         if (data.tahmini_bedel) return butceFmt(data.tahmini_bedel);
-        return 'â€”';
+        return '—';
       })()],
-      ['Ä°hale UsulÃ¼', data.usul || 'â€”'],
+      ['İhale Usulü', data.usul || '—'],
     ]);
 
-    document.getElementById('teklif-adi').value = `${data.baslik || 'Ä°hale'} â€” Teknik & Mali Teklif`;
+    document.getElementById('teklif-adi').value = `${data.baslik || 'İhale'} — Teknik & Mali Teklif`;
     document.getElementById('bc-ihale').textContent = (data.baslik||'').substring(0,40);
     document.getElementById('back-btn').href = `ihale-detay?id=${ihaleId}`;
 
@@ -1360,7 +1360,7 @@
       document.getElementById('sure-uyari').style.display = 'flex';
       document.getElementById('sure-uyari').className = 'sure-uyari';
       document.getElementById('sure-uyari').innerHTML =
-        `âš  Son teklif tarihine <strong>${gun} gÃ¼n</strong> kaldÄ±. Acele ediniz!`;
+        `⚠ Son teklif tarihine <strong>${gun} gün</strong> kaldı. Acele ediniz!`;
     }
   }
 
@@ -1373,16 +1373,16 @@
       </div>`).join('');
   }
 
-  // â”€â”€ Kredi yÃ¼kle â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Kredi yükle ───────────────────────────────────────
   async function krediYukle() {
     const { data: { user } } = await sb.auth.getUser();
-    if (!user) { document.getElementById('kredi-sayi').textContent = 'GiriÅŸ yok'; return; }
+    if (!user) { document.getElementById('kredi-sayi').textContent = 'Giriş yok'; return; }
 
     const { data } = await sb.from('kullanici_krediler')
       .select('kalan_kredi').eq('kullanici_id', user.id).single();
-    document.getElementById('kredi-sayi').textContent = data ? `${data.kalan_kredi} Kredi` : 'â€”';
+    document.getElementById('kredi-sayi').textContent = data ? `${data.kalan_kredi} Kredi` : '—';
 
-    // Sidebar kullanÄ±cÄ±
+    // Sidebar kullanıcı
     const { data: profil } = await sb.from('kullanici_profiller')
       .select('firma_adi, aktif_plan').eq('id', user.id).single();
     if (profil) {
@@ -1396,15 +1396,15 @@
     }
   }
 
-  // â”€â”€ AI Teklif OluÅŸtur â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── AI Teklif Oluştur ─────────────────────────────────
   async function aiTeklifOlustur() {
     const btn = document.getElementById('ai-olustur-btn');
     const loading = document.getElementById('ai-loading');
     const mesajlar = [
-      'Åartname analiz ediliyor...',
-      'Teknik gereksinimler Ã§Ä±karÄ±lÄ±yor...',
-      'Firma profiliniz deÄŸerlendiriliyor...',
-      'Teklif metni yazÄ±lÄ±yor...',
+      'Şartname analiz ediliyor...',
+      'Teknik gereksinimler çıkarılıyor...',
+      'Firma profiliniz değerlendiriliyor...',
+      'Teklif metni yazılıyor...',
     ];
     let mi = 0;
 
@@ -1417,7 +1417,7 @@
     }, 1800);
 
     try {
-      // Backend'e istek (henÃ¼z endpoint yoksa mock)
+      // Backend'e istek (henüz endpoint yoksa mock)
       let teknikMetin, nedenMetin, yontemMetin;
 
       if (ihaleId) {
@@ -1435,31 +1435,31 @@
         }
       }
 
-      // Fallback: Ã¶rnek metin
+      // Fallback: örnek metin
       if (!teknikMetin) {
-        const baslik = ihaleData?.baslik || 'Ä°hale Konusu Ä°ÅŸ';
-        const idare  = ihaleData?.idare  || 'Ä°dare';
-        teknikMetin = `${idare} tarafÄ±ndan ihaleye Ã§Ä±karÄ±lan "${baslik}" kapsamÄ±nda firmamÄ±z aÅŸaÄŸÄ±daki teknik hizmetleri sunmayÄ± taahhÃ¼t etmektedir:\n\nâ€¢ Åartname ve teknik Ã¶zelliklere tam uygun malzeme ve iÅŸÃ§ilik\nâ€¢ Deneyimli kadromuz ile zamanÄ±nda ve eksiksiz teslim\nâ€¢ SektÃ¶rde 15+ yÄ±llÄ±k iÅŸ deneyimi ve referans projeler\nâ€¢ Kalite gÃ¼vence sistemi kapsamÄ±nda sÃ¼rekli denetim ve kontrol`;
-        nedenMetin  = `FirmamÄ±z bu alanda 15 yÄ±lÄ± aÅŸkÄ±n deneyime sahip olup benzer bÃ¼yÃ¼klÃ¼kteki projeleri baÅŸarÄ±yla tamamlamÄ±ÅŸtÄ±r. ISO 9001 kalite yÃ¶netim sistemimiz ve uzman kadromuzla bu ihaleyi en verimli ve kaliteli ÅŸekilde gerÃ§ekleÅŸtirmeye hazÄ±rÄ±z.`;
-        yontemMetin = `Ä°ÅŸin yÃ¼rÃ¼tÃ¼lmesinde aÅŸaÄŸÄ±daki teknik yaklaÅŸÄ±m benimsenecektir:\n\n1. Mobilizasyon ve HazÄ±rlÄ±k (1. Ay): Saha teslimi, iÅŸ programÄ± kesinleÅŸtirilmesi, ekipman temini\n2. Uygulama AÅŸamasÄ± (2â€“5. Ay): Teknik ÅŸartnameye uygun sÄ±ra ve yÃ¶ntemlerle uygulama\n3. Kontrol ve Kabul (6. Ay): Ä°ÅŸ tamamlama, test ve Ã¶lÃ§Ã¼mler, kesin kabul`;
+        const baslik = ihaleData?.baslik || 'İhale Konusu İş';
+        const idare  = ihaleData?.idare  || 'İdare';
+        teknikMetin = `${idare} tarafından ihaleye çıkarılan "${baslik}" kapsamında firmamız aşağıdaki teknik hizmetleri sunmayı taahhüt etmektedir:\n\n• Şartname ve teknik özelliklere tam uygun malzeme ve işçilik\n• Deneyimli kadromuz ile zamanında ve eksiksiz teslim\n• Sektörde 15+ yıllık iş deneyimi ve referans projeler\n• Kalite güvence sistemi kapsamında sürekli denetim ve kontrol`;
+        nedenMetin  = `Firmamız bu alanda 15 yılı aşkın deneyime sahip olup benzer büyüklükteki projeleri başarıyla tamamlamıştır. ISO 9001 kalite yönetim sistemimiz ve uzman kadromuzla bu ihaleyi en verimli ve kaliteli şekilde gerçekleştirmeye hazırız.`;
+        yontemMetin = `İşin yürütülmesinde aşağıdaki teknik yaklaşım benimsenecektir:\n\n1. Mobilizasyon ve Hazırlık (1. Ay): Saha teslimi, iş programı kesinleştirilmesi, ekipman temini\n2. Uygulama Aşaması (2–5. Ay): Teknik şartnameye uygun sıra ve yöntemlerle uygulama\n3. Kontrol ve Kabul (6. Ay): İş tamamlama, test ve ölçümler, kesin kabul`;
       }
 
       document.getElementById('teknik-kapsam').value = teknikMetin;
       document.getElementById('teknik-neden').value  = nedenMetin;
       document.getElementById('teknik-yontem-text').value = yontemMetin;
 
-      toast('Teknik teklif metni oluÅŸturuldu! Ä°nceleyip dÃ¼zenleyebilirsiniz.', 'basari');
+      toast('Teknik teklif metni oluşturuldu! İnceleyip düzenleyebilirsiniz.', 'basari');
     } catch(e) {
-      toast('Bir hata oluÅŸtu. Tekrar deneyin.', 'hata');
+      toast('Bir hata oluştu. Tekrar deneyin.', 'hata');
     } finally {
       clearInterval(interval);
       loading.classList.remove('show');
       btn.disabled = false;
-      btn.textContent = 'âœ¨ Yeniden OluÅŸtur (1 Kredi)';
+      btn.textContent = '✨ Yeniden Oluştur (1 Kredi)';
     }
   }
 
-  // â”€â”€ Tab seÃ§imi â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Tab seçimi ────────────────────────────────────────
   function tabSec(btn, id) {
     btn.closest('.form-section').querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
@@ -1467,7 +1467,7 @@
     document.getElementById(id).classList.add('active');
   }
 
-  // â”€â”€ Tablo satÄ±r iÅŸlemleri â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Tablo satır işlemleri ─────────────────────────────
   function satirSil(btn) {
     const tr = btn.closest('tr');
     const tbody = tr.closest('tbody');
@@ -1476,7 +1476,7 @@
       toplamHesapla();
       numaralandir(tbody);
     } else {
-      toast('En az bir satÄ±r kalmalÄ±.', 'hata');
+      toast('En az bir satır kalmalı.', 'hata');
     }
   }
 
@@ -1494,22 +1494,22 @@
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td style="color:var(--muted);font-size:12px;">${no}</td>
-      <td><input type="text" placeholder="Ä°ÅŸ kalemi aÃ§Ä±klamasÄ±" /></td>
+      <td><input type="text" placeholder="İş kalemi açıklaması" /></td>
       <td><input type="number" placeholder="1" min="0" step="0.01" oninput="toplamHesapla()" /></td>
       <td>
         <select oninput="toplamHesapla()">
-          <option>Adet</option><option>mÂ²</option><option>mÂ³</option><option>m</option>
+          <option>Adet</option><option>m²</option><option>m³</option><option>m</option>
           <option>ton</option><option>kg</option><option>LS</option>
         </select>
       </td>
       <td>
         <div class="input-wrap">
-          <span class="input-prefix">â‚º</span>
+          <span class="input-prefix">₺</span>
           <input type="number" placeholder="0,00" min="0" step="0.01" oninput="toplamHesapla()" />
         </div>
       </td>
-      <td style="color:var(--amber);font-weight:700;" class="satir-toplam">â‚º0,00</td>
-      <td><button onclick="satirSil(this)" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;">Ã—</button></td>`;
+      <td style="color:var(--amber);font-weight:700;" class="satir-toplam">₺0,00</td>
+      <td><button onclick="satirSil(this)" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;">×</button></td>`;
     tbody.appendChild(tr);
   }
 
@@ -1520,10 +1520,10 @@
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td style="color:var(--muted);">${no}</td>
-      <td><input type="text" placeholder="Faaliyet aÃ§Ä±klamasÄ±" /></td>
+      <td><input type="text" placeholder="Faaliyet açıklaması" /></td>
       <td><input type="text" placeholder="${no}. Ay" /></td>
       <td><input type="text" placeholder="${no}. Ay" /></td>
-      <td><button onclick="satirSil(this)" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;">Ã—</button></td>`;
+      <td><button onclick="satirSil(this)" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;">×</button></td>`;
     tbody.appendChild(tr);
   }
 
@@ -1533,9 +1533,9 @@
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td><input type="text" placeholder="Ad Soyad" /></td>
-      <td><input type="text" placeholder="GÃ¶rev / Unvan" /></td>
+      <td><input type="text" placeholder="Görev / Unvan" /></td>
       <td><input type="number" placeholder="0" min="0" /></td>
-      <td><button onclick="satirSil(this)" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;">Ã—</button></td>`;
+      <td><button onclick="satirSil(this)" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;">×</button></td>`;
     tbody.appendChild(tr);
   }
 
@@ -1544,19 +1544,19 @@
     const tbody = document.getElementById('makine-body');
     const tr = document.createElement('tr');
     tr.innerHTML = `
-      <td><input type="text" placeholder="Ekipman adÄ±" /></td>
+      <td><input type="text" placeholder="Ekipman adı" /></td>
       <td><input type="number" placeholder="1" min="1" /></td>
       <td><input type="text" placeholder="Marka / Model" /></td>
       <td>
         <select>
-          <option>MÃ¼lkiyet</option><option>KiralÄ±k</option><option>Temin edilecek</option>
+          <option>Mülkiyet</option><option>Kiralık</option><option>Temin edilecek</option>
         </select>
       </td>
-      <td><button onclick="satirSil(this)" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;">Ã—</button></td>`;
+      <td><button onclick="satirSil(this)" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;">×</button></td>`;
     tbody.appendChild(tr);
   }
 
-  // â”€â”€ Mali teklif toplamÄ± â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Mali teklif toplamı ───────────────────────────────
   function toplamHesapla() {
     let ara = 0;
     const satirlar = document.getElementById('fiyat-body').rows;
@@ -1580,7 +1580,7 @@
     document.getElementById('kdv-label').textContent  = `%${kdvOran}`;
   }
 
-  // â”€â”€ Dosya yÃ¼kle â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Dosya yükle ───────────────────────────────────────
   function dosyaYukle(event) {
     const files = Array.from(event.target.files);
     const kap = document.getElementById('yuklenen-dosyalar');
@@ -1588,42 +1588,42 @@
       const div = document.createElement('div');
       div.style.cssText = 'display:flex;align-items:center;gap:10px;padding:10px 14px;background:var(--navy);border:1px solid var(--border);border-radius:7px;';
       div.innerHTML = `
-        <span>ğŸ“</span>
+        <span>✅</span>
         <span style="flex:1;font-size:13px;color:var(--white);">${f.name}</span>
         <span style="font-size:11px;color:var(--muted);">${(f.size/1024).toFixed(0)} KB</span>
-        <button onclick="this.closest('div').remove()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;">Ã—</button>`;
+        <button onclick="this.closest('div').remove()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;">×</button>`;
       kap.appendChild(div);
     });
     toast(`${files.length} dosya eklendi.`, 'basari');
   }
 
-  // â”€â”€ Åablon seÃ§ (placeholder) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Şablon seç (placeholder) ──────────────────────────
   function sablonSec() {
-    toast('Åablon kÃ¼tÃ¼phanesi yakÄ±nda eklenecek!', 'bilgi');
+    toast('Şablon kütüphanesi yakında eklenecek!', 'bilgi');
   }
 
-  // â”€â”€ Ã–nizleme gÃ¼ncelle â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Önizleme güncelle ─────────────────────────────────
   function onizlemeGuncelle() {
-    const firmaAdi  = document.getElementById('firma-adi').value   || 'Firma AdÄ±';
-    const vergiNo   = document.getElementById('firma-vergi').value  || 'â€”';
-    const adres     = document.getElementById('firma-adres').value  || 'â€”';
-    const yetkiliAd = document.getElementById('yetkili-ad').value   || 'â€”';
-    const yetkiliUn = document.getElementById('yetkili-unvan').value|| 'â€”';
-    const teknikOzet= document.getElementById('teknik-kapsam').value|| 'â€”';
-    const gecerlilik= document.getElementById('gecerlilik').value   || '90 GÃ¼n';
+    const firmaAdi  = document.getElementById('firma-adi').value   || 'Firma Adı';
+    const vergiNo   = document.getElementById('firma-vergi').value  || '—';
+    const adres     = document.getElementById('firma-adres').value  || '—';
+    const yetkiliAd = document.getElementById('yetkili-ad').value   || '—';
+    const yetkiliUn = document.getElementById('yetkili-unvan').value|| '—';
+    const teknikOzet= document.getElementById('teknik-kapsam').value|| '—';
+    const gecerlilik= document.getElementById('gecerlilik').value   || '90 Gün';
     const teklifAdi = document.getElementById('teklif-adi').value   || 'Teklif';
     const ihaleBaslik = ihaleData?.baslik || teklifAdi;
 
     document.getElementById('onizleme-baslik').textContent = teklifAdi;
-    document.getElementById('onizleme-meta').textContent   = `${tarihFmt(new Date())} tarihinde oluÅŸturuldu`;
+    document.getElementById('onizleme-meta').textContent   = `${tarihFmt(new Date())} tarihinde oluşturuldu`;
 
     document.getElementById('belge-firma-adi').textContent = firmaAdi;
     document.getElementById('belge-firma-alt').textContent = `Vergi No: ${vergiNo}`;
     document.getElementById('belge-firma-adres-onizleme').textContent = adres;
     document.getElementById('belge-tarih').textContent = `Tarih: ${tarihFmt(new Date())}`;
-    document.getElementById('belge-konu-text').textContent = `${ihaleBaslik} â€” Teknik & Mali Teklif`;
+    document.getElementById('belge-konu-text').textContent = `${ihaleBaslik} — Teknik & Mali Teklif`;
     document.getElementById('belge-firma-bilgi').textContent =
-      `${firmaAdi} â€” ${adres} â€” Yetkili: ${yetkiliAd} (${yetkiliUn})`;
+      `${firmaAdi} — ${adres} — Yetkili: ${yetkiliAd} (${yetkiliUn})`;
     document.getElementById('belge-teknik-ozet').textContent = teknikOzet;
     document.getElementById('belge-gecerlilik').textContent = gecerlilik;
     document.getElementById('imza-yetkili').textContent = yetkiliAd;
@@ -1637,13 +1637,13 @@
     Array.from(satirlar).forEach((tr, i) => {
       const td = tr.querySelectorAll('td');
       const inputs = tr.querySelectorAll('input[type="number"]');
-      const aciklama = tr.querySelector('input[type="text"]')?.value || 'â€”';
+      const aciklama = tr.querySelector('input[type="text"]')?.value || '—';
       const miktar = parseFloat(inputs[0]?.value) || 0;
       const birim  = tr.querySelector('select')?.value || '';
       const birimFiyat = parseFloat(inputs[1]?.value) || 0;
       const satirToplam = miktar * birimFiyat;
       toplam += satirToplam;
-      if (aciklama !== 'â€”' || miktar > 0) {
+      if (aciklama !== '—' || miktar > 0) {
         tblHTML += `<tr>
           <td>${i+1}</td>
           <td>${aciklama}</td>
@@ -1663,14 +1663,14 @@
     document.getElementById('belge-toplam').textContent = paraCikti(genel);
   }
 
-  // â”€â”€ Word / PDF indirme â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Word / PDF indirme ────────────────────────────────
   function wordIndir() {
-    toast('Word dosyasÄ± hazÄ±rlanÄ±yor... (Backend entegrasyonu ile aktif olacak)', 'bilgi');
+    toast('Word dosyası hazırlanıyor... (Backend entegrasyonu ile aktif olacak)', 'bilgi');
     // TODO: backend /api/teklif/word endpoint'ine POST
   }
 
   function pdfIndir() {
-    // TarayÄ±cÄ± print ile PDF kaydet
+    // Tarayıcı print ile PDF kaydet
     const el = document.getElementById('belge-onizleme');
     const w = window.open('', '_blank');
     w.document.write(`
@@ -1705,10 +1705,10 @@
     setTimeout(() => { w.focus(); w.print(); }, 500);
   }
 
-  // â”€â”€ Kaydet â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Kaydet ────────────────────────────────────────────
   async function kaydEt() {
     const { data: { user } } = await sb.auth.getUser();
-    if (!user) { toast('Kaydetmek iÃ§in giriÅŸ yapmalÄ±sÄ±nÄ±z.', 'hata'); return; }
+    if (!user) { toast('Kaydetmek için giriş yapmalısınız.', 'hata'); return; }
 
     const teklif = {
       kullanici_id: user.id,
@@ -1733,17 +1733,18 @@
     }
 
     document.getElementById('kayit-durum').style.display = 'inline';
-    toast('Teklif baÅŸarÄ±yla kaydedildi! Dashboard\'dan gÃ¶rÃ¼ntÃ¼leyebilirsiniz.', 'basari');
+    toast('Teklif başarıyla kaydedildi! Dashboard\'dan görüntüleyebilirsiniz.', 'basari');
     setTimeout(() => {
       document.getElementById('kayit-durum').style.display = 'none';
     }, 3000);
   }
 
-  // â”€â”€ BaÅŸlat â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Başlat ────────────────────────────────────────────
   ihaleYukle();
   krediYukle();
   document.getElementById('kdv-orani').addEventListener('change', toplamHesapla);
 </script>
 </body>
 </html>
+
 
