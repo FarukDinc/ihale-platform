@@ -167,15 +167,99 @@ class AuthClient:
         return AuthResponse(resp.json())
 
 
+class BucketObj:
+    """list_buckets() sonuçları için .name erişimi sağlar."""
+    def __init__(self, data: dict):
+        self.id = data.get("id", "")
+        self.name = data.get("name", "")
+        self.public = data.get("public", False)
+
+
+class StorageBucket:
+    """sb.storage.from_(bucket) — upload / get_public_url."""
+    def __init__(self, url: str, key: str, bucket: str):
+        self._url = url
+        self._key = key
+        self._bucket = bucket
+
+    def upload(self, path: str, content: bytes, file_options: dict = None) -> ExecuteResult:
+        opts = file_options or {}
+        ct = opts.get("content-type") or opts.get("contentType") or "application/octet-stream"
+        upsert = str(opts.get("upsert", "false")).lower() == "true"
+        endpoint = f"{self._url}/storage/v1/object/{self._bucket}/{path.lstrip('/')}"
+        headers = {
+            "apikey": self._key,
+            "Authorization": f"Bearer {self._key}",
+            "Content-Type": ct,
+        }
+        if upsert:
+            headers["x-upsert"] = "true"
+        method = "PUT" if upsert else "POST"
+        with httpx.Client(timeout=180) as client:
+            resp = client.request(method, endpoint, headers=headers, content=content)
+        if resp.status_code >= 400:
+            raise Exception(f"Storage upload hata {resp.status_code}: {resp.text}")
+        try:
+            data = resp.json()
+        except Exception:
+            data = None
+        return ExecuteResult(data)
+
+    def get_public_url(self, path: str) -> str:
+        return f"{self._url}/storage/v1/object/public/{self._bucket}/{path.lstrip('/')}"
+
+
+class StorageClient:
+    """sb.storage — from_ / list_buckets / create_bucket."""
+    def __init__(self, url: str, key: str):
+        self._url = url
+        self._key = key
+
+    def _auth_headers(self, json_ct: bool = True) -> dict:
+        h = {"apikey": self._key, "Authorization": f"Bearer {self._key}"}
+        if json_ct:
+            h["Content-Type"] = "application/json"
+        return h
+
+    def from_(self, bucket: str) -> StorageBucket:
+        return StorageBucket(self._url, self._key, bucket)
+
+    def list_buckets(self) -> list:
+        endpoint = f"{self._url}/storage/v1/bucket"
+        with httpx.Client(timeout=30) as client:
+            resp = client.get(endpoint, headers=self._auth_headers(json_ct=False))
+        if resp.status_code >= 400:
+            raise Exception(f"Storage list_buckets hata {resp.status_code}: {resp.text}")
+        return [BucketObj(b) for b in (resp.json() or [])]
+
+    def create_bucket(self, bucket_id: str, options: dict = None) -> ExecuteResult:
+        opts = options or {}
+        body = {"id": bucket_id, "name": bucket_id, "public": opts.get("public", False)}
+        if "file_size_limit" in opts:
+            body["file_size_limit"] = opts["file_size_limit"]
+        endpoint = f"{self._url}/storage/v1/bucket"
+        with httpx.Client(timeout=30) as client:
+            resp = client.post(endpoint, headers=self._auth_headers(), json=body)
+        if resp.status_code >= 400:
+            raise Exception(f"Storage create_bucket hata {resp.status_code}: {resp.text}")
+        try:
+            data = resp.json()
+        except Exception:
+            data = None
+        return ExecuteResult(data)
+
+
 class Client:
     def __init__(self, url: str, key: str):
         self._url = url.rstrip("/")
+        self._key = key
         self._headers = {
             "apikey": key,
             "Authorization": f"Bearer {key}",
             "Content-Type": "application/json",
         }
         self.auth = AuthClient(self._url, self._headers)
+        self.storage = StorageClient(self._url, key)
 
     def table(self, name: str) -> QueryBuilder:
         return QueryBuilder(self._url, dict(self._headers), name)

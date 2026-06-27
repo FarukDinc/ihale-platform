@@ -20,6 +20,7 @@ Env:
 
 import asyncio
 import base64
+import hashlib
 import io
 import json
 import os
@@ -530,8 +531,15 @@ async def tum_detaylari_cek(client: httpx.AsyncClient, ham_liste: list) -> dict:
 
 
 # ── Belge indirme + Supabase Storage ──────────────────────
+_TR_ASCII = str.maketrans({
+    "ç": "c", "Ç": "C", "ğ": "g", "Ğ": "G", "ı": "i", "İ": "I",
+    "ö": "o", "Ö": "O", "ş": "s", "Ş": "S", "ü": "u", "Ü": "U",
+})
+
 def dosya_adi_temizle(s):
-    return re.sub(r"[^\w\-.]", "_", s or "belge")[:80]
+    # Supabase Storage anahtarı ASCII olmalı: Türkçe harfleri çevir, kalanı _ yap
+    s = (s or "belge").translate(_TR_ASCII)
+    return re.sub(r"[^A-Za-z0-9\-.]", "_", s)[:80]
 
 async def belge_indir_yukle(client: httpx.AsyncClient, ekap_id: str, ihale_id: str, sb) -> list:
     """
@@ -548,6 +556,8 @@ async def belge_indir_yukle(client: httpx.AsyncClient, ekap_id: str, ihale_id: s
         "4": "Sözleşme Tasarısı",
     }
     belgeler = []
+
+    gorulen: dict = {}  # içerik hash → {"ad", "url"} — aynı dosyayı iki kez yüklemeyi önler
 
     # İslemId 1-4: farklı doküman türleri
     for islem_id in ["1", "2", "3", "4"]:
@@ -570,6 +580,18 @@ async def belge_indir_yukle(client: httpx.AsyncClient, ekap_id: str, ihale_id: s
                 icerik = None
 
         if not icerik or len(icerik) < 200:
+            continue
+
+        # Aynı içerik daha önce yüklendiyse tekrar yükleme, mevcut URL'i paylaş
+        icerik_hash = hashlib.md5(icerik).hexdigest()
+        if icerik_hash in gorulen:
+            onceki = gorulen[icerik_hash]
+            belgeler.append({
+                "id": islem_id, "ad": onceki["ad"], "tur": tur_ad,
+                "url": ekap_url, "storage_url": onceki["url"],
+            })
+            print(f"      ↺ {tur_ad} — aynı içerik ({onceki['ad']}), tekrar yüklenmedi")
+            await asyncio.sleep(1)
             continue
 
         # Dosya uzantısını belirle
@@ -596,6 +618,7 @@ async def belge_indir_yukle(client: httpx.AsyncClient, ekap_id: str, ihale_id: s
                 "url":         ekap_url,
                 "storage_url": storage_url,
             })
+            gorulen[icerik_hash] = {"ad": dosya_adi, "url": storage_url}
             print(f"      ✓ {tur_ad} — {len(icerik)//1024}KB → Storage")
         except Exception as e:
             print(f"      ✗ Storage yükleme hatası ({tur_ad}): {e}")
@@ -726,9 +749,11 @@ async def main():
 
         # 3) Belge indirme
         if BELGE_INDIR and sb:
-            print(f"\n  → Belgeler indiriliyor...")
+            # DETAY_LIMIT belge indirmeyi de sınırlar (test + güvenli ilk tur için)
+            hedef_belge = ham_liste if DETAY_LIMIT <= 0 else ham_liste[:DETAY_LIMIT]
+            print(f"\n  → Belgeler indiriliyor ({len(hedef_belge)} ihale)...")
             id_to_ekap = {i.get("id"): str(i.get("ikn") or i.get("id") or "") for i in ham_liste}
-            for ihale in ham_liste:
+            for ihale in hedef_belge:
                 ihale_id = ihale.get("id")
                 if not ihale_id: continue
                 ekap_id = id_to_ekap.get(ihale_id, ihale_id)
@@ -759,4 +784,11 @@ async def main():
 
 
 if __name__ == "__main__":
+    # Windows konsolunda (cp1254) Unicode karakterler çökmesin
+    try:
+        import sys
+        sys.stdout.reconfigure(encoding="utf-8")
+        sys.stderr.reconfigure(encoding="utf-8")
+    except Exception:
+        pass
     asyncio.run(main())
