@@ -1,15 +1,14 @@
-# ihaleglobal.com yönlendirme kuralları
-# Netlify bu dosyayı otomatik okur
+# ihaleglobal.com — Cloudflare Pages yönlendirme kuralları
 
-# HTML uzantısız URL'ler için
-/dashboard        /dashboard.html   200
-/ihaleler         /ihaleler.html    200
-/ihale-detay      /ihale-detay.html 200
-/profil           /profil.html      200
-/login            /login.html       200
-/kvkk             /kvkk.html        200
-/hakkimizda       /hakkimizda.html  200
-/iletisim         /iletisim.html    200
-/fiyatlandirma    /fiyatlandirma_odeme_bolumu.html  200
-/mesafeli-satis   /mesafeli-satis.html  200
-/teklif-olustur   /teklif-olustur.html  200
+# HTML uzantısız URL'ler için 301 redirect
+/login            /login.html       301
+/dashboard        /dashboard.html   301
+/ihaleler         /ihaleler.html    301
+/ihale-detay      /ihale-detay.html 301
+/profil           /profil.html      301
+/kvkk             /kvkk.html        301
+/hakkimizda       /hakkimizda.html  301
+/iletisim         /iletisim.html    301
+/fiyatlandirma    /fiyatlandirma_odeme_bolumu.html  301
+/mesafeli-satis   /mesafeli-satis.html  301
+/teklif-olustur   /teklif-olustur.html  301
