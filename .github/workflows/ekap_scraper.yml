@@ -19,12 +19,13 @@ jobs:
           python-version: '3.11'
 
       - name: Bağımlılıkları yükle
-        run: pip install httpx supabase pycryptodome
+        run: pip install httpx supabase pycryptodome google-genai pillow numpy
 
       - name: EKAP Scraper çalıştır
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           EKAP_BELGE_INDIR: "1"
         run: python backend/ekap_scraper.py
 

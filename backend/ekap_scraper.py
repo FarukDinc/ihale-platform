@@ -8,17 +8,19 @@ Akış:
      - İtirazen şikayet bedeli → yaklaşık maliyet aralığı
      - Detay bilgileri + ilan HTML
      - Doküman listesi (GetDokumanListByIhaleId)
-     - Doküman URL'leri (GetDokumanUrl) → Supabase Storage'a yükler
+     - Doküman URL'leri (GetDokumanUrl) → Eski EKAP CAPTCHA → Supabase Storage
   4. Supabase 'ilanlar' tablosuna upsert eder
 
 Env:
     SUPABASE_URL, SUPABASE_SERVICE_KEY
     EKAP_BELGE_INDIR=1    (belge indirme aktif)
     EKAP_DETAY_LIMIT      (test: kaç ihale için detay çekilsin, 0=hepsi)
+    GEMINI_API_KEY        (CAPTCHA çözme için, zorunlu)
 """
 
 import asyncio
 import base64
+import io
 import json
 import os
 import re
@@ -28,6 +30,7 @@ import uuid
 from datetime import datetime, timezone
 
 import httpx
+from PIL import Image
 from supabase import create_client
 from Crypto.Cipher import AES
 from Crypto.Util.Padding import pad
@@ -39,6 +42,7 @@ SUPABASE_KEY  = os.environ.get("SUPABASE_SERVICE_KEY", "")
 
 BELGE_INDIR   = os.environ.get("EKAP_BELGE_INDIR", "0") == "1"
 DETAY_LIMIT   = int(os.environ.get("EKAP_DETAY_LIMIT", "0"))
+GEMINI_KEY    = os.environ.get("GEMINI_API_KEY", "")
 ESZAMANLI     = 8
 SAYFA_BOYUTU  = 100
 STORAGE_BUCKET = "belgeler"
@@ -75,6 +79,251 @@ def ssl_ctx():
     ctx.check_hostname = False
     ctx.verify_mode = ssl.CERT_NONE
     return ctx
+
+
+# ── Eski EKAP SSL context ────────────────────────────────
+def old_ekap_ssl():
+    ctx = ssl.create_default_context()
+    ctx.set_ciphers("DEFAULT@SECLEVEL=1")
+    ctx.check_hostname = False
+    ctx.verify_mode = ssl.CERT_NONE
+    return ctx
+
+
+# ── Gemini CAPTCHA çözücü ─────────────────────────────────
+def _captcha_temizle(img_bytes: bytes) -> bytes:
+    """
+    EKAP CAPTCHA'sını gürültüden arındırır.
+    Arka planda kırmızı ihale metni (gürültü) var; soru/sayı koyu renkte.
+    Sadece koyu pikselleri tutup 2x büyüterek okunabilirliği artırır.
+    Çıktı her zaman PNG'dir (Gemini BMP desteklemez).
+    """
+    import numpy as np
+
+    im = Image.open(io.BytesIO(img_bytes)).convert("RGB")
+    arr = np.asarray(im).astype(int)
+    R, G, B = arr[:, :, 0], arr[:, :, 1], arr[:, :, 2]
+    # Eşiği adaptif seç: çok az koyu piksel kalırsa eşiği yükselt
+    dark = (R < 110) & (G < 110) & (B < 110)
+    for thr in (140, 170, 200):
+        if dark.mean() >= 0.01:
+            break
+        dark = (R < thr) & (G < thr) & (B < thr)
+    out = np.full(arr.shape[:2], 255, dtype=np.uint8)
+    out[dark] = 0
+    clean = Image.fromarray(out, "L").resize((im.width * 2, im.height * 2), Image.LANCZOS)
+    buf = io.BytesIO()
+    clean.save(buf, "PNG")
+    return buf.getvalue()
+
+
+_CAPTCHA_PROMPT = (
+    "Bu temizlenmiş bir EKAP (Türk kamu ihalesi) CAPTCHA resmidir.\n"
+    "SOL tarafta Türkçe bir soru/ifade, SAĞ tarafta rakamlarla bir sayı var.\n"
+    "SOL bölümü çöz:\n"
+    "  - Matematik ise hesapla (örn '7 + dört' → 11)\n"
+    "  - 'Yedi yüz on üç sayısını rakamla yazınız' gibi ise sayıya çevir (→ 713)\n"
+    "  - 'Hangisi büyük/küçük harfle yazılmıştır? KIRMIZI, on' gibi ise doğru KELİMEYİ seç\n"
+    "  - 'N. sıradaki sayı kaçtır? 9 1 5' gibi ise ilgili sayıyı seç\n"
+    "Cevap bir SAYI ise rakamla, bir KELİME ise küçük harfle yaz.\n"
+    "SAĞ taraftaki sayıyı olduğu gibi oku.\n"
+    "SADECE şu formatta yanıt ver, başka hiçbir şey yazma:\n"
+    "SOL: <soldaki cevap>\n"
+    "SAĞ: <sağdaki sayı>"
+)
+
+
+def captcha_coz_gemini(img_bytes: bytes) -> str | None:
+    """
+    Gemini multimodal ile EKAP CAPTCHA'yı çözer.
+    Gürültü temizleme + SOL(soru cevabı)+SAĞ(doğrulama sayısı) birleştirme.
+    Doğru cevap formatı: '<soru_cevabı><sağdaki_sayı>' (örn 'zil87075', '71351945').
+    """
+    if not GEMINI_KEY:
+        return None
+    try:
+        from google import genai
+        from google.genai import types
+    except ImportError:
+        print("    ⚠ google-genai kurulu değil: pip install google-genai")
+        return None
+
+    png_bytes = _captcha_temizle(img_bytes)
+
+    client_g = genai.Client(api_key=GEMINI_KEY)
+    for model in ["gemini-2.5-flash", "gemini-2.5-flash-lite"]:
+        try:
+            resp = client_g.models.generate_content(
+                model=model,
+                contents=[
+                    types.Part.from_bytes(data=png_bytes, mime_type="image/png"),
+                    _CAPTCHA_PROMPT,
+                ],
+            )
+            raw = resp.text.strip()
+            sol_m = re.search(r"SOL\s*:\s*(\S+)", raw, re.I)
+            sag_m = re.search(r"SA[ĞG]\s*:\s*(\S+)", raw, re.I)
+            if not (sol_m and sag_m):
+                continue
+            sol = sol_m.group(1).strip(".\"'").lower()
+            sag = re.sub(r"\D", "", sag_m.group(1))
+            cevap = f"{sol}{sag}"
+            return cevap if (sol and sag) else None
+        except Exception as e:
+            err = str(e)
+            if "429" in err or "503" in err or "RESOURCE_EXHAUSTED" in err:
+                time.sleep(3)
+                continue
+            print(f"    ✗ Gemini {model}: {err[:80]}")
+    return None
+
+
+# ── Eski EKAP CAPTCHA akışı ───────────────────────────────
+def _hidden_fields(text: str) -> dict:
+    """ASP.NET WebForms sayfasındaki tüm hidden input'ları çıkarır (ViewState dahil)."""
+    fd: dict = {}
+    for m in re.finditer(r'<input[^>]+type="hidden"[^>]+>', text):
+        tag = m.group()
+        nm = re.search(r'name="([^"]+)"', tag)
+        vl = re.search(r'value="([^"]*)"', tag)
+        if nm and nm.group(1) not in fd:
+            fd[nm.group(1)] = (vl.group(1) if vl else "").replace("&amp;", "&")
+    return fd
+
+
+def _dosya_mi(resp) -> bytes | None:
+    """Yanıt gerçek bir belge (ZIP/PDF/octet-stream) ise içeriğini döndürür."""
+    magic = resp.content[:4]
+    ct = resp.headers.get("content-type", "").lower()
+    cd = resp.headers.get("content-disposition", "")
+    if magic == b"PK\x03\x04" or magic == b"%PDF":
+        return resp.content
+    if ("zip" in ct or "pdf" in ct or "octet-stream" in ct or cd) and len(resp.content) > 1000:
+        return resp.content
+    return None
+
+
+async def ekap_captcha_indir(captcha_url: str) -> bytes | None:
+    """
+    EKAP belge indirme — CAPTCHA korumalı 3 adımlı akış:
+      1) GET VatandasIlanGoruntuleme → IlanDokumanDownload.aspx'e yönlenir (CAPTCHA sayfası)
+      2) CAPTCHA çöz + POST → "İhale Dokümanı başarıyla indirilmiştir" onay sayfası
+      3) btnTmpNormal postback (yeni ViewState ile) → gerçek ZIP/PDF dosyası
+    CAPTCHA başarısızsa 4 deneme yapılır (her denemede taze sayfa+kota dostu).
+    """
+    from urllib.parse import urljoin
+
+    headers_html = {
+        "User-Agent":      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/138.0.0.0",
+        "Accept":          "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": "tr-TR,tr;q=0.9",
+    }
+    origin = "https://ekap.kik.gov.tr"
+
+    async with httpx.AsyncClient(
+        verify=old_ekap_ssl(), timeout=90.0, follow_redirects=True
+    ) as old_cl:
+        for deneme in range(4):
+            # ── ADIM 1: CAPTCHA sayfasını yükle (redirect zinciri izlenir) ──
+            try:
+                r = await old_cl.get(captcha_url, headers=headers_html)
+            except Exception as e:
+                print(f"      ✗ CAPTCHA GET hatası: {e}")
+                return None
+
+            # Yönlendirme sonrası GERÇEK sayfa URL'i — form action bunu baz almalı
+            final_url = str(r.url)
+            text = r.text
+
+            # Direkt dosya geldiyse (CAPTCHA bypass — nadiren)
+            direkt = _dosya_mi(r)
+            if direkt:
+                print(f"      ✓ Direkt indirildi ({len(direkt)//1024}KB)")
+                return direkt
+
+            # Form action (final_url'e göre çöz — /EKAP/Ilan/ path'i kritik)
+            fa_m = re.search(r'<form[^>]+action="([^"]+)"', text)
+            form_action = urljoin(final_url, fa_m.group(1).replace("&amp;", "&")) if fa_m else final_url
+
+            form_data = _hidden_fields(text)
+            form_data["__EVENTTARGET"]   = "ctl00$btnCaptchaProtect"
+            form_data["__EVENTARGUMENT"] = ""
+
+            # CAPTCHA resmini çıkar (capImg <img src="data:...">)
+            idx = text.find("capImg")
+            if idx < 0:
+                print("      ✗ CAPTCHA resmi bulunamadı")
+                return None
+            src_m = re.search(r'src="(data:image/[^"]+)"',
+                              text[text.rfind("<img", 0, idx):text.find(">", idx) + 1])
+            if not src_m:
+                print("      ✗ CAPTCHA src bulunamadı")
+                return None
+            img_bytes = base64.b64decode(src_m.group(1).split(",", 1)[1])
+
+            # Gemini ile çöz (sync → thread pool)
+            loop  = asyncio.get_event_loop()
+            cevap = await loop.run_in_executor(None, captcha_coz_gemini, img_bytes)
+            if not cevap:
+                print(f"      ✗ CAPTCHA çözülemedi (deneme {deneme+1})")
+                await asyncio.sleep(2)
+                continue
+            print(f"      ⚡ CAPTCHA ({deneme+1}. deneme): '{cevap}'")
+            form_data["ctl00$capEkapMaster$txtCaptcha"] = cevap
+
+            # ── ADIM 2: CAPTCHA POST → onay sayfası ──
+            try:
+                r2 = await old_cl.post(
+                    form_action, data=form_data,
+                    headers={**headers_html, "Content-Type": "application/x-www-form-urlencoded",
+                             "Referer": final_url, "Origin": origin},
+                )
+            except Exception as e:
+                print(f"      ✗ CAPTCHA POST hatası: {e}")
+                return None
+
+            # Bazı durumlarda dosya doğrudan gelir
+            direkt2 = _dosya_mi(r2)
+            if direkt2:
+                print(f"      ✓ Dosya (adım 2) {len(direkt2)//1024}KB")
+                return direkt2
+
+            onay = ("başarıyla indir" in r2.text) or ("basariyla indir" in r2.text.lower())
+            if not onay:
+                yanlis = any(k in r2.text.lower() for k in ("güvenlik kod", "hatalı", "geçersiz", "yanlış"))
+                print(f"      ✗ CAPTCHA {'reddedildi' if yanlis else 'onay yok'} (deneme {deneme+1})")
+                await asyncio.sleep(2)
+                continue
+
+            # ── ADIM 3: btnTmpNormal postback → gerçek dosya ──
+            final2 = str(r2.url)
+            fa2 = re.search(r'<form[^>]+action="([^"]+)"', r2.text)
+            action2 = urljoin(final2, fa2.group(1).replace("&amp;", "&")) if fa2 else final2
+            fd2 = _hidden_fields(r2.text)
+            fd2["__EVENTTARGET"]   = "ctl00$ContentPlaceHolder1$UcIhaleDokumanDownload1$btnTmpNormal"
+            fd2["__EVENTARGUMENT"] = ""
+            try:
+                r3 = await old_cl.post(
+                    action2, data=fd2,
+                    headers={**headers_html, "Content-Type": "application/x-www-form-urlencoded",
+                             "Referer": final2, "Origin": origin},
+                )
+            except Exception as e:
+                print(f"      ✗ Belge postback hatası: {e}")
+                return None
+
+            dosya = _dosya_mi(r3)
+            if dosya:
+                cd = r3.headers.get("content-disposition", "")
+                ad = re.search(r'filename=([^;]+)', cd)
+                print(f"      ✓ Belge indirildi ({len(dosya)//1024//1024 or len(dosya)//1024}{'MB' if len(dosya)>1_000_000 else 'KB'})"
+                      f"{' — ' + ad.group(1).strip() if ad else ''}")
+                return dosya
+
+            print(f"      ✗ Belge postback dosya döndürmedi ({r3.status_code}, {len(r3.content)}B)")
+            await asyncio.sleep(2)
+
+    return None
 
 
 # ── Crypto header üretimi ─────────────────────────────────
@@ -286,49 +535,72 @@ def dosya_adi_temizle(s):
 
 async def belge_indir_yukle(client: httpx.AsyncClient, ekap_id: str, ihale_id: str, sb) -> list:
     """
-    1. GetDokumanUrl ile belge linkini al
-    2. İndir
-    3. Supabase Storage'a yükle
+    1. GetDokumanUrl ile EKAP yönlendirme URL'sini al
+    2. Eski EKAP VatandasIlanGoruntuleme.aspx CAPTCHA'sını Gemini ile çöz
+    3. Dosya içeriğini indir
+    4. Supabase Storage'a yükle
     Returns: güncellenmiş belgeler listesi
     """
+    TUR_ADLARI = {
+        "1": "İhale Dokümanı",
+        "2": "İdari Şartname",
+        "3": "Teknik Şartname",
+        "4": "Sözleşme Tasarısı",
+    }
     belgeler = []
 
-    # İslem ID'leri dene: 1=İhale Dokümanı, 2=İdari Şartname, 3=Teknik Şartname
+    # İslemId 1-4: farklı doküman türleri
     for islem_id in ["1", "2", "3", "4"]:
-        url = await dokuman_url_al(client, ihale_id, islem_id)
-        if not url:
+        ekap_url = await dokuman_url_al(client, ihale_id, islem_id)
+        if not ekap_url:
             continue
 
-        # Dosya adını URL'den çıkar
-        dosya = url.split("/")[-1].split("?")[0] or f"dokuman_{islem_id}"
+        tur_ad = TUR_ADLARI.get(islem_id, f"Doküman {islem_id}")
+
+        # VatandasIlanGoruntuleme.aspx → CAPTCHA akışı
+        if "VatandasIlanGoruntuleme" in ekap_url:
+            icerik = await ekap_captcha_indir(ekap_url)
+        else:
+            # Direkt indirilebilir URL (nadiren)
+            try:
+                r = await client.get(ekap_url, timeout=60.0, follow_redirects=True)
+                icerik = r.content if r.is_success and len(r.content) > 200 else None
+            except Exception as e:
+                print(f"      ✗ Direkt GET hatası: {e}")
+                icerik = None
+
+        if not icerik or len(icerik) < 200:
+            continue
+
+        # Dosya uzantısını belirle
+        if icerik[:4] == b"PK\x03\x04":
+            uzanti, ct = ".zip", "application/zip"
+        elif icerik[:4] == b"%PDF":
+            uzanti, ct = ".pdf", "application/pdf"
+        else:
+            uzanti, ct = ".bin", "application/octet-stream"
+
+        dosya_adi = f"{islem_id}_{dosya_adi_temizle(tur_ad)}{uzanti}"
+        path = f"{ekap_id}/{dosya_adi}"
+
         try:
-            r = await client.get(url, timeout=60.0, follow_redirects=True)
-            if not r.is_success or len(r.content) < 200:
-                continue
-
-            ct = r.headers.get("content-type", "application/octet-stream")
-            uzanti = ".pdf" if "pdf" in ct else ".zip"
-            if not dosya.endswith((".zip", ".pdf", ".docx", ".xlsx")):
-                dosya += uzanti
-
-            path = f"{ekap_id}/{islem_id}_{dosya_adi_temizle(dosya)}"
             sb.storage.from_(STORAGE_BUCKET).upload(
-                path, r.content,
+                path, icerik,
                 file_options={"content-type": ct, "upsert": "true"},
             )
             storage_url = sb.storage.from_(STORAGE_BUCKET).get_public_url(path)
-
-            tur_ad = {"1": "İhale Dokümanı", "2": "İdari Şartname",
-                      "3": "Teknik Şartname", "4": "Sözleşme Tasarısı"}.get(islem_id, f"Doküman {islem_id}")
             belgeler.append({
-                "id": islem_id, "ad": dosya, "tur": tur_ad,
-                "url": url, "storage_url": storage_url,
+                "id":          islem_id,
+                "ad":          dosya_adi,
+                "tur":         tur_ad,
+                "url":         ekap_url,
+                "storage_url": storage_url,
             })
-            print(f"      ✓ {tur_ad} — {len(r.content)//1024}KB")
-            await asyncio.sleep(0.3)
-
+            print(f"      ✓ {tur_ad} — {len(icerik)//1024}KB → Storage")
         except Exception as e:
-            print(f"      ✗ islemId={islem_id}: {e}")
+            print(f"      ✗ Storage yükleme hatası ({tur_ad}): {e}")
+
+        await asyncio.sleep(1)  # EKAP rate limit
 
     return belgeler
 
