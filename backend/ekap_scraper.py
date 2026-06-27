@@ -239,6 +239,7 @@ async def detay_cek(context, base_headers, ihale_id):
         "ihale_yeri": None,
         "okas": None,
         "ilan_metni": None,
+        "ilan_html": None,
         "belgeler": None,
     }
 
@@ -273,7 +274,9 @@ async def detay_cek(context, base_headers, ihale_id):
 
             ilan_list = item.get("ilanList") or []
             if ilan_list:
-                sonuc["ilan_metni"] = html_temizle(ilan_list[0].get("veriHtml", "")) or None
+                ham_html = ilan_list[0].get("veriHtml", "") or ""
+                sonuc["ilan_html"]  = ham_html or None
+                sonuc["ilan_metni"] = html_temizle(ham_html) or None
 
             # Dökümanlar: birden fazla nested path dene
             raw_belgeler = (
@@ -398,6 +401,7 @@ def ihaleleri_isle(ham_liste, detaylar):
             "ihale_yeri":           d.get("ihale_yeri"),
             "okas":                 d.get("okas"),
             "ilan_metni":           d.get("ilan_metni"),
+            "ilan_html":            d.get("ilan_html"),
             "belgeler":             belgeler_temizle(d.get("belgeler")),
             "kaynak":               "ekap",
             "olusturulma":          simdi,

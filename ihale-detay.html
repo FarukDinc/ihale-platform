@@ -556,20 +556,22 @@
       if (fill) fill.style.width = uyum + '%';
     }, 200);
 
-    // İlan metni — HTML içeriyorsa güvenli şekilde render et, yoksa pre-wrap text
+    // İlan metni — ilan_html varsa güvenli HTML render, yoksa ilan_metni pre-wrap
     const ilanEl = document.getElementById('ilan-metni-container');
     if (ilanEl) {
+      const html = d.ilan_html || '';
       const metin = d.ilan_metni || d.aciklama || '';
-      if (!metin) {
-        ilanEl.textContent = 'İlan metni bulunamadı.';
-      } else if (/<[a-z]/i.test(metin)) {
-        // HTML içeriyor — DOMParser ile güvenli parse
-        const doc2 = new DOMParser().parseFromString(metin, 'text/html');
-        // Script tagları kaldır
-        doc2.querySelectorAll('script,style,iframe,object,embed').forEach(el => el.remove());
+      if (html) {
+        const doc2 = new DOMParser().parseFromString(html, 'text/html');
+        doc2.querySelectorAll('script,style,iframe,object,embed,link').forEach(el => el.remove());
+        // Inline style'ları kaldır (dark theme ile uyum için)
+        doc2.querySelectorAll('[style]').forEach(el => el.removeAttribute('style'));
+        doc2.querySelectorAll('[color]').forEach(el => el.removeAttribute('color'));
         ilanEl.innerHTML = doc2.body.innerHTML;
-      } else {
+      } else if (metin) {
         ilanEl.textContent = metin;
+      } else {
+        ilanEl.textContent = 'İlan metni bulunamadı.';
       }
     }
   }
