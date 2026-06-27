@@ -19,17 +19,12 @@ jobs:
           python-version: '3.11'
 
       - name: Bağımlılıkları yükle
-        run: |
-          pip install playwright supabase pycryptodome requests
-          playwright install chromium
-          playwright install-deps
+        run: pip install httpx supabase pycryptodome
 
       - name: EKAP Scraper çalıştır
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
-          EKAP_USERNAME: ${{ secrets.EKAP_USERNAME }}
-          EKAP_PASSWORD: ${{ secrets.EKAP_PASSWORD }}
           EKAP_BELGE_INDIR: "1"
         run: python backend/ekap_scraper.py
 

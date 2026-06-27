@@ -1,27 +1,20 @@
 """
-EKAP Scraper - Playwright ile Token Yakalama + Detay Zenginleştirme
+EKAP Scraper v2 — httpx tabanlı, Playwright gerektirmez
 
 Akış:
-  1. (İsteğe bağlı) EKAP hesabına giriş yap — belgeler için gerekli
-  2. EKAP arama sayfasını açar, API token/header'larını havada yakalar
-  3. Tüm aktif ihaleleri sayfalama ile çeker (GetListByParameters)
-  4. Her ihale için crypto-imzalı çağrılarla detay çeker:
-       - İtirazen şikayet bedeli  → yaklaşık maliyet aralığı (KİK eşik tablosu)
-       - İhale detayı             → yer, ihale yeri, OKAS, ilan metni (HTML+metin), belgeler
-       - Döküman listesi          → belge adı, tür, ID
-  5. Belgeleri EKAP'tan indirir, Supabase Storage'a yükler
-  6. Supabase 'ilanlar' tablosuna upsert eder
+  1. httpx + crypto headers ile doğrudan EKAP API'ye bağlanır
+  2. Tüm aktif ihaleleri çeker (GetListByParameters)
+  3. Her ihale için:
+     - İtirazen şikayet bedeli → yaklaşık maliyet aralığı
+     - Detay bilgileri + ilan HTML
+     - Doküman listesi (GetDokumanListByIhaleId)
+     - Doküman URL'leri (GetDokumanUrl) → Supabase Storage'a yükler
+  4. Supabase 'ilanlar' tablosuna upsert eder
 
-Kurulum:
-    pip install playwright supabase pycryptodome
-    playwright install chromium
-    playwright install-deps
-
-Env (GitHub Actions secrets veya backend/.env):
+Env:
     SUPABASE_URL, SUPABASE_SERVICE_KEY
-    EKAP_USERNAME, EKAP_PASSWORD   (belgeler için — isteğe bağlı)
-    EKAP_DETAY_LIMIT               (test için, 0 = sınırsız)
-    EKAP_BELGE_INDIR               (1 = belgeleri indir ve storage'a yükle)
+    EKAP_BELGE_INDIR=1    (belge indirme aktif)
+    EKAP_DETAY_LIMIT      (test: kaç ihale için detay çekilsin, 0=hepsi)
 """
 
 import asyncio
@@ -29,559 +22,337 @@ import base64
 import json
 import os
 import re
+import ssl
 import time
 import uuid
 from datetime import datetime, timezone
 
-from playwright.async_api import async_playwright
+import httpx
 from supabase import create_client
 from Crypto.Cipher import AES
 from Crypto.Util.Padding import pad
 from Crypto.Random import get_random_bytes
 
-SUPABASE_URL = os.environ.get("SUPABASE_URL", "https://lpgelwfoarhouollhwur.supabase.co")
-SUPABASE_KEY = os.environ.get("SUPABASE_SERVICE_KEY", "")
+# ── Konfigürasyon ─────────────────────────────────────────
+SUPABASE_URL  = os.environ.get("SUPABASE_URL",  "https://lpgelwfoarhouollhwur.supabase.co")
+SUPABASE_KEY  = os.environ.get("SUPABASE_SERVICE_KEY", "")
 
-EKAP_USERNAME    = os.environ.get("EKAP_USERNAME", "")
-EKAP_PASSWORD    = os.environ.get("EKAP_PASSWORD", "")
-BELGE_INDIR      = os.environ.get("EKAP_BELGE_INDIR", "0") == "1"
-STORAGE_BUCKET   = "belgeler"
-EKAP_DOSYA_URL   = "https://ekapv2.kik.gov.tr/b_ihalearama/api/Dokuman/GetFile"
-EKAP_LOGIN_BASE  = "https://ekapv2.kik.gov.tr/authzsvc"
+BELGE_INDIR   = os.environ.get("EKAP_BELGE_INDIR", "0") == "1"
+DETAY_LIMIT   = int(os.environ.get("EKAP_DETAY_LIMIT", "0"))
+ESZAMANLI     = 8
+SAYFA_BOYUTU  = 100
+STORAGE_BUCKET = "belgeler"
 
-SAYFA_BOYUTU = 100          # EKAP'ın izin verdiği max
-ESZAMANLI    = 6            # detay çekiminde paralel istek sayısı
-DETAY_LIMIT  = int(os.environ.get("EKAP_DETAY_LIMIT", "0"))  # 0 = sınırsız (test için küçük ver)
+BASE = "https://ekapv2.kik.gov.tr"
 
-EKAP_SEARCH_URL = "https://ekapv2.kik.gov.tr/ekap/search"
-ITIRAZ_URL   = "https://ekapv2.kik.gov.tr/b_ihalearama/api/IhaleDetay/GetByIdItirazenSikayetBasvuruBedel"
-DETAY_URL    = "https://ekapv2.kik.gov.tr/b_ihalearama/api/IhaleDetay/GetByIhaleIdIhaleDetay"
-DOKUMAN_URL  = "https://ekapv2.kik.gov.tr/b_ihalearama/api/IhaleDetay/GetDokumanListByIhaleId"
+ENDPOINTS = {
+    "liste":    "/b_ihalearama/api/Ihale/GetListByParameters",
+    "itiraz":   "/b_ihalearama/api/IhaleDetay/GetByIdItirazenSikayetBasvuruBedel",
+    "detay":    "/b_ihalearama/api/IhaleDetay/GetByIhaleIdIhaleDetay",
+    "dok_liste":"/b_ihalearama/api/IhaleDetay/GetDokumanListByIhaleId",
+    "dok_url":  "/b_ihalearama/api/EkapDokumanYonlendirme/GetDokumanUrl",
+}
 
-# EKAP Angular interceptor anahtarı (environment.r8fact) — AES-192-CBC
 CRYPTO_KEY = b"Qm2LtXR0aByP69vZNKef4wMJ"
+
+BASE_HEADERS = {
+    "Accept":       "application/json",
+    "Content-Type": "application/json",
+    "api-version":  "v1",
+    "Origin":       BASE,
+    "User-Agent":   (
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+        "AppleWebKit/537.36 (KHTML, like Gecko) "
+        "Chrome/138.0.0.0 Safari/537.36"
+    ),
+}
+
+
+# ── SSL context (EKAP eski cipher gerektiriyor) ───────────
+def ssl_ctx():
+    ctx = ssl.create_default_context()
+    ctx.set_ciphers("DEFAULT@SECLEVEL=1")
+    ctx.check_hostname = False
+    ctx.verify_mode = ssl.CERT_NONE
+    return ctx
 
 
 # ── Crypto header üretimi ─────────────────────────────────
 def crypto_headers():
-    """EKAP'ın korumalı endpointleri için X-Custom-Request-* imzalı header üretir."""
     guid = str(uuid.uuid4())
-    iv = get_random_bytes(16)
-    ts = str(int(time.time() * 1000))
+    iv   = get_random_bytes(16)
+    ts   = str(int(time.time() * 1000))
 
     def enc(plaintext):
         cipher = AES.new(CRYPTO_KEY, AES.MODE_CBC, iv)
-        ct = cipher.encrypt(pad(plaintext.encode(), 16))
-        return base64.b64encode(ct).decode()
+        return base64.b64encode(cipher.encrypt(pad(plaintext.encode(), 16))).decode()
 
     return {
         "X-Custom-Request-Guid": guid,
-        "X-Custom-Request-Siv": base64.b64encode(iv).decode(),
+        "X-Custom-Request-Siv":  base64.b64encode(iv).decode(),
         "X-Custom-Request-R8id": enc(guid),
-        "X-Custom-Request-Ts": enc(ts),
+        "X-Custom-Request-Ts":   enc(ts),
     }
 
 
-# ── İtiraz bedeli → yaklaşık maliyet aralığı ──────────────
-# KİK eşik tablosu: itiraz bedeli sabit kademeli, yaklaşık maliyet aralığını belirler.
+# ── Tek HTTP POST ─────────────────────────────────────────
+async def post(client: httpx.AsyncClient, endpoint: str, data: dict) -> dict:
+    headers = {**BASE_HEADERS, **crypto_headers()}
+    try:
+        r = await client.post(f"{BASE}{endpoint}", json=data, headers=headers, timeout=30.0)
+        r.raise_for_status()
+        return r.json()
+    except httpx.HTTPStatusError as e:
+        print(f"    ✗ HTTP {e.response.status_code} — {endpoint}")
+    except Exception as e:
+        print(f"    ✗ {endpoint}: {e}")
+    return {}
+
+
+# ── KİK eşik tablosu ─────────────────────────────────────
 MALIYET_TABLOSU = {
-    64652:  (0,         10_785_492),
+    64652:  (0,          10_785_492),
     129385: (10_785_492, 43_142_132),
     194085: (43_142_132, 323_566_103),
     258810: (323_566_103, None),
 }
 
-def itiraz_parse(itiraz_str):
-    """'64.652,00 TRY' → 64652 (int) ya da None."""
-    if not itiraz_str:
-        return None
-    tam = itiraz_str.split(",")[0].replace(".", "").strip()
-    try:
-        return int(tam)
-    except ValueError:
-        return None
+def itiraz_parse(s):
+    if not s: return None
+    try: return int(s.split(",")[0].replace(".", "").strip())
+    except: return None
 
-def maliyet_araligi(itiraz_bedeli):
-    """itiraz bedeli (int) → (min, max) yaklaşık maliyet."""
-    if itiraz_bedeli is None:
-        return (None, None)
-    return MALIYET_TABLOSU.get(itiraz_bedeli, (None, None))
+def maliyet_araligi(b):
+    return MALIYET_TABLOSU.get(b, (None, None)) if b else (None, None)
 
 
-# ── HTML → yapılı düz metin ───────────────────────────────
+# ── HTML → yapılı metin ───────────────────────────────────
 def html_temizle(html):
-    if not html:
-        return ""
-    # Blok elementleri → satır sonu
-    txt = re.sub(r"<br\s*/?>", "\n", html, flags=re.I)
-    txt = re.sub(r"</p>|</div>|</h[1-6]>|</tr>|<hr[^>]*>", "\n", txt, flags=re.I)
-    txt = re.sub(r"<li[^>]*>", "\n• ", txt, flags=re.I)
-    # Tablo hücresi ayırıcı
-    txt = re.sub(r"</td>\s*<td[^>]*>", " | ", txt, flags=re.I)
-    # Kalan tagları temizle
-    txt = re.sub(r"<[^>]+>", "", txt)
-    # HTML entities
-    txt = re.sub(r"&nbsp;", " ", txt)
-    txt = re.sub(r"&amp;", "&", txt)
-    txt = re.sub(r"&lt;", "<", txt)
-    txt = re.sub(r"&gt;", ">", txt)
+    if not html: return ""
+    txt = re.sub(r"<br\s*/?>",                "\n",   html, flags=re.I)
+    txt = re.sub(r"</p>|</div>|</h\d>|</tr>|<hr[^>]*>", "\n", txt, flags=re.I)
+    txt = re.sub(r"<li[^>]*>",               "\n• ",  txt,  flags=re.I)
+    txt = re.sub(r"</td>\s*<td[^>]*>",       " | ",   txt,  flags=re.I)
+    txt = re.sub(r"<[^>]+>",                 "",      txt)
+    txt = re.sub(r"&nbsp;",  " ", txt)
+    txt = re.sub(r"&amp;",   "&", txt)
+    txt = re.sub(r"&lt;",    "<", txt)
+    txt = re.sub(r"&gt;",    ">", txt)
     txt = re.sub(r"&#?\w+;", " ", txt)
-    # 3+ satır sonunu 2'ye indir, yatay boşlukları temizle
     txt = re.sub(r"[^\S\n]+", " ", txt)
-    txt = re.sub(r" *\n *", "\n", txt)
-    txt = re.sub(r"\n{3,}", "\n\n", txt)
+    txt = re.sub(r" *\n *",   "\n", txt)
+    txt = re.sub(r"\n{3,}",  "\n\n", txt)
     return txt.strip()
 
 
-# ── EKAP OIDC Login ───────────────────────────────────────
-async def ekap_giris_yap(page, username, password):
-    """
-    EKAP OIDC akışı ile giriş yapar.
-    authzsvc/connect/authorize → login formu → kimlik bilgileri → callback.
-    Başarılıysa True döner.
-    """
-    if not username or not password:
-        print("  ℹ  EKAP_USERNAME/PASSWORD yok — anonim modda devam")
-        return False
-
-    AUTH_URL = (
-        f"{EKAP_LOGIN_BASE}/connect/authorize"
-        "?response_type=code"
-        "&client_id=spa-client"
-        "&redirect_uri=https%3A%2F%2Fekapv2.kik.gov.tr%2Fsignin-oidc"
-        "&scope=openid+profile+ekap-ihalearama+ekap-istekli+offline_access"
-        "&state=login"
-        "&nonce=login"
-    )
-
-    print("  → EKAP'a giriş yapılıyor...")
-    try:
-        await page.goto(AUTH_URL, wait_until="networkidle", timeout=45000)
-    except Exception:
-        # networkidle timeout — sayfa yüklendi ama bazı istekler devam ediyor olabilir
-        pass
-
-    # Login formu hazır mı?
-    for selector in [
-        'input[name="Input.Username"]',
-        'input[name="username"]',
-        'input[id="username"]',
-        'input[type="text"]',
-    ]:
-        try:
-            el = page.locator(selector).first
-            if await el.is_visible(timeout=5000):
-                await el.fill(username)
-                break
-        except Exception:
-            continue
-
-    for selector in [
-        'input[name="Input.Password"]',
-        'input[name="password"]',
-        'input[id="password"]',
-        'input[type="password"]',
-    ]:
-        try:
-            el = page.locator(selector).first
-            if await el.is_visible(timeout=3000):
-                await el.fill(password)
-                break
-        except Exception:
-            continue
-
-    # Gönder
-    try:
-        await page.keyboard.press("Enter")
-    except Exception:
-        pass
-
-    # Callback bekle (max 20 sn)
-    for _ in range(20):
-        await page.wait_for_timeout(1000)
-        if "signin-oidc" in page.url or "ekap/search" in page.url or "ekap/" in page.url:
-            break
-
-    # EKAP SPA'ya yönlendirme ol
-    try:
-        await page.goto(EKAP_SEARCH_URL, wait_until="networkidle", timeout=30000)
-    except Exception:
-        pass
-
-    await page.wait_for_timeout(3000)
-
-    # localStorage'dan token kontrol
-    try:
-        token_keys = await page.evaluate(
-            "Object.keys(localStorage).filter(k => k.startsWith('oidc.user'))"
-        )
-        if token_keys:
-            print(f"  ✓ EKAP girişi başarılı (token: {token_keys[0][:40]}…)")
-            return True
-    except Exception:
-        pass
-
-    # Alternatif: 'Çıkış' butonu görünüyorsa giriş olmuş demek
-    try:
-        cikis = await page.locator('text=Çıkış').count()
-        if cikis > 0:
-            print("  ✓ EKAP girişi başarılı")
-            return True
-    except Exception:
-        pass
-
-    print("  ✗ EKAP girişi başarısız — belgeler anonim çekilecek")
-    return False
-
-
-# ── Token yakalama ────────────────────────────────────────
-async def ekap_token_yakala(page):
-    captured = {"headers": None, "payload": None, "url": None}
-
-    async def handle_request(request):
-        if "GetListByParameters" in request.url and request.method == "POST":
-            if not captured["headers"]:
-                captured["headers"] = dict(request.headers)
-                captured["url"] = request.url
-                try:
-                    captured["payload"] = request.post_data_json
-                except Exception:
-                    pass
-
-    page.on("request", handle_request)
-
-    print("  → EKAP arama sayfası açılıyor...")
-    try:
-        await page.goto(EKAP_SEARCH_URL, wait_until="load", timeout=60000)
-    except Exception as e:
-        print(f"  ⚠ Sayfa yüklemesi: {e}")
-
-    for _ in range(40):
-        await page.wait_for_timeout(1000)
-        if captured["headers"] and captured["payload"]:
-            print("  ✓ Token yakalandı")
-            break
-
-    return captured["headers"], captured["payload"], captured["url"]
-
-
-# ── Liste çekme ───────────────────────────────────────────
-async def sayfa_cek(context, headers, payload_sablonu, url, sayfa_atla=0):
-    payload = dict(payload_sablonu)
-    payload["searchText"] = ""
-    payload["paginationSkip"] = sayfa_atla
-    payload["paginationTake"] = SAYFA_BOYUTU
-    payload["ihaleDurumIdList"] = [2]  # Katılıma açık
-
-    temiz = {k: v for k, v in headers.items() if k.lower() != "content-length"}
-    try:
-        response = await context.request.post(url, headers=temiz, data=payload)
-        if response.ok:
-            return await response.json()
-        print(f"    ✗ HTTP {response.status}")
-    except Exception as e:
-        print(f"    ✗ Hata: {e}")
-    return {"list": [], "totalCount": 0}
-
-
-async def tum_ihaleleri_cek(context, headers, payload, url):
-    tum_liste = []
-    print("\n  → Tüm aktif ihaleler çekiliyor...", flush=True)
-    sonuc = await sayfa_cek(context, headers, payload, url, sayfa_atla=0)
-    toplam = sonuc.get("totalCount", 0)
-    tum_liste.extend(sonuc.get("list", []))
-    print(f"  Toplam: {toplam} ihale | İlk sayfa: {len(tum_liste)}")
-
-    sayfa = 1
-    while len(tum_liste) < toplam:
-        await asyncio.sleep(0.3)
-        sonuc = await sayfa_cek(context, headers, payload, url, sayfa_atla=sayfa * SAYFA_BOYUTU)
-        yeni = sonuc.get("list", [])
-        if not yeni:
-            break
-        tum_liste.extend(yeni)
-        print(f"  Sayfa {sayfa + 1}: {len(tum_liste)}/{toplam}")
-        sayfa += 1
-
-    return tum_liste
-
-
-# ── Döküman nesnesi normalleştirici ───────────────────────
-def _belge_isle(b):
-    """EKAP'tan gelen ham döküman objesini normalize eder; tüm alanları korur."""
+# ── Belge nesnesi normalleştirici ────────────────────────
+def belge_isle(b: dict) -> dict:
     doc_id = b.get("id") or b.get("dokumanId") or b.get("belgId")
-    ihale_id = b.get("ihaleId") or b.get("ihaleid")
-    # Döküman adı (farklı field adlarını dene)
     ad = (
         b.get("dokumanAdi") or b.get("ad") or b.get("adi")
-        or b.get("baslik") or b.get("fileName") or b.get("dosyaAdi")
-        or ""
+        or b.get("baslik") or b.get("fileName") or b.get("dosyaAdi") or ""
     ).strip() or None
-    # Döküman türü
     tur = (
         b.get("dokumanTuru") or b.get("tur") or b.get("turu")
-        or b.get("type") or b.get("fileType") or b.get("dosyaTuru")
-        or ""
+        or b.get("type") or b.get("fileType") or b.get("dosyaTuru") or ""
     ).strip() or None
-    # İndirme URL'i
     url = (
-        b.get("url") or b.get("downloadUrl") or b.get("indirimUrl")
-        or b.get("path") or b.get("dosyaYolu")
+        b.get("url") or b.get("downloadUrl")
+        or (f"{BASE}/b_ihalearama/api/Dokuman/GetFile?id={doc_id}" if doc_id else None)
     )
-    if not url and doc_id:
-        url = f"https://ekapv2.kik.gov.tr/b_ihalearama/api/Dokuman/GetFile?id={doc_id}"
-
     return {
-        "id":      doc_id,
-        "ihaleId": ihale_id,
-        "ad":      ad,
-        "tur":     tur,
-        "url":     url,
-        "tarih":   b.get("tarih") or b.get("date") or b.get("olusturmaTarihi"),
-        "_raw":    b,  # orijinal alanlar — hangi field'ların dolu geldiğini log'da görmek için
+        "id":    doc_id,
+        "ad":    ad,
+        "tur":   tur,
+        "url":   url,
+        "tarih": b.get("tarih") or b.get("olusturmaTarihi"),
     }
 
 
-# ── Detay zenginleştirme (crypto imzalı) ──────────────────
-async def detay_cek(context, base_headers, ihale_id):
-    """Bir ihale için itiraz bedeli + detay bilgisi döndürür."""
+# ── İhale detayı çek ─────────────────────────────────────
+async def detay_cek(client: httpx.AsyncClient, ihale_id: str) -> dict:
     sonuc = {
-        "itiraz_bedeli": None,
-        "yaklasik_maliyet_min": None,
-        "yaklasik_maliyet_max": None,
-        "isin_yapilacagi_yer": None,
-        "ihale_yeri": None,
-        "okas": None,
-        "ilan_metni": None,
-        "ilan_html": None,
-        "belgeler": None,
+        "itiraz_bedeli": None, "yaklasik_maliyet_min": None, "yaklasik_maliyet_max": None,
+        "isin_yapilacagi_yer": None, "ihale_yeri": None, "okas": None,
+        "ilan_metni": None, "ilan_html": None, "belgeler": None,
     }
 
-    # 1) İtiraz bedeli (crypto imzalı)
-    try:
-        h = dict(base_headers)
-        h.update(crypto_headers())
-        r = await context.request.post(ITIRAZ_URL, headers=h, data={"ihaleId": ihale_id})
-        if r.ok:
-            data = await r.json()
-            ib = itiraz_parse(data.get("itirazenSikayetBedeli"))
-            if ib:
-                mn, mx = maliyet_araligi(ib)
-                sonuc["itiraz_bedeli"] = ib
-                sonuc["yaklasik_maliyet_min"] = mn
-                sonuc["yaklasik_maliyet_max"] = mx
-    except Exception:
-        pass
+    # 1) İtiraz bedeli → yaklaşık maliyet
+    veri = await post(client, ENDPOINTS["itiraz"], {"ihaleId": ihale_id})
+    if veri:
+        ib = itiraz_parse(veri.get("itirazenSikayetBedeli"))
+        mn, mx = maliyet_araligi(ib)
+        sonuc.update(itiraz_bedeli=ib, yaklasik_maliyet_min=mn, yaklasik_maliyet_max=mx)
 
-    # 2) İhale detayı
-    try:
-        h = dict(base_headers)
-        h.update(crypto_headers())
-        r = await context.request.post(DETAY_URL, headers=h, data={"ihaleId": ihale_id})
-        if r.ok:
-            data = await r.json()
-            item = data.get("item", {})
-            bilgi = item.get("ihaleBilgi", {}) or {}
-            sonuc["isin_yapilacagi_yer"] = (bilgi.get("isinYapilacagiYer") or "").strip() or None
-            sonuc["ihale_yeri"] = (bilgi.get("ihaleYeri") or "").strip() or None
-            sonuc["okas"] = (bilgi.get("okas") or "").strip() or None
+    # 2) Detay bilgileri
+    veri = await post(client, ENDPOINTS["detay"], {"ihaleId": ihale_id})
+    if veri:
+        item  = veri.get("item") or {}
+        bilgi = item.get("ihaleBilgi") or {}
+        sonuc["isin_yapilacagi_yer"] = (bilgi.get("isinYapilacagiYer") or "").strip() or None
+        sonuc["ihale_yeri"]          = (bilgi.get("ihaleYeri") or "").strip() or None
+        sonuc["okas"]                = (bilgi.get("okas") or "").strip() or None
 
-            ilan_list = item.get("ilanList") or []
-            if ilan_list:
-                ham_html = ilan_list[0].get("veriHtml", "") or ""
-                sonuc["ilan_html"]  = ham_html or None
-                sonuc["ilan_metni"] = html_temizle(ham_html) or None
+        ilanlar = item.get("ilanList") or []
+        if ilanlar:
+            ham_html = ilanlar[0].get("veriHtml") or ""
+            sonuc["ilan_html"]  = ham_html or None
+            sonuc["ilan_metni"] = html_temizle(ham_html) or None
 
-            # Dökümanlar: birden fazla nested path dene
-            raw_belgeler = (
-                item.get("dokumanListe")
-                or item.get("belgeList")
-                or item.get("ekDokumanlar")
-                or data.get("dokumanListe")
-                or data.get("belgeList")
-                or []
-            )
-            if raw_belgeler:
-                sonuc["belgeler"] = [_belge_isle(b) for b in raw_belgeler]
-                print(f"    [DOK] ihaleId={ihale_id[:8]}… {len(raw_belgeler)} dok, alanlar: {list(raw_belgeler[0].keys())}")
-    except Exception:
-        pass
+        # Belgeler — önce item içinde
+        raw = (
+            item.get("dokumanListe") or item.get("belgeList")
+            or veri.get("dokumanListe") or []
+        )
+        if raw:
+            sonuc["belgeler"] = [belge_isle(b) for b in raw]
+            print(f"    [DOK-DETAY] {len(raw)} dok alanlar: {list(raw[0].keys())[:6]}")
 
-    # 3) Döküman listesi — ayrı endpoint (asıl kaynakta burada olur)
+    # 3) Doküman listesi (ayrı endpoint)
     if not sonuc["belgeler"]:
-        try:
-            h = dict(base_headers)
-            h.update(crypto_headers())
-            r = await context.request.post(DOKUMAN_URL, headers=h, data={"ihaleId": ihale_id})
-            if r.ok:
-                raw = await r.json()
-                liste = (
-                    raw if isinstance(raw, list)
-                    else (
-                        raw.get("list")
-                        or raw.get("dokumanListe")
-                        or raw.get("belgeList")
-                        or raw.get("data")
-                        or []
-                    )
-                )
-                if liste:
-                    sonuc["belgeler"] = [_belge_isle(b) for b in liste]
-                    print(f"    [DOK2] ihaleId={ihale_id[:8]}… {len(liste)} dok, alanlar: {list(liste[0].keys())}")
-        except Exception:
-            pass
+        veri = await post(client, ENDPOINTS["dok_liste"], {"ihaleId": ihale_id})
+        if veri:
+            raw = veri if isinstance(veri, list) else (
+                veri.get("list") or veri.get("dokumanListe")
+                or veri.get("belgeList") or veri.get("data") or []
+            )
+            if raw:
+                sonuc["belgeler"] = [belge_isle(b) for b in raw]
+                print(f"    [DOK-LISTE] {len(raw)} dok")
 
     return sonuc
 
 
-# ── Belge indirme + Supabase Storage ──────────────────────
-def _dosya_adi_temizle(s):
-    return re.sub(r"[^\w\-.]", "_", s or "belge")[:80]
-
-async def belge_indir_yukle(context, base_headers, ekap_id, belge, sb):
-    """
-    Bir belgeyi EKAP'tan indirir, Supabase Storage'a yükler.
-    Returns: storage public URL veya None.
-    """
-    doc_id = belge.get("id")
-    if not doc_id:
-        return None
-
-    ad    = _dosya_adi_temizle(belge.get("ad") or belge.get("tur") or str(doc_id))
-    uzanti = ".zip" if not re.search(r"\.\w{2,5}$", ad) else ""
-    path   = f"{ekap_id}/{doc_id}_{ad}{uzanti}"
-
-    # Zaten yüklendi mi kontrol et
-    try:
-        existing = sb.storage.from_(STORAGE_BUCKET).list(ekap_id)
-        if any(f.get("name", "") == f"{doc_id}_{ad}{uzanti}" for f in (existing or [])):
-            return sb.storage.from_(STORAGE_BUCKET).get_public_url(path)
-    except Exception:
-        pass
-
-    # İndir
-    try:
-        h = dict(base_headers)
-        h.update(crypto_headers())
-        r = await context.request.get(
-            f"{EKAP_DOSYA_URL}?id={doc_id}",
-            headers=h,
-            timeout=60000,
-        )
-        if not r.ok:
-            print(f"      ✗ Belge HTTP {r.status} — id={doc_id}")
-            return None
-
-        icerik = await r.body()
-        if len(icerik) < 100:
-            # Muhtemelen auth hatası/boş yanıt
-            return None
-
-        # Dosya uzantısını content-type'tan güncelle
-        ct = r.headers.get("content-type", "")
-        if "pdf" in ct:
-            uzanti = ".pdf"
-            path   = f"{ekap_id}/{doc_id}_{ad}.pdf"
-        elif "zip" in ct or "octet" in ct:
-            uzanti = ".zip"
-            path   = f"{ekap_id}/{doc_id}_{ad}.zip"
-
-        # Supabase Storage'a yükle
-        sb.storage.from_(STORAGE_BUCKET).upload(
-            path, icerik,
-            file_options={"content-type": ct or "application/octet-stream", "upsert": "true"},
-        )
-        url = sb.storage.from_(STORAGE_BUCKET).get_public_url(path)
-        print(f"      ✓ {ad} → {len(icerik)//1024}KB yüklendi")
-        return url
-
-    except Exception as e:
-        print(f"      ✗ Belge indirme hatası (id={doc_id}): {e}")
-        return None
+# ── Doküman URL'si al (EkapDokumanYonlendirme) ───────────
+async def dokuman_url_al(client: httpx.AsyncClient, ihale_id: str, islem_id: str = "1") -> str | None:
+    """GetDokumanUrl endpoint → belge indirme linki döndürür."""
+    veri = await post(client, ENDPOINTS["dok_url"], {"islemId": islem_id, "ihaleId": ihale_id})
+    return (veri or {}).get("url")
 
 
-async def ihalenin_belgelerini_indir(context, base_headers, ihale, sb):
-    """
-    Bir ihale için tüm belgeleri indirir, storage URL'lerini belgeler listesine ekler.
-    """
-    belgeler = ihale.get("belgeler") or []
-    if not belgeler:
-        return
+# ── İhale listesi çek ─────────────────────────────────────
+async def sayfa_cek(client: httpx.AsyncClient, skip: int = 0) -> dict:
+    return await post(client, ENDPOINTS["liste"], {
+        "searchText": "", "paginationSkip": skip, "paginationTake": SAYFA_BOYUTU,
+        "ihaleDurumIdList": [2], "searchType": "GirdigimGibi",
+    }) or {}
 
-    ekap_id = str(ihale.get("ekap_id") or ihale.get("id") or "bilinmiyor")
-    print(f"    📥 {len(belgeler)} belge indiriliyor (ihale={ekap_id})...")
+async def tum_ihaleleri_cek(client: httpx.AsyncClient) -> list:
+    print("\n  → Aktif ihaleler çekiliyor...")
+    ilk    = await sayfa_cek(client, 0)
+    toplam = ilk.get("totalCount", 0)
+    liste  = ilk.get("list", [])
+    print(f"  Toplam: {toplam} | İlk sayfa: {len(liste)}")
 
-    temiz = {k: v for k, v in base_headers.items() if k.lower() != "content-length"}
-    for b in belgeler:
-        url = await belge_indir_yukle(context, temiz, ekap_id, b, sb)
-        if url:
-            b["storage_url"] = url
+    sayfa = 1
+    while len(liste) < toplam:
+        await asyncio.sleep(0.3)
+        sonuc = await sayfa_cek(client, sayfa * SAYFA_BOYUTU)
+        yeni  = sonuc.get("list", [])
+        if not yeni: break
+        liste.extend(yeni)
+        print(f"  Sayfa {sayfa+1}: {len(liste)}/{toplam}")
+        sayfa += 1
 
-    indirilenler = sum(1 for b in belgeler if b.get("storage_url"))
-    print(f"    ✓ {indirilenler}/{len(belgeler)} belge storage'a yüklendi")
+    return liste
 
 
-async def tum_detaylari_cek(context, base_headers, ham_liste):
-    """Tüm ihaleler için detayları eşzamanlı (sınırlı) çeker; id→detay sözlüğü döndürür."""
-    temiz = {k: v for k, v in base_headers.items() if k.lower() != "content-length"}
+# ── Tüm detayları çek ─────────────────────────────────────
+async def tum_detaylari_cek(client: httpx.AsyncClient, ham_liste: list) -> dict:
     hedef = ham_liste if DETAY_LIMIT <= 0 else ham_liste[:DETAY_LIMIT]
-    print(f"\n  → {len(hedef)} ihale için detay çekiliyor (eşzamanlı={ESZAMANLI})...", flush=True)
-
-    sem = asyncio.Semaphore(ESZAMANLI)
+    print(f"\n  → {len(hedef)} ihale için detay çekiliyor (eşzamanlı={ESZAMANLI})...")
+    sem     = asyncio.Semaphore(ESZAMANLI)
     detaylar = {}
-    sayac = {"n": 0}
+    sayac    = {"n": 0}
 
     async def gorev(ihale):
         ihale_id = ihale.get("id")
-        if not ihale_id:
-            return
+        if not ihale_id: return
         async with sem:
-            detaylar[ihale_id] = await detay_cek(context, temiz, ihale_id)
-            await asyncio.sleep(0.15)  # nazik throttle
+            detaylar[ihale_id] = await detay_cek(client, ihale_id)
+            await asyncio.sleep(0.1)
             sayac["n"] += 1
             if sayac["n"] % 50 == 0:
-                print(f"    {sayac['n']}/{len(hedef)} detay tamam", flush=True)
+                print(f"    {sayac['n']}/{len(hedef)} tamam")
 
     await asyncio.gather(*(gorev(i) for i in hedef))
     print(f"  ✓ {len(detaylar)} detay çekildi")
     return detaylar
 
 
+# ── Belge indirme + Supabase Storage ──────────────────────
+def dosya_adi_temizle(s):
+    return re.sub(r"[^\w\-.]", "_", s or "belge")[:80]
+
+async def belge_indir_yukle(client: httpx.AsyncClient, ekap_id: str, ihale_id: str, sb) -> list:
+    """
+    1. GetDokumanUrl ile belge linkini al
+    2. İndir
+    3. Supabase Storage'a yükle
+    Returns: güncellenmiş belgeler listesi
+    """
+    belgeler = []
+
+    # İslem ID'leri dene: 1=İhale Dokümanı, 2=İdari Şartname, 3=Teknik Şartname
+    for islem_id in ["1", "2", "3", "4"]:
+        url = await dokuman_url_al(client, ihale_id, islem_id)
+        if not url:
+            continue
+
+        # Dosya adını URL'den çıkar
+        dosya = url.split("/")[-1].split("?")[0] or f"dokuman_{islem_id}"
+        try:
+            r = await client.get(url, timeout=60.0, follow_redirects=True)
+            if not r.is_success or len(r.content) < 200:
+                continue
+
+            ct = r.headers.get("content-type", "application/octet-stream")
+            uzanti = ".pdf" if "pdf" in ct else ".zip"
+            if not dosya.endswith((".zip", ".pdf", ".docx", ".xlsx")):
+                dosya += uzanti
+
+            path = f"{ekap_id}/{islem_id}_{dosya_adi_temizle(dosya)}"
+            sb.storage.from_(STORAGE_BUCKET).upload(
+                path, r.content,
+                file_options={"content-type": ct, "upsert": "true"},
+            )
+            storage_url = sb.storage.from_(STORAGE_BUCKET).get_public_url(path)
+
+            tur_ad = {"1": "İhale Dokümanı", "2": "İdari Şartname",
+                      "3": "Teknik Şartname", "4": "Sözleşme Tasarısı"}.get(islem_id, f"Doküman {islem_id}")
+            belgeler.append({
+                "id": islem_id, "ad": dosya, "tur": tur_ad,
+                "url": url, "storage_url": storage_url,
+            })
+            print(f"      ✓ {tur_ad} — {len(r.content)//1024}KB")
+            await asyncio.sleep(0.3)
+
+        except Exception as e:
+            print(f"      ✗ islemId={islem_id}: {e}")
+
+    return belgeler
+
+
 # ── Veri dönüşümü ─────────────────────────────────────────
 def tur_donustur(tip):
-    eslesme = {
-        "Mal Alımı": "Mal", "Hizmet Alımı": "Hizmet",
-        "Yapım İşi": "Yapım", "Danışmanlık": "Danışmanlık",
-        "Mal": "Mal", "Hizmet": "Hizmet", "Yapım": "Yapım",
-    }
-    for k, v in eslesme.items():
-        if k.lower() in (tip or "").lower():
-            return v
+    for k, v in [("Mal", "Mal"), ("Hizmet", "Hizmet"), ("Yapım", "Yapım"), ("Danışmanlık", "Danışmanlık")]:
+        if k.lower() in (tip or "").lower(): return v
     return tip or "Diğer"
 
-def durum_donustur(durum):
-    if not durum:
-        return "aktif"
-    d = durum.lower()
-    if "açık" in d or "devam" in d or "katılım" in d:
-        return "aktif"
-    if "sonuçland" in d or "tamamland" in d:
-        return "sonuclandi"
+def durum_donustur(d):
+    d = (d or "").lower()
+    if "açık" in d or "devam" in d or "katılım" in d: return "aktif"
+    if "sonuçland" in d or "tamamland" in d: return "sonuclandi"
     return "aktif"
 
-def usul_donustur(aciklama):
-    """'İhale Usulü: Açık' → 'Açık'."""
-    if not aciklama:
-        return None
-    return aciklama.replace("İhale Usulü:", "").strip() or None
+def usul_donustur(s):
+    return (s or "").replace("İhale Usulü:", "").strip() or None
 
-
-def ihaleleri_isle(ham_liste, detaylar):
-    simdi = datetime.now(timezone.utc).isoformat()
+def ihaleleri_isle(ham_liste: list, detaylar: dict) -> list:
+    now = datetime.now(timezone.utc).isoformat()
     kayitlar = []
     for i in ham_liste:
-        if not i.get("ihaleAdi"):
-            continue
+        if not i.get("ihaleAdi"): continue
         d = detaylar.get(i.get("id"), {})
         kayitlar.append({
             "ekap_id":              str(i.get("ikn") or i.get("id") or ""),
@@ -593,212 +364,126 @@ def ihaleleri_isle(ham_liste, detaylar):
             "usul":                 usul_donustur(i.get("ihaleUsulAciklama")),
             "durum":                durum_donustur(i.get("ihaleDurumAciklama")),
             "son_teklif_tarihi":    i.get("ihaleTarihSaat"),
-            # detay alanları
             "itiraz_bedeli":        d.get("itiraz_bedeli"),
             "yaklasik_maliyet_min": d.get("yaklasik_maliyet_min"),
             "yaklasik_maliyet_max": d.get("yaklasik_maliyet_max"),
-            "tahmini_bedel":        d.get("yaklasik_maliyet_min"),  # frontend sıralama/filtre uyumu
+            "tahmini_bedel":        d.get("yaklasik_maliyet_min"),
             "isin_yapilacagi_yer":  d.get("isin_yapilacagi_yer"),
             "ihale_yeri":           d.get("ihale_yeri"),
             "okas":                 d.get("okas"),
             "ilan_metni":           d.get("ilan_metni"),
             "ilan_html":            d.get("ilan_html"),
-            "belgeler":             belgeler_temizle(d.get("belgeler")),
+            "belgeler":             d.get("belgeler"),
             "kaynak":               "ekap",
-            "olusturulma":          simdi,
+            "olusturulma":          now,
         })
     return kayitlar
 
-
-def belgeler_temizle(belgeler):
-    """_raw debug alanını DB'ye yazmadan önce kaldır."""
-    if not belgeler:
-        return belgeler
-    return [{k: v for k, v in b.items() if k != "_raw"} for b in belgeler]
-
-
 def tekilleştir(liste):
     goruldu, tekil = set(), []
-    for ihale in liste:
-        anahtar = ihale.get("ikn") or ihale.get("ekap_id")
-        if anahtar and anahtar not in goruldu:
-            goruldu.add(anahtar)
-            tekil.append(ihale)
+    for i in liste:
+        k = i.get("ikn") or i.get("ekap_id")
+        if k and k not in goruldu:
+            goruldu.add(k)
+            tekil.append(i)
     return tekil
 
 
-def supabase_yaz(liste):
+# ── Supabase yaz ──────────────────────────────────────────
+def supabase_yaz(liste, sb=None):
     if not SUPABASE_KEY:
-        print("⚠ SUPABASE_SERVICE_KEY yok, JSON'a kaydediliyor...")
-        dosya = f"ekap_ihaleler_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
+        dosya = f"ekap_{datetime.now().strftime('%Y%m%d_%H%M%S')}.json"
         with open(dosya, "w", encoding="utf-8") as f:
             json.dump(liste, f, ensure_ascii=False, indent=2)
         print(f"  💾 {len(liste)} ihale → '{dosya}'")
         return
-
-    sb = create_client(SUPABASE_URL, SUPABASE_KEY)
+    if not sb:
+        sb = create_client(SUPABASE_URL, SUPABASE_KEY)
     toplam = 0
-    batch = 50
-    for i in range(0, len(liste), batch):
-        parca = liste[i:i + batch]
+    for i in range(0, len(liste), 50):
         try:
-            sb.table("ilanlar").upsert(parca, on_conflict="ekap_id").execute()
-            toplam += len(parca)
-            print(f"  ✓ {toplam}/{len(liste)} Supabase'e yazıldı")
+            sb.table("ilanlar").upsert(liste[i:i+50], on_conflict="ekap_id").execute()
+            toplam += len(liste[i:i+50])
+            print(f"  ✓ {toplam}/{len(liste)} yazıldı")
         except Exception as e:
             print(f"  ✗ Yazma hatası: {e}")
-    print(f"\n✅ Toplam {toplam} ihale Supabase'e aktarıldı")
+    print(f"\n✅ {toplam} ihale Supabase'e aktarıldı")
+
+
+def storage_hazirla(sb):
+    try:
+        isimler = [b.name for b in sb.storage.list_buckets()]
+        if STORAGE_BUCKET not in isimler:
+            sb.storage.create_bucket(STORAGE_BUCKET, options={"public": True, "file_size_limit": 52428800})
+            print(f"  ✓ Bucket '{STORAGE_BUCKET}' oluşturuldu")
+    except Exception as e:
+        print(f"  ⚠ Storage hazırlık: {e}")
 
 
 def ozet(liste):
     print("\n" + "=" * 55)
-    print("ÖZET")
-    print("=" * 55)
-    print(f"Toplam: {len(liste)} tekil ihale")
+    belgeli  = sum(1 for i in liste if i.get("belgeler"))
+    metinli  = sum(1 for i in liste if i.get("ilan_metni"))
     maliyetli = sum(1 for i in liste if i.get("itiraz_bedeli"))
-    metinli = sum(1 for i in liste if i.get("ilan_metni"))
-    belgeli = sum(1 for i in liste if i.get("belgeler"))
-    print(f"Yaklaşık maliyetli: {maliyetli} | İlan metinli: {metinli} | Belgeli: {belgeli}")
+    print(f"Toplam: {len(liste)} | Belgeli: {belgeli} | İlan metinli: {metinli} | Maliyetli: {maliyetli}")
     if liste:
         o = liste[0]
-        print(f"\nÖrnek:")
-        print(f"  IKN          : {o['ikn']}")
-        print(f"  Başlık       : {o['baslik'][:60]}")
-        print(f"  Yak. maliyet : {o['yaklasik_maliyet_min']} - {o['yaklasik_maliyet_max']}")
-        print(f"  İtiraz bedeli: {o['itiraz_bedeli']}")
+        print(f"Örnek: {o['baslik'][:60]}")
+        print(f"  IKN: {o['ikn']} | Maliyet: {o['yaklasik_maliyet_min']} – {o['yaklasik_maliyet_max']}")
     print("=" * 55)
-
-
-# ── Supabase Storage bucket hazırlığı ────────────────────
-def storage_bucket_hazirla(sb):
-    """'belgeler' bucket yoksa oluştur (public)."""
-    try:
-        buckets = sb.storage.list_buckets()
-        isimler = [b.name for b in buckets]
-        if STORAGE_BUCKET not in isimler:
-            sb.storage.create_bucket(
-                STORAGE_BUCKET,
-                options={"public": True, "file_size_limit": 52428800},  # 50 MB
-            )
-            print(f"  ✓ Storage bucket '{STORAGE_BUCKET}' oluşturuldu")
-        else:
-            print(f"  ✓ Storage bucket '{STORAGE_BUCKET}' mevcut")
-    except Exception as e:
-        print(f"  ⚠ Storage bucket hazırlık hatası: {e}")
 
 
 # ── ANA ───────────────────────────────────────────────────
 async def main():
     print("=" * 55)
-    print("EKAP SCRAPER — Token-Capture + Detay + Belgeler")
+    print("EKAP SCRAPER v2 — httpx / Playwrightsiz")
     print(f"Zaman: {datetime.now().strftime('%d.%m.%Y %H:%M:%S')}")
-    print(f"EKAP girişi: {'EVET' if EKAP_USERNAME else 'HAYIR (anonim)'}")
     print(f"Belge indirme: {'EVET' if BELGE_INDIR else 'HAYIR'}")
     print("=" * 55)
 
-    # Supabase istemcisi (belge yükleme için erken oluştur)
-    sb = None
-    if SUPABASE_KEY:
-        sb = create_client(SUPABASE_URL, SUPABASE_KEY)
-        if BELGE_INDIR:
-            storage_bucket_hazirla(sb)
+    sb = create_client(SUPABASE_URL, SUPABASE_KEY) if SUPABASE_KEY else None
+    if sb and BELGE_INDIR:
+        storage_hazirla(sb)
 
-    async with async_playwright() as p:
-        browser = await p.chromium.launch(
-            headless=True, args=["--no-sandbox", "--disable-setuid-sandbox"]
-        )
-        context = await browser.new_context(
-            user_agent=(
-                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
-                "AppleWebKit/537.36 (KHTML, like Gecko) "
-                "Chrome/125.0.0.0 Safari/537.36"
-            )
-        )
-        page = await context.new_page()
+    async with httpx.AsyncClient(verify=ssl_ctx(), http2=False, timeout=30.0) as client:
+        # 1) Liste
+        ham_liste = await tum_ihaleleri_cek(client)
 
-        # 1) EKAP girişi (belgeler için)
-        giris_basarili = False
-        if EKAP_USERNAME:
-            giris_basarili = await ekap_giris_yap(page, EKAP_USERNAME, EKAP_PASSWORD)
+        # 2) Detaylar
+        detaylar = await tum_detaylari_cek(client, ham_liste)
 
-        # 2) Token yakala
-        headers = payload = url = None
-        for deneme in range(3):
-            if deneme:
-                print(f"  ↻ Token yeniden deneniyor ({deneme + 1}/3)...")
-                await page.wait_for_timeout(5000)
-                try:
-                    await page.goto(EKAP_SEARCH_URL, wait_until="load", timeout=30000)
-                except Exception:
-                    pass
-            headers, payload, url = await ekap_token_yakala(page)
-            if headers and payload:
-                break
-
-        if not headers or not payload:
-            print("❌ Token yakalanamadı — çıkılıyor.")
-            await browser.close()
-            return
-
-        # 3) İhale listesi
-        tum_ham_liste = await tum_ihaleleri_cek(context, headers, payload, url)
-
-        # 4) Detaylar
-        detaylar = await tum_detaylari_cek(context, headers, tum_ham_liste)
-
-        # 5) Belge indirme (giriş başarılıysa)
+        # 3) Belge indirme
         if BELGE_INDIR and sb:
-            belgeli = [
-                d for d in detaylar.values() if d.get("belgeler")
-            ]
-            print(f"\n  → {len(belgeli)} ihalenin belgeleri indirilecek...")
-            # ihale id → ekap_id eşlemesi için ham liste'yi kullan
-            id_to_ekap = {i.get("id"): str(i.get("ikn") or i.get("id") or "") for i in tum_ham_liste}
-            temiz_h = {k: v for k, v in headers.items() if k.lower() != "content-length"}
+            print(f"\n  → Belgeler indiriliyor...")
+            id_to_ekap = {i.get("id"): str(i.get("ikn") or i.get("id") or "") for i in ham_liste}
+            for ihale in ham_liste:
+                ihale_id = ihale.get("id")
+                if not ihale_id: continue
+                ekap_id = id_to_ekap.get(ihale_id, ihale_id)
+                mevcut_belgeler = (detaylar.get(ihale_id) or {}).get("belgeler") or []
+                yeni_belgeler = await belge_indir_yukle(client, ekap_id, ihale_id, sb)
+                if yeni_belgeler:
+                    # storage URL'lerini mevcut belgelere ekle, yoksa yeni listeyi kullan
+                    if mevcut_belgeler:
+                        for nb in yeni_belgeler:
+                            existing = next((b for b in mevcut_belgeler if b.get("tur") == nb.get("tur")), None)
+                            if existing:
+                                existing["storage_url"] = nb["storage_url"]
+                            else:
+                                mevcut_belgeler.append(nb)
+                    else:
+                        if ihale_id not in detaylar:
+                            detaylar[ihale_id] = {}
+                        detaylar[ihale_id]["belgeler"] = yeni_belgeler
 
-            for ihale_raw in tum_ham_liste:
-                ihale_id = ihale_raw.get("id")
-                detay = detaylar.get(ihale_id, {})
-                if not detay.get("belgeler"):
-                    continue
-                proxy = {
-                    "ekap_id": id_to_ekap.get(ihale_id, ihale_id),
-                    "belgeler": detay["belgeler"],
-                }
-                await ihalenin_belgelerini_indir(context, temiz_h, proxy, sb)
-                # Güncellenmiş belgeler listesini detay'a yaz
-                detaylar[ihale_id]["belgeler"] = proxy["belgeler"]
-
-        tum_ham = ihaleleri_isle(tum_ham_liste, detaylar)
-
-        await browser.close()
-
-    tekil = tekilleştir(tum_ham)
-    print(f"\n✓ {len(tum_ham)} kayıt → {len(tekil)} tekil")
-
-    if tekil:
-        ozet(tekil)
-        if sb:
-            supabase_yaz_ile_client(tekil, sb)
-        else:
-            supabase_yaz(tekil)
+    # 4) Dönüştür ve yaz
+    tum = tekilleştir(ihaleleri_isle(ham_liste, detaylar))
+    print(f"\n✓ {len(tum)} tekil ihale")
+    if tum:
+        ozet(tum)
+        supabase_yaz(tum, sb)
     else:
         print("❌ Veri çekilemedi.")
-
-
-def supabase_yaz_ile_client(liste, sb):
-    """Mevcut sb client ile Supabase'e yaz."""
-    toplam = 0
-    batch = 50
-    for i in range(0, len(liste), batch):
-        parca = liste[i:i + batch]
-        try:
-            sb.table("ilanlar").upsert(parca, on_conflict="ekap_id").execute()
-            toplam += len(parca)
-            print(f"  ✓ {toplam}/{len(liste)} Supabase'e yazıldı")
-        except Exception as e:
-            print(f"  ✗ Yazma hatası: {e}")
-    print(f"\n✅ Toplam {toplam} ihale Supabase'e aktarıldı")
 
 
 if __name__ == "__main__":
