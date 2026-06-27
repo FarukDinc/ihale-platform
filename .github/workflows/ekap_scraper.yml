@@ -28,6 +28,9 @@ jobs:
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          EKAP_USERNAME: ${{ secrets.EKAP_USERNAME }}
+          EKAP_PASSWORD: ${{ secrets.EKAP_PASSWORD }}
+          EKAP_BELGE_INDIR: "1"
         run: python backend/ekap_scraper.py
 
       - name: Bildirim e-postaları gönder

@@ -2,12 +2,15 @@
 EKAP Scraper - Playwright ile Token Yakalama + Detay Zenginleştirme
 
 Akış:
-  1. EKAP arama sayfasını açar, API token/header'larını havada yakalar
-  2. Tüm aktif ihaleleri sayfalama ile çeker (GetListByParameters)
-  3. Her ihale için crypto-imzalı çağrılarla detay çeker:
+  1. (İsteğe bağlı) EKAP hesabına giriş yap — belgeler için gerekli
+  2. EKAP arama sayfasını açar, API token/header'larını havada yakalar
+  3. Tüm aktif ihaleleri sayfalama ile çeker (GetListByParameters)
+  4. Her ihale için crypto-imzalı çağrılarla detay çeker:
        - İtirazen şikayet bedeli  → yaklaşık maliyet aralığı (KİK eşik tablosu)
-       - İhale detayı             → işin yapılacağı yer, ihale yeri, OKAS, ilan metni, belgeler
-  4. Supabase 'ilanlar' tablosuna upsert eder
+       - İhale detayı             → yer, ihale yeri, OKAS, ilan metni (HTML+metin), belgeler
+       - Döküman listesi          → belge adı, tür, ID
+  5. Belgeleri EKAP'tan indirir, Supabase Storage'a yükler
+  6. Supabase 'ilanlar' tablosuna upsert eder
 
 Kurulum:
     pip install playwright supabase pycryptodome
@@ -16,6 +19,9 @@ Kurulum:
 
 Env (GitHub Actions secrets veya backend/.env):
     SUPABASE_URL, SUPABASE_SERVICE_KEY
+    EKAP_USERNAME, EKAP_PASSWORD   (belgeler için — isteğe bağlı)
+    EKAP_DETAY_LIMIT               (test için, 0 = sınırsız)
+    EKAP_BELGE_INDIR               (1 = belgeleri indir ve storage'a yükle)
 """
 
 import asyncio
@@ -35,6 +41,13 @@ from Crypto.Random import get_random_bytes
 
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "https://lpgelwfoarhouollhwur.supabase.co")
 SUPABASE_KEY = os.environ.get("SUPABASE_SERVICE_KEY", "")
+
+EKAP_USERNAME    = os.environ.get("EKAP_USERNAME", "")
+EKAP_PASSWORD    = os.environ.get("EKAP_PASSWORD", "")
+BELGE_INDIR      = os.environ.get("EKAP_BELGE_INDIR", "0") == "1"
+STORAGE_BUCKET   = "belgeler"
+EKAP_DOSYA_URL   = "https://ekapv2.kik.gov.tr/b_ihalearama/api/Dokuman/GetFile"
+EKAP_LOGIN_BASE  = "https://ekapv2.kik.gov.tr/authzsvc"
 
 SAYFA_BOYUTU = 100          # EKAP'ın izin verdiği max
 ESZAMANLI    = 6            # detay çekiminde paralel istek sayısı
@@ -118,6 +131,107 @@ def html_temizle(html):
     txt = re.sub(r" *\n *", "\n", txt)
     txt = re.sub(r"\n{3,}", "\n\n", txt)
     return txt.strip()
+
+
+# ── EKAP OIDC Login ───────────────────────────────────────
+async def ekap_giris_yap(page, username, password):
+    """
+    EKAP OIDC akışı ile giriş yapar.
+    authzsvc/connect/authorize → login formu → kimlik bilgileri → callback.
+    Başarılıysa True döner.
+    """
+    if not username or not password:
+        print("  ℹ  EKAP_USERNAME/PASSWORD yok — anonim modda devam")
+        return False
+
+    AUTH_URL = (
+        f"{EKAP_LOGIN_BASE}/connect/authorize"
+        "?response_type=code"
+        "&client_id=spa-client"
+        "&redirect_uri=https%3A%2F%2Fekapv2.kik.gov.tr%2Fsignin-oidc"
+        "&scope=openid+profile+ekap-ihalearama+ekap-istekli+offline_access"
+        "&state=login"
+        "&nonce=login"
+    )
+
+    print("  → EKAP'a giriş yapılıyor...")
+    try:
+        await page.goto(AUTH_URL, wait_until="networkidle", timeout=45000)
+    except Exception:
+        # networkidle timeout — sayfa yüklendi ama bazı istekler devam ediyor olabilir
+        pass
+
+    # Login formu hazır mı?
+    for selector in [
+        'input[name="Input.Username"]',
+        'input[name="username"]',
+        'input[id="username"]',
+        'input[type="text"]',
+    ]:
+        try:
+            el = page.locator(selector).first
+            if await el.is_visible(timeout=5000):
+                await el.fill(username)
+                break
+        except Exception:
+            continue
+
+    for selector in [
+        'input[name="Input.Password"]',
+        'input[name="password"]',
+        'input[id="password"]',
+        'input[type="password"]',
+    ]:
+        try:
+            el = page.locator(selector).first
+            if await el.is_visible(timeout=3000):
+                await el.fill(password)
+                break
+        except Exception:
+            continue
+
+    # Gönder
+    try:
+        await page.keyboard.press("Enter")
+    except Exception:
+        pass
+
+    # Callback bekle (max 20 sn)
+    for _ in range(20):
+        await page.wait_for_timeout(1000)
+        if "signin-oidc" in page.url or "ekap/search" in page.url or "ekap/" in page.url:
+            break
+
+    # EKAP SPA'ya yönlendirme ol
+    try:
+        await page.goto(EKAP_SEARCH_URL, wait_until="networkidle", timeout=30000)
+    except Exception:
+        pass
+
+    await page.wait_for_timeout(3000)
+
+    # localStorage'dan token kontrol
+    try:
+        token_keys = await page.evaluate(
+            "Object.keys(localStorage).filter(k => k.startsWith('oidc.user'))"
+        )
+        if token_keys:
+            print(f"  ✓ EKAP girişi başarılı (token: {token_keys[0][:40]}…)")
+            return True
+    except Exception:
+        pass
+
+    # Alternatif: 'Çıkış' butonu görünüyorsa giriş olmuş demek
+    try:
+        cikis = await page.locator('text=Çıkış').count()
+        if cikis > 0:
+            print("  ✓ EKAP girişi başarılı")
+            return True
+    except Exception:
+        pass
+
+    print("  ✗ EKAP girişi başarısız — belgeler anonim çekilecek")
+    return False
 
 
 # ── Token yakalama ────────────────────────────────────────
@@ -320,6 +434,93 @@ async def detay_cek(context, base_headers, ihale_id):
     return sonuc
 
 
+# ── Belge indirme + Supabase Storage ──────────────────────
+def _dosya_adi_temizle(s):
+    return re.sub(r"[^\w\-.]", "_", s or "belge")[:80]
+
+async def belge_indir_yukle(context, base_headers, ekap_id, belge, sb):
+    """
+    Bir belgeyi EKAP'tan indirir, Supabase Storage'a yükler.
+    Returns: storage public URL veya None.
+    """
+    doc_id = belge.get("id")
+    if not doc_id:
+        return None
+
+    ad    = _dosya_adi_temizle(belge.get("ad") or belge.get("tur") or str(doc_id))
+    uzanti = ".zip" if not re.search(r"\.\w{2,5}$", ad) else ""
+    path   = f"{ekap_id}/{doc_id}_{ad}{uzanti}"
+
+    # Zaten yüklendi mi kontrol et
+    try:
+        existing = sb.storage.from_(STORAGE_BUCKET).list(ekap_id)
+        if any(f.get("name", "") == f"{doc_id}_{ad}{uzanti}" for f in (existing or [])):
+            return sb.storage.from_(STORAGE_BUCKET).get_public_url(path)
+    except Exception:
+        pass
+
+    # İndir
+    try:
+        h = dict(base_headers)
+        h.update(crypto_headers())
+        r = await context.request.get(
+            f"{EKAP_DOSYA_URL}?id={doc_id}",
+            headers=h,
+            timeout=60000,
+        )
+        if not r.ok:
+            print(f"      ✗ Belge HTTP {r.status} — id={doc_id}")
+            return None
+
+        icerik = await r.body()
+        if len(icerik) < 100:
+            # Muhtemelen auth hatası/boş yanıt
+            return None
+
+        # Dosya uzantısını content-type'tan güncelle
+        ct = r.headers.get("content-type", "")
+        if "pdf" in ct:
+            uzanti = ".pdf"
+            path   = f"{ekap_id}/{doc_id}_{ad}.pdf"
+        elif "zip" in ct or "octet" in ct:
+            uzanti = ".zip"
+            path   = f"{ekap_id}/{doc_id}_{ad}.zip"
+
+        # Supabase Storage'a yükle
+        sb.storage.from_(STORAGE_BUCKET).upload(
+            path, icerik,
+            file_options={"content-type": ct or "application/octet-stream", "upsert": "true"},
+        )
+        url = sb.storage.from_(STORAGE_BUCKET).get_public_url(path)
+        print(f"      ✓ {ad} → {len(icerik)//1024}KB yüklendi")
+        return url
+
+    except Exception as e:
+        print(f"      ✗ Belge indirme hatası (id={doc_id}): {e}")
+        return None
+
+
+async def ihalenin_belgelerini_indir(context, base_headers, ihale, sb):
+    """
+    Bir ihale için tüm belgeleri indirir, storage URL'lerini belgeler listesine ekler.
+    """
+    belgeler = ihale.get("belgeler") or []
+    if not belgeler:
+        return
+
+    ekap_id = str(ihale.get("ekap_id") or ihale.get("id") or "bilinmiyor")
+    print(f"    📥 {len(belgeler)} belge indiriliyor (ihale={ekap_id})...")
+
+    temiz = {k: v for k, v in base_headers.items() if k.lower() != "content-length"}
+    for b in belgeler:
+        url = await belge_indir_yukle(context, temiz, ekap_id, b, sb)
+        if url:
+            b["storage_url"] = url
+
+    indirilenler = sum(1 for b in belgeler if b.get("storage_url"))
+    print(f"    ✓ {indirilenler}/{len(belgeler)} belge storage'a yüklendi")
+
+
 async def tum_detaylari_cek(context, base_headers, ham_liste):
     """Tüm ihaleler için detayları eşzamanlı (sınırlı) çeker; id→detay sözlüğü döndürür."""
     temiz = {k: v for k, v in base_headers.items() if k.lower() != "content-length"}
@@ -468,12 +669,39 @@ def ozet(liste):
     print("=" * 55)
 
 
+# ── Supabase Storage bucket hazırlığı ────────────────────
+def storage_bucket_hazirla(sb):
+    """'belgeler' bucket yoksa oluştur (public)."""
+    try:
+        buckets = sb.storage.list_buckets()
+        isimler = [b.name for b in buckets]
+        if STORAGE_BUCKET not in isimler:
+            sb.storage.create_bucket(
+                STORAGE_BUCKET,
+                options={"public": True, "file_size_limit": 52428800},  # 50 MB
+            )
+            print(f"  ✓ Storage bucket '{STORAGE_BUCKET}' oluşturuldu")
+        else:
+            print(f"  ✓ Storage bucket '{STORAGE_BUCKET}' mevcut")
+    except Exception as e:
+        print(f"  ⚠ Storage bucket hazırlık hatası: {e}")
+
+
 # ── ANA ───────────────────────────────────────────────────
 async def main():
     print("=" * 55)
-    print("EKAP SCRAPER — Token-Capture + Detay")
+    print("EKAP SCRAPER — Token-Capture + Detay + Belgeler")
     print(f"Zaman: {datetime.now().strftime('%d.%m.%Y %H:%M:%S')}")
+    print(f"EKAP girişi: {'EVET' if EKAP_USERNAME else 'HAYIR (anonim)'}")
+    print(f"Belge indirme: {'EVET' if BELGE_INDIR else 'HAYIR'}")
     print("=" * 55)
+
+    # Supabase istemcisi (belge yükleme için erken oluştur)
+    sb = None
+    if SUPABASE_KEY:
+        sb = create_client(SUPABASE_URL, SUPABASE_KEY)
+        if BELGE_INDIR:
+            storage_bucket_hazirla(sb)
 
     async with async_playwright() as p:
         browser = await p.chromium.launch(
@@ -488,11 +716,21 @@ async def main():
         )
         page = await context.new_page()
 
+        # 1) EKAP girişi (belgeler için)
+        giris_basarili = False
+        if EKAP_USERNAME:
+            giris_basarili = await ekap_giris_yap(page, EKAP_USERNAME, EKAP_PASSWORD)
+
+        # 2) Token yakala
         headers = payload = url = None
         for deneme in range(3):
             if deneme:
                 print(f"  ↻ Token yeniden deneniyor ({deneme + 1}/3)...")
                 await page.wait_for_timeout(5000)
+                try:
+                    await page.goto(EKAP_SEARCH_URL, wait_until="load", timeout=30000)
+                except Exception:
+                    pass
             headers, payload, url = await ekap_token_yakala(page)
             if headers and payload:
                 break
@@ -502,8 +740,35 @@ async def main():
             await browser.close()
             return
 
+        # 3) İhale listesi
         tum_ham_liste = await tum_ihaleleri_cek(context, headers, payload, url)
+
+        # 4) Detaylar
         detaylar = await tum_detaylari_cek(context, headers, tum_ham_liste)
+
+        # 5) Belge indirme (giriş başarılıysa)
+        if BELGE_INDIR and sb:
+            belgeli = [
+                d for d in detaylar.values() if d.get("belgeler")
+            ]
+            print(f"\n  → {len(belgeli)} ihalenin belgeleri indirilecek...")
+            # ihale id → ekap_id eşlemesi için ham liste'yi kullan
+            id_to_ekap = {i.get("id"): str(i.get("ikn") or i.get("id") or "") for i in tum_ham_liste}
+            temiz_h = {k: v for k, v in headers.items() if k.lower() != "content-length"}
+
+            for ihale_raw in tum_ham_liste:
+                ihale_id = ihale_raw.get("id")
+                detay = detaylar.get(ihale_id, {})
+                if not detay.get("belgeler"):
+                    continue
+                proxy = {
+                    "ekap_id": id_to_ekap.get(ihale_id, ihale_id),
+                    "belgeler": detay["belgeler"],
+                }
+                await ihalenin_belgelerini_indir(context, temiz_h, proxy, sb)
+                # Güncellenmiş belgeler listesini detay'a yaz
+                detaylar[ihale_id]["belgeler"] = proxy["belgeler"]
+
         tum_ham = ihaleleri_isle(tum_ham_liste, detaylar)
 
         await browser.close()
@@ -513,9 +778,27 @@ async def main():
 
     if tekil:
         ozet(tekil)
-        supabase_yaz(tekil)
+        if sb:
+            supabase_yaz_ile_client(tekil, sb)
+        else:
+            supabase_yaz(tekil)
     else:
         print("❌ Veri çekilemedi.")
+
+
+def supabase_yaz_ile_client(liste, sb):
+    """Mevcut sb client ile Supabase'e yaz."""
+    toplam = 0
+    batch = 50
+    for i in range(0, len(liste), batch):
+        parca = liste[i:i + batch]
+        try:
+            sb.table("ilanlar").upsert(parca, on_conflict="ekap_id").execute()
+            toplam += len(parca)
+            print(f"  ✓ {toplam}/{len(liste)} Supabase'e yazıldı")
+        except Exception as e:
+            print(f"  ✗ Yazma hatası: {e}")
+    print(f"\n✅ Toplam {toplam} ihale Supabase'e aktarıldı")
 
 
 if __name__ == "__main__":

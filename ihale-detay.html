@@ -516,25 +516,35 @@
         <div class="detay-card full">
           <div class="card-title">İhale Belgeleri</div>
           ${belgeler.length ? belgeler.map((b) => {
-            const ad  = b.ad || b.tur || b.baslik || 'İhale Dokümanı';
-            const tur = b.tur && b.tur !== ad ? b.tur : '';
-            const url = b.url || (b.id ? `https://ekapv2.kik.gov.tr/b_ihalearama/api/Dokuman/GetFile?id=${b.id}` : ekapLink(d.ikn));
-            const icon = /pdf/i.test(tur||ad) ? '📕' : /excel|xlsx/i.test(tur||ad) ? '📗' : /word|docx/i.test(tur||ad) ? '📘' : /zip|rar/i.test(tur||ad) ? '🗜️' : '📄';
+            const ad   = b.ad || b.tur || b.baslik || 'İhale Dokümanı';
+            const tur  = b.tur && b.tur !== ad ? b.tur : '';
+            // Storage URL öncelikli, yoksa EKAP API, yoksa EKAP sayfası
+            const href = b.storage_url
+              || b.url
+              || (b.id ? `https://ekapv2.kik.gov.tr/b_ihalearama/api/Dokuman/GetFile?id=${b.id}` : null)
+              || ekapLink(d.ikn);
+            const direkt = !!(b.storage_url || b.url || b.id);
+            const icon = /pdf/i.test(tur||ad) ? '📕'
+              : /excel|xlsx/i.test(tur||ad) ? '📗'
+              : /word|docx/i.test(tur||ad) ? '📘'
+              : /zip|rar/i.test(tur||ad) ? '🗜️' : '📄';
             return `
             <div class="belge-item">
               <div class="belge-info">
                 <span class="belge-icon">${icon}</span>
                 <div>
                   <div class="belge-ad">${ad}</div>
-                  <div class="belge-tarih">${tur ? tur + (b.tarih ? ' · ' : '') : ''}${b.tarih ? tarihFormatla(b.tarih) : ''}</div>
+                  <div class="belge-tarih">${tur ? tur + (b.tarih ? ' · ' : '') : ''}${b.tarih ? tarihFormatla(b.tarih) : ''}${b.storage_url ? ' · <span style="color:#4ade80;font-size:10px;">✓ Direkt İndir</span>' : ''}</div>
                 </div>
               </div>
-              <a class="btn-ekap" href="${url}" target="_blank" rel="noopener">↓ İndir</a>
+              <a class="btn-ekap" href="${href}" target="_blank" rel="noopener" download="${direkt ? ad : false}">
+                ${b.storage_url ? '⬇ İndir' : '↗ EKAP\'ta Aç'}
+              </a>
             </div>`;
           }).join('') : `
             <div style="padding:16px 0;">
               <p style="color:var(--muted);font-size:14px;margin-bottom:12px;">
-                Belge listesi sisteme yüklenemedi. Bu ihaleye ait dokümanları EKAP'ta görüntüleyebilirsiniz.
+                Belge listesi henüz sisteme yüklenmedi. Dokümanları EKAP üzerinden görüntüleyebilirsiniz.
               </p>
               ${d.ikn ? `<a class="btn-ekap" href="${ekapLink(d.ikn)}" target="_blank" rel="noopener" style="display:inline-flex;">↗ EKAP'ta Dokümanları Gör</a>` : ''}
             </div>`}
