@@ -13,3 +13,22 @@ __pycache__/
 
 # Node
 node_modules/
+
+# Debug / scratch artefaktları (scraper testleri)
+captcha*.png
+captcha*.bmp
+ekap_belge.*
+prod_test.*
+*.pkl
+ekap_raw.json
+ekap_ws*.txt
+ekap_wsdl.xml
+detay_text.txt
+rendered_text.txt
+search_page.html
+ilan_page.html
+dokuman_resp.html
+out.txt
+
+# Scraper JSON ciktilari (SUPABASE_KEY yokken)
+ekap_[0-9]*.json
