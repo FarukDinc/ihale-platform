@@ -95,13 +95,28 @@ def maliyet_araligi(itiraz_bedeli):
     return MALIYET_TABLOSU.get(itiraz_bedeli, (None, None))
 
 
-# ── HTML → düz metin ──────────────────────────────────────
+# ── HTML → yapılı düz metin ───────────────────────────────
 def html_temizle(html):
     if not html:
         return ""
-    txt = re.sub(r"<[^>]+>", " ", html)
+    # Blok elementleri → satır sonu
+    txt = re.sub(r"<br\s*/?>", "\n", html, flags=re.I)
+    txt = re.sub(r"</p>|</div>|</h[1-6]>|</tr>|<hr[^>]*>", "\n", txt, flags=re.I)
+    txt = re.sub(r"<li[^>]*>", "\n• ", txt, flags=re.I)
+    # Tablo hücresi ayırıcı
+    txt = re.sub(r"</td>\s*<td[^>]*>", " | ", txt, flags=re.I)
+    # Kalan tagları temizle
+    txt = re.sub(r"<[^>]+>", "", txt)
+    # HTML entities
     txt = re.sub(r"&nbsp;", " ", txt)
-    txt = re.sub(r"\s+", " ", txt)
+    txt = re.sub(r"&amp;", "&", txt)
+    txt = re.sub(r"&lt;", "<", txt)
+    txt = re.sub(r"&gt;", ">", txt)
+    txt = re.sub(r"&#?\w+;", " ", txt)
+    # 3+ satır sonunu 2'ye indir, yatay boşlukları temizle
+    txt = re.sub(r"[^\S\n]+", " ", txt)
+    txt = re.sub(r" *\n *", "\n", txt)
+    txt = re.sub(r"\n{3,}", "\n\n", txt)
     return txt.strip()
 
 
@@ -260,21 +275,22 @@ async def detay_cek(context, base_headers, ihale_id):
             if ilan_list:
                 sonuc["ilan_metni"] = html_temizle(ilan_list[0].get("veriHtml", "")) or None
 
-            # Dökümanlar: önce item içinde, yoksa response kökünde ara
+            # Dökümanlar: birden fazla nested path dene
             raw_belgeler = (
                 item.get("dokumanListe")
+                or item.get("belgeList")
+                or item.get("ekDokumanlar")
                 or data.get("dokumanListe")
+                or data.get("belgeList")
                 or []
             )
             if raw_belgeler:
                 sonuc["belgeler"] = [_belge_isle(b) for b in raw_belgeler]
-                # İlk çalışmada alan adlarını görmek için bir kez logla
-                if raw_belgeler:
-                    print(f"    [DOK] ihaleId={ihale_id[:8]}… alan adları: {list(raw_belgeler[0].keys())}")
+                print(f"    [DOK] ihaleId={ihale_id[:8]}… {len(raw_belgeler)} dok, alanlar: {list(raw_belgeler[0].keys())}")
     except Exception:
         pass
 
-    # 3) Döküman listesi (ayrı endpoint, yoksa üstteki yeterli)
+    # 3) Döküman listesi — ayrı endpoint (asıl kaynakta burada olur)
     if not sonuc["belgeler"]:
         try:
             h = dict(base_headers)
@@ -282,7 +298,16 @@ async def detay_cek(context, base_headers, ihale_id):
             r = await context.request.post(DOKUMAN_URL, headers=h, data={"ihaleId": ihale_id})
             if r.ok:
                 raw = await r.json()
-                liste = raw if isinstance(raw, list) else (raw.get("list") or raw.get("dokumanListe") or [])
+                liste = (
+                    raw if isinstance(raw, list)
+                    else (
+                        raw.get("list")
+                        or raw.get("dokumanListe")
+                        or raw.get("belgeList")
+                        or raw.get("data")
+                        or []
+                    )
+                )
                 if liste:
                     sonuc["belgeler"] = [_belge_isle(b) for b in liste]
                     print(f"    [DOK2] ihaleId={ihale_id[:8]}… {len(liste)} dok, alanlar: {list(liste[0].keys())}")

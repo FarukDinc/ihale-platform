@@ -151,6 +151,18 @@
       font-size: 14px; color: var(--off-white); line-height: 1.9;
       white-space: pre-wrap; word-break: break-word;
     }
+    .ilan-metni p { margin: 0 0 12px; }
+    .ilan-metni table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 13px; }
+    .ilan-metni td, .ilan-metni th {
+      border: 1px solid var(--border); padding: 8px 12px; text-align: left; vertical-align: top;
+    }
+    .ilan-metni th { background: rgba(255,255,255,.05); font-weight: 700; color: var(--white); }
+    .ilan-metni tr:nth-child(even) td { background: rgba(255,255,255,.02); }
+    .ilan-metni h1,.ilan-metni h2,.ilan-metni h3,.ilan-metni h4 {
+      color: var(--white); font-weight: 700; margin: 16px 0 8px;
+    }
+    .ilan-metni ul,.ilan-metni ol { padding-left: 24px; margin: 8px 0; }
+    .ilan-metni li { margin-bottom: 4px; }
 
     /* BELGELER */
     .belge-item {
@@ -495,7 +507,7 @@
       <div class="tab-panel" id="tab-ilan">
         <div class="detay-card full">
           <div class="card-title">İhale İlanı</div>
-          <div class="ilan-metni">${d.ilan_metni || d.aciklama || 'İlan metni bulunamadı.'}</div>
+          <div class="ilan-metni" id="ilan-metni-container"></div>
         </div>
       </div>
 
@@ -503,19 +515,28 @@
       <div class="tab-panel" id="tab-belge">
         <div class="detay-card full">
           <div class="card-title">İhale Belgeleri</div>
-          ${belgeler.length ? belgeler.map((b,i) => `
+          ${belgeler.length ? belgeler.map((b) => {
+            const ad  = b.ad || b.tur || b.baslik || 'İhale Dokümanı';
+            const tur = b.tur && b.tur !== ad ? b.tur : '';
+            const url = b.url || (b.id ? `https://ekapv2.kik.gov.tr/b_ihalearama/api/Dokuman/GetFile?id=${b.id}` : ekapLink(d.ikn));
+            const icon = /pdf/i.test(tur||ad) ? '📕' : /excel|xlsx/i.test(tur||ad) ? '📗' : /word|docx/i.test(tur||ad) ? '📘' : /zip|rar/i.test(tur||ad) ? '🗜️' : '📄';
+            return `
             <div class="belge-item">
               <div class="belge-info">
-                <span class="belge-icon">📄</span>
+                <span class="belge-icon">${icon}</span>
                 <div>
-                  <div class="belge-ad">İhale Dokümanı ${i+1}</div>
-                  <div class="belge-tarih">${b.tarih ? tarihFormatla(b.tarih) : ''}</div>
+                  <div class="belge-ad">${ad}</div>
+                  <div class="belge-tarih">${tur ? tur + (b.tarih ? ' · ' : '') : ''}${b.tarih ? tarihFormatla(b.tarih) : ''}</div>
                 </div>
               </div>
-              <a class="btn-ekap" href="${ekapLink(d.ikn)}" target="_blank" rel="noopener">↓ EKAP'tan İndir</a>
-            </div>`).join('') : `
-            <div style="color:var(--muted);font-size:13px;padding:8px 0;">
-              Bu ihale için belge listesi bulunamadı. Dokümanlar EKAP'ta giriş yapılarak indirilebilir.
+              <a class="btn-ekap" href="${url}" target="_blank" rel="noopener">↓ İndir</a>
+            </div>`;
+          }).join('') : `
+            <div style="padding:16px 0;">
+              <p style="color:var(--muted);font-size:14px;margin-bottom:12px;">
+                Belge listesi sisteme yüklenemedi. Bu ihaleye ait dokümanları EKAP'ta görüntüleyebilirsiniz.
+              </p>
+              ${d.ikn ? `<a class="btn-ekap" href="${ekapLink(d.ikn)}" target="_blank" rel="noopener" style="display:inline-flex;">↗ EKAP'ta Dokümanları Gör</a>` : ''}
             </div>`}
         </div>
       </div>
@@ -534,6 +555,23 @@
       const fill = document.getElementById('uyum-fill');
       if (fill) fill.style.width = uyum + '%';
     }, 200);
+
+    // İlan metni — HTML içeriyorsa güvenli şekilde render et, yoksa pre-wrap text
+    const ilanEl = document.getElementById('ilan-metni-container');
+    if (ilanEl) {
+      const metin = d.ilan_metni || d.aciklama || '';
+      if (!metin) {
+        ilanEl.textContent = 'İlan metni bulunamadı.';
+      } else if (/<[a-z]/i.test(metin)) {
+        // HTML içeriyor — DOMParser ile güvenli parse
+        const doc2 = new DOMParser().parseFromString(metin, 'text/html');
+        // Script tagları kaldır
+        doc2.querySelectorAll('script,style,iframe,object,embed').forEach(el => el.remove());
+        ilanEl.innerHTML = doc2.body.innerHTML;
+      } else {
+        ilanEl.textContent = metin;
+      }
+    }
   }
 
   async function benzerIhaleler(d) {
