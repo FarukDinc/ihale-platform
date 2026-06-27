@@ -41,7 +41,8 @@ from Crypto.Random import get_random_bytes
 SUPABASE_URL  = os.environ.get("SUPABASE_URL",  "https://lpgelwfoarhouollhwur.supabase.co")
 SUPABASE_KEY  = os.environ.get("SUPABASE_SERVICE_KEY", "")
 
-BELGE_INDIR   = os.environ.get("EKAP_BELGE_INDIR", "0") == "1"
+BELGE_INDIR   = os.environ.get("EKAP_BELGE_INDIR", "0") == "1"   # ağır: indir + Gemini CAPTCHA + Storage (ileride müşteri başına)
+BELGE_LINK    = os.environ.get("EKAP_BELGE_LINK",  "1") == "1"   # hafif: sadece EKAP indirme linkini sakla (varsayılan)
 DETAY_LIMIT   = int(os.environ.get("EKAP_DETAY_LIMIT", "0"))
 GEMINI_KEY    = os.environ.get("GEMINI_API_KEY", "")
 ESZAMANLI     = 8
@@ -420,7 +421,7 @@ def belge_isle(b: dict) -> dict:
 
 
 # ── İhale detayı çek ─────────────────────────────────────
-async def detay_cek(client: httpx.AsyncClient, ihale_id: str) -> dict:
+async def detay_cek(client: httpx.AsyncClient, ihale_id: str, dokuman_sayisi: int = 0) -> dict:
     sonuc = {
         "itiraz_bedeli": None, "yaklasik_maliyet_min": None, "yaklasik_maliyet_max": None,
         "isin_yapilacagi_yer": None, "ihale_yeri": None, "okas": None,
@@ -458,17 +459,22 @@ async def detay_cek(client: httpx.AsyncClient, ihale_id: str) -> dict:
             sonuc["belgeler"] = [belge_isle(b) for b in raw]
             print(f"    [DOK-DETAY] {len(raw)} dok alanlar: {list(raw[0].keys())[:6]}")
 
-    # 3) Doküman listesi (ayrı endpoint)
-    if not sonuc["belgeler"]:
-        veri = await post(client, ENDPOINTS["dok_liste"], {"ihaleId": ihale_id})
-        if veri:
-            raw = veri if isinstance(veri, list) else (
-                veri.get("list") or veri.get("dokumanListe")
-                or veri.get("belgeList") or veri.get("data") or []
-            )
-            if raw:
-                sonuc["belgeler"] = [belge_isle(b) for b in raw]
-                print(f"    [DOK-LISTE] {len(raw)} dok")
+    # NOT: GetDokumanListByIhaleId endpoint'i artık 404 veriyor (kaldırıldı).
+    # Belge bilgisi GetDokumanUrl linkinden (aşağıda) geliyor.
+
+    # 3) EKAP indirme linki (hafif — dosya indirmez, CAPTCHA çözmez).
+    #    Frontend bu linki "EKAP'ta Aç" olarak gösterir; kullanıcı CAPTCHA'yı kendi çözer.
+    #    Ağır indirme (Gemini + Storage) ileride main()'de BELGE_INDIR ile ayrı yürür.
+    if BELGE_LINK and dokuman_sayisi and not sonuc["belgeler"]:
+        link = await dokuman_url_al(client, ihale_id, "1")
+        if link:
+            sonuc["belgeler"] = [{
+                "id": "1",
+                "tur": "İhale Dokümanı",
+                "ad": "İhale Dokümanı",
+                "url": link,            # frontend href: "EKAP'ta Aç"
+                "storage_url": None,    # ileride indirilirse doldurulur
+            }]
 
     return sonuc
 
@@ -519,7 +525,7 @@ async def tum_detaylari_cek(client: httpx.AsyncClient, ham_liste: list) -> dict:
         ihale_id = ihale.get("id")
         if not ihale_id: return
         async with sem:
-            detaylar[ihale_id] = await detay_cek(client, ihale_id)
+            detaylar[ihale_id] = await detay_cek(client, ihale_id, ihale.get("dokumanSayisi", 0))
             await asyncio.sleep(0.1)
             sayac["n"] += 1
             if sayac["n"] % 50 == 0:
@@ -643,6 +649,19 @@ def durum_donustur(d):
 def usul_donustur(s):
     return (s or "").replace("İhale Usulü:", "").strip() or None
 
+def tarih_iso(s):
+    """EKAP tarihini ISO'ya çevirir. 'GG.AA.YYYY SS:DD' → ISO; zaten ISO ise dokunmaz."""
+    if not s:
+        return None
+    s = str(s).strip()
+    if not s:
+        return None
+    m = re.match(r"^(\d{1,2})\.(\d{1,2})\.(\d{4})(?:[ T](\d{1,2}):(\d{2}))?", s)
+    if m:
+        g, a, y, sa, dk = m.groups()
+        return f"{y}-{int(a):02d}-{int(g):02d}T{int(sa or 0):02d}:{dk or '00'}:00"
+    return s  # zaten ISO veya bilinmeyen format — olduğu gibi bırak
+
 def ihaleleri_isle(ham_liste: list, detaylar: dict) -> list:
     now = datetime.now(timezone.utc).isoformat()
     kayitlar = []
@@ -658,7 +677,7 @@ def ihaleleri_isle(ham_liste: list, detaylar: dict) -> list:
             "tur":                  tur_donustur(i.get("ihaleTipAciklama")),
             "usul":                 usul_donustur(i.get("ihaleUsulAciklama")),
             "durum":                durum_donustur(i.get("ihaleDurumAciklama")),
-            "son_teklif_tarihi":    i.get("ihaleTarihSaat"),
+            "son_teklif_tarihi":    tarih_iso(i.get("ihaleTarihSaat")),
             "itiraz_bedeli":        d.get("itiraz_bedeli"),
             "yaklasik_maliyet_min": d.get("yaklasik_maliyet_min"),
             "yaklasik_maliyet_max": d.get("yaklasik_maliyet_max"),
