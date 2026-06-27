@@ -1,9 +1,9 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="tr">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>İhale Detay — İhalePlatform</title>
+  <title>Ä°hale Detay â€” Ä°halePlatform</title>
   <link rel="stylesheet" href="css/style.css" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
@@ -146,7 +146,7 @@
     .tab-panel { display: none; }
     .tab-panel.active { display: block; }
 
-    /* İLAN METNİ */
+    /* Ä°LAN METNÄ° */
     .ilan-metni {
       font-size: 14px; color: var(--off-white); line-height: 1.9;
       white-space: pre-wrap; word-break: break-word;
@@ -199,13 +199,13 @@
       background: rgba(240,165,0,0.1); color: var(--amber); border: 1px solid rgba(240,165,0,0.2);
     }
 
-    /* AÇIKLAMA */
+    /* AÃ‡IKLAMA */
     .aciklama-text {
       font-size: 14px; color: var(--off-white); line-height: 1.8;
       white-space: pre-wrap;
     }
 
-    /* BENZER İHALELER */
+    /* BENZER Ä°HALELER */
     .benzer-list { display: flex; flex-direction: column; gap: 10px; }
     .benzer-item {
       display: flex; justify-content: space-between; align-items: center;
@@ -226,31 +226,31 @@
     <div class="sidebar-logo">
       <a href="/">
         <span style="width:6px;height:6px;background:var(--amber);border-radius:50%;display:inline-block;animation:pulse 2s infinite;"></span>
-        İhale<span>Platform</span>
+        Ä°hale<span>Platform</span>
       </a>
     </div>
     <nav class="sidebar-nav">
       <div class="nav-section-label">Genel</div>
-      <a href="dashboard" class="nav-item"><span class="icon">◉</span> Dashboard</a>
-      <a href="ihaleler" class="nav-item active"><span class="icon">⊞</span> İhaleler</a>
-      <a href="takipte" class="nav-item"><span class="icon">☆</span> Takipte</a>
-      <a href="bildirimler" class="nav-item"><span class="icon">🔔</span> Bildirimler <span class="nav-badge">4</span></a>
+      <a href="dashboard" class="nav-item"><span class="icon">â—‰</span> Dashboard</a>
+      <a href="ihaleler" class="nav-item active"><span class="icon">âŠ</span> Ä°haleler</a>
+      <a href="takipte" class="nav-item"><span class="icon">â˜†</span> Takipte</a>
+      <a href="bildirimler" class="nav-item"><span class="icon">ğŸ””</span> Bildirimler <span class="nav-badge">4</span></a>
       <div class="nav-section-label">Analiz</div>
-      <a href="#" class="nav-item"><span class="icon">📊</span> Rekabet Analizi</a>
-      <a href="uyumluluk" class="nav-item"><span class="icon">✓</span> Uyumluluk</a>
-      <a href="dokumanlar" class="nav-item"><span class="icon">📁</span> Dökümanlar</a>
+      <a href="#" class="nav-item"><span class="icon">ğŸ“Š</span> Rekabet Analizi</a>
+      <a href="uyumluluk" class="nav-item"><span class="icon">âœ“</span> Uyumluluk</a>
+      <a href="dokumanlar" class="nav-item"><span class="icon">ğŸ“</span> DÃ¶kÃ¼manlar</a>
       <div class="nav-section-label">Ayarlar</div>
-      <a href="profil" class="nav-item"><span class="icon">⚙</span> Profil & Filtreler</a>
-      <a href="fiyatlandirma_odeme_bolumu" class="nav-item"><span class="icon">💳</span> Abonelik</a>
+      <a href="profil" class="nav-item"><span class="icon">âš™</span> Profil & Filtreler</a>
+      <a href="fiyatlandirma_odeme_bolumu" class="nav-item"><span class="icon">ğŸ’³</span> Abonelik</a>
     </nav>
     <div class="sidebar-footer">
       <div class="user-row">
         <div class="user-avatar">FD</div>
         <div class="user-info">
           <div class="user-name">Faruk D.</div>
-          <div class="user-plan">Ücretsiz Plan</div>
+          <div class="user-plan">Ãœcretsiz Plan</div>
         </div>
-        <span style="color:var(--muted);font-size:12px;">⋮</span>
+        <span style="color:var(--muted);font-size:12px;">â‹®</span>
       </div>
     </div>
   </aside>
@@ -261,12 +261,12 @@
     <!-- TOPBAR -->
     <div class="topbar">
       <div class="topbar-left">
-        <a class="back-btn" href="ihaleler">← Geri</a>
-        <div class="breadcrumb">İhaleler / <span id="bc-baslik">Yükleniyor...</span></div>
+        <a class="back-btn" href="ihaleler">â† Geri</a>
+        <div class="breadcrumb">Ä°haleler / <span id="bc-baslik">YÃ¼kleniyor...</span></div>
       </div>
       <div style="display:flex; gap:10px; align-items:center;">
-        <button class="btn-takip" id="topbar-takip" onclick="takibeAl()">☆ Takibe Al</button>
-        <a href="fiyatlandirma_odeme_bolumu" class="btn-primary">Pro'ya Geç ↑</a>
+        <button class="btn-takip" id="topbar-takip" onclick="takibeAl()">â˜† Takibe Al</button>
+        <a href="fiyatlandirma_odeme_bolumu" class="btn-primary">Pro'ya GeÃ§ â†‘</a>
       </div>
     </div>
 
@@ -274,7 +274,7 @@
     <div class="page-body" id="page-content">
       <div class="loading-state">
         <div class="loading-spinner"></div>
-        İhale yükleniyor...
+        Ä°hale yÃ¼kleniyor...
       </div>
     </div>
 
@@ -296,35 +296,35 @@
   const ihaleId = params.get('id');
 
   function tarihFormatla(t) {
-    if (!t) return '—';
+    if (!t) return 'â€”';
     const d = new Date(t);
-    const aylar = ['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
+    const aylar = ['Ocak','Åubat','Mart','Nisan','MayÄ±s','Haziran','Temmuz','AÄŸustos','EylÃ¼l','Ekim','KasÄ±m','AralÄ±k'];
     return `${d.getDate()} ${aylar[d.getMonth()]} ${d.getFullYear()}`;
   }
 
   function butceFormatla(b) {
-    if (!b) return '—';
-    if (b >= 1000000) return `₺${(b/1000000).toFixed(2)}M`;
-    if (b >= 1000) return `₺${(b/1000).toFixed(0)}K`;
-    return `₺${b.toLocaleString('tr')}`;
+    if (!b) return 'â€”';
+    if (b >= 1000000) return `â‚º${(b/1000000).toFixed(2)}M`;
+    if (b >= 1000) return `â‚º${(b/1000).toFixed(0)}K`;
+    return `â‚º${b.toLocaleString('tr')}`;
   }
 
-  // Yaklaşık maliyet aralığı (itiraz bedeli eşiklerinden)
+  // YaklaÅŸÄ±k maliyet aralÄ±ÄŸÄ± (itiraz bedeli eÅŸiklerinden)
   function yaklasikMaliyet(d) {
     const mn = d.yaklasik_maliyet_min, mx = d.yaklasik_maliyet_max;
-    if (mn == null && mx == null) return '—';
-    if (mn === 0 && mx) return `${butceFormatla(mx)} altı`;
-    if (mn && mx == null) return `${butceFormatla(mn)} üzeri`;
-    if (mn != null && mx != null) return `${butceFormatla(mn)} – ${butceFormatla(mx)}`;
-    return '—';
+    if (mn == null && mx == null) return 'â€”';
+    if (mn === 0 && mx) return `${butceFormatla(mx)} altÄ±`;
+    if (mn && mx == null) return `${butceFormatla(mn)} Ã¼zeri`;
+    if (mn != null && mx != null) return `${butceFormatla(mn)} â€“ ${butceFormatla(mx)}`;
+    return 'â€”';
   }
 
   function itirazFormatla(b) {
-    if (!b) return '—';
-    return `₺${Number(b).toLocaleString('tr')}`;
+    if (!b) return 'â€”';
+    return `â‚º${Number(b).toLocaleString('tr')}`;
   }
 
-  // İKN'den (2026/1102593) EKAP detay linki üret
+  // Ä°KN'den (2026/1102593) EKAP detay linki Ã¼ret
   function ekapLink(ikn) {
     if (!ikn || !ikn.includes('/')) return 'https://ekap.kik.gov.tr';
     const [yil, sayi] = ikn.split('/');
@@ -338,10 +338,10 @@
 
   function durumBadge(durum, bitis) {
     const gun = gunHesapla(bitis);
-    if (gun !== null && gun <= 3 && gun >= 0) return `<span class="badge badge-soon">● Son ${gun} Gün</span>`;
-    if (gun !== null && gun < 0) return `<span class="badge badge-closed">● Kapandı</span>`;
-    if (durum === 'aktif') return `<span class="badge badge-open">● Açık</span>`;
-    return `<span class="badge badge-closed">● ${durum}</span>`;
+    if (gun !== null && gun <= 3 && gun >= 0) return `<span class="badge badge-soon">â— Son ${gun} GÃ¼n</span>`;
+    if (gun !== null && gun < 0) return `<span class="badge badge-closed">â— KapandÄ±</span>`;
+    if (durum === 'aktif') return `<span class="badge badge-open">â— AÃ§Ä±k</span>`;
+    return `<span class="badge badge-closed">â— ${durum}</span>`;
   }
 
   let mevcutIhale = null;
@@ -351,7 +351,7 @@
   async function ihaleYukle() {
     if (!ihaleId) {
       document.getElementById('page-content').innerHTML = `
-        <div class="loading-state">⚠ İhale bulunamadı. <a href="ihaleler" style="color:var(--amber);">Geri dön</a></div>`;
+        <div class="loading-state">âš  Ä°hale bulunamadÄ±. <a href="ihaleler" style="color:var(--amber);">Geri dÃ¶n</a></div>`;
       return;
     }
 
@@ -363,7 +363,7 @@
 
     if (error || !data) {
       document.getElementById('page-content').innerHTML = `
-        <div class="loading-state">⚠ İhale bulunamadı. <a href="ihaleler" style="color:var(--amber);">Listeye dön</a></div>`;
+        <div class="loading-state">âš  Ä°hale bulunamadÄ±. <a href="ihaleler" style="color:var(--amber);">Listeye dÃ¶n</a></div>`;
       return;
     }
 
@@ -387,50 +387,50 @@
     const gun = gunHesapla(d.son_teklif_tarihi);
     const belgeler = Array.isArray(d.belgeler) ? d.belgeler : [];
 
-    document.title = `${d.baslik} — İhalePlatform`;
-    document.getElementById('bc-baslik').textContent = d.baslik ? d.baslik.substring(0, 40) + (d.baslik.length > 40 ? '…' : '') : 'Detay';
+    document.title = `${d.baslik} â€” Ä°halePlatform`;
+    document.getElementById('bc-baslik').textContent = d.baslik ? d.baslik.substring(0, 40) + (d.baslik.length > 40 ? 'â€¦' : '') : 'Detay';
 
     document.getElementById('page-content').innerHTML = `
 
       <!-- HEADER KARTI -->
       <div class="detay-header">
-        <div class="detay-eyebrow">EKAP #${d.ekap_id || '—'} · ${d.ikn || '—'}</div>
-        <div class="detay-baslik">${d.baslik || '—'}</div>
-        <div class="detay-idare">📍 ${d.idare || '—'} · ${d.il || '—'}${d.ulke && d.ulke !== 'TR' ? ', ' + d.ulke : ''}</div>
+        <div class="detay-eyebrow">EKAP #${d.ekap_id || 'â€”'} Â· ${d.ikn || 'â€”'}</div>
+        <div class="detay-baslik">${d.baslik || 'â€”'}</div>
+        <div class="detay-idare">ğŸ“ ${d.idare || 'â€”'} Â· ${d.il || 'â€”'}${d.ulke && d.ulke !== 'TR' ? ', ' + d.ulke : ''}</div>
         <div class="detay-badges">
           ${durumBadge(d.durum, d.son_teklif_tarihi)}
           ${d.tur ? `<span class="badge badge-tur">${d.tur}</span>` : ''}
           ${d.usul ? `<span class="badge badge-usul">${d.usul}</span>` : ''}
-          ${gun !== null && gun >= 0 ? `<span class="badge badge-usul">⏱ ${gun} gün kaldı</span>` : ''}
+          ${gun !== null && gun >= 0 ? `<span class="badge badge-usul">â± ${gun} gÃ¼n kaldÄ±</span>` : ''}
         </div>
         <div class="detay-actions">
-          <button class="btn-takip" id="main-takip" onclick="takibeAl()">☆ Takibe Al</button>
-          <a class="btn-takip" href="teklif-olustur?ihale_id=${d.id}" style="background:linear-gradient(135deg,#F0A500,#C98A00);display:inline-flex;align-items:center;gap:6px;text-decoration:none;">✏ Teklif Hazırla</a>
-          ${d.ikn ? `<a class="btn-ekap" href="${ekapLink(d.ikn)}" target="_blank" rel="noopener">↗ EKAP'ta Görüntüle</a>` : ''}
+          <button class="btn-takip" id="main-takip" onclick="takibeAl()">â˜† Takibe Al</button>
+          <a class="btn-takip" href="teklif-olustur?ihale_id=${d.id}" style="background:linear-gradient(135deg,#F0A500,#C98A00);display:inline-flex;align-items:center;gap:6px;text-decoration:none;">âœ Teklif HazÄ±rla</a>
+          ${d.ikn ? `<a class="btn-ekap" href="${ekapLink(d.ikn)}" target="_blank" rel="noopener">â†— EKAP'ta GÃ¶rÃ¼ntÃ¼le</a>` : ''}
         </div>
       </div>
 
       <!-- KPI GRID -->
       <div class="kpi-grid">
         <div class="kpi-card">
-          <div class="kpi-label">Yaklaşık Maliyet</div>
+          <div class="kpi-label">YaklaÅŸÄ±k Maliyet</div>
           <div class="kpi-value amber" style="font-size:18px;">${yaklasikMaliyet(d)}</div>
-          <div class="kpi-sub">${d.itiraz_bedeli ? 'İtiraz bedeli: ' + itirazFormatla(d.itiraz_bedeli) : (d.para_birimi || 'TRY')}</div>
+          <div class="kpi-sub">${d.itiraz_bedeli ? 'Ä°tiraz bedeli: ' + itirazFormatla(d.itiraz_bedeli) : (d.para_birimi || 'TRY')}</div>
         </div>
         <div class="kpi-card">
           <div class="kpi-label">Son Teklif Tarihi</div>
           <div class="kpi-value" style="font-size:18px;">${tarihFormatla(d.son_teklif_tarihi)}</div>
-          <div class="kpi-sub">${gun !== null && gun >= 0 ? gun + ' gün kaldı' : gun !== null ? 'Süresi doldu' : '—'}</div>
+          <div class="kpi-sub">${gun !== null && gun >= 0 ? gun + ' gÃ¼n kaldÄ±' : gun !== null ? 'SÃ¼resi doldu' : 'â€”'}</div>
         </div>
         <div class="kpi-card">
-          <div class="kpi-label">İlan Tarihi</div>
+          <div class="kpi-label">Ä°lan Tarihi</div>
           <div class="kpi-value" style="font-size:18px;">${tarihFormatla(d.ilan_tarihi)}</div>
-          <div class="kpi-sub">Yayın tarihi</div>
+          <div class="kpi-sub">YayÄ±n tarihi</div>
         </div>
         <div class="kpi-card">
           <div class="kpi-label">Profil Uyumu</div>
           <div class="kpi-value amber">${uyum}%</div>
-          <div class="kpi-sub">Sektör eşleşmesi</div>
+          <div class="kpi-sub">SektÃ¶r eÅŸleÅŸmesi</div>
         </div>
       </div>
 
@@ -439,7 +439,7 @@
         <div class="uyum-header">
           <div>
             <div class="kpi-label">Profil Uyum Skoru</div>
-            <div style="font-size:13px;color:var(--muted);margin-top:4px;">Firma profilinize göre hesaplandı</div>
+            <div style="font-size:13px;color:var(--muted);margin-top:4px;">Firma profilinize gÃ¶re hesaplandÄ±</div>
           </div>
           <div class="uyum-score">${uyum}%</div>
         </div>
@@ -447,84 +447,84 @@
           <div class="uyum-fill" id="uyum-fill" style="width:0%"></div>
         </div>
         <div class="uyum-tags">
-          ${d.tur ? `<span class="uyum-tag">✓ ${d.tur}</span>` : ''}
-          ${d.il ? `<span class="uyum-tag">✓ ${d.il}</span>` : ''}
-          <span class="uyum-tag">✓ Bütçe aralığı</span>
+          ${d.tur ? `<span class="uyum-tag">âœ“ ${d.tur}</span>` : ''}
+          ${d.il ? `<span class="uyum-tag">âœ“ ${d.il}</span>` : ''}
+          <span class="uyum-tag">âœ“ BÃ¼tÃ§e aralÄ±ÄŸÄ±</span>
         </div>
       </div>
 
       <!-- SEKMELER -->
       <div class="tabs">
-        <button class="tab-btn active" onclick="sekmeAc(event,'tab-bilgi')">İhale Bilgileri</button>
-        <button class="tab-btn" onclick="sekmeAc(event,'tab-ilan')">İlan Bilgileri</button>
+        <button class="tab-btn active" onclick="sekmeAc(event,'tab-bilgi')">Ä°hale Bilgileri</button>
+        <button class="tab-btn" onclick="sekmeAc(event,'tab-ilan')">Ä°lan Bilgileri</button>
         <button class="tab-btn" onclick="sekmeAc(event,'tab-belge')">Belgeler${belgeler.length ? ' (' + belgeler.length + ')' : ''}</button>
       </div>
 
-      <!-- TAB: İHALE BİLGİLERİ -->
+      <!-- TAB: Ä°HALE BÄ°LGÄ°LERÄ° -->
       <div class="tab-panel active" id="tab-bilgi">
         <div class="detay-grid">
           <div class="detay-card">
-            <div class="card-title">İhale Bilgileri</div>
-            <div class="info-row"><span class="info-label">İdare</span><span class="info-value">${d.idare || '—'}</span></div>
-            <div class="info-row"><span class="info-label">İl</span><span class="info-value">${d.il || '—'}</span></div>
-            <div class="info-row"><span class="info-label">İhale Türü</span><span class="info-value">${d.tur || '—'}</span></div>
-            <div class="info-row"><span class="info-label">İhale Usulü</span><span class="info-value">${d.usul || '—'}</span></div>
-            <div class="info-row"><span class="info-label">OKAS Kodu</span><span class="info-value">${d.okas || '—'}</span></div>
-            <div class="info-row"><span class="info-label">Kaynak</span><span class="info-value">${d.kaynak ? d.kaynak.toUpperCase() : '—'}</span></div>
+            <div class="card-title">Ä°hale Bilgileri</div>
+            <div class="info-row"><span class="info-label">Ä°dare</span><span class="info-value">${d.idare || 'â€”'}</span></div>
+            <div class="info-row"><span class="info-label">Ä°l</span><span class="info-value">${d.il || 'â€”'}</span></div>
+            <div class="info-row"><span class="info-label">Ä°hale TÃ¼rÃ¼</span><span class="info-value">${d.tur || 'â€”'}</span></div>
+            <div class="info-row"><span class="info-label">Ä°hale UsulÃ¼</span><span class="info-value">${d.usul || 'â€”'}</span></div>
+            <div class="info-row"><span class="info-label">OKAS Kodu</span><span class="info-value">${d.okas || 'â€”'}</span></div>
+            <div class="info-row"><span class="info-label">Kaynak</span><span class="info-value">${d.kaynak ? d.kaynak.toUpperCase() : 'â€”'}</span></div>
           </div>
 
           <div class="detay-card">
             <div class="card-title">Tarih & Maliyet</div>
-            <div class="info-row"><span class="info-label">İlan Tarihi</span><span class="info-value">${tarihFormatla(d.ilan_tarihi)}</span></div>
+            <div class="info-row"><span class="info-label">Ä°lan Tarihi</span><span class="info-value">${tarihFormatla(d.ilan_tarihi)}</span></div>
             <div class="info-row"><span class="info-label">Son Teklif</span><span class="info-value">${tarihFormatla(d.son_teklif_tarihi)}</span></div>
-            <div class="info-row"><span class="info-label">İhale Tarihi</span><span class="info-value">${tarihFormatla(d.ihale_tarihi)}</span></div>
-            <div class="info-row"><span class="info-label">Yaklaşık Maliyet</span><span class="info-value" style="color:var(--amber);">${yaklasikMaliyet(d)}</span></div>
-            <div class="info-row"><span class="info-label">İtirazen Şikayet Bedeli</span><span class="info-value">${itirazFormatla(d.itiraz_bedeli)}</span></div>
+            <div class="info-row"><span class="info-label">Ä°hale Tarihi</span><span class="info-value">${tarihFormatla(d.ihale_tarihi)}</span></div>
+            <div class="info-row"><span class="info-label">YaklaÅŸÄ±k Maliyet</span><span class="info-value" style="color:var(--amber);">${yaklasikMaliyet(d)}</span></div>
+            <div class="info-row"><span class="info-label">Ä°tirazen Åikayet Bedeli</span><span class="info-value">${itirazFormatla(d.itiraz_bedeli)}</span></div>
           </div>
 
           ${d.isin_yapilacagi_yer || d.ihale_yeri ? `
           <div class="detay-card full">
             <div class="card-title">Yer Bilgileri</div>
-            ${d.isin_yapilacagi_yer ? `<div class="info-row"><span class="info-label">İşin Yapılacağı Yer</span><span class="info-value" style="max-width:70%;">${d.isin_yapilacagi_yer}</span></div>` : ''}
-            ${d.ihale_yeri ? `<div class="info-row"><span class="info-label">İhale Yeri</span><span class="info-value" style="max-width:70%;">${d.ihale_yeri}</span></div>` : ''}
+            ${d.isin_yapilacagi_yer ? `<div class="info-row"><span class="info-label">Ä°ÅŸin YapÄ±lacaÄŸÄ± Yer</span><span class="info-value" style="max-width:70%;">${d.isin_yapilacagi_yer}</span></div>` : ''}
+            ${d.ihale_yeri ? `<div class="info-row"><span class="info-label">Ä°hale Yeri</span><span class="info-value" style="max-width:70%;">${d.ihale_yeri}</span></div>` : ''}
           </div>` : ''}
         </div>
       </div>
 
-      <!-- TAB: İLAN BİLGİLERİ -->
+      <!-- TAB: Ä°LAN BÄ°LGÄ°LERÄ° -->
       <div class="tab-panel" id="tab-ilan">
         <div class="detay-card full">
-          <div class="card-title">İhale İlanı</div>
-          <div class="ilan-metni">${d.ilan_metni || d.aciklama || 'İlan metni bulunamadı.'}</div>
+          <div class="card-title">Ä°hale Ä°lanÄ±</div>
+          <div class="ilan-metni">${d.ilan_metni || d.aciklama || 'Ä°lan metni bulunamadÄ±.'}</div>
         </div>
       </div>
 
       <!-- TAB: BELGELER -->
       <div class="tab-panel" id="tab-belge">
         <div class="detay-card full">
-          <div class="card-title">İhale Belgeleri</div>
+          <div class="card-title">Ä°hale Belgeleri</div>
           ${belgeler.length ? belgeler.map((b,i) => `
             <div class="belge-item">
               <div class="belge-info">
-                <span class="belge-icon">📄</span>
+                <span class="belge-icon">ğŸ“„</span>
                 <div>
-                  <div class="belge-ad">İhale Dokümanı ${i+1}</div>
+                  <div class="belge-ad">Ä°hale DokÃ¼manÄ± ${i+1}</div>
                   <div class="belge-tarih">${b.tarih ? tarihFormatla(b.tarih) : ''}</div>
                 </div>
               </div>
-              <a class="btn-ekap" href="${ekapLink(d.ikn)}" target="_blank" rel="noopener">↓ EKAP'tan İndir</a>
+              <a class="btn-ekap" href="${ekapLink(d.ikn)}" target="_blank" rel="noopener">â†“ EKAP'tan Ä°ndir</a>
             </div>`).join('') : `
             <div style="color:var(--muted);font-size:13px;padding:8px 0;">
-              Bu ihale için belge listesi bulunamadı. Dokümanlar EKAP'ta giriş yapılarak indirilebilir.
+              Bu ihale iÃ§in belge listesi bulunamadÄ±. DokÃ¼manlar EKAP'ta giriÅŸ yapÄ±larak indirilebilir.
             </div>`}
         </div>
       </div>
 
-      <!-- BENZER İHALELER -->
+      <!-- BENZER Ä°HALELER -->
       <div class="detay-card full" id="benzer-kart" style="margin-top:20px;">
-        <div class="card-title">Benzer İhaleler</div>
+        <div class="card-title">Benzer Ä°haleler</div>
         <div class="benzer-list" id="benzer-list">
-          <div style="color:var(--muted);font-size:13px;">Yükleniyor...</div>
+          <div style="color:var(--muted);font-size:13px;">YÃ¼kleniyor...</div>
         </div>
       </div>
     `;
@@ -549,20 +549,20 @@
     if (!list) return;
 
     if (!data || data.length === 0) {
-      list.innerHTML = `<div style="color:var(--muted);font-size:13px;">Benzer ihale bulunamadı.</div>`;
+      list.innerHTML = `<div style="color:var(--muted);font-size:13px;">Benzer ihale bulunamadÄ±.</div>`;
       return;
     }
 
-    const aylar = ['Oca','Şub','Mar','Nis','May','Haz','Tem','Ağu','Eyl','Eki','Kas','Ara'];
+    const aylar = ['Oca','Åub','Mar','Nis','May','Haz','Tem','AÄŸu','Eyl','Eki','Kas','Ara'];
     list.innerHTML = data.map(b => {
       const dt = b.son_teklif_tarihi ? new Date(b.son_teklif_tarihi) : null;
-      const tarih = dt ? `${dt.getDate()} ${aylar[dt.getMonth()]} ${dt.getFullYear()}` : '—';
+      const tarih = dt ? `${dt.getDate()} ${aylar[dt.getMonth()]} ${dt.getFullYear()}` : 'â€”';
       const bedel = yaklasikMaliyet(b);
       return `
         <a class="benzer-item" href="ihale-detay?id=${b.id}">
           <div>
             <div class="benzer-baslik">${b.baslik}</div>
-            <div class="benzer-meta">${b.idare || '—'} · Son: ${tarih}</div>
+            <div class="benzer-meta">${b.idare || 'â€”'} Â· Son: ${tarih}</div>
           </div>
           <div class="benzer-bedel">${bedel}</div>
         </a>`;
@@ -580,11 +580,11 @@
     btns.forEach(btn => {
       if (!btn) return;
       if (takipte) {
-        btn.textContent = '✓ Takipte';
+        btn.textContent = 'âœ“ Takipte';
         btn.style.background = 'rgba(76,175,80,0.15)';
         btn.style.color = '#4CAF50';
       } else {
-        btn.textContent = '☆ Takibe Al';
+        btn.textContent = 'â˜† Takibe Al';
         btn.style.background = '';
         btn.style.color = '';
       }
@@ -595,3 +595,4 @@
 </script>
 </body>
 </html>
+

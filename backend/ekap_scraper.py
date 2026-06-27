@@ -41,8 +41,9 @@ ESZAMANLI    = 6            # detay çekiminde paralel istek sayısı
 DETAY_LIMIT  = int(os.environ.get("EKAP_DETAY_LIMIT", "0"))  # 0 = sınırsız (test için küçük ver)
 
 EKAP_SEARCH_URL = "https://ekapv2.kik.gov.tr/ekap/search"
-ITIRAZ_URL = "https://ekapv2.kik.gov.tr/b_ihalearama/api/IhaleDetay/GetByIdItirazenSikayetBasvuruBedel"
-DETAY_URL  = "https://ekapv2.kik.gov.tr/b_ihalearama/api/IhaleDetay/GetByIhaleIdIhaleDetay"
+ITIRAZ_URL   = "https://ekapv2.kik.gov.tr/b_ihalearama/api/IhaleDetay/GetByIdItirazenSikayetBasvuruBedel"
+DETAY_URL    = "https://ekapv2.kik.gov.tr/b_ihalearama/api/IhaleDetay/GetByIhaleIdIhaleDetay"
+DOKUMAN_URL  = "https://ekapv2.kik.gov.tr/b_ihalearama/api/IhaleDetay/GetDokumanListByIhaleId"
 
 # EKAP Angular interceptor anahtarı (environment.r8fact) — AES-192-CBC
 CRYPTO_KEY = b"Qm2LtXR0aByP69vZNKef4wMJ"
@@ -176,6 +177,42 @@ async def tum_ihaleleri_cek(context, headers, payload, url):
     return tum_liste
 
 
+# ── Döküman nesnesi normalleştirici ───────────────────────
+def _belge_isle(b):
+    """EKAP'tan gelen ham döküman objesini normalize eder; tüm alanları korur."""
+    doc_id = b.get("id") or b.get("dokumanId") or b.get("belgId")
+    ihale_id = b.get("ihaleId") or b.get("ihaleid")
+    # Döküman adı (farklı field adlarını dene)
+    ad = (
+        b.get("dokumanAdi") or b.get("ad") or b.get("adi")
+        or b.get("baslik") or b.get("fileName") or b.get("dosyaAdi")
+        or ""
+    ).strip() or None
+    # Döküman türü
+    tur = (
+        b.get("dokumanTuru") or b.get("tur") or b.get("turu")
+        or b.get("type") or b.get("fileType") or b.get("dosyaTuru")
+        or ""
+    ).strip() or None
+    # İndirme URL'i
+    url = (
+        b.get("url") or b.get("downloadUrl") or b.get("indirimUrl")
+        or b.get("path") or b.get("dosyaYolu")
+    )
+    if not url and doc_id:
+        url = f"https://ekapv2.kik.gov.tr/b_ihalearama/api/Dokuman/GetFile?id={doc_id}"
+
+    return {
+        "id":      doc_id,
+        "ihaleId": ihale_id,
+        "ad":      ad,
+        "tur":     tur,
+        "url":     url,
+        "tarih":   b.get("tarih") or b.get("date") or b.get("olusturmaTarihi"),
+        "_raw":    b,  # orijinal alanlar — hangi field'ların dolu geldiğini log'da görmek için
+    }
+
+
 # ── Detay zenginleştirme (crypto imzalı) ──────────────────
 async def detay_cek(context, base_headers, ihale_id):
     """Bir ihale için itiraz bedeli + detay bilgisi döndürür."""
@@ -223,14 +260,34 @@ async def detay_cek(context, base_headers, ihale_id):
             if ilan_list:
                 sonuc["ilan_metni"] = html_temizle(ilan_list[0].get("veriHtml", "")) or None
 
-            belgeler = item.get("dokumanListe") or []
-            if belgeler:
-                sonuc["belgeler"] = [
-                    {"id": b.get("id"), "ihaleId": b.get("ihaleId"), "tarih": b.get("tarih")}
-                    for b in belgeler
-                ]
+            # Dökümanlar: önce item içinde, yoksa response kökünde ara
+            raw_belgeler = (
+                item.get("dokumanListe")
+                or data.get("dokumanListe")
+                or []
+            )
+            if raw_belgeler:
+                sonuc["belgeler"] = [_belge_isle(b) for b in raw_belgeler]
+                # İlk çalışmada alan adlarını görmek için bir kez logla
+                if raw_belgeler:
+                    print(f"    [DOK] ihaleId={ihale_id[:8]}… alan adları: {list(raw_belgeler[0].keys())}")
     except Exception:
         pass
+
+    # 3) Döküman listesi (ayrı endpoint, yoksa üstteki yeterli)
+    if not sonuc["belgeler"]:
+        try:
+            h = dict(base_headers)
+            h.update(crypto_headers())
+            r = await context.request.post(DOKUMAN_URL, headers=h, data={"ihaleId": ihale_id})
+            if r.ok:
+                raw = await r.json()
+                liste = raw if isinstance(raw, list) else (raw.get("list") or raw.get("dokumanListe") or [])
+                if liste:
+                    sonuc["belgeler"] = [_belge_isle(b) for b in liste]
+                    print(f"    [DOK2] ihaleId={ihale_id[:8]}… {len(liste)} dok, alanlar: {list(liste[0].keys())}")
+        except Exception:
+            pass
 
     return sonuc
 
@@ -316,11 +373,18 @@ def ihaleleri_isle(ham_liste, detaylar):
             "ihale_yeri":           d.get("ihale_yeri"),
             "okas":                 d.get("okas"),
             "ilan_metni":           d.get("ilan_metni"),
-            "belgeler":             d.get("belgeler"),
+            "belgeler":             belgeler_temizle(d.get("belgeler")),
             "kaynak":               "ekap",
             "olusturulma":          simdi,
         })
     return kayitlar
+
+
+def belgeler_temizle(belgeler):
+    """_raw debug alanını DB'ye yazmadan önce kaldır."""
+    if not belgeler:
+        return belgeler
+    return [{k: v for k, v in b.items() if k != "_raw"} for b in belgeler]
 
 
 def tekilleştir(liste):
@@ -363,7 +427,8 @@ def ozet(liste):
     print(f"Toplam: {len(liste)} tekil ihale")
     maliyetli = sum(1 for i in liste if i.get("itiraz_bedeli"))
     metinli = sum(1 for i in liste if i.get("ilan_metni"))
-    print(f"Yaklaşık maliyetli: {maliyetli} | İlan metinli: {metinli}")
+    belgeli = sum(1 for i in liste if i.get("belgeler"))
+    print(f"Yaklaşık maliyetli: {maliyetli} | İlan metinli: {metinli} | Belgeli: {belgeli}")
     if liste:
         o = liste[0]
         print(f"\nÖrnek:")

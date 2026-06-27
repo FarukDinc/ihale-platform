@@ -599,7 +599,7 @@
       </a>
 
       <div class="nav-section-label">Analiz</div>
-      <a href="#" class="nav-item">
+      <a href="rekabet-analizi" class="nav-item">
         <span class="icon">📊</span> Rekabet Analizi
       </a>
       <a href="uyumluluk" class="nav-item">
@@ -738,11 +738,11 @@
           </tbody>
         </table>
 
-        <!-- Premium nudge -->
-        <div style="position:relative;">
+        <!-- Premium nudge — sadece free kullanıcılara gösterilir -->
+        <div id="premium-nudge-wrap" style="display:none;">
           <div class="premium-nudge">
-            <p>Ücretsiz planda günde <strong>10 ihale</strong> görüntüleyebilirsiniz.<br>
-            <strong>Pro'ya geçin</strong> — tüm 2.847 ihaleyi, uyumluluk analizini ve rekabet verilerini görün.</p>
+            <p>Ücretsiz planda <strong>10 ihale</strong> görüntüleyebilirsiniz.<br>
+            <strong>Pro'ya geçin</strong> — tüm ihaleleri, uyumluluk analizini ve rekabet verilerini görün.</p>
             <a href="fiyatlandirma_odeme_bolumu" class="btn btn-primary">Pro'ya Geç — İlk 30 Gün Ücretsiz</a>
           </div>
         </div>
@@ -767,6 +767,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/sidebar-user.js"></script>
+<script src="js/plan.js"></script>
 <script src="js/main.js"></script>
 <script src="js/takip.js"></script>
 <script>
@@ -961,7 +962,9 @@
     else if (sort === 'maliyet_asc') query = query.order('yaklasik_maliyet_min', { ascending: true, nullsFirst: false });
     else query = query.order('son_teklif_tarihi', { ascending: true });
 
-    query = query.limit(25);
+    const planTur = await Plan.getPlan();
+    const limit = planTur === 'pro' ? 200 : 10;
+    query = query.limit(limit);
 
     const { data, error, count } = await query;
 
@@ -980,6 +983,10 @@
     document.getElementById('results-count').textContent = `${toplam.toLocaleString('tr')} sonuç`;
     const footer = document.querySelector('.table-footer span');
     if (footer) footer.textContent = `${data.length} / ${toplam.toLocaleString('tr')} ihale gösteriliyor`;
+
+    // Free plan nudge
+    const nudge = document.getElementById('premium-nudge-wrap');
+    if (nudge) nudge.style.display = (planTur !== 'pro' && toplam > 10) ? '' : 'none';
   }
 
   let aramaTimer;
@@ -994,8 +1001,12 @@
       iller.map(il => `<option value="${il}">${il}</option>`).join('');
   }
 
-  function csvIndir() {
+  async function csvIndir() {
     if (!yukluIlanlar.length) return;
+    if ((await Plan.getPlan()) !== 'pro') {
+      alert('CSV export Pro plan özelliğidir. Lütfen planınızı yükseltin.');
+      return;
+    }
     const basliklar = ['EKAP ID','İhale Adı','İdare','İl','Tür','Durum','Son Teklif Tarihi','Yak. Maliyet Min (₺)','Yak. Maliyet Max (₺)'];
     const satirlar = yukluIlanlar.map(i => [
       i.ekap_id || '',

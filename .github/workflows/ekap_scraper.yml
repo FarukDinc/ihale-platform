@@ -1,4 +1,4 @@
-name: EKAP Scraper
+name: EKAP Scraper + Bildirimler
 
 on:
   schedule:
@@ -8,7 +8,7 @@ on:
 jobs:
   scrape:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
 
     steps:
       - uses: actions/checkout@v4
@@ -20,7 +20,7 @@ jobs:
 
       - name: Bağımlılıkları yükle
         run: |
-          pip install playwright supabase pycryptodome
+          pip install playwright supabase pycryptodome requests
           playwright install chromium
           playwright install-deps
 
@@ -29,3 +29,10 @@ jobs:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
         run: python backend/ekap_scraper.py
+
+      - name: Bildirim e-postaları gönder
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+        run: python backend/notify.py

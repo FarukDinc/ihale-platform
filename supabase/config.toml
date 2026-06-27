@@ -1,0 +1,5 @@
+[project]
+id = "lpgelwfoarhouollhwur"
+
+[functions.odeme-baslat]
+verify_jwt = false

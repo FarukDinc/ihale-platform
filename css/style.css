@@ -29,6 +29,59 @@
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+/* ---- PRO LOCK ---- */
+.pro-lock-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(10,22,40,0.72);
+  backdrop-filter: blur(2px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 20;
+  border-radius: inherit;
+}
+.pro-lock-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  text-align: center;
+  padding: 28px 32px;
+  background: var(--navy-mid);
+  border: 1px solid rgba(240,165,0,0.25);
+  border-radius: var(--radius-md);
+  max-width: 320px;
+}
+.pro-lock-icon { font-size: 32px; }
+.pro-lock-title { font-family: var(--font-display); font-size: 16px; font-weight: 700; color: var(--white); }
+.pro-lock-desc { font-size: 13px; color: var(--muted); line-height: 1.5; }
+.pro-lock-btn {
+  display: inline-block;
+  margin-top: 4px;
+  background: var(--amber);
+  color: var(--navy);
+  font-size: 13px;
+  font-weight: 700;
+  padding: 9px 20px;
+  border-radius: var(--radius-sm);
+  text-decoration: none;
+  transition: opacity var(--transition);
+}
+.pro-lock-btn:hover { opacity: 0.88; }
+.btn-pro-upgrade {
+  display: inline-block;
+  background: var(--amber);
+  color: var(--navy);
+  font-size: 14px;
+  font-weight: 700;
+  padding: 12px 28px;
+  border-radius: var(--radius-sm);
+  text-decoration: none;
+  transition: opacity var(--transition);
+}
+.btn-pro-upgrade:hover { opacity: 0.88; }
+
 html { scroll-behavior: smooth; }
 
 body {
