@@ -421,11 +421,18 @@
           <label>İhale Usulü</label>
           <select class="filter-select" id="f-usul">
             <option value="">Tümü</option>
-            <option value="open">Açık İhale</option>
-            <option value="bargain">Pazarlık</option>
-            <option value="certain">Belli İstekliler Arasında</option>
-            <option value="design">Tasarım Yarışması</option>
-            <option value="diger">Diğer / İstisna</option>
+            <option value="Açık İhale">Açık İhale</option>
+            <option value="Pazarlık">Pazarlık Usulü (tüm)</option>
+            <option value="Pazarlık Usulü (21/b)">Pazarlık — 21/b</option>
+            <option value="Pazarlık Usulü (21/ı)">Pazarlık — 21/ı</option>
+            <option value="Pazarlık Usulü (21/a)">Pazarlık — 21/a</option>
+            <option value="Pazarlık Usulü (21/c)">Pazarlık — 21/c</option>
+            <option value="Pazarlık Usulü (21/e)">Pazarlık — 21/e</option>
+            <option value="Pazarlık Usulü (21/f)">Pazarlık — 21/f</option>
+            <option value="Belli İstekliler">Belli İstekliler Arasında</option>
+            <option value="Doğrudan Temin">Doğrudan Temin</option>
+            <option value="Tasarım Yarışması">Tasarım Yarışması</option>
+            <option value="Diğer">Diğer / İstisna</option>
           </select>
         </div>
         <div class="filter-group">
@@ -611,10 +618,7 @@
 
   // usul kolonu ham EKAP enum anahtarı tutuyor; fragment ile ilike eşleştir
   // (Pazarlık'ın 21A/21E/21F varyantlarını da BARGAIN fragmenti yakalar)
-  const USUL_FRAGMENT = {
-    open: 'OPEN', bargain: 'BARGAIN', certain: 'AMONG_CERTAIN_BIDDERS',
-    design: 'DESIGN_COMPETITION', diger: 'DIGER'
-  };
+  // usul filtresi: option value doğrudan ilike fragment olarak kullanılır
 
   function sekmeDegistir(sekme) {
     aktifSekme = sekme;
@@ -656,13 +660,11 @@
     return `<span class="badge badge-closed">● ${durum}</span>`;
   }
 
-  // usul kolonu ham EKAP enum anahtarı → kısa Türkçe etiket
   function usulEtiket(usul) {
     if (!usul) return '';
-    const map = [['OPEN','Açık İhale'],['AMONG_CERTAIN_BIDDERS','Belli İstekliler'],
-                 ['BARGAIN','Pazarlık'],['DESIGN_COMPETITION','Tasarım Yarışması'],['DIGER','Diğer']];
-    for (const [frag,label] of map) if (usul.includes(frag)) return `<span class="etiket">${label}</span>`;
-    return usul.length < 30 ? `<span class="etiket">${usul}</span>` : '';
+    // Kısa gösterim: "Pazarlık Usulü (21/b)" → "Pazarlık 21/b"
+    const kisa = usul.replace('Pazarlık Usulü', 'Pazarlık').replace('Usulü', '').replace(/\s+/g,' ').trim();
+    return `<span class="etiket">${kisa}</span>`;
   }
 
   function kartOlustur(ilan) {
@@ -743,7 +745,7 @@
     if (il)       query = query.eq('il', il);
     if (kategori) query = query.eq('kategori', kategori);
     if (tur)      query = query.eq('tur', tur);
-    if (usul)     query = query.ilike('usul', `%${USUL_FRAGMENT[usul]}%`);
+    if (usul)     query = query.ilike('usul', `%${usul}%`);
     if (minBedel) query = query.gte('yaklasik_maliyet_min', minBedel);
     if (maxBedel) query = query.lte('yaklasik_maliyet_max', maxBedel);
     if (idare)    query = query.ilike('idare', `%${idare}%`);
