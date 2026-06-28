@@ -349,6 +349,41 @@
           </select>
         </div>
         <div class="filter-group">
+          <label>Kategori</label>
+          <select class="filter-select" id="f-kategori">
+            <option value="">Tüm Kategoriler</option>
+            <option>İnşaat & Yapım</option>
+            <option>Sağlık</option>
+            <option>Bilişim Hizmetleri</option>
+            <option>BT Ekipmanları</option>
+            <option>Yazılım</option>
+            <option>Tıbbi Cihazlar</option>
+            <option>Ulaşım Araçları</option>
+            <option>Ulaşım Hizmetleri</option>
+            <option>Enerji</option>
+            <option>Elektrik Malzemeleri</option>
+            <option>Gıda & İçecek</option>
+            <option>Çevre Hizmetleri</option>
+            <option>İdari Hizmetler</option>
+            <option>Eğitim</option>
+            <option>Güvenlik</option>
+            <option>Bakım & Onarım</option>
+            <option>Sanayi Makineleri</option>
+            <option>İnşaat Malzemeleri</option>
+            <option>Mimarlık & Mühendislik</option>
+            <option>Lojistik</option>
+            <option>Mobilya & Temizlik</option>
+            <option>Giyim & Tekstil</option>
+            <option>Kimyasal Ürünler</option>
+            <option>Tarım & Ormancılık</option>
+            <option>Madencilik</option>
+            <option>Ar-Ge</option>
+            <option>Kamu Yönetimi</option>
+            <option>Konaklama & Yemek</option>
+            <option>Diğer Hizmetler</option>
+          </select>
+        </div>
+        <div class="filter-group">
           <label>İhale Türü</label>
           <select class="filter-select" id="f-tur">
             <option value="">Tümü</option>
@@ -661,6 +696,7 @@
     const usul     = document.getElementById('f-usul').value;
     const minBedel = parseInt(document.getElementById('f-min-bedel').value) || 0;
     const maxBedel = parseInt(document.getElementById('f-max-bedel').value) || 0;
+    const kategori = document.getElementById('f-kategori').value;
     const minUyum  = parseInt(document.getElementById('f-min-uyum').value) || 0;
     const sort     = document.getElementById('sort-select').value;
     // Detaylı Ara alanları
@@ -682,6 +718,7 @@
 
     if (arama)    query = query.or(`baslik.ilike.%${arama}%,idare.ilike.%${arama}%,okas.ilike.%${arama}%,isin_yapilacagi_yer.ilike.%${arama}%,ilan_metni.ilike.%${arama}%`);
     if (il)       query = query.eq('il', il);
+    if (kategori) query = query.eq('kategori', kategori);
     if (tur)      query = query.eq('tur', tur);
     if (usul)     query = query.ilike('usul', `%${USUL_FRAGMENT[usul]}%`);
     if (minBedel) query = query.gte('yaklasik_maliyet_min', minBedel);
@@ -788,7 +825,7 @@
   }
 
   function filtreleriSifirla() {
-    ['f-arama','f-il','f-tur','f-usul','f-min-bedel','f-max-bedel',
+    ['f-arama','f-il','f-kategori','f-tur','f-usul','f-min-bedel','f-max-bedel',
      'f-idare','f-yayin-bas','f-yayin-bit','f-teklif-bas','f-teklif-bit']
       .forEach(id => { document.getElementById(id).value = ''; });
     document.getElementById('f-min-uyum').value = '0';
