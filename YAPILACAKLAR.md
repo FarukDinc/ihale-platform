@@ -342,10 +342,15 @@ python analiz_runner.py --yenile          # daha önce analizlenenleri yenile
 
 **Yapıldı:**
 - ✅ **Usul normalize**: 5538 kayıt `SEARCH_METHOD.OPEN → Açık İhale`; Diğer (603), Doğrudan Temin (1292), Pazarlık 21/a (21), Pazarlık 21/e (10) düzeltildi
+- ✅ **Usul normalize (kalan)**: Pazarlık 21/b (234), 21/ı (248), 21/c (12), 21/f (29), BARGAIN (4), Diğer (32) — tüm ham enum'lar temizlendi
 - ✅ **Kategori backfill**: ~5500 kayıt OKAS/CPV'den 32 kategori türetildi; `in_()` batch ile
 - ✅ **tur=Yapım fallback**: 246 kayıt `→ İnşaat & Yapım` (kategori boş olanlar)
-- ✅ Supabase wrapper'a `in_()` batch metodu eklendi (timeout sorununu aştı)
-- ⚠️ `ilk_gorulme` kolonu hâlâ yok — DDL gerektiriyor (Supabase SQL Editor'dan çalıştır)
+- ✅ **tur fallback (tam)**: Mal (4199) → "Mal Alımı", Hizmet (1236) → "Hizmet Alımı", Danışmanlık (3) → "Danışmanlık"; kalan 9 OKAS kaydı da düzeltildi
+- ✅ **Kategori dropdown güncellendi** (ihaleler.html): scraper ile tam uyumlu 50+ seçenek; "Genel" (Mal Alımı/Hizmet Alımı/Danışmanlık) + "Sektör" optgroup'ları
+- ✅ **ekap_scraper.py** `kategori_tur()`: Mal/Hizmet/Danışmanlık tur fallback eklendi
+- ✅ Supabase wrapper'a `in_()` batch + `is_()` NULL filtresi eklendi (timeout sorununu aştı)
+- ⚠️ `ilk_gorulme` kolonu hâlâ yok — DDL gerektiriyor (Supabase SQL Editor'dan çalıştır: `migration_ai_analiz.sql`)
+- ⚠️ `idx_ilanlar_analiz` btree index drop gerekiyor — `migration_fix_analiz_index.sql` Supabase SQL Editor'dan çalıştır
 
 ---
 

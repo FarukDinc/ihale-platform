@@ -686,8 +686,11 @@ def kategori_tur(okas: str | None, tur: str | None, baslik: str | None) -> str |
             return _CPV_KATEGORI[prefix]
     # OKAS yoksa ihale türünden genel kategori
     t = (tur or "").lower()
-    if "yapım" in t: return "İnşaat & Yapım"
+    if "yapım" in t:        return "İnşaat & Yapım"
     if "bilgi" in t or "yazılım" in t: return "Bilişim Hizmetleri"
+    if "mal" in t:          return "Mal Alımı"
+    if "hizmet" in t:       return "Hizmet Alımı"
+    if "danışmanlık" in t:  return "Danışmanlık"
     return None
 
 # EKAP ham enum → okunabilir Türkçe (ham: "TENDER_SEARCH.ENUMERATIONS.OPEN" vb.)
