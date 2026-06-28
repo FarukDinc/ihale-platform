@@ -493,6 +493,7 @@
             <div class="info-row"><span class="info-label">İl</span><span class="info-value">${d.il || '—'}</span></div>
             <div class="info-row"><span class="info-label">İhale Türü</span><span class="info-value">${d.tur || '—'}</span></div>
             <div class="info-row"><span class="info-label">İhale Usulü</span><span class="info-value">${usulLabel(d.usul)}</span></div>
+            <div class="info-row"><span class="info-label">Kategori</span><span class="info-value">${d.kategori ? `<a href="ihaleler?kategori=${encodeURIComponent(d.kategori)}" style="color:var(--amber);text-decoration:none;">${d.kategori}</a>` : '—'}</span></div>
             <div class="info-row"><span class="info-label">OKAS Kodu</span><span class="info-value">${d.okas || '—'}</span></div>
             <div class="info-row"><span class="info-label">Kaynak</span><span class="info-value">${d.kaynak ? d.kaynak.toUpperCase() : '—'}</span></div>
           </div>
