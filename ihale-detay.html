@@ -565,21 +565,29 @@
 
       <!-- TAB: AI ANALİZİ -->
       <div class="tab-panel" id="tab-ai">
+        ${d.yapay_zeka_ozeti ? `
+        <div class="detay-card full" style="padding:0; overflow:hidden;">
+          <div style="display:flex; align-items:center; justify-content:space-between; padding:16px 20px; border-bottom:1px solid var(--border);">
+            <span class="card-title" style="margin-bottom:0;">🤖 Yapay Zeka Şartname Analizi</span>
+            ${d.analiz_tarihi ? `<span style="font-size:11px; color:var(--muted);">${tarihFormatla(d.analiz_tarihi)} · ${d.analiz_pdf_turu || 'metin'}</span>` : ''}
+          </div>
+          <div id="ai-analiz-content" style="padding:20px;"></div>
+        </div>
+        ` : `
         <div class="detay-card full">
           <div class="card-title">🤖 Yapay Zeka Şartname Analizi</div>
-          ${d.yapay_zeka_ozeti ? `
-            <div class="ilan-metni" style="white-space:pre-wrap;">${d.yapay_zeka_ozeti}</div>
-            ${d.analiz_tarihi ? `<div style="color:var(--muted);font-size:11px;margin-top:12px;">Analiz tarihi: ${tarihFormatla(d.analiz_tarihi)}${d.analiz_pdf_turu ? ' · ' + d.analiz_pdf_turu : ''}</div>` : ''}
-          ` : `
-            <div style="padding:16px 0;">
-              <p style="color:var(--muted);font-size:14px;margin-bottom:12px;">
-                Bu ihale için henüz yapay zeka analizi yapılmadı. Şartname analiz edildiğinde
-                özet, riskler ve katılım gereksinimleri burada görünecek.
-              </p>
-              <a class="btn-ekap" href="teklif-olustur?ihale_id=${d.id}" style="display:inline-flex;">✏ Teklif Hazırla &amp; Analiz Et</a>
+          <div style="padding:16px 0;">
+            <p style="color:var(--muted);font-size:14px;margin-bottom:16px;">
+              Bu ihale için henüz yapay zeka analizi yapılmadı. Şartname analiz edildiğinde
+              özet, riskler ve katılım gereksinimleri burada görünecek.
+            </p>
+            <div style="display:flex; align-items:center; gap:8px; padding:14px 16px; background:var(--navy-soft); border:1px solid var(--border); border-radius:var(--radius-sm); margin-bottom:16px;">
+              <span style="font-size:18px;">💡</span>
+              <span style="font-size:13px; color:var(--muted);">Analiz yapmak için <strong style="color:var(--white);">analiz_runner.py</strong> scriptini çalıştırın:<br><code style="font-size:11px; color:var(--amber);">python analiz_runner.py --ikn ${d.ikn || d.ekap_id}</code></span>
             </div>
-          `}
+          </div>
         </div>
+        `}
       </div>
 
       <!-- BENZER İHALELER -->
@@ -596,6 +604,50 @@
       const fill = document.getElementById('uyum-fill');
       if (fill) fill.style.width = uyum + '%';
     }, 200);
+
+    // AI Analiz render — ### başlıklı bölümleri kartlara dönüştür
+    const aiEl = document.getElementById('ai-analiz-content');
+    if (aiEl && d.yapay_zeka_ozeti) {
+      const BOLUM_RENKLER = {
+        'ÖZET':                { bg: 'rgba(245,158,11,0.08)', border: 'var(--amber)', icon: '📋' },
+        'KİLİT BİLGİLER':     { bg: 'rgba(99,102,241,0.08)', border: '#6366f1',      icon: '🔑' },
+        'GİRİŞ ENGELLERİ':    { bg: 'rgba(239,68,68,0.06)',  border: '#ef4444',      icon: '🚧' },
+        'MALİ YÜKÜMLÜLÜKLER': { bg: 'rgba(16,185,129,0.06)', border: '#10b981',      icon: '💰' },
+        'RİSKLER VE UYARILAR':{ bg: 'rgba(239,68,68,0.1)',   border: '#ef4444',      icon: '⚠️' },
+        'FIRSATLAR':           { bg: 'rgba(16,185,129,0.08)', border: '#10b981',      icon: '✅' },
+        'TAVSİYE':             { bg: 'rgba(245,158,11,0.12)', border: 'var(--amber)', icon: '🎯' },
+      };
+      const satirlar = d.yapay_zeka_ozeti.split('\n');
+      let html = '';
+      let mevcutBaslik = null;
+      let mevcutIcerik = [];
+
+      function bolumKapat() {
+        if (!mevcutBaslik) return;
+        const stil = BOLUM_RENKLER[mevcutBaslik] || { bg: 'var(--card-bg)', border: 'var(--border)', icon: '•' };
+        const icerikHtml = mevcutIcerik.join('\n')
+          .replace(/^- (.+)$/gm, '<li>$1</li>')
+          .replace(/(<li>.*<\/li>\n?)+/gs, m => `<ul style="margin:6px 0 0 0;padding-left:18px;">${m}</ul>`)
+          .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+        html += `<div style="background:${stil.bg};border-left:3px solid ${stil.border};border-radius:6px;padding:14px 16px;margin-bottom:12px;">
+          <div style="font-weight:600;font-size:13px;color:var(--white);margin-bottom:8px;">${stil.icon} ${mevcutBaslik}</div>
+          <div style="font-size:13px;color:var(--text-secondary);line-height:1.6;">${icerikHtml}</div>
+        </div>`;
+        mevcutIcerik = [];
+      }
+
+      for (const satir of satirlar) {
+        const baslikEsleme = satir.match(/^###\s+(.+)/);
+        if (baslikEsleme) {
+          bolumKapat();
+          mevcutBaslik = baslikEsleme[1].trim().toUpperCase().replace(/[*_]/g, '');
+        } else if (satir.trim() !== '---') {
+          mevcutIcerik.push(satir);
+        }
+      }
+      bolumKapat();
+      aiEl.innerHTML = html || `<div style="white-space:pre-wrap;font-size:13px;color:var(--text-secondary);">${d.yapay_zeka_ozeti}</div>`;
+    }
 
     // İlan metni — ilan_html varsa güvenli HTML render, yoksa ilan_metni pre-wrap
     const ilanEl = document.getElementById('ilan-metni-container');
