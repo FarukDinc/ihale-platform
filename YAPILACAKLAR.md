@@ -314,12 +314,13 @@ ihaleciler.com'da üstte 6 ana kategori var, bunları değerlendir:
 
 ---
 
-## 📊 Dashboard İyileştirmeleri — ✅ EKLENDİ (28 Haz 2026)
+## 📊 Dashboard İyileştirmeleri — ✅ TAMAM (28 Haz 2026)
 
 **Yapıldı (dashboard.html):**
 - ✅ **En Aktif Kurumlar** widget: aktif ihalelerdeki idare sayımı (tüm kayıtlar taranır, JS'te sıralanır), ilk 7 kurum amber progress bar + tıklanabilir kurum-analiz linki ile
 - ✅ **Son Eklenen İhaleler** widget: `olusturulma` DESC son 6 ihale, başlık + il + maliyet + tarih; ihale-detay linki
 - İki widget yan yana 2 kolonluk grid düzeni, KPI grid altında, filtre üstünde
+- ✅ **Kategori Dağılımı widget** eklendi: 12 renkli progress bar, tıklanınca `ihaleler?kategori=X` açar (28 Haz 2026)
 - ⚠️ "Son Eklenen" aslında "son güncellenen" — `olusturulma` her upsert'te tazeleniyor. Gerçek "ilk görülme" için `ilk_gorulme` kolonu gerekir (Supabase'de manual eklenecek)
 
 ---
