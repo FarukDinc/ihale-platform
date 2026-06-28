@@ -8,9 +8,67 @@
   <link rel="stylesheet" href="css/style.css" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
   <style>
     /* NAV active link */
     .nav-links a.active { color: var(--white); }
+
+    /* ===== TÜRKİYE HARİTASI ===== */
+    .harita-section { padding: 64px 0; }
+    .harita-wrap {
+      background: var(--navy-mid); border: 1px solid var(--border);
+      border-radius: var(--radius-lg); padding: 24px; position: relative;
+    }
+    #turkiye-harita {
+      height: 460px; width: 100%; border-radius: var(--radius-md);
+      background: var(--navy); z-index: 1;
+    }
+    .harita-yukleniyor {
+      position: absolute; inset: 24px; display: flex; align-items: center; justify-content: center;
+      color: var(--muted); font-size: 14px; z-index: 2; background: var(--navy);
+      border-radius: var(--radius-md);
+    }
+    .leaflet-container { font-family: var(--font-body); background: var(--navy); }
+    .leaflet-tooltip.il-tooltip {
+      background: var(--navy-soft); border: 1px solid var(--amber); color: var(--white);
+      font-weight: 600; font-size: 13px; padding: 6px 10px; border-radius: 6px; box-shadow: none;
+    }
+    .leaflet-tooltip.il-tooltip::before { display: none; }
+    .il-tooltip .tt-sayi { color: var(--amber); font-weight: 800; }
+    .harita-sekmeler {
+      display: flex; gap: 0; margin-bottom: 20px;
+      border-bottom: 1px solid var(--border);
+    }
+    .harita-sekme {
+      background: none; border: none; border-bottom: 2px solid transparent;
+      color: var(--muted); font-size: 14px; font-weight: 500;
+      padding: 10px 20px; cursor: pointer; margin-bottom: -1px;
+      transition: color var(--transition), border-color var(--transition);
+      font-family: var(--font-body); display: flex; align-items: center; gap: 6px;
+    }
+    .harita-sekme.aktif { color: var(--amber); border-bottom-color: var(--amber); }
+    .harita-sekme:disabled { cursor: not-allowed; opacity: 0.45; }
+    .harita-sekme .yakinda {
+      font-size: 10px; font-weight: 600;
+      background: var(--navy-soft); border: 1px solid var(--border);
+      padding: 1px 6px; border-radius: 10px; color: var(--muted);
+    }
+    .harita-legend {
+      display: flex; align-items: center; gap: 0; flex-wrap: wrap;
+      margin-top: 16px; font-size: 11px; color: var(--muted);
+    }
+    .harita-legend .lg-item { display: flex; align-items: center; gap: 4px; margin-right: 10px; }
+    .harita-legend .lg-box { width: 22px; height: 12px; border-radius: 2px; flex-shrink: 0; }
+    .harita-ozet {
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-top: 20px;
+    }
+    .harita-ozet .oz-card {
+      background: var(--card-bg); border: 1px solid var(--border);
+      border-radius: var(--radius-md); padding: 14px 16px; text-align: center;
+    }
+    .harita-ozet .oz-num { font-size: 22px; font-weight: 800; color: var(--amber); font-family: var(--font-display); }
+    .harita-ozet .oz-label { font-size: 12px; color: var(--muted); margin-top: 4px; }
+    @media (max-width: 640px) { .harita-ozet { grid-template-columns: repeat(2, 1fr); } #turkiye-harita { height: 340px; } }
 
     /* Billing toggle */
     .toggle-wrap {
@@ -451,6 +509,32 @@
   </div>
 </div>
 
+<!-- ============= TÜRKİYE HARİTASI ============= -->
+<section id="harita" class="harita-section">
+  <div class="container">
+    <div class="section-header" style="text-align:center;margin-bottom:32px;">
+      <h2>İhaleler Türkiye Genelinde</h2>
+      <p style="color:var(--muted);margin-top:8px;">İl bazlı aktif ihale yoğunluğu — bir ile tıklayarak o ilin ihalelerini görüntüleyin.</p>
+    </div>
+    <div class="harita-sekmeler">
+      <button class="harita-sekme aktif">📋 İlanlar</button>
+      <button class="harita-sekme" disabled>🏢 Firmalar <span class="yakinda">Yakında</span></button>
+      <button class="harita-sekme" disabled>🏛️ Kurumlar <span class="yakinda">Yakında</span></button>
+    </div>
+    <div class="harita-wrap">
+      <div id="turkiye-harita"></div>
+      <div class="harita-yukleniyor" id="harita-yukleniyor">🗺️ Harita ve veriler yükleniyor…</div>
+      <div class="harita-legend" id="harita-legend"></div>
+      <div class="harita-ozet">
+        <div class="oz-card"><div class="oz-num" id="oz-toplam">—</div><div class="oz-label">Toplam İhale</div></div>
+        <div class="oz-card"><div class="oz-num" id="oz-guncel">—</div><div class="oz-label">Güncel (Açık)</div></div>
+        <div class="oz-card"><div class="oz-num" id="oz-bugun">—</div><div class="oz-label">Bugün Eklenen</div></div>
+        <div class="oz-card"><div class="oz-num" id="oz-il">—</div><div class="oz-label">Kapsanan İl</div></div>
+      </div>
+    </div>
+  </div>
+</section>
+
 <!-- ============= FEATURES ============= -->
 <section id="features" class="section">
   <div class="container">
@@ -757,6 +841,135 @@
     } catch (e) {
       console.warn('Sayaç yüklenemedi:', e);
     }
+  })();
+</script>
+
+<!-- ============= TÜRKİYE HARİTASI (Leaflet choropleth) ============= -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+<script>
+  (() => {
+    const SB_URL = "https://lpgelwfoarhouollhwur.supabase.co";
+    const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxwZ2Vsd2ZvYXJob3VvbGxod3VyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIyMzI4MjAsImV4cCI6MjA5NzgwODgyMH0.GqTZkeoOAomuur4JSyW2pTR-8Zzg8OTv394JtP7DoXM";
+    // Düşük→yüksek yoğunluk renk skalası (proje paleti: navy → amber → kırmızı)
+    const RENKLER = ['#243b5e', '#7a5c1e', '#b07d08', '#e09600', '#f0a500', '#ef4444'];
+
+    const haritaEl = document.getElementById('turkiye-harita');
+    if (!haritaEl || !window.L) return;
+    let baslatildi = false;
+
+    // İl sayımı: il kolonunu 1000'lik sayfalarla çek, client-side topla (aggregate kapalı)
+    async function ilSayimGetir(sb) {
+      const istekler = [];
+      for (let off = 0; off < 13000; off += 1000) {
+        istekler.push(sb.from('ilanlar').select('il').not('il', 'is', null).range(off, off + 999));
+      }
+      const sonuc = await Promise.all(istekler);
+      const sayim = {};
+      for (const { data } of sonuc) (data || []).forEach(r => {
+        if (r.il) sayim[r.il] = (sayim[r.il] || 0) + 1;
+      });
+      return sayim;
+    }
+
+    // GeoJSON Title-case ad → DB BÜYÜK HARF il anahtarı (örn. Afyon → AFYONKARAHİSAR)
+    function ilAnahtar(ad, sayim) {
+      const U = ad.toLocaleUpperCase('tr');
+      if (sayim[U] != null) return U;
+      for (const k of Object.keys(sayim)) if (k.startsWith(U) || U.startsWith(k)) return k;
+      return U;
+    }
+
+    // Skewed dağılım için quantile bazlı eşikler (5 eşik → 6 kademe)
+    function esikler(sayim) {
+      const v = Object.values(sayim).filter(x => x > 0).sort((a, b) => a - b);
+      if (!v.length) return [1, 2, 3, 4, 5];
+      const q = p => v[Math.min(v.length - 1, Math.floor(v.length * p))];
+      return [q(0.50), q(0.70), q(0.85), q(0.93), q(0.98)];
+    }
+    function renkSec(n, esik) {
+      if (!n) return '#16233d';
+      for (let i = 0; i < esik.length; i++) if (n <= esik[i]) return RENKLER[i];
+      return RENKLER[RENKLER.length - 1];
+    }
+
+    function legendCiz(esik) {
+      const lg = document.getElementById('harita-legend');
+      const fmt = n => n >= 1000 ? (n / 1000).toFixed(1).replace('.0', '') + 'b' : String(n);
+      const araliklar = [
+        '0',
+        `1–${fmt(esik[0])}`,
+        `${fmt(esik[0] + 1)}–${fmt(esik[1])}`,
+        `${fmt(esik[1] + 1)}–${fmt(esik[2])}`,
+        `${fmt(esik[2] + 1)}–${fmt(esik[3])}`,
+        `${fmt(esik[3] + 1)}+`,
+      ];
+      lg.innerHTML = '<span style="margin-right:8px;font-size:11px;">İhale yoğunluğu:</span>' +
+        RENKLER.map((c, i) =>
+          `<span class="lg-item"><span class="lg-box" style="background:${c}"></span>${araliklar[i]}</span>`
+        ).join('');
+    }
+
+    async function ozetDoldur(sb, sayim) {
+      const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+      const bugun = new Date(); bugun.setHours(0, 0, 0, 0);
+      try {
+        const [toplam, guncel, bugunEklenen] = await Promise.all([
+          sb.from('ilanlar').select('id', { count: 'exact', head: true }),
+          sb.from('ilanlar').select('id', { count: 'exact', head: true }).gte('son_teklif_tarihi', new Date().toISOString()),
+          sb.from('ilanlar').select('id', { count: 'exact', head: true }).gte('olusturulma', bugun.toISOString()),
+        ]);
+        set('oz-toplam', (toplam.count ?? 0).toLocaleString('tr'));
+        set('oz-guncel', (guncel.count ?? 0).toLocaleString('tr'));
+        set('oz-bugun', (bugunEklenen.count ?? 0).toLocaleString('tr'));
+      } catch (_) {}
+      set('oz-il', Object.values(sayim).filter(x => x > 0).length);
+    }
+
+    async function haritaBaslat() {
+      if (baslatildi) return; baslatildi = true;
+      try {
+        const sb = window.supabase.createClient(SB_URL, SB_KEY);
+        const [geo, sayim] = await Promise.all([
+          fetch('data/turkey-provinces.geojson').then(r => r.json()),
+          ilSayimGetir(sb),
+        ]);
+        const esik = esikler(sayim);
+
+        const map = L.map(haritaEl, { zoomControl: true, scrollWheelZoom: false, attributionControl: false });
+        const katman = L.geoJSON(geo, {
+          style: f => {
+            const k = ilAnahtar(f.properties.name, sayim);
+            return { fillColor: renkSec(sayim[k] || 0, esik), weight: 1, color: '#334155', fillOpacity: 0.85 };
+          },
+          onEachFeature: (f, layer) => {
+            const k = ilAnahtar(f.properties.name, sayim);
+            const n = sayim[k] || 0;
+            layer.bindTooltip(`${f.properties.name} <span class="tt-sayi">${n.toLocaleString('tr')}</span>`,
+              { className: 'il-tooltip', sticky: true });
+            layer.on({
+              mouseover: e => e.target.setStyle({ weight: 2, color: '#fff', fillOpacity: 0.95 }),
+              mouseout: e => katman.resetStyle(e.target),
+              click: () => { window.location.href = 'ihaleler?il=' + encodeURIComponent(k); },
+            });
+          },
+        }).addTo(map);
+        map.fitBounds(katman.getBounds(), { padding: [10, 10] });
+
+        legendCiz(esik);
+        ozetDoldur(sb, sayim);
+        document.getElementById('harita-yukleniyor').style.display = 'none';
+      } catch (e) {
+        console.warn('Harita yüklenemedi:', e);
+        const y = document.getElementById('harita-yukleniyor');
+        if (y) y.textContent = '⚠ Harita yüklenemedi.';
+      }
+    }
+
+    // Görünür olunca başlat (lazy)
+    const io = new IntersectionObserver((entries) => {
+      if (entries.some(e => e.isIntersecting)) { io.disconnect(); haritaBaslat(); }
+    }, { rootMargin: '200px' });
+    io.observe(haritaEl);
   })();
 </script>
 </body>
