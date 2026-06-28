@@ -103,9 +103,11 @@
 - ✅ 3.5/3.6 Sıralama + sayaç + sayfalama (zaten vardı)
 
 **Kalan / engelli (veri eksikliği):**
-- ⚠️ **Kategori filtresi**: `kategori` kolonu DB'de NULL → server-side filtre imkânsız. Scraper kategori doldurmalı (ya da OKAS/CPV'den türet). Şu an kategori sadece uyum skoru için keyword-map ile kullanılıyor.
+- ✅ **Kategori filtresi**: `ihaleler.html`'e KATEGORİ dropdown eklendi (29 kategori); scraper artık OKAS/CPV'den kategori türetiyor; `migration_kategori_backfill.sql` ile mevcut kayıtlar backfill edilebilir (Supabase SQL Editor'dan çalıştır).
 - ⚠️ Detaylı Ara'nın bazı alanları (teklif türü, ihale kaynağı, içerik türü, idare türü, işin/teslim/ödeme süresi, sınır değer) eklenmedi — bu kolonlar DB'de yok.
-- ⚠️ **Veri-borcu (scraper):** `usul` ham i18n anahtarı (`...SEARCH_METHOD.OPEN`) olarak saklanıyor; ingest sırasında Türkçe'ye çevrilmeli. `baslik`/`idare` mojibake (çift-encode).
+- ✅ **Veri-borcu çözüldü (scraper):** `usul` artık Türkçe'ye çevriliyor; `baslik`/`idare`/`il` mojibake scraper'da düzeltiliyor. Mevcut kayıtlar için:
+  - `migration_veri_temizlik.sql`: il UPPER normalize + ham usul enum düzeltme (Supabase SQL Editor'da çalıştır)
+  - `mojibake_fix.py`: mevcut kayıtlardaki bozuk Türkçe karakterleri Python'da düzeltir (`--dry-run` ile önce test et)
 
 ### (orijinal plan ↓)
 ## 🔍 ÖNCELİK 3 — referans
