@@ -736,7 +736,7 @@
       const [aktif, bugun, butce] = await Promise.all([
         sb.from('ilanlar').select('id', { count: 'exact', head: true }).eq('durum', 'aktif'),
         sb.from('ilanlar').select('id', { count: 'exact', head: true })
-          .gte('created_at', bugunBaslangic.toISOString()),
+          .gte('olusturulma', bugunBaslangic.toISOString()),
         sb.from('ilanlar').select('yaklasik_maliyet_min').eq('durum', 'aktif').not('yaklasik_maliyet_min', 'is', null),
       ]);
 

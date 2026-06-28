@@ -1068,7 +1068,7 @@
         sb.from('ilanlar').select('id', { count: 'exact', head: true })
           .eq('durum', 'aktif').gte('yaklasik_maliyet_min', 43142132),
         sb.from('ilanlar').select('id', { count: 'exact', head: true })
-          .gte('created_at', bugunBaslangic.toISOString()).lte('created_at', bugunBitis.toISOString()),
+          .gte('olusturulma', bugunBaslangic.toISOString()).lte('olusturulma', bugunBitis.toISOString()),
         sb.from('ilanlar').select('id', { count: 'exact', head: true })
           .eq('durum', 'aktif').gte('son_teklif_tarihi', bugunBaslangic.toISOString()).lte('son_teklif_tarihi', bugunBitis.toISOString()),
       ]);

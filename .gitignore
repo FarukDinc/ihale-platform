@@ -32,3 +32,6 @@ out.txt
 
 # Scraper JSON ciktilari (SUPABASE_KEY yokken)
 ekap_[0-9]*.json
+
+# Altyapi/kimlik haritasi — YEREL kalir, asla commit'lenmez
+ALTYAPI.md

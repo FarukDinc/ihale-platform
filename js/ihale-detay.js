@@ -104,7 +104,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                 UI.bildirim_goster(
                     "Krediniz yetersiz! Paket yükseltin.",
                     "uyari",
-                    "/fiyatlandirma"
+                    "/fiyatlandirma_odeme_bolumu"
                 );
                 return;
             }

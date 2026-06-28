@@ -56,7 +56,7 @@ const API = (() => {
             // Kredi yetersiz
             if (yanit.status === 402) {
                 const hata = await yanit.json();
-                UI.bildirim_goster("Yetersiz kredi! Paket yükseltmek için tıklayın.", "uyari", "/fiyatlandirma.html");
+                UI.bildirim_goster("Yetersiz kredi! Paket yükseltmek için tıklayın.", "uyari", "/fiyatlandirma_odeme_bolumu");
                 return null;
             }
 

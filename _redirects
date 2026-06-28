@@ -1,13 +1,9 @@
 # ihaleglobal.com — Cloudflare Pages yönlendirme kuralları
-
-# HTML uzantısız URL'ler için 301 redirect
-/dashboard      /dashboard.html   301
-/ihaleler       /ihaleler.html    301
-/ihale-detay    /ihale-detay.html 301
-/profil         /profil.html      301
-/kvkk           /kvkk.html        301
-/hakkimizda     /hakkimizda.html  301
-/iletisim       /iletisim.html    301
-/fiyatlandirma  /fiyatlandirma_odeme_bolumu.html 301
-/mesafeli-satis /mesafeli-satis.html 301
-/teklif-olustur /teklif-olustur.html 301
+#
+# NOT: Uzantısız URL'ler için 301 kuralı YAZMAYIN.
+# Cloudflare Pages, /sayfa.html dosyasını otomatik olarak /sayfa (uzantısız)
+# adresinde servis eder ve /sayfa.html -> /sayfa yönlendirmesini kendisi yapar.
+# Buraya "/sayfa -> /sayfa.html 301" eklemek bu otomatik davranışla çakışır
+# ve ERR_TOO_MANY_REDIRECTS (sonsuz döngü) oluşturur.
+#
+# Tüm iç linkler uzantısız kullanılmalıdır (href="ihaleler" gibi).
