@@ -320,6 +320,35 @@ ihaleciler.com'da üstte 6 ana kategori var, bunları değerlendir:
 
 ---
 
+## 🤖 AI ANALİZ ALTYAPISI — ✅ TAMAMLANDI (28 Haz 2026)
+
+**Yapıldı:**
+- ✅ `backend/analiz_runner.py` oluşturuldu (Gemini 2.5 Flash + Supabase)
+- ✅ `backend/migration_ai_analiz.sql`: `yapay_zeka_ozeti`, `analiz_tarihi`, `analiz_pdf_turu` kolonları
+- ✅ `ihale-detay.html` AI Analizi sekmesi: 7 bölümlü renkli kart render (ÖZET/KİLİT BİLGİLER/GİRİŞ ENGELLERİ/MALİ YÜKÜMLÜLÜKLER/RİSKLER/FIRSATLAR/TAVSİYE)
+- ✅ İlk 3 analiz başarıyla oluşturuldu ve Supabase'e kaydedildi (3640-3998 karakter/analiz)
+- ✅ Supabase wrapper'a `in_()` ve `is_()` metodları eklendi (batch update + NULL filtre)
+
+**Kullanım:**
+```
+python analiz_runner.py --limit 20        # 20 ihale analiz et
+python analiz_runner.py --ikn 2026/123456  # tek ihale
+python analiz_runner.py --yenile          # daha önce analizlenenleri yenile
+```
+
+---
+
+## 🧹 VERİ TEMİZLİK — ✅ TAMAMLANDI (28 Haz 2026)
+
+**Yapıldı:**
+- ✅ **Usul normalize**: 5538 kayıt `SEARCH_METHOD.OPEN → Açık İhale`; Diğer (603), Doğrudan Temin (1292), Pazarlık 21/a (21), Pazarlık 21/e (10) düzeltildi
+- ✅ **Kategori backfill**: ~5500 kayıt OKAS/CPV'den 32 kategori türetildi; `in_()` batch ile
+- ✅ **tur=Yapım fallback**: 246 kayıt `→ İnşaat & Yapım` (kategori boş olanlar)
+- ✅ Supabase wrapper'a `in_()` batch metodu eklendi (timeout sorununu aştı)
+- ⚠️ `ilk_gorulme` kolonu hâlâ yok — DDL gerektiriyor (Supabase SQL Editor'dan çalıştır)
+
+---
+
 ## 🔧 ÖNCELİK 7 — Altyapı / Entegrasyonlar — 🟡 KISMI (28 Haz 2026)
 
 **Yapıldı (scraper kalite iyileştirmeleri):**

@@ -14,6 +14,7 @@ Kullanım:
 
 import os
 import sys
+sys.stdout.reconfigure(encoding='utf-8')
 import json
 import re
 import time
@@ -165,7 +166,7 @@ def ihaleleri_cek(limit: int, yenile: bool, tek_ikn: str | None, tek_id: str | N
     else:
         if not yenile:
             q = q.is_("yapay_zeka_ozeti", "null")
-        q = q.not_.is_("ilan_metni", "null").eq("durum", "aktif")
+        q = q.eq("durum", "aktif")
         q = q.limit(limit)
     res = q.execute()
     return res.data or []

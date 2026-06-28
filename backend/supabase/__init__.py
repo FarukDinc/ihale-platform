@@ -55,6 +55,15 @@ class QueryBuilder:
         self._params[column] = f"ilike.{pattern}"
         return self
 
+    def in_(self, column: str, values: list):
+        joined = ",".join(str(v) for v in values)
+        self._params[column] = f"in.({joined})"
+        return self
+
+    def is_(self, column: str, value: str):
+        self._params[column] = f"is.{value}"
+        return self
+
     def order(self, column: str, desc: bool = False):
         self._params["order"] = f"{column}.{'desc' if desc else 'asc'}"
         return self
