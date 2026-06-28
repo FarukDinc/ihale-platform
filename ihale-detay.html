@@ -356,6 +356,15 @@
     return `<span class="badge badge-closed">● ${durum}</span>`;
   }
 
+  // usul kolonu ham EKAP enum anahtarı tutuyor → okunabilir Türkçe etiket
+  function usulLabel(usul) {
+    if (!usul) return '—';
+    const map = [['OPEN','Açık İhale'],['AMONG_CERTAIN_BIDDERS','Belli İstekliler Arasında'],
+                 ['BARGAIN','Pazarlık Usulü'],['DESIGN_COMPETITION','Tasarım Yarışması'],['DIGER','Diğer / İstisna']];
+    for (const [frag,label] of map) if (usul.includes(frag)) return label;
+    return usul.length < 40 ? usul : 'Diğer';
+  }
+
   let mevcutIhale = null;
   let takipte = false;
   let kullaniciProfil = null;
@@ -412,7 +421,7 @@
         <div class="detay-badges">
           ${durumBadge(d.durum, d.son_teklif_tarihi)}
           ${d.tur ? `<span class="badge badge-tur">${d.tur}</span>` : ''}
-          ${d.usul ? `<span class="badge badge-usul">${d.usul}</span>` : ''}
+          ${d.usul ? `<span class="badge badge-usul">${usulLabel(d.usul)}</span>` : ''}
           ${gun !== null && gun >= 0 ? `<span class="badge badge-usul">⏱ ${gun} gün kaldı</span>` : ''}
         </div>
         <div class="detay-actions">
@@ -470,6 +479,7 @@
         <button class="tab-btn active" onclick="sekmeAc(event,'tab-bilgi')">İhale Bilgileri</button>
         <button class="tab-btn" onclick="sekmeAc(event,'tab-ilan')">İlan Bilgileri</button>
         <button class="tab-btn" onclick="sekmeAc(event,'tab-belge')">Belgeler${belgeler.length ? ' (' + belgeler.length + ')' : ''}</button>
+        <button class="tab-btn" onclick="sekmeAc(event,'tab-ai')">🤖 AI Analizi</button>
       </div>
 
       <!-- TAB: İHALE BİLGİLERİ -->
@@ -480,7 +490,7 @@
             <div class="info-row"><span class="info-label">İdare</span><span class="info-value">${d.idare || '—'}</span></div>
             <div class="info-row"><span class="info-label">İl</span><span class="info-value">${d.il || '—'}</span></div>
             <div class="info-row"><span class="info-label">İhale Türü</span><span class="info-value">${d.tur || '—'}</span></div>
-            <div class="info-row"><span class="info-label">İhale Usulü</span><span class="info-value">${d.usul || '—'}</span></div>
+            <div class="info-row"><span class="info-label">İhale Usulü</span><span class="info-value">${usulLabel(d.usul)}</span></div>
             <div class="info-row"><span class="info-label">OKAS Kodu</span><span class="info-value">${d.okas || '—'}</span></div>
             <div class="info-row"><span class="info-label">Kaynak</span><span class="info-value">${d.kaynak ? d.kaynak.toUpperCase() : '—'}</span></div>
           </div>
@@ -548,6 +558,25 @@
               </p>
               ${d.ikn ? `<a class="btn-ekap" href="${ekapLink(d.ikn)}" target="_blank" rel="noopener" style="display:inline-flex;">↗ EKAP'ta Dokümanları Gör</a>` : ''}
             </div>`}
+        </div>
+      </div>
+
+      <!-- TAB: AI ANALİZİ -->
+      <div class="tab-panel" id="tab-ai">
+        <div class="detay-card full">
+          <div class="card-title">🤖 Yapay Zeka Şartname Analizi</div>
+          ${d.yapay_zeka_ozeti ? `
+            <div class="ilan-metni" style="white-space:pre-wrap;">${d.yapay_zeka_ozeti}</div>
+            ${d.analiz_tarihi ? `<div style="color:var(--muted);font-size:11px;margin-top:12px;">Analiz tarihi: ${tarihFormatla(d.analiz_tarihi)}${d.analiz_pdf_turu ? ' · ' + d.analiz_pdf_turu : ''}</div>` : ''}
+          ` : `
+            <div style="padding:16px 0;">
+              <p style="color:var(--muted);font-size:14px;margin-bottom:12px;">
+                Bu ihale için henüz yapay zeka analizi yapılmadı. Şartname analiz edildiğinde
+                özet, riskler ve katılım gereksinimleri burada görünecek.
+              </p>
+              <a class="btn-ekap" href="teklif-olustur?ihale_id=${d.id}" style="display:inline-flex;">✏ Teklif Hazırla &amp; Analiz Et</a>
+            </div>
+          `}
         </div>
       </div>
 
