@@ -1,14 +1,13 @@
 # ihaleglobal.com — Cloudflare Pages yönlendirme kuralları
 
 # HTML uzantısız URL'ler için 301 redirect
-/login            /login.html       301
-/dashboard        /dashboard.html   301
-/ihaleler         /ihaleler.html    301
-/ihale-detay      /ihale-detay.html 301
-/profil           /profil.html      301
-/kvkk             /kvkk.html        301
-/hakkimizda       /hakkimizda.html  301
-/iletisim         /iletisim.html    301
-/fiyatlandirma    /fiyatlandirma_odeme_bolumu.html  301
-/mesafeli-satis   /mesafeli-satis.html  301
-/teklif-olustur   /teklif-olustur.html  301
+/dashboard      /dashboard.html   301
+/ihaleler       /ihaleler.html    301
+/ihale-detay    /ihale-detay.html 301
+/profil         /profil.html      301
+/kvkk           /kvkk.html        301
+/hakkimizda     /hakkimizda.html  301
+/iletisim       /iletisim.html    301
+/fiyatlandirma  /fiyatlandirma_odeme_bolumu.html 301
+/mesafeli-satis /mesafeli-satis.html 301
+/teklif-olustur /teklif-olustur.html 301
