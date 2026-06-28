@@ -426,6 +426,7 @@ async def detay_cek(client: httpx.AsyncClient, ihale_id: str, dokuman_sayisi: in
         "itiraz_bedeli": None, "yaklasik_maliyet_min": None, "yaklasik_maliyet_max": None,
         "isin_yapilacagi_yer": None, "ihale_yeri": None, "okas": None,
         "ilan_metni": None, "ilan_html": None, "belgeler": None,
+        "ilan_tarihi": None,
     }
 
     # 1) İtiraz bedeli → yaklaşık maliyet
@@ -446,9 +447,18 @@ async def detay_cek(client: httpx.AsyncClient, ihale_id: str, dokuman_sayisi: in
 
         ilanlar = item.get("ilanList") or []
         if ilanlar:
-            ham_html = ilanlar[0].get("veriHtml") or ""
+            ilan0 = ilanlar[0]
+            print(f"  [DEBUG-ILAN0-KEYS] {[k for k in ilan0.keys() if 'html' not in k.lower()]}")
+            ham_html = ilan0.get("veriHtml") or ""
             sonuc["ilan_html"]  = ham_html or None
             sonuc["ilan_metni"] = html_temizle(ham_html) or None
+            # İlan yayım tarihi — field adı API'ye göre değişebilir
+            tarih_ham = (
+                ilan0.get("ilanTarihi") or ilan0.get("tarih")
+                or ilan0.get("yayimTarihi") or ilan0.get("baslangicTarihi")
+                or bilgi.get("ilanTarihi") or bilgi.get("yayimTarihi")
+            )
+            sonuc["ilan_tarihi"] = tarih_iso(tarih_ham)
 
         # Belgeler — önce item içinde
         raw = (
@@ -648,6 +658,38 @@ def durum_donustur(d):
     if "sonuçland" in d or "tamamland" in d: return "sonuclandi"
     return "aktif"
 
+# CPV/OKAS kodunun ilk 2 hanesi → ana kategori
+_CPV_KATEGORI = {
+    "03": "Tarım & Ormancılık", "09": "Enerji", "14": "Madencilik",
+    "15": "Gıda & İçecek", "16": "Tarım Makineleri", "18": "Giyim & Tekstil",
+    "19": "Deri & Kauçuk", "22": "Basın & Yayın", "24": "Kimyasal Ürünler",
+    "30": "BT Ekipmanları", "31": "Elektrik Malzemeleri", "32": "İletişim",
+    "33": "Tıbbi Cihazlar", "34": "Ulaşım Araçları", "35": "Güvenlik",
+    "37": "Spor & Eğlence", "38": "Labaratuvar", "39": "Mobilya & Temizlik",
+    "41": "Su", "42": "Sanayi Makineleri", "43": "Madencilik Ekipmanı",
+    "44": "İnşaat Malzemeleri", "45": "İnşaat & Yapım", "48": "Yazılım",
+    "50": "Bakım & Onarım", "51": "Montaj", "55": "Konaklama & Yemek",
+    "60": "Ulaşım Hizmetleri", "63": "Lojistik", "64": "Posta & İletişim",
+    "65": "Kamu Hizmetleri", "66": "Sigorta & Finans", "70": "Gayrimenkul",
+    "71": "Mimarlık & Mühendislik", "72": "Bilişim Hizmetleri",
+    "73": "Ar-Ge", "75": "Kamu Yönetimi", "76": "Petrol & Gaz",
+    "77": "Bahçe & Çevre", "79": "İdari Hizmetler", "80": "Eğitim",
+    "85": "Sağlık", "90": "Çevre Hizmetleri", "92": "Kültür & Medya",
+    "98": "Diğer Hizmetler",
+}
+
+def kategori_tur(okas: str | None, tur: str | None, baslik: str | None) -> str | None:
+    """OKAS/CPV kodundan kategori türet; yoksa ihale türünden fallback."""
+    if okas:
+        prefix = "".join(filter(str.isdigit, okas))[:2]
+        if prefix in _CPV_KATEGORI:
+            return _CPV_KATEGORI[prefix]
+    # OKAS yoksa ihale türünden genel kategori
+    t = (tur or "").lower()
+    if "yapım" in t: return "İnşaat & Yapım"
+    if "bilgi" in t or "yazılım" in t: return "Bilişim Hizmetleri"
+    return None
+
 # EKAP ham enum → okunabilir Türkçe (ham: "TENDER_SEARCH.ENUMERATIONS.OPEN" vb.)
 _USUL_HARITA = [
     ("OPEN",                   "Açık İhale"),
@@ -670,6 +712,19 @@ def usul_donustur(s):
     # Zaten okunabilir metin (örn. "Açık İhale Usulü" → "Açık İhale Usulü")
     return s.replace("İhale Usulü:", "").strip() or None
 
+def mojibake_duzelt(s: str | None) -> str | None:
+    """UTF-8 metin yanlışlıkla Latin-1 olarak decode edilmişse onarır (Türkçe karakter bozulması)."""
+    if not s:
+        return s
+    try:
+        fixed = s.encode("latin-1").decode("utf-8")
+        # Yalnızca gerçekten Türkçe harf içeriyorsa uygula (fazla agresif olmasın)
+        if any(c in fixed for c in "çğıöşüÇĞİÖŞÜ"):
+            return fixed
+    except (UnicodeEncodeError, UnicodeDecodeError):
+        pass
+    return s
+
 def tarih_iso(s):
     """EKAP tarihini ISO'ya çevirir. 'GG.AA.YYYY SS:DD' → ISO; zaten ISO ise dokunmaz."""
     if not s:
@@ -686,19 +741,29 @@ def tarih_iso(s):
 def ihaleleri_isle(ham_liste: list, detaylar: dict) -> list:
     now = datetime.now(timezone.utc).isoformat()
     kayitlar = []
+    _debug_done = False
     for i in ham_liste:
         if not i.get("ihaleAdi"): continue
         d = detaylar.get(i.get("id"), {})
+        if not _debug_done:
+            print(f"  [DEBUG-LIST-KEYS] {list(i.keys())}")
+            if d:
+                print(f"  [DEBUG-DETAY-KEYS] ilanList[0] fields araştır — ilan_tarihi={d.get('ilan_tarihi')}")
+            _debug_done = True
         kayitlar.append({
             "ekap_id":              str(i.get("ikn") or i.get("id") or ""),
             "ikn":                  str(i.get("ikn") or ""),
-            "baslik":               (i.get("ihaleAdi") or "").strip(),
-            "idare":                (i.get("idareAdi") or "").strip(),
-            "il":                   (i.get("ihaleIlAdi") or "").strip(),
+            "baslik":               mojibake_duzelt((i.get("ihaleAdi") or "").strip()),
+            "idare":                mojibake_duzelt((i.get("idareAdi") or "").strip()),
+            "il":                   mojibake_duzelt((i.get("ihaleIlAdi") or "").strip()),
             "tur":                  tur_donustur(i.get("ihaleTipAciklama")),
             "usul":                 usul_donustur(i.get("ihaleUsulAciklama")),
             "durum":                durum_donustur(i.get("ihaleDurumAciklama")),
             "son_teklif_tarihi":    tarih_iso(i.get("ihaleTarihSaat")),
+            "ilan_tarihi":          d.get("ilan_tarihi") or tarih_iso(
+                                        i.get("ilanTarihi") or i.get("yayimTarihi")
+                                        or i.get("ilkIlanTarihi") or i.get("ilanBaslangicTarihi")
+                                    ),
             "itiraz_bedeli":        d.get("itiraz_bedeli"),
             "yaklasik_maliyet_min": d.get("yaklasik_maliyet_min"),
             "yaklasik_maliyet_max": d.get("yaklasik_maliyet_max"),
@@ -706,6 +771,8 @@ def ihaleleri_isle(ham_liste: list, detaylar: dict) -> list:
             "isin_yapilacagi_yer":  d.get("isin_yapilacagi_yer"),
             "ihale_yeri":           d.get("ihale_yeri"),
             "okas":                 d.get("okas"),
+            "kategori":             kategori_tur(d.get("okas"), tur_donustur(i.get("ihaleTipAciklama")),
+                                        (i.get("ihaleAdi") or "").strip()),
             "ilan_metni":           d.get("ilan_metni"),
             "ilan_html":            d.get("ilan_html"),
             "belgeler":             d.get("belgeler"),
