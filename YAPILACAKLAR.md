@@ -134,7 +134,30 @@ Yukarıdakilere EK olarak:
 
 ---
 
-## 📋 ÖNCELİK 4 — İhale Listesi Kartı (Her ihale satırı)
+## 📋 ÖNCELİK 4 — İhale Listesi Kartı — 🟢 TEMEL TAMAM (28 Haz 2026)
+
+**Yapıldı (ihaleler.html):** Tablo düzeni zengin **kart** düzenine çevrildi. Her kartta:
+- ✅ Kayıt no (ekap_id), tıklanabilir başlık (→ detay), idare adı
+- ✅ Etiketler: EKAP (mavi), ihale türü, ihale usulü (ham enum→Türkçe), 📍 il
+- ✅ Yaklaşık maliyet (aralık formatı), durum rozeti (Açık/Son N Gün/Kapandı)
+- ✅ Tarihler: Yayın + Son Teklif; uyum % barı; Takibe Al + Detay butonları
+- Hover efekti, dark/amber tema korundu. Tarayıcıda doğrulandı (25 kart, il filtresi dahil).
+
+**Kart'ta gösterilemeyen (veri yok — sonuçlanmış ihale gerekir):**
+- ⚠️ Yüklenici adı, sözleşme bedeli + tenzilat %, sözleşme/iş tarihleri, katılımcı sayısı.
+  Bunlar "Sonuç" verisi toplanınca (Öncelik 6 / scraper sonuç ilanı) eklenebilir.
+
+### 🔑 BULUNAN VERİ-BORÇLARI (filtrelerin tam değeri için ÖNEMLİ)
+> Bunlar scraper (`backend/ekap_scraper.py`) ingest aşamasında düzeltilmeli:
+1. **il değerleri Türkçe BÜYÜK HARF** (örn. `İSTANBUL`, `ANKARA`) — tutarsız (birkaç seed kaydı Title Case). Frontend dropdown buna göre büyük-harf value kullanacak şekilde ayarlandı, ama **ideal olan ingest'te normalize etmek** (Title Case). il-bazlı her yeni özellik (harita!) bu kasing'e dikkat etmeli.
+2. **usul ham i18n anahtarı** (`...SEARCH_METHOD.OPEN`) — Türkçe'ye çevrilmeli.
+3. **baslik/idare mojibake** (çift-encode Türkçe karakter) — encoding düzeltmesi.
+4. **kategori kolonu NULL** — kategori filtresi için doldurulmalı (OKAS/CPV'den türetilebilir).
+5. **olusturulma her upsert'te bugüne çekiliyor** → "Bugün Eklenen" sayacı şişkin; gerçek yeni-kayıt takibi için `ilk_gorulme` kolonu ekle.
+
+---
+
+## 📋 ÖNCELİK 4 — referans (orijinal plan)
 
 > ihaleciler.com'daki ihale kartı çok detaylı. Bizimki de bu bilgileri göstermeli ama **daha sade** kartlarla.
 

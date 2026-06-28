@@ -204,6 +204,35 @@
       border-color: rgba(76,175,80,0.3);
     }
 
+    /* İHALE KARTLARI */
+    .ihale-liste { display: flex; flex-direction: column; gap: 12px; }
+    .ihale-kart {
+      background: var(--navy-mid); border: 1px solid var(--border);
+      border-radius: 10px; padding: 16px 18px; transition: border-color .15s, background .15s;
+    }
+    .ihale-kart:hover { border-color: rgba(240,165,0,0.35); background: rgba(255,255,255,0.02); }
+    .kart-ust { display: flex; justify-content: space-between; gap: 16px; align-items: flex-start; }
+    .kart-sol { flex: 1; min-width: 0; }
+    .kart-kayitno { font-size: 11px; color: var(--muted); font-weight: 600; letter-spacing: .04em; margin-bottom: 4px; }
+    .kart-baslik { font-size: 15px; font-weight: 700; color: var(--white); text-decoration: none; display: block; line-height: 1.4; }
+    .kart-baslik:hover { color: var(--amber); }
+    .kart-idare { font-size: 12.5px; color: var(--off-white); margin-top: 6px; }
+    .kart-etiketler { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+    .etiket { font-size: 11px; font-weight: 600; padding: 3px 9px; border-radius: 6px;
+      background: rgba(255,255,255,0.05); color: var(--off-white); border: 1px solid var(--border); white-space: nowrap; }
+    .etiket-ekap { color: #60a5fa; border-color: rgba(96,165,250,0.3); background: rgba(96,165,250,0.08); }
+    .kart-sag { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; text-align: right; white-space: nowrap; }
+    .kart-maliyet-label { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+    .kart-maliyet { font-size: 15px; font-weight: 800; color: var(--white); }
+    .kart-alt { display: flex; justify-content: space-between; align-items: center; gap: 16px;
+      margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--border); flex-wrap: wrap; }
+    .kart-tarihler { display: flex; gap: 20px; }
+    .kart-tarih span { color: var(--muted); display: block; font-size: 10px; text-transform: uppercase; letter-spacing: .04em; margin-bottom: 2px; }
+    .kart-tarih b { color: var(--off-white); font-weight: 600; font-size: 12.5px; }
+    .kart-aksiyon { display: flex; align-items: center; gap: 10px; }
+    .liste-state { padding: 40px 16px; text-align: center; color: var(--muted);
+      background: var(--navy-mid); border: 1px solid var(--border); border-radius: 10px; }
+
     /* PAGİNASYON */
     .pagination-bar {
       display: flex; align-items: center; justify-content: space-between;
@@ -398,31 +427,13 @@
         </select>
       </div>
 
-      <!-- TABLO -->
-      <div class="table-wrap">
-        <table>
-          <thead>
-            <tr>
-              <th><input type="checkbox" id="select-all" /></th>
-              <th>İhale Adı</th>
-              <th>Durum</th>
-              <th>Yaklaşık Maliyet</th>
-              <th>Son Tarih</th>
-              <th>Uyum</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody id="ihale-tbody">
-            <tr class="state-row">
-              <td colspan="7">
-                <div class="loading-spinner"></div>
-                Yükleniyor...
-              </td>
-            </tr>
-          </tbody>
-        </table>
+      <!-- İHALE KARTLARI -->
+      <div class="ihale-liste" id="ihale-liste">
+        <div class="liste-state"><div class="loading-spinner"></div>Yükleniyor...</div>
+      </div>
 
-        <!-- PAGİNASYON -->
+      <!-- PAGİNASYON -->
+      <div class="table-wrap" style="margin-top:16px;">
         <div class="pagination-bar">
           <div class="result-count" id="pag-info">—</div>
           <div class="pagination" id="pagination"></div>
@@ -585,38 +596,62 @@
     return `<span class="badge badge-closed">● ${durum}</span>`;
   }
 
-  function satirOlustur(ilan) {
+  // usul kolonu ham EKAP enum anahtarı → kısa Türkçe etiket
+  function usulEtiket(usul) {
+    if (!usul) return '';
+    const map = [['OPEN','Açık İhale'],['AMONG_CERTAIN_BIDDERS','Belli İstekliler'],
+                 ['BARGAIN','Pazarlık'],['DESIGN_COMPETITION','Tasarım Yarışması'],['DIGER','Diğer']];
+    for (const [frag,label] of map) if (usul.includes(frag)) return `<span class="etiket">${label}</span>`;
+    return usul.length < 30 ? `<span class="etiket">${usul}</span>` : '';
+  }
+
+  function kartOlustur(ilan) {
     const uyum = ilan._uyum !== undefined ? ilan._uyum : uyumHesapla(ilan);
     const takipte = Takip.var(ilan.id);
+    const etiketler = [
+      `<span class="etiket etiket-ekap">EKAP</span>`,
+      ilan.tur ? `<span class="etiket">${ilan.tur}</span>` : '',
+      usulEtiket(ilan.usul),
+      ilan.il ? `<span class="etiket">📍 ${ilan.il}</span>` : ''
+    ].filter(Boolean).join('');
     return `
-      <tr>
-        <td><input type="checkbox" /></td>
-        <td>
-          <a class="ihale-title" href="ihale-detay?id=${ilan.id}">${ilan.baslik || '—'}</a>
-          <div class="ihale-meta">${ilan.idare || '—'} — EKAP #${ilan.ekap_id || '—'}</div>
-        </td>
-        <td>${durumBadge(ilan.durum, ilan.son_teklif_tarihi)}</td>
-        <td class="budget-cell">${yaklasikMaliyet(ilan)}</td>
-        <td style="font-size:13px;">${tarihFormatla(ilan.son_teklif_tarihi)}</td>
-        <td>
-          <div class="compat-bar">
-            <div class="compat-track"><div class="compat-fill" style="width:${uyum}%;"></div></div>
-            <span class="compat-num">${uyum}%</span>
+      <div class="ihale-kart">
+        <div class="kart-ust">
+          <div class="kart-sol">
+            <div class="kart-kayitno">Kayıt No: ${ilan.ekap_id || '—'}</div>
+            <a class="kart-baslik" href="ihale-detay?id=${ilan.id}">${ilan.baslik || '—'}</a>
+            <div class="kart-idare">${ilan.idare || '—'}</div>
+            <div class="kart-etiketler">${etiketler}</div>
           </div>
-        </td>
-        <td>
-          <div class="action-btns">
-            <button class="action-btn ${takipte ? 'takipte' : 'primary'}" onclick="takibeAl(this,'${ilan.id}')">${takipte ? '✓ Takipte' : 'Takibe Al'}</button>
-            <a class="action-btn" href="ihale-detay?id=${ilan.id}">Detay</a>
+          <div class="kart-sag">
+            ${durumBadge(ilan.durum, ilan.son_teklif_tarihi)}
+            <div>
+              <div class="kart-maliyet-label">Yaklaşık Maliyet</div>
+              <div class="kart-maliyet">${yaklasikMaliyet(ilan)}</div>
+            </div>
           </div>
-        </td>
-      </tr>`;
+        </div>
+        <div class="kart-alt">
+          <div class="kart-tarihler">
+            <div class="kart-tarih"><span>Yayın Tarihi</span><b>${tarihFormatla(ilan.ilan_tarihi)}</b></div>
+            <div class="kart-tarih"><span>Son Teklif</span><b>${tarihFormatla(ilan.son_teklif_tarihi)}</b></div>
+          </div>
+          <div class="kart-aksiyon">
+            <div class="compat-bar" title="Profilinize uyum skoru">
+              <div class="compat-track"><div class="compat-fill" style="width:${uyum}%;"></div></div>
+              <span class="compat-num">${uyum}%</span>
+            </div>
+            <button class="action-btn ${takipte ? 'takipte' : 'primary'}" onclick="takibeAl(this,'${ilan.id}')">${takipte ? '✓ Takipte' : '☆ Takibe Al'}</button>
+            <a class="action-btn" href="ihale-detay?id=${ilan.id}">Detay →</a>
+          </div>
+        </div>
+      </div>`;
   }
 
   async function ilanlariYukle(sayfa = 1) {
     mevcutSayfa = sayfa;
-    const tbody = document.getElementById('ihale-tbody');
-    tbody.innerHTML = `<tr class="state-row"><td colspan="7"><div class="loading-spinner"></div>Yükleniyor...</td></tr>`;
+    const liste = document.getElementById('ihale-liste');
+    liste.innerHTML = `<div class="liste-state"><div class="loading-spinner"></div>Yükleniyor...</div>`;
 
     const arama    = document.getElementById('f-arama').value.trim();
     const il       = document.getElementById('f-il').value;
@@ -670,7 +705,7 @@
     const { data, error, count } = await query;
 
     if (error) {
-      tbody.innerHTML = `<tr class="state-row"><td colspan="7">⚠ Hata: ${error.message}</td></tr>`;
+      liste.innerHTML = `<div class="liste-state">⚠ Hata: ${error.message}</div>`;
       return;
     }
 
@@ -692,9 +727,9 @@
       const mesaj = aktifSekme === 'sonuc'
         ? '📊 Sonuçlanmış ihale verisi henüz toplanmıyor — yakında.'
         : '🔍 Filtrelerinize uyan ihale bulunamadı.';
-      tbody.innerHTML = `<tr class="state-row"><td colspan="7">${mesaj}</td></tr>`;
+      liste.innerHTML = `<div class="liste-state">${mesaj}</div>`;
     } else {
-      tbody.innerHTML = ilanlar.map(satirOlustur).join('');
+      liste.innerHTML = ilanlar.map(kartOlustur).join('');
     }
 
     const baslangicNo = (sayfa - 1) * SAYFA_BOYUTU + 1;
@@ -790,9 +825,11 @@
   const TR_ILLER = ['Adana','Adıyaman','Afyonkarahisar','Ağrı','Aksaray','Amasya','Ankara','Antalya','Ardahan','Artvin','Aydın','Balıkesir','Bartın','Batman','Bayburt','Bilecik','Bingöl','Bitlis','Bolu','Burdur','Bursa','Çanakkale','Çankırı','Çorum','Denizli','Diyarbakır','Düzce','Edirne','Elazığ','Erzincan','Erzurum','Eskişehir','Gaziantep','Giresun','Gümüşhane','Hakkari','Hatay','Iğdır','Isparta','İstanbul','İzmir','Kahramanmaraş','Karabük','Karaman','Kars','Kastamonu','Kayseri','Kırıkkale','Kırklareli','Kırşehir','Kilis','Kocaeli','Konya','Kütahya','Malatya','Manisa','Mardin','Mersin','Muğla','Muş','Nevşehir','Niğde','Ordu','Osmaniye','Rize','Sakarya','Samsun','Siirt','Sinop','Sivas','Şanlıurfa','Şırnak','Tekirdağ','Tokat','Trabzon','Tunceli','Uşak','Van','Yalova','Yozgat','Zonguldak'];
 
   function ilDropdownDoldur() {
+    // DB'de il değerleri Türkçe BÜYÜK HARF (örn. "İSTANBUL"); value büyük harf
+    // olmalı ki eq filtresi eşleşsin, etiket okunabilir Title Case kalsın.
     const sel = document.getElementById('f-il');
     sel.innerHTML = '<option value="">Tüm İller</option>' +
-      TR_ILLER.map(il => `<option value="${il}">${il}</option>`).join('');
+      TR_ILLER.map(il => `<option value="${il.toLocaleUpperCase('tr')}">${il}</option>`).join('');
   }
 
   // Sayfa yüklenince
