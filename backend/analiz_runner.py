@@ -171,14 +171,33 @@ def ihaleleri_cek(limit: int, yenile: bool, tek_ikn: str | None, tek_id: str | N
     res = q.execute()
     return res.data or []
 
+_INDEX_HATA_GOSTERILDI = False
+
 def supabase_kaydet(ihale_id: str, ozet: str, pdf_turu: str):
     """Analiz sonucunu Supabase'e yaz."""
+    global _INDEX_HATA_GOSTERILDI
     simdi = datetime.now(timezone.utc).isoformat()
-    sb.table("ilanlar").update({
-        "yapay_zeka_ozeti": ozet,
-        "analiz_tarihi":    simdi,
-        "analiz_pdf_turu":  pdf_turu,
-    }).eq("id", ihale_id).execute()
+    try:
+        sb.table("ilanlar").update({
+            "yapay_zeka_ozeti": ozet,
+            "analiz_tarihi":    simdi,
+            "analiz_pdf_turu":  pdf_turu,
+        }).eq("id", ihale_id).execute()
+    except Exception as e:
+        if "idx_ilanlar_analiz" in str(e) or "54000" in str(e):
+            if not _INDEX_HATA_GOSTERILDI:
+                print()
+                print("=" * 60)
+                print("  ⚠️  SUPABASE INDEX HATASI — DÜZELTME GEREKLİ")
+                print("=" * 60)
+                print("  Supabase SQL Editor'da şunu çalıştır:")
+                print("  DROP INDEX IF EXISTS idx_ilanlar_analiz;")
+                print("  (backend/migration_fix_analiz_index.sql dosyası)")
+                print("=" * 60)
+                print()
+                _INDEX_HATA_GOSTERILDI = True
+            raise Exception(f"INDEX HATASI — migration_fix_analiz_index.sql çalıştır")
+        raise
 
 def main():
     parser = argparse.ArgumentParser(description="İhale AI Analiz Runner")
