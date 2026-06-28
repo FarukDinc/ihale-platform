@@ -84,6 +84,28 @@
     .page-header .subtitle { font-size: 13px; color: var(--muted); margin-top: 4px; }
     .header-actions { display: flex; gap: 10px; }
 
+    /* SEKMELER */
+    .tab-bar { display: flex; gap: 4px; margin-bottom: 16px; border-bottom: 1px solid var(--border); }
+    .tab-btn {
+      background: transparent; border: none; color: var(--muted);
+      font-family: var(--font); font-size: 14px; font-weight: 600;
+      padding: 10px 18px; cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px;
+    }
+    .tab-btn:hover { color: var(--white); }
+    .tab-btn.active { color: var(--amber); border-bottom-color: var(--amber); }
+
+    /* GELİŞMİŞ FİLTRE PANELİ (Detaylı Ara) */
+    .gelismis-panel {
+      display: none; background: var(--navy-mid); border: 1px solid var(--border);
+      border-radius: 10px; padding: 16px 20px; margin-bottom: 20px;
+      gap: 12px; flex-wrap: wrap; align-items: center;
+    }
+    .gelismis-panel.acik { display: flex; }
+    .gelismis-panel .panel-baslik {
+      width: 100%; font-size: 12px; font-weight: 700; color: var(--amber);
+      text-transform: uppercase; letter-spacing: .08em; margin-bottom: 2px;
+    }
+
     /* FİLTRE BARI */
     .filter-bar {
       background: var(--navy-mid); border: 1px solid var(--border);
@@ -275,46 +297,55 @@
         </div>
       </div>
 
+      <!-- SEKMELER -->
+      <div class="tab-bar">
+        <button class="tab-btn active" data-sekme="guncel"  onclick="sekmeDegistir('guncel')">Güncel</button>
+        <button class="tab-btn"        data-sekme="gecmis"  onclick="sekmeDegistir('gecmis')">Geçmiş</button>
+        <button class="tab-btn"        data-sekme="sonuc"   onclick="sekmeDegistir('sonuc')">Sonuç</button>
+        <button class="tab-btn"        data-sekme="detayli" onclick="sekmeDegistir('detayli')">Detaylı Ara</button>
+      </div>
+
       <!-- FİLTRE BARI -->
       <div class="filter-bar">
         <div class="filter-group">
-          <label>Arama</label>
+          <label>İhale İçeriği</label>
           <input type="text" class="filter-input" id="f-arama" placeholder="İhale adı, idare, OKAS, yer veya ilan metni..." />
         </div>
         <div class="filter-group">
           <label>İl</label>
           <select class="filter-select" id="f-il">
             <option value="">Tüm İller</option>
-            <option>Ankara</option>
-            <option>İstanbul</option>
-            <option>İzmir</option>
-            <option>Bursa</option>
-            <option>Antalya</option>
-            <option>Adana</option>
-            <option>Konya</option>
           </select>
         </div>
         <div class="filter-group">
           <label>İhale Türü</label>
           <select class="filter-select" id="f-tur">
             <option value="">Tümü</option>
-            <option>Hizmet</option>
-            <option>Mal</option>
             <option>Yapım</option>
+            <option>Mal</option>
+            <option>Hizmet</option>
             <option>Danışmanlık</option>
+            <option>Kiralama</option>
           </select>
         </div>
         <div class="filter-group">
-          <label>Durum</label>
-          <select class="filter-select" id="f-durum">
+          <label>İhale Usulü</label>
+          <select class="filter-select" id="f-usul">
             <option value="">Tümü</option>
-            <option value="aktif">Açık</option>
-            <option value="kapali">Kapalı</option>
+            <option value="open">Açık İhale</option>
+            <option value="bargain">Pazarlık</option>
+            <option value="certain">Belli İstekliler Arasında</option>
+            <option value="design">Tasarım Yarışması</option>
+            <option value="diger">Diğer / İstisna</option>
           </select>
         </div>
         <div class="filter-group">
-          <label>Min. Yaklaşık Maliyet (₺)</label>
+          <label>Yak. Maliyet Min (₺)</label>
           <input type="number" class="filter-input" id="f-min-bedel" placeholder="0" style="width:120px;" />
+        </div>
+        <div class="filter-group">
+          <label>Yak. Maliyet Max (₺)</label>
+          <input type="number" class="filter-input" id="f-max-bedel" placeholder="∞" style="width:120px;" />
         </div>
         <div class="filter-group">
           <label>Min. Uyum</label>
@@ -328,6 +359,31 @@
         </div>
         <button class="btn-filtrele" onclick="filtreUygula()">Filtrele</button>
         <button class="btn-sifirla" onclick="filtreleriSifirla()">Sıfırla</button>
+      </div>
+
+      <!-- GELİŞMİŞ FİLTRE PANELİ (Detaylı Ara sekmesinde açılır) -->
+      <div class="gelismis-panel" id="gelismis-panel">
+        <div class="panel-baslik">Detaylı Arama Filtreleri</div>
+        <div class="filter-group" style="min-width:240px;">
+          <label>İdare Adı</label>
+          <input type="text" class="filter-input" id="f-idare" placeholder="Kurum / idare adında ara..." />
+        </div>
+        <div class="filter-group">
+          <label>Yayın Tarihi (Baş.)</label>
+          <input type="date" class="filter-input" id="f-yayin-bas" style="width:160px;" />
+        </div>
+        <div class="filter-group">
+          <label>Yayın Tarihi (Bitiş)</label>
+          <input type="date" class="filter-input" id="f-yayin-bit" style="width:160px;" />
+        </div>
+        <div class="filter-group">
+          <label>Teklif Tarihi (Baş.)</label>
+          <input type="date" class="filter-input" id="f-teklif-bas" style="width:160px;" />
+        </div>
+        <div class="filter-group">
+          <label>Teklif Tarihi (Bitiş)</label>
+          <input type="date" class="filter-input" id="f-teklif-bit" style="width:160px;" />
+        </div>
       </div>
 
       <!-- SONUÇ BİLGİSİ -->
@@ -480,6 +536,22 @@
   let mevcutSayfa = 1;
   let toplamKayit = 0;
   let yukluIlanlar = [];
+  let aktifSekme = 'guncel';
+
+  // usul kolonu ham EKAP enum anahtarı tutuyor; fragment ile ilike eşleştir
+  // (Pazarlık'ın 21A/21E/21F varyantlarını da BARGAIN fragmenti yakalar)
+  const USUL_FRAGMENT = {
+    open: 'OPEN', bargain: 'BARGAIN', certain: 'AMONG_CERTAIN_BIDDERS',
+    design: 'DESIGN_COMPETITION', diger: 'DIGER'
+  };
+
+  function sekmeDegistir(sekme) {
+    aktifSekme = sekme;
+    document.querySelectorAll('.tab-btn').forEach(b =>
+      b.classList.toggle('active', b.dataset.sekme === sekme));
+    document.getElementById('gelismis-panel').classList.toggle('acik', sekme === 'detayli');
+    ilanlariYukle(1);
+  }
 
   function tarihFormatla(t) {
     if (!t) return '—';
@@ -549,20 +621,39 @@
     const arama    = document.getElementById('f-arama').value.trim();
     const il       = document.getElementById('f-il').value;
     const tur      = document.getElementById('f-tur').value;
-    const durum    = document.getElementById('f-durum').value;
+    const usul     = document.getElementById('f-usul').value;
     const minBedel = parseInt(document.getElementById('f-min-bedel').value) || 0;
+    const maxBedel = parseInt(document.getElementById('f-max-bedel').value) || 0;
     const minUyum  = parseInt(document.getElementById('f-min-uyum').value) || 0;
     const sort     = document.getElementById('sort-select').value;
+    // Detaylı Ara alanları
+    const idare    = document.getElementById('f-idare').value.trim();
+    const yayinBas = document.getElementById('f-yayin-bas').value;
+    const yayinBit = document.getElementById('f-yayin-bit').value;
+    const teklifBas= document.getElementById('f-teklif-bas').value;
+    const teklifBit= document.getElementById('f-teklif-bit').value;
 
     const uyumModu = sort === 'uyum_desc' || minUyum > 0;
+    const simdiISO = new Date().toISOString();
 
-    let query = sb.from('ilanlar').select('id,ekap_id,baslik,idare,il,tur,durum,son_teklif_tarihi,tahmini_bedel,yaklasik_maliyet_min,yaklasik_maliyet_max,itiraz_bedeli', { count: 'exact' });
+    let query = sb.from('ilanlar').select('id,ekap_id,baslik,idare,il,tur,usul,durum,ilan_tarihi,son_teklif_tarihi,tahmini_bedel,yaklasik_maliyet_min,yaklasik_maliyet_max,itiraz_bedeli', { count: 'exact' });
+
+    // Sekme kapsamı: Güncel = teklif tarihi gelecekte, Geçmiş = geçmişte, Sonuç = sonuçlanmış (henüz veri yok)
+    if      (aktifSekme === 'guncel') query = query.gte('son_teklif_tarihi', simdiISO);
+    else if (aktifSekme === 'gecmis') query = query.lt('son_teklif_tarihi', simdiISO);
+    else if (aktifSekme === 'sonuc')  query = query.eq('durum', 'sonuclandi');
 
     if (arama)    query = query.or(`baslik.ilike.%${arama}%,idare.ilike.%${arama}%,okas.ilike.%${arama}%,isin_yapilacagi_yer.ilike.%${arama}%,ilan_metni.ilike.%${arama}%`);
     if (il)       query = query.eq('il', il);
     if (tur)      query = query.eq('tur', tur);
-    if (durum)    query = query.eq('durum', durum);
+    if (usul)     query = query.ilike('usul', `%${USUL_FRAGMENT[usul]}%`);
     if (minBedel) query = query.gte('yaklasik_maliyet_min', minBedel);
+    if (maxBedel) query = query.lte('yaklasik_maliyet_max', maxBedel);
+    if (idare)    query = query.ilike('idare', `%${idare}%`);
+    if (yayinBas) query = query.gte('ilan_tarihi', yayinBas);
+    if (yayinBit) query = query.lte('ilan_tarihi', `${yayinBit}T23:59:59`);
+    if (teklifBas)query = query.gte('son_teklif_tarihi', teklifBas);
+    if (teklifBit)query = query.lte('son_teklif_tarihi', `${teklifBit}T23:59:59`);
 
     if (sort === 'tahmini_bedel_desc') query = query.order('yaklasik_maliyet_min', { ascending: false, nullsFirst: false });
     else if (sort === 'tahmini_bedel_asc') query = query.order('yaklasik_maliyet_min', { ascending: true, nullsFirst: false });
@@ -598,7 +689,10 @@
     }
 
     if (ilanlar.length === 0) {
-      tbody.innerHTML = `<tr class="state-row"><td colspan="7">🔍 Filtrelerinize uyan ihale bulunamadı.</td></tr>`;
+      const mesaj = aktifSekme === 'sonuc'
+        ? '📊 Sonuçlanmış ihale verisi henüz toplanmıyor — yakında.'
+        : '🔍 Filtrelerinize uyan ihale bulunamadı.';
+      tbody.innerHTML = `<tr class="state-row"><td colspan="7">${mesaj}</td></tr>`;
     } else {
       tbody.innerHTML = ilanlar.map(satirOlustur).join('');
     }
@@ -657,11 +751,9 @@
   }
 
   function filtreleriSifirla() {
-    document.getElementById('f-arama').value = '';
-    document.getElementById('f-il').value = '';
-    document.getElementById('f-tur').value = '';
-    document.getElementById('f-durum').value = '';
-    document.getElementById('f-min-bedel').value = '';
+    ['f-arama','f-il','f-tur','f-usul','f-min-bedel','f-max-bedel',
+     'f-idare','f-yayin-bas','f-yayin-bit','f-teklif-bas','f-teklif-bit']
+      .forEach(id => { document.getElementById(id).value = ''; });
     document.getElementById('f-min-uyum').value = '0';
     document.getElementById('sort-select').value = 'uyum_desc';
     ilanlariYukle(1);
@@ -693,13 +785,14 @@
   // Enter ile filtrele
   document.getElementById('f-arama').addEventListener('keydown', e => { if (e.key === 'Enter') filtreUygula(); });
 
-  async function ilDropdownDoldur() {
-    const { data } = await sb.from('ilanlar').select('il').not('il', 'is', null).order('il');
-    if (!data) return;
-    const iller = [...new Set(data.map(r => r.il).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'tr'));
+  // Türkiye 81 il (statik). PostgREST 1000 satır limiti nedeniyle distinct
+  // sorgu güvenilir değil; tam liste statik veriliyor.
+  const TR_ILLER = ['Adana','Adıyaman','Afyonkarahisar','Ağrı','Aksaray','Amasya','Ankara','Antalya','Ardahan','Artvin','Aydın','Balıkesir','Bartın','Batman','Bayburt','Bilecik','Bingöl','Bitlis','Bolu','Burdur','Bursa','Çanakkale','Çankırı','Çorum','Denizli','Diyarbakır','Düzce','Edirne','Elazığ','Erzincan','Erzurum','Eskişehir','Gaziantep','Giresun','Gümüşhane','Hakkari','Hatay','Iğdır','Isparta','İstanbul','İzmir','Kahramanmaraş','Karabük','Karaman','Kars','Kastamonu','Kayseri','Kırıkkale','Kırklareli','Kırşehir','Kilis','Kocaeli','Konya','Kütahya','Malatya','Manisa','Mardin','Mersin','Muğla','Muş','Nevşehir','Niğde','Ordu','Osmaniye','Rize','Sakarya','Samsun','Siirt','Sinop','Sivas','Şanlıurfa','Şırnak','Tekirdağ','Tokat','Trabzon','Tunceli','Uşak','Van','Yalova','Yozgat','Zonguldak'];
+
+  function ilDropdownDoldur() {
     const sel = document.getElementById('f-il');
     sel.innerHTML = '<option value="">Tüm İller</option>' +
-      iller.map(il => `<option value="${il}">${il}</option>`).join('');
+      TR_ILLER.map(il => `<option value="${il}">${il}</option>`).join('');
   }
 
   // Sayfa yüklenince

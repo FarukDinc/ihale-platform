@@ -65,7 +65,22 @@
 
 ---
 
-## 🔍 ÖNCELİK 3 — Gelişmiş Arama & Filtreleme (ihaleciler.com seviyesine çıkmak)
+## 🔍 ÖNCELİK 3 — Gelişmiş Arama & Filtreleme — 🟡 BÜYÜK KISMI TAMAM (28 Haz 2026)
+
+**Yapıldı (ihaleler.html):**
+- ✅ 3.1 Sekmeler: Güncel / Geçmiş / Sonuç / Detaylı Ara (Güncel=teklif tarihi gelecekte, Geçmiş=geçmişte, Sonuç=veri yok→bilgi mesajı, Detaylı Ara=gelişmiş panel açılır)
+- ✅ 3.2 Filtreler: Şehir (81 il statik), İhale türü (+Kiralama), İhale usulü (ham EKAP enum→ilike fragment eşleştirme), Yaklaşık maliyet **min-max**, İhale içeriği (full-text, 5 kolon OR ilike), Yayın tarihi aralığı
+- ✅ 3.3 Detaylı Ara: İdare adı arama, Teklif tarihi aralığı, Yayın tarihi aralığı
+- ✅ 3.4 Full-text (baslik+idare+okas+isin_yapilacagi_yer+ilan_metni)
+- ✅ 3.5/3.6 Sıralama + sayaç + sayfalama (zaten vardı)
+
+**Kalan / engelli (veri eksikliği):**
+- ⚠️ **Kategori filtresi**: `kategori` kolonu DB'de NULL → server-side filtre imkânsız. Scraper kategori doldurmalı (ya da OKAS/CPV'den türet). Şu an kategori sadece uyum skoru için keyword-map ile kullanılıyor.
+- ⚠️ Detaylı Ara'nın bazı alanları (teklif türü, ihale kaynağı, içerik türü, idare türü, işin/teslim/ödeme süresi, sınır değer) eklenmedi — bu kolonlar DB'de yok.
+- ⚠️ **Veri-borcu (scraper):** `usul` ham i18n anahtarı (`...SEARCH_METHOD.OPEN`) olarak saklanıyor; ingest sırasında Türkçe'ye çevrilmeli. `baslik`/`idare` mojibake (çift-encode).
+
+### (orijinal plan ↓)
+## 🔍 ÖNCELİK 3 — referans
 
 > Hedef: ihaleciler.com kadar güçlü filtre, ama **daha sade/temiz** bir arayüz. Onların ekranı kalabalık; biz aynı gücü daha az görsel yükle vereceğiz.
 
