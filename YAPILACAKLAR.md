@@ -220,6 +220,10 @@ Her ihale kartında (Sonuç sekmesi örneği):
 - ✅ usul ham enum (`...SEARCH_METHOD.BARGAIN`) → "Pazarlık Usulü" (rozet + bilgi satırı; `usulLabel`)
 - ✅ **AI Analizi sekmesi** eklendi: `yapay_zeka_ozeti` varsa gösterir (+analiz tarihi/tür), yoksa "Teklif Hazırla & Analiz Et" CTA'lı bilgilendirme. Tarayıcıda doğrulandı.
 
+**Bu oturumda eklendi (28 Haz 2026):**
+- ✅ **Kategori satırı**: İhale Bilgileri kartına `kategori` alanı eklendi; tıklanınca `ihaleler?kategori=X` filtreli lista açar
+- ✅ **URL parametresi**: `ihaleler.html` artık `?kategori=`, `?usul=`, `?tur=` URL parametrelerini de destekler
+
 **Kalan (veri yok):** İdare adres/telefon/toplantı adresi, sözleşme bilgileri bloğu (yüklenici/bedel/süre) — sonuçlanmış ihale + idare detayı toplanınca. CPV adı (sadece OKAS kodu var).
 
 ---
