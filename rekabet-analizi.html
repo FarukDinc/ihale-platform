@@ -57,7 +57,7 @@
     .chart-title { font-size: 13px; font-weight: 700; color: var(--white); margin-bottom: 4px; }
     .chart-sub { font-size: 12px; color: var(--muted); margin-bottom: 16px; }
     .chart-wrap { position: relative; height: 240px; }
-    .chart-wrap-tall { position: relative; height: 200px; }
+    .chart-wrap-tall { position: relative; height: 360px; }
 
     /* FILTRE */
     .filtre-bar { display: flex; gap: 10px; align-items: center; margin-bottom: 20px; flex-wrap: wrap; }
@@ -176,6 +176,13 @@
         </div>
       </div>
 
+      <!-- KATEGORİ DAĞILIMI -->
+      <div class="chart-card-wide">
+        <div class="chart-title">Kategori Dağılımı</div>
+        <div class="chart-sub">OKAS/CPV kodundan türetilen ihale kategorileri (Top 15)</div>
+        <div class="chart-wrap-tall"><canvas id="chart-kategori"></canvas></div>
+      </div>
+
       <!-- BÜTÇE DAĞILIMI -->
       <div class="chart-card-wide">
         <div class="chart-title">Bütçe Aralığı Dağılımı</div>
@@ -228,6 +235,7 @@
 
   let turChart = null;
   let ilChart = null;
+  let kategoriChart = null;
 
   function paraCevir(v) {
     if (!v) return '—';
@@ -250,15 +258,21 @@
 
   async function yukleData() {
     const durum = document.getElementById('f-durum').value;
-
-    let q = sb.from('ilanlar')
-      .select('tur,il,idare,yaklasik_maliyet_min,durum')
-      .limit(2000);
-    if (durum) q = q.eq('durum', durum);
-
-    const { data, error } = await q;
-    if (error || !data) return null;
-    return data;
+    const all = [];
+    let offset = 0;
+    const PAGE = 1000;
+    while (true) {
+      let q = sb.from('ilanlar')
+        .select('tur,il,idare,yaklasik_maliyet_min,durum,kategori')
+        .range(offset, offset + PAGE - 1);
+      if (durum) q = q.eq('durum', durum);
+      const { data, error } = await q;
+      if (error || !data || data.length === 0) break;
+      all.push(...data);
+      if (data.length < PAGE) break;
+      offset += PAGE;
+    }
+    return all.length ? all : null;
   }
 
   function kpiGoster(data) {
@@ -357,6 +371,33 @@
         responsive: true,
         maintainAspectRatio: false,
         plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ` ${ctx.raw} ihale` } } },
+        scales: {
+          x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#8A96A8', font: { size: 11 } } },
+          y: { grid: { display: false }, ticks: { color: '#F5F6F8', font: { size: 11 } } }
+        }
+      }
+    });
+  }
+
+  function kategoriChartGoster(data) {
+    const sayac = {};
+    data.forEach(d => { if (d.kategori) sayac[d.kategori] = (sayac[d.kategori]||0)+1; });
+    const sirali = Object.entries(sayac).sort((a,b)=>b[1]-a[1]).slice(0,15);
+    const labels = sirali.map(([k])=>k);
+    const values = sirali.map(([,v])=>v);
+
+    if (kategoriChart) kategoriChart.destroy();
+    kategoriChart = new Chart(document.getElementById('chart-kategori'), {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [{ data: values, backgroundColor: chartRenkleri(labels.length), borderRadius: 4, borderSkipped: false }]
+      },
+      options: {
+        indexAxis: 'y',
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ` ${ctx.raw.toLocaleString('tr')} ihale` } } },
         scales: {
           x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#8A96A8', font: { size: 11 } } },
           y: { grid: { display: false }, ticks: { color: '#F5F6F8', font: { size: 11 } } }
@@ -472,6 +513,7 @@
     kpiGoster(data);
     turChartGoster(data);
     ilChartGoster(data);
+    kategoriChartGoster(data);
     butceDagilimiGoster(data);
     idareTbGoster(data);
     turMaliyetTbGoster(data);
