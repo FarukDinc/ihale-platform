@@ -260,9 +260,15 @@ Her ihale kartında (Sonuç sekmesi örneği):
   - `ihale-detay.html`: detay-idare + info-row İdare → `kurum-analiz?kurum=...`
 - ✅ `ihaleler.html` `urlFiltreleriUygula`: `?idare=` parametresi desteklendi (kurum-analiz'den "Tüm İhalelerini Gör" butonu)
 
+- ✅ **`firma-analiz.html`** iskelet oluşturuldu (`?firma=AD` ile arama; idare/başlık içinde firma arar):
+  - 4 KPI kart (3'ü "sonuç verisi bekleniyor")
+  - Genel Bakış + Sonuçlar sekmesi "Yakında" placeholder (yüklenici verisi gelince doldurulacak)
+  - İhaleler sekmesi: mevcut DB'den idare/başlık eşleşmeli kayıtları listeler
+  - Tüm sidebar nav'lara Firma/Kurum Analizi linkleri eklendi
+
 **Kalan:**
-- ⚠️ **`firma-analiz.html`** yapılmadı — yüklenici/sözleşme verisi DB'de henüz yok (scraper sonuç ilanı toplamalı). UI iskelet oluşturulabilir ama veri boş kalır.
-- ⚠️ 6.3 Üst navigasyon (Kategoriler/Şehirler/Sektörler/İdareler/Yükleniciler/KİK) → dashboard nav'a eklenebilir ama arkasında veri yok.
+- ⚠️ Firma Sonuçlar & Genel Bakış sekmeleri: EKAP sonuç ilanı scrape edilince gerçek veri gelecek (yüklenici adı, sözleşme bedeli, tenzilat, KİK kararları)
+- ⚠️ 6.3 Üst navigasyon (Kategoriler/Şehirler/Sektörler/İdareler/Yükleniciler/KİK) → veri tabanı dolunca eklenir
 
 
 
@@ -302,7 +308,14 @@ ihaleciler.com'da üstte 6 ana kategori var, bunları değerlendir:
 
 ---
 
-## 🔧 ÖNCELİK 7 — Altyapı / Entegrasyonlar
+## 🔧 ÖNCELİK 7 — Altyapı / Entegrasyonlar — 🟡 KISMI (28 Haz 2026)
+
+**Yapıldı (scraper kalite iyileştirmeleri):**
+- ✅ `usul_donustur`: EKAP ham enum (`TENDER_SEARCH.ENUMERATIONS.OPEN` vb.) → Türkçe etiket (`Açık İhale`, `Pazarlık Usulü` vb.) haritası eklendi
+- ✅ `supabase_yaz`: 2-pass upsert — yeni kayıtlarda `olusturulma` korunur, güncellemelerde üzerine yazılmaz ("Bugün Eklenen" şişkinliği önlendi)
+- ✅ `tur_donustur`: "Kiralama" tipi eklendi
+
+**Kalan:**
 
 ### 7.1 EKAP Scraper (worker.py)
 - Playwright ile EKAP'tan dinamik auth token yakalama

@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Firma Analizi — İhalePlatform</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    body { background: var(--navy); }
+    .app { display: flex; min-height: 100vh; }
+
+    .sidebar {
+      background: var(--navy-mid); border-right: 1px solid var(--border);
+      width: 240px; flex-shrink: 0; position: sticky; top: 0;
+      height: 100vh; display: flex; flex-direction: column; overflow-y: auto;
+    }
+    .sidebar-logo { padding: 20px 20px 16px; border-bottom: 1px solid var(--border); }
+    .sidebar-logo a {
+      font-family: var(--font-display); font-size: 18px; font-weight: 800;
+      color: var(--white); text-decoration: none; display: flex; align-items: center; gap: 8px;
+    }
+    .sidebar-logo span { color: var(--amber); }
+    .sidebar-nav { flex: 1; padding: 16px 12px; overflow-y: auto; }
+    .nav-section-label {
+      font-size: 10px; font-weight: 700; letter-spacing: .1em;
+      text-transform: uppercase; color: var(--muted); padding: 12px 8px 6px;
+    }
+    .nav-item {
+      display: flex; align-items: center; gap: 10px; padding: 9px 12px;
+      border-radius: 6px; color: var(--muted); text-decoration: none;
+      font-size: 13px; font-weight: 500; transition: all .15s; margin-bottom: 2px;
+    }
+    .nav-item:hover { background: var(--card-bg); color: var(--white); }
+    .nav-item.active { background: rgba(240,165,0,0.12); color: var(--amber); }
+    .nav-item .icon { font-size: 16px; width: 20px; text-align: center; }
+    .sidebar-footer { padding: 16px; border-top: 1px solid var(--border); }
+    .user-row { display: flex; align-items: center; gap: 10px; }
+    .user-avatar {
+      width: 32px; height: 32px; border-radius: 50%;
+      background: var(--amber); color: var(--navy);
+      font-size: 12px; font-weight: 800; display: flex; align-items: center; justify-content: center;
+    }
+    .user-name { font-size: 13px; font-weight: 600; color: var(--white); }
+    .user-plan { font-size: 11px; color: var(--muted); }
+
+    .main { display: flex; flex-direction: column; flex: 1; min-width: 0; height: 100vh; overflow-y: auto; }
+    .topbar {
+      background: var(--navy-mid); border-bottom: 1px solid var(--border);
+      padding: 0 24px; height: 56px; display: flex; align-items: center;
+      justify-content: space-between; position: sticky; top: 0; z-index: 10;
+    }
+    .topbar-left { display: flex; align-items: center; gap: 12px; }
+    .back-btn {
+      display: flex; align-items: center; gap: 6px; color: var(--muted);
+      text-decoration: none; font-size: 13px; font-weight: 500; transition: color .15s;
+    }
+    .back-btn:hover { color: var(--white); }
+    .breadcrumb { font-size: 13px; color: var(--muted); }
+    .breadcrumb span { color: var(--white); }
+
+    .page-body { padding: 28px; }
+    @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.5;transform:scale(.8)} }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ARAMA MODU — firma adı yokken */
+    .firma-arama-wrap {
+      background: var(--navy-mid); border: 1px solid var(--border);
+      border-radius: 12px; padding: 40px; text-align: center; margin-bottom: 24px;
+    }
+    .firma-arama-baslik { font-size: 20px; font-weight: 800; color: var(--white); margin-bottom: 8px; }
+    .firma-arama-alt { font-size: 14px; color: var(--muted); margin-bottom: 24px; }
+    .firma-arama-input-wrap { display: flex; gap: 10px; max-width: 500px; margin: 0 auto; }
+    .firma-arama-input {
+      flex: 1; background: var(--navy-soft); border: 1px solid var(--border);
+      border-radius: 8px; padding: 12px 16px; color: var(--white); font-size: 14px;
+      font-family: var(--font-body); outline: none; transition: border-color .15s;
+    }
+    .firma-arama-input:focus { border-color: var(--amber); }
+    .firma-arama-input::placeholder { color: var(--muted); }
+    .btn-ara {
+      background: var(--amber); color: var(--navy); border: none;
+      padding: 12px 20px; border-radius: 8px; font-weight: 700; cursor: pointer;
+      font-size: 14px; font-family: var(--font-body); transition: background .15s;
+    }
+    .btn-ara:hover { background: var(--amber-dim); }
+
+    /* FİRMA HEADER */
+    .firma-header {
+      background: var(--navy-mid); border: 1px solid var(--border);
+      border-radius: 12px; padding: 28px; margin-bottom: 20px;
+    }
+    .firma-eyebrow {
+      font-size: 11px; font-weight: 700; letter-spacing: .1em;
+      text-transform: uppercase; color: var(--amber); margin-bottom: 10px;
+    }
+    .firma-ad { font-size: 22px; font-weight: 800; color: var(--white); margin-bottom: 6px; }
+    .firma-meta { font-size: 13px; color: var(--muted); }
+
+    /* KPI GRID */
+    .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 20px; }
+    .kpi-card { background: var(--navy-mid); border: 1px solid var(--border); border-radius: 10px; padding: 18px 20px; }
+    .kpi-label { font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; margin-bottom: 8px; }
+    .kpi-value { font-size: 24px; font-weight: 800; color: var(--white); }
+    .kpi-value.amber { color: var(--amber); }
+    .kpi-sub { font-size: 11px; color: var(--muted); margin-top: 4px; }
+
+    /* TABS */
+    .tabs { display: flex; border-bottom: 1px solid var(--border); margin-bottom: 20px; }
+    .tab-btn {
+      padding: 12px 20px; font-size: 14px; font-weight: 600; color: var(--muted);
+      background: none; border: none; border-bottom: 2px solid transparent;
+      cursor: pointer; transition: all .15s; margin-bottom: -1px; font-family: var(--font-body);
+    }
+    .tab-btn:hover { color: var(--white); }
+    .tab-btn.active { color: var(--amber); border-bottom-color: var(--amber); }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* VERİ YOK UYARISI */
+    .veri-yok-card {
+      background: var(--navy-mid); border: 1px solid var(--border);
+      border-radius: 10px; padding: 36px; text-align: center; margin-bottom: 16px;
+    }
+    .veri-yok-icon { font-size: 36px; margin-bottom: 12px; }
+    .veri-yok-baslik { font-size: 16px; font-weight: 700; color: var(--white); margin-bottom: 8px; }
+    .veri-yok-alt { font-size: 13px; color: var(--muted); line-height: 1.6; max-width: 420px; margin: 0 auto; }
+    .yakinda-badge {
+      display: inline-block; margin-top: 14px;
+      background: rgba(240,165,0,0.1); border: 1px solid rgba(240,165,0,0.3);
+      color: var(--amber); font-size: 12px; font-weight: 700; padding: 4px 14px; border-radius: 20px;
+    }
+
+    /* İHALE KART */
+    .ihale-kart {
+      background: var(--navy-mid); border: 1px solid var(--border);
+      border-radius: 10px; padding: 16px 20px; margin-bottom: 10px; transition: border-color .15s;
+    }
+    .ihale-kart:hover { border-color: var(--amber); }
+    .ik-ust { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; }
+    .ik-baslik { font-size: 14px; font-weight: 700; color: var(--white); text-decoration: none; flex: 1; line-height: 1.4; }
+    .ik-baslik:hover { color: var(--amber); }
+    .ik-durum { font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 20px; white-space: nowrap; flex-shrink: 0; }
+    .durum-acik { background: rgba(34,197,94,.12); color: #4ade80; }
+    .durum-son { background: rgba(245,158,11,.12); color: var(--amber); }
+    .durum-kapandi { background: rgba(239,68,68,.1); color: #f87171; }
+    .ik-meta { display: flex; gap: 14px; margin-top: 8px; font-size: 12px; color: var(--muted); flex-wrap: wrap; }
+    .ik-badges { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+    .etiket { font-size: 11px; padding: 2px 8px; border-radius: 10px; font-weight: 600; background: rgba(255,255,255,.06); color: var(--muted); }
+    .et-tur { background: rgba(99,102,241,.12); color: #a5b4fc; }
+    .no-data { text-align: center; padding: 40px; color: var(--muted); font-size: 14px; }
+    .pager { display: flex; justify-content: center; gap: 8px; margin-top: 20px; }
+    .pager-btn {
+      padding: 7px 14px; border-radius: 6px; font-size: 13px; font-weight: 600;
+      background: var(--navy-soft); border: 1px solid var(--border); color: var(--white);
+      cursor: pointer; transition: all .15s;
+    }
+    .pager-btn:hover { border-color: var(--amber); color: var(--amber); }
+    .pager-btn:disabled { opacity: .4; cursor: default; }
+    .pager-info { display: flex; align-items: center; font-size: 13px; color: var(--muted); padding: 0 6px; }
+
+    .loading-spinner {
+      width: 28px; height: 28px; border: 3px solid var(--border);
+      border-top-color: var(--amber); border-radius: 50%;
+      animation: spin .8s linear infinite; margin: 0 auto 12px;
+    }
+
+    @media (max-width: 900px) {
+      .sidebar { display: none; }
+      .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+  </style>
+</head>
+<body>
+<div class="app">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <a href="/">
+        <span style="width:6px;height:6px;background:var(--amber);border-radius:50%;display:inline-block;animation:pulse 2s infinite;"></span>
+        İhale<span>Platform</span>
+      </a>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">Genel</div>
+      <a href="dashboard" class="nav-item"><span class="icon">◉</span> Dashboard</a>
+      <a href="ihaleler" class="nav-item"><span class="icon">⊞</span> İhaleler</a>
+      <a href="takipte" class="nav-item"><span class="icon">☆</span> Takipte</a>
+      <a href="bildirimler" class="nav-item"><span class="icon">🔔</span> Bildirimler</a>
+      <div class="nav-section-label">Analiz</div>
+      <a href="rekabet-analizi" class="nav-item"><span class="icon">📊</span> Rekabet Analizi</a>
+      <a href="kurum-analiz" class="nav-item"><span class="icon">🏛️</span> Kurum Analizi</a>
+      <a href="firma-analiz" class="nav-item active"><span class="icon">🏢</span> Firma Analizi</a>
+      <a href="uyumluluk" class="nav-item"><span class="icon">✓</span> Uyumluluk</a>
+      <a href="dokumanlar" class="nav-item"><span class="icon">📁</span> Dökümanlar</a>
+      <div class="nav-section-label">Ayarlar</div>
+      <a href="profil" class="nav-item"><span class="icon">⚙</span> Profil & Filtreler</a>
+      <a href="fiyatlandirma_odeme_bolumu" class="nav-item"><span class="icon">💳</span> Abonelik</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-row" id="sb-user-row">
+        <div class="user-avatar" id="sb-avatar">?</div>
+        <div>
+          <div class="user-name" id="sb-name">Yükleniyor…</div>
+          <div class="user-plan" id="sb-plan">—</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-left">
+        <a href="javascript:history.back()" class="back-btn">← Geri</a>
+        <div class="breadcrumb">/ <span id="bc-firma">Firma Analizi</span></div>
+      </div>
+    </div>
+
+    <div class="page-body">
+
+      <!-- ARAMA KUTUSU (firma adı yokken gösterilir) -->
+      <div class="firma-arama-wrap" id="arama-wrap">
+        <div class="firma-arama-baslik">🏢 Firma Analizi</div>
+        <div class="firma-arama-alt">İhaleye katılmış bir firmanın geçmişini, sektör dağılımını ve istatistiklerini görüntüleyin.</div>
+        <div class="firma-arama-input-wrap">
+          <input type="text" class="firma-arama-input" id="firma-ara-input"
+            placeholder="Firma / yüklenici adı ara…"
+            onkeydown="if(event.key==='Enter') firmaAra()" />
+          <button class="btn-ara" onclick="firmaAra()">Ara →</button>
+        </div>
+      </div>
+
+      <!-- FİRMA İÇERİĞİ -->
+      <div id="firma-icerik" style="display:none;">
+
+        <div class="firma-header">
+          <div class="firma-eyebrow">🏢 Firma Analizi</div>
+          <div class="firma-ad" id="firma-ad">—</div>
+          <div class="firma-meta" id="firma-meta">—</div>
+        </div>
+
+        <div class="kpi-grid">
+          <div class="kpi-card">
+            <div class="kpi-label">Takip Edilen İhale</div>
+            <div class="kpi-value amber" id="kpi-katilan">—</div>
+            <div class="kpi-sub">DB'deki ihale sayısı</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Kazanılan İhale</div>
+            <div class="kpi-value" id="kpi-kazanilan">—</div>
+            <div class="kpi-sub">sonuç verisi bekleniyor</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Toplam Sözleşme</div>
+            <div class="kpi-value amber" id="kpi-sozlesme">—</div>
+            <div class="kpi-sub">sonuç verisi bekleniyor</div>
+          </div>
+          <div class="kpi-card">
+            <div class="kpi-label">Ort. Tenzilat</div>
+            <div class="kpi-value" id="kpi-tenzilat">—</div>
+            <div class="kpi-sub">sonuç verisi bekleniyor</div>
+          </div>
+        </div>
+
+        <div class="tabs">
+          <button class="tab-btn active" onclick="sekmeAc('genel',this)">Genel Bakış</button>
+          <button class="tab-btn" onclick="sekmeAc('sonuclar',this)">Sonuçlar</button>
+          <button class="tab-btn" onclick="sekmeAc('ihaleler',this)">İhaleler</button>
+        </div>
+
+        <!-- GENEL BAKIŞ -->
+        <div id="tab-genel" class="tab-panel active">
+          <div class="veri-yok-card">
+            <div class="veri-yok-icon">📊</div>
+            <div class="veri-yok-baslik">Yıllık Performans & Sektör Analizi</div>
+            <div class="veri-yok-alt">
+              Bu bölüm firmanın yıllık kazanılan ihale sayısı, toplam sözleşme bedeli, sektör/idare dağılımı ve ortalama tenzilat istatistiklerini gösterecek.
+              Veriler EKAP sonuç ilanlarından toplanacaktır.
+            </div>
+            <span class="yakinda-badge">Yakında — Sonuç Verisi Toplanıyor</span>
+          </div>
+          <div class="veri-yok-card">
+            <div class="veri-yok-icon">🏆</div>
+            <div class="veri-yok-baslik">KİK Kararları & İtiraz Geçmişi</div>
+            <div class="veri-yok-alt">
+              Firmaya ait KİK şikâyet/itiraz kararları burada listelenecek.
+            </div>
+            <span class="yakinda-badge">Yakında</span>
+          </div>
+        </div>
+
+        <!-- SONUÇLAR -->
+        <div id="tab-sonuclar" class="tab-panel">
+          <div class="veri-yok-card">
+            <div class="veri-yok-icon">📋</div>
+            <div class="veri-yok-baslik">Kazanılan İhale Sonuçları</div>
+            <div class="veri-yok-alt">
+              Firmanın kazandığı ihaleler, sözleşme bedelleri, tenzilat oranları ve iş tamamlama tarihleri burada görünecek.
+              Bu veriler EKAP'ın "ihale sonuç ilanı" sayfalarından toplanacaktır.
+            </div>
+            <span class="yakinda-badge">Yakında — Scraper Geliştirme Aşamasında</span>
+          </div>
+        </div>
+
+        <!-- İHALELER (katıldığı/takip edilen) -->
+        <div id="tab-ihaleler" class="tab-panel">
+          <div id="liste-container"></div>
+          <div class="pager" id="pager" style="display:none;">
+            <button class="pager-btn" id="pager-ilk" onclick="sayfaGit(1)">« İlk</button>
+            <button class="pager-btn" id="pager-prev" onclick="sayfaGit(sayfa-1)">‹ Önceki</button>
+            <span class="pager-info" id="pager-info"></span>
+            <button class="pager-btn" id="pager-next" onclick="sayfaGit(sayfa+1)">Sonraki ›</button>
+            <button class="pager-btn" id="pager-son" onclick="sayfaGit(topSayfa)">Son »</button>
+          </div>
+        </div>
+
+      </div><!-- /firma-icerik -->
+
+    </div><!-- /page-body -->
+  </div><!-- /main -->
+</div><!-- /app -->
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="js/sidebar-user.js"></script>
+<script>
+(() => {
+  const SB_URL = "https://lpgelwfoarhouollhwur.supabase.co";
+  const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxwZ2Vsd2ZvYXJob3VvbGxod3VyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIyMzI4MjAsImV4cCI6MjA5NzgwODgyMH0.GqTZkeoOAomuur4JSyW2pTR-8Zzg8OTv394JtP7DoXM";
+  const sb = window.supabase.createClient(SB_URL, SB_KEY);
+
+  const params = new URLSearchParams(window.location.search);
+  let FIRMA = params.get('firma') || '';
+  let tumIhaleler = [];
+  let sayfa = 1;
+  let topSayfa = 1;
+  const PER_PAGE = 20;
+
+  function tarihFormat(s) {
+    if (!s) return '—';
+    return new Date(s).toLocaleDateString('tr-TR', { day:'2-digit', month:'2-digit', year:'numeric' });
+  }
+
+  function durumSec(sonTeklif) {
+    if (!sonTeklif) return { cls:'durum-kapandi', etiket:'Geçmiş' };
+    const gun = Math.ceil((new Date(sonTeklif) - Date.now()) / 86400000);
+    if (gun < 0) return { cls:'durum-kapandi', etiket:'Kapandı' };
+    if (gun <= 7) return { cls:'durum-son', etiket:`Son ${gun} Gün` };
+    return { cls:'durum-acik', etiket:'Açık' };
+  }
+
+  window.sekmeAc = function(id, btn) {
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('tab-' + id).classList.add('active');
+    btn.classList.add('active');
+    if (id === 'ihaleler') listeSayfa(sayfa);
+  };
+
+  window.sayfaGit = function(s) {
+    sayfa = Math.max(1, Math.min(s, topSayfa));
+    listeSayfa(sayfa);
+  };
+
+  function listeSayfa(s) {
+    const bas = (s - 1) * PER_PAGE;
+    const dilim = tumIhaleler.slice(bas, bas + PER_PAGE);
+    const cont = document.getElementById('liste-container');
+    if (!dilim.length) {
+      cont.innerHTML = '<div class="no-data">Bu arama için ihale bulunamadı.</div>';
+      document.getElementById('pager').style.display = 'none';
+      return;
+    }
+    cont.innerHTML = dilim.map(i => {
+      const d = durumSec(i.son_teklif_tarihi);
+      return `<div class="ihale-kart">
+        <div class="ik-ust">
+          <a class="ik-baslik" href="ihale-detay?id=${i.id}">${i.baslik || '—'}</a>
+          <span class="ik-durum ${d.cls}">${d.etiket}</span>
+        </div>
+        <div class="ik-badges">
+          ${i.tur ? `<span class="etiket et-tur">${i.tur}</span>` : ''}
+          ${i.il ? `<span class="etiket">📍 ${i.il}</span>` : ''}
+        </div>
+        <div class="ik-meta">
+          ${i.idare ? `<span><a href="kurum-analiz?kurum=${encodeURIComponent(i.idare)}" style="color:var(--muted);text-decoration:none;">${i.idare}</a></span>` : ''}
+          ${i.son_teklif_tarihi ? `<span>⏰ ${tarihFormat(i.son_teklif_tarihi)}</span>` : ''}
+        </div>
+      </div>`;
+    }).join('');
+    topSayfa = Math.ceil(tumIhaleler.length / PER_PAGE);
+    document.getElementById('pager').style.display = topSayfa > 1 ? 'flex' : 'none';
+    document.getElementById('pager-info').textContent = `${s} / ${topSayfa}`;
+    document.getElementById('pager-ilk').disabled = s <= 1;
+    document.getElementById('pager-prev').disabled = s <= 1;
+    document.getElementById('pager-next').disabled = s >= topSayfa;
+    document.getElementById('pager-son').disabled = s >= topSayfa;
+  }
+
+  window.firmaAra = function() {
+    const v = document.getElementById('firma-ara-input').value.trim();
+    if (!v) return;
+    const url = new URL(window.location);
+    url.searchParams.set('firma', v);
+    window.history.pushState({}, '', url);
+    FIRMA = v;
+    firmaYukle();
+  };
+
+  async function firmaYukle() {
+    if (!FIRMA) return;
+    document.getElementById('arama-wrap').style.display = 'none';
+    document.getElementById('firma-icerik').style.display = 'block';
+    document.getElementById('bc-firma').textContent = FIRMA;
+    document.getElementById('firma-ad').textContent = FIRMA;
+    document.getElementById('firma-meta').textContent = 'Veri yükleniyor…';
+    document.getElementById('kpi-katilan').textContent = '—';
+
+    // İhale arama: idare veya baslik içinde firma adı geçen kayıtlar
+    // (gerçek yüklenici kolonu olmadığı için best-effort arama)
+    const rows = [];
+    for (let off = 0; ; off += 1000) {
+      const { data } = await sb.from('ilanlar')
+        .select('id,ekap_id,baslik,idare,il,tur,son_teklif_tarihi')
+        .or(`idare.ilike.%${FIRMA}%,baslik.ilike.%${FIRMA}%`)
+        .range(off, off + 999);
+      if (!data || !data.length) break;
+      rows.push(...data);
+      if (data.length < 1000) break;
+    }
+
+    tumIhaleler = rows;
+    document.getElementById('kpi-katilan').textContent = rows.length.toLocaleString('tr');
+    document.getElementById('kpi-kazanilan').textContent = '—';
+    document.getElementById('kpi-sozlesme').textContent = '—';
+    document.getElementById('kpi-tenzilat').textContent = '—';
+    document.getElementById('firma-meta').textContent =
+      rows.length
+        ? `${rows.length} ihale kaydı bulundu (arama: idare veya başlık içinde)`
+        : 'Bu arama için sonuç bulunamadı.';
+  }
+
+  if (FIRMA) {
+    document.getElementById('firma-ara-input') && (document.getElementById('firma-ara-input').value = FIRMA);
+    firmaYukle();
+  }
+})();
+</script>
+</body>
+</html>

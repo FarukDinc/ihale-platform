@@ -636,8 +636,10 @@ async def belge_indir_yukle(client: httpx.AsyncClient, ekap_id: str, ihale_id: s
 
 # ── Veri dönüşümü ─────────────────────────────────────────
 def tur_donustur(tip):
-    for k, v in [("Mal", "Mal"), ("Hizmet", "Hizmet"), ("Yapım", "Yapım"), ("Danışmanlık", "Danışmanlık")]:
-        if k.lower() in (tip or "").lower(): return v
+    tip = (tip or "").strip()
+    for k, v in [("Mal", "Mal"), ("Hizmet", "Hizmet"), ("Yapım", "Yapım"),
+                 ("Danışmanlık", "Danışmanlık"), ("Kiralama", "Kiralama")]:
+        if k.lower() in tip.lower(): return v
     return tip or "Diğer"
 
 def durum_donustur(d):
@@ -646,8 +648,27 @@ def durum_donustur(d):
     if "sonuçland" in d or "tamamland" in d: return "sonuclandi"
     return "aktif"
 
+# EKAP ham enum → okunabilir Türkçe (ham: "TENDER_SEARCH.ENUMERATIONS.OPEN" vb.)
+_USUL_HARITA = [
+    ("OPEN",                   "Açık İhale"),
+    ("AMONG_CERTAIN_BIDDERS",  "Belli İstekliler Arasında"),
+    ("BARGAIN",                "Pazarlık Usulü"),
+    ("DESIGN_COMPETITION",     "Tasarım Yarışması"),
+    ("DIRECT_PROCUREMENT",     "Doğrudan Temin"),
+    ("FRAMEWORK_AGREEMENT",    "Çerçeve Anlaşma"),
+    ("DIGER",                  "Diğer / İstisna"),
+]
+
 def usul_donustur(s):
-    return (s or "").replace("İhale Usulü:", "").strip() or None
+    s = (s or "").strip()
+    if not s:
+        return None
+    s_upper = s.upper()
+    for frag, label in _USUL_HARITA:
+        if frag in s_upper:
+            return label
+    # Zaten okunabilir metin (örn. "Açık İhale Usulü" → "Açık İhale Usulü")
+    return s.replace("İhale Usulü:", "").strip() or None
 
 def tarih_iso(s):
     """EKAP tarihini ISO'ya çevirir. 'GG.AA.YYYY SS:DD' → ISO; zaten ISO ise dokunmaz."""
@@ -715,9 +736,14 @@ def supabase_yaz(liste, sb=None):
         sb = create_client(SUPABASE_URL, SUPABASE_KEY)
     toplam = 0
     for i in range(0, len(liste), 50):
+        batch = liste[i:i+50]
         try:
-            sb.table("ilanlar").upsert(liste[i:i+50], on_conflict="ekap_id").execute()
-            toplam += len(liste[i:i+50])
+            # 1. Yeni kayıtları olusturulma dahil insert et (çakışırsa atla)
+            sb.table("ilanlar").upsert(batch, on_conflict="ekap_id", ignore_duplicates=True).execute()
+            # 2. Mevcut kayıtları olusturulma'ya dokunmadan güncelle
+            update_batch = [{k: v for k, v in r.items() if k != "olusturulma"} for r in batch]
+            sb.table("ilanlar").upsert(update_batch, on_conflict="ekap_id").execute()
+            toplam += len(batch)
             print(f"  ✓ {toplam}/{len(liste)} yazıldı")
         except Exception as e:
             print(f"  ✗ Yazma hatası: {e}")
