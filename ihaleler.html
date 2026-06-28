@@ -620,7 +620,7 @@
           <div class="kart-sol">
             <div class="kart-kayitno">Kayıt No: ${ilan.ekap_id || '—'}</div>
             <a class="kart-baslik" href="ihale-detay?id=${ilan.id}">${ilan.baslik || '—'}</a>
-            <div class="kart-idare">${ilan.idare || '—'}</div>
+            <div class="kart-idare">${ilan.idare ? `<a href="kurum-analiz?kurum=${encodeURIComponent(ilan.idare)}" style="color:inherit;text-decoration:none;" onmouseover="this.style.color='var(--amber)'" onmouseout="this.style.color=''">${ilan.idare}</a>` : '—'}</div>
             <div class="kart-etiketler">${etiketler}</div>
           </div>
           <div class="kart-sag">
@@ -832,9 +832,21 @@
       TR_ILLER.map(il => `<option value="${il.toLocaleUpperCase('tr')}">${il}</option>`).join('');
   }
 
+  // URL parametrelerini filtrelere uygula (örn. haritadan ihaleler?il=İSTANBUL)
+  function urlFiltreleriUygula() {
+    const p = new URLSearchParams(window.location.search);
+    const il = p.get('il');
+    if (il) document.getElementById('f-il').value = il.toLocaleUpperCase('tr');
+    const ara = p.get('ara');
+    if (ara) document.getElementById('f-arama').value = ara;
+    const idare = p.get('idare');
+    if (idare) document.getElementById('f-idare').value = idare;
+  }
+
   // Sayfa yüklenince
+  ilDropdownDoldur();          // önce dropdown dolsun ki URL'den gelen il seçilebilsin
+  urlFiltreleriUygula();
   profilCek().then(() => ilanlariYukle());
-  ilDropdownDoldur();
 </script>
 </body>
 </html>

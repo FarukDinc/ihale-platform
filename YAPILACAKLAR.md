@@ -247,7 +247,24 @@ Her ihale kartında (Sonuç sekmesi örneği):
 
 ---
 
-## 📊 ÖNCELİK 6 — Analiz Ekranları (Firma & Kurum Bazlı)
+## 📊 ÖNCELİK 6 — Analiz Ekranları (Firma & Kurum Bazlı) — 🟡 KISMI (28 Haz 2026)
+
+**Yapıldı:**
+- ✅ **`kurum-analiz.html`** oluşturuldu (`?kurum=IDARE_ADI` parametresiyle):
+  - 4 KPI kartı: Toplam İhale / Aktif / Toplam Bütçe / Kapsanan İl
+  - Genel Bakış sekmesi: Yıllık bar chart (Chart.js, `son_teklif_tarihi` fallback), İhale Türü breakdown (yatay progress bar), İl Bazlı Dağılım
+  - İhale Listesi sekmesi: sayfalanmış kart listesi (20/sayfa)
+  - Dokunulan dosyalar: `kurum-analiz.html`
+- ✅ **idare isimlerini tıklanabilir** hale getirdi:
+  - `ihaleler.html`: kart-idare → `kurum-analiz?kurum=...`
+  - `ihale-detay.html`: detay-idare + info-row İdare → `kurum-analiz?kurum=...`
+- ✅ `ihaleler.html` `urlFiltreleriUygula`: `?idare=` parametresi desteklendi (kurum-analiz'den "Tüm İhalelerini Gör" butonu)
+
+**Kalan:**
+- ⚠️ **`firma-analiz.html`** yapılmadı — yüklenici/sözleşme verisi DB'de henüz yok (scraper sonuç ilanı toplamalı). UI iskelet oluşturulabilir ama veri boş kalır.
+- ⚠️ 6.3 Üst navigasyon (Kategoriler/Şehirler/Sektörler/İdareler/Yükleniciler/KİK) → dashboard nav'a eklenebilir ama arkasında veri yok.
+
+
 
 > ihaleciler.com'un en güçlü özelliği bu — firma/kurum bazlı detaylı istatistik.
 

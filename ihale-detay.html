@@ -417,7 +417,7 @@
       <div class="detay-header">
         <div class="detay-eyebrow">EKAP #${d.ekap_id || '—'} · ${d.ikn || '—'}</div>
         <div class="detay-baslik">${d.baslik || '—'}</div>
-        <div class="detay-idare">🏛️ ${d.idare || '—'} · ${d.il || '—'}${d.ulke && d.ulke !== 'TR' ? ', ' + d.ulke : ''}</div>
+        <div class="detay-idare">🏛️ ${d.idare ? `<a href="kurum-analiz?kurum=${encodeURIComponent(d.idare)}" style="color:inherit;text-decoration:none;" onmouseover="this.style.color='var(--amber)'" onmouseout="this.style.color=''">${d.idare}</a>` : '—'} · ${d.il || '—'}${d.ulke && d.ulke !== 'TR' ? ', ' + d.ulke : ''}</div>
         <div class="detay-badges">
           ${durumBadge(d.durum, d.son_teklif_tarihi)}
           ${d.tur ? `<span class="badge badge-tur">${d.tur}</span>` : ''}
@@ -487,7 +487,7 @@
         <div class="detay-grid">
           <div class="detay-card">
             <div class="card-title">İhale Bilgileri</div>
-            <div class="info-row"><span class="info-label">İdare</span><span class="info-value">${d.idare || '—'}</span></div>
+            <div class="info-row"><span class="info-label">İdare</span><span class="info-value">${d.idare ? `<a href="kurum-analiz?kurum=${encodeURIComponent(d.idare)}" style="color:var(--amber);text-decoration:none;">${d.idare}</a>` : '—'}</span></div>
             <div class="info-row"><span class="info-label">İl</span><span class="info-value">${d.il || '—'}</span></div>
             <div class="info-row"><span class="info-label">İhale Türü</span><span class="info-value">${d.tur || '—'}</span></div>
             <div class="info-row"><span class="info-label">İhale Usulü</span><span class="info-value">${usulLabel(d.usul)}</span></div>
