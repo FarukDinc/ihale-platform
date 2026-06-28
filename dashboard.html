@@ -692,6 +692,33 @@
         </div>
       </div>
 
+      <!-- WIDGET ROW: Top Kurumlar + Son İhaleler -->
+      <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:20px;">
+
+        <!-- Top Kurumlar -->
+        <div class="table-wrap" style="padding:0; margin-bottom:0;">
+          <div class="table-header" style="padding:14px 18px 12px;">
+            <span class="table-title" style="font-size:14px;">En Aktif Kurumlar</span>
+            <a href="ihaleler" style="font-size:12px; color:var(--muted); text-decoration:none;">Tümü →</a>
+          </div>
+          <div id="top-kurumlar-list" style="padding:4px 0 8px;">
+            <div style="padding:12px 18px; color:var(--muted); font-size:13px;">Yükleniyor…</div>
+          </div>
+        </div>
+
+        <!-- Son İhaleler -->
+        <div class="table-wrap" style="padding:0; margin-bottom:0;">
+          <div class="table-header" style="padding:14px 18px 12px;">
+            <span class="table-title" style="font-size:14px;">Son Eklenen İhaleler</span>
+            <a href="ihaleler" style="font-size:12px; color:var(--muted); text-decoration:none;">Tümü →</a>
+          </div>
+          <div id="son-ihaleler-list" style="padding:4px 0 8px;">
+            <div style="padding:12px 18px; color:var(--muted); font-size:13px;">Yükleniyor…</div>
+          </div>
+        </div>
+
+      </div>
+
       <!-- FILTERS -->
       <div class="filters-bar">
         <select class="filter-select" id="f-durum" onchange="filtrele()">
@@ -1110,9 +1137,65 @@
     aramaTimer = setTimeout(filtrele, 400);
   });
 
+  // ── Top Kurumlar widget ──────────────────────────────
+  async function topKurumlarYukle() {
+    const el = document.getElementById('top-kurumlar-list');
+    try {
+      const sayim = {};
+      for (let off = 0; ; off += 1000) {
+        const { data } = await sb.from('ilanlar')
+          .select('idare').eq('durum', 'aktif').not('idare', 'is', null)
+          .range(off, off + 999);
+        if (!data || !data.length) break;
+        data.forEach(r => { if (r.idare) sayim[r.idare] = (sayim[r.idare] || 0) + 1; });
+        if (data.length < 1000) break;
+      }
+      const sirali = Object.entries(sayim).sort((a, b) => b[1] - a[1]).slice(0, 7);
+      const maks = sirali[0]?.[1] || 1;
+      el.innerHTML = sirali.map(([idare, sayi]) => `
+        <a href="kurum-analiz?kurum=${encodeURIComponent(idare)}" style="display:block; padding:9px 18px; text-decoration:none; transition:background .15s;" onmouseover="this.style.background='var(--card-bg)'" onmouseout="this.style.background=''">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+            <span style="font-size:13px; color:var(--white); font-weight:500; max-width:75%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${idare}</span>
+            <span style="font-size:12px; color:var(--amber); font-weight:600;">${sayi}</span>
+          </div>
+          <div style="height:3px; background:var(--navy-soft); border-radius:2px;">
+            <div style="height:3px; background:var(--amber); border-radius:2px; width:${Math.round(sayi/maks*100)}%;"></div>
+          </div>
+        </a>`).join('');
+    } catch (e) { el.innerHTML = '<div style="padding:12px 18px; color:var(--muted); font-size:13px;">Yüklenemedi</div>'; }
+  }
+
+  // ── Son Eklenen İhaleler widget ──────────────────────
+  async function sonIhalelerYukle() {
+    const el = document.getElementById('son-ihaleler-list');
+    try {
+      const { data } = await sb.from('ilanlar')
+        .select('id,ekap_id,baslik,idare,il,tur,son_teklif_tarihi,yaklasik_maliyet_min')
+        .eq('durum', 'aktif').order('olusturulma', { ascending: false }).limit(6);
+      if (!data || !data.length) { el.innerHTML = '<div style="padding:12px 18px; color:var(--muted); font-size:13px;">Veri yok</div>'; return; }
+      el.innerHTML = data.map(d => {
+        const maliyet = d.yaklasik_maliyet_min
+          ? (d.yaklasik_maliyet_min >= 1e9 ? (d.yaklasik_maliyet_min/1e9).toFixed(1)+'Mr₺'
+             : d.yaklasik_maliyet_min >= 1e6 ? (d.yaklasik_maliyet_min/1e6).toFixed(1)+'M₺'
+             : (d.yaklasik_maliyet_min/1000).toFixed(0)+'K₺') : '—';
+        const tarih = d.son_teklif_tarihi ? new Date(d.son_teklif_tarihi).toLocaleDateString('tr-TR',{day:'2-digit',month:'short'}) : '—';
+        return `<a href="ihale-detay?id=${d.id}" style="display:block; padding:9px 18px; text-decoration:none; border-bottom:1px solid var(--border); transition:background .15s;" onmouseover="this.style.background='var(--card-bg)'" onmouseout="this.style.background=''">
+          <div style="font-size:13px; color:var(--white); font-weight:500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; margin-bottom:3px;">${d.baslik || '—'}</div>
+          <div style="display:flex; gap:8px; font-size:11px; color:var(--muted);">
+            <span>📍 ${d.il || '—'}</span>
+            <span style="color:var(--amber);">₺ ${maliyet}</span>
+            <span>⏰ ${tarih}</span>
+          </div>
+        </a>`;
+      }).join('');
+    } catch (e) { el.innerHTML = '<div style="padding:12px 18px; color:var(--muted); font-size:13px;">Yüklenemedi</div>'; }
+  }
+
   // ── Sayfa yüklenince ─────────────────────────────────
   kpiYukle();
   ilDropdownDoldur();
+  topKurumlarYukle();
+  sonIhalelerYukle();
   profilCek().then(() => ilanlariYukle());
 </script>
 </body>

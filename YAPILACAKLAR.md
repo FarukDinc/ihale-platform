@@ -308,12 +308,29 @@ ihaleciler.com'da üstte 6 ana kategori var, bunları değerlendir:
 
 ---
 
+## 📊 Dashboard İyileştirmeleri — ✅ EKLENDİ (28 Haz 2026)
+
+**Yapıldı (dashboard.html):**
+- ✅ **En Aktif Kurumlar** widget: aktif ihalelerdeki idare sayımı (tüm kayıtlar taranır, JS'te sıralanır), ilk 7 kurum amber progress bar + tıklanabilir kurum-analiz linki ile
+- ✅ **Son Eklenen İhaleler** widget: `olusturulma` DESC son 6 ihale, başlık + il + maliyet + tarih; ihale-detay linki
+- İki widget yan yana 2 kolonluk grid düzeni, KPI grid altında, filtre üstünde
+- ⚠️ "Son Eklenen" aslında "son güncellenen" — `olusturulma` her upsert'te tazeleniyor. Gerçek "ilk görülme" için `ilk_gorulme` kolonu gerekir (Supabase'de manual eklenecek)
+
+---
+
 ## 🔧 ÖNCELİK 7 — Altyapı / Entegrasyonlar — 🟡 KISMI (28 Haz 2026)
 
 **Yapıldı (scraper kalite iyileştirmeleri):**
 - ✅ `usul_donustur`: EKAP ham enum (`TENDER_SEARCH.ENUMERATIONS.OPEN` vb.) → Türkçe etiket (`Açık İhale`, `Pazarlık Usulü` vb.) haritası eklendi
 - ✅ `supabase_yaz`: 2-pass upsert — yeni kayıtlarda `olusturulma` korunur, güncellemelerde üzerine yazılmaz ("Bugün Eklenen" şişkinliği önlendi)
 - ✅ `tur_donustur`: "Kiralama" tipi eklendi
+
+**Bu oturumda yapıldı (scraper kalite iyileştirmeleri — 28 Haz 2026):**
+- ✅ `mojibake_duzelt()`: UTF-8 metin Latin-1 olarak yanlış decode edilmişse onarır; `baslik`/`idare`/`il` alanlarına uygulandı
+- ✅ `kategori_tur()`: OKAS/CPV kodunun ilk 2 hanesinden 40+ kategori haritası; `tur`'dan fallback. `kategori` kolonu artık scraper'da doldurulacak
+- ✅ `ilan_tarihi` çıkarma: `detay_cek()` → `ilanList[0].ilanTarihi/tarih/yayimTarihi/baslangicTarihi` ve `bilgi.ilanTarihi` fallback zinciri; `ihaleleri_isle()` → liste response alanlarından da fallback
+- ⚠️ Debug print'ler eklendi — scraper çalışınca hangi field adının dolu geldiği görülecek; yanlış field adıysa düzeltilmeli
+- ⚠️ `ilk_gorulme TIMESTAMPTZ DEFAULT NOW()` kolonu Supabase'de manuel eklenecek
 
 **Kalan:**
 
