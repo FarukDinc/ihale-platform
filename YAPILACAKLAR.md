@@ -1,7 +1,8 @@
 # İhalePlatform — Yapılacaklar Listesi
 
-> Son güncelleme: 28 Haziran 2026
+> Son güncelleme: 29 Haziran 2026
 > Bu dosya, Code modunda kodlama yaparken referans alınacak. Her madde mümkün olduğunca net ve uygulanabilir yazıldı.
+> 29 Haz 2026: **tendermeister.com** ve **ihaleciler.com** canlı olarak detaylı gezildi; rekabet/özellik-açığı analizi en alta "🆚 REKABET ANALİZİ" bölümüne eklendi (Öncelik 9). Önce o bölümü oku.
 
 ---
 
@@ -413,3 +414,292 @@ python analiz_runner.py --yenile          # daha önce analizlenenleri yenile
 6. **Türkiye haritası** (2) — görsel vitrin
 7. **Firma/Kurum analiz ekranları** (6) — ileri özellik
 8. **İyzico + AI** (7) — para kazanma + katma değer
+
+---
+---
+
+# 🆚 ÖNCELİK 9 — REKABET ANALİZİ & ÖZELLİK AÇIKLARI (29 Haz 2026)
+
+> **Kaynak:** 29 Haziran 2026'da **tendermeister.com** ve **ihaleciler.com** canlı hesaplarla uçtan uca gezildi
+> (tendermeister'da tarama çalıştırıldı: 16 portaldan 136 ihale; ihaleciler'de firma analizi + KİK kararları açıldı).
+> **Amaç:** ihaleglobal.com'da bu iki sitedeki HİÇBİR önemli özelliğin eksiği kalmasın. Aşağıdaki maddeler,
+> "bizde var / kısmen var / yok" olarak işaretlendi ve P0–P3 öncelik verildi.
+>
+> **İşaretler:** 🟢 bizde var · 🟡 kısmen/iskelet var · 🔴 yok (eklenecek) · 🧱 veri-bağımlı (önce scraper)
+
+## 9.0 Üç ürünün tek bakışta karşılaştırması
+
+| Eksen | ihaleglobal (biz) | tendermeister | ihaleciler.com |
+|---|---|---|---|
+| **Konum** | TR / EKAP | DE menşeli, AB+DE+TR | TR (köklü) |
+| **Kaynaklar** | EKAP | EU TED + 16 DE eyalet portalı + Bund.de + TR eKAP (18) | EKAP + Gazete + İstihbarat (özel) |
+| **Çekirdek değer** | Takip + AI şartname analizi | AI eşleşme + ihale-başına AI teklif workflow | Veri zenginliği + firma/idare analitiği |
+| **AI eşleşme** | basit ağırlıklı uyum % | semantik AI skor + %70 bildirim eşiği | yok (manuel filtre) |
+| **Firma/idare analizi** | 🟡 iskelet | yok | 🟢 derin pivot (amiral gemisi) |
+| **Sonuç/sözleşme verisi** | 🔴 yok | n/a | 🟢 var (analitiğin temeli) |
+| **KİK kararları** | 🔴 yok | yok | 🟢 34.7k karar |
+| **AI teklif yazımı** | 🟡 teklif-olustur.html (backend bağı eksik) | 🟢 KO tarayıcı + form doldurma + konsept yazıcı | yok |
+| **Çoklu dil** | TR | TR/EN/DE/FR/AR | TR |
+| **Fiyat** | Free / ₺1.490 / ₺3.990 | €299 / €499 / €899 | abonelik |
+
+> **Stratejik okuma:** Türkiye pazarında asıl rakip **ihaleciler.com** (veri + analitik). tendermeister ise
+> **ürün/AI vizyonu** açısından nereye gideceğimizi gösteriyor (AI Brain + ihale-başına teklif workflow'u).
+> İkisinin kesişiminde durursak ("ihaleciler'in verisi + tendermeister'in AI'ı, daha sade arayüzle") fark yaratırız.
+
+---
+
+## 9.1 🧱 P0 — SONUÇ / SÖZLEŞME VERİSİ (her şeyin temeli) — 🟡 ALTYAPI HAZIR (29 Haz 2026)
+
+> Bu olmadan firma-analiz, idare-analiz, "Sonuç" sekmesi, rekabet/fiyat istihbaratı ve uyum skorunun
+> "kazanma oranı" iddiası BOŞ kalır. ihaleciler'in tüm gücü bu veriden geliyor. **En kritik açık.**
+
+- [x] 🟢 **DB şeması hazırlandı**: `backend/migration_sonuc_schema.sql` (29 Haz 2026)
+  - `ihale_sonuclari` tablosu (yüklenici, sözleşme bedeli, tenzilat, katılımcı sayısı vb.)
+  - `yukleniciler` tablosu (firma sözlüğü: normalize_ad, ciro, sözleşme sayısı)
+  - `scrape_log` tablosu (hangi ihaleler denendi, başarılı mı?)
+  - `ilanlar_sonuc` VIEW (ilanlar + ihale_sonuclari join)
+  - `idare_sayim()` ve `kategori_sayim()` RPC fonksiyonları (performans için)
+  - ⚠️ **Çalıştır**: Supabase SQL Editor'dan `backend/migration_sonuc_schema.sql`
+- [x] 🟢 **`backend/ekap_sonuc_scraper.py`** oluşturuldu (29 Haz 2026)
+  - `--probe` modu: 1-11 arası durum kodları + tüm endpoint kombinasyonlarını test eder
+  - `--limit N`, `--ikn IKN`, `--all`, `--retry-failed` parametreleri
+  - 5 farklı EKAP sonuç endpoint'i sırayla denenir (kesinlesme/sonuc_ilan/karar/sozlesme/sonuc_detay)
+  - `yukleniciler` tablosuna upsert (normalize_ad ile dedup + ciro/sayı güncelleme)
+  - ⚠️ **Önce probe çalıştır**: `python ekap_sonuc_scraper.py --probe`
+- [ ] 🔴 **EKAP sonuç ilanı (kesinleşen ihale kararı / sözleşme) scrape'i** — `ekap_scraper.py`'a yeni akış:
+  - Çekilecek alanlar: **yüklenici adı + vergi no/uyruk**, **sözleşme bedeli**, **yaklaşık maliyet**, **tenzilat %**,
+    **katılımcı sayısı**, **geçerli teklif sayısı**, **sözleşme tarihi**, **işe başlama/bitiş**, **iş bitirme belgesi tutarı**.
+  - EKAP v2'de sonuç endpoint'i araştır (`GetByIhaleIdSonucIlan` / `KesinlesenIhaleKarari` benzeri); yoksa
+    "Sonuç İlanı" HTML'ini ayrıştır.
+- [ ] 🔴 **DB şeması**: `ilanlar`a sonuç kolonları veya ayrı `ihale_sonuclari` + `firma_istatistikleri` tablosu
+  (PLATFORM_CONTEXT'te zaten planlı — hayata geçir). Yüklenici adlarını normalize et (tekil firma anahtarı).
+- [ ] 🔴 **`yukleniciler` tablosu** (firma sözlüğü): ad, vergi no, normalize_ad, toplam sözleşme, sektör[].
+- **Tahmini etki:** Bu tek iş, 9.2 + 9.3 + 9.7'nin önünü açar. **İlk yapılacak P0 bu.**
+
+> ✅ **Önemli düzeltme (29 Haz 2026):** "hangi idare / hangi sektör" verisi ASLINDA ZATEN YAZILIYOR.
+> `ekap_scraper.py` upsert kaydında: `idare` (idareAdi) ✅, `il` ✅, `okas` (CPV/OKAS kodu) ✅,
+> `kategori` (OKAS'tan türetiliyor) ✅. Yani her ihalenin idaresi ve sektörü DB'de var.
+> **Eksik olan üç şey:** (1) idare bazlı **arama/dizin sayfası** (9.9), (2) **CPV-kodu seviyesinde sektör**
+> gezinmesi — şu an sadece OKAS ilk-2-hane ana kategori var (9.9), (3) **geçmişte ihale alan firma listesi**
+> = yüklenici/sonuç verisi (bu madde, 9.1). Yani idare/sektör için "veri yok" değil, "arama yüzeyi yok".
+
+### 9.1.1 🕰️ Geçmiş (bugünden önceki) veri & kaynak — HUKUKİ NOT
+
+> Kullanıcı sorusu: "Geçmişe yönelik veriyi çekmek için ihaleciler.com'dan veri çekebilir miyiz?"
+> **Kısa cevap: Teknik olarak mümkün ama YAPMA — yanlış kaynak. Doğru kaynak EKAP'ın kendisi.**
+
+- ⛔ **ihaleciler.com'dan veri kazımak RİSKLİ ve YANLIŞ:**
+  - ihaleciler'in derlenmiş veritabanı onların **emeği/ürünü**; kullanım şartları otomatik veri çekmeyi yasaklar.
+  - Bir rakibin DB'sini kopyalayıp **kendi ticari ürünümüzde** kullanmak Türkiye'de **haksız rekabet** (TTK m.54-55)
+    ve sözleşme ihlali riski doğurur; üstelik bunu **kendi ücretli hesabımızla** yapmak ihlali ikiye katlar (hesap kapatma + hukuki risk).
+  - Onların verisi de zaten çoğunlukla EKAP'tan türetilmiş — yani aracıdan kopyalamak yerine **kaynağa gitmek** hem
+    yasal hem daha sağlam (onların scrape hataları/gecikmeleri bize miras kalmaz).
+- ✅ **DOĞRU yol — geçmiş & sonuç verisini doğrudan EKAP'tan al (kamuya açık):**
+  - EKAP **İhale Sonuç İlanları / Kesinleşen İhale Kararları**'nı KAMUYA açık yayınlar → yüklenici, sözleşme bedeli,
+    tenzilat, katılımcı sayısı burada. Bunlar bizim **meşru** geçmiş-veri kaynağımız.
+  - [ ] 🔴 **Geçmiş ihale backfill akışı**: mevcut scraper sadece AKTİF listeyi çekiyor (`GetListByParameters` ~11.878).
+    Kapanmış/geçmiş ihaleleri ve sonuç ilanlarını çekmek için: tarih aralığı/sayfalama ile **geçmişe doğru tara**
+    (EKAP v2'de kapanmış ihale + sonuç endpoint'lerini test et; yoksa sonuç ilanı HTML'ini ayrıştır).
+  - [ ] 🔴 Backfill'i **incremental + idempotent** yaz (ikn bazlı upsert, dedup) — bir kez geçmişi doldur, sonra günlük ekle.
+  - ⚠️ Gece Actions 45dk limiti → backfill'i ayrı, manuel/parça parça çalışan bir job olarak kur (cron değil).
+- ℹ️ **ihaleciler'in "İstihbarat" kaynağı** (özel/erken intel) EKAP'ta YOK — o onların özel katma değeri.
+  Onu kopyalayamayız/kopyalamamalıyız; karşılığını **kendi "özel sektör alım ilanları"** modülümüzle (9.6) kurarız.
+
+
+---
+
+## 9.2 📊 P1 — FİRMA (YÜKLENİCİ) & İDARE ANALİZİ (ihaleciler amiral gemisi) — 🟡 İSKELET VAR
+
+> ihaleciler'in `/analyze` ekranı: bir yüklenici/idare/sektör için çok-boyutlu pivot. Her satırda "Listele" ile
+> alttaki ihalelere iniliyor. Bizim `firma-analiz.html` + `kurum-analiz.html` iskeleti var ama veri yok.
+
+- [ ] 🧱 **firma-analiz.html'i gerçek veriye bağla** (9.1 sonrası). Pivot tabloları (ihaleciler birebir):
+  - **Yıllık**: Yıl · Ort. katılımcı · Ort. geçerli teklif · Devam eden · Tamamlanan · Ort. sözleşme bedeli · Toplam sözleşme
+  - **Sektörler (CPV)**: CPV kodu · ad · Güncel · Geçmiş · Devam eden · Tamamlanan · Toplam sözleşme
+  - **İdareler**: idare (tam hiyerarşi) · aynı kırılım
+  - **Yükleniciler (rakipler)**: aynı sektörde yarışan firmalar
+  - **Şehirler / İhale türü / İhale usulü / Teklif türü**: aynı kırılım
+  - Üst KPI: Ortalama tenzilat %, ort. sözleşme süresi, ilk/son sözleşme tarihi, toplam iş bitirme (5 yıl)
+- [ ] 🧱 **kurum-analiz.html'i derinleştir**: o idarenin açtığı tüm ihaleler, hangi firmalar kazanmış,
+  ortalama tenzilat, tekrar eden yükleniciler (idare-firma ilişki ağı).
+- [ ] 🔴 **`/analyze` esnek motoru**: herhangi bir filtre kombinasyonuna (firma+sektör+il) pivot üretebilen
+  tek bir analiz endpoint'i (ihaleciler bunu yapıyor). Supabase RPC (GROUP BY) ile performanslı yaz.
+- 🟢 Not: Bizim artımız → bu ekranlara **AI yorumu** ekleyebiliriz ("bu firma X idaresinde güçlü, tenzilatı düşük").
+
+### 9.2.1 🔎 FİRMA ARAŞTIRMA MODÜLÜ (yeni — kullanıcı isteği 29 Haz 2026) — 🔴 YOK
+
+> Kullanıcı net istedi: "geçmişte o işleri almış firmaları" araştırabileceğimiz bir **firma araştırma / firma
+> istihbarat** modülü. **Kaynak = EKAP sonuç ilanları (kamuya açık olgu), ihaleciler DEĞİL.** Olgular serbest;
+> derlemeyi biz yaparız. Bu modül, P0 sonuç verisi (9.1) gelince hayata geçer; `firma-analiz.html` bunun temeli.
+
+**Veri (9.1'den gelir):** `yukleniciler` tablosu (firma sözlüğü: ad, normalize_ad, vergi_no?, il, sektör[]) +
+`ihale_sonuclari` (ihale ↔ kazanan firma ↔ sözleşme bedeli, tenzilat, katılımcı/geçerli teklif sayısı, tarih).
+
+**(a) Firma Dizini / Arama** (`/firmalar` veya yükleniciler dizini, 9.9):
+- [ ] 🔴 Firma adına göre arama + sektör/şehir filtresi; toplam ciroya göre sıralama; sayfalama.
+- [ ] 🔴 Her firma kartı: ad, şehir, toplam sözleşme sayısı, toplam ciro (₺), son iş tarihi → profile link.
+
+**(b) Firma Profil Sayfası** (`firma-analiz.html?firma=...` — derinleştir):
+- [ ] 🔴 **Kimlik**: ad, (varsa) vergi no, şehir, ana sektörler (CPV).
+- [ ] 🔴 **KPI şeridi**: toplam sözleşme sayısı · toplam ciro · devam eden · tamamlanan · **ort. tenzilat %** ·
+  ort. sözleşme bedeli · ilk/son sözleşme tarihi · 5-yıllık iş bitirme toplamı.
+- [ ] 🔴 **Kazandığı ihaleler listesi** (drill-down, sayfalı): ihale adı · idare · bedel · tenzilat · tarih.
+- [ ] 🔴 **Sektör (CPV) kırılımı**: hangi sektörlerde ne kadar iş aldı.
+- [ ] 🔴 **İdare kırılımı / ilişki haritası**: hangi idarelerden iş alıyor (tekrar eden idare = güçlü ilişki sinyali).
+- [ ] 🔴 **Rakip firmalar**: aynı ihalelerde yarıştığı/birlikte teklif verdiği firmalar (co-bidder ağı).
+- [ ] 🔴 **Şehir / ihale türü / usul kırılımı** (Chart.js + tablo).
+- [ ] 🔴 **Yıllık trend** grafiği (sözleşme sayısı + ciro / yıl).
+- [ ] 🟡 **Ortaklık / konsorsiyum geçmişi** (JV ortakları) — sonuç verisinde ortak girişim bilgisi varsa.
+- [ ] 🟢 **AI firma yorumu (artımız)**: Gemini ile özet — "bu firma X idaresinde baskın, Y sektöründe agresif
+  tenzilat veriyor, son 1 yılda Z'ye yöneldi" → ihaleciler'de OLMAYAN katma değer.
+
+**(c) Rakip Takibi** (üretkenlik — 9.10 ile bağlı):
+- [ ] 🔴 Kullanıcı bir/birkaç **rakip firmayı takibe alır** → o firma yeni iş aldığında/teklif verdiğinde bildirim.
+- [ ] 🔴 "Rakiplerim" panosu: takip edilen firmaların son hareketleri (kazandığı/girdiği ihaleler).
+
+**Satış değeri:** "Rakibini araştır, hangi idareyle çalışıyor, ne kadar tenzilat veriyor, nereye yöneliyor — gör."
+Bu, fiyat/rekabet istihbaratının (landing'de PREMIUM vaat edilen) somut karşılığı. **9.1 olmadan başlayamaz.**
+
+
+---
+
+## 9.3 ⚖️ P1 — KİK KARARLARI VERİTABANI — 🔴 YOK
+
+> ihaleciler'de: **32.255 uyuşmazlık kararı + 2.454 mahkeme kararı**, kategori/şehir/tür/usul/şikayetçi/tarih ile aranır.
+> Teklif verenin "itiraz edersem kazanır mıyım / bu idare çok mu şikayet alıyor" sorusuna cevap = yüksek katma değer.
+
+- [ ] 🔴 **KİK kararları scrape** (kik.gov.tr / EKAP karar arşivi): karar no, tarih, idare, şikayetçi, konu, sonuç, tam metin.
+- [ ] 🔴 `kik_kararlari` tablosu + arama sayfası (`kik-kararlari.html`): full-text + filtreler.
+- [ ] 🟢 **Artımız**: kararları Gemini ile özetle ("emsal karar: benzer şikayet reddedilmiş") + ihale-detayda
+  "bu idarenin/konunun emsal kararları" bloğu.
+
+---
+
+## 9.4 🧠 P2 — AI ŞİRKET PROFİLİ "BRAIN" + RAG BİLGİ TABANI — 🟡 profil.html var, RAG yok
+
+> tendermeister'ın kalbi: şirket profili sadece form değil, **bilgi tabanı**. Belgeler/referanslar/sertifikalar
+> yüklenir → **indekslenir** → hem eşleştirmede hem teklif yazımında kullanılır. "Yapay Zeka Bilgi Düzeyi %"
+> profil doluluğunu gösterir.
+
+- [ ] 🔴 **Firma bilgi tabanı**: kullanıcı kendi belgelerini (iş bitirme, ISO, kapasite raporu, referans mektupları)
+  yükler → Gemini ile özetlenir/embed'lenir → Supabase `pgvector`'da saklanır (RAG).
+- [ ] 🔴 **Profil doluluk skoru** ("AI Bilgi Düzeyi %") — profili tamamlamaya teşvik (onboarding gamification).
+- [ ] 🔴 **Profil alanları (tendermeister'dan eksiklerimiz)**: temel yetkinlikler, anahtar kelimeler,
+  **sertifikalar/yeterlilikler** (uygunluk kontrolü için), **faaliyet yarıçapı (km)**, **min sözleşme değeri**,
+  çok ülke kapsamı (yurtdışı için), iletişim kişisi.
+- [ ] 🔴 **Otomatik CPV/OKAS kodu önerisi**: sektör+yetkinlikten AI ile CPV/OKAS belirlet (tendermeister CPV/NUTS yapıyor).
+- 🟢 Mevcut `profil.html` + `kullanici_profiller` bunun iskeleti; üzerine RAG ve doluluk skoru eklenecek.
+
+---
+
+## 9.5 🤖 P2 — İHALE-BAŞINA AI TEKLİF WORKFLOW'U — 🟡 teklif-olustur.html var, entegre değil
+
+> tendermeister'da her ihalenin "Detaylar"ı bir **workflow** sayfası: 6 sekme. Bizim `teklif-olustur.html` +
+> `uyumluluk.html` + `ihale-detay.html` parçalı; bunları tek bir akışta birleştir.
+
+- [ ] 🔴 **Belge yükle → AI sınıflandır**: kullanıcı şartname/eklerini (PDF/DOCX/XLSX/ZIP) yükler → AI tür ayırır
+  (idari şartname, teknik şartname, birim fiyat cetveli, sözleşme tasarısı). (tendermeister: ZIP extraction + GAEB tanıma;
+  bizde TR karşılığı = **birim fiyat cetveli / standart formlar** ayrıştırma.)
+- [ ] 🔴 **KO (eleme) kriter tarayıcı** = bizim **uyumluluk** modülümüzün güçlendirilmiş hali: şartnameden zorunlu
+  yeterlilik şartlarını (iş deneyim oranı, teminat, kapasite, belgeler) çıkar → firmanın bilgi tabanıyla (9.4)
+  **"giriş engeli var/yok"** kontrolü. *uyumluluk.html'i buraya entegre et.*
+- [ ] 🔴 **AI form doldurma**: standart formları (birim fiyat teklif mektubu, iş deneyim beyanı) firma profilinden doldur.
+- [ ] 🔴 **AI konsept/teklif metni yazıcı**: teknik teklif/metodoloji taslağı üret (teklif-olustur.html'in backend bağı).
+- [ ] 🔴 **Alt yüklenici / konsorsiyum modülü**: bu ihale için alt yüklenici/ortak öner (PLATFORM_CONTEXT'te konsorsiyum planlı).
+- [ ] 🟡 **Bölünmüş ekran inceleme**: solda şartname, sağda teklif (nice-to-have).
+- 🟢 Mevcut **AI Analizi sekmesi (7 bölüm)** zaten bu workflow'un "analiz" adımı — üzerine "aksiyon" adımlarını ekle.
+
+---
+
+## 9.6 📡 P3 — ÇOK KAYNAKLI RADAR + ANLIK TARAMA — 🟡 EKAP gece cron var
+
+> tendermeister 18 portalı, ihaleciler 3 kaynağı (EKAP+Gazete+İstihbarat) topluyor. Biz tek kaynak + gece taraması.
+
+- [ ] 🔴 **Gazete/özel sektör ilanları kaynağı** (ihaleciler'in "Gazete" + "İstihbarat"ı): özel sektör alım ilanları,
+  resmi gazete ihale ilanları. (PLATFORM_CONTEXT'te "Özel sektör alım ilanları" zaten Faz 2'de planlı — başlat.)
+- [ ] 🔴 **"Şimdi tara" / anlık yenile** butonu (kullanıcı tetikli incremental tarama) — gece cron'a ek.
+- [ ] 🟡 **Yurtdışı/AB ihale altyapısı** (tendermeister EU TED yapıyor; PLATFORM_CONTEXT'te "Yurtdışı ihale altyapısı" planlı).
+  → çok dilli arayüz gerektirir (9.8).
+- 🟢 Bizim gece cron + link-only mimarimiz sağlam temel; üzerine kaynak çeşitliliği eklenecek.
+
+---
+
+## 9.7 🔔 P2 — AKILLI EŞLEŞME SKORU + BİLDİRİM EŞİĞİ — 🟡 basit uyum % var
+
+- [ ] 🔴 **Semantik AI eşleşme**: şu anki uyum % formülü basit (kategori+il+tür+bütçe). tendermeister profil
+  anahtar kelimeleri + CPV/NUTS + bilgi tabanıyla **semantik** skor veriyor. Gemini embedding ile firma profili ↔
+  ihale şartnamesi benzerliği hesapla.
+- [ ] 🔴 **Minimum eşleşme eşiği** (kullanıcı ayarı, ör. %70): sadece eşiğin üstündekiler bildirim/öne çıkarma.
+- [ ] 🔴 **"En iyi eşleşmeler" görünümü** (ör. %85+ rozeti) — dashboard'da öne çıkan blok.
+
+---
+
+## 9.8 🌐 P3 — ÇOK DİLLİ ARAYÜZ — 🔴 sadece TR
+
+- [ ] 🔴 i18n altyapısı (TR/EN, sonra AR). tendermeister 5 dil (AR dahil) sunuyor — yurtdışı/uluslararası firma hedefi için.
+  Yurtdışı ihale (9.6) açılırsa zorunlu.
+
+---
+
+## 9.9 🗂️ P2 — VERİ ZENGİNLİĞİ & GEZİNME (ihaleciler dizinleri) — 🟡 DEVAM EDİYOR (29 Haz 2026)
+
+> ihaleciler üst menüsü: **Kategoriler · Şehirler · Sektörler · İdareler · Yükleniciler · KİK Kararları** —
+> her biri sayılı bir dizin sayfası. Bizde Kategoriler/Şehirler (harita) var; diğerleri eksik.
+>
+> ✅ Not: **idareye göre ve sektöre göre ARAMA için gereken veri DB'de zaten var** (`idare`, `okas`, `kategori`).
+> Yani bu maddeler "veri toplama" değil, **arama/dizin yüzeyi (UI + GROUP BY sorgusu)** işidir → görece hızlı.
+
+- [x] 🟢 **İdareye göre arama/dizin**: `idareler.html` oluşturuldu (29 Haz 2026).
+  - Tüm idareler paginated batch ile çekilir, client-side GROUP BY + sort
+  - Özet kartlar: Toplam İdare / Aktif İdareler / Toplam İhale / Aktif İhale
+  - Arama (anlık filter), İl filtresi, 5 sıralama seçeneği (en çok ihale/aktif/isim/il)
+  - Her satırda: idare adı, başlıca il, toplam sayı, aktif sayı, Analiz + İhaleler butonları
+  - 50/sayfa sayfalama; sidebar nav'a tüm sayfalarda eklendi
+  - Dokunulan dosyalar: `idareler.html` (yeni), sidebar güncellemesi (dashboard/ihaleler/ihale-detay/kurum-analiz/firma-analiz/takipte/bildirimler/rekabet-analizi/fiyatlandirma_odeme_bolumu)
+- [ ] 🔴 **Sektöre (CPV) göre arama/dizin**: `okas` kodundan tam CPV-kodu seviyesinde gezinme
+  (şu an sadece OKAS ilk-2-hane → ana kategori var; alt CPV kırılımı eklenecek).
+- [ ] 🔴 **Yükleniciler dizini**: geçmişte ihale alan firmaların listesi (9.1 sonuç verisi gelince) + analiz linki.
+- [ ] 🔴 **Resmi KİK iş-deneyim grup taksonomisi** ((A) Köprü/Tünel/Karayolu… (B) Bina… (C) Tesisat… (D) Enerji… (E) Haberleşme):
+  yeterlilik/iş deneyim eşleştirmesi için kategori ağacına ekle (ihaleciler'de var).
+- 🟢 Bizim **Türkiye haritası** ihaleciler'de yok — bu bizim görsel artımız, koru/öne çıkar.
+
+---
+
+## 9.10 👤 P2 — HESAP / ÜRETKENLİK ÖZELLİKLERİ — 🟡 kısmi
+
+> ihaleciler hesap menüsü: **Bültenlerim · Okuduklarım · Takip listem · Sözleşme listem · Bildirimler**.
+
+- [ ] 🔴 **Bültenlerim**: her kayıtlı arama → otomatik e-posta bülteni (kaydedilen filtre = abonelik). (Bizde takip var, kayıtlı-arama-bülteni yok.)
+- [ ] 🔴 **Okuduklarım / okundu-takibi**: görülen ihaleyi "okundu" işaretle, "okudukları gizle" filtresi (kalabalığı azaltır).
+- [ ] 🟡 **Takip listem** — 🟢 bizde `takipte.html` var (koru).
+- [ ] 🔴 **Sözleşme listem**: kazanılan/takip edilen sözleşmeleri ayrı liste + son tarih hatırlatma.
+- [ ] 🟡 **Çok kanallı bildirim**: landing'de SMS/WhatsApp/Telegram vaat ediliyor ama backend yok → en azından
+  **e-posta + tarayıcı push** (tendermeister push yapıyor) gerçekle; SMS/WhatsApp'ı sonra.
+
+---
+
+## 9.11 💰 Fiyatlandırma / konumlandırma notu
+
+- tendermeister €299–€899 (kurumsal/AB). ihaleciler TR abonelik. Bizimki ₺1.490/₺3.990 — TR pazarına uygun.
+- **Risk:** ihaleciler veri derinliğinde önde; biz **AI + sadelik + harita + uyum skoru** ile farklılaşmalıyız.
+  Satış mesajı: *"ihaleciler'in tüm verisi + yapay zekâ ile teklif/analiz, yarısı kadar kalabalık arayüzde."*
+- Bu yüzden **P0 (sonuç verisi) + P1 (analitik/KİK)** olmadan "ihaleciler'e eş" diyemeyiz; **P2 (AI Brain/teklif)**
+  olmadan "tendermeister'e eş" diyemeyiz. Sıra bu yüzden aşağıdaki gibi.
+
+---
+
+## 🎯 ÖNERİLEN UYGULAMA SIRASI (Öncelik 9 için)
+
+> "Asla eksiğimiz kalmasın" hedefi → önce ihaleciler paritesi (TR pazarı), sonra tendermeister AI vizyonu.
+
+1. **P0 — Sonuç/sözleşme verisi scrape + şema** (9.1) → analitiğin yakıtı. *Her şeyden önce bu.*
+2. **P1 — Firma & idare derin analizi** (9.2) → ihaleciler amiral gemisine parite.
+3. **P1 — KİK kararları DB + arama** (9.3) → ihaleciler'in diğer büyük kozu.
+4. **P2 — AI Brain + RAG profil** (9.4) → eşleşme ve teklifin temeli; profil alanlarını tamamla.
+5. **P2 — Akıllı eşleşme skoru + eşik** (9.7) → AI farkı görünür olur.
+6. **P2 — İhale-başına AI teklif workflow** (9.5) → tendermeister'in çekirdek değeri (uyumluluk.html'i entegre et).
+7. **P2 — Hesap üretkenlik** (9.10: Bültenlerim, Okuduklarım, Sözleşme listem, push) + **dizinler** (9.9).
+8. **P3 — Çok kaynak + anlık tarama** (9.6), **çok dil** (9.8), **yurtdışı/AB**.
+
+> **Not (kalıcı talimat gereği):** Bu bölüm üzerinde çalışırken her tamamlanan maddeyi 🟢'ya çevir,
+> dokunulan dosyaları yaz, ve yeni fark edilen açıkları buraya ekle. Veriye bağlı (🧱) maddeler 9.1 bitmeden başlamaz.
