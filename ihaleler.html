@@ -94,6 +94,17 @@
     .tab-btn:hover { color: var(--white); }
     .tab-btn.active { color: var(--amber); border-bottom-color: var(--amber); }
 
+    /* HIZLI TARİH FİLTRELERİ */
+    .hizli-filtreler { display:flex; align-items:center; gap:6px; padding:4px 0 12px; flex-wrap:wrap; }
+    .hf-label { font-size:11px; color:var(--muted); margin-right:2px; text-transform:uppercase; letter-spacing:.5px; }
+    .hizli-chip {
+      background:var(--card-bg); border:1px solid var(--border);
+      color:var(--muted); font-size:12px; font-weight:500; font-family:var(--font);
+      padding:4px 13px; border-radius:20px; cursor:pointer; transition:all .15s;
+    }
+    .hizli-chip:hover { border-color:var(--blue); color:var(--white); }
+    .hizli-chip.active { background:var(--blue); border-color:var(--blue); color:#fff; }
+
     /* GELİŞMİŞ FİLTRE PANELİ (Detaylı Ara) */
     .gelismis-panel {
       display: none; background: var(--navy-mid); border: 1px solid var(--border);
@@ -211,6 +222,20 @@
       border-radius: 10px; padding: 16px 18px; transition: border-color .15s, background .15s;
     }
     .ihale-kart:hover { border-color: rgba(240,165,0,0.35); background: rgba(255,255,255,0.02); }
+    .ihale-kart.okundu { opacity: .55; }
+    .ihale-kart.okundu .kart-baslik { color: var(--muted); }
+    .okundu-badge {
+      font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 10px;
+      background: rgba(148,163,184,.15); color: var(--muted); letter-spacing: .04em;
+      display: inline-block; margin-left: 8px; vertical-align: middle;
+    }
+    .btn-okundu-toggle {
+      font-size: 12px; font-weight: 600; padding: 5px 12px; border-radius: 6px;
+      background: rgba(255,255,255,.06); color: var(--muted); border: 1px solid var(--border);
+      cursor: pointer; transition: all .15s; white-space: nowrap;
+    }
+    .btn-okundu-toggle:hover { border-color: rgba(255,255,255,.25); color: var(--white); }
+    .btn-okundu-toggle.aktif { background: rgba(148,163,184,.15); color: var(--white); border-color: rgba(148,163,184,.3); }
     .kart-ust { display: flex; justify-content: space-between; gap: 16px; align-items: flex-start; }
     .kart-sol { flex: 1; min-width: 0; }
     .kart-kayitno { font-size: 11px; color: var(--muted); font-weight: 600; letter-spacing: .04em; margin-bottom: 4px; }
@@ -259,6 +284,94 @@
     }
     @keyframes spin { to { transform: rotate(360deg); } }
     @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.5;transform:scale(.8)} }
+
+    /* ── KAYITLI ARAMA ─────────────────────────────── */
+    .btn-ara-kaydet {
+      font-size: 12px; font-weight: 600; padding: 5px 12px; border-radius: 6px;
+      background: rgba(240,165,0,.08); color: var(--amber);
+      border: 1px solid rgba(240,165,0,.3); cursor: pointer; transition: all .15s; white-space: nowrap;
+    }
+    .btn-ara-kaydet:hover { background: rgba(240,165,0,.18); }
+
+    .btn-kayitli-ara {
+      font-size: 12px; font-weight: 600; padding: 5px 12px; border-radius: 6px;
+      background: rgba(255,255,255,.05); color: var(--muted);
+      border: 1px solid var(--border); cursor: pointer; transition: all .15s; white-space: nowrap; position: relative;
+    }
+    .btn-kayitli-ara:hover { color: var(--white); }
+    .kayitli-badge {
+      position: absolute; top: -4px; right: -4px; width: 16px; height: 16px;
+      background: var(--amber); color: var(--navy); border-radius: 50%;
+      font-size: 9px; font-weight: 800; display: flex; align-items: center; justify-content: center;
+    }
+
+    /* Modal overlay */
+    .modal-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,.6); z-index: 1000;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .modal-overlay.hidden { display: none; }
+    .modal-box {
+      background: var(--navy-mid); border: 1px solid var(--border);
+      border-radius: 12px; padding: 28px 28px 24px; width: 480px; max-width: 95vw;
+    }
+    .modal-title { font-size: 16px; font-weight: 700; margin-bottom: 8px; }
+    .modal-sub { font-size: 13px; color: var(--muted); margin-bottom: 18px; line-height: 1.5; }
+    .modal-input {
+      width: 100%; background: var(--navy); border: 1px solid var(--border);
+      border-radius: 7px; color: var(--white); font-size: 14px; font-family: var(--font);
+      padding: 10px 14px; outline: none; margin-bottom: 16px; box-sizing: border-box;
+    }
+    .modal-input:focus { border-color: var(--amber); }
+    .modal-actions { display: flex; gap: 10px; justify-content: flex-end; }
+    .modal-btn-cancel {
+      background: transparent; color: var(--muted); border: 1px solid var(--border);
+      padding: 8px 18px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer;
+    }
+    .modal-btn-cancel:hover { color: var(--white); }
+    .modal-btn-ok {
+      background: var(--amber); color: var(--navy); border: none;
+      padding: 8px 22px; border-radius: 6px; font-size: 13px; font-weight: 700; cursor: pointer;
+    }
+    .modal-btn-ok:hover { opacity: .88; }
+
+    /* Kayıtlı aramalar paneli */
+    .kayitli-panel {
+      background: var(--navy-mid); border: 1px solid var(--border);
+      border-radius: 10px; padding: 16px; margin-bottom: 16px;
+    }
+    .kayitli-panel-header {
+      display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;
+    }
+    .kayitli-panel-title { font-size: 13px; font-weight: 700; color: var(--white); }
+    .kayitli-items { display: flex; flex-direction: column; gap: 8px; }
+    .kayitli-item {
+      display: flex; align-items: center; gap: 10px; padding: 10px 12px;
+      background: var(--navy); border: 1px solid var(--border); border-radius: 8px;
+    }
+    .kayitli-item-icon { font-size: 16px; flex-shrink: 0; }
+    .kayitli-item-info { flex: 1; min-width: 0; }
+    .kayitli-item-ad { font-size: 13px; font-weight: 600; color: var(--white); }
+    .kayitli-item-ozet { font-size: 11px; color: var(--muted); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .kayitli-item-actions { display: flex; gap: 6px; flex-shrink: 0; }
+    .kayitli-run-btn {
+      font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 5px;
+      background: rgba(240,165,0,.1); color: var(--amber); border: 1px solid rgba(240,165,0,.3); cursor: pointer;
+    }
+    .kayitli-run-btn:hover { background: rgba(240,165,0,.22); }
+    .kayitli-del-btn {
+      font-size: 12px; padding: 4px 8px; border-radius: 5px;
+      background: rgba(239,68,68,.08); color: #f87171; border: 1px solid rgba(239,68,68,.2); cursor: pointer;
+    }
+    .kayitli-del-btn:hover { background: rgba(239,68,68,.18); }
+    .toast {
+      position: fixed; bottom: 24px; right: 24px; z-index: 2000;
+      background: var(--navy-mid); border: 1px solid var(--amber); border-radius: 8px;
+      padding: 12px 20px; font-size: 13px; font-weight: 600; color: var(--white);
+      display: flex; align-items: center; gap: 10px; opacity: 0;
+      transform: translateY(8px); transition: all .25s; pointer-events: none;
+    }
+    .toast.show { opacity: 1; transform: translateY(0); }
   </style>
 </head>
 <body>
@@ -281,7 +394,8 @@
       <div class="nav-section-label">Analiz</div>
       <a href="rekabet-analizi" class="nav-item"><span class="icon">📊</span> Rekabet Analizi</a>
       <a href="idareler" class="nav-item"><span class="icon">🏛️</span> İdareler Dizini</a>
-      <a href="kurum-analiz" class="nav-item"><span class="icon">🏛️</span> Kurum Analizi</a>
+      <a href="sektorler" class="nav-item"><span class="icon">🏭</span> Sektörler Dizini</a>
+      <a href="kurum-analiz" class="nav-item"><span class="icon">🔍</span> Kurum Analizi</a>
       <a href="firma-analiz" class="nav-item"><span class="icon">🏢</span> Firma Analizi</a>
       <a href="uyumluluk" class="nav-item"><span class="icon">✓</span> Uyumluluk</a>
       <a href="dokumanlar" class="nav-item"><span class="icon">📁</span> Dökümanlar</a>
@@ -331,10 +445,20 @@
 
       <!-- SEKMELER -->
       <div class="tab-bar">
-        <button class="tab-btn active" data-sekme="guncel"  onclick="sekmeDegistir('guncel')">Güncel</button>
-        <button class="tab-btn"        data-sekme="gecmis"  onclick="sekmeDegistir('gecmis')">Geçmiş</button>
-        <button class="tab-btn"        data-sekme="sonuc"   onclick="sekmeDegistir('sonuc')">Sonuç</button>
+        <button class="tab-btn active" data-sekme="guncel"  onclick="sekmeDegistir('guncel')">Güncel <span id="tab-cnt-guncel" style="font-size:11px;opacity:.6;font-weight:500;"></span></button>
+        <button class="tab-btn"        data-sekme="gecmis"  onclick="sekmeDegistir('gecmis')">Geçmiş <span id="tab-cnt-gecmis" style="font-size:11px;opacity:.6;font-weight:500;"></span></button>
+        <button class="tab-btn"        data-sekme="sonuc"   onclick="sekmeDegistir('sonuc')">Sonuç <span id="tab-cnt-sonuc" style="font-size:11px;opacity:.6;font-weight:500;"></span></button>
         <button class="tab-btn"        data-sekme="detayli" onclick="sekmeDegistir('detayli')">Detaylı Ara</button>
+      </div>
+
+      <!-- HIZLI TARİH FİLTRELERİ -->
+      <div class="hizli-filtreler" id="hizli-filtreler">
+        <span class="hf-label">Hızlı:</span>
+        <button class="hizli-chip active" data-mod="" onclick="hizliTarihFiltre('')">Tümü</button>
+        <button class="hizli-chip" data-mod="bugun" onclick="hizliTarihFiltre('bugun')">Bugün</button>
+        <button class="hizli-chip" data-mod="buHafta" onclick="hizliTarihFiltre('buHafta')">Bu Hafta</button>
+        <button class="hizli-chip" data-mod="son7" onclick="hizliTarihFiltre('son7')">Son 7 Gün</button>
+        <button class="hizli-chip" data-mod="son30" onclick="hizliTarihFiltre('son30')">Son 30 Gün</button>
       </div>
 
       <!-- FİLTRE BARI -->
@@ -483,9 +607,25 @@
         </div>
       </div>
 
+      <!-- KAYITLI ARAMALAR PANELİ (görünür olunca gösterilir) -->
+      <div class="kayitli-panel" id="kayitli-panel" style="display:none;">
+        <div class="kayitli-panel-header">
+          <span class="kayitli-panel-title">⭐ Kayıtlı Aramalarım</span>
+          <button onclick="kayitliPanelKapat()" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;">✕</button>
+        </div>
+        <div class="kayitli-items" id="kayitli-items-list"></div>
+      </div>
+
       <!-- SONUÇ BİLGİSİ -->
       <div class="result-info">
         <div class="result-count" id="result-count">Yükleniyor...</div>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <button class="btn-okundu-toggle" id="btn-okundu-toggle" onclick="okunduToggle()" title="Okunan ihaleleri gizle / göster">👁 Okunanları Gizle <span id="okundu-sayi" style="display:none;"></span></button>
+          <button class="btn-ara-kaydet" onclick="aramaKaydetModal()" title="Mevcut filtreleri kaydet">⭐ Aramayı Kaydet</button>
+          <button class="btn-kayitli-ara" id="btn-kayitli-ara" onclick="kayitliPanelToggle()" title="Kayıtlı aramalar">
+            📂 Kayıtlı <span class="kayitli-badge" id="kayitli-badge" style="display:none;"></span>
+          </button>
+        </div>
         <select class="sort-select" id="sort-select" onchange="filtreUygula()">
           <option value="uyum_desc">Uyum % ↓</option>
           <option value="son_teklif_tarihi">Son Teklif ↑</option>
@@ -511,6 +651,23 @@
     </div><!-- /page-body -->
   </div><!-- /main -->
 </div><!-- /app -->
+
+<!-- KAYITLI ARAMA MODAL -->
+<div class="modal-overlay hidden" id="kaydet-modal" onclick="if(event.target===this)kaydetModalKapat()">
+  <div class="modal-box">
+    <div class="modal-title">Aramayı Kaydet</div>
+    <div class="modal-sub" id="modal-filtre-ozet" style="font-size:12px;color:var(--muted);margin-bottom:12px;"></div>
+    <div class="modal-sub">Bu aramaya bir isim verin — daha sonra bir tıkla çalıştırabilirsiniz.</div>
+    <input class="modal-input" id="kaydet-ad" type="text" placeholder="Örn: Ankara Yazılım İhaleleri" maxlength="60" />
+    <div class="modal-actions">
+      <button class="modal-btn-cancel" onclick="kaydetModalKapat()">İptal</button>
+      <button class="modal-btn-ok" onclick="aramaKaydet()">Kaydet</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast">✅ <span id="toast-msg"></span></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/sidebar-user.js"></script>
@@ -608,6 +765,14 @@
     if (max === 0 || (bedel >= min && bedel <= max)) puan += 15;
     else if (bedel >= min * 0.5 && bedel <= max * 1.5) puan += 7;
 
+    // Anahtar kelime bonusu (+10) — profil.html'de girilen özel kelimeler
+    const anahtarlar = (localStorage.getItem('ihale_anahtar_kelimeler') || '')
+      .split(',').map(k => k.trim().toLowerCase()).filter(Boolean);
+    if (anahtarlar.length > 0 && ilan.baslik) {
+      const bl = ilan.baslik.toLowerCase();
+      if (anahtarlar.some(k => bl.includes(k))) puan += 10;
+    }
+
     return Math.min(puan, 100);
   }
 
@@ -616,6 +781,39 @@
   let toplamKayit = 0;
   let yukluIlanlar = [];
   let aktifSekme = 'guncel';
+  let okunduGizle = false;
+
+  // ── Okuduklarım (localStorage) ────────────────────────────
+  const Okundu = (() => {
+    const KEY = 'ihale_okundu_v1';
+    const get = () => { try { return new Set(JSON.parse(localStorage.getItem(KEY)) || []); } catch { return new Set(); } };
+    const save = s => localStorage.setItem(KEY, JSON.stringify([...s]));
+    return {
+      var: id => get().has(String(id)),
+      isle: id => { const s = get(); s.add(String(id)); save(s); },
+      sil: id => { const s = get(); s.delete(String(id)); save(s); },
+      sayi: () => get().size,
+      temizle: () => localStorage.removeItem(KEY),
+    };
+  })();
+
+  function okunduToggle() {
+    okunduGizle = !okunduGizle;
+    const btn = document.getElementById('btn-okundu-toggle');
+    btn.classList.toggle('aktif', okunduGizle);
+    btn.querySelector('span') && (btn.innerHTML = okunduGizle
+      ? `👁 Okunanları Göster <span id="okundu-sayi">(${Okundu.sayi()})</span>`
+      : `👁 Okunanları Gizle <span id="okundu-sayi"></span>`);
+    document.querySelectorAll('.ihale-kart.okundu').forEach(el => {
+      el.style.display = okunduGizle ? 'none' : '';
+    });
+  }
+
+  function okunduSayiGuncelle() {
+    const n = Okundu.sayi();
+    const span = document.getElementById('okundu-sayi');
+    if (span) { span.textContent = n > 0 ? `(${n})` : ''; span.style.display = n > 0 ? '' : 'none'; }
+  }
 
   // usul kolonu ham EKAP enum anahtarı tutuyor; fragment ile ilike eşleştir
   // (Pazarlık'ın 21A/21E/21F varyantlarını da BARGAIN fragmenti yakalar)
@@ -669,20 +867,25 @@
   }
 
   function kartOlustur(ilan) {
-    const uyum = ilan._uyum !== undefined ? ilan._uyum : uyumHesapla(ilan);
+    const uyum    = ilan._uyum !== undefined ? ilan._uyum : uyumHesapla(ilan);
     const takipte = Takip.var(ilan.id);
+    const okundu  = Okundu.var(ilan.id);
+    const okunduStyle = okunduGizle && okundu ? 'display:none;' : '';
     const etiketler = [
       `<span class="etiket etiket-ekap">EKAP</span>`,
-      ilan.tur ? `<span class="etiket">${ilan.tur}</span>` : '',
+      ilan.tur  ? `<span class="etiket">${ilan.tur}</span>` : '',
       usulEtiket(ilan.usul),
-      ilan.il ? `<span class="etiket">📍 ${ilan.il}</span>` : ''
+      ilan.il   ? `<span class="etiket">📍 ${ilan.il}</span>` : ''
     ].filter(Boolean).join('');
     return `
-      <div class="ihale-kart">
+      <div class="ihale-kart${okundu ? ' okundu' : ''}" style="${okunduStyle}" id="kart-${ilan.id}">
         <div class="kart-ust">
           <div class="kart-sol">
-            <div class="kart-kayitno">Kayıt No: ${ilan.ekap_id || '—'}</div>
-            <a class="kart-baslik" href="ihale-detay?id=${ilan.id}">${ilan.baslik || '—'}</a>
+            <div class="kart-kayitno">
+              Kayıt No: ${ilan.ekap_id || '—'}
+              ${okundu ? '<span class="okundu-badge">Okundu</span>' : ''}
+            </div>
+            <a class="kart-baslik" href="ihale-detay?id=${ilan.id}" onclick="kartOku('${ilan.id}')">${ilan.baslik || '—'}</a>
             <div class="kart-idare">${ilan.idare ? `<a href="kurum-analiz?kurum=${encodeURIComponent(ilan.idare)}" style="color:inherit;text-decoration:none;" onmouseover="this.style.color='var(--amber)'" onmouseout="this.style.color=''">${ilan.idare}</a>` : '—'}</div>
             <div class="kart-etiketler">${etiketler}</div>
           </div>
@@ -705,10 +908,24 @@
               <span class="compat-num">${uyum}%</span>
             </div>
             <button class="action-btn ${takipte ? 'takipte' : 'primary'}" onclick="takibeAl(this,'${ilan.id}')">${takipte ? '✓ Takipte' : '☆ Takibe Al'}</button>
-            <a class="action-btn" href="ihale-detay?id=${ilan.id}">Detay →</a>
+            <a class="action-btn" href="ihale-detay?id=${ilan.id}" onclick="kartOku('${ilan.id}')">Detay →</a>
           </div>
         </div>
       </div>`;
+  }
+
+  function kartOku(id) {
+    if (Okundu.var(id)) return;
+    Okundu.isle(id);
+    const el = document.getElementById('kart-' + id);
+    if (el) {
+      el.classList.add('okundu');
+      const kayitno = el.querySelector('.kart-kayitno');
+      if (kayitno && !kayitno.querySelector('.okundu-badge')) {
+        kayitno.insertAdjacentHTML('beforeend', '<span class="okundu-badge">Okundu</span>');
+      }
+    }
+    okunduSayiGuncelle();
   }
 
   async function ilanlariYukle(sayfa = 1) {
@@ -856,7 +1073,33 @@
       .forEach(id => { document.getElementById(id).value = ''; });
     document.getElementById('f-min-uyum').value = '0';
     document.getElementById('sort-select').value = 'uyum_desc';
+    document.querySelectorAll('.hizli-chip').forEach(c => c.classList.toggle('active', c.dataset.mod === ''));
     ilanlariYukle(1);
+  }
+
+  function hizliTarihFiltre(mod) {
+    document.querySelectorAll('.hizli-chip').forEach(c => c.classList.toggle('active', c.dataset.mod === mod));
+    const bugun = new Date();
+    const tarihStr = d => d.toISOString().split('T')[0];
+    const bBas = document.getElementById('f-yayin-bas');
+    const bBit = document.getElementById('f-yayin-bit');
+    if (mod === '') {
+      bBas.value = ''; bBit.value = '';
+    } else if (mod === 'bugun') {
+      bBas.value = tarihStr(bugun); bBit.value = tarihStr(bugun);
+    } else if (mod === 'buHafta') {
+      const paz = new Date(bugun);
+      paz.setDate(bugun.getDate() - (bugun.getDay() === 0 ? 6 : bugun.getDay() - 1));
+      bBas.value = tarihStr(paz); bBit.value = tarihStr(bugun);
+    } else if (mod === 'son7') {
+      const d = new Date(bugun); d.setDate(bugun.getDate() - 7);
+      bBas.value = tarihStr(d); bBit.value = tarihStr(bugun);
+    } else if (mod === 'son30') {
+      const d = new Date(bugun); d.setDate(bugun.getDate() - 30);
+      bBas.value = tarihStr(d); bBit.value = tarihStr(bugun);
+    }
+    // Detaylı Ara paneline gerek kalmadan filtreyi çalıştır
+    filtreUygula();
   }
 
   function takibeAl(btn, id) {
@@ -912,12 +1155,216 @@
     if (usul) document.getElementById('f-usul').value = usul;
     const tur = p.get('tur');
     if (tur) document.getElementById('f-tur').value = tur;
+    const sekme = p.get('sekme');
+    if (sekme && ['guncel','gecmis','sonuc','detayli'].includes(sekme)) sekmeDegistir(sekme);
+  }
+
+  // ── Kayıtlı Arama modülü ─────────────────────────────────
+  const KayitliArama = (() => {
+    const KEY = 'ihale_kayitli_aramalar_v1';
+    const get = () => { try { return JSON.parse(localStorage.getItem(KEY)) || []; } catch { return []; } };
+    const save = list => localStorage.setItem(KEY, JSON.stringify(list));
+    return {
+      liste: get,
+      ekle: (ad, params) => { const l = get(); l.unshift({ id: Date.now(), ad, params, tarih: new Date().toISOString() }); save(l); },
+      sil: id => { const l = get().filter(x => x.id !== id); save(l); },
+      sayi: () => get().length,
+    };
+  })();
+
+  function mevcutFiltreleriOku() {
+    return {
+      arama:    document.getElementById('f-arama').value.trim(),
+      il:       document.getElementById('f-il').value,
+      kategori: document.getElementById('f-kategori').value,
+      tur:      document.getElementById('f-tur').value,
+      usul:     document.getElementById('f-usul').value,
+      minBedel: document.getElementById('f-min-bedel').value,
+      maxBedel: document.getElementById('f-max-bedel').value,
+      minUyum:  document.getElementById('f-min-uyum').value,
+      idare:    document.getElementById('f-idare').value.trim(),
+      yayinBas: document.getElementById('f-yayin-bas').value,
+      yayinBit: document.getElementById('f-yayin-bit').value,
+      teklifBas: document.getElementById('f-teklif-bas').value,
+      teklifBit: document.getElementById('f-teklif-bit').value,
+      sekme:    aktifSekme,
+    };
+  }
+
+  function filtrelerOzet(params) {
+    const parcalar = [];
+    if (params.arama)    parcalar.push(`"${params.arama}"`);
+    if (params.il)       parcalar.push(`İl: ${params.il}`);
+    if (params.kategori) parcalar.push(`Kategori: ${params.kategori}`);
+    if (params.tur)      parcalar.push(`Tür: ${params.tur}`);
+    if (params.usul)     parcalar.push(`Usul: ${params.usul}`);
+    if (params.minBedel || params.maxBedel) {
+      const mn = params.minBedel ? `₺${(+params.minBedel/1e6).toFixed(1)}M` : '0';
+      const mx = params.maxBedel ? `₺${(+params.maxBedel/1e6).toFixed(1)}M` : '∞';
+      parcalar.push(`Bütçe: ${mn}–${mx}`);
+    }
+    if (params.minUyum && params.minUyum !== '0') parcalar.push(`Min Uyum: %${params.minUyum}`);
+    if (params.idare)    parcalar.push(`İdare: ${params.idare}`);
+    return parcalar.length ? parcalar.join(' · ') : 'Tüm ihaleler (filtre yok)';
+  }
+
+  function filtrelerUrlYap(params) {
+    const p = new URLSearchParams();
+    if (params.arama)    p.set('ara', params.arama);
+    if (params.il)       p.set('il', params.il);
+    if (params.kategori) p.set('kategori', params.kategori);
+    if (params.tur)      p.set('tur', params.tur);
+    if (params.usul)     p.set('usul', params.usul);
+    if (params.idare)    p.set('idare', params.idare);
+    const str = p.toString();
+    return str ? `ihaleler?${str}` : 'ihaleler';
+  }
+
+  function aramaKaydetModal() {
+    const params = mevcutFiltreleriOku();
+    const ozet = filtrelerOzet(params);
+    document.getElementById('modal-filtre-ozet').textContent = ozet;
+    document.getElementById('kaydet-ad').value = '';
+    document.getElementById('kaydet-modal').classList.remove('hidden');
+    setTimeout(() => document.getElementById('kaydet-ad').focus(), 100);
+  }
+
+  function kaydetModalKapat() {
+    document.getElementById('kaydet-modal').classList.add('hidden');
+  }
+
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') kaydetModalKapat(); });
+  document.getElementById('kaydet-ad').addEventListener('keydown', e => { if (e.key === 'Enter') aramaKaydet(); });
+
+  function aramaKaydet() {
+    const ad = document.getElementById('kaydet-ad').value.trim();
+    if (!ad) { document.getElementById('kaydet-ad').focus(); return; }
+    const params = mevcutFiltreleriOku();
+    KayitliArama.ekle(ad, params);
+    kaydetModalKapat();
+    toastGoster(`"${ad}" kaydedildi`);
+    kayitliBadgeGuncelle();
+  }
+
+  function toastGoster(msg) {
+    const t = document.getElementById('toast');
+    document.getElementById('toast-msg').textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2800);
+  }
+
+  function kayitliBadgeGuncelle() {
+    const n = KayitliArama.sayi();
+    const badge = document.getElementById('kayitli-badge');
+    if (badge) { badge.textContent = n; badge.style.display = n > 0 ? 'flex' : 'none'; }
+  }
+
+  function kayitliPanelToggle() {
+    const panel = document.getElementById('kayitli-panel');
+    const visible = panel.style.display !== 'none';
+    if (visible) { panel.style.display = 'none'; return; }
+    kayitliPanelRender();
+    panel.style.display = 'block';
+  }
+
+  function kayitliPanelKapat() {
+    document.getElementById('kayitli-panel').style.display = 'none';
+  }
+
+  function kayitliPanelRender() {
+    const liste = KayitliArama.liste();
+    const konteyner = document.getElementById('kayitli-items-list');
+    if (!liste.length) {
+      konteyner.innerHTML = '<div style="font-size:13px;color:var(--muted);padding:8px 0;">Henüz kayıtlı aramanız yok. Filtreleri ayarlayıp "Aramayı Kaydet"e tıklayın.</div>';
+      return;
+    }
+    konteyner.innerHTML = liste.map(item => `
+      <div class="kayitli-item" id="ki-${item.id}">
+        <span class="kayitli-item-icon">⭐</span>
+        <div class="kayitli-item-info">
+          <div class="kayitli-item-ad">${item.ad}</div>
+          <div class="kayitli-item-ozet">${filtrelerOzet(item.params)}</div>
+        </div>
+        <div class="kayitli-item-actions">
+          <button class="kayitli-run-btn" onclick="kayitliAramaUygula(${item.id})">▶ Çalıştır</button>
+          <button class="kayitli-del-btn" onclick="kayitliAramaSil(${item.id})">✕</button>
+        </div>
+      </div>`).join('');
+  }
+
+  function kayitliAramaUygula(id) {
+    const item = KayitliArama.liste().find(x => x.id === id);
+    if (!item) return;
+    const p = item.params;
+    document.getElementById('f-arama').value    = p.arama    || '';
+    document.getElementById('f-il').value       = p.il       || '';
+    document.getElementById('f-kategori').value = p.kategori || '';
+    document.getElementById('f-tur').value      = p.tur      || '';
+    document.getElementById('f-usul').value     = p.usul     || '';
+    document.getElementById('f-min-bedel').value= p.minBedel || '';
+    document.getElementById('f-max-bedel').value= p.maxBedel || '';
+    document.getElementById('f-min-uyum').value = p.minUyum  || '0';
+    document.getElementById('f-idare').value    = p.idare    || '';
+    document.getElementById('f-yayin-bas').value= p.yayinBas || '';
+    document.getElementById('f-yayin-bit').value= p.yayinBit || '';
+    document.getElementById('f-teklif-bas').value=p.teklifBas|| '';
+    document.getElementById('f-teklif-bit').value=p.teklifBit|| '';
+    if (p.sekme) sekmeDegistir(p.sekme);
+    kayitliPanelKapat();
+    ilanlariYukle(1);
+    toastGoster(`"${item.ad}" uygulandı`);
+  }
+
+  function kayitliAramaSil(id) {
+    KayitliArama.sil(id);
+    const el = document.getElementById('ki-' + id);
+    if (el) el.remove();
+    kayitliBadgeGuncelle();
+    if (!KayitliArama.sayi()) kayitliPanelRender();
   }
 
   // Sayfa yüklenince
   ilDropdownDoldur();          // önce dropdown dolsun ki URL'den gelen il seçilebilsin
   urlFiltreleriUygula();
+  // Profil'den kaydedilmiş min. uyum eşiğini uygula (URL parametresi yoksa)
+  if (!new URLSearchParams(window.location.search).has('minUyum')) {
+    const kayitliEsik = localStorage.getItem('ihale_min_uyum_esigi');
+    if (kayitliEsik && parseInt(kayitliEsik) > 0) {
+      document.getElementById('f-min-uyum').value = kayitliEsik;
+    }
+  }
+  kayitliBadgeGuncelle();
   profilCek().then(() => ilanlariYukle());
+
+  // ── Klavye kısayolları ────────────────────────────────────
+  document.addEventListener('keydown', e => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+      e.preventDefault();
+      const el = document.getElementById('topbar-search');
+      if (el) { el.focus(); el.select(); }
+    }
+    if (e.altKey && !e.ctrlKey && !e.metaKey) {
+      const secmeMap = { '1': 'guncel', '2': 'gecmis', '3': 'sonuc', '4': 'detayli' };
+      if (secmeMap[e.key]) { e.preventDefault(); sekmeDegistir(secmeMap[e.key]); }
+    }
+  });
+
+  // ── Sekme sayaçları (arka planda yükle) ─────────────────
+  (async () => {
+    const simdi = new Date().toISOString();
+    try {
+      const [guncel, gecmis, sonuc] = await Promise.all([
+        sb.from('ilanlar').select('id', { count: 'exact', head: true }).gte('son_teklif_tarihi', simdi),
+        sb.from('ilanlar').select('id', { count: 'exact', head: true }).lt('son_teklif_tarihi', simdi),
+        sb.from('ilanlar').select('id', { count: 'exact', head: true }).eq('durum', 'sonuclandi'),
+      ]);
+      const fmt = n => n >= 1000 ? (n/1000).toFixed(1)+'K' : String(n);
+      const setEl = (id, n) => { const el = document.getElementById(id); if (el && n) el.textContent = '(' + fmt(n) + ')'; };
+      setEl('tab-cnt-guncel', guncel.count);
+      setEl('tab-cnt-gecmis', gecmis.count);
+      setEl('tab-cnt-sonuc',  sonuc.count);
+    } catch {}
+  })();
 </script>
 </body>
 </html>

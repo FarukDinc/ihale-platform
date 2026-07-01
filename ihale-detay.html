@@ -250,6 +250,7 @@
       <div class="nav-section-label">Analiz</div>
       <a href="rekabet-analizi" class="nav-item"><span class="icon">📊</span> Rekabet Analizi</a>
       <a href="idareler" class="nav-item"><span class="icon">🏛️</span> İdareler Dizini</a>
+      <a href="sektorler" class="nav-item"><span class="icon">🏭</span> Sektörler Dizini</a>
       <a href="kurum-analiz" class="nav-item"><span class="icon">🔍</span> Kurum Analizi</a>
       <a href="firma-analiz" class="nav-item"><span class="icon">🏢</span> Firma Analizi</a>
       <a href="uyumluluk" class="nav-item"><span class="icon">✓</span> Uyumluluk</a>
@@ -394,8 +395,18 @@
     mevcutIhale = data;
     takipte = Takip.var(data.id);
     kullaniciProfil = await Uyum.profilCek(sb);
+    // Son görüntülenenleri localStorage'a kaydet
+    try {
+      const SGK = 'ihale_son_gorulenler_v1';
+      let sg = JSON.parse(localStorage.getItem(SGK) || '[]');
+      sg = sg.filter(x => String(x.id) !== String(data.id));
+      sg.unshift({ id: data.id, baslik: data.baslik, idare: data.idare, il: data.il, tarih: new Date().toISOString() });
+      if (sg.length > 10) sg = sg.slice(0, 10);
+      localStorage.setItem(SGK, JSON.stringify(sg));
+    } catch {}
     sayfaOlustur(data);
     takipButonlariGuncelle();
+    notAlaniDoldur(data.id);
     benzerIhaleler(data);
   }
 
@@ -431,6 +442,7 @@
           <button class="btn-takip" id="main-takip" onclick="takibeAl()">☆ Takibe Al</button>
           <a class="btn-takip" href="teklif-olustur?ihale_id=${d.id}" style="background:linear-gradient(135deg,#F0A500,#C98A00);display:inline-flex;align-items:center;gap:6px;text-decoration:none;">✏ Teklif Hazırla</a>
           ${d.ikn ? `<a class="btn-ekap" href="${ekapLink(d.ikn)}" target="_blank" rel="noopener">↗ EKAP'ta Görüntüle</a>` : ''}
+          <button class="btn-ekap" id="link-kopyala-btn" onclick="linkKopyala(this)" title="Sayfa linkini panoya kopyala">🔗 Paylaş</button>
         </div>
       </div>
 
@@ -483,6 +495,7 @@
         <button class="tab-btn" onclick="sekmeAc(event,'tab-ilan')">İlan Bilgileri</button>
         <button class="tab-btn" onclick="sekmeAc(event,'tab-belge')">Belgeler${belgeler.length ? ' (' + belgeler.length + ')' : ''}</button>
         <button class="tab-btn" onclick="sekmeAc(event,'tab-ai')">🤖 AI Analizi</button>
+        <button class="tab-btn" id="not-tab-btn" onclick="sekmeAc(event,'tab-not')">📝 Notlarım</button>
       </div>
 
       <!-- TAB: İHALE BİLGİLERİ -->
@@ -592,6 +605,28 @@
         `}
       </div>
 
+      <!-- TAB: NOTLARIM -->
+      <div class="tab-panel" id="tab-not">
+        <div class="detay-card full">
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
+            <div class="card-title" style="margin-bottom:0;">📝 Kişisel Notlarım</div>
+            <div style="display:flex; align-items:center; gap:10px;">
+              <span id="not-kayit-bilgi" style="font-size:11px; color:var(--muted);"></span>
+              <button onclick="notlariTemizle(${d.id})" style="font-size:12px; color:#f87171; background:rgba(239,68,68,.08); border:1px solid rgba(239,68,68,.2); border-radius:6px; padding:4px 10px; cursor:pointer;">Temizle</button>
+            </div>
+          </div>
+          <textarea id="not-alani" rows="10"
+            placeholder="Bu ihale hakkında notlarınızı buraya yazın — teklif stratejisi, dikkat edilecek maddeler, sorular, ön hazırlık adımları..."
+            oninput="notKaydet(${d.id}, this.value)"
+            style="width:100%; background:var(--navy); border:1.5px solid var(--border); border-radius:8px; padding:14px 16px; color:var(--white); font-family:var(--font-body); font-size:14px; line-height:1.7; resize:vertical; outline:none; box-sizing:border-box; transition:border-color .15s;"
+            onfocus="this.style.borderColor='var(--amber)'" onblur="this.style.borderColor='var(--border)'"></textarea>
+          <div style="display:flex; justify-content:space-between; margin-top:8px;">
+            <span style="font-size:11px; color:var(--muted);">Notlarınız tarayıcınızda saklanır — hesabınızla senkronize edilmez.</span>
+            <span id="not-karakter" style="font-size:11px; color:var(--muted);">0 karakter</span>
+          </div>
+        </div>
+      </div>
+
       <!-- BENZER İHALELER -->
       <div class="detay-card full" id="benzer-kart" style="margin-top:20px;">
         <div class="card-title">Benzer İhaleler</div>
@@ -672,13 +707,24 @@
   }
 
   async function benzerIhaleler(d) {
-    const { data } = await sb
-      .from('ilanlar')
-      .select('id, baslik, idare, yaklasik_maliyet_min, yaklasik_maliyet_max, son_teklif_tarihi')
-      .eq('tur', d.tur || 'Hizmet')
-      .neq('id', d.id)
-      .eq('durum', 'aktif')
-      .limit(4);
+    let data = null;
+    const sel = 'id,baslik,idare,il,yaklasik_maliyet_min,yaklasik_maliyet_max,son_teklif_tarihi';
+
+    // 1. Aynı kategori + il
+    if (d.kategori && d.il) {
+      ({ data } = await sb.from('ilanlar').select(sel)
+        .eq('kategori', d.kategori).eq('il', d.il).neq('id', d.id).eq('durum', 'aktif').limit(4));
+    }
+    // 2. Aynı kategori
+    if ((!data || data.length < 2) && d.kategori) {
+      ({ data } = await sb.from('ilanlar').select(sel)
+        .eq('kategori', d.kategori).neq('id', d.id).eq('durum', 'aktif').limit(4));
+    }
+    // 3. Aynı tür (fallback)
+    if (!data || data.length === 0) {
+      ({ data } = await sb.from('ilanlar').select(sel)
+        .eq('tur', d.tur || 'Hizmet').neq('id', d.id).eq('durum', 'aktif').limit(4));
+    }
 
     const list = document.getElementById('benzer-list');
     if (!list) return;
@@ -697,11 +743,62 @@
         <a class="benzer-item" href="ihale-detay?id=${b.id}">
           <div>
             <div class="benzer-baslik">${b.baslik}</div>
-            <div class="benzer-meta">${b.idare || '—'} · Son: ${tarih}</div>
+            <div class="benzer-meta">${b.idare || '—'}${b.il ? ' · 📍' + b.il : ''} · Son: ${tarih}</div>
           </div>
           <div class="benzer-bedel">${bedel}</div>
         </a>`;
     }).join('');
+  }
+
+  // ── Notlarım (localStorage) ─────────────────────────────
+  function notlarYukle(id) {
+    return localStorage.getItem('ihale_not_' + id) || '';
+  }
+
+  function notAlaniDoldur(id) {
+    const ta = document.getElementById('not-alani');
+    if (!ta) return;
+    const metin = notlarYukle(id);
+    ta.value = metin;
+    document.getElementById('not-karakter').textContent = metin.length + ' karakter';
+    if (metin) {
+      const btn = document.getElementById('not-tab-btn');
+      if (btn) btn.textContent = '📝 Notlarım ·';
+    }
+  }
+
+  function notKaydet(id, metin) {
+    localStorage.setItem('ihale_not_' + id, metin);
+    const bilgi = document.getElementById('not-kayit-bilgi');
+    if (bilgi) bilgi.textContent = '✓ Kaydedildi';
+    const karEl = document.getElementById('not-karakter');
+    if (karEl) karEl.textContent = metin.length + ' karakter';
+    const btn = document.getElementById('not-tab-btn');
+    if (btn) btn.textContent = metin.trim() ? '📝 Notlarım ·' : '📝 Notlarım';
+  }
+
+  function notlariTemizle(id) {
+    if (!confirm('Bu ihaledeki notunuz silinecek. Emin misiniz?')) return;
+    localStorage.removeItem('ihale_not_' + id);
+    const ta = document.getElementById('not-alani');
+    if (ta) ta.value = '';
+    const bilgi = document.getElementById('not-kayit-bilgi');
+    if (bilgi) bilgi.textContent = 'Temizlendi';
+    const karEl = document.getElementById('not-karakter');
+    if (karEl) karEl.textContent = '0 karakter';
+    const btn = document.getElementById('not-tab-btn');
+    if (btn) btn.textContent = '📝 Notlarım';
+  }
+
+  function linkKopyala(btn) {
+    navigator.clipboard.writeText(window.location.href).then(() => {
+      const orig = btn.innerHTML;
+      btn.innerHTML = '✓ Kopyalandı';
+      btn.style.color = '#4ade80';
+      setTimeout(() => { btn.innerHTML = orig; btn.style.color = ''; }, 2000);
+    }).catch(() => {
+      prompt('Linki kopyalayın:', window.location.href);
+    });
   }
 
   function takibeAl() {

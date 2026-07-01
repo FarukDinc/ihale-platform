@@ -84,6 +84,84 @@
     .btn-kaydet:hover { opacity: .85; }
 
     @media (max-width: 900px) { .sidebar { display: none; } }
+
+    /* ── Bültenlerim ── */
+    .bulten-kart {
+      background: var(--navy-mid); border: 1px solid var(--border);
+      border-radius: 10px; padding: 16px 18px; margin-bottom: 10px;
+      display: flex; align-items: center; gap: 14px; transition: border-color .15s;
+    }
+    .bulten-kart:hover { border-color: rgba(240,165,0,.3); }
+    .bulten-ikon {
+      width: 40px; height: 40px; border-radius: 10px;
+      background: rgba(240,165,0,.1); display: flex; align-items: center;
+      justify-content: center; font-size: 20px; flex-shrink: 0;
+    }
+    .bulten-info { flex: 1; min-width: 0; }
+    .bulten-ad { font-size: 14px; font-weight: 700; color: var(--white); margin-bottom: 3px; }
+    .bulten-ozet { font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .bulten-tarih { font-size: 11px; color: var(--muted); margin-top: 4px; }
+    .bulten-actions { display: flex; gap: 8px; flex-shrink: 0; }
+    .bulten-btn-run {
+      font-size: 12px; font-weight: 700; padding: 7px 14px; border-radius: 6px;
+      background: var(--amber); color: var(--navy); border: none; cursor: pointer; text-decoration: none;
+      display: flex; align-items: center; gap: 5px;
+    }
+    .bulten-btn-run:hover { opacity: .88; }
+    .bulten-btn-del {
+      font-size: 12px; font-weight: 600; padding: 7px 12px; border-radius: 6px;
+      background: rgba(239,68,68,.08); color: #f87171; border: 1px solid rgba(239,68,68,.2); cursor: pointer;
+    }
+    .bulten-btn-del:hover { background: rgba(239,68,68,.18); }
+    .bulten-bos {
+      text-align: center; padding: 48px 24px; color: var(--muted);
+      background: var(--navy-mid); border: 1px solid var(--border);
+      border-radius: 10px;
+    }
+    .bulten-bos .bos-ikon { font-size: 36px; margin-bottom: 12px; }
+
+    /* ── Okuduklarım ── */
+    .oku-kart {
+      background: var(--navy-mid); border: 1px solid var(--border);
+      border-radius: 10px; padding: 14px 18px; margin-bottom: 8px;
+      display: flex; align-items: center; gap: 14px; transition: border-color .15s;
+      text-decoration: none; color: inherit;
+    }
+    .oku-kart:hover { border-color: rgba(240,165,0,.3); }
+    .oku-ikon {
+      width: 38px; height: 38px; border-radius: 50%;
+      background: rgba(99,102,241,.1); display: flex; align-items: center;
+      justify-content: center; font-size: 18px; flex-shrink: 0;
+    }
+    .oku-info { flex: 1; min-width: 0; }
+    .oku-baslik { font-size: 13px; font-weight: 600; color: var(--white); margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .oku-meta { font-size: 11px; color: var(--muted); }
+    .oku-bos {
+      text-align: center; padding: 48px 24px; color: var(--muted);
+      background: var(--navy-mid); border: 1px solid var(--border); border-radius: 10px;
+    }
+
+    /* ── Push bildirim banner ── */
+    .push-banner {
+      display: flex; align-items: center; gap: 16px;
+      background: rgba(240,165,0,0.07); border: 1px solid rgba(240,165,0,0.25);
+      border-radius: 10px; padding: 14px 18px; margin-bottom: 20px;
+    }
+    .push-banner-icon { font-size: 24px; flex-shrink: 0; }
+    .push-banner-info { flex: 1; }
+    .push-banner-info strong { font-size: 13px; color: var(--white); font-weight: 700; }
+    .push-banner-info p { font-size: 12px; color: var(--muted); margin-top: 2px; }
+    .push-banner-btn {
+      background: var(--amber); color: var(--navy); border: none;
+      padding: 8px 18px; border-radius: 6px; font-size: 13px; font-weight: 700;
+      cursor: pointer; white-space: nowrap; transition: opacity .15s;
+    }
+    .push-banner-btn:hover { opacity: .85; }
+    .push-banner-dismiss {
+      background: none; border: none; color: var(--muted); font-size: 18px;
+      cursor: pointer; padding: 4px; line-height: 1; flex-shrink: 0;
+    }
+    .push-banner-dismiss:hover { color: var(--white); }
   </style>
 </head>
 <body>
@@ -104,6 +182,9 @@
       <div class="nav-section-label">Analiz</div>
       <a href="rekabet-analizi" class="nav-item"><span class="icon">📊</span> Rekabet Analizi</a>
       <a href="idareler" class="nav-item"><span class="icon">🏛️</span> İdareler Dizini</a>
+      <a href="sektorler" class="nav-item"><span class="icon">🏭</span> Sektörler Dizini</a>
+      <a href="kurum-analiz" class="nav-item"><span class="icon">🔍</span> Kurum Analizi</a>
+      <a href="firma-analiz" class="nav-item"><span class="icon">🏢</span> Firma Analizi</a>
       <a href="uyumluluk" class="nav-item"><span class="icon">✓</span> Uyumluluk</a>
       <a href="dokumanlar" class="nav-item"><span class="icon">📁</span> Dökümanlar</a>
       <div class="nav-section-label">Ayarlar</div>
@@ -132,18 +213,68 @@
         <p>Takip ettiğiniz ihaleler ve sistem bildirimleri.</p>
       </div>
 
+      <!-- Push Bildirim İzin Banner'ı -->
+      <div class="push-banner" id="push-banner" style="display:none;">
+        <div class="push-banner-icon">🔔</div>
+        <div class="push-banner-info">
+          <strong>Tarayıcı Bildirimlerini Etkinleştirin</strong>
+          <p>Yeni eşleşen ihaleler ve son dakika güncellemeleri için anlık bildirim alın.</p>
+        </div>
+        <button class="push-banner-btn" onclick="pushIzinIste()">İzin Ver</button>
+        <button class="push-banner-dismiss" onclick="pushBannerKapat()" title="Kapat">×</button>
+      </div>
+
       <div class="notif-toolbar">
         <div class="notif-tabs">
           <button class="notif-tab active" onclick="sekmeGoster('hepsi', this)">Tümü</button>
           <button class="notif-tab" onclick="sekmeGoster('okunmamis', this)">Okunmamış <span id="tab-badge" style="background:var(--amber);color:var(--navy);font-size:10px;font-weight:700;padding:1px 5px;border-radius:10px;margin-left:4px;">0</span></button>
           <button class="notif-tab" onclick="sekmeGoster('ihale', this)">İhale</button>
           <button class="notif-tab" onclick="sekmeGoster('sistem', this)">Sistem</button>
+          <button class="notif-tab" onclick="sekmeGoster('bulten', this)" id="tab-bulten">⭐ Bültenlerim <span id="bulten-badge" style="display:none;background:rgba(240,165,0,.15);color:var(--amber);font-size:10px;font-weight:700;padding:1px 5px;border-radius:10px;margin-left:4px;"></span></button>
+          <button class="notif-tab" onclick="sekmeGoster('okuduklarim', this)" id="tab-okuduklarim">📖 Okuduklarım <span id="okuduklarim-badge" style="display:none;background:rgba(99,102,241,.15);color:#a5b4fc;font-size:10px;font-weight:700;padding:1px 5px;border-radius:10px;margin-left:4px;"></span></button>
+          <button class="notif-tab" onclick="sekmeGoster('sozlesme', this)" id="tab-sozlesme">📋 Sözleşme Listesi <span id="sozlesme-badge" style="display:none;background:rgba(34,197,94,.15);color:#4ade80;font-size:10px;font-weight:700;padding:1px 5px;border-radius:10px;margin-left:4px;"></span></button>
         </div>
         <button class="btn-tumunu-oku" onclick="tumunuOku()">Tümünü okundu işaretle</button>
       </div>
 
       <div class="notif-list" id="notif-list">
         <div class="notif-bos"><div class="bos-ikon">⌛</div><p>Yükleniyor...</p></div>
+      </div>
+
+      <!-- BÜLTENLERİM (kayıtlı aramalar) -->
+      <div id="bulten-panel" style="display:none;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+          <div>
+            <h2 style="font-size:16px;font-weight:700;margin-bottom:4px;">⭐ Bültenlerim — Kayıtlı Aramalar</h2>
+            <p style="font-size:13px;color:var(--muted);">İhaleler sayfasında kaydettiğiniz filtre kombinasyonları. Tek tıkla tekrar çalıştırabilirsiniz.</p>
+          </div>
+          <a href="ihaleler" class="btn-kaydet" style="text-decoration:none;padding:8px 16px;font-size:13px;">+ Yeni Arama Kaydet</a>
+        </div>
+        <div id="bulten-liste"></div>
+      </div>
+
+      <!-- OKUDUKLARIM -->
+      <div id="okuduklarim-panel" style="display:none;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+          <div>
+            <h2 style="font-size:16px;font-weight:700;margin-bottom:4px;">📖 Okuduklarım</h2>
+            <p style="font-size:13px;color:var(--muted);">Bu cihazda görüntülediğiniz ihaleler. Yalnızca yerel belleğe kaydedilir.</p>
+          </div>
+          <button onclick="okunanlarTemizle()" class="btn-kaydet" style="font-size:12px;padding:7px 14px;background:var(--navy);border-color:var(--border);color:var(--muted);" title="Okuma geçmişini temizle">↺ Geçmişi Sil</button>
+        </div>
+        <div id="okuduklarim-liste"></div>
+      </div>
+
+      <!-- SÖZLEŞME LİSTESİ -->
+      <div id="sozlesme-panel" style="display:none;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+          <div>
+            <h2 style="font-size:16px;font-weight:700;margin-bottom:4px;">📋 Sözleşme Listesi</h2>
+            <p style="font-size:13px;color:var(--muted);">Takip listenizden yaklaşan ve süresi dolacak ihaleler. İhale-detay sayfasından "Sözleşme Listeme Ekle" ile yönetebilirsiniz.</p>
+          </div>
+          <a href="takipte" class="btn-kaydet" style="text-decoration:none;padding:8px 16px;font-size:13px;">Takip Listesi →</a>
+        </div>
+        <div id="sozlesme-liste"></div>
       </div>
 
       <!-- BİLDİRİM AYARLARI -->
@@ -321,7 +452,28 @@
     aktifFiltre = filtre;
     document.querySelectorAll('.notif-tab').forEach(t => t.classList.remove('active'));
     btn.classList.add('active');
-    render(filtre);
+    const notifList        = document.getElementById('notif-list');
+    const ayarKart         = document.querySelector('.ayar-kart');
+    const bultenPanel      = document.getElementById('bulten-panel');
+    const okuduklarimPanel = document.getElementById('okuduklarim-panel');
+    const sozlesmePanel    = document.getElementById('sozlesme-panel');
+    const paneller = [notifList, bultenPanel, okuduklarimPanel, sozlesmePanel];
+    paneller.forEach(p => p && (p.style.display = 'none'));
+    if (ayarKart) ayarKart.style.display = 'none';
+    if (filtre === 'bulten') {
+      bultenPanel.style.display = 'block';
+      bultenYukle();
+    } else if (filtre === 'okuduklarim') {
+      okuduklarimPanel.style.display = 'block';
+      okuduklarimiYukle();
+    } else if (filtre === 'sozlesme') {
+      sozlesmePanel.style.display = 'block';
+      sozlesmeListesiYukle();
+    } else {
+      notifList.style.display = '';
+      if (ayarKart) ayarKart.style.display = '';
+      render(filtre);
+    }
   }
 
   async function okunduIsaretle(id) {
@@ -372,6 +524,285 @@
     if (btn) { btn.textContent = '✓ Kaydedildi'; setTimeout(() => btn.textContent = 'Tercihleri Kaydet', 2000); }
   }
 
+  // ── Bültenlerim (kayıtlı aramalar) ───────────────────────
+  const KayitliArama = (() => {
+    const KEY = 'ihale_kayitli_aramalar_v1';
+    const get = () => { try { return JSON.parse(localStorage.getItem(KEY)) || []; } catch { return []; } };
+    const save = list => localStorage.setItem(KEY, JSON.stringify(list));
+    return {
+      liste: get,
+      sil: id => { save(get().filter(x => x.id !== id)); },
+      sayi: () => get().length,
+    };
+  })();
+
+  function filtrelerOzet(params) {
+    if (!params) return 'Tüm ihaleler';
+    const p = [];
+    if (params.arama)    p.push(`"${params.arama}"`);
+    if (params.il)       p.push(`İl: ${params.il}`);
+    if (params.kategori) p.push(`Kategori: ${params.kategori}`);
+    if (params.tur)      p.push(`Tür: ${params.tur}`);
+    if (params.usul)     p.push(`Usul: ${params.usul}`);
+    if (params.minUyum && params.minUyum !== '0') p.push(`Min Uyum: %${params.minUyum}`);
+    if (params.idare)    p.push(`İdare: ${params.idare}`);
+    if (params.minBedel || params.maxBedel) {
+      const mn = params.minBedel ? `₺${(+params.minBedel/1e6).toFixed(1)}M` : '0';
+      const mx = params.maxBedel ? `₺${(+params.maxBedel/1e6).toFixed(1)}M` : '∞';
+      p.push(`Bütçe: ${mn}–${mx}`);
+    }
+    return p.length ? p.join(' · ') : 'Tüm ihaleler (filtre yok)';
+  }
+
+  function filtrelerUrlYap(params) {
+    if (!params) return 'ihaleler';
+    const p = new URLSearchParams();
+    if (params.arama)    p.set('ara', params.arama);
+    if (params.il)       p.set('il', params.il);
+    if (params.kategori) p.set('kategori', params.kategori);
+    if (params.tur)      p.set('tur', params.tur);
+    if (params.usul)     p.set('usul', params.usul);
+    if (params.idare)    p.set('idare', params.idare);
+    const str = p.toString();
+    return str ? `ihaleler?${str}` : 'ihaleler';
+  }
+
+  function tarihKisa(iso) {
+    if (!iso) return '';
+    const d = new Date(iso);
+    return d.toLocaleDateString('tr-TR', { day: 'numeric', month: 'short', year: 'numeric' });
+  }
+
+  function bultenYukle() {
+    const liste = KayitliArama.liste();
+    const konteyner = document.getElementById('bulten-liste');
+    const badge = document.getElementById('bulten-badge');
+    if (badge) { badge.textContent = liste.length; badge.style.display = liste.length ? '' : 'none'; }
+    if (!liste.length) {
+      konteyner.innerHTML = `
+        <div class="bulten-bos">
+          <div class="bos-ikon">⭐</div>
+          <p style="font-size:14px;font-weight:600;margin-bottom:8px;">Henüz kayıtlı aramanız yok</p>
+          <p style="font-size:13px;margin-bottom:16px;">İhaleler sayfasında filtreleri ayarlayıp "Aramayı Kaydet"e tıklayın. Buraya otomatik gelir.</p>
+          <a href="ihaleler" style="display:inline-block;background:var(--amber);color:var(--navy);padding:9px 20px;border-radius:6px;font-size:13px;font-weight:700;text-decoration:none;">İhaleler'e Git →</a>
+        </div>`;
+      return;
+    }
+    konteyner.innerHTML = liste.map(item => `
+      <div class="bulten-kart" id="bk-${item.id}">
+        <div class="bulten-ikon">⭐</div>
+        <div class="bulten-info">
+          <div class="bulten-ad">${item.ad}</div>
+          <div class="bulten-ozet">${filtrelerOzet(item.params)}</div>
+          <div class="bulten-tarih">Kaydedildi: ${tarihKisa(item.tarih)}</div>
+        </div>
+        <div class="bulten-actions">
+          <a href="${filtrelerUrlYap(item.params)}" class="bulten-btn-run">▶ Çalıştır</a>
+          <button class="bulten-btn-del" onclick="bultenSil(${item.id})">✕ Sil</button>
+        </div>
+      </div>`).join('');
+  }
+
+  function bultenSil(id) {
+    KayitliArama.sil(id);
+    const el = document.getElementById('bk-' + id);
+    if (el) el.remove();
+    const badge = document.getElementById('bulten-badge');
+    const n = KayitliArama.sayi();
+    if (badge) { badge.textContent = n; badge.style.display = n ? '' : 'none'; }
+    if (!n) bultenYukle();
+  }
+
+  // ── Okuduklarım ───────────────────────────────────────────
+  async function okuduklarimiYukle() {
+    const konteyner = document.getElementById('okuduklarim-liste');
+    konteyner.innerHTML = '<div class="oku-bos"><div style="font-size:32px;margin-bottom:8px;">⌛</div><p>Yükleniyor...</p></div>';
+
+    let ids = [];
+    try { ids = JSON.parse(localStorage.getItem('ihale_okundu_v1')) || []; } catch (_) {}
+
+    if (!ids.length) {
+      konteyner.innerHTML = `
+        <div class="oku-bos">
+          <div style="font-size:32px;margin-bottom:8px;">📖</div>
+          <p style="font-size:14px;font-weight:600;margin-bottom:8px;">Henüz bir ihale görüntülemediniz</p>
+          <p style="font-size:13px;margin-bottom:16px;">İhaleler sayfasında kartlara tıklayarak görüntülediğiniz ihaleler burada listelenir.</p>
+          <a href="ihaleler" style="display:inline-block;background:var(--amber);color:var(--navy);padding:9px 20px;border-radius:6px;font-size:13px;font-weight:700;text-decoration:none;">İhaleler'e Git →</a>
+        </div>`;
+      return;
+    }
+
+    const { data } = await sb.from('ilanlar')
+      .select('id,baslik,idare,il,tur,son_teklif_tarihi,durum')
+      .in('id', ids.slice(-50));
+
+    const ilanMap = {};
+    (data || []).forEach(x => ilanMap[x.id] = x);
+
+    const siralananIds = [...ids].reverse().slice(0, 50);
+    const satirlar = siralananIds.map(id => {
+      const ilan = ilanMap[id];
+      if (!ilan) return '';
+      const tarih = ilan.son_teklif_tarihi
+        ? new Date(ilan.son_teklif_tarihi).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' })
+        : '—';
+      const durum = ilan.durum === 'aktif'
+        ? '<span style="color:#4ade80;font-size:10px;font-weight:700;">● AKTİF</span>'
+        : '<span style="color:var(--muted);font-size:10px;">◯ Sona Erdi</span>';
+      const meta = [ilan.idare, ilan.il, ilan.tur].filter(Boolean).join(' · ');
+      return `
+        <a href="ihale-detay?id=${ilan.id}" class="oku-kart">
+          <div class="oku-ikon">📄</div>
+          <div class="oku-info">
+            <div class="oku-baslik">${ilan.baslik}</div>
+            <div class="oku-meta">${meta} · Son: ${tarih} &nbsp;${durum}</div>
+          </div>
+        </a>`;
+    }).join('');
+
+    konteyner.innerHTML = satirlar || '<div class="oku-bos"><p>Gösterilecek ihale bulunamadı.</p></div>';
+  }
+
+  function okunanlarTemizle() {
+    if (!confirm('Tüm okuma geçmişi silinecek. Emin misiniz?')) return;
+    localStorage.removeItem('ihale_okundu_v1');
+    document.getElementById('okuduklarim-liste').innerHTML = `
+      <div class="oku-bos">
+        <div style="font-size:32px;margin-bottom:8px;">📖</div>
+        <p>Okuma geçmişi temizlendi.</p>
+      </div>`;
+    const badge = document.getElementById('okuduklarim-badge');
+    if (badge) badge.style.display = 'none';
+  }
+
+  // ── Sözleşme Listesi ──────────────────────────────────────
+  async function sozlesmeListesiYukle() {
+    const konteyner = document.getElementById('sozlesme-liste');
+    konteyner.innerHTML = '<div class="oku-bos"><div style="font-size:32px;margin-bottom:8px;">⌛</div><p>Yükleniyor...</p></div>';
+
+    const ids = window.Takip ? Takip.liste() : [];
+    if (!ids.length) {
+      konteyner.innerHTML = `
+        <div class="oku-bos">
+          <div style="font-size:32px;margin-bottom:8px;">📋</div>
+          <p style="font-size:14px;font-weight:600;margin-bottom:8px;">Takip listesi boş</p>
+          <p style="font-size:13px;margin-bottom:16px;">İhaleler sayfasında "Takip Et" butonuna tıklayarak ihaleleri buraya ekleyebilirsiniz.</p>
+          <a href="ihaleler" style="display:inline-block;background:var(--amber);color:var(--navy);padding:9px 20px;border-radius:6px;font-size:13px;font-weight:700;text-decoration:none;">İhaleler'e Git →</a>
+        </div>`;
+      return;
+    }
+
+    const { data } = await sb.from('ilanlar')
+      .select('id,baslik,idare,il,tur,durum,son_teklif_tarihi,yaklasik_maliyet_min,tahmini_bedel')
+      .in('id', ids);
+
+    if (!data || !data.length) {
+      konteyner.innerHTML = '<div class="oku-bos"><p>Takip edilen ihaleler bulunamadı.</p></div>';
+      return;
+    }
+
+    const simdi = new Date();
+    const satirlar = data.map(ilan => {
+      const son = ilan.son_teklif_tarihi ? new Date(ilan.son_teklif_tarihi) : null;
+      let kalanHtml = '';
+      if (son) {
+        const kalanMs = son - simdi;
+        if (kalanMs > 0) {
+          const gun = Math.ceil(kalanMs / 86400000);
+          const renk = gun <= 3 ? '#f87171' : gun <= 7 ? '#fb923c' : '#4ade80';
+          kalanHtml = `<span style="color:${renk};font-weight:700;font-size:11px;">⏱ ${gun} gün kaldı</span>`;
+        } else {
+          kalanHtml = `<span style="color:var(--muted);font-size:11px;">◯ Süresi doldu</span>`;
+        }
+      }
+      const tarihStr = son ? son.toLocaleDateString('tr-TR', { day: 'numeric', month: 'short', year: 'numeric' }) : '—';
+      const meta = [ilan.idare, ilan.il, ilan.tur].filter(Boolean).join(' · ');
+      const _bedel = ilan.yaklasik_maliyet_min || ilan.tahmini_bedel;
+      const bedel = _bedel
+        ? (_bedel >= 1e6
+          ? (_bedel / 1e6).toFixed(1) + ' M₺'
+          : Math.round(_bedel).toLocaleString('tr-TR') + ' ₺')
+        : '';
+      return `
+        <a href="ihale-detay?id=${ilan.id}" class="oku-kart">
+          <div class="oku-ikon">📋</div>
+          <div class="oku-info">
+            <div class="oku-baslik">${ilan.baslik}</div>
+            <div class="oku-meta">${meta}${bedel ? ' · ' + bedel : ''}</div>
+            <div style="margin-top:4px;display:flex;gap:10px;align-items:center;">
+              <span style="color:var(--muted);font-size:11px;">Son: ${tarihStr}</span>
+              ${kalanHtml}
+            </div>
+          </div>
+        </a>`;
+    }).join('');
+
+    konteyner.innerHTML = satirlar;
+  }
+
+  // Badge başlangıçta güncelle
+  (() => {
+    try {
+      const nb = (JSON.parse(localStorage.getItem('ihale_kayitli_aramalar_v1')) || []).length;
+      const badge = document.getElementById('bulten-badge');
+      if (badge && nb > 0) { badge.textContent = nb; badge.style.display = ''; }
+    } catch (_) {}
+    try {
+      const no = (JSON.parse(localStorage.getItem('ihale_okundu_v1')) || []).length;
+      const badge = document.getElementById('okuduklarim-badge');
+      if (badge && no > 0) { badge.textContent = no; badge.style.display = ''; }
+    } catch (_) {}
+    try {
+      const nt = window.Takip ? Takip.sayi() : 0;
+      const badge = document.getElementById('sozlesme-badge');
+      if (badge && nt > 0) { badge.textContent = nt; badge.style.display = ''; }
+    } catch (_) {}
+  })();
+
+  // ── Push Bildirim ──────────────────────────────────────
+  function pushBannerKontrol() {
+    if (!('Notification' in window)) return;
+    const kapatildi = localStorage.getItem('ihale_push_banner_kapali');
+    if (kapatildi) return;
+    const banner = document.getElementById('push-banner');
+    if (!banner) return;
+    if (Notification.permission === 'default') {
+      banner.style.display = 'flex';
+    }
+  }
+
+  function pushIzinIste() {
+    if (!('Notification' in window)) return;
+    Notification.requestPermission().then(perm => {
+      const banner = document.getElementById('push-banner');
+      if (banner) banner.style.display = 'none';
+      if (perm === 'granted') {
+        new Notification('İhalePlatform', {
+          body: 'Bildirimler etkinleştirildi! Yeni eşleşen ihaleler için uyarı alacaksınız.',
+          icon: '/favicon.ico'
+        });
+      }
+    });
+  }
+
+  function pushBannerKapat() {
+    localStorage.setItem('ihale_push_banner_kapali', '1');
+    const banner = document.getElementById('push-banner');
+    if (banner) banner.style.display = 'none';
+  }
+
+  document.addEventListener('keydown', e => {
+    if (!e.altKey || e.ctrlKey || e.metaKey) return;
+    const tabMap = { '1': 'hepsi', '2': 'okunmamis', '3': 'ihale', '4': 'sistem', '5': 'bulten', '6': 'okuduklarim', '7': 'sozlesme' };
+    if (tabMap[e.key]) {
+      e.preventDefault();
+      const tabs = document.querySelectorAll('.notif-tab');
+      const idx = parseInt(e.key) - 1;
+      if (tabs[idx]) sekmeGoster(tabMap[e.key], tabs[idx]);
+    }
+  });
+
+  pushBannerKontrol();
   bildirimleriYukle();
 </script>
 </body>

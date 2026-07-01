@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sektörler Dizini — İhalePlatform</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    body { background: var(--navy); }
+    .app { display: flex; min-height: 100vh; }
+    .sidebar {
+      background: var(--navy-mid); border-right: 1px solid var(--border);
+      width: 240px; flex-shrink: 0; position: sticky; top: 0;
+      height: 100vh; display: flex; flex-direction: column; overflow-y: auto;
+    }
+    .sidebar-logo { padding: 20px 20px 16px; border-bottom: 1px solid var(--border); }
+    .sidebar-logo a {
+      font-family: var(--font-display); font-size: 18px; font-weight: 800;
+      color: var(--white); text-decoration: none; display: flex; align-items: center; gap: 8px;
+    }
+    .sidebar-logo span { color: var(--amber); }
+    .sidebar-nav { flex: 1; padding: 16px 12px; overflow-y: auto; }
+    .nav-section-label {
+      font-size: 10px; font-weight: 700; letter-spacing: .1em;
+      text-transform: uppercase; color: var(--muted); padding: 12px 8px 6px;
+    }
+    .nav-item {
+      display: flex; align-items: center; gap: 10px; padding: 9px 12px;
+      border-radius: 6px; color: var(--muted); text-decoration: none;
+      font-size: 13px; font-weight: 500; transition: all .15s; margin-bottom: 2px;
+    }
+    .nav-item:hover { background: var(--card-bg); color: var(--white); }
+    .nav-item.active { background: rgba(240,165,0,0.12); color: var(--amber); }
+    .nav-item .icon { font-size: 16px; width: 20px; text-align: center; }
+    .sidebar-footer { padding: 16px; border-top: 1px solid var(--border); }
+    .user-row { display: flex; align-items: center; gap: 10px; }
+    .user-avatar {
+      width: 32px; height: 32px; border-radius: 50%;
+      background: var(--amber); color: var(--navy);
+      font-size: 12px; font-weight: 800; display: flex; align-items: center; justify-content: center;
+    }
+    .user-name { font-size: 13px; font-weight: 600; color: var(--white); }
+    .user-plan { font-size: 11px; color: var(--muted); }
+
+    .main { display: flex; flex-direction: column; flex: 1; min-width: 0; height: 100vh; overflow-y: auto; }
+    .topbar {
+      background: var(--navy-mid); border-bottom: 1px solid var(--border);
+      padding: 0 24px; height: 56px; display: flex; align-items: center;
+      justify-content: space-between; position: sticky; top: 0; z-index: 10;
+    }
+    .topbar-left { display: flex; align-items: center; gap: 12px; }
+    .page-title { font-size: 15px; font-weight: 700; color: var(--white); }
+
+    .page-body { padding: 24px 28px; }
+
+    /* ÖZET */
+    .stat-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 24px; }
+    .stat-card { background: var(--navy-mid); border: 1px solid var(--border); border-radius: 10px; padding: 16px 20px; }
+    .stat-label { font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; margin-bottom: 6px; }
+    .stat-val { font-size: 22px; font-weight: 800; color: var(--white); }
+    .stat-val.amber { color: var(--amber); }
+
+    /* FİLTRE */
+    .filtre-bar {
+      background: var(--navy-mid); border: 1px solid var(--border);
+      border-radius: 10px; padding: 14px 18px; margin-bottom: 18px;
+      display: flex; gap: 12px; align-items: center; flex-wrap: wrap;
+    }
+    .arama-wrap {
+      display: flex; align-items: center; gap: 8px;
+      background: var(--navy); border: 1px solid var(--border);
+      border-radius: 7px; padding: 8px 12px; flex: 1; min-width: 200px;
+    }
+    .arama-wrap input {
+      background: none; border: none; outline: none;
+      color: var(--white); font-size: 13px; font-family: var(--font); width: 100%;
+    }
+    .arama-wrap input::placeholder { color: var(--muted); }
+    .filtre-select {
+      background: var(--navy); border: 1px solid var(--border);
+      color: var(--white); font-size: 13px; font-family: var(--font);
+      padding: 8px 12px; border-radius: 7px; outline: none; cursor: pointer;
+    }
+    .sayac-label { font-size: 13px; color: var(--muted); white-space: nowrap; margin-left: auto; }
+
+    /* KARTLAR GRİDİ */
+    .sektor-grid {
+      display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 14px;
+    }
+    .sektor-kart {
+      background: var(--navy-mid); border: 1px solid var(--border);
+      border-radius: 10px; padding: 18px 20px; transition: all .15s;
+    }
+    .sektor-kart:hover { border-color: rgba(240,165,0,.4); transform: translateY(-1px); }
+    .sk-ust { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+    .sk-icon {
+      width: 44px; height: 44px; border-radius: 10px; background: rgba(240,165,0,.1);
+      display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0;
+    }
+    .sk-ad { font-size: 14px; font-weight: 700; color: var(--white); line-height: 1.3; }
+    .sk-sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+    .sk-sayilar { display: flex; gap: 16px; margin-bottom: 12px; }
+    .sk-sayac { }
+    .sk-n { font-size: 20px; font-weight: 800; color: var(--white); line-height: 1; }
+    .sk-n.amber { color: var(--amber); }
+    .sk-nl { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; margin-top: 2px; }
+    .sk-bar { height: 4px; background: var(--border); border-radius: 2px; margin-bottom: 12px; overflow: hidden; }
+    .sk-bar-fill { height: 100%; background: var(--amber); border-radius: 2px; transition: width .6s ease; }
+    .sk-actions { display: flex; gap: 6px; }
+    .btn-sm {
+      font-size: 12px; font-weight: 600; padding: 5px 11px; border-radius: 6px;
+      text-decoration: none; border: none; cursor: pointer; transition: all .15s;
+    }
+    .btn-sm-amber { background: rgba(240,165,0,.12); color: var(--amber); }
+    .btn-sm-amber:hover { background: rgba(240,165,0,.25); }
+    .btn-sm-ghost { background: rgba(255,255,255,.06); color: var(--muted); }
+    .btn-sm-ghost:hover { background: rgba(255,255,255,.12); color: var(--white); }
+
+    /* YÜKLENİYOR */
+    .yukleniyor { text-align: center; padding: 60px; color: var(--muted); }
+    .spinner {
+      width: 28px; height: 28px; border: 3px solid var(--border);
+      border-top-color: var(--amber); border-radius: 50%;
+      animation: spin .8s linear infinite; margin: 0 auto 12px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .progress-mini { height: 4px; background: var(--border); border-radius: 2px; margin-top: 8px; overflow: hidden; max-width: 300px; margin-left: auto; margin-right: auto; }
+    .progress-mini-fill { height: 100%; background: var(--amber); border-radius: 2px; transition: width .3s; }
+
+    .bos-durum { text-align: center; padding: 60px; color: var(--muted); font-size: 14px; }
+
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.5} }
+
+    @media (max-width: 900px) {
+      .sidebar { display: none; }
+      .stat-row { grid-template-columns: repeat(2, 1fr); }
+      .sektor-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+<div class="app">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <a href="/">
+        <span style="width:6px;height:6px;background:var(--amber);border-radius:50%;display:inline-block;animation:pulse 2s infinite;"></span>
+        İhale<span>Platform</span>
+      </a>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">Genel</div>
+      <a href="dashboard" class="nav-item"><span class="icon">◉</span> Dashboard</a>
+      <a href="ihaleler" class="nav-item"><span class="icon">⊞</span> İhaleler</a>
+      <a href="takipte" class="nav-item"><span class="icon">☆</span> Takipte</a>
+      <a href="bildirimler" class="nav-item"><span class="icon">🔔</span> Bildirimler</a>
+      <div class="nav-section-label">Analiz</div>
+      <a href="rekabet-analizi" class="nav-item"><span class="icon">📊</span> Rekabet Analizi</a>
+      <a href="idareler" class="nav-item"><span class="icon">🏛️</span> İdareler Dizini</a>
+      <a href="sektorler" class="nav-item active"><span class="icon">🏭</span> Sektörler Dizini</a>
+      <a href="kurum-analiz" class="nav-item"><span class="icon">🔍</span> Kurum Analizi</a>
+      <a href="firma-analiz" class="nav-item"><span class="icon">🏢</span> Firma Analizi</a>
+      <a href="uyumluluk" class="nav-item"><span class="icon">✓</span> Uyumluluk</a>
+      <a href="dokumanlar" class="nav-item"><span class="icon">📁</span> Dökümanlar</a>
+      <div class="nav-section-label">Ayarlar</div>
+      <a href="profil" class="nav-item"><span class="icon">⚙</span> Profil & Filtreler</a>
+      <a href="fiyatlandirma_odeme_bolumu" class="nav-item"><span class="icon">💳</span> Abonelik</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-row">
+        <div class="user-avatar" id="sb-avatar">?</div>
+        <div>
+          <div class="user-name" id="sb-name">Yükleniyor…</div>
+          <div class="user-plan" id="sb-plan">—</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-left">
+        <span class="page-title">🏭 Sektörler Dizini</span>
+      </div>
+      <div class="topbar-right" style="display:flex;gap:10px;align-items:center;">
+        <a href="idareler" style="font-size:12px;color:var(--muted);text-decoration:none;">İdareler →</a>
+        <a href="ihaleler" style="font-size:12px;color:var(--muted);text-decoration:none;">Tüm İhaleler →</a>
+        <button onclick="csvIndir()" style="background:var(--card-bg);border:1px solid var(--border);color:var(--muted);padding:5px 12px;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;font-family:var(--font);">↓ CSV</button>
+        <button id="paylasBtn" onclick="linkPaylas(this)" style="background:var(--card-bg);border:1px solid var(--border);color:var(--muted);padding:5px 12px;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;font-family:var(--font);">🔗 Paylaş</button>
+      </div>
+    </div>
+
+    <div class="page-body">
+      <!-- ÖZET -->
+      <div class="stat-row">
+        <div class="stat-card">
+          <div class="stat-label">Toplam Sektör</div>
+          <div class="stat-val amber" id="st-sektor">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Aktif Sektörler</div>
+          <div class="stat-val" id="st-aktif-sektor">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Toplam İhale</div>
+          <div class="stat-val" id="st-toplam">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Aktif İhale</div>
+          <div class="stat-val" id="st-aktif">—</div>
+        </div>
+      </div>
+
+      <!-- YÜKLENİYOR -->
+      <div id="yukleniyor-blok" class="yukleniyor">
+        <div class="spinner"></div>
+        <p id="yukleniyor-mesaj">Sektör verileri çekiliyor…</p>
+        <div class="progress-mini">
+          <div class="progress-mini-fill" id="progress-fill" style="width:0%"></div>
+        </div>
+      </div>
+
+      <!-- İÇERİK -->
+      <div id="icerik" style="display:none;">
+        <!-- FİLTRE -->
+        <div class="filtre-bar">
+          <div class="arama-wrap">
+            <span style="color:var(--muted);">🔍</span>
+            <input type="text" id="arama" placeholder="Sektör adı ara…" autocomplete="off">
+          </div>
+          <select class="filtre-select" id="sirala">
+            <option value="toplam_desc">En Çok İhale</option>
+            <option value="aktif_desc">En Çok Aktif</option>
+            <option value="ad_asc">Alfabetik (A→Z)</option>
+            <option value="oran_desc">Aktiflik Oranı</option>
+          </select>
+          <select class="filtre-select" id="min-filter">
+            <option value="0">Tüm sektörler</option>
+            <option value="aktif">Sadece Aktif</option>
+            <option value="10">Min 10 ihale</option>
+            <option value="50">Min 50 ihale</option>
+            <option value="100">Min 100 ihale</option>
+          </select>
+          <span class="sayac-label" id="sayac-label">— sektör</span>
+        </div>
+
+        <!-- GRID -->
+        <div class="sektor-grid" id="sektor-grid">
+          <div class="bos-durum">Veri bekleniyor…</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="js/sidebar-user.js" defer></script>
+<script>
+  const SUPABASE_URL = "https://lpgelwfoarhouollhwur.supabase.co";
+  const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxwZ2Vsd2ZvYXJob3VvbGxod3VyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIyMzI4MjAsImV4cCI6MjA5NzgwODgyMH0.GqTZkeoOAomuur4JSyW2pTR-8Zzg8OTv394JtP7DoXM";
+  const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+  // Sektör ikonları
+  const SEKTOR_IKON = {
+    "Tarım & Ormancılık": "🌾", "Enerji": "⚡", "Madencilik": "⛏️",
+    "Gıda & İçecek": "🍽️", "Tarım Makineleri": "🚜", "Giyim & Tekstil": "👕",
+    "Deri & Kauçuk": "🧤", "Basın & Yayın": "📰", "Kimyasal Ürünler": "🧪",
+    "BT Ekipmanları": "💻", "Elektrik Malzemeleri": "🔌", "İletişim": "📡",
+    "Tıbbi Cihazlar": "🏥", "Ulaşım Araçları": "🚗", "Güvenlik": "🛡️",
+    "Spor & Eğlence": "⚽", "Labaratuvar": "🔬", "Mobilya & Temizlik": "🪑",
+    "Su": "💧", "Sanayi Makineleri": "⚙️", "Madencilik Ekipmanı": "🔧",
+    "İnşaat Malzemeleri": "🧱", "İnşaat & Yapım": "🏗️", "Yazılım": "💾",
+    "Bakım & Onarım": "🔨", "Montaj": "🔩", "Konaklama & Yemek": "🍴",
+    "Ulaşım Hizmetleri": "🚌", "Lojistik": "📦", "Posta & İletişim": "📬",
+    "Kamu Hizmetleri": "🏢", "Sigorta & Finans": "💰", "Gayrimenkul": "🏠",
+    "Mimarlık & Mühendislik": "📐", "Bilişim Hizmetleri": "🖥️",
+    "Ar-Ge": "🔭", "Kamu Yönetimi": "⚖️", "Petrol & Gaz": "🛢️",
+    "Bahçe & Çevre": "🌿", "İdari Hizmetler": "📋", "Eğitim": "📚",
+    "Sağlık": "❤️", "Çevre Hizmetleri": "♻️", "Kültür & Medya": "🎭",
+    "Diğer Hizmetler": "🔧",
+    "Mal Alımı": "📦", "Hizmet Alımı": "🤝", "Danışmanlık": "💡",
+    "Diğer": "📌",
+  };
+
+  let tumSektor = [];
+  let filtrelenmis = [];
+
+  async function veriCek() {
+    const sayim = {};
+    let offset = 0;
+    const { count } = await sb.from('ilanlar').select('*', { count: 'exact', head: true });
+    const toplamKayit = count || 12000;
+
+    // Önce kategori_sayim() RPC'yi dene (migration SQL çalıştırıldıysa)
+    try {
+      const { data: rpcData, error: rpcErr } = await sb.rpc('kategori_sayim');
+      if (!rpcErr && rpcData && rpcData.length) {
+        rpcData.forEach(r => {
+          sayim[r.kategori || 'Diğer'] = { toplam: parseInt(r.toplam), aktif: parseInt(r.aktif) };
+        });
+        finalize(sayim);
+        return;
+      }
+    } catch (_) {}
+
+    // Fallback: paginated batch
+    while (true) {
+      const { data } = await sb.from('ilanlar')
+        .select('kategori, durum')
+        .range(offset, offset + 999);
+      if (!data || data.length === 0) break;
+
+      data.forEach(r => {
+        const kat = r.kategori || 'Diğer';
+        if (!sayim[kat]) sayim[kat] = { toplam: 0, aktif: 0 };
+        sayim[kat].toplam++;
+        if (r.durum === 'aktif') sayim[kat].aktif++;
+      });
+
+      offset += 1000;
+      const yuzde = Math.min(Math.round(offset / toplamKayit * 100), 99);
+      document.getElementById('progress-fill').style.width = yuzde + '%';
+      document.getElementById('yukleniyor-mesaj').textContent =
+        `Sektör verileri çekiliyor… (${offset.toLocaleString('tr-TR')} / ${toplamKayit.toLocaleString('tr-TR')})`;
+      if (data.length < 1000) break;
+    }
+
+    finalize(sayim);
+  }
+
+  function finalize(sayim) {
+    document.getElementById('progress-fill').style.width = '100%';
+
+    tumSektor = Object.entries(sayim).map(([ad, v]) => ({
+      ad, toplam: v.toplam, aktif: v.aktif,
+      oran: v.toplam > 0 ? Math.round(v.aktif / v.toplam * 100) : 0,
+    }));
+
+    const toplamIhale = tumSektor.reduce((s, i) => s + i.toplam, 0);
+    const aktifIhale  = tumSektor.reduce((s, i) => s + i.aktif, 0);
+    const aktifSektor = tumSektor.filter(s => s.aktif > 0).length;
+
+    document.getElementById('st-sektor').textContent = tumSektor.length.toLocaleString('tr-TR');
+    document.getElementById('st-aktif-sektor').textContent = aktifSektor.toLocaleString('tr-TR');
+    document.getElementById('st-toplam').textContent = toplamIhale.toLocaleString('tr-TR');
+    document.getElementById('st-aktif').textContent = aktifIhale.toLocaleString('tr-TR');
+
+    document.getElementById('yukleniyor-blok').style.display = 'none';
+    document.getElementById('icerik').style.display = 'block';
+
+    goster();
+  }
+
+  function goster() {
+    const aramaVal = document.getElementById('arama').value.trim().toLowerCase();
+    const siraKey  = document.getElementById('sirala').value;
+
+    const minRaw = document.getElementById('min-filter').value;
+    filtrelenmis = tumSektor.filter(s => {
+      if (aramaVal && !s.ad.toLowerCase().includes(aramaVal)) return false;
+      if (minRaw === 'aktif') { if (s.aktif < 1) return false; }
+      else if (minRaw && parseInt(minRaw) && s.toplam < parseInt(minRaw)) return false;
+      return true;
+    });
+
+    filtrelenmis.sort((a, b) => {
+      switch (siraKey) {
+        case 'toplam_desc': return b.toplam - a.toplam;
+        case 'aktif_desc':  return b.aktif  - a.aktif;
+        case 'ad_asc':      return a.ad.localeCompare(b.ad, 'tr');
+        case 'oran_desc':   return b.oran - a.oran;
+        default:            return b.toplam - a.toplam;
+      }
+    });
+
+    document.getElementById('sayac-label').textContent = filtrelenmis.length + ' sektör';
+    const maxToplam = filtrelenmis[0]?.toplam || 1;
+
+    const grid = document.getElementById('sektor-grid');
+    if (!filtrelenmis.length) {
+      grid.innerHTML = '<div class="bos-durum" style="grid-column:1/-1;">Eşleşen sektör bulunamadı.</div>';
+      return;
+    }
+
+    const rozetler = ['🥇', '🥈', '🥉'];
+    grid.innerHTML = filtrelenmis.map((s, idx) => {
+      const ikon    = SEKTOR_IKON[s.ad] || '📌';
+      const barW    = Math.round(s.toplam / maxToplam * 100);
+      const encKat  = encodeURIComponent(s.ad);
+      const rozet   = idx < 3 ? `<span title="#${idx+1}" style="position:absolute;top:10px;right:12px;font-size:16px;">${rozetler[idx]}</span>` : '';
+      return `
+        <div class="sektor-kart" style="position:relative;">
+          ${rozet}
+          <div class="sk-ust">
+            <div class="sk-icon">${ikon}</div>
+            <div>
+              <div class="sk-ad">${s.ad}</div>
+              <div class="sk-sub">%${s.oran} aktiflik oranı</div>
+            </div>
+          </div>
+          <div class="sk-sayilar">
+            <div class="sk-sayac">
+              <div class="sk-n amber">${s.toplam.toLocaleString('tr-TR')}</div>
+              <div class="sk-nl">Toplam</div>
+            </div>
+            <div class="sk-sayac">
+              <div class="sk-n">${s.aktif.toLocaleString('tr-TR')}</div>
+              <div class="sk-nl">Aktif</div>
+            </div>
+            <div class="sk-sayac">
+              <div class="sk-n">${(s.toplam - s.aktif).toLocaleString('tr-TR')}</div>
+              <div class="sk-nl">Kapandı</div>
+            </div>
+          </div>
+          <div class="sk-bar"><div class="sk-bar-fill" style="width:${barW}%"></div></div>
+          <div class="sk-actions">
+            <a href="ihaleler?kategori=${encKat}" class="btn-sm btn-sm-amber">Aktif İhaleler</a>
+            <a href="rekabet-analizi?kategori=${encKat}" class="btn-sm btn-sm-ghost">📊 Analiz</a>
+            <a href="ihaleler?kategori=${encKat}&sekme=gecmis" class="btn-sm btn-sm-ghost">Geçmiş</a>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  function csvIndir() {
+    if (!filtrelenmis.length) { alert('Gösterilecek sektör yok.'); return; }
+    const satirlar = [
+      ['Sektör', 'Toplam İhale', 'Aktif İhale', 'Kapandı', 'Aktiflik Oranı %'],
+      ...filtrelenmis.map(s => [
+        `"${s.ad.replace(/"/g, '""')}"`, s.toplam, s.aktif, s.toplam - s.aktif, s.oran,
+      ]),
+    ];
+    const icerik = '﻿' + satirlar.map(r => r.join(',')).join('\r\n');
+    const blob = new Blob([icerik], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = `sektorler_${new Date().toISOString().split('T')[0]}.csv`;
+    a.click(); URL.revokeObjectURL(url);
+  }
+
+  function linkPaylas(btn) {
+    navigator.clipboard.writeText(window.location.href).then(() => {
+      const orig = btn.innerHTML;
+      btn.innerHTML = '✓ Kopyalandı';
+      btn.style.color = '#4ade80';
+      setTimeout(() => { btn.innerHTML = orig; btn.style.color = ''; }, 2000);
+    }).catch(() => prompt('Linki kopyalayın:', window.location.href));
+  }
+
+  let aramaTimer;
+  document.getElementById('arama').addEventListener('input', () => { clearTimeout(aramaTimer); aramaTimer = setTimeout(goster, 250); });
+  document.getElementById('sirala').addEventListener('change', goster);
+  document.getElementById('min-filter').addEventListener('change', goster);
+
+  veriCek().catch(e => {
+    console.error(e);
+    document.getElementById('yukleniyor-blok').innerHTML =
+      '<div style="color:#f87171;padding:40px;text-align:center;">Veri yüklenemedi.</div>';
+  });
+</script>
+</body>
+</html>

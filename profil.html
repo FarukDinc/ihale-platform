@@ -193,10 +193,38 @@
 
     @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.5;transform:scale(.8)} }
 
+    /* EŞİK PRESET BUTONLARI */
+    .esik-preset {
+      font-size: 12px; font-weight: 600; padding: 6px 14px; border-radius: 20px;
+      border: 1.5px solid var(--border); background: transparent; color: var(--muted);
+      cursor: pointer; transition: all .15s;
+    }
+    .esik-preset:hover { border-color: rgba(240,165,0,.4); color: var(--white); }
+    .esik-preset.aktif { border-color: var(--amber); background: rgba(240,165,0,.1); color: var(--amber); }
+
     @media (max-width: 768px) {
       .sektor-grid { grid-template-columns: 1fr 1fr; }
       .il-grid { grid-template-columns: repeat(3, 1fr); }
     }
+
+    /* DOLULUK SKORU BANNER */
+    .doluluk-banner {
+      background: var(--navy-mid); border: 1px solid var(--border);
+      border-radius: 12px; padding: 20px 24px; margin-bottom: 20px;
+      display: flex; align-items: center; gap: 24px;
+    }
+    .doluluk-yuzde {
+      font-size: 40px; font-weight: 800; color: var(--amber);
+      line-height: 1; min-width: 68px; text-align: center; transition: color .4s;
+    }
+    .doluluk-info { flex: 1; }
+    .doluluk-baslik { font-size: 13px; font-weight: 700; color: var(--white); margin-bottom: 8px; }
+    .doluluk-bar-bg { background: rgba(255,255,255,.08); border-radius: 4px; height: 7px; overflow: hidden; margin-bottom: 10px; }
+    .doluluk-bar { height: 100%; border-radius: 4px; background: var(--amber); transition: width .5s ease, background .4s; }
+    .doluluk-items { display: flex; gap: 14px; flex-wrap: wrap; }
+    .doluluk-item { font-size: 11px; font-weight: 600; transition: color .2s; }
+    .doluluk-item.tamam { color: #4ade80; }
+    .doluluk-item.eksik { color: var(--muted); }
   </style>
 </head>
 <body>
@@ -217,7 +245,11 @@
       <a href="takipte" class="nav-item"><span class="icon">☆</span> Takipte</a>
       <a href="bildirimler" class="nav-item"><span class="icon">🔔</span> Bildirimler <span class="nav-badge">4</span></a>
       <div class="nav-section-label">Analiz</div>
-      <a href="#" class="nav-item"><span class="icon">📊</span> Rekabet Analizi</a>
+      <a href="rekabet-analizi" class="nav-item"><span class="icon">📊</span> Rekabet Analizi</a>
+      <a href="idareler" class="nav-item"><span class="icon">🏛️</span> İdareler Dizini</a>
+      <a href="sektorler" class="nav-item"><span class="icon">🏭</span> Sektörler Dizini</a>
+      <a href="kurum-analiz" class="nav-item"><span class="icon">🔍</span> Kurum Analizi</a>
+      <a href="firma-analiz" class="nav-item"><span class="icon">🏢</span> Firma Analizi</a>
       <a href="uyumluluk" class="nav-item"><span class="icon">✓</span> Uyumluluk</a>
       <a href="dokumanlar" class="nav-item"><span class="icon">📁</span> Dökümanlar</a>
       <div class="nav-section-label">Ayarlar</div>
@@ -250,6 +282,53 @@
       <div class="page-header">
         <h1>Firma Profili</h1>
         <p>Sektör, il ve ihale türü tercihlerinizi belirleyin. Bu bilgiler her ihalede size özel <strong style="color:var(--amber)">uyum skoru</strong> hesaplamak için kullanılır.</p>
+      </div>
+
+      <!-- 0. FİRMA BİLGİLERİ -->
+      <div class="section-card">
+        <div class="section-header">
+          <div class="section-icon">🏢</div>
+          <div>
+            <div class="section-title">Firma Bilgileri</div>
+            <div class="section-sub">Firmanızın adı bildirim ve raporlarda görünür</div>
+          </div>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:12px;">
+          <div>
+            <div class="bedel-label">Firma / Kuruluş Adı</div>
+            <input type="text" class="bedel-input" id="firma-adi" placeholder="ör: Teknoloji A.Ş." style="max-width:420px;" />
+          </div>
+          <div style="display:flex; gap:12px; flex-wrap:wrap;">
+            <div style="flex:1; min-width:180px;">
+              <div class="bedel-label">İletişim Kişisi</div>
+              <input type="text" class="bedel-input" id="iletisim-kisi" placeholder="ör: Ahmet Yılmaz" oninput="localStorage.setItem('ihale_iletisim_kisi',this.value)" />
+            </div>
+            <div style="flex:1; min-width:180px;">
+              <div class="bedel-label">İletişim Telefonu</div>
+              <input type="text" class="bedel-input" id="iletisim-tel" placeholder="ör: +90 555 000 00 00" oninput="localStorage.setItem('ihale_iletisim_tel',this.value)" />
+            </div>
+          </div>
+          <div>
+            <div class="bedel-label">Vergi No</div>
+            <input type="text" class="bedel-input" id="vergi-no" placeholder="ör: 1234567890" style="max-width:220px;" oninput="localStorage.setItem('ihale_vergi_no',this.value)" />
+          </div>
+        </div>
+      </div>
+
+      <!-- DOLULUK SKORU -->
+      <div class="doluluk-banner" id="doluluk-banner">
+        <div class="doluluk-yuzde" id="doluluk-yuzde">0%</div>
+        <div class="doluluk-info">
+          <div class="doluluk-baslik">🤖 Profil Doluluk Skoru — Uyum hesaplaması için profilinizi tamamlayın</div>
+          <div class="doluluk-bar-bg"><div class="doluluk-bar" id="doluluk-bar" style="width:0%"></div></div>
+          <div class="doluluk-items">
+            <span class="doluluk-item eksik" id="di-sektor">⊙ Sektörler (30p)</span>
+            <span class="doluluk-item eksik" id="di-il">⊙ İller (20p)</span>
+            <span class="doluluk-item eksik" id="di-tur">⊙ İhale Türü (20p)</span>
+            <span class="doluluk-item eksik" id="di-bedel">⊙ Bütçe Aralığı (15p)</span>
+            <span class="doluluk-item eksik" id="di-esik">⊙ Eşleşme Eşiği (15p)</span>
+          </div>
+        </div>
       </div>
 
       <!-- 1. SEKTÖRLER -->
@@ -316,6 +395,83 @@
           <div class="bedel-input-wrap">
             <div class="bedel-label">Maksimum</div>
             <input type="number" class="bedel-input" id="max-bedel" placeholder="ör: 10.000.000" />
+          </div>
+        </div>
+      </div>
+
+      <!-- 4.5 ANAHTAR KELİMELER -->
+      <div class="section-card">
+        <div class="section-header">
+          <div class="section-icon">🔑</div>
+          <div>
+            <div class="section-title">Anahtar Kelimeler</div>
+            <div class="section-sub">İhale başlığında aranacak özel kelimeler — virgülle ayırın; uyum skorunu artırır</div>
+          </div>
+        </div>
+        <textarea id="anahtar-kelimeler" class="bedel-input" rows="3"
+          style="resize:vertical; font-weight:400; line-height:1.7; font-size:14px;"
+          placeholder="ör: boya, kaplama, epoksi, dış cephe, çatı, yalıtım"
+          oninput="kelimelerKaydet(this.value)"></textarea>
+        <div style="margin-top:8px; font-size:12px; color:var(--muted);">
+          💡 Bu kelimeler ihale başlığında bulunduğunda uyum skorunuza <strong style="color:var(--amber);">+10 puan</strong> eklenir. Sektör filtrelerini tamamlayıcı nitelikte kullanın.
+        </div>
+      </div>
+
+      <!-- 4.6 BELGELER & YETERLİLİKLER -->
+      <div class="section-card">
+        <div class="section-header">
+          <div class="section-icon">📜</div>
+          <div>
+            <div class="section-title">Belgeler & Yetkilendirmeler</div>
+            <div class="section-sub">Sertifikalar, iş deneyim belgeleri ve yetki belgeleri — AI uygunluk kontrolünde kullanılır</div>
+          </div>
+        </div>
+        <textarea id="sertifikalar" class="bedel-input" rows="3"
+          style="resize:vertical; font-weight:400; line-height:1.7; font-size:14px;"
+          placeholder="ör: ISO 9001, TSE Kalite, İş Deneyim Belgesi B-Grubu (Bina İnşaatı), Güvenlik Yetki Belgesi, TÜRKAK Akreditasyon"
+          oninput="sertifikalarKaydet(this.value)"></textarea>
+        <div style="margin-top:8px; font-size:12px; color:var(--muted);">
+          💡 Bu bilgiler AI şartname analizi sırasında "eleme kriteri uygunluğu" kontrolünde devreye girer. Virgülle ayırarak yazın.
+        </div>
+      </div>
+
+      <!-- 5. AKILLI EŞLEŞTİRME EŞİĞİ (9.7) -->
+      <div class="section-card">
+        <div class="section-header">
+          <div class="section-icon">🎯</div>
+          <div>
+            <div class="section-title">Akıllı Eşleşme Eşiği</div>
+            <div class="section-sub">Yalnızca bu eşiğin üzerindeki ihaleler bildirimlerinizde ve "En İyi Eşleşmeler"de öne çıkar</div>
+          </div>
+        </div>
+
+        <div style="padding: 8px 0 4px;">
+          <div style="display:flex; align-items:center; gap:20px; margin-bottom:16px;">
+            <div style="flex:1;">
+              <input type="range" id="min-uyum-esigi" min="0" max="90" step="5" value="50"
+                style="width:100%; accent-color:var(--amber); cursor:pointer; height:6px;"
+                oninput="esikGuncelle(this.value)" />
+              <div style="display:flex; justify-content:space-between; font-size:11px; color:var(--muted); margin-top:6px;">
+                <span>%0 (Tümü)</span>
+                <span>%45</span>
+                <span>%70</span>
+                <span>%90 (Yalnızca En İyi)</span>
+              </div>
+            </div>
+            <div style="text-align:center; min-width:80px;">
+              <div style="font-size:32px; font-weight:800; color:var(--amber); line-height:1;" id="esik-goster">%50</div>
+              <div style="font-size:11px; color:var(--muted); margin-top:4px;">minimum uyum</div>
+            </div>
+          </div>
+          <div style="display:flex; gap:8px; flex-wrap:wrap;" id="esik-preset-btns">
+            <button class="esik-preset" onclick="esikSec(0)"  data-val="0">Tümü</button>
+            <button class="esik-preset" onclick="esikSec(40)" data-val="40">%40+ Orta</button>
+            <button class="esik-preset" onclick="esikSec(60)" data-val="60">%60+ İyi</button>
+            <button class="esik-preset" onclick="esikSec(75)" data-val="75">%75+ Yüksek</button>
+            <button class="esik-preset" onclick="esikSec(85)" data-val="85">%85+ Mükemmel</button>
+          </div>
+          <div style="margin-top:14px; padding:12px 16px; background:var(--navy); border-radius:8px; border:1px solid var(--border); font-size:13px; color:var(--muted);">
+            💡 Eşik <strong style="color:var(--white);" id="esik-aciklama-val">%50</strong> olarak ayarlandığında, ihaleler sayfasında <strong style="color:var(--amber);">Min. Uyum</strong> filtresi otomatik bu değerle başlar ve bildirimler yalnızca eşleşen ihaleler için gelir.
           </div>
         </div>
       </div>
@@ -452,23 +608,53 @@
       </div>`).join('');
   }
 
+  // ── Profil doluluk skoru ────────────────────────────────────────────────
+  function dolulukGuncelle() {
+    let puan = 0;
+    const item = (id, label, puan_mi, p) => {
+      puan += puan_mi ? p : 0;
+      const el = document.getElementById(id);
+      if (el) {
+        el.className = 'doluluk-item ' + (puan_mi ? 'tamam' : 'eksik');
+        el.textContent = (puan_mi ? '✓' : '⊙') + ' ' + label;
+      }
+    };
+    item('di-sektor', 'Sektörler (30p)',      seciliSektorler.size > 0, 30);
+    item('di-il',     'İller (20p)',           seciliIller.size > 0,     20);
+    item('di-tur',    'İhale Türü (20p)',      seciliTurler.size > 0,    20);
+    const minB = document.getElementById('min-bedel')?.value;
+    const maxB = document.getElementById('max-bedel')?.value;
+    item('di-bedel',  'Bütçe Aralığı (15p)',  !!(minB || maxB),         15);
+    const esikVal = parseInt(document.getElementById('min-uyum-esigi')?.value) || 0;
+    item('di-esik',   'Eşleşme Eşiği (15p)',  esikVal > 0,              15);
+
+    const renk = puan >= 80 ? '#4ade80' : puan >= 50 ? 'var(--amber)' : '#f87171';
+    const yEl = document.getElementById('doluluk-yuzde');
+    const bEl = document.getElementById('doluluk-bar');
+    if (yEl) { yEl.textContent = puan + '%'; yEl.style.color = renk; }
+    if (bEl) { bEl.style.width = puan + '%'; bEl.style.background = renk; }
+  }
+
   // ── Toggle fonksiyonları ────────────────────────────────────────────────
   function sektorToggle(id) {
     if (seciliSektorler.has(id)) seciliSektorler.delete(id);
     else seciliSektorler.add(id);
     document.getElementById('sektor-' + id).classList.toggle('secili', seciliSektorler.has(id));
+    dolulukGuncelle();
   }
 
   function ilToggle(il) {
     if (seciliIller.has(il)) seciliIller.delete(il);
     else seciliIller.add(il);
     document.getElementById('il-' + il).classList.toggle('secili', seciliIller.has(il));
+    dolulukGuncelle();
   }
 
   function turToggle(id) {
     if (seciliTurler.has(id)) seciliTurler.delete(id);
     else seciliTurler.add(id);
     document.getElementById('tur-' + id).classList.toggle('secili', seciliTurler.has(id));
+    dolulukGuncelle();
   }
 
   // ── Profili yükle ───────────────────────────────────────────────────────
@@ -485,8 +671,18 @@
 
     if (data) {
       document.getElementById('sidebar-firma').textContent = data.firma_adi || email;
+      if (data.firma_adi) document.getElementById('firma-adi').value = data.firma_adi;
       if (data.min_bedel) document.getElementById('min-bedel').value = data.min_bedel;
       if (data.max_bedel) document.getElementById('max-bedel').value = data.max_bedel;
+      esikYukle(data.min_uyum_esigi ?? localStorage.getItem('ihale_min_uyum_esigi') ?? 50);
+      // Anahtar kelimeler: DB'den gelirse kaydet, yoksa localStorage'dan yükle
+      const kelimelerDB = data.anahtar_kelimeler;
+      const kelimelerLS = localStorage.getItem('ihale_anahtar_kelimeler') || '';
+      const kelimelerGoster = kelimelerDB || kelimelerLS;
+      if (kelimelerGoster) {
+        document.getElementById('anahtar-kelimeler').value = kelimelerGoster;
+        localStorage.setItem('ihale_anahtar_kelimeler', kelimelerGoster);
+      }
 
       // Seçimleri geri yükle
       (data.sektorler || []).forEach(s => {
@@ -509,6 +705,39 @@
     }
   }
 
+  // ── Min. Uyum Eşiği ────────────────────────────────────────────────────
+  function esikGuncelle(val) {
+    const n = parseInt(val);
+    document.getElementById('esik-goster').textContent = n === 0 ? 'Tümü' : `%${n}`;
+    document.getElementById('esik-aciklama-val').textContent = n === 0 ? '%0 (Tümü)' : `%${n}`;
+    document.querySelectorAll('.esik-preset').forEach(b => {
+      b.classList.toggle('aktif', parseInt(b.dataset.val) === n);
+    });
+    localStorage.setItem('ihale_min_uyum_esigi', n);
+    dolulukGuncelle();
+  }
+
+  function esikSec(val) {
+    document.getElementById('min-uyum-esigi').value = val;
+    esikGuncelle(val);
+  }
+
+  function esikYukle(val) {
+    const n = parseInt(val) || 0;
+    document.getElementById('min-uyum-esigi').value = n;
+    esikGuncelle(n);
+  }
+
+  // ── Anahtar kelimeler (anlık localStorage) ────────────────────────────
+  function kelimelerKaydet(deger) {
+    localStorage.setItem('ihale_anahtar_kelimeler', deger.trim());
+  }
+
+  // ── Belgeler & Yeterlilikler (anlık localStorage) ─────────────────────
+  function sertifikalarKaydet(deger) {
+    localStorage.setItem('ihale_sertifikalar', deger.trim());
+  }
+
   // ── Kaydet ─────────────────────────────────────────────────────────────
   async function kaydet() {
     const btn = document.getElementById('btn-kaydet');
@@ -523,14 +752,21 @@
       btn.disabled = false; btn.textContent = 'Değişiklikleri Kaydet'; return;
     }
 
+    const kelimelerMetin = (document.getElementById('anahtar-kelimeler').value || '').trim();
+    localStorage.setItem('ihale_anahtar_kelimeler', kelimelerMetin);
+    const sertMetin = (document.getElementById('sertifikalar').value || '').trim();
+    localStorage.setItem('ihale_sertifikalar', sertMetin);
+
     const veri = {
       user_id: user.id,
+      firma_adi: document.getElementById('firma-adi').value.trim() || null,
       sektorler: [...seciliSektorler],
       kategoriler: [...seciliSektorler],
       tercih_iller: [...seciliIller],
       tercih_turler: [...seciliTurler],
       min_bedel: parseInt(document.getElementById('min-bedel').value) || 0,
       max_bedel: parseInt(document.getElementById('max-bedel').value) || 0,
+      min_uyum_esigi: parseInt(document.getElementById('min-uyum-esigi').value) || 0,
       guncelleme: new Date().toISOString()
     };
 
@@ -539,6 +775,10 @@
     if (error) {
       toast('Kayıt hatası: ' + error.message, 'hata');
     } else {
+      // Anahtar kelimeleri ayrıca kaydetmeyi dene (kolon DB'de olmayabilir — sessiz hata)
+      if (kelimelerMetin) {
+        sb.from('profil').update({ anahtar_kelimeler: kelimelerMetin }).eq('user_id', user.id).then(() => {});
+      }
       toast('✓ Profil kaydedildi! Uyum skorları güncelleniyor...', 'basari');
     }
 
@@ -558,7 +798,28 @@
   sektorGridOlustur();
   ilGridOlustur();
   turGridOlustur();
-  profilYukle();
+  esikYukle(localStorage.getItem('ihale_min_uyum_esigi') ?? 50);
+  // Anahtar kelimeleri localStorage'dan yükle (DB yüklemesinden önce anlık göster)
+  const kelimelerLS = localStorage.getItem('ihale_anahtar_kelimeler');
+  if (kelimelerLS) document.getElementById('anahtar-kelimeler').value = kelimelerLS;
+  // Belgeler & Yeterlilikler
+  const sertLS = localStorage.getItem('ihale_sertifikalar');
+  if (sertLS) document.getElementById('sertifikalar').value = sertLS;
+  const kisiLS = localStorage.getItem('ihale_iletisim_kisi');
+  if (kisiLS) document.getElementById('iletisim-kisi').value = kisiLS;
+  const telLS = localStorage.getItem('ihale_iletisim_tel');
+  if (telLS) document.getElementById('iletisim-tel').value = telLS;
+  const vergiLS = localStorage.getItem('ihale_vergi_no');
+  if (vergiLS) document.getElementById('vergi-no').value = vergiLS;
+  // Bedel ve diğer inputlarda doluluk skorunu güncelle
+  ['min-bedel', 'max-bedel'].forEach(id => {
+    document.getElementById(id)?.addEventListener('input', dolulukGuncelle);
+  });
+  document.addEventListener('keydown', e => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 's') { e.preventDefault(); kaydet(); }
+  });
+
+  profilYukle().then(() => dolulukGuncelle());
 </script>
 </body>
 </html>

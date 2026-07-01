@@ -97,6 +97,16 @@ window.Uyum = (() => {
     if (max === 0 || (bedel >= min && bedel <= max)) puan += 15;
     else if (bedel >= min * 0.5 && bedel <= max * 1.5) puan += 7;
 
+    // Anahtar kelime bonusu (+10) — profil.html'de girilen özel kelimeler
+    if (ilan.baslik) {
+      const anahtarlar = (localStorage.getItem('ihale_anahtar_kelimeler') || '')
+        .split(',').map(k => k.trim().toLowerCase()).filter(Boolean);
+      if (anahtarlar.length > 0) {
+        const bl = ilan.baslik.toLowerCase();
+        if (anahtarlar.some(k => bl.includes(k))) puan += 10;
+      }
+    }
+
     return Math.min(puan, 100);
   }
 

@@ -113,7 +113,11 @@
       <a href="takipte" class="nav-item"><span class="icon">☆</span> Takipte</a>
       <a href="bildirimler" class="nav-item"><span class="icon">🔔</span> Bildirimler</a>
       <div class="nav-section-label">Analiz</div>
-      <a href="#" class="nav-item"><span class="icon">📊</span> Rekabet Analizi</a>
+      <a href="rekabet-analizi" class="nav-item"><span class="icon">📊</span> Rekabet Analizi</a>
+      <a href="idareler" class="nav-item"><span class="icon">🏛️</span> İdareler Dizini</a>
+      <a href="sektorler" class="nav-item"><span class="icon">🏭</span> Sektörler Dizini</a>
+      <a href="kurum-analiz" class="nav-item"><span class="icon">🔍</span> Kurum Analizi</a>
+      <a href="firma-analiz" class="nav-item"><span class="icon">🏢</span> Firma Analizi</a>
       <a href="uyumluluk" class="nav-item"><span class="icon">✓</span> Uyumluluk</a>
       <a href="dokumanlar" class="nav-item active"><span class="icon">📁</span> Dökümanlar</a>
       <div class="nav-section-label">Ayarlar</div>
@@ -132,6 +136,7 @@
     <div class="topbar">
       <span style="font-size:15px;font-weight:600;">Dökümanlar</span>
       <div class="topbar-actions">
+        <button id="tumunu-ac-btn" onclick="tumunuAcKapat()" style="background:var(--card-bg);border:1px solid var(--border);color:var(--muted);padding:5px 12px;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;font-family:var(--font);">Tümünü Aç</button>
         <a href="takipte" class="action-btn" style="padding:7px 14px;font-size:12px;font-weight:600;border-radius:6px;border:1px solid var(--border);background:var(--card-bg);color:var(--white);text-decoration:none;">Takipte →</a>
         <a href="fiyatlandirma_odeme_bolumu" class="btn btn-primary" style="padding:7px 16px;font-size:13px;">Pro'ya Geç ↑</a>
       </div>
@@ -247,7 +252,7 @@
          </div>`;
 
     const id = 'kart-'+ihale.id;
-    return `<div class="ihale-kart" data-baslik="${(ihale.baslik||'').toLowerCase()}">
+    return `<div class="ihale-kart" data-baslik="${(ihale.baslik||'').toLowerCase()}" data-id="${ihale.id}">
       <div class="kart-header" onclick="toggle('${id}')">
         <div>
           <div class="kart-baslik">${ihale.baslik||'—'}</div>
@@ -312,7 +317,52 @@
     }
 
     icerik.innerHTML = tumVeriler.map(ihaleDokRender).join('');
+
+    if (tumVeriler.length <= 3) {
+      tumVeriler.forEach(({ ihale }) => {
+        const id = 'kart-' + ihale.id;
+        const body = document.getElementById(id);
+        const tog = document.getElementById('tog-' + id);
+        if (body) body.classList.add('acik');
+        if (tog) tog.classList.add('acik');
+      });
+      tumAcik = true;
+      const btn = document.getElementById('tumunu-ac-btn');
+      if (btn) btn.textContent = 'Tümünü Kapat';
+    }
   }
+
+  let tumAcik = false;
+  function tumunuAcKapat() {
+    tumAcik = !tumAcik;
+    document.querySelectorAll('#dok-icerik .ihale-kart').forEach(kart => {
+      const id = 'kart-' + kart.dataset.id;
+      const body = document.getElementById(id);
+      const tog = document.getElementById('tog-' + id);
+      if (!body) return;
+      body.classList.toggle('acik', tumAcik);
+      if (tog) tog.classList.toggle('acik', tumAcik);
+    });
+    const btn = document.getElementById('tumunu-ac-btn');
+    if (btn) btn.textContent = tumAcik ? 'Tümünü Kapat' : 'Tümünü Aç';
+  }
+
+  document.addEventListener('keydown', e => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+      e.preventDefault();
+      const el = document.getElementById('dok-search');
+      if (el) { el.focus(); el.select(); }
+    }
+    if (e.altKey && !e.ctrlKey && !e.metaKey) {
+      const tabs = document.querySelectorAll('.tab');
+      const tabIds = ['takip', 'teknik', 'idari'];
+      const idx = parseInt(e.key) - 1;
+      if (idx >= 0 && idx < tabIds.length) {
+        e.preventDefault();
+        sekmeAc(tabIds[idx], tabs[idx]);
+      }
+    }
+  });
 
   yukle();
 </script>

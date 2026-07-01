@@ -126,7 +126,11 @@
       <a href="takipte" class="nav-item"><span class="icon">☆</span> Takipte</a>
       <a href="bildirimler" class="nav-item"><span class="icon">🔔</span> Bildirimler</a>
       <div class="nav-section-label">Analiz</div>
-      <a href="#" class="nav-item"><span class="icon">📊</span> Rekabet Analizi</a>
+      <a href="rekabet-analizi" class="nav-item"><span class="icon">📊</span> Rekabet Analizi</a>
+      <a href="idareler" class="nav-item"><span class="icon">🏛️</span> İdareler Dizini</a>
+      <a href="sektorler" class="nav-item"><span class="icon">🏭</span> Sektörler Dizini</a>
+      <a href="kurum-analiz" class="nav-item"><span class="icon">🔍</span> Kurum Analizi</a>
+      <a href="firma-analiz" class="nav-item"><span class="icon">🏢</span> Firma Analizi</a>
       <a href="uyumluluk" class="nav-item active"><span class="icon">✓</span> Uyumluluk</a>
       <a href="dokumanlar" class="nav-item"><span class="icon">📁</span> Dökümanlar</a>
       <div class="nav-section-label">Ayarlar</div>
@@ -145,6 +149,7 @@
     <div class="topbar">
       <span style="font-size:15px;font-weight:600;">Uyumluluk Analizi</span>
       <div class="topbar-actions">
+        <button onclick="csvIndir()" class="action-btn" title="Eşleşme listesini CSV olarak indir">↓ CSV</button>
         <a href="profil" class="action-btn">Profili Düzenle</a>
         <a href="fiyatlandirma_odeme_bolumu" class="btn btn-primary" style="padding:7px 16px;font-size:13px;">Pro'ya Geç ↑</a>
       </div>
@@ -164,7 +169,9 @@
       <!-- TABLO ARAÇ ÇUBUĞU -->
       <div class="tablo-toolbar">
         <div class="result-info" id="result-info">Yükleniyor...</div>
-        <div style="display:flex;gap:8px;align-items:center;">
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+          <input type="text" id="f-arama" placeholder="Başlık / idare ara…" class="sort-select"
+            style="min-width:180px;padding:7px 11px;" oninput="aramaFiltrele()">
           <label style="font-size:12px;color:var(--muted);">Min. Uyum:</label>
           <select class="sort-select" id="f-min-uyum" onchange="yukle(1)">
             <option value="0">Tümü</option>
@@ -218,6 +225,7 @@
   const SAYFA = 25;
   let profil = null;
   let mevcutSayfa = 1;
+  let tumScoredIlanlar = [];
 
   function tarihFmt(t) {
     if (!t) return '—';
@@ -247,10 +255,12 @@
   function satirOlustur(ilan) {
     const puan = Uyum.hesapla(ilan, profil);
     const sinif = uyumSinif(puan);
-    return `<tr>
+    const takipte = Takip.var(ilan.id);
+    const katChip = ilan.kategori ? ` · <span style="color:var(--muted)">${ilan.kategori}</span>` : '';
+    return `<tr id="uyum-satir-${ilan.id}">
       <td>
         <a class="ihale-title" href="ihale-detay?id=${ilan.id}">${ilan.baslik||'—'}</a>
-        <div class="ihale-meta">${ilan.idare||'—'}${ilan.il ? ' — '+ilan.il : ''}</div>
+        <div class="ihale-meta">${ilan.idare||'—'}${ilan.il ? ' — 📍'+ilan.il : ''}${katChip}</div>
       </td>
       <td>${durumBadge(ilan.durum, ilan.son_teklif_tarihi)}</td>
       <td class="budget-cell">${butceFmt(ilan.yaklasik_maliyet_min, ilan.yaklasik_maliyet_max)}</td>
@@ -263,10 +273,52 @@
       </td>
       <td>
         <div class="action-btns">
+          <button class="action-btn ${takipte ? 'primary' : ''}" id="uyum-takip-${ilan.id}"
+            onclick="uyumTakip(${ilan.id})" title="${takipte ? 'Takipten çıkar' : 'Takibe al'}"
+            style="font-size:14px;">${takipte ? '★' : '☆'}</button>
           <a class="action-btn" href="ihale-detay?id=${ilan.id}">Detay</a>
         </div>
       </td>
     </tr>`;
+  }
+
+  let _aramaTimer;
+  function aramaFiltrele() {
+    clearTimeout(_aramaTimer);
+    _aramaTimer = setTimeout(() => yukle(1), 250);
+  }
+
+  function csvIndir() {
+    if (!tumScoredIlanlar.length) { alert('Henüz veri yüklenmedi.'); return; }
+    const satirlar = [
+      ['Uyum %', 'Başlık', 'İdare', 'İl', 'Kategori', 'Tür', 'Son Teklif', 'Yaklaşık Maliyet'],
+      ...tumScoredIlanlar.map(i => [
+        i._uyum,
+        `"${(i.baslik || '').replace(/"/g, '""')}"`,
+        `"${(i.idare || '').replace(/"/g, '""')}"`,
+        i.il || '',
+        i.kategori || '',
+        i.tur || '',
+        i.son_teklif_tarihi ? i.son_teklif_tarihi.split('T')[0] : '',
+        i.yaklasik_maliyet_min || i.tahmini_bedel || '',
+      ]),
+    ];
+    const icerik = '﻿' + satirlar.map(r => r.join(',')).join('\r\n');
+    const blob = new Blob([icerik], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = `uyumluluk_${new Date().toISOString().split('T')[0]}.csv`;
+    a.click(); URL.revokeObjectURL(url);
+  }
+
+  function uyumTakip(id) {
+    const takipte = Takip.toggle(id);
+    const btn = document.getElementById('uyum-takip-' + id);
+    if (btn) {
+      btn.textContent = takipte ? '★' : '☆';
+      btn.classList.toggle('primary', takipte);
+      btn.title = takipte ? 'Takipten çıkar' : 'Takibe al';
+    }
   }
 
   function profilOzetGoster() {
@@ -306,7 +358,7 @@
 
     // Uyum filtrelemesi için tüm ilanları çekiyoruz (limit yüksek), client'ta filtrele
     let query = sb.from('ilanlar')
-      .select('id,ekap_id,baslik,idare,il,tur,durum,son_teklif_tarihi,tahmini_bedel,yaklasik_maliyet_min,yaklasik_maliyet_max')
+      .select('id,ekap_id,baslik,idare,il,tur,kategori,durum,son_teklif_tarihi,tahmini_bedel,yaklasik_maliyet_min,yaklasik_maliyet_max')
       .eq('durum', 'aktif');
 
     if (sort === 'son_teklif') query = query.order('son_teklif_tarihi', { ascending: true });
@@ -324,6 +376,10 @@
     let ilanlar = (data || []).map(i => ({ ...i, _uyum: Uyum.hesapla(i, profil) }));
     if (minUyum > 0) ilanlar = ilanlar.filter(i => i._uyum >= minUyum);
     if (sort === 'uyum_desc') ilanlar.sort((a, b) => b._uyum - a._uyum);
+    tumScoredIlanlar = ilanlar;
+    const aramaVal = (document.getElementById('f-arama')?.value || '').trim().toLowerCase();
+    if (aramaVal) ilanlar = ilanlar.filter(i =>
+      (i.baslik || '').toLowerCase().includes(aramaVal) || (i.idare || '').toLowerCase().includes(aramaVal));
 
     const toplam = ilanlar.length;
     const bas = (sayfa - 1) * SAYFA;

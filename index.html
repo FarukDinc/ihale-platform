@@ -560,31 +560,31 @@
       </div>
 
       <div class="feature-card">
-        <div class="feature-icon">📋</div>
-        <h3>Uyumluluk Ön Analizi</h3>
-        <p>Şartname yayınlanır yayınlanmaz iş deneyim belgesi, teminat ve kapasite uyumunuzu otomatik kontrol edin.</p>
+        <div class="feature-icon">🤖</div>
+        <h3>AI Şartname Analizi</h3>
+        <p>Gemini ile her ihale şartnamesini 7 başlıkta analiz edin: özet, kilit bilgiler, giriş engelleri, mali yükümlülükler, riskler, fırsatlar ve tavsiye.</p>
         <span class="feature-tag">Premium</span>
       </div>
 
       <div class="feature-card">
         <div class="feature-icon">📊</div>
-        <h3>Rekabet & Fiyat İstihbarası</h3>
-        <p>Aynı kurum ve sektörde geçmiş ihale sonuçlarını, kazanan fiyat aralıklarını ve rakip profillerini görün.</p>
+        <h3>Rekabet & Firma Analizi</h3>
+        <p>İl, sektör ve ihale türü bazında rekabet haritanızı çıkarın. Kurum ve firma profilleri ile geçmiş ihale trendlerini görün.</p>
         <span class="feature-tag">Premium</span>
       </div>
 
       <div class="feature-card">
         <div class="feature-icon">🔔</div>
-        <h3>Çoklu Kanal Bildirimleri</h3>
-        <p>E-posta, SMS, WhatsApp veya Telegram üzerinden tercihinize göre anlık ve özet bildirimler alın.</p>
+        <h3>Takip & Bildirim Sistemi</h3>
+        <p>İhaleleri takip listesine ekleyin, son tarih geri sayımını izleyin. Kayıtlı aramalar ile yeni ihaleleri filtreli takip edin.</p>
         <span class="feature-tag">Tüm Planlarda</span>
       </div>
 
       <div class="feature-card">
-        <div class="feature-icon">📁</div>
-        <h3>Ekip & Döküman Yönetimi</h3>
-        <p>Teklif hazırlama süreçlerini ekiple yönetin, dökümanları organize edin, takvim entegrasyonuyla son günleri kaçırmayın.</p>
-        <span class="feature-tag">Kurumsal</span>
+        <div class="feature-icon">🗂️</div>
+        <h3>Sektör & İdare Dizinleri</h3>
+        <p>50+ sektör ve binlerce idareyi keşfedin. Her sektör ve kurum için ihale sayımları, aktiflik oranı ve detaylı analiz linki.</p>
+        <span class="feature-tag">Ücretsiz</span>
       </div>
     </div>
 
@@ -820,7 +820,7 @@
       const [aktif, bugun, butce] = await Promise.all([
         sb.from('ilanlar').select('id', { count: 'exact', head: true }).eq('durum', 'aktif'),
         sb.from('ilanlar').select('id', { count: 'exact', head: true })
-          .gte('olusturulma', bugunBaslangic.toISOString()),
+          .gte('ilan_tarihi', bugunBaslangic.toISOString()),
         sb.from('ilanlar').select('yaklasik_maliyet_min').eq('durum', 'aktif').not('yaklasik_maliyet_min', 'is', null),
       ]);
 
@@ -916,7 +916,7 @@
         const [toplam, guncel, bugunEklenen] = await Promise.all([
           sb.from('ilanlar').select('id', { count: 'exact', head: true }),
           sb.from('ilanlar').select('id', { count: 'exact', head: true }).gte('son_teklif_tarihi', new Date().toISOString()),
-          sb.from('ilanlar').select('id', { count: 'exact', head: true }).gte('olusturulma', bugun.toISOString()),
+          sb.from('ilanlar').select('id', { count: 'exact', head: true }).gte('ilan_tarihi', bugun.toISOString()),
         ]);
         set('oz-toplam', (toplam.count ?? 0).toLocaleString('tr'));
         set('oz-guncel', (guncel.count ?? 0).toLocaleString('tr'));

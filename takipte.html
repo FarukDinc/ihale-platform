@@ -259,6 +259,15 @@
       <a href="idareler" class="nav-item">
         <span class="icon">🏛️</span> İdareler Dizini
       </a>
+      <a href="sektorler" class="nav-item">
+        <span class="icon">🏭</span> Sektörler Dizini
+      </a>
+      <a href="kurum-analiz" class="nav-item">
+        <span class="icon">🔍</span> Kurum Analizi
+      </a>
+      <a href="firma-analiz" class="nav-item">
+        <span class="icon">🏢</span> Firma Analizi
+      </a>
       <a href="uyumluluk" class="nav-item">
         <span class="icon">✓</span> Uyumluluk
       </a>
@@ -297,7 +306,12 @@
         <input type="text" placeholder="Takip listesinde ara..." id="takip-search" oninput="aramaYap(this.value)" />
       </div>
       <div class="topbar-actions">
-        <div class="icon-btn" title="Bildirimler">🔔</div>
+        <select id="siralama-sec" onchange="siralamaUygula(this.value)"
+          style="background:var(--navy); border:1px solid var(--border); color:var(--white); border-radius:6px; padding:7px 12px; font-size:13px; cursor:pointer; outline:none;">
+          <option value="ekle">Son Eklenen Önce</option>
+          <option value="deadline">En Yakın Tarih Önce</option>
+          <option value="uyum">En Yüksek Uyum Önce</option>
+        </select>
         <a href="fiyatlandirma_odeme_bolumu" class="btn btn-primary" style="padding:8px 16px; font-size:13px;">Pro'ya Geç ↑</a>
       </div>
     </div>
@@ -311,6 +325,8 @@
           <p>Takibe aldığınız ihaleler burada listelenir. Veriler tarayıcınızda saklanır.</p>
         </div>
         <div style="display:flex; gap:8px;">
+          <button class="btn btn-ghost" style="font-size:13px; padding:9px 16px;" onclick="csvIndir()" title="Takip listesini CSV olarak indir">↓ CSV</button>
+          <button class="btn btn-ghost" style="font-size:13px; padding:9px 16px;" onclick="gecmisleriTemizle()" title="Teklif tarihi geçmiş ihaleleri kaldır">↩ Bittileri Kaldır</button>
           <button class="btn btn-ghost" style="font-size:13px; padding:9px 16px;" onclick="tumunuTemizle()">Listeyi Temizle</button>
           <a href="ihaleler" class="btn btn-primary" style="font-size:13px; padding:9px 16px;">+ İhale Ekle</a>
         </div>
@@ -431,23 +447,37 @@
     return Math.floor(Math.random() * 25 + 60);
   }
 
+  function kalanGunRenk(bitis) {
+    if (!bitis) return { renk: 'var(--muted)', etiket: '' };
+    const gun = Math.ceil((new Date(bitis) - new Date()) / 86400000);
+    if (gun < 0) return { renk: 'var(--muted)', etiket: 'Kapandı' };
+    if (gun <= 3) return { renk: '#f87171', etiket: `Son ${gun} gün` };
+    if (gun <= 7) return { renk: 'var(--amber)', etiket: `${gun} gün kaldı` };
+    return { renk: '#4ade80', etiket: `${gun} gün kaldı` };
+  }
+
   function satirOlustur(ilan) {
     const uyum = uyumSkoru(ilan);
+    const uyumRenk = uyum >= 75 ? '#4ade80' : uyum >= 55 ? 'var(--amber)' : 'var(--muted)';
+    const { renk, etiket } = kalanGunRenk(ilan.son_teklif_tarihi);
     return `
-      <tr data-id="${ilan.id}" data-baslik="${(ilan.baslik || '').toLowerCase()}">
+      <tr data-id="${ilan.id}" data-baslik="${(ilan.baslik || '').toLowerCase()}" data-deadline="${ilan.son_teklif_tarihi || ''}" data-uyum="${uyum}">
         <td class="ihale-title-cell">
           <a href="ihale-detay?id=${ilan.id}">${ilan.baslik || '—'}</a>
-          <div class="ihale-kurrum-cell">${ilan.idare || '—'}${ilan.ekap_id ? ' — EKAP #' + ilan.ekap_id : ''}</div>
+          <div class="ihale-kurrum-cell">${ilan.idare || '—'}${ilan.il ? ' · ' + ilan.il : ''}${ilan.ekap_id ? ' — EKAP #' + ilan.ekap_id : ''}</div>
         </td>
         <td>${durumBadge(ilan.durum, ilan.son_teklif_tarihi)}</td>
         <td class="budget-cell">${yaklasikMaliyet(ilan)}</td>
-        <td style="font-size:13px; color:var(--off-white);">${tarihFormatla(ilan.son_teklif_tarihi)}</td>
+        <td>
+          <div style="font-size:13px; color:var(--off-white);">${tarihFormatla(ilan.son_teklif_tarihi)}</div>
+          ${etiket ? `<div style="font-size:11px; font-weight:700; color:${renk}; margin-top:2px;">${etiket}</div>` : ''}
+        </td>
         <td>
           <div class="compat-bar">
             <div style="flex:1; background:var(--border); height:4px; border-radius:2px; overflow:hidden;">
-              <div class="compat-fill" style="width:${uyum}%;"></div>
+              <div class="compat-fill" style="width:${uyum}%; background:${uyumRenk};"></div>
             </div>
-            <span class="compat-num">${uyum}%</span>
+            <span class="compat-num" style="color:${uyumRenk};">${uyum}%</span>
           </div>
         </td>
         <td>
@@ -457,6 +487,22 @@
           </div>
         </td>
       </tr>`;
+  }
+
+  function siralamaUygula(mod) {
+    const tbody = document.getElementById('takip-tbody');
+    const rows = [...tbody.querySelectorAll('tr[data-id]')];
+    if (rows.length === 0) return;
+    rows.sort((a, b) => {
+      if (mod === 'deadline') {
+        const da = a.dataset.deadline, db = b.dataset.deadline;
+        if (!da) return 1; if (!db) return -1;
+        return new Date(da) - new Date(db);
+      }
+      if (mod === 'uyum') return parseInt(b.dataset.uyum) - parseInt(a.dataset.uyum);
+      return 0; // 'ekle' — DOM sırası (zaten doğru)
+    });
+    rows.forEach(r => tbody.appendChild(r));
   }
 
   function takiptenCikar(btn, id) {
@@ -473,12 +519,51 @@
     }, 200);
   }
 
+  function csvIndir() {
+    if (!tumIlanlar.length) { alert('Takip listesi boş.'); return; }
+    const satirlar = [
+      ['ID', 'EKAP No', 'Başlık', 'İdare', 'İl', 'Tür', 'Durum', 'Son Teklif Tarihi', 'Yaklaşık Maliyet (Min)'],
+      ...tumIlanlar.map(i => [
+        i.id,
+        i.ekap_id || '',
+        `"${(i.baslik || '').replace(/"/g, '""')}"`,
+        `"${(i.idare || '').replace(/"/g, '""')}"`,
+        i.il || '',
+        i.tur || '',
+        i.durum || '',
+        i.son_teklif_tarihi ? i.son_teklif_tarihi.split('T')[0] : '',
+        i.yaklasik_maliyet_min || i.tahmini_bedel || '',
+      ]),
+    ];
+    const icerik = '﻿' + satirlar.map(r => r.join(',')).join('\r\n');
+    const blob = new Blob([icerik], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = `takip_listesi_${new Date().toISOString().split('T')[0]}.csv`;
+    a.click(); URL.revokeObjectURL(url);
+  }
+
   function tumunuTemizle() {
     if (!confirm('Takip listenizdeki tüm ihaleler kaldırılacak. Emin misiniz?')) return;
     Takip.liste().forEach(id => Takip.toggle(id));
     tumIlanlar = [];
     istatistikleriGuncelle();
     bosEkranGoster();
+  }
+
+  function gecmisleriTemizle() {
+    const simdi = new Date();
+    const gecmis = tumIlanlar.filter(i => i.son_teklif_tarihi && new Date(i.son_teklif_tarihi) < simdi);
+    if (!gecmis.length) { alert('Teklif tarihi geçmiş ihale yok.'); return; }
+    if (!confirm(`${gecmis.length} süresi dolmuş ihale listeden kaldırılacak. Emin misiniz?`)) return;
+    gecmis.forEach(i => {
+      Takip.toggle(i.id);
+      const row = document.querySelector(`tr[data-id="${i.id}"]`);
+      if (row) row.remove();
+    });
+    tumIlanlar = tumIlanlar.filter(i => !gecmis.some(g => g.id === i.id));
+    istatistikleriGuncelle();
+    if (!tumIlanlar.length) bosEkranGoster();
   }
 
   function bosEkranGoster() {
