@@ -404,6 +404,7 @@ async def calis(max_pages: int, dry_run: bool, start_skip: int | None):
     print(f"→ EKAP sonuçlanmış ihale listesi taranıyor (başlangıç skip={skip})…\n")
 
     taranan, eslesen, yazilan, hata = 0, 0, 0, 0
+    sayfa_basina_yeni = []  # son N sayfada yeni yazma oldu mu (plato tespiti için)
 
     async with httpx.AsyncClient(verify=ssl_ctx(), http2=False, timeout=30.0) as client:
         for sayfa in range(max_pages):
@@ -411,12 +412,22 @@ async def calis(max_pages: int, dry_run: bool, start_skip: int | None):
                 "searchText": "", "paginationSkip": skip, "paginationTake": SAYFA_BOYUTU,
                 "ihaleDurumIdList": [5], "searchType": "GirdigimGibi",
             })
+            if veri is None:
+                # Geçici ağ/HTTP hatası olabilir — bir kez daha dene, olmazsa bu sayfayı atla (durma).
+                await asyncio.sleep(1.0)
+                veri = await post(client, "/b_ihalearama/api/Ihale/GetListByParameters", {
+                    "searchText": "", "paginationSkip": skip, "paginationTake": SAYFA_BOYUTU,
+                    "ihaleDurumIdList": [5], "searchType": "GirdigimGibi",
+                })
             if not veri or not veri.get("list"):
-                print("  (liste bitti ya da hata — durduruluyor)")
-                break
+                print(f"  ⚠ sayfa atlandı (skip={skip}) — boş/hatalı yanıt")
+                skip += SAYFA_BOYUTU
+                checkpoint_yaz(skip)
+                continue
 
             liste = veri["list"]
             taranan += len(liste)
+            yazilan_once = yazilan
 
             for item in liste:
                 ikn = item.get("ikn")
@@ -445,6 +456,17 @@ async def calis(max_pages: int, dry_run: bool, start_skip: int | None):
             checkpoint_yaz(skip)
             if (sayfa + 1) % 10 == 0:
                 print(f"  … {taranan} kayıt tarandı, {eslesen} eşleşme, {yazilan} yazıldı (skip={skip})")
+
+            # Plato tespiti: EKAP'ın sonuç listesi büyük ihtimalle belirli bir sıralamayla geliyor ve
+            # bizim ilanlar tablomuzla kesişim sadece belirli bir aralıkta yoğunlaşıyor (canlı testte
+            # skip~16000'den sonra binlerce kayıtta tek yeni eşleşme çıkmadığı gözlemlendi). Uzun süre
+            # yeni kayıt yazılmazsa boşuna taramaya devam etmek yerine erken dur.
+            sayfa_basina_yeni.append(1 if yazilan > yazilan_once else 0)
+            if len(sayfa_basina_yeni) >= 100 and sum(sayfa_basina_yeni[-100:]) == 0:
+                print(f"\n  ⏹ Son 100 sayfada (10.000 kayıt) hiç yeni sonuç bulunamadı — plato tespit edildi, durduruluyor.")
+                print(f"     (İleride farklı bir skip aralığından denemek isterseniz --start-skip kullanın.)")
+                break
+
             await asyncio.sleep(0.25)
 
     print(f"\n{'='*55}")

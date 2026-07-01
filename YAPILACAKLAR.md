@@ -500,24 +500,35 @@ sonuçlandığı anlamına gelmiyor. **Doğru yön tam tersi:** EKAP'ın zaten `
     - Mojibake (Türkçe karakter bozulması) `mojibake_duzelt()` ile düzeltiliyor
   - Checkpoint dosyası (`.sonuc_backfill_checkpoint.json`) ile kaldığı yerden devam eder (kesintiye dayanıklı)
   - `--dry-run` ile DB'ye yazmadan test edilebilir
-- ✅ **Canlı veri akıyor**: İlk test + arka plan taraması ile `ihale_sonuclari` tablosuna gerçek kayıtlar yazıldı
-  (örnek: "KESKİNLER GLOBAL DANIŞMANLIK... — 13.120.750 TL, tenzilat %50.93"). 1 Tem 2026'da 1500 sayfalık
-  (~150k kayıt) arka plan taraması başlatıldı; her çalıştırma checkpoint'ten devam ediyor.
-- ✅ **Frontend bağlandı (`ihaleler.html`)**: "Sonuç" sekmesi artık gerçek veriyle çalışıyor —
+- ✅ **Canlı veri akıyor — ilk gerçek parti tamamlandı (1 Tem 2026)**: `ihale_sonuclari` tablosuna **15 gerçek
+  sonuç kaydı** yazıldı (örn. "KESKİNLER GLOBAL DANIŞMANLIK... — 13.120.750 TL, tenzilat %50.93",
+  "AKSU OTOM.PET... — 26.680.000 TL, tenzilat %5.26" vb.).
+  **Önemli gözlem — plato tespit edildi:** EKAP'ın sonuçlanmış (durum=5) listesi tarandıkça, bizim ~12.7k IKN'lik
+  havuzla kesişim sadece listenin **ilk ~16-20 bin kaydında** yoğunlaşıyor; skip=22.100'e kadar (toplam ~22k
+  kayıt tarandı) yeni eşleşme çıkmadı, skip=100k/300k/600k/1M nokta kontrollerinde de sıfır eşleşme bulundu.
+  Bu beklenen bir durum: EKAP listesi büyük ihtimalle yakın zamanda sonuçlanan ihaleleri önce veriyor ve bizim
+  `ilanlar` tablomuz da esasen "yakın zamanda aktifti" ihalelerden oluşuyor — iki küme sadece dar bir pencerede
+  kesişiyor. **Script artık bunu otomatik yönetiyor**: son 100 sayfada (10.000 kayıt) hiç yeni kayıt yazılmazsa
+  plato tespit edilip tarama kendiliğinden durur (boşuna binlerce istek atılmıyor).
+- ✅ **Frontend bağlandı (`ihaleler.html` + `ihale-detay.html`)**: "Sonuç" sekmesi artık gerçek veriyle çalışıyor —
   eskiden hiç dolmayan `ilanlar.durum='sonuclandi'` filtresi yerine PostgREST'in **otomatik FK embed**
   özelliği kullanıldı: `ilanlar?select=...,ihale_sonuclari!inner(...)` (view/RPC gerekmeden, FK zaten
   tanınıyor). Her ihale kartına, sonucu varsa yeşil "✓ Sonuçlandı — Kazanan: X · ₺Y · Tenzilat %Z" bloğu
   eklendi (diğer sekmelerde de sonuç varsa gösteriliyor). Sekme sayacı da `ihale_sonuclari` COUNT'una bağlandı.
-  Dokunulan dosyalar: `ihaleler.html`
+  `ihale-detay.html` sayfa başlığının altına da aynı bilgiyi gösteren bir blok eklendi (`sonucBilgiGoster()`).
+  Dokunulan dosyalar: `ihaleler.html`, `ihale-detay.html`
 - **Kalan (bir sonraki oturum):**
-  - Tarama devam ettikçe hacim büyüyecek — `python ekap_sonuc_backfill.py --max-pages N` periyodik çalıştırılmalı
-    (checkpoint sayesinde güvenle tekrar tekrar koşulabilir)
+  - **Hacmi büyütmenin gerçek yolu bu script'i daha sık koşmak DEĞİL** (aynı skip aralığını tekrar tekrar
+    taramak aynı platoyu verir) — asıl kaldıraç **ana `ekap_scraper.py`'nin her gece daha fazla/farklı ihale
+    keşfetmesi** (yeni aktif ihaleler zamanla sonuçlanıp bu havuza girecek) ve/veya EKAP'ın durum=5 listesinde
+    farklı bir sıralama/filtre parametresi bulup (örn. tarih aralığı filtresi varsa) hedefli tarama yapmak.
+    `--start-skip` ile farklı bir aralık da denenebilir ama önce spot-check yapılmalı (bu oturumda 100k/300k/
+    600k/1M noktalarında sıfır çıktı, yani rastgele ileri atlamak muhtemelen boşuna).
   - `yukleniciler` + `scrape_log` tabloları hâlâ yok (DDL — Supabase SQL Editor'dan elle çalıştırılmalı);
     olmadan da `ihale_sonuclari` tek başına Sonuç sekmesi + gelecekteki firma-analiz için yeterli veri sağlıyor
   - Çok kısımlı (kısım/lot) ihalelerde şu an sadece ilk `sozlesmeBilgiList[0]` kaydediliyor — çoklu kazanan
     firma senaryosu (aynı ihalede birden fazla lot/kazanan) tek satıra sığmıyor; ileride ayrı bir
     `ihale_sonuclari_kisim` tablosu gerekebilir
-  - `ihale-detay.html`'e de aynı sonuç bloğu eklenebilir (şu an sadece `ihaleler.html` kart listesinde var)
 
 - [x] 🟢 **DB şeması hazırlandı**: `backend/migration_sonuc_schema.sql` (29 Haz 2026)
   - `ihale_sonuclari` tablosu (yüklenici, sözleşme bedeli, tenzilat, katılımcı sayısı vb.)
