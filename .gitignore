@@ -14,6 +14,9 @@ __pycache__/
 # Node
 node_modules/
 
+# Backfill checkpoint (runtime state, kod değil)
+backend/.sonuc_backfill_checkpoint.json
+
 # Debug / scratch artefaktları (scraper testleri)
 captcha*.png
 captcha*.bmp

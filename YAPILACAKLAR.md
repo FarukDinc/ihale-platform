@@ -457,10 +457,67 @@ python analiz_runner.py --yenile          # daha önce analizlenenleri yenile
 
 ---
 
-## 9.1 🧱 P0 — SONUÇ / SÖZLEŞME VERİSİ (her şeyin temeli) — 🟡 ALTYAPI HAZIR (29 Haz 2026)
+## 9.1 🧱 P0 — SONUÇ / SÖZLEŞME VERİSİ (her şeyin temeli) — 🟢 ÇALIŞIYOR, VERİ AKIYOR (1 Tem 2026)
 
 > Bu olmadan firma-analiz, idare-analiz, "Sonuç" sekmesi, rekabet/fiyat istihbaratı ve uyum skorunun
 > "kazanma oranı" iddiası BOŞ kalır. ihaleciler'in tüm gücü bu veriden geliyor. **En kritik açık.**
+
+### ✅ 1 Tem 2026 — Uçtan uca çalışan pipeline kuruldu ve canlı veri akıyor
+
+**Önemli düzeltme:** `backend/migration_sonuc_schema.sql` (29 Haz) hiç Supabase SQL Editor'dan çalıştırılmamış —
+onun yerine Supabase'de **farklı, daha eski bir `ihale_sonuclari` şeması** zaten kuruluydu (muhtemelen bir
+önceki oturumdan): `ilan_id` (ilanlar.id UUID FK) + `kazanan_firma` / `kazanan_teklif` / `en_dusuk_teklif` /
+`en_yuksek_teklif` / `toplam_teklif_sayisi` / `kazanan_teklif_farki_yuzde` / `sonuc_tarihi` / `tum_teklifler` (jsonb).
+`yukleniciler` ve `scrape_log` tabloları ise hiç oluşturulmamış (DDL gerektiriyor, SQL Editor'dan manuel).
+
+**Doğru EKAP endpoint'i bulundu:** `ekap_sonuc_scraper.py --probe` çalıştırıldı — ihale bazlı "sonuç" endpoint'leri
+(`GetByIhaleIdSonucIlan` vb.) hepsi 404 verdi. Ama zaten **çalışan** `GetByIhaleIdIhaleDetay` endpoint'i (ana
+scraper'da aktif ihale detayı için kullanılıyor), ihale "Result Announcement Published" (durum kodu **"15"**)
+durumundaysa yanıtına **`sozlesmeBilgiList`** (yüklenici adı, sözleşme bedeli, en yüksek/düşük teklif, sözleşme
+tarihi) ve **`ilanList[].veriHtml`** içinde tam "SONUÇ İLANI" HTML metnini (teklif sayıları dahil) veriyor.
+Yani ayrı bir "sonuç endpoint'i" yok — zaten var olan detay endpoint'i, sonuçlanan ihalelerde otomatik olarak
+sonuç bilgisini de içeriyor.
+
+**Verimli tarama yönü bulundu (deneme-yanılmayla):** Kendi DB'mizdeki "son_teklif_tarihi geçmiş" ilanları tek
+tek EKAP'ta aratmak (IKN ile) çok düşük isabet verdi (rastgele örneklemde 0/15, 0/9, 0/4) — çünkü çoğu idare
+"Sonuç İlanı"nı hiç yayınlamıyor ya da aylarca gecikmeli yayınlıyor; bizdeki "tarih geçmiş" olması EKAP'ta
+sonuçlandığı anlamına gelmiyor. **Doğru yön tam tersi:** EKAP'ın zaten `ihaleDurumIdList=[5]` filtresiyle
+"sonuçlanmış" (1.68M kayıt) listesini baştan sayfalayıp, her sayfadaki IKN'leri bizim ~12.7k IKN'lik kendi
+`ilanlar` tablomuzla kesiştirmek — ilk 1000 kayıtta 7 isabet (%0.7) bulundu, çok daha verimli.
+
+- ✅ **`backend/ekap_sonuc_backfill.py`** (yeni script — `ekap_sonuc_scraper.py`'nin varsayımları güncel şemayla
+  uyuşmadığı için ayrı yazıldı, o dosyaya dokunulmadı):
+  - Kendi `ilanlar` tablosunu `{ikn: {id, yaklasik_maliyet_min, ...}}` olarak indeksler
+  - EKAP'ın durum=5 (sonuçlanmış) listesini sayfalar, IKN eşleşmesi bulunca `GetByIhaleIdIhaleDetay` çağırır
+  - **Bulunan veri kalitesi sorunları ve düzeltmeleri:**
+    - `sozlesmeBilgiList.yaklasikMaliyet(Degeri)` alanı EKAP'ta gözlemlenen örneklerde **10x hatalı** geliyor
+      (örn. gerçek 26.737.250 TL yerine 267.372.500 TL) → bunun yerine **SONUÇ İLANI HTML metnindeki**
+      "Yaklaşık Maliyeti" rakamı regex ile çıkarılıp kullanılıyor (`html_yaklasik_maliyet_parse`)
+    - `ilanList` bazen hem orijinal ilanı hem sonuç ilanını içeriyor, sıra garanti değil →
+      "SONUÇ İLANI" başlığını taşıyan girdi özellikle aranıyor (`sonuc_ilan_html_bul`)
+    - Bazı (çok kısımlı/ithal) ihalelerde sözleşme bedeli **USD/EUR** cinsinden geliyor ama alan sayısal —
+      TRY sanılırsa tenzilat hesabı tamamen bozuluyor → para birimi tespit edilirse o kayıt atlanıyor
+    - Mojibake (Türkçe karakter bozulması) `mojibake_duzelt()` ile düzeltiliyor
+  - Checkpoint dosyası (`.sonuc_backfill_checkpoint.json`) ile kaldığı yerden devam eder (kesintiye dayanıklı)
+  - `--dry-run` ile DB'ye yazmadan test edilebilir
+- ✅ **Canlı veri akıyor**: İlk test + arka plan taraması ile `ihale_sonuclari` tablosuna gerçek kayıtlar yazıldı
+  (örnek: "KESKİNLER GLOBAL DANIŞMANLIK... — 13.120.750 TL, tenzilat %50.93"). 1 Tem 2026'da 1500 sayfalık
+  (~150k kayıt) arka plan taraması başlatıldı; her çalıştırma checkpoint'ten devam ediyor.
+- ✅ **Frontend bağlandı (`ihaleler.html`)**: "Sonuç" sekmesi artık gerçek veriyle çalışıyor —
+  eskiden hiç dolmayan `ilanlar.durum='sonuclandi'` filtresi yerine PostgREST'in **otomatik FK embed**
+  özelliği kullanıldı: `ilanlar?select=...,ihale_sonuclari!inner(...)` (view/RPC gerekmeden, FK zaten
+  tanınıyor). Her ihale kartına, sonucu varsa yeşil "✓ Sonuçlandı — Kazanan: X · ₺Y · Tenzilat %Z" bloğu
+  eklendi (diğer sekmelerde de sonuç varsa gösteriliyor). Sekme sayacı da `ihale_sonuclari` COUNT'una bağlandı.
+  Dokunulan dosyalar: `ihaleler.html`
+- **Kalan (bir sonraki oturum):**
+  - Tarama devam ettikçe hacim büyüyecek — `python ekap_sonuc_backfill.py --max-pages N` periyodik çalıştırılmalı
+    (checkpoint sayesinde güvenle tekrar tekrar koşulabilir)
+  - `yukleniciler` + `scrape_log` tabloları hâlâ yok (DDL — Supabase SQL Editor'dan elle çalıştırılmalı);
+    olmadan da `ihale_sonuclari` tek başına Sonuç sekmesi + gelecekteki firma-analiz için yeterli veri sağlıyor
+  - Çok kısımlı (kısım/lot) ihalelerde şu an sadece ilk `sozlesmeBilgiList[0]` kaydediliyor — çoklu kazanan
+    firma senaryosu (aynı ihalede birden fazla lot/kazanan) tek satıra sığmıyor; ileride ayrı bir
+    `ihale_sonuclari_kisim` tablosu gerekebilir
+  - `ihale-detay.html`'e de aynı sonuç bloğu eklenebilir (şu an sadece `ihaleler.html` kart listesinde var)
 
 - [x] 🟢 **DB şeması hazırlandı**: `backend/migration_sonuc_schema.sql` (29 Haz 2026)
   - `ihale_sonuclari` tablosu (yüklenici, sözleşme bedeli, tenzilat, katılımcı sayısı vb.)

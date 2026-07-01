@@ -408,6 +408,7 @@
     takipButonlariGuncelle();
     notAlaniDoldur(data.id);
     benzerIhaleler(data);
+    sonucBilgiGoster(data.id);
   }
 
   function sekmeAc(ev, panelId) {
@@ -445,6 +446,8 @@
           <button class="btn-ekap" id="link-kopyala-btn" onclick="linkKopyala(this)" title="Sayfa linkini panoya kopyala">🔗 Paylaş</button>
         </div>
       </div>
+
+      <div id="sonuc-bilgi-wrap"></div>
 
       <!-- KPI GRID -->
       <div class="kpi-grid">
@@ -704,6 +707,27 @@
         ilanEl.textContent = 'İlan metni bulunamadı.';
       }
     }
+  }
+
+  async function sonucBilgiGoster(ilanId) {
+    const wrap = document.getElementById('sonuc-bilgi-wrap');
+    if (!wrap) return;
+    const { data } = await sb.from('ihale_sonuclari')
+      .select('kazanan_firma,kazanan_teklif,kazanan_teklif_farki_yuzde,en_dusuk_teklif,en_yuksek_teklif,toplam_teklif_sayisi,sonuc_tarihi')
+      .eq('ilan_id', ilanId).limit(1);
+    const s = data && data[0];
+    if (!s) return;
+    wrap.innerHTML = `
+      <div style="background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.25);border-radius:10px;padding:16px 20px;margin-bottom:20px;">
+        <div style="color:#4ade80;font-weight:700;font-size:13px;margin-bottom:8px;">✓ İhale Sonuçlandı</div>
+        <div style="display:flex;flex-wrap:wrap;gap:24px;font-size:13px;">
+          <div><span style="color:var(--muted);">Kazanan Firma:</span> <b style="color:var(--white);">${s.kazanan_firma || '—'}</b></div>
+          ${s.kazanan_teklif ? `<div><span style="color:var(--muted);">Sözleşme Bedeli:</span> <b style="color:var(--white);">${butceFormatla(s.kazanan_teklif)}</b></div>` : ''}
+          ${s.kazanan_teklif_farki_yuzde != null ? `<div><span style="color:var(--muted);">Tenzilat:</span> <b style="color:var(--amber);">%${s.kazanan_teklif_farki_yuzde}</b></div>` : ''}
+          ${s.toplam_teklif_sayisi ? `<div><span style="color:var(--muted);">Toplam Teklif:</span> <b style="color:var(--white);">${s.toplam_teklif_sayisi}</b></div>` : ''}
+          ${s.sonuc_tarihi ? `<div><span style="color:var(--muted);">Sözleşme Tarihi:</span> <b style="color:var(--white);">${tarihFormatla(s.sonuc_tarihi)}</b></div>` : ''}
+        </div>
+      </div>`;
   }
 
   async function benzerIhaleler(d) {
