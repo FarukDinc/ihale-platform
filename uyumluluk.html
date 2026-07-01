@@ -282,10 +282,8 @@
     </tr>`;
   }
 
-  let _aramaTimer;
   function aramaFiltrele() {
-    clearTimeout(_aramaTimer);
-    _aramaTimer = setTimeout(() => yukle(1), 250);
+    renderSayfa(1);
   }
 
   function csvIndir() {
@@ -349,7 +347,6 @@
   }
 
   async function yukle(sayfa = 1) {
-    mevcutSayfa = sayfa;
     const tbody = document.getElementById('tbody');
     tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:32px;color:var(--muted);">Yükleniyor...</td></tr>`;
 
@@ -377,7 +374,16 @@
     if (minUyum > 0) ilanlar = ilanlar.filter(i => i._uyum >= minUyum);
     if (sort === 'uyum_desc') ilanlar.sort((a, b) => b._uyum - a._uyum);
     tumScoredIlanlar = ilanlar;
+
+    renderSayfa(sayfa);
+  }
+
+  // Metin araması + sayfalama, Supabase'e gitmeden tumScoredIlanlar üzerinde çalışır (anlık).
+  function renderSayfa(sayfa = 1) {
+    mevcutSayfa = sayfa;
+    const tbody = document.getElementById('tbody');
     const aramaVal = (document.getElementById('f-arama')?.value || '').trim().toLowerCase();
+    let ilanlar = tumScoredIlanlar;
     if (aramaVal) ilanlar = ilanlar.filter(i =>
       (i.baslik || '').toLowerCase().includes(aramaVal) || (i.idare || '').toLowerCase().includes(aramaVal));
 
@@ -392,7 +398,7 @@
     }
 
     document.getElementById('result-info').innerHTML = `<strong>${toplam.toLocaleString('tr')}</strong> eşleşme`;
-    document.getElementById('pag-info').textContent = `${bas+1}–${Math.min(bas+SAYFA, toplam)} / ${toplam}`;
+    document.getElementById('pag-info').textContent = toplam ? `${bas+1}–${Math.min(bas+SAYFA, toplam)} / ${toplam}` : '0 / 0';
     paginasyonOlustur(toplam);
   }
 
@@ -400,11 +406,11 @@
     const toplamSayfa = Math.ceil(toplam / SAYFA);
     const pag = document.getElementById('pagination');
     if (toplamSayfa <= 1) { pag.innerHTML = ''; return; }
-    let html = `<button class="page-btn" onclick="yukle(${mevcutSayfa-1})" ${mevcutSayfa===1?'disabled':''}>‹</button>`;
+    let html = `<button class="page-btn" onclick="renderSayfa(${mevcutSayfa-1})" ${mevcutSayfa===1?'disabled':''}>‹</button>`;
     for (let i = 1; i <= Math.min(toplamSayfa, 7); i++)
-      html += `<button class="page-btn ${i===mevcutSayfa?'active':''}" onclick="yukle(${i})">${i}</button>`;
-    if (toplamSayfa > 7) html += `<button class="page-btn" disabled>…</button><button class="page-btn" onclick="yukle(${toplamSayfa})">${toplamSayfa}</button>`;
-    html += `<button class="page-btn" onclick="yukle(${mevcutSayfa+1})" ${mevcutSayfa===toplamSayfa?'disabled':''}>›</button>`;
+      html += `<button class="page-btn ${i===mevcutSayfa?'active':''}" onclick="renderSayfa(${i})">${i}</button>`;
+    if (toplamSayfa > 7) html += `<button class="page-btn" disabled>…</button><button class="page-btn" onclick="renderSayfa(${toplamSayfa})">${toplamSayfa}</button>`;
+    html += `<button class="page-btn" onclick="renderSayfa(${mevcutSayfa+1})" ${mevcutSayfa===toplamSayfa?'disabled':''}>›</button>`;
     pag.innerHTML = html;
   }
 
@@ -413,8 +419,8 @@
     if (planTur !== 'pro') {
       Plan.lockPage(
         document.querySelector('.page-body'),
-        'Uyumluluk Analizi � Pro �zelliği',
-        'Profilinize g�re kişiselleştirilmiş uyumluluk skorları Pro plan kullanıcılarına �zeldir.'
+        'Uyumluluk Analizi — Pro Özelliği',
+        'Profilinize göre kişiselleştirilmiş uyumluluk skorları Pro plan kullanıcılarına özeldir.'
       );
       return;
     }
