@@ -23,6 +23,20 @@
 
 ---
 
+## 🚀 CANLIYA ALMA İLERLEMESİ (5 Tem 2026)
+
+**✅ Çözülenler:**
+- **Anasayfa haritası prod'da bozuktu** → eksik `data/turkey-provinces.geojson` commit'lendi. Ayrıca il sayımı 13 istek yerine tek RPC'ye taşındı (`backend/migration_il_sayim_rpc.sql` — Supabase'de çalıştır; fallback var).
+- **Dashboard'a Türkiye haritası eklendi** (giriş sonrası yoktu) → `js/harita.js` (yeniden kullanılabilir), ile tıklayınca `ihaleler?il=X`.
+- **3 UX bug'ı:** (1) "EKAP'ta Görüntüle" 406 hata → çalışan public arama sayfası ("EKAP'ta Ara"); (2) AI analiz kutusundaki `python analiz_runner.py` geliştirici metni → "Teklif Hazırla" CTA; (3) Dashboard→Kurum Analizi "parametre eksik" → İdareler Dizini'ne yönlendirme.
+- **🔴 GECE CRON'U ÇÖKMÜŞTÜ (4 gün 0 kayıt)** → kök neden: `upsert(ignore_duplicates=True)` sahte supabase wrapper'ında desteklenmiyordu, her yazma sessizce TypeError. Wrapper düzeltildi (commit 5e5a08e). Cron yarından itibaren tekrar çalışır. Bugünkü veri elle tam turla tazelendi.
+
+**⏳ Devam eden / planlanan:**
+- **Tüm geçmiş (2003+) backfill** (kullanıcı kararı): EKAP'ın sonuçlanmış listesi (~1.68M) taranacak → milyonlarca kayıt. GEREKSİNİM: (a) Webshare proxy (boş — IP ban riski), (b) Supabase plan yükseltme (free tier milyonları kaldırmaz), (c) ayrı checkpoint'li backfill workflow'u (`ekap_sonuc_backfill.py` temeli var). Firma/yüklenici verisi bunun çıktısı olarak gelecek.
+- Cron'un GitHub Actions'ta gerçekten yeşil döndüğünü ilk gece sonrası doğrula (`olusturulma` bugüne yakın mı).
+
+---
+
 ## 🔐 CANLIYA ALMA — GÜVENLİK DENETİMİ & E2E (4 Tem 2026)
 
 > Canlı Supabase'e karşı anon key + gerçek test kullanıcısı (signup→login) ile uçtan uca denetim yapıldı.
