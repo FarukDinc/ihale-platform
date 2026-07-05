@@ -859,6 +859,16 @@
 
     // İl sayımı: il kolonunu 1000'lik sayfalarla çek, client-side topla (aggregate kapalı)
     async function ilSayimGetir(sb) {
+      // Hızlı yol: server-side GROUP BY (tek istek, ~81 satır). migration_il_sayim_rpc.sql gerektirir.
+      try {
+        const { data, error } = await sb.rpc('il_sayim');
+        if (!error && Array.isArray(data) && data.length) {
+          const sayim = {};
+          data.forEach(r => { if (r.il) sayim[r.il] = Number(r.adet) || 0; });
+          return sayim;
+        }
+      } catch (_) { /* RPC yoksa aşağıdaki fallback'e düş */ }
+      // Fallback: sayfalı çekim (RPC henüz deploy edilmemişse çalışmaya devam eder)
       const istekler = [];
       for (let off = 0; off < 13000; off += 1000) {
         istekler.push(sb.from('ilanlar').select('il').not('il', 'is', null).range(off, off + 999));
