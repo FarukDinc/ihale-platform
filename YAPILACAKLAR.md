@@ -23,6 +23,41 @@
 
 ---
 
+## 🔐 CANLIYA ALMA — GÜVENLİK DENETİMİ & E2E (4 Tem 2026)
+
+> Canlı Supabase'e karşı anon key + gerçek test kullanıcısı (signup→login) ile uçtan uca denetim yapıldı.
+
+**✅ Okuma (veri sızıntısı) tarafı TAM KORUMALI:**
+- Tüm kullanıcı tabloları (`profil`, `kullanici_krediler`, `kredi_hareketleri`, `bildirimler`, `teklifler`, `takipler`, `kullanici_profiller`) anon SELECT'e `[]` / `count */0` döndü → RLS okumayı filtreliyor.
+- Kimlik doğrulanmış kullanıcı SADECE kendi satırlarını görüyor; `kredi_hareketleri` no-filter sorgusu bile `*/0` (başkasınınki görünmüyor).
+
+**✅ Yazma tarafı — doğrulananlar:**
+- `profil`: kendi satırını yazabiliyor (201), **başka user_id ile yazma RLS'le engellendi (403/42501)**.
+- `takipler`: kendi satırı OK, **çapraz-kullanıcı yazma engellendi (403)**.
+- `kullanici_krediler.kalan_kredi` **generated (hesaplanan) kolon** → doğrudan kredi yazılamıyor. İyi tasarım.
+
+**🔴 KRİTİK AÇIK — ONAYLANDI (policy listesiyle, 4 Tem 2026):**
+- `kullanici_krediler` ve `kredi_hareketleri` policy'leri `cmd=ALL` + `auth.uid()=kullanici_id`, WITH CHECK boş → INSERT/UPDATE'te USING'e düşüyor. **Giriş yapmış kullanıcı kendi kredi satırını UPDATE edebiliyor** (`toplam_kredi`'yi şişir → `kalan_kredi` hesaplanan kolon otomatik artar → sınırsız bedava kredi, İyzico bypass).
+- **DÜZELTME HAZIR → `backend/rls_fix_kredi.sql`'i Supabase SQL Editor'da çalıştır.** İki tabloyu salt-okur yapar. Backend payment.py service_role ile yazdığı için ödeme/kredi yükleme ETKİLENMEZ (frontend krediyi zaten sadece okuyor). **Canlıya/İyzico'ya geçmeden ÖNCE uygulanmalı.**
+- `ilanlar`: GÜVENLİ — write policy'leri `yayinlayan_id`'ye bağlı; EKAP kayıtlarında `null` → kullanıcı EKAP ihalelerini değiştiremez.
+- Denetim SQL'i: `backend/rls_audit.sql` (salt-okur, RLS on/off + policy listesi).
+
+**🐛 BULUNAN & DÜZELTİLEN BUG — takip DB senkronu kırıktı (`js/takip.js`):**
+- `from('takip')` → var olmayan tablo (gerçek ad `takipler`); kolon `user_id` → gerçek ad `kullanici_id`. Hatalar `catch{}` ile sessizce yutuluyordu → **takipler DB'ye hiç yazılmıyordu, sadece localStorage'da kalıyordu** (cihaz değişince/çıkışta kayboluyor).
+- Düzeltme uygulandı ve canlıda doğrulandı (insert→read→delete OK, çapraz-kullanıcı yazma bloklu). Artık takip cihazlar arası senkron olacak.
+
+**⚠️ Launch notu — e-posta doğrulaması KAPALI:** signup anında `email_verified:true` token verdi, onay adımı yok → sahte e-postayla hesap açılabilir. Ücretli ürün için Supabase Auth'ta e-posta doğrulamayı açmayı değerlendir.
+
+### 🔲 YAPILACAK — E-posta doğrulamasını aç (canlıya almadan önce)
+- [ ] Supabase Dashboard → **Authentication → Sign In / Providers → Email** → **"Confirm email"** seçeneğini AÇ.
+  - Etki: yeni kayıt olan kullanıcı, e-postasındaki doğrulama linkine tıklamadan giriş yapamaz → sahte/çalıntı e-postayla hesap açılması engellenir.
+  - Not: Doğrulama e-postaları Supabase'in varsayılan SMTP'siyle gider (düşük limit). Canlıda güvenilir teslim için **Authentication → Emails → SMTP Settings**'ten Resend SMTP'yi bağla (Resend zaten bildirimler için kullanılıyor).
+  - Test: aç → yeni bir e-postayla kayıt ol → giriş engellenmeli, kutuya doğrulama maili düşmeli.
+
+**🧹 Temizlik:** Denetimde 1 test kullanıcısı oluşturuldu (`e2e.test.1783161485@ihaleglobal-e2etest.com`). Profil satırı silinemedi (profil'de DELETE policy yok — zararsız). Supabase Dashboard → Auth → Users'tan bu test kullanıcısını silebilirsin (profil satırı cascade gider).
+
+---
+
 ## 🔴 ÖNCELİK 1 — Acil Bug'lar (Önce bunlar çözülmeli) — ✅ TAMAMLANDI (28 Haz 2026)
 
 ### 1.1 Redirect Loop — ✅ ÇÖZÜLDÜ

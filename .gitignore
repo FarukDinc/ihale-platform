@@ -38,3 +38,9 @@ ekap_[0-9]*.json
 
 # Altyapi/kimlik haritasi — YEREL kalir, asla commit'lenmez
 ALTYAPI.md
+
+# Claude Code yerel ayarlari (izinler, launch config) — yerel kalir
+.claude/
+
+# Debug/scratch scraper dosyasi
+backend/ekap_fields_check.py
