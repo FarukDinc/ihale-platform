@@ -679,7 +679,8 @@
 
   async function main() {
     if (!KURUM) {
-      document.getElementById('root-loading').innerHTML = '<p style="color:var(--muted);">Kurum parametresi eksik. <a href="ihaleler" style="color:var(--amber);">İhale listesine dön</a></p>';
+      // Belirli bir kurum seçilmeden gelindiyse (örn. sidebar linki) → İdareler Dizini'ne yönlendir
+      window.location.replace('idareler');
       return;
     }
 

@@ -340,11 +340,11 @@
     return `₺${Number(b).toLocaleString('tr')}`;
   }
 
-  // İKN'den (2026/1102593) EKAP detay linki üret
+  // EKAP public ihale arama sayfası. NOT: EKAP, IKN'ye özel public deep-link SUNMUYOR
+  // (ekapv2/ekap/ihale-detay rotası oturum ister → 406 hata sayfası). Bu yüzden çalışan
+  // public "İhale Arama" sayfasına yönlendiriyoruz; kullanıcı IKN'yi (sayfada görünür) aratır.
   function ekapLink(ikn) {
-    if (!ikn || !ikn.includes('/')) return 'https://ekap.kik.gov.tr';
-    const [yil, sayi] = ikn.split('/');
-    return `https://ekapv2.kik.gov.tr/ekap/ihale-detay/${yil}/${sayi}`;
+    return 'https://ekap.kik.gov.tr/EKAP/Ortak/IhaleArama/index.html';
   }
 
   function gunHesapla(bitis) {
@@ -442,7 +442,7 @@
         <div class="detay-actions">
           <button class="btn-takip" id="main-takip" onclick="takibeAl()">☆ Takibe Al</button>
           <a class="btn-takip" href="teklif-olustur?ihale_id=${d.id}" style="background:linear-gradient(135deg,#F0A500,#C98A00);display:inline-flex;align-items:center;gap:6px;text-decoration:none;">✏ Teklif Hazırla</a>
-          ${d.ikn ? `<a class="btn-ekap" href="${ekapLink(d.ikn)}" target="_blank" rel="noopener">↗ EKAP'ta Görüntüle</a>` : ''}
+          ${d.ikn ? `<a class="btn-ekap" href="${ekapLink(d.ikn)}" target="_blank" rel="noopener" title="EKAP İhale Arama — İKN: ${d.ikn}">↗ EKAP'ta Ara</a>` : ''}
           <button class="btn-ekap" id="link-kopyala-btn" onclick="linkKopyala(this)" title="Sayfa linkini panoya kopyala">🔗 Paylaş</button>
         </div>
       </div>
@@ -601,7 +601,7 @@
             </p>
             <div style="display:flex; align-items:center; gap:8px; padding:14px 16px; background:var(--navy-soft); border:1px solid var(--border); border-radius:var(--radius-sm); margin-bottom:16px;">
               <span style="font-size:18px;">💡</span>
-              <span style="font-size:13px; color:var(--muted);">Analiz yapmak için <strong style="color:var(--white);">analiz_runner.py</strong> scriptini çalıştırın:<br><code style="font-size:11px; color:var(--amber);">python analiz_runner.py --ikn ${d.ikn || d.ekap_id}</code></span>
+              <span style="font-size:13px; color:var(--muted);">Bu ihalenin şartname analizi henüz hazır değil. <a href="teklif-olustur?ihale_id=${d.id}" style="color:var(--amber); text-decoration:none; font-weight:600;">Teklif Hazırla</a> ekranından yapay zeka analizini başlatabilirsiniz.</span>
             </div>
           </div>
         </div>
