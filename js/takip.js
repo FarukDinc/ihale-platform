@@ -54,9 +54,9 @@ window.Takip = (() => {
     const sb = _sb();
     if (!sb) return;
     try {
-      await sb.from('takip').upsert(
-        { user_id: user.id, ilan_id: ilanId },
-        { onConflict: 'user_id,ilan_id', ignoreDuplicates: true }
+      await sb.from('takipler').upsert(
+        { kullanici_id: user.id, ilan_id: ilanId },
+        { onConflict: 'kullanici_id,ilan_id', ignoreDuplicates: true }
       );
     } catch { /* sessizce geç */ }
   }
@@ -65,9 +65,9 @@ window.Takip = (() => {
     const sb = _sb();
     if (!sb) return;
     try {
-      await sb.from('takip')
+      await sb.from('takipler')
         .delete()
-        .eq('user_id', user.id)
+        .eq('kullanici_id', user.id)
         .eq('ilan_id', ilanId);
     } catch { /* sessizce geç */ }
   }
@@ -79,9 +79,9 @@ window.Takip = (() => {
     if (!user) return;
     const sb = _sb();
     try {
-      const { data } = await sb.from('takip')
+      const { data } = await sb.from('takipler')
         .select('ilan_id')
-        .eq('user_id', user.id);
+        .eq('kullanici_id', user.id);
       if (!data) return;
       const dbIds = data.map(r => String(r.ilan_id));
       const localIds = liste();
