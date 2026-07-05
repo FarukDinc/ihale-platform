@@ -37,6 +37,69 @@
 
 ---
 
+## 🖥️ BÜYÜK PLAN — TEK VDS'E TAŞIMA (5 Tem 2026, DEVAM EDECEK)
+
+> **Bu bölüm bir sonraki oturum/AI için devir notudur.** Kullanıcı sistemi tek bir sunucuda
+> (VDS) birleştirmeye karar verdi. Aşağıdaki karar/gerekçe/plan aynen sürdürülecek.
+
+### KARAR & GEREKÇE
+- **Hedef:** Şu an dağıtık olan sistemi (Cloudflare Pages + Supabase + Render + GitHub Actions)
+  **tek bir Türk VDS'te** birleştir.
+- **3 neden:** (1) tek pencereden yönetim (bugün cron 4 gün sessiz çökmüştü — dağıtık sistemin bedeli),
+  (2) milyonlarca geçmiş ihale satırını **ucuza/sınırsız** saklama (Supabase free 500MB yetmiyor,
+  Pro $25/ay pahalı bulundu), (3) **KVKK / kamu:** kamuyla çalışılacağı için veri **Türkiye'de**
+  tutulmalı (Cumhurbaşkanlığı Bilgi ve İletişim Güvenliği Rehberi + kamu ihale şartnameleri veri-yeri ister).
+- **Kritik:** Sağlayıcı **fiziksel olarak Türkiye'de** olmalı. Yurt dışı olursa gerekçe çöker → o durumda
+  Hetzner (~€4/ay, daha ucuz/güvenilir) tercih edilir. Yani "Türk sağlayıcı"nın TEK sebebi veri-yeri.
+
+### SAĞLAYICI SEÇİMİ (KARAR AŞAMASINDA)
+Kullanıcı Türk VDS bakıyor. Değerlendirilen adaylar (spec ~4-6 çekirdek / 8-10GB RAM / 60-130GB, Ubuntu 22.04, tam root):
+- **Hosting Dünyam — TR-VDS6:** 4 çekirdek E5-2699v4 / 8GB ECC / 60GB SATA SSD / 395₺/ay. İstanbul, Tier III+, %99.9. Sağlam.
+- **Datacasa — Premium Sunucu 10:** 6 çekirdek E5-2698v4 / 10GB / **130GB NVMe** / 349,99₺/ay. Spec/fiyat daha iyi
+  AMA **datacenter Türkiye'de mi doğrulanmalı** (belirsiz) + sağlayıcı itibarı teyit edilmeli. Türkiye'deyse tercih edilir.
+- ⚠️ Alınacak ürün MUTLAKA **VDS / Cloud Sunucu (tam root)** olmalı — "Hosting/Web Hosting" DEĞİL.
+- Öneri seviyesi: 8GB RAM yeterli (analiz için); 12GB gerekince sonradan yükseltilir. CPU farkı ikincil.
+
+### SSH ANAHTARI (HAZIR)
+- Kullanıcının makinesinde üretildi: **`~/.ssh/ihale_oracle`** (private) + **`~/.ssh/ihale_oracle.pub`** (public).
+- Public key: `ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIJgxU49zYE9enXlSCbgAwddf+dTIZai9VrtgDlJJYMdN ihale-oracle-vm`
+- Herhangi bir sağlayıcıda geçerli. VM alınca panele eklenir ya da root şifresiyle sonra kurulur.
+
+### HEDEF MİMARİ (VDS üstünde)
+| Bileşen | Nasıl | Şu an nerede |
+|---|---|---|
+| DB + Auth + API + RLS + Storage | **Self-hosted Supabase** (Docker) — supabase-js/frontend/RLS AYNEN çalışır, sadece URL değişir | Supabase (managed) |
+| Backend API | FastAPI → `systemd` + `uvicorn`, önünde nginx | Render |
+| Scraper | Linux `cron` → `python ekap_scraper.py` (gece) | GitHub Actions |
+| Geçmiş backfill | VM'de uzun süren checkpoint'li iş (Actions 6h/Render cron yok — VM'de sınır yok) | (yapılmadı) |
+| Frontend | nginx (statik) — AMA **Cloudflare önde proxy** kalsın (bedava CDN+DDoS+SSL, sıfır yönetim) | Cloudflare Pages |
+
+### DEPOLAMA STRATEJİSİ — HİBRİT (ÖNEMLİ)
+- Tam ihale satırı ~**25KB** (ilan HTML dahil), kompakt ~**0.5KB** → **50x fark**.
+- **Aktif/güncel ihaleler (~12k): TAM HTML sakla** (detay + içerik araması + AI). ~300MB, ucuz.
+- **Geçmiş arşiv (milyonlarca): KOMPAKT sakla** (meta + sonuç: yüklenici/bedel/tenzilat). ~4GB.
+- Geçmişi HTML'li saklasaydık ~40-100GB gerekirdi (60GB'a sığmazdı). Kompakt sayesinde TR-VDS6/130GB rahat.
+- **Backfill script'i bu mantıkla yazılacak (geçmiş = kompakt, HTML yok).**
+
+### FAZLAR (adım adım)
+1. **Faz 1 — Hesap + VM (KULLANICI):** Türk VDS al (Ubuntu 22.04, ~8GB, tam root). Datacasa'yı seçerse önce
+   "Türkiye'de mi + itibar" doğrula. IP + root erişimini AI'a ver.
+2. **Faz 2 — Sunucu kurulumu (AI, SSH'tan):** Docker + docker-compose, güvenlik duvarı (ufw: 22/80/443),
+   SSH sertleştirme (key-only), self-hosted Supabase stack.
+3. **Faz 3 — Uygulamalar:** FastAPI systemd servisi, scraper cron, nginx (frontend + reverse proxy).
+4. **Faz 4 — Veri taşıma:** Supabase → yeni Postgres (pg_dump/restore), Storage `belgeler` bucket taşı,
+   frontend'in SUPABASE_URL/KEY'lerini yeni VM adresine çevir, RLS policy'lerini uygula (backend/rls_*.sql).
+5. **Faz 5 — Geçmiş backfill:** VM'de kompakt 2003+ backfill başlat (ekap_sonuc_backfill.py temeli) → firma verisi dolar.
+6. **Faz 6 — Cut-over:** Cloudflare DNS'i VM'e çevir (proxy açık), uçtan uca test, sonra eski servisleri kapat.
+- **Paralel çalışılacak:** mevcut managed sistem taşıma boyunca AYAKTA kalır, sadece test bitince DNS çevrilir → sıfır kesinti.
+
+### AÇIK KARARLAR / SIRADAKI
+- [ ] Kullanıcı sağlayıcı+paketi kesinleştirsin (Datacasa Türkiye'deyse o; değilse Hosting Dünyam TR-VDS6 ya da Hetzner).
+- [ ] VM alınınca: **Public IP + root erişimi** → Faz 2 başlar.
+- [ ] Kullanıcının kendi tercihi: taşımayı launch'tan ÖNCE yapıyor (managed paralel ayakta kalacağı için risksiz).
+
+---
+
 ## 🔐 CANLIYA ALMA — GÜVENLİK DENETİMİ & E2E (4 Tem 2026)
 
 > Canlı Supabase'e karşı anon key + gerçek test kullanıcısı (signup→login) ile uçtan uca denetim yapıldı.
