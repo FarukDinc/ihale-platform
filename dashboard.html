@@ -7,8 +7,34 @@
   <link rel="stylesheet" href="css/style.css" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
   <style>
     body { background: var(--navy); }
+
+    /* ---- HARİTA ---- */
+    .harita-wrap { position: relative; }
+    #turkiye-harita {
+      height: 420px; width: 100%; border-radius: 12px; overflow: hidden;
+      background: var(--navy); border: 1px solid var(--border);
+    }
+    .harita-yukleniyor {
+      position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+      color: var(--muted); font-size: 14px; pointer-events: none;
+    }
+    .leaflet-container { font-family: var(--font-body); background: var(--navy); }
+    .leaflet-tooltip.il-tooltip {
+      background: var(--navy-mid); color: var(--off-white); border: 1px solid var(--border);
+      border-radius: 6px; font-size: 12px; padding: 4px 8px; box-shadow: 0 4px 12px rgba(0,0,0,.4);
+    }
+    .leaflet-tooltip.il-tooltip::before { display: none; }
+    .il-tooltip .tt-sayi { color: var(--amber); font-weight: 700; margin-left: 4px; }
+    .harita-legend {
+      display: flex; flex-wrap: wrap; align-items: center; gap: 4px;
+      padding: 10px 4px 2px; font-size: 11px; color: var(--muted);
+    }
+    .harita-legend .lg-item { display: flex; align-items: center; gap: 4px; margin-right: 10px; }
+    .harita-legend .lg-box { width: 22px; height: 12px; border-radius: 2px; flex-shrink: 0; }
+    @media (max-width: 640px) { #turkiye-harita { height: 340px; } }
 
     /* ---- LAYOUT ---- */
     .app {
@@ -698,6 +724,21 @@
         </div>
       </div>
 
+      <!-- WIDGET: Türkiye Haritası -->
+      <div class="table-wrap" style="padding:0; margin-bottom:16px;">
+        <div class="table-header" style="padding:14px 18px 12px;">
+          <span class="table-title" style="font-size:14px;">🗺️ Türkiye İhale Haritası</span>
+          <span style="font-size:12px; color:var(--muted);">Bir ile tıklayın → o ilin ihaleleri</span>
+        </div>
+        <div style="padding:0 18px 16px;">
+          <div class="harita-wrap">
+            <div id="turkiye-harita"></div>
+            <div class="harita-yukleniyor" id="harita-yukleniyor">🗺️ Harita ve veriler yükleniyor…</div>
+          </div>
+          <div class="harita-legend" id="harita-legend"></div>
+        </div>
+      </div>
+
       <!-- WIDGET: 7-Günlük Trend -->
       <div class="table-wrap" style="padding:0; margin-bottom:16px;">
         <div class="table-header" style="padding:14px 18px 12px;">
@@ -875,6 +916,8 @@
 </div><!-- /app -->
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+<script src="js/harita.js"></script>
 <script src="js/sidebar-user.js"></script>
 <script src="js/plan.js"></script>
 <script src="js/main.js"></script>
