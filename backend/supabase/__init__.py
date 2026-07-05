@@ -94,10 +94,13 @@ class QueryBuilder:
         self._headers = {**self._headers, "Prefer": "return=representation"}
         return self
 
-    def upsert(self, data: dict, on_conflict: str = ""):
+    def upsert(self, data: dict, on_conflict: str = "", ignore_duplicates: bool = False):
         self._method = "POST"
         self._body = data
-        prefer = "resolution=merge-duplicates,return=representation"
+        # ignore_duplicates=True → çakışan satırları güncelleme, atla (INSERT ... ON CONFLICT DO NOTHING)
+        # False (varsayılan) → çakışanları güncelle (merge)
+        resolution = "ignore-duplicates" if ignore_duplicates else "merge-duplicates"
+        prefer = f"resolution={resolution},return=representation"
         self._headers = {**self._headers, "Prefer": prefer}
         if on_conflict:
             self._params["on_conflict"] = on_conflict
