@@ -24,7 +24,10 @@ from dotenv import load_dotenv
 from supabase import create_client, Client
 
 # Kendi modüllerimiz
-from ekap_scraper import tum_sonuclari_cek, ihaleleri_isle, tekilleştir
+# NOT: tum_sonuclari_cek + ekap_token_yakala eski scraper API'sine aitti ve
+# refactor'da kaldırıldı; sadece aşağıdaki (kullanılmayan) scraper_cron içinde
+# geçtikleri için import'ları oraya taşıdık. Gerçek gece turu ekap_scraper.main().
+from ekap_scraper import ihaleleri_isle, tekilleştir
 from analyzer import ihale_analiz_et
 
 load_dotenv()
@@ -271,7 +274,7 @@ async def scraper_cron():
     EKAP'tan yeni ihaleleri çekip Supabase'e yazar.
     """
     from playwright.async_api import async_playwright
-    from ekap_scraper import ekap_token_yakala
+    from ekap_scraper import ekap_token_yakala, tum_sonuclari_cek
 
     print(f"\n{'='*55}")
     print(f"SCRAPER CRON — {datetime.now().strftime('%d.%m.%Y %H:%M')}")
