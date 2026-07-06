@@ -37,10 +37,37 @@
 
 ---
 
-## 🖥️ BÜYÜK PLAN — TEK VDS'E TAŞIMA (5 Tem 2026, DEVAM EDECEK)
+## 🖥️ BÜYÜK PLAN — TEK VDS'E TAŞIMA (5 Tem 2026 · Faz 2-4 TAMAMLANDI 6 Tem 2026)
 
 > **Bu bölüm bir sonraki oturum/AI için devir notudur.** Kullanıcı sistemi tek bir sunucuda
 > (VDS) birleştirmeye karar verdi. Aşağıdaki karar/gerekçe/plan aynen sürdürülecek.
+
+### ✅ TAMAMLANAN (6 Tem 2026) — Sistem VDS'te tam çalışıyor: http://195.85.207.126
+**VDS:** Datacasa Premium (Başakşehir/İstanbul, KVM, Türkiye ✓), IP `195.85.207.126`, Ubuntu 24.04, root.
+**Erişim:** `ssh -i ~/.ssh/ihale_oracle root@195.85.207.126` (anahtar authorized_keys'te, şifresiz).
+
+- ✅ **Faz 2 — Sunucu:** Docker + UFW (22/80/443/8000/3000) + SSH key. Self-hosted Supabase
+  (`/opt/supabase/docker`, 11 container healthy, PG17, JWT/şifreler generate-keys.sh ile).
+- ✅ **Faz 3 — Uygulamalar:** nginx tek-domain proxy (frontend + `/rest|/auth|/storage|/realtime|/functions`→Kong:8000 + `/api/`→FastAPI:8080, uzantısız URL `try_files`). FastAPI systemd (`ihale-api`, 127.0.0.1:8080). Scraper cron (02:00 UTC → `/opt/ihale-platform/backend/run_scraper.sh`). Repo: `/opt/ihale-platform`. Python venv **yalın kurulum** (sürümsüz — eski-pinned requirements backtracking yapıyordu; gerçek `supabase` paketi gereksiz çünkü sahte wrapper httpx-tabanlı).
+- ✅ **Faz 4 — Veri taşıma:** pg_dump/restore ile **13.535 ilan + 4 auth.users + identities + profiller + RLS/politikalar** taşındı. il_sayim RPC eklendi. anon/authenticated GRANT'leri elle verildi (anon SELECT, authenticated yazma; RLS satır korur). FK'ler (auth.users) geri eklendi. **Scraper testi: EKAP'tan 12.052 canlı ihale yazdı ✓.** Frontend URL/anon-key VDS kopyasında yerele çevrildi (repoya DEĞİL — canlı Cloudflare bozulmasın).
+- 🐛 Yol boyu düzeltilen: worker.py stale import (`tum_sonuclari_cek`) api.py'yi çökertiyordu → commit 9ea9ca5.
+
+**KRİTİK TEKNİK NOTLAR (sonraki oturum için):**
+- Supabase direct-conn **IPv6-only**, VDS'in IPv6'sı yok → pg_dump/restore **pooler** üzerinden: `aws-0-eu-west-3.pooler.supabase.com:5432`, user `postgres.lpgelwfoarhouollhwur`.
+- PG sürümü eşleşmeli (managed=self-hosted=17); client PGDG deposundan `postgresql-client-17`.
+- Managed Postgres şifresi sıfırlandı (Sifre.123123!.) — bu SADECE direct DB conn içindir, app'ler API-key kullanır, kopmaz.
+- Gece scraper `main()` **playwright'siz** (httpx + crypto headers); chromium sadece ağır belge-indirme turu.
+
+### 🔲 KALAN — Faz 5-6 (kullanıcı TEST edip "yayına al" deyince)
+- [ ] **Kullanıcı testi:** http://195.85.207.126 — harita, arama, giriş (hesaplar taşındı), dashboard, analiz. Eksik/bug bildir → düzelt.
+- [ ] **Faz 6 — DNS + SSL cut-over:** Cloudflare `ihaleglobal.com` → `195.85.207.126`; Let's Encrypt (certbot+nginx); frontend URL'lerini `https://ihaleglobal.com`'a çevir + **repoya commit**; eski servisleri (Render/GitHub Actions) kapat. Managed paralel ayakta = sıfır kesinti.
+- [ ] **Faz 5 — Geçmiş backfill:** VM'de kompakt 2003+ backfill (ekap_sonuc_backfill.py) → firma verisi dolar. HTML'siz (kompakt strateji ↓).
+- [ ] **E-posta doğrulama:** Supabase Auth + Resend SMTP (aşağıdaki bölüm).
+- [ ] Storage `belgeler` bucket taşınması (ağır belge turu aktifleşince).
+
+---
+
+### 📜 ORİJİNAL PLAN (referans — yukarıda uygulandı)
 
 ### KARAR & GEREKÇE
 - **Hedef:** Şu an dağıtık olan sistemi (Cloudflare Pages + Supabase + Render + GitHub Actions)
