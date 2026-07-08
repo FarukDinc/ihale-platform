@@ -346,16 +346,16 @@
   // ── DB'den yükle ─────────────────────────────────────────
   async function dbBildirimleriYukle(user) {
     const { data } = await sb.from('bildirimler')
-      .select('id,tip,baslik,aciklama,ilan_id,okunmus,created_at')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false })
+      .select('id,tur,baslik,icerik,ilan_id,okundu,olusturulma')
+      .eq('kullanici_id', user.id)
+      .order('olusturulma', { ascending: false })
       .limit(50);
     return (data || []).map(b => ({
-      id: b.id, tip: b.tip, okunmus: b.okunmus,
-      ikon: ikonMap[b.tip] || '🔔',
-      ikonKlass: ikonKlassMap[b.tip] || 'yeni',
-      baslik: b.baslik, aciklama: b.aciklama || '',
-      zaman: b.created_at,
+      id: b.id, tip: b.tur, okunmus: b.okundu,
+      ikon: ikonMap[b.tur] || '🔔',
+      ikonKlass: ikonKlassMap[b.tur] || 'yeni',
+      baslik: b.baslik, aciklama: b.icerik || '',
+      zaman: b.olusturulma,
       link: b.ilan_id ? `ihale-detay?id=${b.ilan_id}` : null,
       _db: true,
     }));
@@ -482,7 +482,7 @@
     b.okunmus = true;
     render(aktifFiltre);
     if (b._db && window._currentUser) {
-      await sb.from('bildirimler').update({ okunmus: true }).eq('id', id);
+      await sb.from('bildirimler').update({ okundu: true }).eq('id', id);
     }
   }
 
@@ -491,7 +491,7 @@
     (window._bildirimler || []).forEach(b => b.okunmus = true);
     render(aktifFiltre);
     if (dbIds.length && window._currentUser) {
-      await sb.from('bildirimler').update({ okunmus: true }).in('id', dbIds);
+      await sb.from('bildirimler').update({ okundu: true }).in('id', dbIds);
     }
   }
 

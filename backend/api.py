@@ -227,10 +227,10 @@ def takip_ekle(
     try:
         supabase.table("takipler").upsert({
             "kullanici_id": kullanici_id,
-            "ihale_id": istek.ihale_id,
+            "ilan_id": istek.ihale_id,
             "notlar": istek.notlar,
             "durum": "aktif"
-        }, on_conflict="kullanici_id,ihale_id").execute()
+        }, on_conflict="kullanici_id,ilan_id").execute()
         return {"basari": True, "mesaj": "Takibe alındı"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
@@ -247,7 +247,7 @@ def takip_kaldir(
     try:
         supabase.table("takipler").update({"durum": "arsivlendi"}).eq(
             "kullanici_id", kullanici_id
-        ).eq("ihale_id", ihale_id).execute()
+        ).eq("ilan_id", ihale_id).execute()
         return {"basari": True, "mesaj": "Takipten çıkarıldı"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

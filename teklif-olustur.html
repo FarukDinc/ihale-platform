@@ -1386,12 +1386,13 @@
 
     // Sidebar kullanıcı
     const { data: profil } = await sb.from('kullanici_profiller')
-      .select('firma_adi, aktif_plan').eq('id', user.id).single();
+      .select('firma_adi').eq('id', user.id).single();
     if (profil) {
       const kisa = (profil.firma_adi||user.email||'').substring(0,2).toUpperCase();
       document.getElementById('sidebar-avatar').textContent = kisa;
       document.getElementById('sidebar-isim').textContent = profil.firma_adi || user.email;
-      document.getElementById('sidebar-plan').textContent = profil.aktif_plan || 'Free';
+      document.getElementById('sidebar-plan').textContent =
+        (window.Plan && (await Plan.getPlan()) === 'pro') ? 'Pro Plan' : 'Free';
 
       // Firma bilgilerini doldur
       document.getElementById('firma-adi').value = profil.firma_adi || '';

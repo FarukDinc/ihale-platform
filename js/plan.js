@@ -1,7 +1,8 @@
 /**
  * Plan kontrolü modülü.
- * Supabase'deki profil tablosundan kullanıcı planını okur.
- * Sonuç 30 saniyeliğine cache'lenir.
+ * Supabase'deki kullanici_krediler tablosundan kullanıcı planını okur
+ * (payment.py ödeme başarılı olunca plan'ı buraya yazar). Süresi dolan
+ * abonelik free'ye düşer. Sonuç 30 saniyeliğine cache'lenir.
  */
 window.Plan = (() => {
   const PRO_PLANS = ['pro', 'Pro', 'PRO', 'premium', 'enterprise'];
@@ -30,11 +31,14 @@ window.Plan = (() => {
       return _cache;
     }
     try {
-      const { data } = await res.sb.from('profil')
-        .select('plan')
-        .eq('user_id', res.user.id)
+      const { data } = await res.sb.from('kullanici_krediler')
+        .select('plan, plan_bitis')
+        .eq('kullanici_id', res.user.id)
         .single();
-      _cache = PRO_PLANS.includes(data?.plan) ? 'pro' : 'free';
+      let planDeger = data?.plan;
+      // Abonelik süresi dolmuşsa free'ye düş
+      if (planDeger && data?.plan_bitis && new Date(data.plan_bitis) < new Date()) planDeger = 'free';
+      _cache = PRO_PLANS.includes(planDeger) ? 'pro' : 'free';
     } catch {
       _cache = 'free';
     }

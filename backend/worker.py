@@ -238,7 +238,7 @@ def kullanici_analiz_isle(
         "baslik": "Analiz tamamlandı",
         "icerik": f"{ihale['baslik'][:60]} ihalesi analiz edildi.",
         "tur": "ihale",
-        "ihale_id": ihale_id
+        "ilan_id": ihale_id
     }).execute()
 
     return {

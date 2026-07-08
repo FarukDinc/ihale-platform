@@ -15,14 +15,23 @@
     const email = user.email || '';
     const initials = email.substring(0, 2).toUpperCase();
 
-    // Profil tablosundan firma adı ve plan
+    // Firma adı — profil tablosundan
     const { data: profil } = await sb.from('profil')
-      .select('firma_adi, plan')
+      .select('firma_adi')
       .eq('user_id', user.id)
       .single();
 
+    // Plan — kullanici_krediler tablosundan (payment.py buraya yazar)
+    const { data: kredi } = await sb.from('kullanici_krediler')
+      .select('plan, plan_bitis')
+      .eq('kullanici_id', user.id)
+      .single();
+    const PRO = ['pro', 'Pro', 'PRO', 'premium', 'enterprise'];
+    let planKodu = kredi?.plan;
+    if (planKodu && kredi?.plan_bitis && new Date(kredi.plan_bitis) < new Date()) planKodu = null;
+
     const gosterilenAd = profil?.firma_adi || email.split('@')[0];
-    const plan = profil?.plan || 'Ücretsiz Plan';
+    const plan = PRO.includes(planKodu) ? 'Pro Plan' : 'Ücretsiz Plan';
 
     // Tüm sidebar avatar + name elementlerini güncelle
     document.querySelectorAll('.sidebar .user-avatar, .sidebar-footer .user-avatar, #avatar-text').forEach(el => {
