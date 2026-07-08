@@ -942,6 +942,7 @@
     if (gun !== null && gun <= 3 && gun >= 0) {
       return `<span class="badge badge-soon">● Son ${gun} Gün</span>`;
     }
+    if (gun !== null && gun < 0) return `<span class="badge badge-closed">● Kapandı</span>`;
     if (durum === 'aktif') return `<span class="badge badge-open">● Açık</span>`;
     return `<span class="badge">${durum}</span>`;
   }
@@ -1254,6 +1255,12 @@
   document.getElementById('main-search').addEventListener('input', () => {
     clearTimeout(aramaTimer);
     aramaTimer = setTimeout(filtrele, 400);
+  });
+  // Enter → tam ihaleler listesine git (dashboard'daki canlı filtre limitli)
+  document.getElementById('main-search').addEventListener('keydown', (e) => {
+    if (e.key !== 'Enter') return;
+    const q = e.target.value.trim();
+    if (q) window.location.href = 'ihaleler?ara=' + encodeURIComponent(q);
   });
 
   // ── Top Kurumlar widget ──────────────────────────────
