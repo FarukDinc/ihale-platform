@@ -106,6 +106,10 @@ docker compose up -d auth
 
 **ADIM 6 — Eski servisleri kapat (KULLANICI):** Render servisi + GitHub Actions scraper workflow'unu durdur (VDS cron devraldı).
 
+**QA TARAMASI (8 Tem, read-only — frontend sağlam):** ana sayfa, harita, ihaleler/detay, dashboard, arama, bildirimler (boş durum OK), fiyatlandırma + İyzico ödeme modalı (hatasız açılıyor; kart girilmedi/ödeme yapılmadı), idareler dizini — **hepsi konsol-temiz.**
+- 💳 **Ödeme PCI notu:** ödeme modalı ham kart numarasını doğrudan alıyor (İyzico hosted checkout değil). payment.py sunucuda tokenize etmiyorsa PCI-DSS yükü doğar → İyzico hosted/tokenize akışı önerilir. Canlı çekim sandbox test kartıyla doğrulanmalı (AI finansal işlem yapmaz).
+- 📊 **Kozmetik:** "Toplam"="Aktif" her yerde eşit (tüm kayıtlar `durum='aktif'`; geçmiş/sonuç verisi Faz 5 backfill gelene dek ayrışmaz) — bug değil, veri-durumu.
+
 **AÇIK NOTLAR / temizlik:**
 - 🔑 **Resend key sohbet geçmişinde** — kullanıcı isterse rotate edip yeni key'i Adım 2 mantığıyla `.env`'e yazmalı (`SMTP_PASS=`).
 - `farukdinc890@gmail.com` geçici parola `GeciciTest123!` → değiştirilmeli.
