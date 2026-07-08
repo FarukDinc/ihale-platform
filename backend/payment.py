@@ -333,6 +333,27 @@ async def iyzico_webhook(request: Request):
     return {"status": "ok"}
 
 
+@router.post("/plan-iptal")
+async def plan_iptal(authorization: str = Header(None)):
+    """Kullanıcının planını ücretsize düşürür. service_role ile yazar çünkü
+    kullanici_krediler RLS'i client yazımını engeller (güvenlik gereği salt-okur)."""
+    kullanici_id, _email = kullanici_dogrula_payment(authorization)
+    try:
+        supabase.table("kullanici_krediler").update({
+            "plan": "free",
+            "plan_bitis": datetime.now().isoformat(),
+        }).eq("kullanici_id", kullanici_id).execute()
+        supabase.table("bildirimler").insert({
+            "kullanici_id": kullanici_id,
+            "baslik": "Plan iptal edildi",
+            "icerik": "Aboneliğiniz ücretsiz plana düşürüldü.",
+            "tur": "sistem",
+        }).execute()
+        return {"basari": True, "mesaj": "Planınız ücretsize düşürüldü"}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @router.get("/planlar")
 def planlari_getir():
     """Mevcut planları döndürür — herkese açık."""

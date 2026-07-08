@@ -1713,18 +1713,22 @@
     const { data: { user } } = await sb.auth.getUser();
     if (!user) { toast('Kaydetmek için giriş yapmalısınız.', 'hata'); return; }
 
+    // teklifler şeması: teklif_veren_id, ilan_id, teklif_tutari (bigint), teklif_metni (text), durum, olusturulma
+    // Formun yapısal alanları (teklif_adi/yetkili/teknik_teklif) teklif_metni'ne JSON olarak paketlenir.
     const teklif = {
-      kullanici_id: user.id,
-      ihale_id: ihaleId || null,
-      teklif_adi: document.getElementById('teklif-adi').value,
-      firma_adi: document.getElementById('firma-adi').value,
-      yetkili: document.getElementById('yetkili-ad').value,
-      teknik_teklif: {
-        kapsam: document.getElementById('teknik-kapsam').value,
-        neden: document.getElementById('teknik-neden').value,
-        yontem: document.getElementById('teknik-yontem-text').value,
-      },
-      toplam_bedel: parseFloat(document.getElementById('genel-toplam').textContent.replace(/[^0-9.,]/g,'').replace(',','.')) || 0,
+      teklif_veren_id: user.id,
+      ilan_id: ihaleId || null,
+      teklif_tutari: Math.round(parseFloat(document.getElementById('genel-toplam').textContent.replace(/[^0-9.,]/g,'').replace(',','.')) || 0),
+      teklif_metni: JSON.stringify({
+        teklif_adi: document.getElementById('teklif-adi').value,
+        firma_adi: document.getElementById('firma-adi').value,
+        yetkili: document.getElementById('yetkili-ad').value,
+        teknik_teklif: {
+          kapsam: document.getElementById('teknik-kapsam').value,
+          neden: document.getElementById('teknik-neden').value,
+          yontem: document.getElementById('teknik-yontem-text').value,
+        },
+      }),
       durum: 'taslak',
       olusturulma: new Date().toISOString(),
     };

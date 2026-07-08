@@ -383,6 +383,7 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="js/api.js"></script>
 <script src="js/sidebar-user.js"></script>
 <script src="js/plan.js"></script>
 <script>
@@ -519,15 +520,24 @@
     }
   }
 
-  function planDusur() {
+  async function planDusur() {
     if (!confirm('Pro planınızı iptal edip ücretsiz plana geçmek istediğinizden emin misiniz? Kalan süreniz için iade yapılır.')) return;
-    sb.auth.getUser().then(async ({ data: { user } }) => {
-      if (!user) return;
-      await sb.from('profil').upsert({ user_id: user.id, plan: 'free' }, { onConflict: 'user_id' });
+    // kullanici_krediler RLS salt-okur → düşürme backend endpoint'iyle (service_role) yapılır
+    const { data: { session } } = await sb.auth.getSession();
+    if (!session) { alert('Oturum bulunamadı, tekrar giriş yapın.'); return; }
+    try {
+      const res = await fetch(`${API.CONFIG.BASE_URL}/plan-iptal`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${session.access_token}` },
+      });
+      const sonuc = await res.json().catch(() => ({}));
+      if (!res.ok || !sonuc.basari) throw new Error(sonuc.detail || sonuc.mesaj || 'İşlem başarısız');
       Plan.clearCache();
       alert('Planınız ücretsize düşürüldü.');
       window.location.reload();
-    });
+    } catch (e) {
+      alert('Plan iptali başarısız: ' + e.message);
+    }
   }
 
   baslat();
