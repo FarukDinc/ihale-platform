@@ -59,10 +59,12 @@
 - Gece scraper `main()` **playwright'siz** (httpx + crypto headers); chromium sadece ağır belge-indirme turu.
 
 ### 🔲 KALAN — Faz 5-6 (kullanıcı TEST edip "yayına al" deyince)
-- [ ] **Kullanıcı testi:** http://195.85.207.126 — harita, arama, giriş (hesaplar taşındı), dashboard, analiz. Eksik/bug bildir → düzelt.
-- [ ] **Faz 6 — DNS + SSL cut-over:** Cloudflare `ihaleglobal.com` → `195.85.207.126`; Let's Encrypt (certbot+nginx); frontend URL'lerini `https://ihaleglobal.com`'a çevir + **repoya commit**; eski servisleri (Render/GitHub Actions) kapat. Managed paralel ayakta = sıfır kesinti.
+- [x] **Kullanıcı testi (8 Tem 2026, AI tarayıcıyla uçtan uca):** ana sayfa (14.060 aktif, canlı KPI), harita choropleth + il→ihaleler yönlendirmesi (`?il=ANKARA`), ihaleler listesi/filtre/kart, ihale detay (KPI+uyum+AI sekmesi+benzer ihaleler), giriş (taşınan session geçerli — "Merhaba, info"), dashboard tüm widget'lar, canlı arama ("temizlik"→77) — **hepsi çalışıyor, konsol temiz.** 2 küçük bug bulundu+düzeltildi (↓).
+- [x] **Güvenlik doğrulaması VDS'te (8 Tem 2026, SSH):** devir notundaki "2 kritik açık" **ikisi de zaten güvenli.** (1) Kredi RLS: `kullanici_krediler`+`kredi_hareketleri`'nde YALNIZCA `SELECT` policy var (yazma policy'si yok), RLS açık (`relrowsecurity=t`) → bedava-kredi/İyzico-bypass açığı yok, `rls_fix_kredi.sql` GEREKMİYOR. (2) E-posta: `GOTRUE_MAILER_AUTOCONFIRM=false` → onaysız giriş engelli.
+- [ ] 🔴 **SMTP BOZUK (launch-blocker):** GoTrue SMTP sahte placeholder (`fake_mail_user`, `supabase-mail` container yok). Autoconfirm kapalı ama mail gidemiyor → **yeni kayıt olan giriş yapamaz** (taşınan hesaplar onaylı olduğu için çalışıyor). VDS `backend/.env`'de **RESEND_API_KEY yok** (bildirim yapılandırması taşınmamış → notify.py de prod'da hiç çalışmamış olmalı). ÇÖZÜM: kullanıcı Resend'e kaydolacak (yoktu) + domain doğrulayacak → key ile GoTrue SMTP (`smtp.resend.com:465`, user `resend`) kurulacak, `supabase-auth` restart, test kaydıyla doğrula.
+- [x] **2 dashboard bug'ı düzeltildi + deploy (commit b347ec3, main'e push):** (1) `durumBadge` teklif tarihi geçmiş kayda "● Açık" yerine "● Kapandı" (ihaleler.html ile tutarlı; 2010 tarihli ihaleler "Açık" görünüyordu). (2) `main-search` Enter → `ihaleler?ara=...` tam listeye yönlendirir.
+- [ ] **Faz 6 — DNS + SSL cut-over:** Cloudflare `ihaleglobal.com` → `195.85.207.126`; Let's Encrypt (certbot+nginx); frontend URL'lerini `https://ihaleglobal.com`'a çevir + **repoya commit**; `GOTRUE_SITE_URL`'yi `https`'e çevir (şu an `http://ihaleglobal.com`); eski servisleri (Render/GitHub Actions) kapat. Managed paralel ayakta = sıfır kesinti. **Cloudflare DNS + Render/Actions kapatma = KULLANICI (AI erişimi yok); SSL+URL = AI (DNS çevrildikten sonra).**
 - [ ] **Faz 5 — Geçmiş backfill:** VM'de kompakt 2003+ backfill (ekap_sonuc_backfill.py) → firma verisi dolar. HTML'siz (kompakt strateji ↓).
-- [ ] **E-posta doğrulama:** Supabase Auth + Resend SMTP (aşağıdaki bölüm).
 - [ ] Storage `belgeler` bucket taşınması (ağır belge turu aktifleşince).
 
 ---
