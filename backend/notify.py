@@ -24,12 +24,44 @@ SUPABASE_URL = os.environ.get("SUPABASE_URL", "https://lpgelwfoarhouollhwur.supa
 SUPABASE_KEY = os.environ.get("SUPABASE_SERVICE_KEY", "")
 RESEND_KEY   = os.environ.get("RESEND_API_KEY", "")
 
-FROM_EMAIL   = "bildirim@ihaleplatform.com"
-SITE_URL     = "https://ihaleplatform.com"
+FROM_EMAIL   = os.environ.get("BILDIRIM_FROM_EMAIL", "noreply@ihaleglobal.com")
+SITE_URL     = os.environ.get("SITE_URL", "https://ihaleglobal.com")
 
 
 def sb_client():
     return create_client(SUPABASE_URL, SUPABASE_KEY)
+
+
+def auth_email_map():
+    """GoTrue admin API'sinden {user_id: email} haritası çek (service key ile).
+    Sahte supabase wrapper auth.admin desteklemediği için doğrudan REST çağrısı."""
+    if not SUPABASE_KEY:
+        return {}
+    emap = {}
+    try:
+        page = 1
+        while True:
+            r = requests.get(
+                f"{SUPABASE_URL}/auth/v1/admin/users",
+                headers={"apikey": SUPABASE_KEY, "Authorization": f"Bearer {SUPABASE_KEY}"},
+                params={"page": page, "per_page": 200},
+                timeout=15,
+            )
+            if r.status_code != 200:
+                print(f"❌ Auth listesi hatası {r.status_code}: {r.text[:120]}")
+                break
+            users = r.json().get("users", [])
+            if not users:
+                break
+            for u in users:
+                if u.get("email"):
+                    emap[str(u["id"])] = u["email"]
+            if len(users) < 200:
+                break
+            page += 1
+    except Exception as e:
+        print(f"❌ Auth listesi exception: {e}")
+    return emap
 
 
 def para_fmt(v):
@@ -170,16 +202,20 @@ def resend_gonder(to_email, subject, html):
         return False
 
 
-def bildirim_kaydet(sb, user_id, baslik, aciklama, ilan_id=None, email_gonderildi=False):
+def bildirim_kaydet(sb, kullanici_id, baslik, icerik, ilan_id=None):
+    """bildirimler tablosuna kayıt (şema: kullanici_id, tur, baslik, icerik, okundu, ilan_id, aksiyon_url)."""
     try:
-        sb.table("bildirimler").insert({
-            "user_id": user_id,
-            "tip": "ihale",
+        kayit = {
+            "kullanici_id": kullanici_id,
+            "tur": "ihale",
             "baslik": baslik,
-            "aciklama": aciklama,
-            "ilan_id": ilan_id,
-            "email_gonderildi": email_gonderildi,
-        }).execute()
+            "icerik": icerik,
+            "okundu": False,
+        }
+        if ilan_id:
+            kayit["ilan_id"] = ilan_id
+            kayit["aksiyon_url"] = f"/ihale-detay?id={ilan_id}"
+        sb.table("bildirimler").insert(kayit).execute()
     except Exception as e:
         print(f"  ⚠ bildirim kayıt hatası: {e}")
 
@@ -209,13 +245,8 @@ def main():
 
     print(f"E-posta bildirimi açık: {len(kullanicilar)} kullanıcı")
 
-    # Auth tablosundan e-posta adreslerini al
-    try:
-        auth_res = sb.auth.admin.list_users()
-        email_map = {str(u.id): u.email for u in auth_res if u.email}
-    except Exception as e:
-        print(f"❌ Auth listesi hatası: {e}")
-        email_map = {}
+    # Auth kullanıcılarının e-postalarını GoTrue admin API'sinden al
+    email_map = auth_email_map()
 
     gondeilen = 0
     for profil in kullanicilar:
@@ -229,7 +260,7 @@ def main():
 
         # Bu kullanıcının takip ettiği ihaleleri çek
         try:
-            takip_res = sb.table("takip").select("ilan_id").eq("user_id", user_id).execute()
+            takip_res = sb.table("takipler").select("ilan_id").eq("kullanici_id", user_id).execute()
             ilan_ids = [r["ilan_id"] for r in (takip_res.data or [])]
         except Exception as e:
             print(f"  ⚠ {email} takip listesi hatası: {e}")
@@ -273,7 +304,7 @@ def main():
         for ilan in yaklaşan:
             kalan = ilan.get("kalan_gun", 0)
             baslik = f"{'Bugün son gün!' if kalan == 0 else f'{kalan} gün kaldı'}: {ilan['baslik'][:60]}"
-            bildirim_kaydet(sb, user_id, baslik, ilan["baslik"], ilan["id"], basarili)
+            bildirim_kaydet(sb, user_id, baslik, ilan["baslik"], ilan["id"])
 
         if basarili:
             gondeilen += 1
