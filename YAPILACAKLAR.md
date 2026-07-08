@@ -1,6 +1,6 @@
 # İhalePlatform — Yapılacaklar Listesi
 
-> Son güncelleme: 1 Temmuz 2026
+> Son güncelleme: 8 Temmuz 2026 (otonom oturum — SMTP kuruldu, güvenlik/VDS doğrulandı, devir bloğu eklendi → "DEVİR — SIRADAKİ AI" bölümüne bak)
 > Bu dosya, Code modunda kodlama yaparken referans alınacak. Her madde mümkün olduğunca net ve uygulanabilir yazıldı.
 > 29 Haz 2026: **tendermeister.com** ve **ihaleciler.com** canlı olarak detaylı gezildi; rekabet/özellik-açığı analizi en alta "🆚 REKABET ANALİZİ" bölümüne eklendi (Öncelik 9). Önce o bölümü oku.
 
@@ -61,11 +61,56 @@
 ### 🔲 KALAN — Faz 5-6 (kullanıcı TEST edip "yayına al" deyince)
 - [x] **Kullanıcı testi (8 Tem 2026, AI tarayıcıyla uçtan uca):** ana sayfa (14.060 aktif, canlı KPI), harita choropleth + il→ihaleler yönlendirmesi (`?il=ANKARA`), ihaleler listesi/filtre/kart, ihale detay (KPI+uyum+AI sekmesi+benzer ihaleler), giriş (taşınan session geçerli — "Merhaba, info"), dashboard tüm widget'lar, canlı arama ("temizlik"→77) — **hepsi çalışıyor, konsol temiz.** 2 küçük bug bulundu+düzeltildi (↓).
 - [x] **Güvenlik doğrulaması VDS'te (8 Tem 2026, SSH):** devir notundaki "2 kritik açık" **ikisi de zaten güvenli.** (1) Kredi RLS: `kullanici_krediler`+`kredi_hareketleri`'nde YALNIZCA `SELECT` policy var (yazma policy'si yok), RLS açık (`relrowsecurity=t`) → bedava-kredi/İyzico-bypass açığı yok, `rls_fix_kredi.sql` GEREKMİYOR. (2) E-posta: `GOTRUE_MAILER_AUTOCONFIRM=false` → onaysız giriş engelli.
-- [ ] 🔴 **SMTP BOZUK (launch-blocker):** GoTrue SMTP sahte placeholder (`fake_mail_user`, `supabase-mail` container yok). Autoconfirm kapalı ama mail gidemiyor → **yeni kayıt olan giriş yapamaz** (taşınan hesaplar onaylı olduğu için çalışıyor). VDS `backend/.env`'de **RESEND_API_KEY yok** (bildirim yapılandırması taşınmamış → notify.py de prod'da hiç çalışmamış olmalı). ÇÖZÜM: kullanıcı Resend'e kaydolacak (yoktu) + domain doğrulayacak → key ile GoTrue SMTP (`smtp.resend.com:465`, user `resend`) kurulacak, `supabase-auth` restart, test kaydıyla doğrula.
+- [x] **SMTP kuruldu + doğrulandı (8 Tem 2026):** Kullanıcı Resend'e kaydoldu, gönderim key'i verdi. `/opt/supabase/docker/.env`'de SMTP ayarlandı: `SMTP_HOST=smtp.resend.com`, `SMTP_PORT=465`, `SMTP_USER=resend`, `SMTP_PASS=<resend key>`, `SMTP_SENDER_NAME=IhaleGlobal`, `SMTP_ADMIN_EMAIL=onboarding@resend.dev` (test göndericisi). `.env.bak.<ts>` yedeği alındı. `docker compose up -d auth` ile yenilendi. Test: `farukdinc890@gmail.com` ile signup → HTTP 200, `confirmation_sent_at` set, GoTrue loglarında SMTP hatası YOK, istek 3.4sn (gerçek gönderim) → **boru hattı çalışıyor.**
+  - ⚠️ **Resend key "sadece-gönderim" yetkili** — domain API'si (`POST /domains`) 401 verir; domain doğrulaması **panelden** yapılmalı.
+  - ⚠️ **Test göndericisi kısıtı:** domain doğrulanana kadar `onboarding@resend.dev` YALNIZCA kullanıcının Resend hesabı e-postasına teslim eder. Gerçek kullanıcılara mail için domain doğrulama ŞART (↓ handoff).
+  - ℹ️ `farukdinc890@gmail.com` hesabı admin ile onaylandı (`email_confirm:true`), giriş test edildi (token 200). Geçici parola `GeciciTest123!` — kullanıcı değiştirmeli.
 - [x] **2 dashboard bug'ı düzeltildi + deploy (commit b347ec3, main'e push):** (1) `durumBadge` teklif tarihi geçmiş kayda "● Açık" yerine "● Kapandı" (ihaleler.html ile tutarlı; 2010 tarihli ihaleler "Açık" görünüyordu). (2) `main-search` Enter → `ihaleler?ara=...` tam listeye yönlendirir.
-- [ ] **Faz 6 — DNS + SSL cut-over:** Cloudflare `ihaleglobal.com` → `195.85.207.126`; Let's Encrypt (certbot+nginx); frontend URL'lerini `https://ihaleglobal.com`'a çevir + **repoya commit**; `GOTRUE_SITE_URL`'yi `https`'e çevir (şu an `http://ihaleglobal.com`); eski servisleri (Render/GitHub Actions) kapat. Managed paralel ayakta = sıfır kesinti. **Cloudflare DNS + Render/Actions kapatma = KULLANICI (AI erişimi yok); SSL+URL = AI (DNS çevrildikten sonra).**
-- [ ] **Faz 5 — Geçmiş backfill:** VM'de kompakt 2003+ backfill (ekap_sonuc_backfill.py) → firma verisi dolar. HTML'siz (kompakt strateji ↓).
+- [ ] **Faz 6 — DNS + SSL cut-over** → aşağıdaki "DEVİR" bloğundaki adım adım plan.
+- [x] **VDS sağlık doğrulandı (8 Tem 2026):** cron `0 2 * * *` çalışıyor — bugün 02:09'da 253 taze kayıt yazdı (toplam 14.060); disk %13 (19G/158G); FastAPI `ihale-api` active. VDS taşımanın asıl amacı (güvenilir cron) doğrulandı.
+- [ ] 🐛 **BİLDİRİM SERVİSİ KIRIK (notify.py — launch-blocker DEĞİL, 8 Tem 2026 bulundu):** Gece cron'unda `notify.py` her çalıştığında şema uyumsuzluğundan çöküyor, hiç bildirim gitmiyor (scraper.log: `column profil.bildirim_email does not exist`). İKİ katman: (1) `profil` tablosunda `bildirim_email`/`bildirim_son_teklif`/`bildirim_gun_oncesi` kolonları YOK (notify.py:202-204 bunları seçiyor) → eklenecek migration + kullanıcının Profil ekranında açıp-kapatacağı UI gerek. (2) notify.py:232 `takip` tablosu + `user_id` kullanıyor → gerçek ad `takipler` + `kullanici_id` (js/takip.js'te düzeltilen AYNI bug; notify.py'da düzeltilmemiş). Ayrıca kullanıcı e-postasının nereden geldiği belirsiz (notify.py:265 `email` değişkeni profil select'inde yok — auth.users'tan çekilmeli). ÖNERİ: launch sonrası ele al; profil'e kolonları ekle (default false), notify.py'daki tablo/kolon adlarını düzelt, e-posta kaynağını auth.users admin API'sinden çöz. SMTP artık hazır olduğu için bunlar bitince bildirimler ilk kez canlı olur.
+- [ ] **Faz 5 — Geçmiş backfill:** VM'de kompakt 2003+ backfill (ekap_sonuc_backfill.py) → firma verisi dolar. HTML'siz (kompakt strateji ↓). ⚠️ Otonom BAŞLATILMADI: uzun/riskli iş (proxy boş → IP ban riski VDS'in gece cron'unu da vurabilir); kullanıcı "başlat" deyince checkpoint'li çalıştırılmalı.
 - [ ] Storage `belgeler` bucket taşınması (ağır belge turu aktifleşince).
+
+---
+
+### 🤝 DEVİR — SIRADAKİ AI/OTURUM İÇİN (8 Tem 2026, otonom oturumdan)
+
+> **Durum:** VDS tam çalışıyor (http://195.85.207.126), güvenlik temiz, SMTP boru hattı kurulu.
+> **Launch'ın önündeki tek gerçek engel = KULLANICININ elindeki 2 panel işi** (Resend domain + Cloudflare DNS).
+> AI erişimi olmayan yerler net işaretlendi. SSH: `ssh -i ~/.ssh/ihale_oracle root@195.85.207.126`.
+
+**ADIM 1 — Resend domain doğrulama (KULLANICI, Resend paneli):**
+- resend.com → Domains → Add → `ihaleglobal.com`. Resend'in verdiği SPF/DKIM/DMARC (CNAME+TXT) kayıtlarını **Cloudflare DNS**'e ekle (proxy KAPALI/gri bulut — mail kayıtları proxy'lenmez). Doğrulama yeşil olunca Adım 2.
+
+**ADIM 2 — Göndericiyi gerçek adrese çevir (AI, domain doğrulanınca):**
+```bash
+ssh -i ~/.ssh/ihale_oracle root@195.85.207.126
+cd /opt/supabase/docker
+sed -i 's|^SMTP_ADMIN_EMAIL=.*|SMTP_ADMIN_EMAIL=noreply@ihaleglobal.com|' .env
+docker compose up -d auth
+# test: farkli bir e-postaya signup at, Resend panel → Emails "Delivered" gormeli
+```
+
+**ADIM 3 — DNS cut-over (KULLANICI, Cloudflare paneli):**
+- Cloudflare → DNS → `ihaleglobal.com` A kaydını `195.85.207.126`'ya çevir (AAAA/IPv6 varsa sil — VDS'in IPv6'sı yok). Proxy (turuncu bulut) AÇIK kalabilir (CDN+SSL).
+- `www` de aynı IP'ye.
+
+**ADIM 4 — SSL (AI, DNS çevrildikten sonra). İKİ seçenek:**
+- **(Önerilen, CF-proxy'li) Cloudflare Origin Certificate:** KULLANICI CF → SSL/TLS → Origin Server → Create Certificate (15 yıl) → cert+key'i verir; AI bunları `/etc/nginx/ssl/`'e koyup nginx'e `listen 443 ssl` + `ssl_certificate` ekler; CF SSL modu **Full (strict)**. certbot GEREKMEZ.
+- **(Alternatif) Let's Encrypt:** `apt install certbot python3-certbot-nginx` (VDS'te certbot YOK); ama CF proxy açıkken HTTP-01 zorlaşır → DNS-01 için CF API token gerekir. Origin Cert daha basit.
+
+**ADIM 5 — URL'leri https'e çevir (AI, SSL sonrası):**
+- VDS `/opt/supabase/docker/.env`: `SITE_URL=https://ihaleglobal.com` (şu an `http://ihaleglobal.com`) + `docker compose up -d auth`.
+- Frontend `SUPABASE_URL`/anon-key → `https://ihaleglobal.com` (VDS kopyasında; **repoya da commit** — ama DİKKAT: repo şu an Cloudflare-managed'ı besliyor, commit ancak DNS cut-over TAM bitince yapılmalı yoksa canlı managed bozulur). Managed paralel ayakta = sıfır kesinti; test bitince commit + eski servis kapat.
+
+**ADIM 6 — Eski servisleri kapat (KULLANICI):** Render servisi + GitHub Actions scraper workflow'unu durdur (VDS cron devraldı).
+
+**AÇIK NOTLAR / temizlik:**
+- 🔑 **Resend key sohbet geçmişinde** — kullanıcı isterse rotate edip yeni key'i Adım 2 mantığıyla `.env`'e yazmalı (`SMTP_PASS=`).
+- `farukdinc890@gmail.com` geçici parola `GeciciTest123!` → değiştirilmeli.
+- E2E test kullanıcısı (`e2e.test.1783161485@...`) hâlâ auth.users'ta — zararsız, silinebilir.
+- `GOTRUE_MAILER_EXTERNAL_HOSTS` uyarısı loglarda var (kozmetik) — istenirse `195.85.207.126`+`ihaleglobal.com` allowlist'e eklenir.
 
 ---
 
