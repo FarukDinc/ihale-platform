@@ -1200,9 +1200,10 @@ PY
 - [ ] ADIM 5: ⏸️ Beklemede — veri kaynağı sorunu çözülene kadar sayfa boş gösterir
 
 **Alternatif veri kaynakları (yapılacak):**
-- Resmi Gazete API üzerinden KİK kararı özeti çekme
-- EKAP scraper'a KİK karar no alanı ekleme (ihale detayında mevcut)
-- Playwright/Selenium ile browser tabanlı scraping (bot tespitinden geçer)
+- `ekapv2.kik.gov.tr` crypto-auth ile tüm karar endpoint'leri denendi → tümü 404 (API'de karar modülü yok)
+- `www.kik.gov.tr` → 406 (IP bloğu, header'dan bağımsız)
+- **Çözüm:** Playwright kurulumu VDS'e (`playwright install chromium`) → headless browser ile kik.gov.tr atlatılabilir
+- Veya ücretli proxy servisi (brightdata.com) — düşük öncelik, ileride değerlendir
 
 ### 🔲 4. Eşik Katsayısı Filtresi — KÜÇÜK, AMA EKSİK
 ihaleciler'de 0.70–1.20 eşik katsayısı filtresi var (ihale sınır değer hesabında kullanılır).
@@ -1214,11 +1215,14 @@ ihaleciler EKAP dışında gazete ve "istihbarat" kaynaklı ilanlar da gösteriy
 - EKAP-dışı kaynak = kendi kazıma/ortaklık gerektiriyor; önce EKAP derinleştir.
 - Ertelenmiş (9.6'da işlenmiş).
 
-### 🔲 6. Bülten Sistemi (Kullanıcı tanımlı bildirim kuralları) — ORTA ÖNCELİK
+### 🟡 6. Bülten Sistemi (Kullanıcı tanımlı bildirim kuralları) — YAPILIYOR (9 Temmuz 2026)
 ihaleciler'de kullanıcılar kendi filtrelerini "bülten" olarak kaydedip e-posta alıyor.
 - Bizde `takipler` var (tek ihale takibi) ama kural tabanlı bülten yok.
-- Yapılacak: `bültenler` tablosu (kullanıcı_id, filtre_json, frekans), notify.py bülten akışı
-- `bildirimler.html`'in "Bültenlerim" sekmesi şu an boş — bu dolduracak.
+- Plan: `bultenler` tablosu (kullanıcı_id, filtre_json, aktif), `bulten_gonder.py` scripti, `bildirimler.html`'de Bültenlerim UI
+- [ ] bultenler tablo SQL + Supabase'de oluştur
+- [ ] bulten_gonder.py scripti (notify.py gibi gece çalışır)
+- [ ] bildirimler.html Bültenlerim sekmesi UI
+- [ ] run_scraper.sh'e bulten_gonder.py ekle (VDS'de)
 
 ### 🔲 7. Sözleşme Listesi — KÜÇÜK ÖNCELİK
 ihaleciler'de kullanıcılar kazandıkları ihaleleri "sözleşme listesi"ne ekleyebiliyor.

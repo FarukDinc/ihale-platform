@@ -243,16 +243,60 @@
         <div class="notif-bos"><div class="bos-ikon">⌛</div><p>Yükleniyor...</p></div>
       </div>
 
-      <!-- BÜLTENLERİM (kayıtlı aramalar) -->
+      <!-- BÜLTENLERİM -->
       <div id="bulten-panel" style="display:none;">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px;">
           <div>
-            <h2 style="font-size:16px;font-weight:700;margin-bottom:4px;">⭐ Bültenlerim — Kayıtlı Aramalar</h2>
-            <p style="font-size:13px;color:var(--muted);">İhaleler sayfasında kaydettiğiniz filtre kombinasyonları. Tek tıkla tekrar çalıştırabilirsiniz.</p>
+            <h2 style="font-size:16px;font-weight:700;margin-bottom:4px;">⭐ Bültenlerim</h2>
+            <p style="font-size:13px;color:var(--muted);">Filtre kombinasyonlarınızı kaydedin, gece otomatik e-posta alın.</p>
           </div>
-          <a href="ihaleler" class="btn-kaydet" style="text-decoration:none;padding:8px 16px;font-size:13px;">+ Yeni Arama Kaydet</a>
+          <button onclick="yeniBultenAc()" class="btn-kaydet" style="padding:8px 16px;font-size:13px;">+ Yeni Bülten</button>
         </div>
-        <div id="bulten-liste"></div>
+
+        <!-- YENİ BÜLTEN FORMU -->
+        <div id="bulten-form" style="display:none;background:var(--navy-mid);border:1px solid var(--border);border-radius:10px;padding:18px 20px;margin-bottom:16px;">
+          <div style="font-size:14px;font-weight:700;color:var(--white);margin-bottom:14px;">Yeni Bülten Oluştur</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
+            <div style="grid-column:1/-1;">
+              <label style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;display:block;margin-bottom:4px;">Bülten Adı *</label>
+              <input id="bf-ad" type="text" placeholder="örn. İstanbul Yapım İhaleleri" style="width:100%;box-sizing:border-box;background:var(--navy);border:1px solid var(--border);color:var(--white);padding:8px 12px;border-radius:7px;font-size:13px;font-family:var(--font-body);outline:none;" />
+            </div>
+            <div>
+              <label style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;display:block;margin-bottom:4px;">Anahtar Kelime</label>
+              <input id="bf-kelime" type="text" placeholder="beton, temizlik…" style="width:100%;box-sizing:border-box;background:var(--navy);border:1px solid var(--border);color:var(--white);padding:8px 12px;border-radius:7px;font-size:13px;font-family:var(--font-body);outline:none;" />
+            </div>
+            <div>
+              <label style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;display:block;margin-bottom:4px;">İl</label>
+              <input id="bf-il" type="text" placeholder="İSTANBUL" style="width:100%;box-sizing:border-box;background:var(--navy);border:1px solid var(--border);color:var(--white);padding:8px 12px;border-radius:7px;font-size:13px;font-family:var(--font-body);outline:none;" />
+            </div>
+            <div>
+              <label style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;display:block;margin-bottom:4px;">İhale Türü</label>
+              <select id="bf-tur" style="width:100%;box-sizing:border-box;background:var(--navy);border:1px solid var(--border);color:var(--white);padding:8px 12px;border-radius:7px;font-size:13px;font-family:var(--font-body);outline:none;">
+                <option value="">Tümü</option>
+                <option>Yapım</option><option>Mal</option><option>Hizmet</option><option>Danışmanlık</option>
+              </select>
+            </div>
+            <div>
+              <label style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;display:block;margin-bottom:4px;">Min. Bedel (₺)</label>
+              <input id="bf-min" type="number" placeholder="1000000" style="width:100%;box-sizing:border-box;background:var(--navy);border:1px solid var(--border);color:var(--white);padding:8px 12px;border-radius:7px;font-size:13px;font-family:var(--font-body);outline:none;" />
+            </div>
+            <div>
+              <label style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;display:block;margin-bottom:4px;">Frekans</label>
+              <select id="bf-frekans" style="width:100%;box-sizing:border-box;background:var(--navy);border:1px solid var(--border);color:var(--white);padding:8px 12px;border-radius:7px;font-size:13px;font-family:var(--font-body);outline:none;">
+                <option value="gunluk">Günlük</option>
+                <option value="haftalik">Haftalık</option>
+              </select>
+            </div>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <button onclick="bultenKaydet()" style="background:var(--amber);color:var(--navy);border:none;padding:8px 20px;border-radius:7px;font-size:13px;font-weight:700;cursor:pointer;font-family:var(--font-body);">Kaydet</button>
+            <button onclick="yeniBultenKapat()" style="background:transparent;color:var(--muted);border:1px solid var(--border);padding:8px 14px;border-radius:7px;font-size:13px;cursor:pointer;font-family:var(--font-body);">İptal</button>
+          </div>
+        </div>
+
+        <div id="bulten-liste">
+          <div style="text-align:center;padding:40px 20px;color:var(--muted);">Bültenler yükleniyor…</div>
+        </div>
       </div>
 
       <!-- OKUDUKLARIM -->
@@ -526,94 +570,165 @@
     if (btn) { btn.textContent = '✓ Kaydedildi'; setTimeout(() => btn.textContent = 'Tercihleri Kaydet', 2000); }
   }
 
-  // ── Bültenlerim (kayıtlı aramalar) ───────────────────────
-  const KayitliArama = (() => {
-    const KEY = 'ihale_kayitli_aramalar_v1';
-    const get = () => { try { return JSON.parse(localStorage.getItem(KEY)) || []; } catch { return []; } };
-    const save = list => localStorage.setItem(KEY, JSON.stringify(list));
-    return {
-      liste: get,
-      sil: id => { save(get().filter(x => x.id !== id)); },
-      sayi: () => get().length,
-    };
-  })();
-
-  function filtrelerOzet(params) {
-    if (!params) return 'Tüm ihaleler';
+  // ── Bültenlerim (DB tabanlı) ─────────────────────────────
+  function filtrelerOzet(filtre) {
+    if (!filtre) return 'Tüm ihaleler';
     const p = [];
-    if (params.arama)    p.push(`"${params.arama}"`);
-    if (params.il)       p.push(`İl: ${params.il}`);
-    if (params.kategori) p.push(`Kategori: ${params.kategori}`);
-    if (params.tur)      p.push(`Tür: ${params.tur}`);
-    if (params.usul)     p.push(`Usul: ${params.usul}`);
-    if (params.minUyum && params.minUyum !== '0') p.push(`Min Uyum: %${params.minUyum}`);
-    if (params.idare)    p.push(`İdare: ${params.idare}`);
-    if (params.minBedel || params.maxBedel) {
-      const mn = params.minBedel ? `₺${(+params.minBedel/1e6).toFixed(1)}M` : '0';
-      const mx = params.maxBedel ? `₺${(+params.maxBedel/1e6).toFixed(1)}M` : '∞';
-      p.push(`Bütçe: ${mn}–${mx}`);
-    }
-    return p.length ? p.join(' · ') : 'Tüm ihaleler (filtre yok)';
+    if (filtre.kelime)   p.push(`"${filtre.kelime}"`);
+    if (filtre.il)       p.push(`İl: ${filtre.il}`);
+    if (filtre.tur)      p.push(`Tür: ${filtre.tur}`);
+    if (filtre.min_bedel) p.push(`Min: ₺${(+filtre.min_bedel/1e6).toFixed(1)}M`);
+    // localStorage uyumlu eski format
+    if (filtre.arama)    p.push(`"${filtre.arama}"`);
+    if (filtre.kategori) p.push(filtre.kategori);
+    return p.length ? p.join(' · ') : 'Tüm ihaleler';
   }
 
-  function filtrelerUrlYap(params) {
-    if (!params) return 'ihaleler';
+  function filtrelerUrlYap(filtre) {
+    if (!filtre) return 'ihaleler';
     const p = new URLSearchParams();
-    if (params.arama)    p.set('ara', params.arama);
-    if (params.il)       p.set('il', params.il);
-    if (params.kategori) p.set('kategori', params.kategori);
-    if (params.tur)      p.set('tur', params.tur);
-    if (params.usul)     p.set('usul', params.usul);
-    if (params.idare)    p.set('idare', params.idare);
+    if (filtre.kelime || filtre.arama) p.set('ara', filtre.kelime || filtre.arama);
+    if (filtre.il)    p.set('il', filtre.il);
+    if (filtre.tur)   p.set('tur', filtre.tur);
     const str = p.toString();
     return str ? `ihaleler?${str}` : 'ihaleler';
   }
 
   function tarihKisa(iso) {
     if (!iso) return '';
-    const d = new Date(iso);
-    return d.toLocaleDateString('tr-TR', { day: 'numeric', month: 'short', year: 'numeric' });
+    return new Date(iso).toLocaleDateString('tr-TR', { day:'numeric', month:'short', year:'numeric' });
   }
 
-  function bultenYukle() {
-    const liste = KayitliArama.liste();
+  async function bultenYukle() {
     const konteyner = document.getElementById('bulten-liste');
     const badge = document.getElementById('bulten-badge');
-    if (badge) { badge.textContent = liste.length; badge.style.display = liste.length ? '' : 'none'; }
-    if (!liste.length) {
-      konteyner.innerHTML = `
-        <div class="bulten-bos">
-          <div class="bos-ikon">⭐</div>
-          <p style="font-size:14px;font-weight:600;margin-bottom:8px;">Henüz kayıtlı aramanız yok</p>
-          <p style="font-size:13px;margin-bottom:16px;">İhaleler sayfasında filtreleri ayarlayıp "Aramayı Kaydet"e tıklayın. Buraya otomatik gelir.</p>
-          <a href="ihaleler" style="display:inline-block;background:var(--amber);color:var(--navy);padding:9px 20px;border-radius:6px;font-size:13px;font-weight:700;text-decoration:none;">İhaleler'e Git →</a>
-        </div>`;
+    konteyner.innerHTML = '<div style="text-align:center;padding:30px;color:var(--muted);">Yükleniyor…</div>';
+
+    // Oturum yoksa localStorage'a düş
+    const { data: { session } } = await sb.auth.getSession();
+    if (!session) {
+      // localStorage uyumluluk
+      let liste = [];
+      try { liste = JSON.parse(localStorage.getItem('ihale_kayitli_aramalar_v1')) || []; } catch(_){}
+      if (badge) { badge.textContent = liste.length; badge.style.display = liste.length ? '' : 'none'; }
+      if (!liste.length) { _bultenBos(konteyner); return; }
+      konteyner.innerHTML = liste.map(item => _bultenKartHtml({
+        id: item.id, ad: item.ad, filtre: item.params || {},
+        frekans: 'gunluk', email_aktif: false,
+        son_gonderim: null, olusturulma: item.tarih, _local: true,
+      })).join('');
       return;
     }
-    konteyner.innerHTML = liste.map(item => `
-      <div class="bulten-kart" id="bk-${item.id}">
-        <div class="bulten-ikon">⭐</div>
-        <div class="bulten-info">
-          <div class="bulten-ad">${item.ad}</div>
-          <div class="bulten-ozet">${filtrelerOzet(item.params)}</div>
-          <div class="bulten-tarih">Kaydedildi: ${tarihKisa(item.tarih)}</div>
-        </div>
-        <div class="bulten-actions">
-          <a href="${filtrelerUrlYap(item.params)}" class="bulten-btn-run">▶ Çalıştır</a>
-          <button class="bulten-btn-del" onclick="bultenSil(${item.id})">✕ Sil</button>
-        </div>
-      </div>`).join('');
+
+    const { data, error } = await sb.from('bultenler')
+      .select('id,ad,filtre,frekans,email_aktif,son_gonderim,olusturulma')
+      .order('olusturulma', { ascending: false });
+
+    if (error) {
+      if (error.code === '42P01') {
+        konteyner.innerHTML = '<div style="text-align:center;padding:30px;color:var(--muted);font-size:13px;">Bülten tablosu henüz oluşturulmadı.</div>';
+        return;
+      }
+      konteyner.innerHTML = `<div style="text-align:center;padding:30px;color:#f87171;font-size:13px;">Hata: ${error.message}</div>`;
+      return;
+    }
+
+    const liste = data || [];
+    if (badge) { badge.textContent = liste.length; badge.style.display = liste.length ? '' : 'none'; }
+    if (!liste.length) { _bultenBos(konteyner); return; }
+    konteyner.innerHTML = liste.map(_bultenKartHtml).join('');
   }
 
-  function bultenSil(id) {
-    KayitliArama.sil(id);
-    const el = document.getElementById('bk-' + id);
-    if (el) el.remove();
-    const badge = document.getElementById('bulten-badge');
-    const n = KayitliArama.sayi();
-    if (badge) { badge.textContent = n; badge.style.display = n ? '' : 'none'; }
-    if (!n) bultenYukle();
+  function _bultenBos(konteyner) {
+    konteyner.innerHTML = `
+      <div class="bulten-bos">
+        <div class="bos-ikon">⭐</div>
+        <p style="font-size:14px;font-weight:600;margin-bottom:8px;">Henüz bülteniniz yok</p>
+        <p style="font-size:13px;margin-bottom:16px;">Yukarıdaki "+ Yeni Bülten" butonuyla filtre kuralı oluşturun.<br>Her gece eşleşen ihaleler e-postayla gelir.</p>
+        <a href="ihaleler" style="display:inline-block;background:var(--amber);color:var(--navy);padding:9px 20px;border-radius:6px;font-size:13px;font-weight:700;text-decoration:none;">İhalelere Bak →</a>
+      </div>`;
   }
+
+  function _bultenKartHtml(b) {
+    const ozet = filtrelerOzet(b.filtre);
+    const url   = filtrelerUrlYap(b.filtre);
+    const tarih = tarihKisa(b.olusturulma);
+    const freknasEtk = b.frekans === 'haftalik' ? 'Haftalık' : 'Günlük';
+    const emailDurum = b.email_aktif
+      ? '<span style="color:#4ade80;font-size:11px;font-weight:700;">● E-posta AKTİF</span>'
+      : '<span style="color:var(--muted);font-size:11px;">○ E-posta kapalı</span>';
+    const sonG = b.son_gonderim ? `Son: ${tarihKisa(b.son_gonderim)}` : 'Henüz gönderilmedi';
+    const sil  = b._local
+      ? `onclick="bultenLocalSil(${b.id})"`
+      : `onclick="bultenDbSil('${b.id}')"`;
+    return `
+      <div class="bulten-kart" id="bk-${b.id}">
+        <div class="bulten-ikon">⭐</div>
+        <div class="bulten-info">
+          <div class="bulten-ad">${b.ad}</div>
+          <div class="bulten-ozet">${ozet}</div>
+          <div class="bulten-tarih" style="display:flex;gap:10px;flex-wrap:wrap;">
+            ${emailDurum} &nbsp;·&nbsp; ${freknasEtk} &nbsp;·&nbsp; ${sonG} &nbsp;·&nbsp; Oluşturuldu: ${tarih}
+          </div>
+        </div>
+        <div class="bulten-actions">
+          <a href="${url}" class="bulten-btn-run">▶ Çalıştır</a>
+          <button class="bulten-btn-del" ${sil}>✕ Sil</button>
+        </div>
+      </div>`;
+  }
+
+  async function bultenDbSil(id) {
+    if (!confirm('Bu bülteni silmek istiyor musunuz?')) return;
+    await sb.from('bultenler').delete().eq('id', id);
+    document.getElementById('bk-' + id)?.remove();
+    await bultenYukle();
+  }
+
+  function bultenLocalSil(id) {
+    try {
+      const k = 'ihale_kayitli_aramalar_v1';
+      const liste = JSON.parse(localStorage.getItem(k)) || [];
+      localStorage.setItem(k, JSON.stringify(liste.filter(x => x.id !== id)));
+    } catch(_) {}
+    document.getElementById('bk-' + id)?.remove();
+    bultenYukle();
+  }
+
+  window.yeniBultenAc = () => {
+    document.getElementById('bulten-form').style.display = 'block';
+    document.getElementById('bf-ad').focus();
+  };
+  window.yeniBultenKapat = () => {
+    document.getElementById('bulten-form').style.display = 'none';
+    ['bf-ad','bf-kelime','bf-il','bf-min'].forEach(id => document.getElementById(id).value = '');
+  };
+
+  window.bultenKaydet = async () => {
+    const ad = document.getElementById('bf-ad').value.trim();
+    if (!ad) { alert('Bülten adı zorunlu'); return; }
+    const filtre = {};
+    const kelime = document.getElementById('bf-kelime').value.trim();
+    const il     = document.getElementById('bf-il').value.trim();
+    const tur    = document.getElementById('bf-tur').value;
+    const min    = document.getElementById('bf-min').value;
+    const frekans = document.getElementById('bf-frekans').value;
+    if (kelime) filtre.kelime = kelime;
+    if (il)     filtre.il = il.toUpperCase();
+    if (tur)    filtre.tur = tur;
+    if (min)    filtre.min_bedel = parseInt(min);
+
+    const { data: { session } } = await sb.auth.getSession();
+    if (!session) { alert('Giriş yapmanız gerekiyor'); return; }
+
+    const { error } = await sb.from('bultenler').insert({
+      kullanici_id: session.user.id,
+      ad, filtre, frekans, email_aktif: true,
+    });
+    if (error) { alert('Kayıt hatası: ' + error.message); return; }
+    yeniBultenKapat();
+    await bultenYukle();
+  };
 
   // ── Okuduklarım ───────────────────────────────────────────
   async function okuduklarimiYukle() {
