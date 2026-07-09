@@ -1215,14 +1215,12 @@ ihaleciler EKAP dışında gazete ve "istihbarat" kaynaklı ilanlar da gösteriy
 - EKAP-dışı kaynak = kendi kazıma/ortaklık gerektiriyor; önce EKAP derinleştir.
 - Ertelenmiş (9.6'da işlenmiş).
 
-### 🟡 6. Bülten Sistemi (Kullanıcı tanımlı bildirim kuralları) — YAPILIYOR (9 Temmuz 2026)
-ihaleciler'de kullanıcılar kendi filtrelerini "bülten" olarak kaydedip e-posta alıyor.
-- Bizde `takipler` var (tek ihale takibi) ama kural tabanlı bülten yok.
-- Plan: `bultenler` tablosu (kullanıcı_id, filtre_json, aktif), `bulten_gonder.py` scripti, `bildirimler.html`'de Bültenlerim UI
-- [ ] bultenler tablo SQL + Supabase'de oluştur
-- [ ] bulten_gonder.py scripti (notify.py gibi gece çalışır)
-- [ ] bildirimler.html Bültenlerim sekmesi UI
-- [ ] run_scraper.sh'e bulten_gonder.py ekle (VDS'de)
+### ✅ 6. Bülten Sistemi — TAMAMLANDI (9 Temmuz 2026)
+- `bultenler` tablosu VDS Supabase'de oluşturuldu + GRANT verildi
+- `bulten_gonder.py`: gece çalışan e-posta gönderici; filtre eşleşmesi bulur → Resend ile HTML e-posta gönderir → son_gonderim günceller
+- `bildirimler.html` Bültenlerim sekmesi: DB tabanlı, yeni bülten formu (ad/kelime/il/tür/min bedel/frekans), e-posta durum göstergesi, sil
+- `run_scraper.sh`'e `bulten_gonder.py` eklendi — her gece scraper'dan sonra çalışır
+- **Test:** `venv/bin/python bulten_gonder.py` → "Aktif bülten yok, çıkılıyor" ✅
 
 ### 🔲 7. Sözleşme Listesi — KÜÇÜK ÖNCELİK
 ihaleciler'de kullanıcılar kazandıkları ihaleleri "sözleşme listesi"ne ekleyebiliyor.
