@@ -1,6 +1,6 @@
 # İhalePlatform — Yapılacaklar Listesi
 
-> Son güncelleme: 9 Temmuz 2026 (Fable 5 inceleme oturumu — ihaleciler.com yeniden canlı incelendi, firma verisi & ihaleciler'i geçme MASTER PLANI eklendi → en alttaki "🏆 ÖNCELİK 10" bölümüne bak; Sonnet o bölümü uygulayacak)
+> Son güncelleme: 10 Temmuz 2026 (Opus oturumu — DNS cutover TAMAMLANDI, canlı site VDS'te; Resend domain doğrulandı; SMTP gönderici adresi değişimi YARIM KALDI → en alttaki "📍 SON DURUM" bölümüne bak, oradan devam et)
 > Bu dosya, Code modunda kodlama yaparken referans alınacak. Her madde mümkün olduğunca net ve uygulanabilir yazıldı.
 > 29 Haz 2026: **tendermeister.com** ve **ihaleciler.com** canlı olarak detaylı gezildi; rekabet/özellik-açığı analizi en alta "🆚 REKABET ANALİZİ" bölümüne eklendi (Öncelik 9). Önce o bölümü oku.
 
@@ -1243,10 +1243,34 @@ ihaleciler'de kullanıcılar kazandıkları ihaleleri "sözleşme listesi"ne ekl
 > DNS A → VDS IP (proxied), SSL Full(strict). (4) SITE_URL=https, auth restart. Canlı test: 8 sayfa 200,
 > auth/REST/RPC/harita hepsi gerçek veriyle çalışıyor.
 >
-> **🔴 CUTOVER SONRASI KALAN (kullanıcı):** (a) **Resend e-posta domain doğrulama** — signup onay mailleri için
-> (SITE_URL hazır ama domain doğrulanmadan mail gitmez; "🤝 DEVİR" Adım 1). (b) **Eski servisleri kapat** —
-> Render + GitHub Actions scraper (VDS devraldı). (c) Küçük güvenlik: UFW `8000/tcp Anywhere` açık (Kong doğrudan;
-> nginx dışından kapatılabilir). Aşağıdaki eski "CUTOVER GEREK" notları TARİHSELDİR (artık yapıldı).
+> **✅ Resend domain doğrulama TAMAMLANDI (10 Tem, kullanıcı):** `ihaleglobal.com` Resend'e eklendi, region
+> Ireland (eu-west-1). 4 DNS kaydı Cloudflare'e eklendi (DNS only/gri bulut): TXT `resend._domainkey` (DKIM),
+> MX `send.ihaleglobal.com`→`feedback-smtp.eu-west-1.amazonses.com` (öncelik 10), TXT `send.ihaleglobal.com`
+> (SPF `v=spf1 include:amazonses.com ~all`), TXT `_dmarc` (`v=DMARC1; p=none;`). Resend panelinde
+> **Status: Verified** (Domain added → DNS verified → Domain verified, hepsi yeşil). Domain artık mail
+> gönderebilir durumda.
+>
+> **🔴 SIRADAKİ ADIM (yarım kaldı — bir sonraki AI/oturum buradan devam etsin):** SMTP göndericisini test
+> adresinden (`onboarding@resend.dev`) gerçek domain'e (`noreply@ihaleglobal.com`) çevirmek. Komut hazırdı,
+> **kullanıcı SSH aracını reddetti (dur dedi)** — muhtemelen elle/dikkatli yapmak istiyor ya da onay vermeden
+> önce bu dosyayı görmek istedi. **Otomatik çalıştırma, önce kullanıcıya sor.** Adımlar:
+> ```bash
+> ssh -i ~/.ssh/ihale_oracle root@195.85.207.126
+> cd /opt/supabase/docker
+> cp .env .env.bak.$(date +%s)          # yedek
+> sed -i 's|^SMTP_ADMIN_EMAIL=.*|SMTP_ADMIN_EMAIL=noreply@ihaleglobal.com|' .env
+> grep '^SMTP_ADMIN_EMAIL=' .env         # doğrula
+> docker compose up -d auth              # auth container'ı yeniden başlat
+> # test: https://ihaleglobal.com üzerinden yeni bir e-postayla signup dene,
+> # Resend panel → Emails sekmesinde "Delivered" görünmeli (artık onboarding@resend.dev DEĞİL, gerçek gönderim)
+> ```
+> ⚠️ Not: Mevcut Resend API key'i (`.env`'deki `SMTP_PASS`) muhtemelen "sadece-gönderim" yetkiliydi (bkz. eski
+> not: domain API'si 401 veriyordu) — domain artık panelden doğrulandığı için bu SORUN OLMAMALI, ama test
+> sonrası "Delivered" değil "Bounced/Failed" görürsen key yetkisini kontrol et.
+>
+> **Diğer kalan:** (b) **Eski servisleri kapat** — Render + GitHub Actions scraper (VDS devraldı, artık gereksiz).
+> (c) Küçük güvenlik: UFW `8000/tcp Anywhere` açık (Kong doğrudan erişilebilir; nginx dışından kapatılabilir,
+> `ufw delete allow 8000/tcp` + doğrula ki nginx proxy'si 127.0.0.1 üzerinden hâlâ çalışıyor).
 
 <details><summary>(tarihsel — cutover öncesi durum notları)</summary>
 
