@@ -1,8 +1,9 @@
 name: EKAP Scraper + Bildirimler
 
+# NOT (10 Tem 2026): Otomatik zamanlama KAPATILDI — VDS cron (195.85.207.126,
+# /opt/ihale-platform/backend/run_scraper.sh, 02:00 UTC) bu işi devraldı.
+# Bu workflow artık sadece manuel tetiklenebilir (yedek/acil durum).
 on:
-  schedule:
-    - cron: '0 2 * * *'   # Her gece saat 05:00 TR (UTC+3 = UTC 02:00)
   workflow_dispatch:        # Manuel tetikleme
 
 jobs:

@@ -1250,27 +1250,28 @@ ihaleciler'de kullanıcılar kazandıkları ihaleleri "sözleşme listesi"ne ekl
 > **Status: Verified** (Domain added → DNS verified → Domain verified, hepsi yeşil). Domain artık mail
 > gönderebilir durumda.
 >
-> **🔴 SIRADAKİ ADIM (yarım kaldı — bir sonraki AI/oturum buradan devam etsin):** SMTP göndericisini test
-> adresinden (`onboarding@resend.dev`) gerçek domain'e (`noreply@ihaleglobal.com`) çevirmek. Komut hazırdı,
-> **kullanıcı SSH aracını reddetti (dur dedi)** — muhtemelen elle/dikkatli yapmak istiyor ya da onay vermeden
-> önce bu dosyayı görmek istedi. **Otomatik çalıştırma, önce kullanıcıya sor.** Adımlar:
-> ```bash
-> ssh -i ~/.ssh/ihale_oracle root@195.85.207.126
-> cd /opt/supabase/docker
-> cp .env .env.bak.$(date +%s)          # yedek
-> sed -i 's|^SMTP_ADMIN_EMAIL=.*|SMTP_ADMIN_EMAIL=noreply@ihaleglobal.com|' .env
-> grep '^SMTP_ADMIN_EMAIL=' .env         # doğrula
-> docker compose up -d auth              # auth container'ı yeniden başlat
-> # test: https://ihaleglobal.com üzerinden yeni bir e-postayla signup dene,
-> # Resend panel → Emails sekmesinde "Delivered" görünmeli (artık onboarding@resend.dev DEĞİL, gerçek gönderim)
-> ```
-> ⚠️ Not: Mevcut Resend API key'i (`.env`'deki `SMTP_PASS`) muhtemelen "sadece-gönderim" yetkiliydi (bkz. eski
-> not: domain API'si 401 veriyordu) — domain artık panelden doğrulandığı için bu SORUN OLMAMALI, ama test
-> sonrası "Delivered" değil "Bounced/Failed" görürsen key yetkisini kontrol et.
+> **✅ SMTP gönderici değişimi TAMAMLANDI (10 Tem 2026, kullanıcı tam onay verdi):** VDS
+> `/opt/supabase/docker/.env`'de `SMTP_ADMIN_EMAIL=noreply@ihaleglobal.com` yapıldı (yedek `.env.bak.<ts>`
+> alındı), `docker compose up -d auth` ile yeniden başlatıldı. Test signup (`smtptest.*@gmail.com`) → HTTP 200,
+> `confirmation_sent_at` set, auth loglarında SMTP hatası YOK (istek 3.3sn — gerçek SMTP gönderim gecikmesi,
+> hata olsa anında dönerdi). Artık gerçek kullanıcılara `noreply@ihaleglobal.com`'dan mail gidiyor.
 >
-> **Diğer kalan:** (b) **Eski servisleri kapat** — Render + GitHub Actions scraper (VDS devraldı, artık gereksiz).
-> (c) Küçük güvenlik: UFW `8000/tcp Anywhere` açık (Kong doğrudan erişilebilir; nginx dışından kapatılabilir,
-> `ufw delete allow 8000/tcp` + doğrula ki nginx proxy'si 127.0.0.1 üzerinden hâlâ çalışıyor).
+> **🟡 GitHub Actions scraper TAMAMLANDI (10 Tem):** `.github/workflows/ekap_scraper.yml`'deki `schedule`
+> tetikleyicisi kaldırıldı (sadece `workflow_dispatch` — manuel/yedek olarak kalabilir). VDS cron zaten tek
+> aktif scraper. Dosya SİLİNMEDİ (acil durumda elle tetiklenebilsin diye).
+>
+> **⚠️ ÖNEMLİ DÜZELTME — Render KAPATILMADI, kapatılmamalı:** Bu dosyadaki eski not "Render + GitHub Actions
+> = eski/gereksiz servisler" diyordu ama bu YANLIŞ/GÜNCEL DEĞİL. `js/api.js`'deki `CONFIG.BASE_URL` hâlâ
+> `https://ihale-api.onrender.com`'a işaret ediyor — yani **frontend'in AI analiz, ödeme (İyzico), plan-iptal,
+> firma-AI-yorum gibi TÜM backend API çağrıları hâlâ Render'a gidiyor**, VDS'in kendi FastAPI'sine (`/api/`
+> proxy, nginx üzerinden 127.0.0.1:8080) DEĞİL. Render'ı kapatmak bu özellikleri anında kırar. Render'ı
+> güvenle kapatmak için önce `js/api.js:15`'teki `BASE_URL`'i `https://ihaleglobal.com/api` yapıp uçtan uca
+> test etmek gerekir (ayrı bir iş — bu oturumda yapılmadı, sadece tespit edildi).
+>
+> **🔲 KALAN (küçük, ilk gerçek deneme UFW klasik güvenlik sınıflandırıcısı tarafından engellendi — kullanıcı
+> özel onayı gerek):** UFW `8000/tcp Anywhere` açık duruyor (Kong'a nginx dışından doğrudan erişilebiliyor).
+> nginx zaten `127.0.0.1:8000`'e proxy yapıyor (`/etc/nginx/snippets/ihale-locations.conf:8`) → dışarıdan
+> erişime gerek yok, güvenle kapatılabilir. Komut: `ssh ... "ufw delete allow 8000/tcp"` (v4+v6 iki kural).
 
 <details><summary>(tarihsel — cutover öncesi durum notları)</summary>
 
