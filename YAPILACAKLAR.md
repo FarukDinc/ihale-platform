@@ -1250,10 +1250,12 @@ ihaleciler'de kullanıcılar kazandıkları ihaleleri "sözleşme listesi"ne ekl
 
 ### 🟡 İLERLEME (9 Tem 2026, Sonnet oturumu — kod hazır, DB migration'ları BEKLİYOR)
 
-> Bu oturumda A2/A3/B1/B2/B3/C1 için KOD yazıldı ve `firmalar.html` local önizlemede doğrulandı
-> (boş-durum + sidebar + CSV/paylaş — hepsi çalışıyor). **SSH bu oturumda auto-mode tarafından
-> engellendi** (üretim VDS'e yazma — kullanıcı onayı gerek) → aşağıdaki SQL migration'ları HENÜZ
-> VDS'e ve managed Supabase'e uygulanmadı. Bir sonraki adım bunları uygulamak.
+> **GÜNCELLEME (9 Tem, Opus oturumu):** Kullanıcı açık SSH yetkisi verdi → VDS'e 3 migration UYGULANDI +
+> DOĞRULANDI, `--tum-kayitlar` geniş backfill canlı EKAP'a karşı test edildi ve ÇALIŞIYOR (2 sayfada 189
+> sonuç/0 hata), arka planda büyük parti çalışıyor (35 → 700+ sonuç ve artıyor). Detay: aşağıdaki
+> "VDS'E UYGULANDI" + "A3 CANLI DOĞRULANDI" bloklarında. Managed bilinçli atlandı (donmuş, cutover gerek).
+>
+> Bu oturumda A2/A3/B1/B2/B3/C1 için KOD yazıldı ve `firmalar.html` local önizlemede doğrulandı.
 
 - ✅ **A2+A3 kod hazır** (`backend/ekap_sonuc_backfill.py`): çok kısımlı (kısım/lot) desteği eklendi
   (`sonuc_kayitlari_olustur()` artık liste döner, her kısım `(ilan_id, kisim_no)` ile upsert edilir);
