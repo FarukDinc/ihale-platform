@@ -700,6 +700,31 @@
         </div>
       </div>
 
+      <!-- GÜNLÜK CANLI SAYAÇ -->
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px;" id="gunluk-strip">
+        <div style="background:var(--navy-mid);border:1px solid var(--border);border-radius:10px;padding:14px 18px;display:flex;align-items:center;gap:12px;">
+          <span style="font-size:22px;">📅</span>
+          <div>
+            <div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;">Bugün Eklendi</div>
+            <div style="font-size:22px;font-weight:800;color:var(--white);" id="gs-eklendi">—</div>
+          </div>
+        </div>
+        <div style="background:var(--navy-mid);border:1px solid var(--border);border-radius:10px;padding:14px 18px;display:flex;align-items:center;gap:12px;">
+          <span style="font-size:22px;">⏰</span>
+          <div>
+            <div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;">Bugün Son Teklif</div>
+            <div style="font-size:22px;font-weight:800;color:var(--amber);" id="gs-sonteklif">—</div>
+          </div>
+        </div>
+        <div style="background:var(--navy-mid);border:1px solid var(--border);border-radius:10px;padding:14px 18px;display:flex;align-items:center;gap:12px;">
+          <span style="font-size:22px;">🏆</span>
+          <div>
+            <div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;">Toplam Kazanım Kaydı</div>
+            <div style="font-size:22px;font-weight:800;color:#4ade80;" id="gs-kazanim">—</div>
+          </div>
+        </div>
+      </div>
+
       <!-- KPI CARDS -->
       <div class="kpi-grid">
         <div class="kpi-card">
@@ -1231,6 +1256,13 @@
       setVal('kpi-buyuk', buyuk.count);
       setVal('hdr-bugun', bugunEklenen.count);
       setVal('hdr-songun', bugunSonGun.count);
+      setVal('gs-eklendi', bugunEklenen.count);
+      setVal('gs-sonteklif', bugunSonGun.count);
+      // Toplam kazanım kaydı (ihale_sonuclari)
+      try {
+        const { count: kazanimSay } = await sb.from('ihale_sonuclari').select('id', { count: 'exact', head: true });
+        setVal('gs-kazanim', kazanimSay);
+      } catch (_) {}
       const rc = document.getElementById('results-count');
       if (rc) rc.textContent = `${(aktif.count ?? 0).toLocaleString('tr')} sonuç`;
     } catch (e) {
