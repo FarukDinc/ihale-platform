@@ -1,6 +1,6 @@
 # İhalePlatform — Yapılacaklar Listesi
 
-> Son güncelleme: 10 Temmuz 2026 (Opus oturumu — DNS cutover TAMAMLANDI, canlı site VDS'te; Resend domain doğrulandı; SMTP gönderici adresi değişimi YARIM KALDI → en alttaki "📍 SON DURUM" bölümüne bak, oradan devam et)
+> Son güncelleme: 10 Temmuz 2026 (Sonnet oturumu — SMTP gönderici değişimi + GH Actions kapatma TAMAMLANDI, D2 emsal listesi + bildirim tercihi UI eklendi; 3 madde kullanıcının ÖZEL onayını bekliyor (UFW port, RESEND_API_KEY, Render redeploy) → en alttaki "📍 SON DURUM" bölümüne bak, oradan devam et)
 > Bu dosya, Code modunda kodlama yaparken referans alınacak. Her madde mümkün olduğunca net ve uygulanabilir yazıldı.
 > 29 Haz 2026: **tendermeister.com** ve **ihaleciler.com** canlı olarak detaylı gezildi; rekabet/özellik-açığı analizi en alta "🆚 REKABET ANALİZİ" bölümüne eklendi (Öncelik 9). Önce o bölümü oku.
 
@@ -1272,6 +1272,45 @@ ihaleciler'de kullanıcılar kazandıkları ihaleleri "sözleşme listesi"ne ekl
 > özel onayı gerek):** UFW `8000/tcp Anywhere` açık duruyor (Kong'a nginx dışından doğrudan erişilebiliyor).
 > nginx zaten `127.0.0.1:8000`'e proxy yapıyor (`/etc/nginx/snippets/ihale-locations.conf:8`) → dışarıdan
 > erişime gerek yok, güvenle kapatılabilir. Komut: `ssh ... "ufw delete allow 8000/tcp"` (v4+v6 iki kural).
+
+---
+
+## 📍 SON DURUM (10 Tem 2026, Sonnet oturumu, devamı) — ÖNCE BUNU OKU
+
+> Bu oturumda tamamlananlar + **3 madde kullanıcının ÖZEL onayını bekliyor** (genel "her şeyi yap" yetkisi
+> production değişiklikleri için otomatik güvenlik sınıflandırıcısını geçmiyor — her biri ayrı ayrı
+> onaylanmalı, aşağıda net komutlarıyla yazılı).
+
+**✅ Bu oturumda TAMAMLANANLAR:**
+1. SMTP göndericisi `noreply@ihaleglobal.com`'a çevrildi + test signup ile doğrulandı (auth loglarında hata yok).
+2. GitHub Actions scraper zamanlaması kapatıldı (`.github/workflows/ekap_scraper.yml` — artık sadece manuel).
+3. **D2 tamamlandı:** `ihale-detay.html` kazanma bandı kutusuna "bu idare/sektörde son sözleşmeler" emsal
+   listesi eklendi (ihale_sonuclari⋈ilanlar, son 5 kayıt). VDS canlı veriyle doğrulandı.
+4. **Bildirim servisinin son parçası tamamlandı:** `profil.html`'e e-posta bildirim tercihi UI'ı eklendi
+   (bildirim_email/bildirim_son_teklif/bildirim_gun_oncesi — DB kolonları zaten VDS'te vardı). Kod
+   `anahtar_kelimeler` ile aynı savunmacı yazım deseninde (kolon yoksa sessiz hata). Auth olmadığı için
+   canlı round-trip test edilemedi ama syntax/render doğrulandı.
+
+**⚠️ ÖNEMLİ BULGU — Render backend HÂLÂ CANLI KULLANIMDA, kapatılmamalı:**
+`js/api.js:15` `CONFIG.BASE_URL` hâlâ `https://ihale-api.onrender.com`'a işaret ediyor. AI analiz, İyzico
+ödeme, plan-iptal, firma-AI-yorum gibi TÜM backend çağrıları hâlâ Render'a gidiyor — VDS'in kendi FastAPI'sine
+(`ihale-api` systemd, nginx `/api/` proxy) DEĞİL. **Ayrıca Render'daki deploy GÜNCEL DEĞİL:** `bb88c40`
+(Faz D1, `/ai/firma-yorum`) ve `4fc8a29` (`/plan-iptal`) commit'leri push'landı ama Render'da hâlâ 404
+dönüyor (kod repoda var, canlıda yok — auto-deploy tetiklenmemiş ya da sessizce fail olmuş). **Etki:**
+kullanıcı "Analizi Oluştur" veya plan iptali denediğinde arka planda 404 alıyor. **Kullanıcı Render
+dashboard'undan manuel "Deploy latest commit" tetiklemeli** (bu oturumda Render API erişimi/credential yok).
+
+**🔲 KULLANICI ÖZEL ONAYI BEKLEYEN 3 MADDE (genel yetki yeterli görülmedi, ayrı ayrı sorulmalı):**
+1. **UFW `8000/tcp` kapatma** — `ssh -i ~/.ssh/ihale_oracle root@195.85.207.126 "ufw delete allow 8000/tcp"`
+   (v4+v6 iki satır). Güvenli: nginx zaten 127.0.0.1 üzerinden proxy yapıyor.
+2. **`backend/.env`'e RESEND_API_KEY ekleme** — notify.py'nin Resend HTTP API'si (SMTP'den ayrı) için gerekli.
+   Aynı key zaten `/opt/supabase/docker/.env`'deki `SMTP_PASS`'te var, sadece kopyalanacak. Bu YAPILMADAN
+   bildirimler (yukarıdaki UI ile opt-in olsalar bile) gönderilemez.
+3. **Render'da manuel redeploy tetikleme** (yukarıya bak) — D1 (AI firma yorumu) ve plan-iptal canlıya
+   çıkması için şart.
+
+**Sıradaki mantıklı adım (bu 3 onay gelince):** notify.py'yi cron'da test et (artık gerçek opt-in kullanıcı +
+RESEND_API_KEY olacak), sonra C4/E1/E3/E4'e geç (bkz. yukarıdaki "10.F Uygulama sırası").
 
 <details><summary>(tarihsel — cutover öncesi durum notları)</summary>
 
