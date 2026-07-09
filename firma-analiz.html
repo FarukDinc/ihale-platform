@@ -331,6 +331,7 @@
               <div style="font-size:13px;color:var(--muted);">Sonuç verisi yükleniyor…</div>
             </div>
           </div>
+          <div id="pivot-kirilim-container"></div>
         </div>
 
         <!-- İHALELER (katıldığı/takip edilen) -->
@@ -421,9 +422,52 @@
     return b.toLocaleString('tr') + ' TL';
   }
 
+  // ÖNCELİK 10 Faz C2 — analiz_pivot RPC'sinden idare/sektör kırılımı (RPC henüz DB'ye
+  // uygulanmadıysa sessizce atlanır, sayfa eskisi gibi çalışmaya devam eder).
+  let _pivotYuklendi = false;
+  async function pivotKirilimGoster() {
+    if (_pivotYuklendi || !FIRMA) return;
+    const hedef = document.getElementById('pivot-kirilim-container');
+    if (!hedef) return;
+    try {
+      const [{ data: idareData, error: e1 }, { data: kategoriData, error: e2 }] = await Promise.all([
+        sb.rpc('analiz_pivot', { p_grup: 'idare', p_firma: FIRMA }),
+        sb.rpc('analiz_pivot', { p_grup: 'kategori', p_firma: FIRMA }),
+      ]);
+      if (e1 || e2) throw (e1 || e2);
+      _pivotYuklendi = true;
+      const satirHtml = (list, ikon) => (list || []).slice(0, 8).map(r => `
+        <div style="display:flex;justify-content:space-between;align-items:center;font-size:12.5px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.04);">
+          <span style="color:var(--white);">${ikon} ${r.grup_deger}</span>
+          <span style="display:flex;gap:10px;color:var(--muted);">
+            <span style="color:var(--amber);font-weight:700;">${r.ihale_sayisi} iş</span>
+            ${r.ort_tenzilat != null ? `<span>ort. %${Number(r.ort_tenzilat).toFixed(1)} tenz.</span>` : ''}
+          </span>
+        </div>`).join('') || '<div style="color:var(--muted);font-size:12.5px;">Veri yok.</div>';
+
+      if ((idareData && idareData.length) || (kategoriData && kategoriData.length)) {
+        hedef.innerHTML = `
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:18px;">
+            <div class="kpi-card" style="text-align:left;">
+              <div class="kpi-label" style="margin-bottom:8px;">🏛️ En Çok Çalıştığı İdareler</div>
+              ${satirHtml(idareData, '📍')}
+            </div>
+            <div class="kpi-card" style="text-align:left;">
+              <div class="kpi-label" style="margin-bottom:8px;">🏭 Sektör Kırılımı</div>
+              ${satirHtml(kategoriData, '🏷️')}
+            </div>
+          </div>`;
+      }
+    } catch (err) {
+      // analiz_pivot RPC henüz uygulanmamış (managed/VDS migration bekliyor) — sessizce geç.
+      console.info('analiz_pivot henüz kullanılamıyor (migration bekliyor):', err?.message || err);
+    }
+  }
+
   function sonuclariGoster() {
     const cont = document.getElementById('sonuclar-container');
     if (!cont) return;
+    pivotKirilimGoster();
     if (!sonucVeri.length) {
       cont.innerHTML = `<div class="veri-yok-card">
         <div class="veri-yok-icon">🔍</div>
@@ -587,6 +631,8 @@
 
   async function firmaYukle() {
     if (!FIRMA) return;
+    _pivotYuklendi = false;
+    document.getElementById('pivot-kirilim-container').innerHTML = '';
     sonAramaKaydet(FIRMA);
     document.getElementById('arama-wrap').style.display = 'none';
     document.getElementById('firma-icerik').style.display = 'block';

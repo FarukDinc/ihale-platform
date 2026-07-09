@@ -367,6 +367,12 @@
               <canvas id="durum-chart"></canvas>
             </div>
           </div>
+          <!-- ÖNCELİK 10 Faz C3 — analiz_pivot RPC'sinden kazanan firma dağılımı (RPC henüz
+               DB'ye uygulanmadıysa boş kalır, sayfanın geri kalanı etkilenmez). -->
+          <div id="kazanan-firma-card" class="detay-card" style="margin-bottom:20px; display:none;">
+            <div class="card-title">🏆 Kazanan Firmalar (sonuçlanan ihaleler)</div>
+            <div id="kazanan-firma-list" class="tur-list"></div>
+          </div>
         </div>
 
         <!-- İHALE LİSTESİ -->
@@ -717,6 +723,30 @@
     kategoriBreakdown(tumIhaleler);
     usulBreakdown(tumIhaleler);
     durumChart(tumIhaleler);
+    kazananFirmalarGoster();
+  }
+
+  // ÖNCELİK 10 Faz C3 — analiz_pivot RPC'sinden bu idarenin kazanan firma dağılımı
+  // (RPC henüz DB'ye uygulanmadıysa kart gizli kalır, sayfanın geri kalanı etkilenmez).
+  async function kazananFirmalarGoster() {
+    try {
+      const { data, error } = await sb.rpc('analiz_pivot', { p_grup: 'firma', p_idare: KURUM });
+      if (error) throw error;
+      if (!data || !data.length) return;
+      document.getElementById('kazanan-firma-list').innerHTML = data.slice(0, 12).map(r => {
+        const max = data[0].ihale_sayisi || 1;
+        return `<div class="tur-item">
+          <div class="tur-header">
+            <span class="tur-ad">🏢 ${r.grup_deger}</span>
+            <span class="tur-sayi">${r.ihale_sayisi} iş${r.ort_tenzilat != null ? ` · ort. %${Number(r.ort_tenzilat).toFixed(1)} tenz.` : ''}</span>
+          </div>
+          <div class="tur-bar"><div class="tur-fill" style="width:${(r.ihale_sayisi/max*100).toFixed(0)}%"></div></div>
+        </div>`;
+      }).join('');
+      document.getElementById('kazanan-firma-card').style.display = 'block';
+    } catch (err) {
+      console.info('analiz_pivot henüz kullanılamıyor (migration bekliyor):', err?.message || err);
+    }
   }
 
   main().catch(e => {

@@ -10,7 +10,7 @@ BEGIN;
 
 CREATE OR REPLACE FUNCTION analiz_pivot(
   p_grup      TEXT,               -- 'yil' | 'kategori' | 'idare' | 'il' | 'usul' | 'tur' | 'firma'
-  p_firma     TEXT DEFAULT NULL,  -- normalize_ad ile eşleşir
+  p_firma     TEXT DEFAULT NULL,  -- ham firma adı da olur — içeride normalize_firma() ile karşılaştırılır
   p_idare     TEXT DEFAULT NULL,
   p_kategori  TEXT DEFAULT NULL,
   p_il        TEXT DEFAULT NULL,
@@ -60,7 +60,7 @@ BEGIN
     JOIN ilanlar i ON i.id = s.ilan_id
     LEFT JOIN yukleniciler y ON y.id = s.yuklenici_id
     WHERE s.kazanan_teklif IS NOT NULL
-      AND ($1 IS NULL OR y.normalize_ad = $1 OR normalize_firma(s.kazanan_firma) = $1)
+      AND ($1 IS NULL OR y.normalize_ad = normalize_firma($1) OR normalize_firma(s.kazanan_firma) = normalize_firma($1))
       AND ($2 IS NULL OR i.idare = $2)
       AND ($3 IS NULL OR i.kategori = $3)
       AND ($4 IS NULL OR i.il = $4)

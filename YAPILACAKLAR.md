@@ -1281,8 +1281,23 @@ ihaleciler'de kullanıcılar kazandıkları ihaleleri "sözleşme listesi"ne ekl
   `firmalar.html` linkleri bu yüzden `f.ad` (görünen ad) kullanıyor, `f.normalizeAd` değil.
 - ✅ **C1 kod hazır**: `backend/migration_analiz_rpc.sql` → `analiz_pivot(p_grup, p_firma, p_idare,
   p_kategori, p_il, p_yil)` RPC'si (whitelist'li dinamik GROUP BY, 7 kırılım). **UYGULANMADI.**
-- [ ] 🔴 **C2/C3/C4 YAPILMADI**: firma-analiz.html/kurum-analiz.html'in `analiz_pivot` RPC'sine
-  bağlanması henüz yapılmadı (RPC canlıda doğrulanmadan bağlamak riskli — önce migration uygulanmalı).
+  🐛 Yazım sırasında bulunan+düzeltilen bug: `p_firma` filtresi ham firma adını normalize etmeden
+  `normalize_ad`'a karşı karşılaştırıyordu (asla eşleşmezdi) — artık `normalize_firma($1)` ile sarmalanıyor.
+- ✅ **C2 TAMAMLANDI (frontend, RPC'siz de güvenli)**: `firma-analiz.html` Sonuçlar sekmesine
+  `pivotKirilimGoster()` eklendi — `analiz_pivot('idare', p_firma=FIRMA)` ve `('kategori', ...)` çağırıp
+  "En Çok Çalıştığı İdareler" + "Sektör Kırılımı" kartlarını gösterir. RPC yoksa (`Could not find function`)
+  `console.info` ile sessizce loglanır, sayfa hiç etkilenmez — local önizlemede doğrulandı (hata yok,
+  boş-durum kartı normal render oldu). Firma değişince pivot cache'i sıfırlanıyor (`_pivotYuklendi`).
+- ✅ **C3 TAMAMLANDI (frontend, RPC'siz de güvenli)**: `kurum-analiz.html` Dağılım Analizi sekmesine
+  "🏆 Kazanan Firmalar" kartı eklendi (`analiz_pivot('firma', p_idare=KURUM)`) — RPC yoksa kart
+  `display:none` kalır (local önizlemede doğrulandı, konsol hatasız). Bu, ihaleciler'in "idare hangi
+  firmalarla çalışıyor" görünümüne parite.
+- [ ] 🔴 **C4 YAPILMADI**: eşik katsayısı kolonu/filtresi henüz eklenmedi (scraper + DB + UI gerekiyor,
+  ayrı bir iş — bkz. madde 4 "İHALECİLER.COM EKSİKLERİ").
+- ⚠️ **ÖNEMLİ — bu oturumda SSH production'a engellendi**: kullanıcı "otomatik onay" dedi ama auto-mode
+  classifier'ı SSH'ı yine de bloke etti ("prod hedefini bu oturumda açıkça adıyla anmalısın" gerekçesiyle).
+  Yani C2/C3'ün gerçek veriyle çalıştığı HENÜZ CANLI DOĞRULANMADI — sadece "RPC yokken bozulmuyor" doğrulandı.
+  Migration'lar uygulanınca (↓) bu iki ekranı gerçek firma/idare ile tekrar kontrol et.
 
 #### 🔑 SIRADAKİ AI/KULLANICI İÇİN — DB migration'larını uygula (SSH gerekiyor, bu oturumda engellendi)
 
