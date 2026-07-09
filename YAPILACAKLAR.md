@@ -1,6 +1,6 @@
 # İhalePlatform — Yapılacaklar Listesi
 
-> Son güncelleme: 8 Temmuz 2026 (otonom oturum — SMTP kuruldu, güvenlik/VDS doğrulandı, devir bloğu eklendi → "DEVİR — SIRADAKİ AI" bölümüne bak)
+> Son güncelleme: 9 Temmuz 2026 (Fable 5 inceleme oturumu — ihaleciler.com yeniden canlı incelendi, firma verisi & ihaleciler'i geçme MASTER PLANI eklendi → en alttaki "🏆 ÖNCELİK 10" bölümüne bak; Sonnet o bölümü uygulayacak)
 > Bu dosya, Code modunda kodlama yaparken referans alınacak. Her madde mümkün olduğunca net ve uygulanabilir yazıldı.
 > 29 Haz 2026: **tendermeister.com** ve **ihaleciler.com** canlı olarak detaylı gezildi; rekabet/özellik-açığı analizi en alta "🆚 REKABET ANALİZİ" bölümüne eklendi (Öncelik 9). Önce o bölümü oku.
 
@@ -1226,3 +1226,155 @@ ihaleciler EKAP dışında gazete ve "istihbarat" kaynaklı ilanlar da gösteriy
 ihaleciler'de kullanıcılar kazandıkları ihaleleri "sözleşme listesi"ne ekleyebiliyor.
 - Bizde `teklifler` tablosu var (taslak/gönderildi durumu) — sözleşmeye dönüştürme akışı eklenebilir.
 - Düşük öncelik; teklif modülü stabil olunca.
+
+---
+
+# 🏆 ÖNCELİK 10 — FİRMA VERİSİ MASTER PLANI: İHALECİLER'İ YAKALA VE GEÇ (9 Tem 2026, Fable 5 analizi)
+
+> **BU BÖLÜM SONNET İÇİN YAZILDI.** Uygulayıcı AI: aşağıdaki fazları SIRAYLA yap, her fazın sonundaki
+> "KABUL KRİTERİ"ni doğrulamadan sonrakine geçme. Her adımda dosya yolları, tablo/kolon adları ve
+> komutlar açıkça verildi. Kararsız kaldığın yerde bu bölümdeki varsayılanı uygula, kullanıcıya sorma.
+>
+> **9 Tem 2026 canlı kontrol (anonim):** ihaleciler.com şu an ~13.0k aktif ihale (EKAP 9.158 + Gazete 1.229 +
+> İstihbarat 2.174), 81 il, 40+ sektör, 16 idare türü, yüklenici dizini (`/contractors`), KİK kararları,
+> `/analyze` pivot motoru (üyelik-korumalı; metrikler: sözleşme bedeli aralığı, tenzilat %, katılımcı/geçerli
+> teklif sayısı, yayın/teklif/sözleşme tarihleri, iş/ödeme/teslim süreleri, eşik katsayısı 0.70–1.20).
+>
+> **Stratejik özet:** ihaleciler'in TEK gerçek hendeği = YILLARA YAYILMIŞ SONUÇ VERİSİ (firma × ihale × bedel ×
+> tenzilat). UI'ları eski, AI'ları YOK. Bizim boru hattımız çalışıyor (ekap_sonuc_backfill.py → ihale_sonuclari,
+> 35 kayıt) ama hacim yok. Plan = (A) hacmi büyüt, (B) firma katmanını kur, (C) analiz motorunu yaz,
+> (D) AI'ı verinin ÜSTÜNE koy (onlarda hiç yok → geçiş noktamız), (E) tahmin/istihbarat (kimsede yok).
+>
+> ⛔ **HUKUKİ SINIR (değişmedi, bkz. 9.1.1):** ihaleciler.com'dan TEK SATIR veri çekilmeyecek. Tüm veri
+> EKAP/KİK kamu kaynaklarından. ihaleciler sadece "özellik referansı".
+
+## 10.0 Mevcut durum envanteri (Sonnet: önce bunu doğrula)
+
+| Varlık | Durum | Yer |
+|---|---|---|
+| `ilanlar` | ~14.0k aktif ihale, gece cron VDS'te | VDS Supabase (`ssh -i ~/.ssh/ihale_oracle root@195.85.207.126`) |
+| `ihale_sonuclari` | ~35 kayıt, Design A (`kazanan_firma`,`kazanan_teklif`,`kazanan_teklif_farki_yuzde`) + B kolonları migration'la eklendi (`tenzilat_yuzde`,`yaklasik_maliyet`,`katilimci_sayisi`,`gecerli_teklif_sayisi`) ama B kolonları BOŞ | `backend/migration_sonuc_B_kurulum.sql` uygulandı |
+| `yukleniciler` | tablo VAR, BOŞ | aynı migration |
+| Sonuç scraper | ÇALIŞIYOR: `backend/ekap_sonuc_backfill.py` (EKAP durum=15 listesi × bizim IKN kesişimi, checkpoint'li, plato-tespitli) | cron'a eklenmesi bekliyor (bkz. 9.1 kalan (a)) |
+| Firma UI | `firma-analiz.html` (Sonuçlar sekmesi çalışıyor), `kurum-analiz.html`, `rekabet-analizi.html`, `sonuclananlar.html` | frontend |
+| AI | Gemini analiz (`analyzer.py`, 7 bölümlü şartname analizi) — sonuç/firma verisine HİÇ bağlı değil | backend |
+| KİK kararları | UI+tablo+script hazır, kaynak IP-bloklu (Playwright çözümü bekliyor) | `backend/kik_backfill.py` |
+
+## 10.A FAZ A — VERİ HACMİ: sonuç verisini 35'ten on binlere çıkar (her şeyin önkoşulu)
+
+**A1. Cron'a günlük sonuç taraması ekle (5 dk):** `run_scraper.sh`'e ana scraper'dan SONRA gelecek satır:
+`$VENV/python ekap_sonuc_backfill.py --max-pages 50 >> /opt/ihale-platform/logs/scraper.log 2>&1`
+Mantık: her gece EKAP'ın "yeni sonuçlananlar" penceresini tarar; bizim havuz büyüdükçe kesişim büyür.
+
+**A2. Kayıt başına eksik alanları doldur:** `ekap_sonuc_backfill.py`'de SONUÇ İLANI HTML'i zaten parse ediliyor
+(`html_yaklasik_maliyet_parse`). Aynı HTML'den regex ile şunları da çıkar ve `ihale_sonuclari`'nın ZATEN VAR OLAN
+B kolonlarına yaz: **katılımcı sayısı** ("... doküman satın alınmış/indirilmiş", "X istekli katılmış"),
+**geçerli teklif sayısı**, **sözleşme tarihi**, mümkünse **işe başlama/bitiş**. Ek olarak `tenzilat_yuzde`'yi
+(zaten `kazanan_teklif_farki_yuzde` hesaplanıyor) B kolonuna da kopyala — analiz motoru B kolonlarından okuyacak.
+- Çok kısımlı ihale: `sozlesmeBilgiList` birden fazla elemanlıysa HER kısmı ayrı satır yaz. Bunun için migration:
+  `ihale_sonuclari`'ya `kisim_no INTEGER DEFAULT 1` ekle + unique constraint'i `(ilan_id, kisim_no)` yap
+  (yeni dosya: `backend/migration_sonuc_kisim.sql`; hem VDS'e hem managed'a uygulanacak — VDS: `docker exec -i supabase-db psql -U postgres -d postgres < dosya`).
+
+**A3. GEÇMİŞE DÖNÜK GENİŞ BACKFILL — "havuzdan bağımsız" mod (BÜYÜK KALDIRAÇ):**
+Şu anki script SADECE bizim `ilanlar` IKN'leriyle kesişeni yazıyor (%0.7 isabet) → hacim tavanı bizim havuz.
+İhaleciler'i yakalamak için bu bağı kopar:
+- `ekap_sonuc_backfill.py`'ye `--tum-kayitlar` flag'i ekle: IKN bizde OLMASA BİLE sonuçlanmış ihaleyi çek,
+  önce `ilanlar`'a KOMPAKT bir satır upsert et (ikn, baslik, idare, il, tur, usul, okas/kategori, ilan_tarihi,
+  `durum='sonuclandi'`, `ilan_metni=NULL` — depolama stratejisi "geçmiş=kompakt ~0.5KB", bkz. VDS bölümü),
+  sonra `ihale_sonuclari` satırını yaz.
+- Hız/koruma: sayfa başına 0.3s throttle korunacak; `--max-pages` sınırı ile parça parça (gecelik 200 sayfa =
+  20k kayıt taraması ≈ makul). Checkpoint zaten var. **Proxy'siz başla** (ana scraper aynı IP'den ban yemiyor);
+  ilk 403/429'da dur ve log'a "PROXY GEREK" yaz — o noktada kullanıcı Webshare'i doldurur.
+- Hedef: **önce son 2 yıl** (analitik değerin %80'i güncel veride), sonra 2003'e doğru. 1.68M kayıt × son 2 yıl
+  ≈ tahmini 300-400k sonuç → Supabase self-hosted VDS'te disk sorunu yok (%13 dolu, 158G).
+**KABUL KRİTERİ A:** `ihale_sonuclari` ≥ 10.000 satır, `katilimci_sayisi` doluluk ≥ %60, cron her gece artırıyor.
+
+## 10.B FAZ B — FİRMA KATMANI: `yukleniciler` sözlüğünü kur ve doldur
+
+**B1. Normalizasyon fonksiyonu (kritik — firma birleştirme):** `backend/firma_normalize.py`:
+`normalize_ad()`: büyük harf (TR locale: İ/I dikkat), "A.Ş./LTD.ŞTİ./TİC./SAN./İNŞ." varyantlarını tekilleştir,
+noktalama/fazla boşluk temizle, mojibake düzelt. Aynı fonksiyonun SQL karşılığını da yaz (migration'da
+`immutable` PL/pgSQL fonksiyon `normalize_firma(text)`), çünkü hem Python-yazma hem SQL-sorgulama tarafı aynı
+anahtarı kullanmalı. Ortak girişim ("İŞ ORTAKLIĞI", "ORTAK GİRİŞİM", "-" ile ayrılmış iki firma) tespit edilirse
+`ortak_girisim=true` işaretle ve mümkünse ortakları ayır (`ortaklar text[]`).
+
+**B2. `yukleniciler`'i agregasyonla doldur (scrape DEĞİL, mevcut veriden türet):**
+`backend/migration_yuklenici_agg.sql` içinde RPC `yuklenici_yenile()`:
+`INSERT ... SELECT normalize_firma(kazanan_firma), min(kazanan_firma) as gorunen_ad, count(*), sum(kazanan_teklif), avg(tenzilat), max(sonuc_tarihi), array_agg(distinct kategori), array_agg(distinct il) FROM ihale_sonuclari JOIN ilanlar ... GROUP BY 1 ON CONFLICT (normalize_ad) DO UPDATE ...`
+Cron sonunda çağır (`run_scraper.sh`'e psql/REST çağrısı). Böylece `yukleniciler` HER GECE kendini tazeler.
+
+**B3. Firma dizini sayfası `firmalar.html`** (idareler.html'i şablon al — aynı kart/filtre/CSV düzeni):
+arama + il + sektör filtresi, sıralama (toplam ciro / iş sayısı / son iş tarihi), her kart → `firma-analiz?firma=<normalize_ad>`.
+Sidebar'a "🏢 Firmalar" linkini TÜM sayfalara ekle. Ana sayfadaki harita "Firmalar" sekmesini ("Yakında") buna bağla.
+**KABUL KRİTERİ B:** `firmalar.html` canlıda arama+filtreyle çalışıyor; `yukleniciler` satır sayısı = distinct normalize_ad sayısı; ortak girişimler çift firma yaratmıyor.
+
+## 10.C FAZ C — ANALİZ MOTORU: ihaleciler `/analyze` paritesi (RPC tabanlı)
+
+**C1. Tek esnek pivot RPC:** `backend/migration_analiz_rpc.sql` → `analiz_pivot(p_firma text, p_idare text, p_kategori text, p_il text, p_yil int, p_grup text)`:
+`ihale_sonuclari ⋈ ilanlar` üzerinde verilen filtrelerle `p_grup`'a göre (`'yil'|'kategori'|'idare'|'il'|'usul'|'tur'|'firma'`)
+GROUP BY döner: `grup_deger, ihale_sayisi, toplam_bedel, ort_bedel, ort_tenzilat, ort_katilimci, ort_gecerli_teklif`.
+SECURITY DEFINER + anon EXECUTE (veri zaten public-read). Client-side 1000'er batch çekme ALIŞKANLIĞINI BIRAK — bu RPC her analiz sayfasının tek veri kaynağı olsun.
+
+**C2. `firma-analiz.html`'i tam profile dönüştür** (9.2.1(b) listesi geçerli, veri artık var):
+KPI şeridi (toplam sözleşme+ciro+ort.tenzilat+ort.katılımcı+ilk/son iş) · Yıllık trend (Chart.js line) ·
+Sektör kırılımı · İdare kırılımı ("en çok çalıştığı 10 idare" — tekrar eden idare vurgusu) ·
+**Rakip firmalar**: aynı (kategori×il) hücresinde kazanan diğer firmalar (`analiz_pivot` p_grup='firma') ·
+Kazandığı işler listesi (mevcut Sonuçlar sekmesi, sayfalı). Hepsi C1 RPC'sinden.
+
+**C3. `kurum-analiz.html`'i derinleştir:** o idarenin sonuçlanan işleri, kazanan firma dağılımı (pasta),
+ort. tenzilat, "bu idarede kazanmak için ort. %X tenzilat gerekir" kutusu.
+
+**C4. Eşik katsayısı (ihaleciler'de var, bizde yok — madde 4):** `ilanlar`'a `esik_katsayi NUMERIC` kolonu
+(migration) + scraper'da EKAP detayından çek (yapım işi sınır değer katsayısı 0.70–1.20 aralığı ilan/idari
+şartname verisinde) + `ihaleler.html` Detaylı Ara'ya dropdown. Bulunamıyorsa NULL bırak, filtre "belirtilmemiş"i dışlar.
+**KABUL KRİTERİ C:** firma-analiz bir gerçek firma için <2sn'de KPI+4 kırılım gösteriyor; sorgular RPC'den (Network sekmesinde tek istek/kırılım).
+
+## 10.D FAZ D — AI KATMANI: veriyi yoruma çevir (ihaleciler'de YOK → geçiş noktası)
+
+> İlke: AI'ı ham LLM çağrısı olarak değil, **C fazının RPC çıktısını prompt'a gömen** yapı olarak kur.
+> Halüsinasyon riski = düşük (sayılar bizden, yorum AI'dan). Cache'le (kredi sistemine uygun).
+
+**D1. AI Firma Yorumu:** `api.py`'ye `POST /ai/firma-yorum {firma}` → `analiz_pivot`'un 4 kırılımını JSON olarak
+Gemini'ye ver, iste: güçlü olduğu idareler/sektörler, tenzilat agresifliği, yönelim (son 12 ay), rekabet önerisi
+("bu firmayla X ihalesinde karşılaşırsanız ..."). Sonucu `yukleniciler.ai_yorum` + `ai_yorum_tarih`'e cache'le
+(7 gün geçerli). `firma-analiz.html`'e "🤖 AI Rakip Analizi" kartı (1 kredi düş; free'de blur+CTA).
+**D2. Tenzilat/kazanma tahmini (KİMSEDE YOK — amiral gemisi adayı):** `ihale-detay.html`'e "Bu ihaleyi kazanmak
+için tahmini teklif bandı" kutusu: aynı (idare×kategori×il) geçmiş sonuçlarından ort±std tenzilat → yaklaşık
+maliyetten banda çevir + geçmiş örnekleri listele. İlk sürüm SALT İSTATİSTİK (RPC), yeterli veri yoksa ("<5 emsal")
+kutuyu gizle. AI sadece açıklama metnini yazar. Bu özellik pazarlamada "Fiyat İstihbaratı" olarak PRO'ya bağlanır.
+**D3. Semantik eşleşme (9.7'deki bekleyen iş):** Gemini `text-embedding-004` ile (a) firma profili (sektör+
+anahtar kelime+sertifika metni) ve (b) yeni ihale başlık+özet embed'i → pgvector `ilanlar.embedding` kolonu +
+cron'da yeni ilanlara embed. Uyum skoru = mevcut kural puanı %60 + cosine %40. pgvector self-hosted'da kurulu
+değilse: `CREATE EXTENSION vector;` (VDS'te mümkün, managed'da da var).
+**D4. AI teklif workflow bağlantısı (9.5):** teklif-olustur.html'e firma verisini enjekte et: "benzer işleri
+geçmişte X,Y firmaları %Z tenzilatla aldı" bağlamını teklif metni promptuna ekle → teklif taslağı piyasa-farkında olur.
+**KABUL KRİTERİ D:** D1+D2 canlıda bir gerçek firma/ihale üzerinde çalışıyor, sonuçlar cache'leniyor, kredi düşümü işliyor.
+
+## 10.E FAZ E — İSTİHBARAT & FARK AÇICILAR (ihaleciler'i geçtiğimiz yer)
+
+- **E1. Rakip Takibi (9.2.1(c)):** `takip_firmalar` tablosu (kullanici_id, normalize_ad) + firma-analiz'e
+  "⭐ Rakibi Takip Et" + cron'da yeni sonuç yazılırken takipçilere `bildirimler` kaydı + bülten e-postasına
+  "Rakip hareketleri" bloğu (`bulten_gonder.py` genişlet). ihaleciler'de bu YOK.
+- **E2. İdare-Firma ilişki grafiği:** kurum-analiz'e "bu idarenin işlerini hep aynı 3 firma mı alıyor?"
+  (yoğunlaşma endeksi = top3 firma payı). Gazetecilik-vari şeffaflık açısı, SEO değeri yüksek.
+- **E3. SEO firma sayfaları:** `firmalar/<slug>` statik-vari URL'ler (Cloudflare `_redirects` veya SSR-siz
+  meta enjeksiyonu) → Google'dan "X firması ihale" aramaları bize gelsin. ihaleciler login duvarının arkasında —
+  biz özet kısmı PUBLIC bırakıp derinliği PRO yaparsak organik trafiği alırız.
+- **E4. KİK kararları kaynağı (madde 3 devamı):** VDS'e `playwright install chromium --with-deps` → kik_backfill.py'yi
+  Playwright'a geçir (www.kik.gov.tr 406 bloğu headless ile aşılabilir; olmadıysa Webshare proxy). Kararlar gelince
+  D-katmanı özetleri (9.3 🟢 maddesi) uygula.
+- **E5. Gazete/İstihbarat kaynağı (madde 5)** düşük öncelik: E1-E4 bitmeden BAŞLAMA.
+
+## 10.F Uygulama sırası & disiplin (Sonnet için)
+
+1. **A1→A2→A3** (veri olmadan gerisi boş — A3 uzun sürer, arka planda cron'la akmaya devam eder; B'ye A'nın
+   KABUL kriterini beklemeden, ilk ~1-2k satır oluşunca geçebilirsin)
+2. **B1→B2→B3** → 3. **C1→C2→C3→C4** → 4. **D1→D2** (D3/D4 sonra) → 5. **E1→E3→E4**
+- Her migration İKİ yere: VDS (`docker exec -i supabase-db psql...`) + managed (Supabase SQL Editor, cutover'a dek).
+- Her faz sonunda: commit (TR mesaj, ne yapıldığı net) + bu dosyada ilgili maddeyi ✅/🟡 işaretle + dokunulan dosyaları yaz.
+- Frontend değişikliklerini tarayıcıda doğrula; RPC'leri önce curl/psql ile test et.
+- ⛔ ihaleciler.com'a istek atan HİÇBİR kod yazma. ⛔ Managed Supabase'e milyonlarca satır YÜKLEME (free tier) —
+  büyük hacim SADECE VDS'e; managed cutover'a kadar yalnızca mevcut akışla yaşar.
+
+**Konumlandırma cümlesi (pazarlama, D2 sonrası):** *"ihaleciler sana geçmişi gösterir; İhaleGlobal kazanmak için
+kaç vermen gerektiğini söyler."*
