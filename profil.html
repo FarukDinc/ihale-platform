@@ -479,6 +479,39 @@
         </div>
       </div>
 
+      <!-- 6. BİLDİRİM TERCİHLERİ -->
+      <div class="section-card">
+        <div class="section-header">
+          <div class="section-icon">📧</div>
+          <div>
+            <div class="section-title">E-posta Bildirimleri</div>
+            <div class="section-sub">Takip ettiğiniz ihalelerin son teklif tarihi yaklaşınca e-posta ile uyarılın</div>
+          </div>
+        </div>
+
+        <div style="display:flex; flex-direction:column; gap:16px;">
+          <label style="display:flex; align-items:center; gap:12px; cursor:pointer;">
+            <input type="checkbox" id="bildirim-email" style="width:18px; height:18px; accent-color:var(--amber); cursor:pointer;" onchange="bildirimUIGuncelle()" />
+            <div>
+              <div style="font-size:13px; font-weight:600; color:var(--white);">E-posta bildirimlerini aç</div>
+              <div style="font-size:12px; color:var(--muted);">Kapalıyken hiçbir bildirim e-postası gönderilmez</div>
+            </div>
+          </label>
+
+          <div id="bildirim-alt-secenekler" style="display:none; flex-direction:column; gap:14px; padding-left:30px; border-left:2px solid var(--border); margin-left:8px;">
+            <label style="display:flex; align-items:center; gap:12px; cursor:pointer;">
+              <input type="checkbox" id="bildirim-son-teklif" style="width:18px; height:18px; accent-color:var(--amber); cursor:pointer;" />
+              <div style="font-size:13px; color:var(--white);">Son teklif tarihi yaklaşınca uyar</div>
+            </label>
+            <div style="display:flex; align-items:center; gap:12px;">
+              <div class="bedel-label" style="margin-bottom:0;">Kaç gün önceden</div>
+              <input type="number" id="bildirim-gun-oncesi" class="bedel-input" min="1" max="14" style="max-width:90px; padding:8px 12px;" value="3" />
+              <span style="font-size:12px; color:var(--muted);">gün önce</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- UYUM SKORU ÖNİZLEME -->
       <div class="section-card">
         <div class="section-header">
@@ -678,6 +711,11 @@
       if (data.min_bedel) document.getElementById('min-bedel').value = data.min_bedel;
       if (data.max_bedel) document.getElementById('max-bedel').value = data.max_bedel;
       esikYukle(data.min_uyum_esigi ?? localStorage.getItem('ihale_min_uyum_esigi') ?? 50);
+      // Bildirim tercihleri (kolonlar henüz DB'de yoksa data.bildirim_email undefined kalır — varsayılan kapalı)
+      document.getElementById('bildirim-email').checked = !!data.bildirim_email;
+      document.getElementById('bildirim-son-teklif').checked = data.bildirim_son_teklif !== false;
+      document.getElementById('bildirim-gun-oncesi').value = data.bildirim_gun_oncesi ?? 3;
+      bildirimUIGuncelle();
       // Anahtar kelimeler: DB'den gelirse kaydet, yoksa localStorage'dan yükle
       const kelimelerDB = data.anahtar_kelimeler;
       const kelimelerLS = localStorage.getItem('ihale_anahtar_kelimeler') || '';
@@ -705,7 +743,14 @@
       });
     } else {
       document.getElementById('sidebar-firma').textContent = email;
+      bildirimUIGuncelle();
     }
+  }
+
+  // ── Bildirim tercihleri ────────────────────────────────────────────────
+  function bildirimUIGuncelle() {
+    const acik = document.getElementById('bildirim-email').checked;
+    document.getElementById('bildirim-alt-secenekler').style.display = acik ? 'flex' : 'none';
   }
 
   // ── Min. Uyum Eşiği ────────────────────────────────────────────────────
@@ -782,6 +827,12 @@
       if (kelimelerMetin) {
         sb.from('profil').update({ anahtar_kelimeler: kelimelerMetin }).eq('user_id', user.id).then(() => {});
       }
+      // Bildirim tercihleri ayrıca kaydedilir (kolonlar DB'de olmayabilir — sessiz hata)
+      sb.from('profil').update({
+        bildirim_email: document.getElementById('bildirim-email').checked,
+        bildirim_son_teklif: document.getElementById('bildirim-son-teklif').checked,
+        bildirim_gun_oncesi: parseInt(document.getElementById('bildirim-gun-oncesi').value) || 3
+      }).eq('user_id', user.id).then(() => {});
       toast('✓ Profil kaydedildi! Uyum skorları güncelleniyor...', 'basari');
     }
 
