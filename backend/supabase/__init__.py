@@ -64,6 +64,11 @@ class QueryBuilder:
         self._params[column] = f"is.{value}"
         return self
 
+    def not_(self, column: str, operator: str, value: Any):
+        # PostgREST negasyon: örn. not_("ekap_id", "in", "(a,b)") → ekap_id=not.in.(a,b)
+        self._params[column] = f"not.{operator}.{value}"
+        return self
+
     def order(self, column: str, desc: bool = False):
         self._params["order"] = f"{column}.{'desc' if desc else 'asc'}"
         return self
