@@ -1133,11 +1133,12 @@ ihaleciler'de "Bugün sonuçlananlar" akışı → kazanan firma + sözleşme be
 - Sidebar nav'a eklendi
 - Dokunulan dosyalar: `sonuclananlar.html`, nav linkleri (firma-analiz.html vb.)
 
-### 🔲 3. KİK Karar Arama (`/kik-kararlar`) — YOK, YÜKSEK ÖNCELİK
-ihaleciler'de 34.700+ KİK (Kamu İhale Kurulu) itiraz/şikayet kararı aranabiliyor — büyük fark yaratan özellik.
-- EKAP'ta KİK kararları kamuya açık API'si var: `ekapv2.kik.gov.tr/b_ihalearama/api/Karar/...`
-- Yapılacak: (1) karar endpoint'lerini probe et, (2) `kik_kararlar` tablosu oluştur, (3) nightly scraper ekle, (4) `kik-kararlar.html` arama sayfası (ihale no / firma adı / karar türü filtresiyle)
-- Tahmini etki: Pro özellik, ciddi diferansiasyon — ihaleciler'de bu var, tendermeister'de YOK
+### ✅ 3. KİK Karar Arama (`/kik-kararlar`) — TAMAMLANDI (9 Temmuz 2026)
+- `kik-kararlar.html`: arama formu (kelime/no/tür/sonuç/tarih aralığı), filtre chipleri, CSV, sayfalama
+- `backend/supabase/migrations/kik_kararlar_tablo.sql`: DB şeması + tam-text indeksler + RLS
+- `backend/kik_backfill.py`: KİK API'sinden karar çeken cron scripti
+- 15 HTML dosyasında sidebar'a ⚖️ KİK Kararlar nav linki eklendi
+- **Sonraki adım:** Supabase Dashboard > SQL Editor'da `kik_kararlar_tablo.sql` çalıştır; VDS'de `python kik_backfill.py --max-pages 200` ile doldurmaya başla
 
 ### 🔲 4. Eşik Katsayısı Filtresi — KÜÇÜK, AMA EKSİK
 ihaleciler'de 0.70–1.20 eşik katsayısı filtresi var (ihale sınır değer hesabında kullanılır).
