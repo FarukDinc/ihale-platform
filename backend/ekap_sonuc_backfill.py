@@ -421,9 +421,13 @@ def ilan_kompakt_ekle(item: dict, dry_run: bool) -> dict | None:
     tur = tur_donustur(item.get("ihaleTipAciklama")) if tur_donustur else None
     okas = item.get("okas")
     baslik = mojibake_duzelt((item.get("ihaleAdi") or item.get("konu") or "").strip()) or None
+    # baslik NOT NULL — boşsa IKN'yi yedek başlık olarak kullan.
+    if not baslik:
+        baslik = f"İhale {ikn}"
     kategori = kategori_tur(okas, tur, baslik) if kategori_tur else None
 
     kayit = {
+        "kaynak": "ekap",  # ilanlar.kaynak NOT NULL — ana scraper da 'ekap' yazıyor
         "ekap_id": str(item.get("ikn") or item.get("id") or ""),
         "ikn": str(ikn),
         "baslik": baslik,
