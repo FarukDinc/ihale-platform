@@ -411,6 +411,7 @@
     notAlaniDoldur(data.id);
     benzerIhaleler(data);
     sonucBilgiGoster(data.id);
+    kazanmaBandiGoster(data);
   }
 
   function sekmeAc(ev, panelId) {
@@ -450,6 +451,7 @@
       </div>
 
       <div id="sonuc-bilgi-wrap"></div>
+      <div id="kazanma-bandi-wrap"></div>
 
       <!-- KPI GRID -->
       <div class="kpi-grid">
@@ -730,6 +732,55 @@
           ${s.sonuc_tarihi ? `<div><span style="color:var(--muted);">Sözleşme Tarihi:</span> <b style="color:var(--white);">${tarihFormatla(s.sonuc_tarihi)}</b></div>` : ''}
         </div>
       </div>`;
+  }
+
+  // ÖNCELİK 10 Faz D2 — "kazanmak için tahmini teklif bandı" (salt istatistik, ihaleciler'de
+  // ve tendermeister'da YOK). Aynı idare×kategori×il geçmiş sonuçlarından ağırlıklı ort. tenzilat
+  // hesaplayıp yaklaşık maliyeti banda çevirir. Emsal <5 ise veya RPC yoksa sessizce gizli kalır.
+  async function kazanmaBandiGoster(d) {
+    const wrap = document.getElementById('kazanma-bandi-wrap');
+    if (!wrap) return;
+    if (d.durum !== 'aktif' || !d.idare || !d.kategori || !d.yaklasik_maliyet_min) return;
+    try {
+      const { data, error } = await sb.rpc('analiz_pivot', {
+        p_grup: 'yil', p_idare: d.idare, p_kategori: d.kategori, p_il: d.il || null
+      });
+      if (error) throw error;
+      if (!data || !data.length) return;
+
+      const toplamEmsal = data.reduce((s, r) => s + Number(r.ihale_sayisi || 0), 0);
+      if (toplamEmsal < 5) return; // yeterli emsal yok — tahmin güvenilmez, kutuyu gösterme
+
+      let agirlik = 0, tenzX = 0;
+      data.forEach(r => {
+        if (r.ort_tenzilat != null) {
+          agirlik += Number(r.ihale_sayisi);
+          tenzX += Number(r.ort_tenzilat) * Number(r.ihale_sayisi);
+        }
+      });
+      if (!agirlik) return;
+
+      const ortTenz = tenzX / agirlik;
+      const maliyet = Number(d.yaklasik_maliyet_min);
+      const bandGenislik = 8; // basit sabit bant — v1 salt istatistik, std sapma RPC'de yok
+      const tenzAlt = Math.max(ortTenz - bandGenislik, 0);
+      const tenzUst = Math.min(ortTenz + bandGenislik, 95);
+      const bedelUst = maliyet * (1 - tenzAlt / 100); // düşük tenzilat → yüksek bedel
+      const bedelAlt = maliyet * (1 - tenzUst / 100);
+
+      wrap.innerHTML = `
+        <div style="background:rgba(240,165,0,0.06);border:1px dashed rgba(240,165,0,0.35);border-radius:10px;padding:16px 20px;margin-bottom:20px;">
+          <div style="color:var(--amber);font-weight:700;font-size:13px;margin-bottom:8px;">📊 Tahmini Kazanma Bandı <span style="color:var(--muted);font-weight:500;">(bu idare/sektör/ildeki ${toplamEmsal} geçmiş sonuca göre)</span></div>
+          <div style="display:flex;flex-wrap:wrap;gap:24px;font-size:13px;align-items:center;">
+            <div><span style="color:var(--muted);">Tahmini Teklif Bandı:</span> <b style="color:var(--white);">${butceFormatla(Math.round(bedelAlt))} – ${butceFormatla(Math.round(bedelUst))}</b></div>
+            <div><span style="color:var(--muted);">Ort. Tenzilat:</span> <b style="color:var(--amber);">%${ortTenz.toFixed(1)}</b></div>
+          </div>
+          <div style="color:var(--muted);font-size:11.5px;margin-top:8px;">İstatistiksel tahmindir, garanti değildir. Emsal sayısı arttıkça isabet oranı artar.</div>
+        </div>`;
+    } catch (err) {
+      // analiz_pivot RPC henüz DB'ye uygulanmadıysa (migration bekliyor) sessizce geç.
+      console.info('kazanma bandı tahmini şu an kullanılamıyor (migration bekliyor):', err?.message || err);
+    }
   }
 
   async function benzerIhaleler(d) {

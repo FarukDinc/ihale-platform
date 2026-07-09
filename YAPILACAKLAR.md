@@ -1461,6 +1461,21 @@ geçmişte X,Y firmaları %Z tenzilatla aldı" bağlamını teklif metni promptu
   (kırmızı hata/konsol patlaması yok — local önizlemede doğrulandı: free state'te kart doğru render oldu,
   konsol temiz). Migration'lar + Render deploy sonrası pro kullanıcıyla uçtan uca test edilmeli.
 
+### 🟡 İLERLEME D2 (9 Tem 2026, Sonnet — kod hazır, migration bekliyor)
+
+- ✅ **`ihale-detay.html`'e "📊 Tahmini Kazanma Bandı" kutusu eklendi** (`kazanmaBandiGoster()`):
+  sadece aktif+idare+kategori+yaklasik_maliyet_min dolu ihalelerde çalışır. `analiz_pivot('yil',
+  p_idare, p_kategori, p_il)` çağırıp dönen yıl satırlarını ihale_sayisi ile ağırlıklandırıp
+  ortalama tenzilat çıkarır; toplam emsal <5 ise kutuyu hiç göstermez (plandaki kural). Bant,
+  ort. tenzilat ±8 puan sabit genişlikle hesaplanıyor (v1 — RPC std sapma döndürmüyor, ileride
+  `analiz_pivot`'a `stddev_tenzilat` eklenip bant daralt/genişlet dinamikleştirilebilir).
+  RPC yoksa `console.info` ile sessizce geçer — local önizlemede aktif bir ihale ile test edildi,
+  konsolda sadece bilgi logu var, sayfa (KPI/tab/başlık) tamamen sağlam kaldı.
+  ⚠️ **AI açıklama metni YAPILMADI** (plan: "AI sadece açıklama metnini yazar") — v1 salt istatistik.
+  İstenirse D1'deki `firma_ai_yorum.py` deseni tekrarlanarak eklenebilir, düşük öncelik.
+- [ ] 🔴 Geçmiş örnek listesi (plan: "+ geçmiş örnekleri listele") eklenmedi — sadece özet bant var,
+  alt satıra "bu idare/kategoride son N sözleşme" mini-liste eklenmesi ayrı bir küçük iş.
+
 ## 10.E FAZ E — İSTİHBARAT & FARK AÇICILAR (ihaleciler'i geçtiğimiz yer)
 
 - **E1. Rakip Takibi (9.2.1(c)):** `takip_firmalar` tablosu (kullanici_id, normalize_ad) + firma-analiz'e
