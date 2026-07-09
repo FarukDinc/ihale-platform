@@ -1481,8 +1481,10 @@ geçmişte X,Y firmaları %Z tenzilatla aldı" bağlamını teklif metni promptu
 - **E1. Rakip Takibi (9.2.1(c)):** `takip_firmalar` tablosu (kullanici_id, normalize_ad) + firma-analiz'e
   "⭐ Rakibi Takip Et" + cron'da yeni sonuç yazılırken takipçilere `bildirimler` kaydı + bülten e-postasına
   "Rakip hareketleri" bloğu (`bulten_gonder.py` genişlet). ihaleciler'de bu YOK.
-- **E2. İdare-Firma ilişki grafiği:** kurum-analiz'e "bu idarenin işlerini hep aynı 3 firma mı alıyor?"
-  (yoğunlaşma endeksi = top3 firma payı). Gazetecilik-vari şeffaflık açısı, SEO değeri yüksek.
+- ✅ **E2 TAMAMLANDI (9 Tem 2026):** `kurum-analiz.html`'in "Kazanan Firmalar" kartına (Faz C3) yoğunlaşma
+  endeksi eklendi — ilk 3 firmanın toplam iş payı hesaplanıp (≥3 firma + ≥5 toplam iş varsa) renkli bir
+  etiketle gösteriliyor (%60+ kırmızı "yüksek yoğunlaşma", %35+ amber "orta", altı yeşil "dağınık"). RPC
+  henüz uygulanmadığından bu kod da C3 ile aynı try/catch içinde — canlı doğrulama migration sonrası.
 - **E3. SEO firma sayfaları:** `firmalar/<slug>` statik-vari URL'ler (Cloudflare `_redirects` veya SSR-siz
   meta enjeksiyonu) → Google'dan "X firması ihale" aramaları bize gelsin. ihaleciler login duvarının arkasında —
   biz özet kısmı PUBLIC bırakıp derinliği PRO yaparsak organik trafiği alırız.

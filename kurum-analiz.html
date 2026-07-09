@@ -733,8 +733,28 @@
       const { data, error } = await sb.rpc('analiz_pivot', { p_grup: 'firma', p_idare: KURUM });
       if (error) throw error;
       if (!data || !data.length) return;
-      document.getElementById('kazanan-firma-list').innerHTML = data.slice(0, 12).map(r => {
-        const max = data[0].ihale_sayisi || 1;
+      const max = data[0].ihale_sayisi || 1;
+      const toplamIs = data.reduce((s, r) => s + Number(r.ihale_sayisi || 0), 0);
+
+      // ÖNCELİK 10 Faz E2 — yoğunlaşma endeksi: bu idarenin işlerinin ne kadarı ilk 3 firmada
+      // toplanmış? Yüksek oran = "hep aynı firmalar mı kazanıyor" şeffaflık sinyali (SEO/gazetecilik değeri).
+      const top3Toplam = data.slice(0, 3).reduce((s, r) => s + Number(r.ihale_sayisi || 0), 0);
+      const yogunlasmaOrani = toplamIs > 0 ? (top3Toplam / toplamIs * 100) : 0;
+      let yogunlasmaEtiket = '';
+      if (data.length >= 3 && toplamIs >= 5) {
+        const renk = yogunlasmaOrani >= 60 ? '#f87171' : (yogunlasmaOrani >= 35 ? 'var(--amber)' : '#4ade80');
+        const yorum = yogunlasmaOrani >= 60
+          ? 'Yüksek yoğunlaşma — işlerin büyük kısmı az sayıda firmada.'
+          : (yogunlasmaOrani >= 35 ? 'Orta düzey yoğunlaşma.' : 'Dağınık — çok sayıda farklı firma kazanıyor.');
+        yogunlasmaEtiket = `
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;padding:8px 12px;background:rgba(255,255,255,.03);border-radius:6px;">
+            <span style="font-size:11px;color:var(--muted);">İlk 3 Firma Payı:</span>
+            <b style="color:${renk};font-size:13px;">%${yogunlasmaOrani.toFixed(0)}</b>
+            <span style="font-size:11px;color:var(--muted);">— ${yorum}</span>
+          </div>`;
+      }
+
+      document.getElementById('kazanan-firma-list').innerHTML = yogunlasmaEtiket + data.slice(0, 12).map(r => {
         return `<div class="tur-item">
           <div class="tur-header">
             <span class="tur-ad">🏢 ${r.grup_deger}</span>
