@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>İdareler Dizini — İhalePlatform</title>
+  <title>Firmalar Dizini — İhalePlatform</title>
   <link rel="stylesheet" href="css/style.css" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
@@ -57,7 +57,6 @@
 
     .page-body { padding: 24px 28px; }
 
-    /* ÖZET KARTLAR */
     .stat-row {
       display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 24px;
     }
@@ -69,7 +68,6 @@
     .stat-val { font-size: 22px; font-weight: 800; color: var(--white); }
     .stat-val.amber { color: var(--amber); }
 
-    /* FİLTRE ÇUBUĞU */
     .filtre-bar {
       background: var(--navy-mid); border: 1px solid var(--border);
       border-radius: 10px; padding: 14px 18px; margin-bottom: 18px;
@@ -93,80 +91,47 @@
     .filtre-select option { background: var(--navy-mid); }
     .sayac-label { font-size: 13px; color: var(--muted); white-space: nowrap; margin-left: auto; }
 
-    /* TABLO */
     .tablo-wrap {
       background: var(--navy-mid); border: 1px solid var(--border);
       border-radius: 10px; overflow: hidden;
     }
     .tablo-header {
-      display: grid; grid-template-columns: 2fr 100px 90px 90px 120px;
+      display: grid; grid-template-columns: 2fr 100px 110px 130px 120px 110px;
       padding: 10px 18px; border-bottom: 1px solid var(--border);
       font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .06em;
     }
-    .tablo-header .sortable {
-      cursor: pointer; user-select: none; display: flex; align-items: center; gap: 4px;
-    }
+    .tablo-header .sortable { cursor: pointer; user-select: none; display: flex; align-items: center; gap: 4px; }
     .tablo-header .sortable:hover { color: var(--white); }
     .tablo-header .sortable.asc::after { content: ' ↑'; color: var(--amber); }
     .tablo-header .sortable.desc::after { content: ' ↓'; color: var(--amber); }
 
-    .idare-row {
-      display: grid; grid-template-columns: 2fr 100px 90px 90px 120px;
+    .firma-row {
+      display: grid; grid-template-columns: 2fr 100px 110px 130px 120px 110px;
       padding: 13px 18px; border-bottom: 1px solid rgba(255,255,255,.04);
       align-items: center; transition: background .12s;
     }
-    .idare-row:last-child { border-bottom: none; }
-    .idare-row:hover { background: rgba(255,255,255,.03); }
+    .firma-row:last-child { border-bottom: none; }
+    .firma-row:hover { background: rgba(255,255,255,.03); }
 
-    .idare-ad {
-      font-size: 13px; font-weight: 600; color: var(--white);
-      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-      padding-right: 12px;
-    }
-    .idare-ad a {
-      color: inherit; text-decoration: none; transition: color .15s;
-    }
-    .idare-ad a:hover { color: var(--amber); }
-    .idare-il { font-size: 12px; color: var(--muted); }
-    .idare-toplam { font-size: 14px; font-weight: 700; color: var(--white); }
-    .idare-aktif { font-size: 13px; font-weight: 600; color: #4ade80; }
-    .idare-actions { display: flex; gap: 6px; }
-    .btn-xs {
-      font-size: 11px; font-weight: 600; padding: 4px 9px; border-radius: 5px;
-      text-decoration: none; border: none; cursor: pointer; transition: all .15s;
-    }
+    .firma-ad { font-size: 13px; font-weight: 600; color: var(--white); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding-right: 12px; }
+    .firma-ad a { color: inherit; text-decoration: none; transition: color .15s; }
+    .firma-ad a:hover { color: var(--amber); }
+    .firma-badge { display: inline-block; font-size: 10px; font-weight: 700; color: var(--amber); background: rgba(240,165,0,.12); padding: 1px 6px; border-radius: 4px; margin-left: 6px; vertical-align: middle; }
+    .firma-il { font-size: 12px; color: var(--muted); }
+    .firma-sayi { font-size: 14px; font-weight: 700; color: var(--white); }
+    .firma-ciro { font-size: 13px; font-weight: 700; color: #4ade80; }
+    .firma-tarih { font-size: 12px; color: var(--muted); }
+    .firma-actions { display: flex; gap: 6px; }
+    .btn-xs { font-size: 11px; font-weight: 600; padding: 4px 9px; border-radius: 5px; text-decoration: none; border: none; cursor: pointer; transition: all .15s; }
     .btn-xs-amber { background: rgba(240,165,0,.12); color: var(--amber); }
     .btn-xs-amber:hover { background: rgba(240,165,0,.25); }
-    .btn-xs-ghost { background: rgba(255,255,255,.06); color: var(--muted); }
-    .btn-xs-ghost:hover { background: rgba(255,255,255,.12); color: var(--white); }
 
-    /* YÜKLENİYOR */
-    .yukleniyor {
-      text-align: center; padding: 60px; color: var(--muted);
-    }
-    .spinner {
-      width: 28px; height: 28px; border: 3px solid var(--border);
-      border-top-color: var(--amber); border-radius: 50%;
-      animation: spin .8s linear infinite; margin: 0 auto 12px;
-    }
+    .yukleniyor { text-align: center; padding: 60px; color: var(--muted); }
+    .spinner { width: 28px; height: 28px; border: 3px solid var(--border); border-top-color: var(--amber); border-radius: 50%; animation: spin .8s linear infinite; margin: 0 auto 12px; }
     @keyframes spin { to { transform: rotate(360deg); } }
-    .progress-mini {
-      height: 4px; background: var(--border); border-radius: 2px; margin-top: 8px; overflow: hidden;
-    }
-    .progress-mini-fill {
-      height: 100%; background: var(--amber); border-radius: 2px; transition: width .3s;
-    }
 
-    /* SAYFALAMA */
-    .pager {
-      display: flex; justify-content: center; align-items: center;
-      gap: 6px; padding: 16px; border-top: 1px solid var(--border);
-    }
-    .pager-btn {
-      padding: 6px 12px; border-radius: 6px; font-size: 13px; font-weight: 600;
-      background: var(--navy); border: 1px solid var(--border); color: var(--white);
-      cursor: pointer; transition: all .15s;
-    }
+    .pager { display: flex; justify-content: center; align-items: center; gap: 6px; padding: 16px; border-top: 1px solid var(--border); }
+    .pager-btn { padding: 6px 12px; border-radius: 6px; font-size: 13px; font-weight: 600; background: var(--navy); border: 1px solid var(--border); color: var(--white); cursor: pointer; transition: all .15s; }
     .pager-btn:hover { border-color: var(--amber); color: var(--amber); }
     .pager-btn:disabled { opacity: .35; cursor: default; }
     .pager-info { font-size: 13px; color: var(--muted); padding: 0 8px; }
@@ -178,10 +143,10 @@
     @media (max-width: 900px) {
       .sidebar { display: none; }
       .stat-row { grid-template-columns: repeat(2, 1fr); }
-      .tablo-header { grid-template-columns: 1fr 80px 60px; }
-      .tablo-header .col-il, .tablo-header .col-actions { display: none; }
-      .idare-row { grid-template-columns: 1fr 80px 60px; }
-      .idare-il, .idare-actions { display: none; }
+      .tablo-header { grid-template-columns: 1fr 80px 90px; }
+      .tablo-header .col-il, .tablo-header .col-tarih, .tablo-header .col-actions { display: none; }
+      .firma-row { grid-template-columns: 1fr 80px 90px; }
+      .firma-il, .firma-tarih, .firma-actions { display: none; }
     }
   </style>
 </head>
@@ -205,12 +170,12 @@
       <a href="bildirimler" class="nav-item"><span class="icon">🔔</span> Bildirimler</a>
       <div class="nav-section-label">Analiz</div>
       <a href="rekabet-analizi" class="nav-item"><span class="icon">📊</span> Rekabet Analizi</a>
-      <a href="idareler" class="nav-item active"><span class="icon">🏛️</span> İdareler Dizini</a>
-      <a href="firmalar" class="nav-item"><span class="icon">🏢</span> Firmalar Dizini</a>
+      <a href="idareler" class="nav-item"><span class="icon">🏛️</span> İdareler Dizini</a>
       <a href="sektorler" class="nav-item"><span class="icon">🏭</span> Sektörler Dizini</a>
+      <a href="firmalar" class="nav-item active"><span class="icon">🏢</span> Firmalar Dizini</a>
       <a href="kurum-analiz" class="nav-item"><span class="icon">🔍</span> Kurum Analizi</a>
       <a href="kik-kararlar" class="nav-item"><span class="icon">⚖️</span> KİK Kararlar</a>
-      <a href="firma-analiz" class="nav-item"><span class="icon">🏢</span> Firma Analizi</a>
+      <a href="firma-analiz" class="nav-item"><span class="icon">🔎</span> Firma Analizi</a>
       <a href="uyumluluk" class="nav-item"><span class="icon">✓</span> Uyumluluk</a>
       <a href="dokumanlar" class="nav-item"><span class="icon">📁</span> Dökümanlar</a>
       <div class="nav-section-label">Ayarlar</div>
@@ -232,10 +197,10 @@
   <div class="main">
     <div class="topbar">
       <div class="topbar-left">
-        <span class="page-title">🏛️ İdareler Dizini</span>
+        <span class="page-title">🏢 Firmalar Dizini</span>
       </div>
       <div class="topbar-right">
-        <a href="ihaleler" class="btn-xs btn-xs-ghost" style="padding:6px 12px; font-size:12px;">Tüm İhaleler →</a>
+        <a href="sonuclananlar" class="btn-xs btn-xs-amber" style="padding:6px 12px; font-size:12px;">Sonuçlananlar →</a>
         <button onclick="csvIndir()" style="background:var(--card-bg);border:1px solid var(--border);color:var(--muted);padding:5px 12px;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;font-family:var(--font);">↓ CSV</button>
         <button id="paylasBtn" onclick="linkPaylas(this)" style="background:var(--card-bg);border:1px solid var(--border);color:var(--muted);padding:5px 12px;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;font-family:var(--font);">🔗 Paylaş</button>
       </div>
@@ -246,30 +211,33 @@
       <!-- ÖZET KARTLAR -->
       <div class="stat-row">
         <div class="stat-card">
-          <div class="stat-label">Toplam İdare</div>
-          <div class="stat-val amber" id="st-toplam-idare">—</div>
+          <div class="stat-label">Toplam Firma</div>
+          <div class="stat-val amber" id="st-toplam-firma">—</div>
         </div>
         <div class="stat-card">
-          <div class="stat-label">Aktif İdareler</div>
-          <div class="stat-val" id="st-aktif-idare">—</div>
+          <div class="stat-label">Toplam Sözleşme</div>
+          <div class="stat-val" id="st-toplam-sozlesme">—</div>
         </div>
         <div class="stat-card">
-          <div class="stat-label">Toplam İhale</div>
-          <div class="stat-val" id="st-toplam-ihale">—</div>
+          <div class="stat-label">Toplam Ciro</div>
+          <div class="stat-val" id="st-toplam-ciro">—</div>
         </div>
         <div class="stat-card">
-          <div class="stat-label">Aktif İhale</div>
-          <div class="stat-val" id="st-aktif-ihale">—</div>
+          <div class="stat-label">İş Ortaklığı</div>
+          <div class="stat-val" id="st-ortak-girisim">—</div>
         </div>
       </div>
 
       <!-- YÜKLENİYOR DURUMU -->
       <div id="yukleniyor-blok" class="yukleniyor">
         <div class="spinner"></div>
-        <p id="yukleniyor-mesaj">İdare verileri çekiliyor…</p>
-        <div class="progress-mini" style="max-width:300px; margin:8px auto 0;">
-          <div class="progress-mini-fill" id="progress-fill" style="width:0%"></div>
-        </div>
+        <p>Firma verileri çekiliyor…</p>
+      </div>
+
+      <!-- BOŞ VERİ UYARISI (yukleniciler henüz doldurulmadıysa) -->
+      <div id="veri-yok-blok" style="display:none;" class="bos-durum">
+        Henüz yeterli firma verisi yok. Sonuç verisi hacmi arttıkça (ÖNCELİK 10 Faz A/B) bu dizin dolacak —
+        <a href="sonuclananlar" style="color:var(--amber);">Sonuçlananlar</a> sayfasından mevcut kayıtları görebilirsiniz.
       </div>
 
       <!-- İÇERİK -->
@@ -278,35 +246,31 @@
         <div class="filtre-bar">
           <div class="arama-wrap">
             <span style="color:var(--muted);">🔍</span>
-            <input type="text" id="arama" placeholder="İdare adı veya il ara…" autocomplete="off">
+            <input type="text" id="arama" placeholder="Firma adı ara…" autocomplete="off">
           </div>
           <select class="filtre-select" id="il-filtre">
             <option value="">Tüm İller</option>
           </select>
-          <select class="filtre-select" id="aktif-filtre">
-            <option value="">Tüm İdareler</option>
-            <option value="aktif">Sadece Aktif</option>
-          </select>
           <select class="filtre-select" id="sirala">
-            <option value="toplam_desc">En Çok İhale</option>
-            <option value="aktif_desc">En Çok Aktif</option>
+            <option value="ciro_desc">En Çok Ciro</option>
+            <option value="sayi_desc">En Çok Sözleşme</option>
+            <option value="tarih_desc">Son İş (En Yeni)</option>
             <option value="ad_asc">İsme Göre (A→Z)</option>
-            <option value="ad_desc">İsme Göre (Z→A)</option>
-            <option value="il_asc">İle Göre (A→Z)</option>
           </select>
-          <span class="sayac-label" id="sayac-label">— idare</span>
+          <span class="sayac-label" id="sayac-label">— firma</span>
         </div>
 
         <!-- TABLO -->
         <div class="tablo-wrap">
           <div class="tablo-header">
-            <div>İDARE ADI</div>
-            <div class="col-il">BAŞLICA İL</div>
-            <div class="sortable" id="sort-toplam" data-key="toplam">TOPLAM</div>
-            <div class="sortable" id="sort-aktif" data-key="aktif">AKTİF</div>
+            <div>FİRMA ADI</div>
+            <div class="col-il">İL</div>
+            <div class="sortable" id="sort-sayi" data-key="sayi">SÖZLEŞME</div>
+            <div class="sortable" id="sort-ciro" data-key="ciro">TOPLAM CİRO</div>
+            <div class="col-tarih">SON İŞ</div>
             <div class="col-actions">İŞLEMLER</div>
           </div>
-          <div id="liste-gövde">
+          <div id="liste-govde">
             <div class="bos-durum">Veri bekleniyor…</div>
           </div>
           <div class="pager" id="pager" style="display:none;">
@@ -329,70 +293,54 @@
   const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
   const SAYFA_BOYUTU = 50;
-  let tumIdare = [];   // { ad, il, toplam, aktif }
+  let tumFirma = [];   // { normalize_ad, ad, il, sayi, ciro, sonTarih, ortakGirisim }
   let filtrelenmis = [];
   let sayfa = 0;
-  let siraKey = 'toplam_desc';
 
-  // ── Veri çekme ──────────────────────────────────────────
+  function paraCevir(v) {
+    if (!v) return '—';
+    if (v >= 1e9) return (v / 1e9).toFixed(1).replace('.', ',') + ' Mr ₺';
+    if (v >= 1e6) return (v / 1e6).toFixed(1).replace('.', ',') + ' M ₺';
+    if (v >= 1e3) return (v / 1e3).toFixed(0) + ' bin ₺';
+    return v.toLocaleString('tr-TR') + ' ₺';
+  }
+
+  // ── Veri çekme (yukleniciler — agregasyon zaten DB'de, ilanlar gibi büyük tarama gerekmez) ──
   async function veriCek() {
-    const sayim = {};  // { idare: { toplam, aktif, iller: {il: count} } }
-    let offset = 0;
-    const batchSize = 1000;
-    let toplamKayit = 0;
+    const { data, error, count } = await sb.from('yukleniciler')
+      .select('normalize_ad, ad, il, toplam_sozlesme_sayisi, toplam_ciro, son_sozlesme_tarihi, ortak_girisim', { count: 'exact' })
+      .order('toplam_ciro', { ascending: false })
+      .limit(5000);
 
-    // Önce toplam sayıyı öğren (progress bar için)
-    const { count } = await sb.from('ilanlar').select('*', { count: 'exact', head: true });
-    toplamKayit = count || 12000;
+    if (error) throw error;
 
-    while (true) {
-      const { data, error } = await sb.from('ilanlar')
-        .select('idare, il, durum')
-        .not('idare', 'is', null)
-        .range(offset, offset + batchSize - 1);
-
-      if (error || !data || data.length === 0) break;
-
-      data.forEach(r => {
-        if (!r.idare) return;
-        if (!sayim[r.idare]) sayim[r.idare] = { toplam: 0, aktif: 0, iller: {} };
-        sayim[r.idare].toplam++;
-        if (r.durum === 'aktif') sayim[r.idare].aktif++;
-        if (r.il) {
-          sayim[r.idare].iller[r.il] = (sayim[r.idare].iller[r.il] || 0) + 1;
-        }
-      });
-
-      offset += batchSize;
-      const yuzde = Math.min(Math.round(offset / toplamKayit * 100), 99);
-      document.getElementById('progress-fill').style.width = yuzde + '%';
-      document.getElementById('yukleniyor-mesaj').textContent =
-        `İdare verileri çekiliyor… (${offset.toLocaleString('tr-TR')} / ${toplamKayit.toLocaleString('tr-TR')})`;
-
-      if (data.length < batchSize) break;
+    if (!data || data.length === 0) {
+      document.getElementById('yukleniyor-blok').style.display = 'none';
+      document.getElementById('veri-yok-blok').style.display = 'block';
+      return;
     }
 
-    document.getElementById('progress-fill').style.width = '100%';
+    tumFirma = data.map(r => ({
+      normalizeAd: r.normalize_ad,
+      ad: r.ad || r.normalize_ad,
+      il: r.il || '—',
+      sayi: r.toplam_sozlesme_sayisi || 0,
+      ciro: r.toplam_ciro || 0,
+      sonTarih: r.son_sozlesme_tarihi,
+      ortakGirisim: !!r.ortak_girisim,
+    }));
 
-    // Map → dizi dönüştür
-    tumIdare = Object.entries(sayim).map(([ad, v]) => {
-      const ilEn = Object.entries(v.iller).sort((a, b) => b[1] - a[1])[0]?.[0] || '—';
-      return { ad, il: ilEn, toplam: v.toplam, aktif: v.aktif };
-    });
+    const toplamCiro = tumFirma.reduce((s, f) => s + f.ciro, 0);
+    const toplamSozlesme = tumFirma.reduce((s, f) => s + f.sayi, 0);
+    const ortakSayisi = tumFirma.filter(f => f.ortakGirisim).length;
+    document.getElementById('st-toplam-firma').textContent = tumFirma.length.toLocaleString('tr-TR');
+    document.getElementById('st-toplam-sozlesme').textContent = toplamSozlesme.toLocaleString('tr-TR');
+    document.getElementById('st-toplam-ciro').textContent = paraCevir(toplamCiro);
+    document.getElementById('st-ortak-girisim').textContent = ortakSayisi.toLocaleString('tr-TR');
 
-    // İstatistik kartları
-    const toplamIhale = tumIdare.reduce((s, i) => s + i.toplam, 0);
-    const aktifIhale  = tumIdare.reduce((s, i) => s + i.aktif, 0);
-    const aktifIdare  = tumIdare.filter(i => i.aktif > 0).length;
-    document.getElementById('st-toplam-idare').textContent = tumIdare.length.toLocaleString('tr-TR');
-    document.getElementById('st-aktif-idare').textContent  = aktifIdare.toLocaleString('tr-TR');
-    document.getElementById('st-toplam-ihale').textContent = toplamIhale.toLocaleString('tr-TR');
-    document.getElementById('st-aktif-ihale').textContent  = aktifIhale.toLocaleString('tr-TR');
-
-    // İl filtresi doldur
-    const tümİller = [...new Set(tumIdare.map(i => i.il).filter(il => il && il !== '—'))].sort();
+    const tumIller = [...new Set(tumFirma.map(f => f.il).filter(il => il && il !== '—'))].sort();
     const ilSelect = document.getElementById('il-filtre');
-    tümİller.forEach(il => {
+    tumIller.forEach(il => {
       const opt = document.createElement('option');
       opt.value = il; opt.textContent = il;
       ilSelect.appendChild(opt);
@@ -404,29 +352,24 @@
     goster();
   }
 
-  // ── Filtre & sıralama ────────────────────────────────────
   function goster() {
-    const aramaVal   = document.getElementById('arama').value.trim().toLowerCase();
-    const ilVal      = document.getElementById('il-filtre').value;
-    const aktifVal   = document.getElementById('aktif-filtre').value;
-    siraKey          = document.getElementById('sirala').value;
+    const aramaVal = document.getElementById('arama').value.trim().toLowerCase();
+    const ilVal = document.getElementById('il-filtre').value;
+    const siraKey = document.getElementById('sirala').value;
 
-    filtrelenmis = tumIdare.filter(i => {
-      if (aramaVal && !i.ad.toLowerCase().includes(aramaVal) && !i.il.toLowerCase().includes(aramaVal)) return false;
-      if (ilVal && i.il !== ilVal) return false;
-      if (aktifVal === 'aktif' && i.aktif < 1) return false;
+    filtrelenmis = tumFirma.filter(f => {
+      if (aramaVal && !f.ad.toLowerCase().includes(aramaVal)) return false;
+      if (ilVal && f.il !== ilVal) return false;
       return true;
     });
 
-    // Sırala
     filtrelenmis.sort((a, b) => {
       switch (siraKey) {
-        case 'toplam_desc': return b.toplam - a.toplam;
-        case 'aktif_desc':  return b.aktif - a.aktif;
-        case 'ad_asc':      return a.ad.localeCompare(b.ad, 'tr');
-        case 'ad_desc':     return b.ad.localeCompare(a.ad, 'tr');
-        case 'il_asc':      return a.il.localeCompare(b.il, 'tr');
-        default:            return b.toplam - a.toplam;
+        case 'ciro_desc':  return b.ciro - a.ciro;
+        case 'sayi_desc':  return b.sayi - a.sayi;
+        case 'tarih_desc': return new Date(b.sonTarih || 0) - new Date(a.sonTarih || 0);
+        case 'ad_asc':     return a.ad.localeCompare(b.ad, 'tr');
+        default:           return b.ciro - a.ciro;
       }
     });
 
@@ -436,84 +379,79 @@
 
   function sayfaGoster() {
     const baslangic = sayfa * SAYFA_BOYUTU;
-    const bitis     = baslangic + SAYFA_BOYUTU;
-    const dilim     = filtrelenmis.slice(baslangic, bitis);
+    const dilim = filtrelenmis.slice(baslangic, baslangic + SAYFA_BOYUTU);
     const toplamSayfa = Math.ceil(filtrelenmis.length / SAYFA_BOYUTU);
 
-    document.getElementById('sayac-label').textContent =
-      filtrelenmis.length.toLocaleString('tr-TR') + ' idare';
+    document.getElementById('sayac-label').textContent = filtrelenmis.length.toLocaleString('tr-TR') + ' firma';
 
-    const govde = document.getElementById('liste-gövde');
+    const govde = document.getElementById('liste-govde');
     if (!dilim.length) {
-      govde.innerHTML = '<div class="bos-durum">Arama kriterleriyle eşleşen idare bulunamadı.</div>';
+      govde.innerHTML = '<div class="bos-durum">Arama kriterleriyle eşleşen firma bulunamadı.</div>';
       document.getElementById('pager').style.display = 'none';
       return;
     }
 
-    govde.innerHTML = dilim.map(i => `
-      <div class="idare-row">
-        <div class="idare-ad">
-          <a href="kurum-analiz?kurum=${encodeURIComponent(i.ad)}" title="${i.ad}">${i.ad}</a>
+    govde.innerHTML = dilim.map(f => `
+      <div class="firma-row">
+        <div class="firma-ad">
+          <a href="firma-analiz?firma=${encodeURIComponent(f.ad)}" title="${f.ad}">${f.ad}</a>
+          ${f.ortakGirisim ? '<span class="firma-badge">İŞ ORT.</span>' : ''}
         </div>
-        <div class="idare-il">${i.il}</div>
-        <div class="idare-toplam">${i.toplam.toLocaleString('tr-TR')}</div>
-        <div class="idare-aktif">${i.aktif > 0 ? i.aktif.toLocaleString('tr-TR') : '<span style="color:var(--muted)">0</span>'}</div>
-        <div class="idare-actions">
-          <a href="kurum-analiz?kurum=${encodeURIComponent(i.ad)}" class="btn-xs btn-xs-amber">Analiz</a>
-          <a href="ihaleler?idare=${encodeURIComponent(i.ad)}" class="btn-xs btn-xs-ghost">İhaleler</a>
+        <div class="firma-il">${f.il}</div>
+        <div class="firma-sayi">${f.sayi.toLocaleString('tr-TR')}</div>
+        <div class="firma-ciro">${paraCevir(f.ciro)}</div>
+        <div class="firma-tarih">${f.sonTarih ? new Date(f.sonTarih).toLocaleDateString('tr-TR') : '—'}</div>
+        <div class="firma-actions">
+          <a href="firma-analiz?firma=${encodeURIComponent(f.ad)}" class="btn-xs btn-xs-amber">Analiz</a>
         </div>
       </div>
     `).join('');
 
-    // Sayfalama
     const pager = document.getElementById('pager');
     if (toplamSayfa <= 1) {
       pager.style.display = 'none';
     } else {
       pager.style.display = 'flex';
       document.getElementById('p-info').textContent =
-        `Sayfa ${sayfa + 1} / ${toplamSayfa}  (${filtrelenmis.length.toLocaleString('tr-TR')} idare)`;
+        `Sayfa ${sayfa + 1} / ${toplamSayfa}  (${filtrelenmis.length.toLocaleString('tr-TR')} firma)`;
       document.getElementById('p-prev').disabled = sayfa === 0;
       document.getElementById('p-next').disabled = sayfa >= toplamSayfa - 1;
     }
   }
 
-  // ── Olaylar ──────────────────────────────────────────────
   let aramaTimer;
   document.getElementById('arama').addEventListener('input', () => {
     clearTimeout(aramaTimer);
     aramaTimer = setTimeout(goster, 300);
   });
   document.getElementById('il-filtre').addEventListener('change', goster);
-  document.getElementById('aktif-filtre').addEventListener('change', goster);
   document.getElementById('sirala').addEventListener('change', goster);
 
   document.getElementById('p-prev').addEventListener('click', () => { sayfa--; sayfaGoster(); window.scrollTo(0,0); });
   document.getElementById('p-next').addEventListener('click', () => { sayfa++; sayfaGoster(); window.scrollTo(0,0); });
 
-  // Kolon başlığı tıklama ile sıralama
-  document.getElementById('sort-toplam').addEventListener('click', () => {
-    document.getElementById('sirala').value = siraKey === 'toplam_desc' ? 'aktif_desc' : 'toplam_desc';
+  document.getElementById('sort-sayi').addEventListener('click', () => {
+    document.getElementById('sirala').value = 'sayi_desc';
     goster();
   });
-  document.getElementById('sort-aktif').addEventListener('click', () => {
-    document.getElementById('sirala').value = 'aktif_desc';
+  document.getElementById('sort-ciro').addEventListener('click', () => {
+    document.getElementById('sirala').value = 'ciro_desc';
     goster();
   });
 
   function csvIndir() {
-    if (!filtrelenmis.length) { alert('Gösterilecek idare yok.'); return; }
+    if (!filtrelenmis.length) { alert('Gösterilecek firma yok.'); return; }
     const satirlar = [
-      ['İdare Adı', 'Başlıca İl', 'Toplam İhale', 'Aktif İhale'],
-      ...filtrelenmis.map(i => [
-        `"${i.ad.replace(/"/g, '""')}"`, i.il, i.toplam, i.aktif,
+      ['Firma Adı', 'İl', 'Sözleşme Sayısı', 'Toplam Ciro', 'Son İş Tarihi'],
+      ...filtrelenmis.map(f => [
+        `"${f.ad.replace(/"/g, '""')}"`, f.il, f.sayi, f.ciro, f.sonTarih || '',
       ]),
     ];
     const icerik = '﻿' + satirlar.map(r => r.join(',')).join('\r\n');
     const blob = new Blob([icerik], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.href = url; a.download = `idareler_${new Date().toISOString().split('T')[0]}.csv`;
+    a.href = url; a.download = `firmalar_${new Date().toISOString().split('T')[0]}.csv`;
     a.click(); URL.revokeObjectURL(url);
   }
 
@@ -534,11 +472,13 @@
     }
   });
 
-  // ── Başlat ───────────────────────────────────────────────
   veriCek().catch(e => {
     console.error(e);
-    document.getElementById('yukleniyor-blok').innerHTML =
-      '<div style="color:#f87171; padding:40px; text-align:center;">Veri yüklenemedi. Lütfen sayfayı yenileyin.</div>';
+    // yukleniciler tablosu henüz bu ortamda kurulmamış olabilir (migration_sonuc_B_kurulum.sql +
+    // migration_yuklenici_agg.sql bekliyor, bkz. YAPILACAKLAR.md ÖNCELİK 10 Faz B) — kullanıcıya
+    // korkutucu kırmızı hata yerine bilgilendirici boş-durum göster.
+    document.getElementById('yukleniyor-blok').style.display = 'none';
+    document.getElementById('veri-yok-blok').style.display = 'block';
   });
 </script>
 </body>

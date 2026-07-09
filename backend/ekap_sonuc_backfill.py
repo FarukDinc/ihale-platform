@@ -179,8 +179,8 @@ def tarih_iso(s):
 
 
 def html_teklif_sayisi_parse(html: str) -> dict:
-    """SONUÇ İLANI HTML'inden 'Toplam Teklif Sayısı' / 'Toplam Geçerli Teklif Sayısı' çıkar."""
-    out = {"toplam_teklif": None, "gecerli_teklif": None}
+    """SONUÇ İLANI HTML'inden 'Toplam Teklif Sayısı' / 'Toplam Geçerli Teklif Sayısı' / katılımcı sayısı çıkar."""
+    out = {"toplam_teklif": None, "gecerli_teklif": None, "katilimci": None}
     if not html:
         return out
     fixed = mojibake_duzelt(html) or html
@@ -190,6 +190,17 @@ def html_teklif_sayisi_parse(html: str) -> dict:
     m = re.search(r"Toplam Ge[çc]erli Teklif Say[ıi]s[ıi][^0-9]{0,20}?(\d+)", fixed, re.IGNORECASE)
     if m:
         out["gecerli_teklif"] = int(m.group(1))
+    # Katılımcı sayısı: EKAP sonuç ilanlarında "X istekli katılmış/teklif vermiştir" ya da
+    # "İhaleye katılan istekli sayısı" biçiminde geçebiliyor — ikisini de dene.
+    m = re.search(r"[İI]haleye Kat[ıi]lan [İI]stekli Say[ıi]s[ıi][^0-9]{0,20}?(\d+)", fixed, re.IGNORECASE)
+    if m:
+        out["katilimci"] = int(m.group(1))
+    else:
+        m = re.search(r"(\d+)\s*istekli\s*(?:ihaleye\s*)?kat[ıi]lm[ıi][şs]", fixed, re.IGNORECASE)
+        if m:
+            out["katilimci"] = int(m.group(1))
+    if out["katilimci"] is None:
+        out["katilimci"] = out["toplam_teklif"]  # teklif veren = katılımcı için makul yaklaşım
     return out
 
 
@@ -231,67 +242,86 @@ async def ekap_detay_cek(client: httpx.AsyncClient, ihale_id: str) -> dict | Non
     return await post(client, "/b_ihalearama/api/IhaleDetay/GetByIhaleIdIhaleDetay", {"ihaleId": ihale_id})
 
 
-def sonuc_kaydi_olustur(ilan: dict, detay: dict) -> dict | None:
-    """detay (GetByIhaleIdIhaleDetay yanıtı) → ihale_sonuclari satırı."""
+def sonuc_kayitlari_olustur(ilan: dict, detay: dict) -> list[dict]:
+    """
+    detay (GetByIhaleIdIhaleDetay yanıtı) → ihale_sonuclari satır listesi.
+    Çok kısımlı (lot) ihalelerde sozlesmeBilgiList birden fazla eleman içerebilir —
+    her kısım ayrı bir satır olarak (ilan_id, kisim_no) anahtarıyla yazılır
+    (bkz. migration_sonuc_kisim.sql, ÖNCELİK 10 Faz A2).
+    """
     item = (detay or {}).get("item") or {}
     sozlesme_list = item.get("sozlesmeBilgiList") or []
     ilan_list = item.get("ilanList") or []
     if not sozlesme_list and not ilan_list:
-        return None
-
-    sozlesme = sozlesme_list[0] if sozlesme_list else {}
-
-    # Bazı ihaleler (özellikle çok kısımlı/ithal alımlar) sözleşme bedelini yabancı para
-    # birimiyle (USD/EUR) yayınlıyor; sozlesmeBedeliDegeri o durumda da bir sayı döndürüyor
-    # ama TRY değil — TRY sanıp kaydetmek tenzilat hesabını tamamen bozar. Böyle kayıtları atla.
-    bedel_metni = str(sozlesme.get("sozlesmeBedeli") or "")
-    if any(k in bedel_metni.upper() for k in (" USD", " EUR", " GBP", "DOLAR", "AVRO", "EURO")):
-        return None
+        return []
 
     sonuc_entry = sonuc_ilan_html_bul(ilan_list)
     ilan_html = sonuc_entry.get("veriHtml") if sonuc_entry else None
     teklif_info = html_teklif_sayisi_parse(ilan_html)
-
-    kazanan_firma = mojibake_duzelt(sozlesme.get("yukleniciAdi")) or None
-    if not kazanan_firma and sonuc_entry:
-        kazanan_firma = mojibake_duzelt(sonuc_entry.get("istekliAdi"))
-
-    kazanan_teklif = bedel_parse(sozlesme.get("sozlesmeBedeliDegeri") or sozlesme.get("sozlesmeBedeli"))
-    en_dusuk = bedel_parse(sozlesme.get("enDusukTeklifDegeri") or sozlesme.get("enDusukTeklif"))
-    en_yuksek = bedel_parse(sozlesme.get("enYuksekTeklifDegeri") or sozlesme.get("enYuksekTeklif"))
-    sonuc_tarihi = tarih_iso(sozlesme.get("sozlesmeTarih"))
-
-    # tenzilat %: SONUÇ İLANI HTML'inden ayrıştırılan yaklaşık maliyet en güvenilir kaynak
-    # (sozlesmeBilgiList.yaklasikMaliyet alanı EKAP'ta gözlemlenen örneklerde 10x hatalı geliyor).
-    # Yoksa bizim ilanlar.yaklasik_maliyet_min'e düş.
-    yaklasik = html_yaklasik_maliyet_parse(ilan_html) \
+    # HTML'den ayrıştırılan yaklaşık maliyet en güvenilir kaynak (sozlesmeBilgiList.yaklasikMaliyet
+    # EKAP'ta gözlemlenen örneklerde 10x hatalı geliyor). Yoksa bizim ilanlar.yaklasik_maliyet_min'e düş.
+    yaklasik_html = html_yaklasik_maliyet_parse(ilan_html) \
         or ilan.get("yaklasik_maliyet_min") or ilan.get("tahmini_bedel")
-    tenzilat = None
-    if yaklasik and kazanan_teklif and yaklasik > 0:
-        tenzilat = round((1 - (kazanan_teklif / yaklasik)) * 100, 3)
+    sonuc_tarihi_genel = tarih_iso(item.get("sozlesmeTarih") or item.get("karar_tarihi"))
 
-    if not kazanan_firma and kazanan_teklif is None:
-        return None
+    kaynak_list = sozlesme_list if sozlesme_list else [{}]
+    kayitlar = []
+    for idx, sozlesme in enumerate(kaynak_list, start=1):
+        # Bazı ihaleler (özellikle çok kısımlı/ithal alımlar) sözleşme bedelini yabancı para
+        # birimiyle (USD/EUR) yayınlıyor; sozlesmeBedeliDegeri o durumda da bir sayı döndürüyor
+        # ama TRY değil — TRY sanıp kaydetmek tenzilat hesabını tamamen bozar. Böyle kısımları atla.
+        bedel_metni = str(sozlesme.get("sozlesmeBedeli") or "")
+        if any(k in bedel_metni.upper() for k in (" USD", " EUR", " GBP", "DOLAR", "AVRO", "EURO")):
+            continue
 
-    ortalama = None
-    if en_dusuk is not None and en_yuksek is not None:
-        ortalama = int(round((en_dusuk + en_yuksek) / 2))
+        kazanan_firma = mojibake_duzelt(sozlesme.get("yukleniciAdi")) or None
+        if not kazanan_firma and sonuc_entry and idx == 1:
+            kazanan_firma = mojibake_duzelt(sonuc_entry.get("istekliAdi"))
 
-    return {
-        "ilan_id": ilan["id"],
-        "kazanan_firma": kazanan_firma,
-        "kazanan_teklif": kazanan_teklif,
-        "kazanan_teklif_farki_yuzde": tenzilat,
-        "tum_teklifler": json.dumps({
-            "sozlesme_bilgi": sozlesme,
-            "teklif_sayilari": teklif_info,
-        }, ensure_ascii=False, default=str)[:15000],
-        "toplam_teklif_sayisi": teklif_info.get("toplam_teklif") or teklif_info.get("gecerli_teklif"),
-        "en_dusuk_teklif": en_dusuk,
-        "en_yuksek_teklif": en_yuksek,
-        "ortalama_teklif": ortalama,
-        "sonuc_tarihi": sonuc_tarihi,
-    }
+        kazanan_teklif = bedel_parse(sozlesme.get("sozlesmeBedeliDegeri") or sozlesme.get("sozlesmeBedeli"))
+        en_dusuk = bedel_parse(sozlesme.get("enDusukTeklifDegeri") or sozlesme.get("enDusukTeklif"))
+        en_yuksek = bedel_parse(sozlesme.get("enYuksekTeklifDegeri") or sozlesme.get("enYuksekTeklif"))
+        sonuc_tarihi = tarih_iso(sozlesme.get("sozlesmeTarih")) or sonuc_tarihi_genel
+
+        if not kazanan_firma and kazanan_teklif is None:
+            continue
+
+        # Kısım-bazlı yaklaşık maliyet varsa onu kullan, yoksa ihale-geneli HTML değerine düş.
+        yaklasik = bedel_parse(sozlesme.get("yaklasikMaliyetDegeri")) or yaklasik_html
+        tenzilat = None
+        if yaklasik and kazanan_teklif and yaklasik > 0:
+            tenzilat = round((1 - (kazanan_teklif / yaklasik)) * 100, 3)
+
+        ortalama = None
+        if en_dusuk is not None and en_yuksek is not None:
+            ortalama = int(round((en_dusuk + en_yuksek) / 2))
+
+        kayitlar.append({
+            "ilan_id": ilan["id"],
+            "kisim_no": idx,
+            "kazanan_firma": kazanan_firma,
+            "kazanan_teklif": kazanan_teklif,
+            "kazanan_teklif_farki_yuzde": tenzilat,
+            "tum_teklifler": json.dumps({
+                "sozlesme_bilgi": sozlesme,
+                "teklif_sayilari": teklif_info,
+            }, ensure_ascii=False, default=str)[:15000],
+            "toplam_teklif_sayisi": teklif_info.get("toplam_teklif") or teklif_info.get("gecerli_teklif"),
+            "en_dusuk_teklif": en_dusuk,
+            "en_yuksek_teklif": en_yuksek,
+            "ortalama_teklif": ortalama,
+            "sonuc_tarihi": sonuc_tarihi,
+            # ÖNCELİK 10 Faz A2 — Tasarım B kolonlarını da dolduruyoruz (analiz_pivot RPC bunlardan okuyacak)
+            "ikn": ilan.get("ikn"),
+            "yuklenici_ad": kazanan_firma,
+            "sozlesme_bedeli": kazanan_teklif,
+            "sozlesme_tarihi": sonuc_tarihi,
+            "tenzilat_yuzde": tenzilat,
+            "yaklasik_maliyet": yaklasik,
+            "katilimci_sayisi": teklif_info.get("katilimci"),
+            "gecerli_teklif_sayisi": teklif_info.get("gecerli_teklif"),
+        })
+    return kayitlar
 
 
 # ── Supabase REST yardımcıları (supabase-py yerine doğrudan httpx — bağımlılık azaltmak için) ──
@@ -362,20 +392,72 @@ def checkpoint_yaz(skip: int):
 
 def sonuc_upsert(kayit: dict, dry_run: bool):
     if dry_run:
-        print(f"    [DRY-RUN] {kayit['kazanan_firma']} — {kayit['kazanan_teklif']} TL "
+        print(f"    [DRY-RUN] kısım {kayit['kisim_no']}: {kayit['kazanan_firma']} — {kayit['kazanan_teklif']} TL "
               f"(tenzilat: {kayit['kazanan_teklif_farki_yuzde']}%)")
         return
     with httpx.Client(timeout=30.0) as c:
         r = c.post(f"{SUPABASE_URL}/rest/v1/ihale_sonuclari", json=kayit,
+                    params={"on_conflict": "ilan_id,kisim_no"},
                     headers={**sb_headers(), "Prefer": "resolution=merge-duplicates"})
         if r.status_code >= 300:
             print(f"    ✗ yazma hatası: {r.status_code} {r.text[:200]}")
 
 
+def ilan_kompakt_ekle(item: dict, dry_run: bool) -> dict | None:
+    """
+    ÖNCELİK 10 Faz A3 — '--tum-kayitlar' modu: IKN bizim ilanlar tablomuzda yoksa,
+    EKAP'ın sonuç listesindeki (item) bilgilerden KOMPAKT bir satır oluşturup ilanlar'a
+    upsert eder (ilan_metni=NULL — depolama stratejisi: geçmiş=kompakt ~0.5KB, HTML yok).
+    Döner: {id, ikn, yaklasik_maliyet_min, tahmini_bedel} ya da None.
+    """
+    ikn = item.get("ikn")
+    if not ikn:
+        return None
+    try:
+        from ekap_scraper import kategori_tur, tur_donustur  # aynı klasör, sadece saf fonksiyonlar
+    except Exception:
+        kategori_tur = tur_donustur = None
+
+    tur = tur_donustur(item.get("ihaleTipAciklama")) if tur_donustur else None
+    okas = item.get("okas")
+    baslik = mojibake_duzelt((item.get("ihaleAdi") or item.get("konu") or "").strip()) or None
+    kategori = kategori_tur(okas, tur, baslik) if kategori_tur else None
+
+    kayit = {
+        "ekap_id": str(item.get("ikn") or item.get("id") or ""),
+        "ikn": str(ikn),
+        "baslik": baslik,
+        "idare": mojibake_duzelt((item.get("idareAdi") or "").strip()) or None,
+        "il": mojibake_duzelt((item.get("ihaleIlAdi") or "").strip()) or None,
+        "tur": tur,
+        "okas": okas,
+        "kategori": kategori,
+        "durum": "sonuclandi",
+        "ilan_metni": None,
+    }
+    if dry_run:
+        print(f"    [DRY-RUN] kompakt ilan eklenecek: {ikn} — {kayit['baslik']}")
+        return {"id": None, "ikn": ikn, "yaklasik_maliyet_min": None, "tahmini_bedel": None}
+    with httpx.Client(timeout=30.0) as c:
+        r = c.post(f"{SUPABASE_URL}/rest/v1/ilanlar", json=kayit,
+                    params={"on_conflict": "ekap_id"},
+                    headers={**sb_headers(), "Prefer": "resolution=merge-duplicates,return=representation"})
+        if r.status_code >= 300:
+            print(f"    ✗ kompakt ilan yazma hatası: {r.status_code} {r.text[:200]}")
+            return None
+        rows = r.json()
+        if not rows:
+            return None
+        row = rows[0]
+        return {"id": row["id"], "ikn": ikn,
+                "yaklasik_maliyet_min": row.get("yaklasik_maliyet_min"),
+                "tahmini_bedel": row.get("tahmini_bedel")}
+
+
 SAYFA_BOYUTU = 100
 
 
-async def calis(max_pages: int, dry_run: bool, start_skip: int | None):
+async def calis(max_pages: int, dry_run: bool, start_skip: int | None, tum_kayitlar: bool = False):
     """
     EKAP'ın 'Result Announcement Published' (durum filtresi=5) listesini baştan/kaldığı
     yerden sayfalar, kendi ilanlar tablomuzdaki IKN'lerle eşleşenleri bulur, detayını
@@ -432,25 +514,39 @@ async def calis(max_pages: int, dry_run: bool, start_skip: int | None):
             for item in liste:
                 ikn = item.get("ikn")
                 ilan = harita.get(ikn)
-                if not ilan or ilan["id"] in mevcut:
+                if not ilan and tum_kayitlar:
+                    # Faz A3 — havuzdan bağımsız mod: bizim ilanlar tablomuzda olmasa bile
+                    # kompakt bir satır oluşturup devam et (hacmi 1.68M'e doğru büyütür).
+                    ilan = ilan_kompakt_ekle(item, dry_run)
+                    if ilan and ilan.get("id"):
+                        harita[ikn] = ilan
+                if not ilan or (ilan.get("id") and ilan["id"] in mevcut):
                     continue
                 eslesen += 1
                 try:
                     detay = await ekap_detay_cek(client, item["id"])
                     if not detay:
                         continue
-                    kayit = sonuc_kaydi_olustur(ilan, detay)
-                    if not kayit:
+                    kayitlar = sonuc_kayitlari_olustur(ilan, detay)
+                    if not kayitlar:
                         continue
-                    sonuc_upsert(kayit, dry_run)
-                    mevcut.add(ilan["id"])
+                    for kayit in kayitlar:
+                        sonuc_upsert(kayit, dry_run)
+                        print(f"  ✓ {ikn} kısım {kayit['kisim_no']} → {kayit['kazanan_firma']} "
+                              f"({kayit['kazanan_teklif']} TL, tenzilat {kayit['kazanan_teklif_farki_yuzde']}%)")
+                    if ilan.get("id"):
+                        mevcut.add(ilan["id"])
                     yazilan += 1
-                    print(f"  ✓ {ikn} → {kayit['kazanan_firma']} "
-                          f"({kayit['kazanan_teklif']} TL, tenzilat {kayit['kazanan_teklif_farki_yuzde']}%)")
                     await asyncio.sleep(0.15)
                 except Exception as e:
                     hata += 1
                     print(f"  ✗ {ikn}: {e}")
+                    # 403/429 → muhtemelen IP kısıtlaması; plan gereği (Faz A3) burada durup
+                    # kullanıcının proxy doldurmasını beklemek daha güvenli.
+                    if "403" in str(e) or "429" in str(e):
+                        print("  ⏹ 403/429 alındı — IP kısıtlanmış olabilir. PROXY GEREK. Durduruluyor.")
+                        checkpoint_yaz(skip)
+                        return
 
             skip += SAYFA_BOYUTU
             checkpoint_yaz(skip)
@@ -482,9 +578,12 @@ def main():
     ap.add_argument("--start-skip", type=int, default=None, help="Belirtilmezse checkpoint dosyasından devam eder")
     ap.add_argument("--reset", action="store_true", help="Checkpoint'i sıfırla (baştan tara)")
     ap.add_argument("--dry-run", action="store_true")
+    ap.add_argument("--tum-kayitlar", action="store_true",
+                     help="ÖNCELİK 10 Faz A3: bizim ilanlar tablomuzda olmayan IKN'leri de "
+                          "kompakt satır olarak ekleyip işler (havuzdan bağımsız geniş backfill).")
     args = ap.parse_args()
     start_skip = 0 if args.reset else args.start_skip
-    asyncio.run(calis(args.max_pages, args.dry_run, start_skip))
+    asyncio.run(calis(args.max_pages, args.dry_run, start_skip, args.tum_kayitlar))
 
 
 if __name__ == "__main__":

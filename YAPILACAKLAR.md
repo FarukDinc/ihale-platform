@@ -1248,6 +1248,77 @@ ihaleciler'de kullanıcılar kazandıkları ihaleleri "sözleşme listesi"ne ekl
 > ⛔ **HUKUKİ SINIR (değişmedi, bkz. 9.1.1):** ihaleciler.com'dan TEK SATIR veri çekilmeyecek. Tüm veri
 > EKAP/KİK kamu kaynaklarından. ihaleciler sadece "özellik referansı".
 
+### 🟡 İLERLEME (9 Tem 2026, Sonnet oturumu — kod hazır, DB migration'ları BEKLİYOR)
+
+> Bu oturumda A2/A3/B1/B2/B3/C1 için KOD yazıldı ve `firmalar.html` local önizlemede doğrulandı
+> (boş-durum + sidebar + CSV/paylaş — hepsi çalışıyor). **SSH bu oturumda auto-mode tarafından
+> engellendi** (üretim VDS'e yazma — kullanıcı onayı gerek) → aşağıdaki SQL migration'ları HENÜZ
+> VDS'e ve managed Supabase'e uygulanmadı. Bir sonraki adım bunları uygulamak.
+
+- ✅ **A2+A3 kod hazır** (`backend/ekap_sonuc_backfill.py`): çok kısımlı (kısım/lot) desteği eklendi
+  (`sonuc_kayitlari_olustur()` artık liste döner, her kısım `(ilan_id, kisim_no)` ile upsert edilir);
+  katılımcı sayısı HTML'den parse ediliyor (`html_teklif_sayisi_parse` → `katilimci` alanı); B kolonları
+  (tenzilat_yuzde, yaklasik_maliyet, katilimci_sayisi, gecerli_teklif_sayisi, sozlesme_tarihi, ikn,
+  yuklenici_ad, sozlesme_bedeli) artık her yazımda dolduruluyor. `--tum-kayitlar` flag'i eklendi
+  (`ilan_kompakt_ekle()`): IKN bizim havuzda yoksa bile kompakt satır oluşturup devam eder; 403/429
+  alınca "PROXY GEREK" logu ile duruyor (kullanıcı Webshare doldurunca devam edilir).
+- ✅ **`backend/migration_sonuc_kisim.sql`** (yeni): `ihale_sonuclari`'ya `kisim_no` ekler, eski
+  tekil `ilan_id` kısıtını `(ilan_id, kisim_no)`'ya genişletir. **UYGULANMADI.**
+- ✅ **B1 kod hazır**: `backend/firma_normalize.py` (Python normalize_ad/ortak_girisim tespiti) +
+  `backend/migration_yuklenici_agg.sql`'deki `normalize_firma()` (SQL ikizi, davranışça senkron).
+- ✅ **B2 kod hazır**: `backend/migration_yuklenici_agg.sql` → `yuklenici_yenile()` RPC'si (agregasyon
+  + `ihale_sonuclari.yuklenici_id` doldurma). Cron tetikleyici: `backend/yuklenici_yenile_calistir.py`
+  (REST üzerinden RPC çağırır). **RPC UYGULANMADI, cron'a EKLENMEDİ.**
+- ✅ **B3 TAMAMLANDI (frontend)**: `firmalar.html` (yeni) — idareler.html şablonundan, arama+il filtresi+
+  4 sıralama+CSV+paylaş+boş-durum. `yukleniciler` boşken/tablo yokken kullanıcıya kırmızı hata yerine
+  bilgilendirici mesaj gösteriyor (test edildi: managed'da tablo 404 verdi, mesaj düzgün göründü).
+  Sidebar linki (`🏢 Firmalar Dizini`) **17 sayfaya** eklendi (idareler linkinden hemen sonra, tutarlı
+  konumda): bildirimler, dokumanlar, firma-analiz, fiyatlandirma_odeme_bolumu, ihale-detay, ihaleler,
+  kik-kararlar, kurum-analiz, profil, rekabet-analizi, sektorler, sonuclananlar, teklif-olustur,
+  uyumluluk, dashboard, takipte, idareler (kendi sayfası, `active` sınıfıyla). Ana sayfa haritasındaki
+  "🏢 Firmalar (Yakında)" sekmesi artık gerçek link (`index.html`) — choropleth değil, doğrudan dizine yönlendirir.
+  ⚠️ Not: `firma-analiz.html`'in `?firma=` parametresi ham ada ILIKE arama yapıyor (normalize_ad değil) —
+  `firmalar.html` linkleri bu yüzden `f.ad` (görünen ad) kullanıyor, `f.normalizeAd` değil.
+- ✅ **C1 kod hazır**: `backend/migration_analiz_rpc.sql` → `analiz_pivot(p_grup, p_firma, p_idare,
+  p_kategori, p_il, p_yil)` RPC'si (whitelist'li dinamik GROUP BY, 7 kırılım). **UYGULANMADI.**
+- [ ] 🔴 **C2/C3/C4 YAPILMADI**: firma-analiz.html/kurum-analiz.html'in `analiz_pivot` RPC'sine
+  bağlanması henüz yapılmadı (RPC canlıda doğrulanmadan bağlamak riskli — önce migration uygulanmalı).
+
+#### 🔑 SIRADAKİ AI/KULLANICI İÇİN — DB migration'larını uygula (SSH gerekiyor, bu oturumda engellendi)
+
+Aşağıdaki 3 dosya VDS'e VE managed Supabase'e (cutover'a dek ikisi de canlı) sırayla uygulanmalı:
+`backend/migration_sonuc_kisim.sql` → `backend/migration_yuklenici_agg.sql` → `backend/migration_analiz_rpc.sql`
+(bu sıra önemli: kisim.sql önce, çünkü diğer ikisi `ihale_sonuclari` şemasının nihai halini varsayıyor).
+
+**VDS (SSH):**
+```bash
+ssh -i ~/.ssh/ihale_oracle root@195.85.207.126
+cd /opt/ihale-platform && git pull origin main
+docker exec -i supabase-db psql -U postgres -d postgres < backend/migration_sonuc_kisim.sql
+docker exec -i supabase-db psql -U postgres -d postgres < backend/migration_yuklenici_agg.sql
+docker exec -i supabase-db psql -U postgres -d postgres < backend/migration_analiz_rpc.sql
+# doğrula:
+docker exec -i supabase-db psql -U postgres -d postgres -c "SELECT yuklenici_yenile();"
+docker exec -i supabase-db psql -U postgres -d postgres -c "SELECT * FROM analiz_pivot('yil') LIMIT 5;"
+```
+**Managed Supabase (Dashboard → SQL Editor):** aynı 3 dosyanın içeriğini sırayla yapıştır+RUN.
+
+**Sonra cron'a ekle (VDS, `run_scraper.sh`'e, ana scraper'dan SONRA):**
+```bash
+cat >> /opt/ihale-platform/backend/run_scraper.sh << 'EOF'
+$VENV/python ekap_sonuc_backfill.py --max-pages 50 >> /opt/ihale-platform/logs/scraper.log 2>&1
+$VENV/python yuklenici_yenile_calistir.py >> /opt/ihale-platform/logs/scraper.log 2>&1
+EOF
+```
+Bu 2 satır A1'i de tamamlar (9.1'in bekleyen (a) maddesiyle aynı iş).
+
+**Geniş backfill'i başlatmak isterseniz (Faz A3, proxy'siz ilk deneme):**
+```bash
+venv/bin/python ekap_sonuc_backfill.py --tum-kayitlar --max-pages 200 --reset
+```
+
+---
+
 ## 10.0 Mevcut durum envanteri (Sonnet: önce bunu doğrula)
 
 | Varlık | Durum | Yer |
