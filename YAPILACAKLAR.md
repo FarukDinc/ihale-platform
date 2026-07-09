@@ -1190,11 +1190,19 @@ print('kik_kararlar kayıt sayısı:', getattr(r, 'count', None) or len(r.data o
 PY
 ```
 
-- [x] ADIM 1: VDS'e git pull çek
-- [ ] ADIM 2: `kik_kararlar` tablosunu oluştur
-- [ ] ADIM 3: `run_scraper.sh`'e kik_backfill satırı ekle
-- [ ] ADIM 4: İlk test çalıştırması
-- [ ] ADIM 5: Kayıt sayısını doğrula
+- [x] ADIM 1: VDS'e git pull çek ✅
+- [x] ADIM 2: `kik_kararlar` tablosu Supabase'de oluşturuldu ✅
+- [x] ADIM 3: `run_scraper.sh`'e kik_backfill satırı eklendi ✅
+- [x] ADIM 4: Test çalıştırıldı — KİK tüm endpointleri bloke ediyor ⚠️
+  - `ekap.kik.gov.tr/EKAP/karar/arama` → 302 (login)
+  - `ekapv2.kik.gov.tr/b_ihalearama/api/Karar/Arama` → 401
+  - `www.kik.gov.tr/tr/uyusmazlik-kararlari` → 406 (IP bloğu)
+- [ ] ADIM 5: ⏸️ Beklemede — veri kaynağı sorunu çözülene kadar sayfa boş gösterir
+
+**Alternatif veri kaynakları (yapılacak):**
+- Resmi Gazete API üzerinden KİK kararı özeti çekme
+- EKAP scraper'a KİK karar no alanı ekleme (ihale detayında mevcut)
+- Playwright/Selenium ile browser tabanlı scraping (bot tespitinden geçer)
 
 ### 🔲 4. Eşik Katsayısı Filtresi — KÜÇÜK, AMA EKSİK
 ihaleciler'de 0.70–1.20 eşik katsayısı filtresi var (ihale sınır değer hesabında kullanılır).
