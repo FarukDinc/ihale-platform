@@ -12,12 +12,15 @@ SQL tarafında AYNI mantığın PL/pgSQL karşılığı `migration_yuklenici_agg
 import re
 import unicodedata
 
-# Sık geçen firma eki/kısaltmaları — noktalama/boşluk farklarından bağımsız tekilleştirmek için kaldırılır.
+# Sık geçen firma eki/kısaltmaları — noktalama/boşluk farklarından bağımsız tekilleştirmek için
+# kaldırılır. SQL normalize_firma() ile AYNI küme olmalı (migration_yuklenici_agg.sql).
+# Not: noktalama önce temizlendiği için (bkz. normalize_ad) burada tam-kelime kalıpları yeterli.
 _EKLER = [
-    r"\bA\.?\s*Ş\.?\b", r"\bLTD\.?\s*ŞT[İI]\.?\b", r"\bLİMİTED\s*Ş[İI]RKET[İI]\b",
-    r"\bT[İI]C\.?\b", r"\bSAN\.?\b", r"\b[İI]NŞ\.?\b", r"\bTAAH\.?\b",
-    r"\bVE\b", r"\bTİCARET\b", r"\bSANAYİ\b", r"\bİNŞAAT\b", r"\bTAAHHÜT\b",
-    r"\bA\.?\s*Ş\b", r"\bA\.?\s*O\.?\b",  # bazı yabancı/eski kısaltmalar
+    r"\bA\s*Ş\b", r"\bLTD\b", r"\bŞT[İI]\b",
+    r"\bANON[İI]M\b", r"\bL[İI]M[İI]TED\b", r"\bŞ[İI]RKET[İI]?\b",
+    r"\bKOLLEKT[İI]F\b", r"\bKOMAND[İI]T\b",
+    r"\bT[İI]C\b", r"\bSAN\b", r"\b[İI]NŞ\b", r"\bTAAH\b",
+    r"\bVE\b", r"\bT[İI]CARET\b", r"\bSANAY[İI]\b", r"\b[İI]NŞAAT\b", r"\bTAAHHÜT\b",
 ]
 _EKLER_RE = re.compile("|".join(_EKLER), re.IGNORECASE)
 
@@ -68,8 +71,10 @@ def normalize_ad(ham_ad: str | None) -> str | None:
     # TR-locale büyük harfe çevirme (Python'ın varsayılan .upper() İ/I ayrımını doğru yapmaz)
     ad = ad.translate(_TR_UPPER_MAP).upper()
     ad = unicodedata.normalize("NFC", ad)
-    ad = _EKLER_RE.sub(" ", ad)
+    # Önce noktalama temizliği (SQL normalize_firma() ile aynı sıra) — böylece "A.Ş" → "A Ş"
+    # olur ve tam-kelime ek kuralları da yakalar.
     ad = re.sub(r"[.,\-–—()]+", " ", ad)
+    ad = _EKLER_RE.sub(" ", ad)
     ad = re.sub(r"\s+", " ", ad).strip()
     return ad or None
 

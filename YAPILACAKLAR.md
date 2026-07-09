@@ -1294,12 +1294,46 @@ ihaleciler'de kullanıcılar kazandıkları ihaleleri "sözleşme listesi"ne ekl
   firmalarla çalışıyor" görünümüne parite.
 - [ ] 🔴 **C4 YAPILMADI**: eşik katsayısı kolonu/filtresi henüz eklenmedi (scraper + DB + UI gerekiyor,
   ayrı bir iş — bkz. madde 4 "İHALECİLER.COM EKSİKLERİ").
-- ⚠️ **ÖNEMLİ — bu oturumda SSH production'a engellendi**: kullanıcı "otomatik onay" dedi ama auto-mode
-  classifier'ı SSH'ı yine de bloke etti ("prod hedefini bu oturumda açıkça adıyla anmalısın" gerekçesiyle).
-  Yani C2/C3'ün gerçek veriyle çalıştığı HENÜZ CANLI DOĞRULANMADI — sadece "RPC yokken bozulmuyor" doğrulandı.
-  Migration'lar uygulanınca (↓) bu iki ekranı gerçek firma/idare ile tekrar kontrol et.
 
-#### 🔑 SIRADAKİ AI/KULLANICI İÇİN — DB migration'larını uygula (SSH gerekiyor, bu oturumda engellendi)
+#### ✅ VDS'E UYGULANDI + DOĞRULANDI (9 Tem 2026, Opus oturumu — kullanıcı açık SSH yetkisi verdi)
+
+> **VDS (`195.85.207.126`, self-hosted Supabase) tam işlevsel.** 3 migration sırayla uygulandı,
+> `yuklenici_yenile()` çalıştı → **33 firma** sözlüğe girdi, `analiz_pivot` RPC'si doğru veri döndürüyor.
+
+- ✅ **3 migration VDS `supabase-db`'ye uygulandı**: `migration_sonuc_kisim.sql` → `migration_yuklenici_agg.sql`
+  → `migration_analiz_rpc.sql`. Hepsi temiz (BEGIN…COMMIT).
+- ✅ **`yuklenici_yenile()` çalıştı → 33 firma** (örn. DEMİR YAPI 2 iş/181M TL, KOÇ SİSTEM 1 iş/76M TL).
+  REST tetikleyici `yuklenici_yenile_calistir.py` de test edildi (✓ 33 satır).
+- ✅ **`analiz_pivot` doğrulandı**: `analiz_pivot('yil')` → 2026: 35 ihale/677M TL. `analiz_pivot('idare',
+  p_firma:='DEMİR YAPI İNŞAAT')` → TCDD 2 iş/181M TL (kısmi ad eşleşmesi çalışıyor).
+- 🐛 **UÇTAN UCA TESTTE BULUNAN + DÜZELTİLEN BUG (normalize_firma)**: normalizasyon "ANONİM ŞİRKETİ",
+  "LİMİTED ŞİRKETİ" gibi TAM kelime eklerini temizlemiyordu (sadece "A.Ş." kısaltmasını) → kısmi ad
+  aramaları ("DEMİR YAPI İNŞAAT") tam adla ("...ANONİM ŞİRKETİ") eşleşmiyordu. Hem SQL `normalize_firma()`
+  hem Python `firma_normalize.py` düzeltildi (ANONİM/LİMİTED/ŞİRKET(İ)/KOLLEKTİF/KOMANDİT tam kelimeleri
+  + noktalama-önce-temizlik sırası). VDS'te fonksiyon güncellendi, `yukleniciler` yeniden anahtarlandı
+  (11 yetim eski-anahtar satır hedefli DELETE ile temizlendi → tam 33 firma). Repo'ya da işlendi.
+- ✅ **Cron güncellendi** (`run_scraper.sh`, yedek alındı): ana scraper'dan sonra `ekap_sonuc_backfill.py
+  --max-pages 50` + `yuklenici_yenile_calistir.py` eklendi → sistem her gece kendini besliyor (Faz A1+B2).
+- ✅ **C2/C3 frontend bu veriye karşı DB katmanında doğrulandı** (psql/REST). Client JS zaten local
+  önizlemede "RPC yokken bozulmuyor" diye test edilmişti; artık RPC canlı → VDS frontend'inde gerçek veriyle
+  çalışacak (cutover sonrası kullanıcıya görünür).
+
+#### 🔴 KRİTİK — MANAGED SUPABASE ARTIK DONMUŞ, CUTOVER GEREKLİ
+
+> **VDS scraper'ı `SUPABASE_URL=http://localhost:8000`'e (VDS-local Supabase) yazıyor — managed'a DEĞİL.**
+> Yani gece taraması artık **sadece VDS-local'ı** besliyor. Managed (`lpgelwfoarhouollhwur.supabase.co`,
+> canlı Cloudflare sitesinin bağlı olduğu DB) **donmuş**: 15 sonuç, yeni tablo/RPC yok, veri tazelenmıyor.
+>
+> **SONUÇ:** Bu özellikleri (firmalar dizini, pivot analizler, AI yorum, kazanma bandı) gerçek kullanıcılara
+> canlı yapmanın yolu **managed'a migration DEĞİL** (çöpe giden iş — managed terk ediliyor), **DNS cutover**:
+> - Managed'a migration YAPILMADI (bilinçli — donmuş DB'ye yatırım anlamsız).
+> - Cutover adımları hazır: bkz. "🤝 DEVİR" bloğu Adım 3-6 (Cloudflare DNS → `195.85.207.126`, SSL, URL'ler).
+> - Cutover olunca VDS canlıya geçer → tüm bu özellikler + taze veri + firma analitiği kullanıcıya açılır.
+> - ⚠️ Eğer cutover YAKIN DEĞİLSE ve managed'ın da güncel kalması isteniyorsa: (a) 3 migration'ı Supabase
+>   Dashboard SQL Editor'dan managed'a uygula, (b) scraper'ı managed'a da yazacak şekilde çift-yaz yap —
+>   ama bu geçici; asıl çözüm cutover.
+
+#### 🔑 (REFERANS) DB migration'larını elle uygulama komutları
 
 Aşağıdaki 3 dosya VDS'e VE managed Supabase'e (cutover'a dek ikisi de canlı) sırayla uygulanmalı:
 `backend/migration_sonuc_kisim.sql` → `backend/migration_yuklenici_agg.sql` → `backend/migration_analiz_rpc.sql`

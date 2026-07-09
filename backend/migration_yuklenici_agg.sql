@@ -22,19 +22,26 @@ BEGIN
   END IF;
   ad := upper(btrim(ham_ad));
   -- Yaygın firma ekleri/bağlaçları — Python normalize_ad() ile aynı küme.
-  ad := regexp_replace(ad, '\mA\.?\s*Ş\.?\M', ' ', 'gi');
-  ad := regexp_replace(ad, '\mLTD\.?\s*ŞT[İI]\.?\M', ' ', 'gi');
-  ad := regexp_replace(ad, '\mL[İI]M[İI]TED\s*Ş[İI]RKET[İI]\M', ' ', 'gi');
-  ad := regexp_replace(ad, '\mT[İI]C\.?\M', ' ', 'gi');
-  ad := regexp_replace(ad, '\mSAN\.?\M', ' ', 'gi');
-  ad := regexp_replace(ad, '\m[İI]NŞ\.?\M', ' ', 'gi');
-  ad := regexp_replace(ad, '\mTAAH\.?\M', ' ', 'gi');
+  -- Önce noktalama temizliği (böylece "A.Ş" → "A Ş" olur ve tam-kelime kuralları da yakalar).
+  ad := regexp_replace(ad, '[.,\-–—()]+', ' ', 'g');
+  -- Şirket türü tam kelimeleri (ANONİM ŞİRKETİ / LİMİTED ŞİRKETİ vb.) ve kısaltmaları kaldır.
+  ad := regexp_replace(ad, '\mA\s*Ş\M', ' ', 'gi');
+  ad := regexp_replace(ad, '\mLTD\M', ' ', 'gi');
+  ad := regexp_replace(ad, '\mŞT[İI]\M', ' ', 'gi');
+  ad := regexp_replace(ad, '\mANON[İI]M\M', ' ', 'gi');
+  ad := regexp_replace(ad, '\mL[İI]M[İI]TED\M', ' ', 'gi');
+  ad := regexp_replace(ad, '\mŞ[İI]RKET[İI]?\M', ' ', 'gi');
+  ad := regexp_replace(ad, '\mKOLLEKT[İI]F\M', ' ', 'gi');
+  ad := regexp_replace(ad, '\mKOMAND[İI]T\M', ' ', 'gi');
+  ad := regexp_replace(ad, '\mT[İI]C\M', ' ', 'gi');
+  ad := regexp_replace(ad, '\mSAN\M', ' ', 'gi');
+  ad := regexp_replace(ad, '\m[İI]NŞ\M', ' ', 'gi');
+  ad := regexp_replace(ad, '\mTAAH\M', ' ', 'gi');
   ad := regexp_replace(ad, '\mVE\M', ' ', 'gi');
   ad := regexp_replace(ad, '\mT[İI]CARET\M', ' ', 'gi');
   ad := regexp_replace(ad, '\mSANAY[İI]\M', ' ', 'gi');
   ad := regexp_replace(ad, '\m[İI]NŞAAT\M', ' ', 'gi');
   ad := regexp_replace(ad, '\mTAAHHÜT\M', ' ', 'gi');
-  ad := regexp_replace(ad, '[.,\-–—()]+', ' ', 'g');
   ad := regexp_replace(ad, '\s+', ' ', 'g');
   ad := btrim(ad);
   IF ad = '' THEN
