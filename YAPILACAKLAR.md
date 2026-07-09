@@ -1231,6 +1231,37 @@ ihaleciler'de kullanıcılar kazandıkları ihaleleri "sözleşme listesi"ne ekl
 
 # 🏆 ÖNCELİK 10 — FİRMA VERİSİ MASTER PLANI: İHALECİLER'İ YAKALA VE GEÇ (9 Tem 2026, Fable 5 analizi)
 
+## 📍 SON DURUM (9 Tem 2026, Opus oturumu sonu) — ÖNCE BUNU OKU
+
+> **VDS (`195.85.207.126`) = gerçek/güncel production ve ÖNCELİK 10 özellikleri BURADA CANLI.**
+> **Managed (`lpgelwfoarhouollhwur.supabase.co`) = donmuş; canlı site hâlâ buna bağlı → CUTOVER GEREK.**
+
+**✅ Kod (repo, tümü push'landı — 8 commit):** A2, A3, B1, B2, B3, C1, C2, C3, D1, D2, E2 fazları.
+Yeni dosyalar: `firmalar.html`, `backend/firma_normalize.py`, `backend/firma_ai_yorum.py`,
+`backend/yuklenici_yenile_calistir.py`, `backend/migration_{sonuc_kisim,yuklenici_agg,analiz_rpc}.sql`.
+
+**✅ VDS'e uygulandı + canlı doğrulandı (SSH, açık kullanıcı yetkisiyle):**
+- 3 migration çalıştırıldı → `analiz_pivot` RPC + `yuklenici_yenile()` + kısım desteği aktif.
+- **Faz A3 (`--tum-kayitlar` geniş backfill) canlı EKAP'a karşı ÇALIŞIYOR** — IKN-havuzuna bağlı
+  olmadan sonuçlanmış her ihaleyi kompakt yazıyor (200 kayıtta ~189 sonuç, %95 verim).
+- **VERİ HACMİ BÜYÜDÜ: `ihale_sonuclari` 35 → 1650+ (ve artıyor — arka planda `--max-pages 150`
+  backfill çalışıyor), `ilanlar` kompakt geçmiş ~1400 satır.** Firma sözlüğü (`yukleniciler`) backfill
+  bitince tazelenecek (`yuklenici_yenile_calistir.py` cron'da; elle: `SELECT yuklenici_yenile();`).
+- **Cron güncellendi** (`run_scraper.sh`): her gece sonuç taraması + firma tazeleme → kendini besliyor.
+
+**🐛 Uçtan uca testte bulunan+düzeltilen 2 bug (repoda):** (1) `normalize_firma` tam kelime şirket
+eklerini ("ANONİM ŞİRKETİ" vb.) temizlemiyordu → kısmi ad araması eşleşmiyordu. (2) `--tum-kayitlar`
+kompakt insert'i `ilanlar.kaynak` (NOT NULL) vermiyordu → 23502 hatası. İkisi de düzeltildi.
+
+**🔴 KALAN — kullanıcı/sonraki oturum:**
+1. **DNS cutover** (Cloudflare A → `195.85.207.126` + SSL) → VDS canlıya geçer, TÜM bu özellikler
+   + taze veri + firma analitiği gerçek kullanıcılara açılır. Adımlar: "🤝 DEVİR" bloğu Adım 3-6.
+   **Bu yapılmadan özellikler canlı sitede GÖRÜNMEZ** (managed'a bağlı, managed'da bunlar yok).
+2. Cutover istenmiyorsa geçici alternatif: 3 migration'ı managed'a da uygula + scraper'ı çift-yaz yap.
+3. C4 (eşik katsayısı), D3 (semantik embedding), D4 (teklif workflow), E1/E3/E4 henüz YAPILMADI.
+
+---
+
 > **BU BÖLÜM SONNET İÇİN YAZILDI.** Uygulayıcı AI: aşağıdaki fazları SIRAYLA yap, her fazın sonundaki
 > "KABUL KRİTERİ"ni doğrulamadan sonrakine geçme. Her adımda dosya yolları, tablo/kolon adları ve
 > komutlar açıkça verildi. Kararsız kaldığın yerde bu bölümdeki varsayılanı uygula, kullanıcıya sorma.
