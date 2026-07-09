@@ -1242,11 +1242,13 @@ Yeni dosyalar: `firmalar.html`, `backend/firma_normalize.py`, `backend/firma_ai_
 
 **✅ VDS'e uygulandı + canlı doğrulandı (SSH, açık kullanıcı yetkisiyle):**
 - 3 migration çalıştırıldı → `analiz_pivot` RPC + `yuklenici_yenile()` + kısım desteği aktif.
-- **Faz A3 (`--tum-kayitlar` geniş backfill) canlı EKAP'a karşı ÇALIŞIYOR** — IKN-havuzuna bağlı
-  olmadan sonuçlanmış her ihaleyi kompakt yazıyor (200 kayıtta ~189 sonuç, %95 verim).
-- **VERİ HACMİ BÜYÜDÜ: `ihale_sonuclari` 35 → 1650+ (ve artıyor — arka planda `--max-pages 150`
-  backfill çalışıyor), `ilanlar` kompakt geçmiş ~1400 satır.** Firma sözlüğü (`yukleniciler`) backfill
-  bitince tazelenecek (`yuklenici_yenile_calistir.py` cron'da; elle: `SELECT yuklenici_yenile();`).
+- **Faz A3 (`--tum-kayitlar` geniş backfill) canlı EKAP'a karşı ÇALIŞTI + BİTTİ** — IKN-havuzuna bağlı
+  olmadan sonuçlanmış her ihaleyi kompakt yazdı (15.000 kayıt tarandı, 14.767 sonuç yazıldı, **0 hata**, %95+ verim).
+- **✅ VERİ HACMİ PATLADI: `ihale_sonuclari` 35 → 20.686 sonuç** (toplam 662 milyar TL sözleşme),
+  `ilanlar` kompakt geçmiş 15.126 satır (`durum='sonuclandi'`, aktif sayaçları kirletmez).
+  **`yukleniciler` firma sözlüğü tazelendi → 11.186 BENZERSİZ FİRMA** (0 yetim). Zirvede İPEK HIRDAVAT
+  (109 iş/441M TL), MERİDYEN TESİSAT (77 iş/330M TL). `analiz_pivot` uçtan uca doğrulandı (firma→idare
+  kırılımı gerçek veriyle çalışıyor). Checkpoint skip=15200 → cron buradan devam eder, veri her gece artar.
 - **Cron güncellendi** (`run_scraper.sh`): her gece sonuç taraması + firma tazeleme → kendini besliyor.
 
 **🐛 Uçtan uca testte bulunan+düzeltilen 2 bug (repoda):** (1) `normalize_firma` tam kelime şirket
