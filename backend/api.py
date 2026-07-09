@@ -13,7 +13,9 @@ from pydantic import BaseModel
 from typing import Optional
 from supabase import create_client, Client
 from worker import kullanici_analiz_isle
+from firma_ai_yorum import firma_yorum_uret, AI_YORUM_GECERLILIK_GUN
 from dotenv import load_dotenv
+from datetime import datetime, timedelta, timezone
 
 load_dotenv()
 
@@ -74,6 +76,9 @@ class ProfilGuncelle(BaseModel):
 class TakipEkle(BaseModel):
     ihale_id: str
     notlar: Optional[str] = None
+
+class FirmaYorumIstek(BaseModel):
+    firma: str
 
 
 # ── Endpoint'ler ──────────────────────────────────────────
@@ -296,6 +301,88 @@ def analiz_gecmisi_getir(authorization: str = Header(None)):
             "olusturulma", desc=True
         ).limit(20).execute()
         return {"basari": True, "veri": sonuc.data}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/ai/firma-yorum")
+def firma_ai_yorum(
+    istek: FirmaYorumIstek,
+    authorization: str = Header(None)
+):
+    """
+    ÖNCELİK 10 Faz D1 — bir firma için AI rekabet yorumu üretir.
+    Sayılar analiz_pivot RPC'sinden (SQL), yorum Gemini'den. 7 gün cache'lenir
+    (yukleniciler.ai_yorum / ai_yorum_tarih — bkz. migration_yuklenici_agg.sql).
+    ⚠️ Bu endpoint, analiz_pivot RPC'si ve yukleniciler.ai_yorum kolonları DB'de
+    kurulana kadar 500 döner (migration bekliyor, bkz. YAPILACAKLAR.md ÖNCELİK 10 Faz C/D).
+    """
+    kullanici_id = kullanici_dogrula(authorization)
+    firma = istek.firma.strip()
+    if not firma:
+        raise HTTPException(status_code=400, detail="Firma adı gerekli")
+
+    try:
+        # 1. Cache kontrolü (yukleniciler.normalize_ad ile eşleşen kayıt).
+        # NOT: fake supabase wrapper'da .maybe_single() yok, sadece .single() (0 satırda hata
+        # fırlatır) — bu yüzden düz .select() + liste kontrolü kullanıyoruz (0 satır = boş liste).
+        norm = supabase.rpc("normalize_firma", {"ham_ad": firma}).execute()
+        normalize_ad = norm.data
+        mevcut_liste = supabase.table("yukleniciler").select(
+            "id, ad, ai_yorum, ai_yorum_tarih"
+        ).eq("normalize_ad", normalize_ad).limit(1).execute()
+        mevcut_kayit = (mevcut_liste.data or [None])[0]
+
+        if mevcut_kayit and mevcut_kayit.get("ai_yorum"):
+            tarih = mevcut_kayit.get("ai_yorum_tarih")
+            if tarih:
+                try:
+                    yas = datetime.now(timezone.utc) - datetime.fromisoformat(tarih.replace("Z", "+00:00"))
+                    if yas < timedelta(days=AI_YORUM_GECERLILIK_GUN):
+                        return {"basari": True, "metin": mevcut_kayit["ai_yorum"], "cache": True}
+                except ValueError:
+                    pass  # tarih parse edilemedi, tazele
+
+        # 2. Kredi ön kontrolü
+        kredi_bilgi = supabase.table("kullanici_krediler").select(
+            "kalan_kredi"
+        ).eq("kullanici_id", kullanici_id).single().execute()
+        if (kredi_bilgi.data or {}).get("kalan_kredi", 0) < 1:
+            raise HTTPException(status_code=402, detail="Yetersiz kredi")
+
+        # 3. analiz_pivot kırılımlarını topla
+        kirilimlar = {}
+        for grup in ("idare", "kategori", "il", "yil"):
+            r = supabase.rpc("analiz_pivot", {"p_grup": grup, "p_firma": firma}).execute()
+            kirilimlar[grup] = (r.data or [])[:8]
+
+        # 4. Gemini yorumu üret
+        sonuc = firma_yorum_uret(firma_adi=firma, kirilimlar=kirilimlar)
+        if not sonuc["basari"]:
+            raise HTTPException(status_code=500, detail=sonuc["hata"])
+
+        # 5. Kredi düş (ihale-bağımsız — p_ihale_id=None; kredi_dus RPC'si bunu kabul etmiyorsa
+        #    bu adım hata verir ama yorum yine de üretilmiş olur, cache'e yazılır)
+        try:
+            supabase.rpc("kredi_dus", {
+                "p_kullanici_id": kullanici_id,
+                "p_miktar": 1,
+                "p_ihale_id": None,
+                "p_aciklama": f"AI Firma Yorumu: {firma[:50]}"
+            }).execute()
+        except Exception as e:
+            print(f"  ⚠ kredi_dus (firma-yorum) hatası — imza kontrolü gerekebilir: {e}")
+
+        # 6. Cache'e yaz
+        supabase.table("yukleniciler").update({
+            "ai_yorum": sonuc["metin"],
+            "ai_yorum_tarih": datetime.now(timezone.utc).isoformat(),
+        }).eq("normalize_ad", normalize_ad).execute()
+
+        return {"basari": True, "metin": sonuc["metin"], "cache": False}
+
+    except HTTPException:
+        raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

@@ -180,7 +180,14 @@ const API = (() => {
         }
     };
 
+    // ── Firma AI Yorumu (ÖNCELİK 10 Faz D1) ──────────────
+    const firma = {
+        async yorum_al(firma_adi) {
+            return istek("POST", "/ai/firma-yorum", { firma: firma_adi });
+        }
+    };
+
     // Public API
-    return { auth, ihaleler, profil, takipler, bildirimler, gecmis, CONFIG };
+    return { auth, ihaleler, profil, takipler, bildirimler, gecmis, firma, CONFIG };
 
 })();

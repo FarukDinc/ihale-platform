@@ -332,6 +332,7 @@
             </div>
           </div>
           <div id="pivot-kirilim-container"></div>
+          <div id="ai-yorum-container"></div>
         </div>
 
         <!-- İHALELER (katıldığı/takip edilen) -->
@@ -355,6 +356,8 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
 <script src="js/sidebar-user.js"></script>
+<script src="js/plan.js"></script>
+<script src="js/api.js"></script>
 <script>
 (() => {
   const SB_URL = "https://lpgelwfoarhouollhwur.supabase.co";
@@ -464,10 +467,63 @@
     }
   }
 
+  // ÖNCELİK 10 Faz D1 — AI Rakip Analizi kartı (Pro plan; free'de CTA gösterir).
+  async function aiYorumKartiGoster() {
+    const hedef = document.getElementById('ai-yorum-container');
+    if (!hedef || !FIRMA) return;
+    let planTur = 'free';
+    try { planTur = (typeof Plan !== 'undefined') ? await Plan.getPlan() : 'free'; } catch {}
+
+    if (planTur !== 'pro') {
+      hedef.innerHTML = `
+        <div class="kpi-card" style="text-align:left; margin-top:14px; position:relative; overflow:hidden;">
+          <div class="kpi-label">🤖 AI Rakip Analizi</div>
+          <div style="filter:blur(4px); pointer-events:none; font-size:12.5px; color:var(--muted); margin-top:6px; line-height:1.6;">
+            Bu firma X idaresinde baskın, Y sektöründe agresif tenzilat veriyor, son dönemde Z'ye yöneliyor…
+          </div>
+          <a href="fiyatlandirma_odeme_bolumu" style="display:inline-block; margin-top:10px; background:var(--amber); color:var(--navy); font-weight:700; font-size:12.5px; padding:7px 14px; border-radius:6px; text-decoration:none;">Pro'ya Geç ve Aç</a>
+        </div>`;
+      return;
+    }
+
+    hedef.innerHTML = `
+      <div class="kpi-card" style="text-align:left; margin-top:14px;">
+        <div class="kpi-label" style="margin-bottom:8px;">🤖 AI Rakip Analizi</div>
+        <button id="ai-yorum-btn" style="background:rgba(240,165,0,.12); color:var(--amber); border:none; font-size:12.5px; font-weight:700; padding:7px 14px; border-radius:6px; cursor:pointer;">
+          Analizi Oluştur (1 kredi)
+        </button>
+        <div id="ai-yorum-metin" style="margin-top:10px; font-size:13px; color:var(--white); line-height:1.7;"></div>
+      </div>`;
+
+    document.getElementById('ai-yorum-btn').addEventListener('click', async () => {
+      const btn = document.getElementById('ai-yorum-btn');
+      const metinEl = document.getElementById('ai-yorum-metin');
+      btn.disabled = true;
+      btn.textContent = 'Oluşturuluyor…';
+      try {
+        const sonuc = await API.firma.yorum_al(FIRMA);
+        if (sonuc && sonuc.basari) {
+          metinEl.textContent = sonuc.metin;
+          btn.style.display = 'none';
+        } else {
+          metinEl.innerHTML = '<span style="color:#f87171;">Analiz oluşturulamadı. Lütfen daha sonra tekrar deneyin.</span>';
+          btn.disabled = false;
+          btn.textContent = 'Tekrar Dene';
+        }
+      } catch (err) {
+        console.info('AI firma yorumu şu an kullanılamıyor (migration/backend bekliyor):', err?.message || err);
+        metinEl.innerHTML = '<span style="color:var(--muted);">Bu özellik yakında aktif olacak.</span>';
+        btn.disabled = false;
+        btn.textContent = 'Tekrar Dene';
+      }
+    });
+  }
+
   function sonuclariGoster() {
     const cont = document.getElementById('sonuclar-container');
     if (!cont) return;
     pivotKirilimGoster();
+    aiYorumKartiGoster();
     if (!sonucVeri.length) {
       cont.innerHTML = `<div class="veri-yok-card">
         <div class="veri-yok-icon">🔍</div>
@@ -633,6 +689,7 @@
     if (!FIRMA) return;
     _pivotYuklendi = false;
     document.getElementById('pivot-kirilim-container').innerHTML = '';
+    document.getElementById('ai-yorum-container').innerHTML = '';
     sonAramaKaydet(FIRMA);
     document.getElementById('arama-wrap').style.display = 'none';
     document.getElementById('firma-icerik').style.display = 'block';

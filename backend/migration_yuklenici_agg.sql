@@ -45,9 +45,12 @@ END;
 $$;
 
 -- yukleniciler'e ortak-girişim işareti + ortak listesi (Faz B1'in "ortaklar" alanı)
+-- + AI yorumu cache alanları (Faz D1, backend/firma_ai_yorum.py bunları yazar/okur)
 ALTER TABLE yukleniciler
   ADD COLUMN IF NOT EXISTS ortak_girisim BOOLEAN DEFAULT FALSE,
-  ADD COLUMN IF NOT EXISTS kategori TEXT[];
+  ADD COLUMN IF NOT EXISTS kategori TEXT[],
+  ADD COLUMN IF NOT EXISTS ai_yorum TEXT,
+  ADD COLUMN IF NOT EXISTS ai_yorum_tarih TIMESTAMPTZ;
 
 CREATE OR REPLACE FUNCTION yuklenici_yenile()
 RETURNS INTEGER

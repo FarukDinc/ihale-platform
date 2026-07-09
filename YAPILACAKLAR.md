@@ -1436,6 +1436,31 @@ değilse: `CREATE EXTENSION vector;` (VDS'te mümkün, managed'da da var).
 geçmişte X,Y firmaları %Z tenzilatla aldı" bağlamını teklif metni promptuna ekle → teklif taslağı piyasa-farkında olur.
 **KABUL KRİTERİ D:** D1+D2 canlıda bir gerçek firma/ihale üzerinde çalışıyor, sonuçlar cache'leniyor, kredi düşümü işliyor.
 
+### 🟡 İLERLEME D1 (9 Tem 2026, Sonnet — kod hazır, DB migration + frontend kartı BEKLİYOR)
+
+- ✅ **`backend/firma_ai_yorum.py`** (yeni): `firma_yorum_uret(firma_adi, kirilimlar)` — analyzer.py ile
+  aynı Gemini 1.5 Flash konfigürasyonu, kırılımları (idare/kategori/il/yıl) JSON olarak prompt'a gömüyor,
+  4-6 cümlelik düz metin Türkçe yorum istiyor (halüsinasyon riskini azaltmak için "bu sayılara sadık kal" talimatı).
+- ✅ **`api.py`'ye `POST /ai/firma-yorum {firma}` endpoint'i eklendi**: auth zorunlu → cache kontrolü
+  (`yukleniciler.ai_yorum`, 7 gün) → kredi ön kontrolü → `analiz_pivot` RPC'sinden 4 kırılım → Gemini →
+  cache'e yaz → `kredi_dus` RPC'sini çağır (1 kredi).
+  🐛 Yazım sırasında bulunan+düzeltilen bug: fake `supabase` wrapper'da (`backend/supabase/__init__.py`)
+  `.maybe_single()` YOK, sadece `.single()` (0 satırda İSTİSNA fırlatır) — ilk sürüm `.maybe_single()`
+  kullanıyordu, bu yeni firma aranınca hep 500 dönerdi. Düz `.select().limit(1)` + liste kontrolüne çevrildi.
+  ⚠️ **Doğrulanmamış varsayım:** `kredi_dus` RPC'sinin tanımı repoda yok (muhtemelen Supabase panelinden
+  elle oluşturulmuş); `p_ihale_id=None` ile çağrılıyor — RPC bunu kabul etmiyorsa (NOT NULL kısıtı vb.)
+  kredi düşümü hata verir ama try/except ile yutulur (yorum yine üretilir/cache'lenir, sadece kredi düşmez).
+  **Migration'lar uygulanınca RPC'nin gerçek imzasını kontrol et** (Supabase Dashboard → Database → Functions).
+- ✅ **`migration_yuklenici_agg.sql` güncellendi**: `yukleniciler`'e `ai_yorum TEXT` + `ai_yorum_tarih
+  TIMESTAMPTZ` eklendi (henüz uygulanmadı, diğer Faz B/C migration'larıyla birlikte uygulanacak).
+- ✅ **Frontend kartı TAMAMLANDI**: `firma-analiz.html` Sonuçlar sekmesine "🤖 AI Rakip Analizi" kartı eklendi
+  (`aiYorumKartiGoster()`). `js/plan.js`'in `Plan.getPlan()`'ı ile free/pro ayrımı yapılıyor: free'de blurlanmış
+  örnek metin + "Pro'ya Geç ve Aç" CTA, pro'da "Analizi Oluştur (1 kredi)" butonu → `API.firma.yorum_al(FIRMA)`.
+  `js/api.js`'e `firma.yorum_al()` metodu eklendi (`POST /ai/firma-yorum`, Render API'sine gider — `CONFIG.BASE_URL`).
+  Backend/endpoint henüz canlı olmadığından buton tıklanınca hata yakalanıp "yakında aktif olacak" gösteriyor
+  (kırmızı hata/konsol patlaması yok — local önizlemede doğrulandı: free state'te kart doğru render oldu,
+  konsol temiz). Migration'lar + Render deploy sonrası pro kullanıcıyla uçtan uca test edilmeli.
+
 ## 10.E FAZ E — İSTİHBARAT & FARK AÇICILAR (ihaleciler'i geçtiğimiz yer)
 
 - **E1. Rakip Takibi (9.2.1(c)):** `takip_firmalar` tablosu (kullanici_id, normalize_ad) + firma-analiz'e
