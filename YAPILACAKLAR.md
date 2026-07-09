@@ -1138,7 +1138,63 @@ ihaleciler'de "Bugün sonuçlananlar" akışı → kazanan firma + sözleşme be
 - `backend/supabase/migrations/kik_kararlar_tablo.sql`: DB şeması + tam-text indeksler + RLS
 - `backend/kik_backfill.py`: KİK API'sinden karar çeken cron scripti
 - 15 HTML dosyasında sidebar'a ⚖️ KİK Kararlar nav linki eklendi
-- **Sonraki adım:** Supabase Dashboard > SQL Editor'da `kik_kararlar_tablo.sql` çalıştır; VDS'de `python kik_backfill.py --max-pages 200` ile doldurmaya başla
+
+#### 🔧 KİK Cron Kurulum Adımları — KULLANICI MANUEL UYGULAR
+
+**VDS Bağlantısı (PowerShell veya Windows Terminal'de):**
+```
+ssh -i $HOME\.ssh\ihale_oracle root@195.85.207.126
+```
+
+**ADIM 1 — Kodu VDS'e çek:**
+```bash
+cd /opt/ihale-platform
+git pull origin main
+```
+Beklenen çıktı: `kik_backfill.py` + `kik_kararlar_tablo.sql` dosyalarının indiğini görürsün.
+
+**ADIM 2 — Supabase'de tabloyu oluştur (SQL çalıştır):**
+VDS'de managed Supabase'e psql ile bağlan ve SQL migration'ı uygula:
+```bash
+cd /opt/ihale-platform/backend
+source .env
+psql "$SUPABASE_DB_URL" -f supabase/migrations/kik_kararlar_tablo.sql
+```
+Eğer `SUPABASE_DB_URL` yoksa alternatif — Supabase Dashboard:
+1. https://supabase.com/dashboard → proje → SQL Editor
+2. `backend/supabase/migrations/kik_kararlar_tablo.sql` dosyasını aç, içeriği yapıştır, RUN
+
+**ADIM 3 — `run_scraper.sh`'e KİK backfill ekle:**
+```bash
+cat >> /opt/ihale-platform/backend/run_scraper.sh << 'EOF'
+$VENV/python kik_backfill.py --max-pages 10 >> /opt/ihale-platform/logs/scraper.log 2>&1
+EOF
+```
+
+**ADIM 4 — Test çalıştır (5 sayfa = ~100 karar):**
+```bash
+cd /opt/ihale-platform/backend
+source .env
+venv/bin/python kik_backfill.py --max-pages 5
+```
+
+**ADIM 5 — Doğrula:**
+```bash
+venv/bin/python - << 'PY'
+import os, sys
+sys.path.insert(0, '.')
+from supabase import create_client
+sb = create_client(os.environ['SUPABASE_URL'], os.environ['SUPABASE_SERVICE_KEY'])
+r = sb.table('kik_kararlar').select('id', count='exact').execute()
+print('kik_kararlar kayıt sayısı:', getattr(r, 'count', None) or len(r.data or []))
+PY
+```
+
+- [x] ADIM 1: VDS'e git pull çek
+- [ ] ADIM 2: `kik_kararlar` tablosunu oluştur
+- [ ] ADIM 3: `run_scraper.sh`'e kik_backfill satırı ekle
+- [ ] ADIM 4: İlk test çalıştırması
+- [ ] ADIM 5: Kayıt sayısını doğrula
 
 ### 🔲 4. Eşik Katsayısı Filtresi — KÜÇÜK, AMA EKSİK
 ihaleciler'de 0.70–1.20 eşik katsayısı filtresi var (ihale sınır değer hesabında kullanılır).
