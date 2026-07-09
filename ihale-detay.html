@@ -768,6 +768,33 @@
       const bedelUst = maliyet * (1 - tenzAlt / 100); // düşük tenzilat → yüksek bedel
       const bedelAlt = maliyet * (1 - tenzUst / 100);
 
+      let ornekHtml = '';
+      try {
+        const { data: ornekler } = await sb.from('ihale_sonuclari')
+          .select('kazanan_firma,kazanan_teklif,kazanan_teklif_farki_yuzde,sozlesme_tarihi,ilanlar!inner(baslik,idare,kategori,il)')
+          .eq('ilanlar.idare', d.idare).eq('ilanlar.kategori', d.kategori)
+          .order('sozlesme_tarihi', { ascending: false, nullsFirst: false })
+          .limit(5);
+        if (ornekler && ornekler.length) {
+          ornekHtml = `
+            <div style="margin-top:12px;padding-top:12px;border-top:1px solid rgba(240,165,0,0.2);">
+              <div style="color:var(--muted);font-size:11.5px;margin-bottom:6px;">Bu idare/sektörde son sözleşmeler:</div>
+              <div style="display:flex;flex-direction:column;gap:5px;">
+                ${ornekler.map(o => {
+                  const t = o.sozlesme_tarihi ? new Date(o.sozlesme_tarihi).toLocaleDateString('tr-TR') : '—';
+                  const tenz = o.kazanan_teklif_farki_yuzde != null ? `%${Number(o.kazanan_teklif_farki_yuzde).toFixed(1)} tenzilat` : '';
+                  return `<div style="font-size:12px;color:var(--white);display:flex;justify-content:space-between;gap:12px;">
+                    <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${o.kazanan_firma || '—'}</span>
+                    <span style="color:var(--muted);white-space:nowrap;">${t}${tenz ? ' · ' + tenz : ''}</span>
+                  </div>`;
+                }).join('')}
+              </div>
+            </div>`;
+        }
+      } catch (e) {
+        console.info('geçmiş emsal listesi alınamadı:', e?.message || e);
+      }
+
       wrap.innerHTML = `
         <div style="background:rgba(240,165,0,0.06);border:1px dashed rgba(240,165,0,0.35);border-radius:10px;padding:16px 20px;margin-bottom:20px;">
           <div style="color:var(--amber);font-weight:700;font-size:13px;margin-bottom:8px;">📊 Tahmini Kazanma Bandı <span style="color:var(--muted);font-weight:500;">(bu idare/sektör/ildeki ${toplamEmsal} geçmiş sonuca göre)</span></div>
@@ -776,6 +803,7 @@
             <div><span style="color:var(--muted);">Ort. Tenzilat:</span> <b style="color:var(--amber);">%${ortTenz.toFixed(1)}</b></div>
           </div>
           <div style="color:var(--muted);font-size:11.5px;margin-top:8px;">İstatistiksel tahmindir, garanti değildir. Emsal sayısı arttıkça isabet oranı artar.</div>
+          ${ornekHtml}
         </div>`;
     } catch (err) {
       // analiz_pivot RPC henüz DB'ye uygulanmadıysa (migration bekliyor) sessizce geç.
