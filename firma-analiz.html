@@ -264,9 +264,9 @@
             <div class="kpi-sub">eşleşen ihale sayısı</div>
           </div>
           <div class="kpi-card">
-            <div class="kpi-label">Aktif İhale</div>
+            <div class="kpi-label">Kazanılan İhale</div>
             <div class="kpi-value" id="kpi-kazanilan">—</div>
-            <div class="kpi-sub">teklif süresi dolmamış</div>
+            <div class="kpi-sub" id="kpi-kazanilan-sub">EKAP sonuç kaydı</div>
           </div>
           <div class="kpi-card">
             <div class="kpi-label">Kapsanan İl</div>
@@ -323,14 +323,11 @@
 
         <!-- SONUÇLAR -->
         <div id="tab-sonuclar" class="tab-panel">
-          <div class="veri-yok-card">
-            <div class="veri-yok-icon">📋</div>
-            <div class="veri-yok-baslik">Kazanılan İhale Sonuçları</div>
-            <div class="veri-yok-alt">
-              Firmanın kazandığı ihaleler, sözleşme bedelleri, tenzilat oranları ve iş tamamlama tarihleri burada görünecek.
-              Bu veriler EKAP'ın "ihale sonuç ilanı" sayfalarından toplanacaktır.
+          <div id="sonuclar-container">
+            <div class="veri-yok-card">
+              <div class="loading-spinner"></div>
+              <div style="font-size:13px;color:var(--muted);">Sonuç verisi yükleniyor…</div>
             </div>
-            <span class="yakinda-badge">Yakında — Scraper Geliştirme Aşamasında</span>
           </div>
         </div>
 
@@ -360,6 +357,7 @@
   const SB_URL = "https://lpgelwfoarhouollhwur.supabase.co";
   const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxwZ2Vsd2ZvYXJob3VvbGxod3VyIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODIyMzI4MjAsImV4cCI6MjA5NzgwODgyMH0.GqTZkeoOAomuur4JSyW2pTR-8Zzg8OTv394JtP7DoXM";
   const sb = window.supabase.createClient(SB_URL, SB_KEY);
+  let sonucVeri = [];
 
   const params = new URLSearchParams(window.location.search);
   let FIRMA = params.get('firma') || '';
@@ -413,12 +411,84 @@
     return { cls:'durum-acik', etiket:'Açık' };
   }
 
+  function formatBedel(b) {
+    if (!b) return '—';
+    if (b >= 1_000_000_000) return (b / 1_000_000_000).toFixed(1) + ' Mrd TL';
+    if (b >= 1_000_000) return (b / 1_000_000).toFixed(1) + ' M TL';
+    if (b >= 1000) return (b / 1000).toFixed(0) + ' K TL';
+    return b.toLocaleString('tr') + ' TL';
+  }
+
+  function sonuclariGoster() {
+    const cont = document.getElementById('sonuclar-container');
+    if (!cont) return;
+    if (!sonucVeri.length) {
+      cont.innerHTML = `<div class="veri-yok-card">
+        <div class="veri-yok-icon">🔍</div>
+        <div class="veri-yok-baslik">Kayıtlı kazanım verisi bulunamadı</div>
+        <div class="veri-yok-alt">EKAP sonuç ilanlarından bu firma ismiyle eşleşen kazanım henüz toplanmamış.
+          Sistem her gece otomatik tarama yapmaktadır — yeni sonuçlar biriktiğinde burada görünür.</div>
+      </div>`;
+      return;
+    }
+    const toplamBedel = sonucVeri.reduce((a, s) => a + (s.kazanan_teklif || 0), 0);
+    const tenzList = sonucVeri.filter(s => s.kazanan_teklif_farki_yuzde != null);
+    const ortTenz = tenzList.length
+      ? tenzList.reduce((a, s) => a + Number(s.kazanan_teklif_farki_yuzde), 0) / tenzList.length
+      : null;
+    cont.innerHTML = `
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px;">
+        <div class="kpi-card">
+          <div class="kpi-label">Kazanılan İhale</div>
+          <div class="kpi-value amber">${sonucVeri.length}</div>
+          <div class="kpi-sub">EKAP sonuç kaydı</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Toplam Sözleşme</div>
+          <div class="kpi-value">${toplamBedel ? formatBedel(toplamBedel) : '—'}</div>
+          <div class="kpi-sub">toplam</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Ort. Tenzilat</div>
+          <div class="kpi-value amber">${ortTenz != null ? '%' + ortTenz.toFixed(1) : '—'}</div>
+          <div class="kpi-sub">sözleşme indirimi</div>
+        </div>
+      </div>
+      <div>
+        ${sonucVeri.map(s => {
+          const ilan = s.ilan || {};
+          const tenz = s.kazanan_teklif_farki_yuzde != null
+            ? `<span class="ik-durum durum-acik">%${Number(s.kazanan_teklif_farki_yuzde).toFixed(1)} tenz.</span>`
+            : '';
+          const idareKisa = (ilan.idare || '').length > 45
+            ? ilan.idare.substring(0, 45) + '…'
+            : (ilan.idare || '');
+          return `<div class="ihale-kart">
+            <div class="ik-ust">
+              <a class="ik-baslik" href="ihale-detay?id=${s.ilan_id}">${ilan.baslik || '(Başlık yok)'}</a>
+              ${tenz}
+            </div>
+            <div class="ik-badges">
+              ${ilan.il ? `<span class="etiket">📍 ${ilan.il}</span>` : ''}
+              ${idareKisa ? `<span class="etiket">${idareKisa}</span>` : ''}
+            </div>
+            <div class="ik-meta">
+              ${s.kazanan_teklif ? `<span style="color:var(--amber);font-weight:700;">₺ ${formatBedel(s.kazanan_teklif)}</span>` : ''}
+              ${s.sonuc_tarihi ? `<span>📅 ${tarihFormat(s.sonuc_tarihi)}</span>` : ''}
+              ${s.toplam_teklif_sayisi ? `<span>👥 ${s.toplam_teklif_sayisi} teklif</span>` : ''}
+            </div>
+          </div>`;
+        }).join('')}
+      </div>`;
+  }
+
   window.sekmeAc = function(id, btn) {
     document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
     document.getElementById('tab-' + id).classList.add('active');
     btn.classList.add('active');
     if (id === 'ihaleler') listeSayfa(sayfa);
+    if (id === 'sonuclar') sonuclariGoster();
   };
 
   window.sayfaGit = function(s) {
@@ -522,11 +592,19 @@
     document.getElementById('firma-ad').textContent = FIRMA;
     document.getElementById('firma-meta').textContent = 'Veri yükleniyor…';
     document.getElementById('kpi-katilan').textContent = '—';
+    document.getElementById('kpi-kazanilan').textContent = '—';
+    document.getElementById('sonuclar-container').innerHTML =
+      `<div class="veri-yok-card"><div class="loading-spinner"></div><div style="font-size:13px;color:var(--muted);">Sonuç verisi yükleniyor…</div></div>`;
     const iBtn = document.getElementById('firma-ihaleler-btn');
     if (iBtn) iBtn.href = `ihaleler?idare=${encodeURIComponent(FIRMA)}`;
 
-    // İhale arama: idare veya baslik içinde firma adı geçen kayıtlar
-    // (gerçek yüklenici kolonu olmadığı için best-effort arama)
+    // Kazanım sorgusu + ilanlar sorgusu paralel başlat
+    const sonucProm = sb.from('ihale_sonuclari')
+      .select('ilan_id,kazanan_firma,kazanan_teklif,kazanan_teklif_farki_yuzde,toplam_teklif_sayisi,en_dusuk_teklif,en_yuksek_teklif,sonuc_tarihi')
+      .ilike('kazanan_firma', `%${FIRMA}%`)
+      .order('sonuc_tarihi', { ascending: false })
+      .limit(500);
+
     const rows = [];
     for (let off = 0; ; off += 1000) {
       const { data } = await sb.from('ilanlar')
@@ -539,20 +617,39 @@
     }
 
     tumIhaleler = rows;
-    const simdi = Date.now();
-    const aktif  = rows.filter(i => i.son_teklif_tarihi && new Date(i.son_teklif_tarihi) > simdi).length;
     const iller  = new Set(rows.filter(i => i.il).map(i => i.il));
     const katlar = new Set(rows.filter(i => i.kategori).map(i => i.kategori));
-
     document.getElementById('kpi-katilan').textContent = rows.length.toLocaleString('tr');
-    document.getElementById('kpi-kazanilan').textContent = aktif.toLocaleString('tr');
     document.getElementById('kpi-sozlesme').textContent = iller.size;
     document.getElementById('kpi-tenzilat').textContent = katlar.size;
     document.getElementById('firma-meta').textContent = rows.length
       ? `${rows.length} ihale kaydı bulundu · ${iller.size} il · ${katlar.size} sektör`
       : 'Bu arama için sonuç bulunamadı.';
-
     if (rows.length) firmaIstatistikGoster(rows);
+
+    // Kazanım verisini al ve ilan başlıklarını zenginleştir
+    const { data: sonucRaw } = await sonucProm;
+    sonucVeri = sonucRaw || [];
+    if (sonucVeri.length) {
+      const ids = [...new Set(sonucVeri.map(s => s.ilan_id).filter(Boolean))];
+      if (ids.length) {
+        const { data: ilanDetay } = await sb.from('ilanlar')
+          .select('id,baslik,ekap_id,idare,il,tur')
+          .in('id', ids);
+        const mp = {};
+        (ilanDetay || []).forEach(i => { mp[i.id] = i; });
+        sonucVeri = sonucVeri.map(s => ({ ...s, ilan: mp[s.ilan_id] || null }));
+      }
+      document.getElementById('kpi-kazanilan').textContent = sonucVeri.length.toLocaleString('tr');
+      const toplamBedel = sonucVeri.reduce((a, s) => a + (s.kazanan_teklif || 0), 0);
+      const sub = document.getElementById('kpi-kazanilan-sub');
+      if (sub && toplamBedel) sub.textContent = formatBedel(toplamBedel) + ' toplam';
+    } else {
+      document.getElementById('kpi-kazanilan').textContent = '0';
+    }
+
+    // Sonuçlar sekmesi açıksa hemen doldur
+    if (document.getElementById('tab-sonuclar')?.classList.contains('active')) sonuclariGoster();
   }
 
   let _yilChart = null;
