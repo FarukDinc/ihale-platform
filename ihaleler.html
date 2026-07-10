@@ -1046,6 +1046,11 @@
       if (uyumModu) { fallback = fallback.limit(200); }
       else { const baslangic = (sayfa - 1) * SAYFA_BOYUTU; fallback = fallback.range(baslangic, baslangic + SAYFA_BOYUTU - 1); }
       ({ data, error, count } = await fallback);
+      // Bu yol esik_katsayi filtresini UYGULAYAMIYOR (kolon yok) — kullanıcı seçtiyse
+      // sessizce yoksayıp "filtrelenmiş" izlenimi vermemek için açıkça uyar.
+      if (esikKatsayi) {
+        toastGoster('⚠ Sınır değer katsayısı filtresi şu an kullanılamıyor, sonuçlara uygulanmadı.');
+      }
     }
 
     if (error) {

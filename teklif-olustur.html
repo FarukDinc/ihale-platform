@@ -1422,6 +1422,7 @@
 
     try {
       let teknikMetin, nedenMetin, yontemMetin;
+      let aiYanitAlindi = false;   // backend gerçekten yanıt verdi mi (kısmi de olsa)
 
       if (ihaleId) {
         const { data: { session } } = await sb.auth.getSession();
@@ -1447,11 +1448,21 @@
           teknikMetin = json.kapsam || '';
           nedenMetin  = json.neden || '';
           yontemMetin = json.yontem || '';
+          aiYanitAlindi = true;
+        } else if (res) {
+          // Gerçek bir backend hatası (404/500) — sessizce şablona düşüp "başarılı" göstermek
+          // yanıltıcı olur (kredi zaten düşmüş olabilir). Kullanıcıya gerçek hatayı bildir.
+          const hataJson = await res.json().catch(() => ({}));
+          toast(hataJson.detail || 'AI teklif oluşturma başarısız oldu. Tekrar deneyin.', 'hata');
+          return;
         }
+        // res === null (ağ hatası / backend'e hiç ulaşılamadı) → aşağıdaki şablon yedeğine düşülür.
       }
 
-      // Fallback: örnek metin
-      if (!teknikMetin) {
+      // Şablon yedeği: SADECE backend'e hiç ulaşılamadıysa (ihale_id yok / ağ hatası) devreye girer.
+      // Alan bazlı: backend yanıt verdiyse ama bir alan boş kaldıysa, DİĞER gerçek AI alanları
+      // korunur — hepsini şablonla ezmek, kısmi de olsa gerçek AI içeriğini kaybettirirdi.
+      if (!aiYanitAlindi) {
         const baslik = ihaleData?.baslik || 'İhale Konusu İş';
         const idare  = ihaleData?.idare  || 'İdare';
         teknikMetin = `${idare} tarafından ihaleye çıkarılan "${baslik}" kapsamında firmamız aşağıdaki teknik hizmetleri sunmayı taahhüt etmektedir:\n\n• Şartname ve teknik özelliklere tam uygun malzeme ve işçilik\n• Deneyimli kadromuz ile zamanında ve eksiksiz teslim\n• Sektörde 15+ yıllık iş deneyimi ve referans projeler\n• Kalite güvence sistemi kapsamında sürekli denetim ve kontrol`;
@@ -1459,11 +1470,15 @@
         yontemMetin = `İşin yürütülmesinde aşağıdaki teknik yaklaşım benimsenecektir:\n\n1. Mobilizasyon ve Hazırlık (1. Ay): Saha teslimi, iş programı kesinleştirilmesi, ekipman temini\n2. Uygulama Aşaması (2–5. Ay): Teknik şartnameye uygun sıra ve yöntemlerle uygulama\n3. Kontrol ve Kabul (6. Ay): İş tamamlama, test ve ölçümler, kesin kabul`;
       }
 
-      document.getElementById('teknik-kapsam').value = teknikMetin;
-      document.getElementById('teknik-neden').value  = nedenMetin;
-      document.getElementById('teknik-yontem-text').value = yontemMetin;
+      document.getElementById('teknik-kapsam').value = teknikMetin || '';
+      document.getElementById('teknik-neden').value  = nedenMetin || '';
+      document.getElementById('teknik-yontem-text').value = yontemMetin || '';
 
-      toast('Teknik teklif metni oluşturuldu! İnceleyip düzenleyebilirsiniz.', 'basari');
+      toast(
+        aiYanitAlindi ? 'Teknik teklif metni oluşturuldu! İnceleyip düzenleyebilirsiniz.'
+                      : 'Örnek şablon metin dolduruldu (AI şu an ulaşılamıyor) — inceleyip düzenleyebilirsiniz.',
+        'basari'
+      );
     } catch(e) {
       toast('Bir hata oluştu. Tekrar deneyin.', 'hata');
     } finally {

@@ -2,8 +2,12 @@
 Faz E1 — Rakip Takibi: gece cron'da ekap_sonuc_backfill.py'den SONRA çalışır.
 Son taramada (scrape_tarihi >= şimdi - PENCERE_SAAT) yeni yazılan ihale_sonuclari
 satırlarını, takip_firmalar'daki kullanıcıların takip ettiği firma adlarıyla
-(basit iki-yönlü substring eşleşmesi — firma-analiz.html'in ILIKE '%FIRMA%'
-aramasıyla aynı mantık) karşılaştırır; eşleşme varsa bildirimler'e kayıt açar.
+karşılaştırır; eşleşme varsa bildirimler'e kayıt açar.
+
+Eşleştirme firma_normalize.normalize_ad() ile YAPILIYOR (ham iki-yönlü substring DEĞİL) —
+"ABC İNŞAAT A.Ş." (takip edilen) ile "ABC İnşaat Ltd. Şti." (kazanan) gibi sadece şirket
+eki farklı olan yazımların da eşleşmesi için (bkz. firma_normalize.py, aynı normalizasyon
+yukleniciler tablosunda ve firma-analiz.html'de de kullanılıyor).
 
 DB tarafı: backend/migration_takip_firmalar.sql (takip_firmalar tablosu, UYGULANMADI —
 bkz. YAPILACAKLAR.md). Migration uygulanmadan bu script 404/42P01 ile sessizce çıkar
@@ -20,6 +24,9 @@ from datetime import datetime, timedelta, timezone
 import httpx
 from dotenv import load_dotenv
 
+sys.path.insert(0, os.path.dirname(__file__))
+from firma_normalize import normalize_ad
+
 load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), ".env"))
 
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "")
@@ -35,13 +42,8 @@ def _headers():
     }
 
 
-def _tr_lower(s: str) -> str:
-    # Python'un str.lower()'ı Türkçe İ/I harflerini yanlış çevirir (İ→'i̇' birleşik karakter).
-    return s.replace("İ", "i").replace("I", "ı").lower()
-
-
 def esleşiyor(firma_ad: str, kazanan: str) -> bool:
-    a, b = _tr_lower(firma_ad.strip()), _tr_lower((kazanan or "").strip())
+    a, b = normalize_ad(firma_ad), normalize_ad(kazanan)
     return bool(a) and bool(b) and (a in b or b in a)
 
 

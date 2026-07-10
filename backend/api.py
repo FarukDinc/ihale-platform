@@ -208,13 +208,25 @@ def profil_guncelle(
 
         # Faz D3 — semantik eşleşme: profil değiştiğinde firma embedding'ini tazele.
         # embedding kolonu (migration_semantik_esleme.sql) yoksa sessizce geç, kaydı bozmaz.
+        # ⚠️ Bu istek PARÇALI bir güncelleme olabilir (sadece 1-2 alan gönderilmiş) — embedding'i
+        # sadece bu isteğin gövdesinden değil, güncel TAM satırdan üretiyoruz; yoksa örn. sadece
+        # calisani_sayisi güncellenince firma_adi/referanslar embedding'den düşüp daralırdı.
         try:
-            metin_parca = [
-                str(veri.get("firma_adi") or ""),
-                " ".join(veri.get("faaliyet_alanlari") or []) if veri.get("faaliyet_alanlari") else "",
-                " ".join(veri.get("referanslar") or []) if isinstance(veri.get("referanslar"), list) else str(veri.get("referanslar") or ""),
-            ]
-            metin = " ".join(p for p in metin_parca if p).strip()
+            guncel = supabase.table("kullanici_profiller").select(
+                "firma_adi, faaliyet_alanlari, referanslar"
+            ).eq("id", kullanici_id).limit(1).execute()
+            satir = (guncel.data or [{}])[0]
+
+            def _metin_yap(deger):
+                if isinstance(deger, list):
+                    return " ".join(str(x) for x in deger if x)
+                return str(deger or "")
+
+            metin = " ".join(p for p in (
+                _metin_yap(satir.get("firma_adi")),
+                _metin_yap(satir.get("faaliyet_alanlari")),
+                _metin_yap(satir.get("referanslar")),
+            ) if p).strip()
             if metin:
                 from embed_ortak import embed_uret
                 vec = embed_uret(metin)
@@ -449,15 +461,20 @@ def teklif_olustur(
         ).eq("id", kullanici_id).limit(1).execute()
         firma_profil = (profil_liste.data or [{}])[0]
 
-        # Piyasa bağlamı — aynı idare/kategoride geçmişte kazanan firmalar (RPC yoksa sessizce boş)
+        # Piyasa bağlamı — aynı idare/kategoride geçmişte kazanan firmalar (RPC yoksa sessizce boş).
+        # ⚠️ analiz_pivot'ta p_idare/p_kategori NULL ise o filtre uygulanmaz (bkz. migration_analiz_rpc.sql
+        # "$2 IS NULL OR i.idare = $2") — yani ilan.idare/kategori boşsa RPC TÜM Türkiye'deki en sık
+        # kazanan firmaları döndürür, ama prompt bunu "bu idare/sektörde" diye sunar. İkisi de eksikse
+        # RPC'yi hiç çağırma; boş bağlam (teklif_ai.py zaten "geçmiş kayıt bulunamadı" diye ele alıyor).
         piyasa_baglami = []
-        try:
-            piv = supabase.rpc("analiz_pivot", {
-                "p_grup": "firma", "p_idare": ilan.get("idare"), "p_kategori": ilan.get("kategori"),
-            }).execute()
-            piyasa_baglami = piv.data or []
-        except Exception as e:
-            print(f"  ⚠ analiz_pivot (teklif-olustur) atlandı: {e}")
+        if ilan.get("idare") and ilan.get("kategori"):
+            try:
+                piv = supabase.rpc("analiz_pivot", {
+                    "p_grup": "firma", "p_idare": ilan.get("idare"), "p_kategori": ilan.get("kategori"),
+                }).execute()
+                piyasa_baglami = piv.data or []
+            except Exception as e:
+                print(f"  ⚠ analiz_pivot (teklif-olustur) atlandı: {e}")
 
         sonuc = teklif_taslak_uret(ilan=ilan, firma_profil=firma_profil, piyasa_baglami=piyasa_baglami)
         if not sonuc["basari"]:

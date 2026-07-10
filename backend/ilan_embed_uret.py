@@ -3,9 +3,13 @@ Faz D3 — gece cron'da aktif ilanlardan embedding'i eksik olanları doldurur.
 
 Kasıtlı olarak SINIRLI/aşamalı: bir kerede TÜM geçmişi (51k+ satır) embed etmeye
 çalışmaz — Gemini kota/maliyetine dikkat (bkz. proje hafızası "Gemini kota uyarısı").
-Her gece varsayılan 300 satır işler; ilanlar tükendiğinde (yeni + embed'i eksik eski
-aktif ilanlar) otomatik "0 işlendi" ile biter. Yalnızca `durum='aktif'` işlenir —
-geçmiş/kompakt satırların zaten `ilan_metni` yok, embed edilecek anlamlı metin de yok.
+Her gece varsayılan 300 satır işler. Yalnızca `durum='aktif'` işlenir — geçmiş/kompakt
+satırların zaten `ilan_metni` yok, embed edilecek anlamlı metin de yok.
+⚠️ Sıralama BİLEREK `olusturulma DESC` (en yeni önce): kullanıcıya "Güncel" sekmesinde
+gösterilen taze ilanların semantik skoru en çok değer taşır. Eğer bir gecede yeni aktif
+ilan sayısı `--max`'i aşarsa, embed'i eksik ESKİ aktif ilanlar o gece sıraya giremez —
+bu kabul edilebilir bir ödünleşim (eski aktif ilanlar zaten yakında son teklif tarihi
+geçip "aktif" olmaktan çıkacak, semantik eşleşmenin değeri de onlarla birlikte azalır).
 
 Kullanım: python ilan_embed_uret.py [--max 300]
 Env: SUPABASE_URL, SUPABASE_SERVICE_KEY, GEMINI_API_KEY (backend/.env)
