@@ -1474,9 +1474,32 @@ ayrı ayrı doğrulandı — yüksek güvenilirlik.**
 **Sıradaki mantıklı adım:** (1) Gerçek bir kullanıcı hesabıyla tarayıcıdan "Analiz Et" dene (nihai UI/UX
 doğrulaması — backend artık sağlam). (2) Kullanıcı onayıyla IYZICO key'lerini edge-functions'a ekle →
 sandbox kartla ödeme testi yap (İyzico test kartı: 5528790000000008). (3) manual_backfill.log'u izle →
-bittiğinde veri hacmini tekrar say (şu an ~44.8k, 20.689'dan başladı). (4) C4/E1/E3/E4'e geç.
+bittiğinde veri hacmini tekrar say (şu an ~47k, 20.689'dan başladı). (4) C4/E1/E3/E4'e geç.
 (5) `google.generativeai` → `google.genai` tam SDK migrasyonu düşünülebilir (şu an çalışıyor ama SDK "support
 ended" — uzun vadede sorun çıkarabilir, acil değil).
+
+**✅ EK TUR (10 Tem, "devam et hiç durma" — sistematik tablo/RPC/plan-kontrol denetimi):**
+- 🔴 **`js/sidebar-user.js`'de AYNI Pro-plan tespit bug'ı** (plan.js'deki ile birebir aynı, bağımsız kopya):
+  `PRO` listesi `'standart'`/`'kurumsal'` içermiyordu → **TÜM sayfalardaki sidebar rozeti** ödeyen
+  kullanıcılar için hep "Ücretsiz Plan" gösteriyordu. Düzeltildi (commit `c1707ca`). Bu ikisi (`js/plan.js`
+  + `js/sidebar-user.js`) artık tarandı, başka bağımsız kopya kalmadı (dashboard/teklif-olustur/fiyatlandirma
+  hepsi paylaşılan `Plan.getPlan()`'ı kullanıyor, kendi listesi yok — doğrulandı).
+- 🟡 **`kik-kararlar.html`**: (1) sidebar planı var olmayan `kullanicilar` tablosuna sorguluyordu → gerçek
+  `kullanici_krediler` deseni ile değiştirildi. (2) ana liste var olmayan `kik_kararlar` tablosunu
+  okuyordu — sayfa bunu zaten (42P01) zarifçe yakalıyordu (crash yoktu), ama `backend/kik_backfill.py`
+  bu tabloya yazmayı bekliyordu ve migration hiç yazılmamıştı. `migration_kik_kararlar_tablo.sql` ile
+  eklendi (kullanıcı onayıyla VDS'e uygulandı, RLS+public SELECT). **KİK kaynağı hâlâ IP-bloklu (302,
+  cron her gece "0 eklendi") — bu SADECE tabloyu hazırladı, veri akışını başlatmadı** (ayrı iş, Playwright
+  gerektirir, bkz. Faz E4).
+- 🟢 **`sektorler.html`'in beklediği `kategori_sayim()` RPC'si hiç yoktu** — sayfa zaten defensif
+  (38 sayfalanmış istekle manuel fallback, çöküş yoktu) ama yavaştı. `il_sayim()` ile aynı desende
+  eklendi (kullanıcı onayıyla VDS'e uygulandı, commit `4fd18a7`).
+- ✅ **Sistematik denetim tamamlandı:** tüm backend `.rpc()` çağrıları (`normalize_firma`, `analiz_pivot`,
+  `kredi_dus`, `il_sayim`, `kategori_sayim`) gerçek `pg_proc` imzalarıyla eşleşiyor. Tüm frontend `.from()`
+  çağrıları (~90 site) gerçek `information_schema.tables` listesiyle karşılaştırıldı — yukarıdaki 2 madde
+  (kullanicilar, kik_kararlar) dışında sapma bulunmadı. `teklif-olustur.html`'in `teklifler` insert'i
+  şemayla uyumlu doğrulandı (8 Tem'deki düzeltme kalıcıymış). `notify.py`/`bulten_gonder.py`'nin tablo/kolon
+  referansları da statik olarak doğru bulundu (ayrıca cron loglarında hatasız çalıştıkları zaten görülmüştü).
 
 <details><summary>(tarihsel — cutover öncesi durum notları)</summary>
 
