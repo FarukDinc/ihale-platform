@@ -1421,16 +1421,27 @@
     }, 1800);
 
     try {
-      // Backend'e istek (henüz endpoint yoksa mock)
       let teknikMetin, nedenMetin, yontemMetin;
 
       if (ihaleId) {
-        const res = await fetch(`https://ihaleplatform-backend.onrender.com/api/teklif-olustur`, {
+        const { data: { session } } = await sb.auth.getSession();
+        if (!session) {
+          toast('Bu özellik için giriş yapmalısınız.', 'hata');
+          return;
+        }
+        const res = await fetch(`${API.CONFIG.BASE_URL}/teklif-olustur`, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${session.access_token}`,
+          },
           body: JSON.stringify({ ihale_id: ihaleId })
         }).catch(() => null);
 
+        if (res && res.status === 402) {
+          toast('Yetersiz kredi. Plan yükseltip tekrar deneyin.', 'hata');
+          return;
+        }
         if (res && res.ok) {
           const json = await res.json();
           teknikMetin = json.kapsam || '';

@@ -14,6 +14,7 @@ from typing import Optional
 from supabase import create_client, Client
 from worker import kullanici_analiz_isle
 from firma_ai_yorum import firma_yorum_uret, AI_YORUM_GECERLILIK_GUN
+from teklif_ai import teklif_taslak_uret
 from payment import router as payment_router
 from dotenv import load_dotenv
 from datetime import datetime, timedelta, timezone
@@ -386,6 +387,80 @@ def firma_ai_yorum(
         }).eq("normalize_ad", normalize_ad).execute()
 
         return {"basari": True, "metin": sonuc["metin"], "cache": False}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/teklif-olustur")
+def teklif_olustur(
+    istek: AnalizIstek,
+    authorization: str = Header(None)
+):
+    """
+    Faz D4 — AI teklif taslağı üretir (teklif-olustur.html "✨ AI ile Oluştur" butonu).
+    İhale detayı + kullanıcının firma profili + aynı idare/kategoride geçmişte kazanan
+    firmaların ortalama tenzilatı (analiz_pivot) Gemini'ye bağlam olarak veriliyor —
+    "piyasa farkında" taslak (bkz. YAPILACAKLAR.md Faz D4).
+    """
+    kullanici_id = kullanici_dogrula(authorization)
+    ihale_id = istek.ihale_id
+
+    try:
+        ilan_sonuc = supabase.table("ilanlar").select(
+            "id, baslik, idare, il, kategori, tur, isin_yapilacagi_yer, ilan_metni"
+        ).eq("id", ihale_id).limit(1).execute()
+        ilan = (ilan_sonuc.data or [None])[0]
+        if not ilan:
+            raise HTTPException(status_code=404, detail="İhale bulunamadı")
+
+        # Kredi ön kontrolü
+        kredi_bilgi = supabase.table("kullanici_krediler").select(
+            "kalan_kredi"
+        ).eq("kullanici_id", kullanici_id).single().execute()
+        if (kredi_bilgi.data or {}).get("kalan_kredi", 0) < 1:
+            raise HTTPException(status_code=402, detail="Yetersiz kredi")
+
+        # Firma profili (defensif — .maybe_single() yok, .select().limit(1) + liste kontrolü)
+        profil_liste = supabase.table("kullanici_profiller").select(
+            "firma_adi, yillik_ciro_tl, calisma_illeri, referanslar"
+        ).eq("id", kullanici_id).limit(1).execute()
+        firma_profil = (profil_liste.data or [{}])[0]
+
+        # Piyasa bağlamı — aynı idare/kategoride geçmişte kazanan firmalar (RPC yoksa sessizce boş)
+        piyasa_baglami = []
+        try:
+            piv = supabase.rpc("analiz_pivot", {
+                "p_grup": "firma", "p_idare": ilan.get("idare"), "p_kategori": ilan.get("kategori"),
+            }).execute()
+            piyasa_baglami = piv.data or []
+        except Exception as e:
+            print(f"  ⚠ analiz_pivot (teklif-olustur) atlandı: {e}")
+
+        sonuc = teklif_taslak_uret(ilan=ilan, firma_profil=firma_profil, piyasa_baglami=piyasa_baglami)
+        if not sonuc["basari"]:
+            raise HTTPException(status_code=500, detail=sonuc["hata"])
+
+        try:
+            supabase.rpc("kredi_dus", {
+                "p_kullanici_id": kullanici_id,
+                "p_miktar": 1,
+                "p_referans_id": ihale_id,
+                "p_referans_tip": "ihale",
+                "p_islem_turu": "teklif_taslak",
+                "p_aciklama": f"AI Teklif Taslağı: {(ilan.get('baslik') or '')[:50]}"
+            }).execute()
+        except Exception as e:
+            print(f"  ⚠ kredi_dus (teklif-olustur) hatası: {e}")
+
+        return {
+            "basari": True,
+            "kapsam": sonuc["kapsam"],
+            "neden": sonuc["neden"],
+            "yontem": sonuc["yontem"],
+        }
 
     except HTTPException:
         raise

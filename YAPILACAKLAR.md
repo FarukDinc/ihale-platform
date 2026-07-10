@@ -1622,22 +1622,58 @@ ended" — uzun vadede sorun çıkarabilir, acil değil).
      otomatik sayfa alabilir (şu an manuel/tek seferlik üretim), (c) Google Search Console'a
      sitemap gönderilmesi (kullanıcı tarafında, hesap gerektirir).
 
+5. **E4 (KİK kararları) — sadece araştırma, kod DEĞİŞMEDİ:** kullanıcı onayıyla tek bir test isteği
+   atıldı, sonuç + gerekçe yukarıdaki "10.E FAZ E" bölümündeki E4 maddesine eklendi (özet: gerçek bir
+   iç API bulundu ama çalışan `b_ihalearama` tabanında değil, ve EKAP'ın kendi menüsü de bu özelliği
+   `externalLink` ile dışarı yönlendiriyor — düşük öncelikte kalmalı).
+
+6. **Faz D4 — AI Teklif Workflow Bağlantısı TAMAMLANDI (kod hazır — VDS'e henüz deploy edilmedi):**
+   `teklif-olustur.html`'deki "✨ Teknik Teklif Oluştur" butonu artık gerçekten hiç var olmayan
+   `ihaleplatform-backend.onrender.com` yerine **gerçek bir backend endpoint'ine** bağlı — önceden bu
+   buton HER ZAMAN sabit/kanıksanmış örnek metne düşüyordu (kullanıcı "AI oluşturdu" sanıyordu, aslında
+   şablon metindi — sessiz bir UX yanıltmasıydı).
+   - `backend/teklif_ai.py` (yeni, `firma_ai_yorum.py` ile aynı desen): ihale detayı + kullanıcının
+     firma profili + **aynı idare/kategoride geçmişte kazanan firmaların ortalama tenzilatı**
+     (`analiz_pivot('firma', p_idare=..., p_kategori=...)` — D2'nin kazanma-bandı özelliğiyle aynı RPC)
+     Gemini'ye bağlam olarak veriliyor → "piyasa farkında" taslak (plan D4'ün tam istediği: "benzer
+     işleri geçmişte X,Y firmaları %Z tenzilatla aldı"). 3 bölüm (KAPSAM/NEDEN/YÖNTEM) `###` ayıracıyla
+     parse ediliyor.
+   - `api.py`'ye `POST /teklif-olustur {ihale_id}` eklendi (`/ai/firma-yorum` ile birebir aynı iskelet:
+     auth zorunlu, kredi ön kontrolü, RPC hata verirse sessizce boş bağlamla devam, kredi düşümü
+     try/except'li — başarısız Gemini çağrısında kredi düşmez, aynı D1'de düzeltilen ilkeyle tutarlı).
+   - `teklif-olustur.html`: fetch artık `${API.CONFIG.BASE_URL}/teklif-olustur`'a (aynı-origin,
+     `https://ihaleglobal.com/api`) gerçek `sb.auth.getSession()` token'ıyla gidiyor (fiyatlandırma
+     sayfasındaki `planDusur()` ile aynı, kanıtlanmış auth deseni — `js/api.js`'nin `ihale_token`
+     localStorage mekanizması yerine bunu tercih ettim çünkü payment flow'da zaten doğrulanmış).
+     Girişsiz kullanıcıda artık sessizce şablon metne düşmüyor, net "giriş yapmalısınız" hatası veriyor
+     (yanıltıcı olmasın diye) — local preview'da doğrulandı (`window.aiTeklifOlustur()` çağrısı →
+     doğru toast, kapsam alanı boş kaldı, buton/loading state doğru resetlendi, konsol hatasız). 402
+     (yetersiz kredi) durumu da ayrıca ele alınıyor. Gerçek network/ihale-bulunamadı hatalarında (backend
+     kapalıyken/canlı değilken) eski davranış korunuyor — kanıksanmış örnek metne nazikçe düşüyor.
+   - **KALAN:** VDS'te `git pull` + `systemctl restart ihale-api` (yeni Python dosyası/import eklendi,
+     mevcut migration'lara bağımlı değil — `analiz_pivot` zaten VDS'te kurulu, migration beklemiyor).
+     Gerçek bir giriş yapmış kullanıcı + gerçek ihale ID'siyle uçtan uca DOĞRULANMADI (local'de
+     backend/Gemini canlı değildi) — sıradaki oturumun ilk işlerinden biri bu olmalı.
+
 **🔲 SIRADAKİ OTURUM/KULLANICI İÇİN:**
 1. `backend/migration_esik_katsayi.sql`'i VDS'e uygula (yukarıdaki komut).
 2. `backend/migration_takip_firmalar.sql`'i VDS'e uygula (aynı yöntem: `docker exec -i supabase-db psql
    -U postgres -d postgres < backend/migration_takip_firmalar.sql`).
 3. VDS'te `cd /opt/ihale-platform && git pull origin main` (scraper + ihaleler.html + firma-analiz.html +
-   login.html + rakip_bildirim.py + 1.696 statik `firma/*.html` + `robots.txt` + `sitemap-firmalar.xml`
-   güncellensin/eklensin).
+   login.html + rakip_bildirim.py + teklif_ai.py + api.py + teklif-olustur.html + 1.696 statik
+   `firma/*.html` + `robots.txt` + `sitemap-firmalar.xml` güncellensin/eklensin) + `systemctl restart
+   ihale-api` (yeni `/teklif-olustur` endpoint'i canlı olsun).
 4. `run_scraper.sh`'e şu satırı `yuklenici_yenile_calistir.py` çağrısından sonra ekle:
    `$VENV/python rakip_bildirim.py >> /opt/ihale-platform/logs/scraper.log 2>&1`
 5. Gece cron'unun yeni scraper'ı kullandığını doğrulamaya gerek yok (aynı dosya, sadece yeni alan
    ekliyor) — bir sonraki gece turu otomatik `esik_katsayi` dolduracak. Mevcut ilanlar geriye dönük
    doldurulmaz (yalnızca yeni/yeniden-çekilen kayıtlarda dolar) — istenirse ayrı bir "detay yeniden çek"
    turu gerekir, düşük öncelik.
-6. Hâlâ bekleyen (önceki oturumlardan): IYZICO_API_KEY/SECRET edge-functions'a ekleme (ödeme testi için
+6. `POST /teklif-olustur`'u gerçek bir giriş yapmış kullanıcı + gerçek ihale ID'siyle test et (D4,
+   yukarıya bak — henüz uçtan uca doğrulanmadı).
+7. Hâlâ bekleyen (önceki oturumlardan): IYZICO_API_KEY/SECRET edge-functions'a ekleme (ödeme testi için
    şart), manual_backfill.log'un bitip bitmediğini kontrol (403/429 ile durduysa Webshare proxy
-   değerlendir). Sonra E3 (SEO firma sayfaları) / E4 (KİK — düşük öncelik, WAF engelli)'e geç.
+   değerlendir). Sonra D3 (semantik embedding, kapsamlı/pgvector gerektirir) düşünülebilir.
 
 <details><summary>(tarihsel — cutover öncesi durum notları)</summary>
 
