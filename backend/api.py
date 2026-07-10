@@ -14,12 +14,14 @@ from typing import Optional
 from supabase import create_client, Client
 from worker import kullanici_analiz_isle
 from firma_ai_yorum import firma_yorum_uret, AI_YORUM_GECERLILIK_GUN
+from payment import router as payment_router
 from dotenv import load_dotenv
 from datetime import datetime, timedelta, timezone
 
 load_dotenv()
 
 app = FastAPI(title="İhalePlatform API", version="1.0.0")
+app.include_router(payment_router)
 
 # CORS — Netlify frontend'e izin ver
 app.add_middleware(

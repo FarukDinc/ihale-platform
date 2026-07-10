@@ -25,3 +25,5 @@ create policy "kullanici kendi bultenini siler"     on public.bultenler for dele
 
 -- Service role (backend) tüm bültenleri okuyabilir/güncelleyebilir
 create policy "service_role tam erisim" on public.bultenler using (true) with check (true);
+
+grant all on public.bultenler to service_role, anon, authenticated;
