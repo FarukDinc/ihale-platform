@@ -205,6 +205,26 @@ def profil_guncelle(
         supabase.table("kullanici_profiller").update(veri).eq(
             "id", kullanici_id
         ).execute()
+
+        # Faz D3 — semantik eşleşme: profil değiştiğinde firma embedding'ini tazele.
+        # embedding kolonu (migration_semantik_esleme.sql) yoksa sessizce geç, kaydı bozmaz.
+        try:
+            metin_parca = [
+                str(veri.get("firma_adi") or ""),
+                " ".join(veri.get("faaliyet_alanlari") or []) if veri.get("faaliyet_alanlari") else "",
+                " ".join(veri.get("referanslar") or []) if isinstance(veri.get("referanslar"), list) else str(veri.get("referanslar") or ""),
+            ]
+            metin = " ".join(p for p in metin_parca if p).strip()
+            if metin:
+                from embed_ortak import embed_uret
+                vec = embed_uret(metin)
+                if vec is not None:
+                    supabase.table("kullanici_profiller").update({
+                        "embedding": vec,
+                    }).eq("id", kullanici_id).execute()
+        except Exception as e:
+            print(f"  ⚠ profil embedding tazeleme atlandı: {e}")
+
         return {"basari": True, "mesaj": "Profil güncellendi"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

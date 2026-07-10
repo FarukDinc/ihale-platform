@@ -1655,16 +1655,67 @@ ended" — uzun vadede sorun çıkarabilir, acil değil).
      Gerçek bir giriş yapmış kullanıcı + gerçek ihale ID'siyle uçtan uca DOĞRULANMADI (local'de
      backend/Gemini canlı değildi) — sıradaki oturumun ilk işlerinden biri bu olmalı.
 
+7. **Faz D3 — Semantik Eşleşme TAMAMLANDI (kod hazır — VDS'e henüz deploy edilmedi, geçmiş ilanlar
+   embed EDİLMEDİ, kasıtlı):**
+   - 🐛 **Plandaki `text-embedding-004` model adı da KALDIRILMIŞ** (gemini-1.5-flash'la aynı sınıf
+     sorun — Google eski model adlarını sünsetliyor). `client.models.list()` ile canlı doğrulandı:
+     embedContent destekleyen güncel model **`models/gemini-embedding-001`**. Bu model varsayılan
+     3072 boyut döndürüyor (pgvector index limitleri için fazla) — `EmbedContentConfig
+     (output_dimensionality=768)` ile Matryoshka/MRL kısaltması istendi, canlı test edildi (768 boyut
+     doğru döndü). ⚠️ Kısaltılmış çıktı norm=1 DEĞİL (test: 0.588) ama bu SORUN DEĞİL — pgvector'ın
+     `<=>` operatörü cosine mesafeyi zaten vektör normlarına bölerek hesaplıyor, manuel normalize
+     gerekmiyor.
+   - `backend/embed_ortak.py` (yeni, paylaşılan yardımcı): `embed_uret(metin) -> list[float]|None`,
+     hem `ilan_embed_uret.py` hem `api.py` bunu kullanıyor (DRY).
+   - `backend/migration_semantik_esleme.sql` (yeni): `CREATE EXTENSION vector` + `ilanlar.embedding`/
+     `kullanici_profiller.embedding` (vector(768)) + HNSW index + **`semantik_skor_batch(p_ilan_ids)`
+     RPC**. ⚠️ **Güvenlik tasarımı bilerek `p_kullanici_id` parametresi ALMIYOR** — SECURITY DEFINER
+     içinde doğrudan `auth.uid()` kullanıyor, çünkü bu oturumun başında bulunan `kullanici_profiller`
+     gizlilik açığı dersinden sonra "çağıran istediği kullanıcı ID'sini geçebilir" deseninden
+     kaçınıldı — sadece kendi embedding'inle karşılaştırma yapabilirsin.
+   - `backend/ilan_embed_uret.py` (yeni, gece cron adayı): SADECE `durum='aktif'` + `embedding IS
+     NULL` ilanları, **varsayılan 300/çalıştırma sınırlı** — bilinçli olarak TÜM geçmişi (51k+ satır)
+     tek seferde embed etmeye ÇALIŞMIYOR (proje hafızasındaki "Gemini kota uyarısı" dersine uyularak;
+     mevcut 51k+ geçmiş/kompakt satırın zaten `ilan_metni` yok, embed edilecek anlamlı metin de yok —
+     scriptte `ilan_metni not.is.null` filtresiyle bu zaten dışlanıyor).
+   - `api.py`'nin `PUT /profil`'i artık kaydı güncelledikten sonra `firma_adi`+`faaliyet_alanlari`+
+     `referanslar`'dan embedding üretip `kullanici_profiller.embedding`'i tazeliyor (try/except'li —
+     migration uygulanmadan/Gemini hata verirse profil kaydı yine BAŞARILI döner, sadece embedding
+     boş kalır).
+   - `ihaleler.html`: `ilanlariYukle()`'de kural-tabanlı `_uyum` hesaplandıktan hemen sonra
+     `semantik_skor_batch` RPC'si çağrılıp **%60 kural + %40 semantik** harmanlanıyor (plandaki
+     KABUL KRİTERİ D formülü birebir). RPC/embedding yoksa (migration uygulanmadı, kullanıcı girişsiz,
+     ya da o ilan/profil için embedding boş) sessizce atlanıyor, `_uyum` salt kural-tabanlı kalıyor.
+     Local preview'da doğrulandı: RPC 404 döndü (migration henüz VDS'te yok), liste yine de 200 ihale
+     ile sorunsuz render oldu, konsol hatasız — `esik_katsayi` fallback'iyle aynı anda, birbirini
+     bozmadan çalıştıkları da görüldü.
+   - **KALAN (sırasıyla):** (a) migration'ı VDS'e uygula, (b) VDS'te `git pull` + `ihale-api` restart,
+     (c) `ilan_embed_uret.py`'yi cron'a ekle (`yuklenici_yenile_calistir.py`'den sonra, `rakip_bildirim.py`
+     ile aynı satırda), (d) **BİLİNÇLİ KULLANICI KARARI GEREKİYOR:** mevcut ~14k aktif ilanın geçmişe
+     dönük embed'lenmesi (script gece başına 300 işler → ilk dolana kadar ~47 gece SÜRER, ya da
+     `--max` büyütülüp tek seferde/birkaç günde bitirilebilir — bu bir maliyet/hız kararı, otonom
+     yapılmadı). Migration + cron gelene kadar ihaleler.html tamamen eskisi gibi (salt kural-tabanlı)
+     çalışmaya devam eder, hiçbir regresyon yok.
+
 **🔲 SIRADAKİ OTURUM/KULLANICI İÇİN:**
 1. `backend/migration_esik_katsayi.sql`'i VDS'e uygula (yukarıdaki komut).
 2. `backend/migration_takip_firmalar.sql`'i VDS'e uygula (aynı yöntem: `docker exec -i supabase-db psql
    -U postgres -d postgres < backend/migration_takip_firmalar.sql`).
+2b. `backend/migration_semantik_esleme.sql`'i VDS'e uygula (aynı yöntem). `CREATE EXTENSION vector`
+    içerir — VDS'in self-hosted Postgres'inde pgvector extension'ı kurulu olmalı (Supabase docker
+    image'ları genelde önceden yükler; değilse `docker exec supabase-db sh -c "..."` ile eklenmesi
+    gerekebilir, önce dene, hata alırsan araştır).
 3. VDS'te `cd /opt/ihale-platform && git pull origin main` (scraper + ihaleler.html + firma-analiz.html +
-   login.html + rakip_bildirim.py + teklif_ai.py + api.py + teklif-olustur.html + 1.696 statik
-   `firma/*.html` + `robots.txt` + `sitemap-firmalar.xml` güncellensin/eklensin) + `systemctl restart
-   ihale-api` (yeni `/teklif-olustur` endpoint'i canlı olsun).
-4. `run_scraper.sh`'e şu satırı `yuklenici_yenile_calistir.py` çağrısından sonra ekle:
-   `$VENV/python rakip_bildirim.py >> /opt/ihale-platform/logs/scraper.log 2>&1`
+   login.html + rakip_bildirim.py + teklif_ai.py + api.py + teklif-olustur.html + embed_ortak.py +
+   ilan_embed_uret.py + 1.696 statik `firma/*.html` + `robots.txt` + `sitemap-firmalar.xml`
+   güncellensin/eklensin) + `systemctl restart ihale-api` (yeni `/teklif-olustur` endpoint'i canlı olsun).
+4. `run_scraper.sh`'e şu 2 satırı `yuklenici_yenile_calistir.py` çağrısından sonra ekle:
+   ```
+   $VENV/python rakip_bildirim.py >> /opt/ihale-platform/logs/scraper.log 2>&1
+   $VENV/python ilan_embed_uret.py --max 300 >> /opt/ihale-platform/logs/scraper.log 2>&1
+   ```
+   (`--max 300` ihtiyaten düşük tutuldu — hız artırılmak istenirse yükseltilebilir, bkz. D3 notundaki
+   maliyet/hız kararı.)
 5. Gece cron'unun yeni scraper'ı kullandığını doğrulamaya gerek yok (aynı dosya, sadece yeni alan
    ekliyor) — bir sonraki gece turu otomatik `esik_katsayi` dolduracak. Mevcut ilanlar geriye dönük
    doldurulmaz (yalnızca yeni/yeniden-çekilen kayıtlarda dolar) — istenirse ayrı bir "detay yeniden çek"

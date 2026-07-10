@@ -1054,6 +1054,26 @@
     }
 
     let ilanlar = (data || []).map(ilan => ({ ...ilan, _uyum: uyumHesapla(ilan) }));
+
+    // Faz D3 — semantik eşleşme: kural-tabanlı skoru (yukarıda) AI cosine benzerliğiyle
+    // harmanla (%60 kural + %40 semantik). RPC/embedding henüz yoksa (migration uygulanmadı,
+    // kullanıcı girişsiz, ya da bu ilan/profil için embedding boş) sessizce atlanır — _uyum
+    // salt kural-tabanlı kalır, hiçbir hata gösterilmez.
+    try {
+      const idler = ilanlar.map(i => i.id);
+      if (idler.length) {
+        const { data: skorlar, error: skorHata } = await sb.rpc('semantik_skor_batch', { p_ilan_ids: idler });
+        if (!skorHata && skorlar) {
+          const skorMap = {};
+          skorlar.forEach(s => { skorMap[s.ilan_id] = s.skor; });
+          ilanlar = ilanlar.map(i => {
+            const sem = skorMap[i.id];
+            return sem == null ? i : { ...i, _uyum: Math.round(i._uyum * 0.6 + sem * 100 * 0.4) };
+          });
+        }
+      }
+    } catch (e) { /* semantik eşleşme opsiyonel, sessizce geç */ }
+
     yukluIlanlar = ilanlar;
 
     if (minUyum > 0) ilanlar = ilanlar.filter(i => i._uyum >= minUyum);
