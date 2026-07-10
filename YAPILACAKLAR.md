@@ -1,6 +1,8 @@
 # İhalePlatform — Yapılacaklar Listesi
 
-> Son güncelleme: 10 Temmuz 2026 (Sonnet oturumu — SMTP gönderici değişimi + GH Actions kapatma TAMAMLANDI, D2 emsal listesi + bildirim tercihi UI eklendi; 3 madde kullanıcının ÖZEL onayını bekliyor (UFW port, RESEND_API_KEY, Render redeploy) → en alttaki "📍 SON DURUM" bölümüne bak, oradan devam et)
+> Son güncelleme: 10 Temmuz 2026 (Sonnet oturumu devamı, kullanıcı "3 gün içinde canlıya al" dedi ve otonom
+> yetki verdi — 3 bekleyen madde + KÖK NEDEN BULUNAN GERÇEK BUG çözüldü, Render bağımlılığı tamamen kaldırıldı,
+> geniş tarihsel backfill başlatıldı → en alttaki "📍 SON DURUM (10 Tem, otonom launch oturumu)" bölümüne bak)
 > Bu dosya, Code modunda kodlama yaparken referans alınacak. Her madde mümkün olduğunca net ve uygulanabilir yazıldı.
 > 29 Haz 2026: **tendermeister.com** ve **ihaleciler.com** canlı olarak detaylı gezildi; rekabet/özellik-açığı analizi en alta "🆚 REKABET ANALİZİ" bölümüne eklendi (Öncelik 9). Önce o bölümü oku.
 
@@ -1311,6 +1313,56 @@ dashboard'undan manuel "Deploy latest commit" tetiklemeli** (bu oturumda Render 
 
 **Sıradaki mantıklı adım (bu 3 onay gelince):** notify.py'yi cron'da test et (artık gerçek opt-in kullanıcı +
 RESEND_API_KEY olacak), sonra C4/E1/E3/E4'e geç (bkz. yukarıdaki "10.F Uygulama sırası").
+
+---
+
+## 📍 SON DURUM (10 Tem 2026, otonom launch oturumu) — ÖNCE BUNU OKU
+
+> Kullanıcı "3 gün içinde canlıya alalım, sağlam ve geçmiş verilerle" dedi, otonom yetki verdi. Bu oturumda
+> yukarıdaki 3 bekleyen madde çözüldü + **"Render deploy güncel değil" teşhisinin YANLIŞ olduğu ortaya çıktı**
+> — gerçek kök neden bulunup düzeltildi. Render artık tamamen devre dışı bırakılabilir.
+
+**✅ TAMAMLANANLAR (kullanıcı onayıyla, SSH ile VDS `195.85.207.126`):**
+1. **UFW `8000/tcp` kapatıldı** (v4+v6). Kong artık sadece nginx üzerinden erişilebilir.
+2. **`RESEND_API_KEY` `backend/.env`'e eklendi** (Supabase SMTP_PASS ile aynı Resend key — kullanıcı bu spesifik
+   credential-reuse'u ayrıca onayladı). notify.py artık gerçek bildirim e-postası gönderebilir.
+3. **🔴 GERÇEK KÖK NEDEN BULUNDU + DÜZELTİLDİ — `/plan-iptal` 404'ünün sebebi Render'ın eski deploy'u DEĞİLDİ:**
+   `backend/api.py`, `backend/payment.py`'deki `APIRouter`'ı (`/plan-iptal`, `/odeme/baslat`, `/webhook/iyzico`,
+   `/planlar`) **hiçbir zaman `include_router()` ile bağlamıyordu.** Bu route'lar repo'da var olalı beri
+   (ne Render'da ne VDS'te) hiç canlı olmamıştı. Düzeltme: `api.py`'ye `from payment import router as
+   payment_router` + `app.include_router(payment_router)` eklendi (commit `89fb7ed`). Ayrıca VDS venv'inde
+   `iyzipay` paketi eksikti (import zinciri patlardı) → kuruldu. **Doğrulandı:** VDS'te restart sonrası
+   `curl https://ihaleglobal.com/api/plan-iptal` artık 401 (auth gerekli) dönüyor, 404 değil.
+4. **Render bağımlılığı tamamen kaldırıldı (commit `fcc87cc`):** `js/api.js` `CONFIG.BASE_URL`
+   `https://ihale-api.onrender.com` → `https://ihaleglobal.com/api` (VDS'in kendi FastAPI'si, nginx `/api/`
+   proxy, aynı origin → CORS'a bile gerek yok). VDS git ile senkron edildi. **Doğrulandı (public internetten
+   curl):** `https://ihaleglobal.com/api/planlar` → 200, gerçek plan verisi dönüyor.
+   ⚠️ **Render servisi artık kullanıcı tarafından güvenle kapatılabilir** — repo'da `ihale-api.onrender.com`'a
+   giden hiçbir runtime referans kalmadı (sadece YAPILACAKLAR.md/payment.py'da eski doküman/yorum satırı var).
+5. **Geçmiş veri — cron kalıcı olarak geniş moda geçirildi:** `run_scraper.sh`'teki gece `ekap_sonuc_backfill.py`
+   çağrısına `--tum-kayitlar` eklendi (yedek `run_scraper.sh.bak.<ts>` alındı). Önceden bu satır bayraksızdı →
+   sadece bizim `ilanlar` havuzumuzla kesişen sonuçları yazıyordu (~%0.7 isabet, gece başına ~1-2 yeni kayıt).
+   Artık her gece IKN havuzundan bağımsız geniş tarama yapıyor (Faz A3 mantığı) — geçmiş veri kalıcı olarak büyüyecek.
+6. **Ek geniş backfill partisi başlatıldı (kullanıcı onayıyla, arka planda):** VDS'te `nohup ekap_sonuc_backfill.py
+   --tum-kayitlar --max-pages 400` — log: `/opt/ihale-platform/logs/manual_backfill.log`. Checkpoint
+   `.sonuc_backfill_checkpoint.json`'dan devam eder (bu oturum başında skip=20200). Başlangıç hacmi: 29.809
+   ilan, 20.689 sonuç, 11.187 firma (662 milyar TL sözleşme). **Sıradaki oturum: log'u kontrol et, tamamlandıysa
+   (veya 403/429 ile durduysa) yeni bir parti başlat / Webshare proxy değerlendir.**
+7. **Repo temizliği:** kök dizinde yanlış-adlı (Windows path'i literal dosya adı olmuş) bir stray dosya
+   silindi; içeriği (`GRANT ALL ON public.bultenler ...`) gerçek migration dosyasına (`backend/supabase/
+   migrations/bultenler_tablo.sql`) eklendi (VDS'te zaten elle uygulanmıştı, sadece dokümantasyon eksikti).
+
+**🟡 DÜŞÜK ÖNCELİK — bu oturumda görülüp DOKUNULMADI (launch'ı bloklamıyor):**
+- `teklif-olustur.html:1428` farklı/var olmayan bir Render servisine (`ihaleplatform-backend.onrender.com`,
+  `ihale-api.onrender.com` DEĞİL) `.catch(()=>null)` ile sessizce no-op eden bir fetch var → zaten mock/örnek
+  metne düşüyor, kırık değil ama "gerçek AI teklif oluşturma" hiç çalışmıyor. İstenirse `/api/teklif-olustur`
+  diye bir endpoint api.py'a eklenip buraya bağlanabilir (ayrı iş, teklif taslağı şema kararı — bkz. 9.5 notu).
+- `backend/payment.py` docstring'indeki İyzico webhook URL yorumu hâlâ eski Render adresini gösteriyor
+  (kod değil, sadece dokümantasyon) — payment flow zaten Supabase Edge Function `odeme-baslat` kullanıyor,
+  bu router'daki `/odeme/baslat`+`/webhook/iyzico` aktif kullanılmıyor gibi görünüyor; kafa karışıklığı
+  yaratmasın diye yorum güncellenebilir, düşük öncelik.
+
+**Sıradaki mantıklı adım:** manual_backfill.log'u izle → bittiğinde veri hacmini tekrar say → C4/E1/E3/E4'e geç.
 
 <details><summary>(tarihsel — cutover öncesi durum notları)</summary>
 
