@@ -5,7 +5,9 @@
  * abonelik free'ye düşer. Sonuç 30 saniyeliğine cache'lenir.
  */
 window.Plan = (() => {
-  const PRO_PLANS = ['pro', 'Pro', 'PRO', 'premium', 'enterprise'];
+  // DB'deki gerçek geçerli değerler (planlar.kod FK): 'standart' | 'kurumsal'.
+  // Diğerleri (pro/premium/enterprise) geriye dönük tolerans için tutuluyor.
+  const PRO_PLANS = ['standart', 'kurumsal', 'pro', 'Pro', 'PRO', 'premium', 'enterprise'];
 
   let _cache = null;
   let _cacheTs = 0;

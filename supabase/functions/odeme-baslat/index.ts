@@ -50,10 +50,26 @@ function pkiStr(obj: unknown): string {
   return String(obj);
 }
 
+// Frontend "pro" der (fiyatlandirma_odeme_bolumu.html'deki planBilgi), DB'de (planlar.kod FK:
+// kullanici_krediler.plan → planlar.kod) sadece 'free'|'standart'|'kurumsal' geçerli — "pro" yazılırsa
+// FK ihlali olur. Bu yüzden gelen kodu DB koduna çeviriyoruz.
+const DB_PLAN_KODU: Record<string, string> = {
+  pro:       "standart",
+  standart:  "standart",
+  kurumsal:  "kurumsal",
+};
+
 const planFiyat: Record<string, string> = {
   pro:       "1490.00",
   standart:  "1490.00",
   kurumsal:  "3990.00",
+};
+
+// backend/payment.py PLANLAR ile birebir aynı (kredi tutarları) — iki yazma yolu senkron kalsın.
+const planKredi: Record<string, number> = {
+  pro:       50,
+  standart:  50,
+  kurumsal:  250,
 };
 
 serve(async (req) => {
@@ -173,22 +189,57 @@ serve(async (req) => {
     const veri = await iyzicoRes.json();
 
     if (veri.status === "success") {
-      const planAdi = plan_kodu === "kurumsal" ? "kurumsal" : "pro";
-      const simdi   = new Date();
-      const bitis   = new Date(simdi.getTime() + 30 * 24 * 3600 * 1000);
-      await sb.from("profil").upsert(
+      // DİKKAT: kullanici_krediler.plan → planlar.kod FK'sine bağlı (sadece 'standart'/'kurumsal' geçerli).
+      // js/plan.js de BURADAN (profil'den DEĞİL) okuyor — payment.py'nin kredi_yukle() ile aynı hedef tablo.
+      const dbPlanKodu   = DB_PLAN_KODU[plan_kodu] ?? "standart";
+      const krediMiktari = planKredi[plan_kodu] ?? planKredi.standart;
+      const simdi        = new Date();
+      const bitis        = new Date(simdi.getTime() + 30 * 24 * 3600 * 1000);
+
+      const { data: mevcut } = await sb.from("kullanici_krediler")
+        .select("toplam_kredi")
+        .eq("kullanici_id", user.id)
+        .maybeSingle();
+      const yeniToplam = (mevcut?.toplam_kredi ?? 0) + krediMiktari;
+
+      const { error: krediErr } = await sb.from("kullanici_krediler").upsert(
         {
-          user_id:           user.id,
-          plan:              planAdi,
-          plan_baslangic:    simdi.toISOString(),
-          plan_bitis:        bitis.toISOString(),
-          iyzico_payment_id: veri.paymentId ?? null,
+          kullanici_id:    user.id,
+          toplam_kredi:    yeniToplam,
+          plan:            dbPlanKodu,
+          plan_baslangic:  simdi.toISOString(),
+          plan_bitis:      bitis.toISOString(),
         },
-        { onConflict: "user_id" }
+        { onConflict: "kullanici_id" }
       );
+
+      if (krediErr) {
+        // İyzico'da ödeme ALINDI ama DB güncellenemedi — kullanıcıya "başarılı" YALANI söylenmemeli.
+        console.error("odeme-baslat: kullanici_krediler yazılamadı, ödeme alındı ama plan güncellenmedi:", krediErr, "paymentId:", veri.paymentId);
+        return json({
+          basari: false,
+          hata:   "Ödemeniz alındı ancak hesabınız güncellenirken bir sorun oluştu. Lütfen destek ile iletişime geçin.",
+          paymentId: veri.paymentId,
+        }, 500);
+      }
+
+      await sb.from("kredi_hareketleri").insert({
+        kullanici_id: user.id,
+        miktar:       krediMiktari,
+        islem_turu:   "yukleme",
+        aciklama:     `${dbPlanKodu === "kurumsal" ? "Kurumsal Plan" : "Standart Plan"} — İyzico: ${veri.paymentId ?? convId}`,
+      });
+
+      await sb.from("bildirimler").insert({
+        kullanici_id: user.id,
+        baslik:       "Kredi yüklendi! 🎉",
+        icerik:       `${dbPlanKodu === "kurumsal" ? "Kurumsal Plan" : "Standart Plan"} aktivasyonu: ${krediMiktari} kredi hesabınıza eklendi.`,
+        tur:          "kredi",
+      });
+
       return json({
         basari:    true,
-        mesaj:     "Ödeme başarılı! Pro planınız aktifleştirildi.",
+        mesaj:     "Ödeme başarılı! Planınız aktifleştirildi.",
         paymentId: veri.paymentId,
         convId,
       });
