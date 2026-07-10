@@ -607,6 +607,16 @@
           <label>Teklif Tarihi (Bitiş)</label>
           <input type="date" class="filter-input" id="f-teklif-bit" style="width:160px;" />
         </div>
+        <div class="filter-group">
+          <label>Sınır Değer Katsayısı (Yapım)</label>
+          <select class="filter-select" id="f-esik-katsayi" style="width:170px;">
+            <option value="">Tümü</option>
+            <option value="0-0.80">≤ 0,80</option>
+            <option value="0.80-1.00">0,80 – 1,00</option>
+            <option value="1.00-1.20">1,00 – 1,20</option>
+            <option value="1.20-99">&gt; 1,20</option>
+          </select>
+        </div>
       </div>
 
       <!-- KAYITLI ARAMALAR PANELİ (görünür olunca gösterilir) -->
@@ -877,7 +887,8 @@
       `<span class="etiket etiket-ekap">EKAP</span>`,
       ilan.tur  ? `<span class="etiket">${ilan.tur}</span>` : '',
       usulEtiket(ilan.usul),
-      ilan.il   ? `<span class="etiket">📍 ${ilan.il}</span>` : ''
+      ilan.il   ? `<span class="etiket">📍 ${ilan.il}</span>` : '',
+      ilan.esik_katsayi != null ? `<span class="etiket" title="Sınır Değer Katsayısı">N: ${String(ilan.esik_katsayi).replace('.', ',')}</span>` : ''
     ].filter(Boolean).join('');
     const sonuc = Array.isArray(ilan.ihale_sonuclari) ? ilan.ihale_sonuclari[0] : null;
     const sonucBlok = sonuc ? `
@@ -959,6 +970,7 @@
     const yayinBit = document.getElementById('f-yayin-bit').value;
     const teklifBas= document.getElementById('f-teklif-bas').value;
     const teklifBit= document.getElementById('f-teklif-bit').value;
+    const esikKatsayi = document.getElementById('f-esik-katsayi').value;
 
     const uyumModu = sort === 'uyum_desc' || minUyum > 0;
     const simdiISO = new Date().toISOString();
@@ -967,7 +979,7 @@
     // Diğer sekmelerde normal (opsiyonel) embed — varsa kartta "✓ Sonuçlandı" rozeti gösterilir.
     const sonucEmbed = aktifSekme === 'sonuc' ? 'ihale_sonuclari!inner' : 'ihale_sonuclari';
     let query = sb.from('ilanlar').select(
-      `id,ekap_id,baslik,idare,il,tur,usul,durum,ilan_tarihi,son_teklif_tarihi,tahmini_bedel,yaklasik_maliyet_min,yaklasik_maliyet_max,itiraz_bedeli,${sonucEmbed}(kazanan_firma,kazanan_teklif,kazanan_teklif_farki_yuzde,sonuc_tarihi)`,
+      `id,ekap_id,baslik,idare,il,tur,usul,durum,ilan_tarihi,son_teklif_tarihi,tahmini_bedel,yaklasik_maliyet_min,yaklasik_maliyet_max,itiraz_bedeli,esik_katsayi,${sonucEmbed}(kazanan_firma,kazanan_teklif,kazanan_teklif_farki_yuzde,sonuc_tarihi)`,
       { count: 'exact' }
     );
 
@@ -987,6 +999,10 @@
     if (yayinBit) query = query.lte('ilan_tarihi', `${yayinBit}T23:59:59`);
     if (teklifBas)query = query.gte('son_teklif_tarihi', teklifBas);
     if (teklifBit)query = query.lte('son_teklif_tarihi', `${teklifBit}T23:59:59`);
+    if (esikKatsayi) {
+      const [ekMin, ekMax] = esikKatsayi.split('-').map(Number);
+      query = query.gte('esik_katsayi', ekMin).lte('esik_katsayi', ekMax);
+    }
 
     if (sort === 'tahmini_bedel_desc') query = query.order('yaklasik_maliyet_min', { ascending: false, nullsFirst: false });
     else if (sort === 'tahmini_bedel_asc') query = query.order('yaklasik_maliyet_min', { ascending: true, nullsFirst: false });
@@ -1000,7 +1016,37 @@
       query = query.range(baslangic, baslangic + SAYFA_BOYUTU - 1);
     }
 
-    const { data, error, count } = await query;
+    let { data, error, count } = await query;
+
+    // esik_katsayi migration henüz uygulanmamışsa (kolon yok) — sessizce o alan olmadan tekrar dene.
+    if (error && /esik_katsayi/.test(error.message || '')) {
+      console.info('esik_katsayi kolonu henüz yok, filtresiz tekrar deneniyor:', error.message);
+      let fallback = sb.from('ilanlar').select(
+        `id,ekap_id,baslik,idare,il,tur,usul,durum,ilan_tarihi,son_teklif_tarihi,tahmini_bedel,yaklasik_maliyet_min,yaklasik_maliyet_max,itiraz_bedeli,${sonucEmbed}(kazanan_firma,kazanan_teklif,kazanan_teklif_farki_yuzde,sonuc_tarihi)`,
+        { count: 'exact' }
+      );
+      if      (aktifSekme === 'guncel') fallback = fallback.gte('son_teklif_tarihi', simdiISO);
+      else if (aktifSekme === 'gecmis') fallback = fallback.lt('son_teklif_tarihi', simdiISO);
+      if (arama)    fallback = fallback.or(`baslik.ilike.%${arama}%,idare.ilike.%${arama}%,okas.ilike.%${arama}%,isin_yapilacagi_yer.ilike.%${arama}%,ilan_metni.ilike.%${arama}%`);
+      if (il)       fallback = fallback.eq('il', il);
+      if (kategori) fallback = fallback.eq('kategori', kategori);
+      if (tur)      fallback = fallback.eq('tur', tur);
+      if (usul)     fallback = fallback.ilike('usul', `%${usul}%`);
+      if (minBedel) fallback = fallback.gte('yaklasik_maliyet_min', minBedel);
+      if (maxBedel) fallback = fallback.lte('yaklasik_maliyet_max', maxBedel);
+      if (idare)    fallback = fallback.ilike('idare', `%${idare}%`);
+      if (yayinBas) fallback = fallback.gte('ilan_tarihi', yayinBas);
+      if (yayinBit) fallback = fallback.lte('ilan_tarihi', `${yayinBit}T23:59:59`);
+      if (teklifBas)fallback = fallback.gte('son_teklif_tarihi', teklifBas);
+      if (teklifBit)fallback = fallback.lte('son_teklif_tarihi', `${teklifBit}T23:59:59`);
+      if (sort === 'tahmini_bedel_desc') fallback = fallback.order('yaklasik_maliyet_min', { ascending: false, nullsFirst: false });
+      else if (sort === 'tahmini_bedel_asc') fallback = fallback.order('yaklasik_maliyet_min', { ascending: true, nullsFirst: false });
+      else if (sort === 'ilan_tarihi') fallback = fallback.order('ilan_tarihi', { ascending: false });
+      else fallback = fallback.order('son_teklif_tarihi', { ascending: true });
+      if (uyumModu) { fallback = fallback.limit(200); }
+      else { const baslangic = (sayfa - 1) * SAYFA_BOYUTU; fallback = fallback.range(baslangic, baslangic + SAYFA_BOYUTU - 1); }
+      ({ data, error, count } = await fallback);
+    }
 
     if (error) {
       liste.innerHTML = `<div class="liste-state">⚠ Hata: ${error.message}</div>`;
@@ -1085,7 +1131,7 @@
 
   function filtreleriSifirla() {
     ['f-arama','f-il','f-kategori','f-tur','f-usul','f-min-bedel','f-max-bedel',
-     'f-idare','f-yayin-bas','f-yayin-bit','f-teklif-bas','f-teklif-bit']
+     'f-idare','f-yayin-bas','f-yayin-bit','f-teklif-bas','f-teklif-bit','f-esik-katsayi']
       .forEach(id => { document.getElementById(id).value = ''; });
     document.getElementById('f-min-uyum').value = '0';
     document.getElementById('sort-select').value = 'uyum_desc';
@@ -1203,6 +1249,7 @@
       yayinBit: document.getElementById('f-yayin-bit').value,
       teklifBas: document.getElementById('f-teklif-bas').value,
       teklifBit: document.getElementById('f-teklif-bit').value,
+      esikKatsayi: document.getElementById('f-esik-katsayi').value,
       sekme:    aktifSekme,
     };
   }
@@ -1325,6 +1372,7 @@
     document.getElementById('f-yayin-bit').value= p.yayinBit || '';
     document.getElementById('f-teklif-bas').value=p.teklifBas|| '';
     document.getElementById('f-teklif-bit').value=p.teklifBit|| '';
+    document.getElementById('f-esik-katsayi').value = p.esikKatsayi || '';
     if (p.sekme) sekmeDegistir(p.sekme);
     kayitliPanelKapat();
     ilanlariYukle(1);

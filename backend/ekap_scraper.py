@@ -376,6 +376,16 @@ def itiraz_parse(s):
 def maliyet_araligi(b):
     return MALIYET_TABLOSU.get(b, (None, None)) if b else (None, None)
 
+# Yapım işi ilanlarında ilan metninin sonunda geçer: "...sınır değer katsayısı (N) = 1,00"
+ESIK_KATSAYI_RE = re.compile(r"sınır\s*değer\s*katsayısı\s*\(?\s*n\s*\)?\s*[:=]\s*([\d]+[.,]\d+)", re.IGNORECASE)
+
+def esik_katsayi_parse(metin):
+    if not metin: return None
+    m = ESIK_KATSAYI_RE.search(metin)
+    if not m: return None
+    try: return float(m.group(1).replace(",", "."))
+    except: return None
+
 
 # ── HTML → yapılı metin ───────────────────────────────────
 def html_temizle(html):
@@ -426,7 +436,7 @@ async def detay_cek(client: httpx.AsyncClient, ihale_id: str, dokuman_sayisi: in
         "itiraz_bedeli": None, "yaklasik_maliyet_min": None, "yaklasik_maliyet_max": None,
         "isin_yapilacagi_yer": None, "ihale_yeri": None, "okas": None,
         "ilan_metni": None, "ilan_html": None, "belgeler": None,
-        "ilan_tarihi": None,
+        "ilan_tarihi": None, "esik_katsayi": None,
     }
 
     # 1) İtiraz bedeli → yaklaşık maliyet
@@ -452,6 +462,7 @@ async def detay_cek(client: httpx.AsyncClient, ihale_id: str, dokuman_sayisi: in
             ham_html = ilan0.get("veriHtml") or ""
             sonuc["ilan_html"]  = ham_html or None
             sonuc["ilan_metni"] = html_temizle(ham_html) or None
+            sonuc["esik_katsayi"] = esik_katsayi_parse(sonuc["ilan_metni"])
             # İlan yayım tarihi — field adı API'ye göre değişebilir
             tarih_ham = (
                 ilan0.get("ilanTarihi") or ilan0.get("tarih")
@@ -778,6 +789,7 @@ def ihaleleri_isle(ham_liste: list, detaylar: dict) -> list:
                                         (i.get("ihaleAdi") or "").strip()),
             "ilan_metni":           d.get("ilan_metni"),
             "ilan_html":            d.get("ilan_html"),
+            "esik_katsayi":         d.get("esik_katsayi"),
             "belgeler":             d.get("belgeler"),
             "kaynak":               "ekap",
             "olusturulma":          now,
