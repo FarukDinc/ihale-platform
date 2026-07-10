@@ -1842,9 +1842,17 @@ geçmişte X,Y firmaları %Z tenzilatla aldı" bağlamını teklif metni promptu
 - **E3. SEO firma sayfaları:** `firmalar/<slug>` statik-vari URL'ler (Cloudflare `_redirects` veya SSR-siz
   meta enjeksiyonu) → Google'dan "X firması ihale" aramaları bize gelsin. ihaleciler login duvarının arkasında —
   biz özet kısmı PUBLIC bırakıp derinliği PRO yaparsak organik trafiği alırız.
-- **E4. KİK kararları kaynağı (madde 3 devamı):** VDS'e `playwright install chromium --with-deps` → kik_backfill.py'yi
-  Playwright'a geçir (www.kik.gov.tr 406 bloğu headless ile aşılabilir; olmadıysa Webshare proxy). Kararlar gelince
-  D-katmanı özetleri (9.3 🟢 maddesi) uygula.
+- **E4. KİK kararları kaynağı (madde 3 devamı) — 10 Tem'de feasibility test edildi, "sadece Playwright kur"
+  yeterli DEĞİL:** VDS'te playwright zaten kurulu + chromium çalışıyor (doğrulandı) ama iki ayrı sorun var:
+  (1) `kik_backfill.py`'nin hedeflediği `ekap.kik.gov.tr/EKAP/karar/arama` artık `ekapv2.kik.gov.tr` ana
+  sayfasına redirect ediyor (200 ama yanlış sayfa) — muhtemelen eski portal taşınırken bu endpoint kaldırıldı/
+  taşındı, URL güncellenmesi gerekiyor. (2) Alternatif kaynak `www.kik.gov.tr/tr/uyusmazlik-kararlari`
+  gerçek Playwright+chromium ile (gerçekçi User-Agent/viewport/locale ile bile) hâlâ **406** veriyor — bu
+  basit bir IP engeli değil, WAF/bot-koruması (muhtemelen TLS parmak izi/JA3 gibi header-ötesi sinyaller);
+  düz `playwright install` bunu aşmıyor. Gerçek çözüm ya (a) doğru güncel endpoint'i bulmak (ekapv2 API'sinde
+  bir "karar arama" uç noktası olabilir, `ekap_scraper.py`'nin ENDPOINTS deseniyle taranabilir) ya da
+  (b) ciddi stealth/proxy altyapısı (playwright-stealth, residential proxy) — ikisi de ayrı, kapsamlı bir iş.
+  Düşük öncelik, launch'ı bloklamıyor (sayfa zaten "henüz senkronize edilmedi" ile zarifçe dönüyor).
 - **E5. Gazete/İstihbarat kaynağı (madde 5)** düşük öncelik: E1-E4 bitmeden BAŞLAMA.
 
 ## 10.F Uygulama sırası & disiplin (Sonnet için)
