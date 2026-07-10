@@ -152,12 +152,16 @@ def kullanici_analiz_isle(
         print(f"  → Cache hit! Gemini'ye gitmiyor")
 
         # Cache'den gelse bile kredi düş (1 kredi)
-        kredi_sonuc = supabase.rpc("kredi_dus", {
-            "p_kullanici_id": kullanici_id,
-            "p_miktar": 1,
-            "p_ihale_id": ihale_id,
-            "p_aciklama": f"Analiz (cache): {ihale['baslik'][:50]}"
-        }).execute()
+        try:
+            kredi_sonuc = supabase.rpc("kredi_dus", {
+                "p_kullanici_id": kullanici_id,
+                "p_miktar": 1,
+                "p_referans_id": ihale_id,
+                "p_islem_turu": "analiz",
+                "p_aciklama": f"Analiz (cache): {ihale['baslik'][:50]}"
+            }).execute()
+        except Exception as e:
+            return {"basari": False, "hata": f"Kredi işlemi başarısız: {e}"}
 
         if not kredi_sonuc.data:
             return {"basari": False, "hata": "Yetersiz kredi"}
@@ -209,12 +213,16 @@ def kullanici_analiz_isle(
     pdf_turu = rapor.get("_meta", {}).get("pdf_turu", "metin")
 
     # 5. Kredi düş
-    kredi_sonuc = supabase.rpc("kredi_dus", {
-        "p_kullanici_id": kullanici_id,
-        "p_miktar": harcanan,
-        "p_ihale_id": ihale_id,
-        "p_aciklama": f"Analiz: {ihale['baslik'][:50]}"
-    }).execute()
+    try:
+        kredi_sonuc = supabase.rpc("kredi_dus", {
+            "p_kullanici_id": kullanici_id,
+            "p_miktar": harcanan,
+            "p_referans_id": ihale_id,
+            "p_islem_turu": "analiz",
+            "p_aciklama": f"Analiz: {ihale['baslik'][:50]}"
+        }).execute()
+    except Exception as e:
+        return {"basari": False, "hata": f"Kredi işlemi başarısız: {e}"}
 
     if not kredi_sonuc.data:
         return {"basari": False, "hata": "Kredi işlemi başarısız"}

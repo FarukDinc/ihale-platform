@@ -363,17 +363,21 @@ def firma_ai_yorum(
         if not sonuc["basari"]:
             raise HTTPException(status_code=500, detail=sonuc["hata"])
 
-        # 5. Kredi düş (ihale-bağımsız — p_ihale_id=None; kredi_dus RPC'si bunu kabul etmiyorsa
-        #    bu adım hata verir ama yorum yine de üretilmiş olur, cache'e yazılır)
+        # 5. Kredi düş (ihale-bağımsız — p_referans_id=None; gerçek RPC imzası
+        #    p_kullanici_id/p_miktar/p_referans_id/p_referans_tip/p_islem_turu/p_aciklama —
+        #    önceden yanlışlıkla var olmayan p_ihale_id kullanılıyordu, PostgREST'in fonksiyonu
+        #    hiç bulamamasına (dolayısıyla kredinin hiç düşmemesine) yol açıyordu)
         try:
             supabase.rpc("kredi_dus", {
                 "p_kullanici_id": kullanici_id,
                 "p_miktar": 1,
-                "p_ihale_id": None,
+                "p_referans_id": None,
+                "p_referans_tip": "firma",
+                "p_islem_turu": "analiz",
                 "p_aciklama": f"AI Firma Yorumu: {firma[:50]}"
             }).execute()
         except Exception as e:
-            print(f"  ⚠ kredi_dus (firma-yorum) hatası — imza kontrolü gerekebilir: {e}")
+            print(f"  ⚠ kredi_dus (firma-yorum) hatası: {e}")
 
         # 6. Cache'e yaz
         supabase.table("yukleniciler").update({
