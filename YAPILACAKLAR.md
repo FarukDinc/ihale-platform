@@ -1976,6 +1976,17 @@ geçmişte X,Y firmaları %Z tenzilatla aldı" bağlamını teklif metni promptu
   bir "karar arama" uç noktası olabilir, `ekap_scraper.py`'nin ENDPOINTS deseniyle taranabilir) ya da
   (b) ciddi stealth/proxy altyapısı (playwright-stealth, residential proxy) — ikisi de ayrı, kapsamlı bir iş.
   Düşük öncelik, launch'ı bloklamıyor (sayfa zaten "henüz senkronize edilmedi" ile zarifçe dönüyor).
+  **10 Tem 2026 EK BULGU — (a) yolu da denendi, ölü çıktı:** `ekapv2.kik.gov.tr`'nin kendi minify'lı JS
+  bundle'ları statik olarak indirilip (`main.*.js` + 66 lazy-chunk, `curl` ile) "karar" için tarandı.
+  Gerçek bir `KurulKararlariClient.getKurulKararlari()` (`/api/KurulKararlari/GetKurulKararlari`) bulundu
+  — ama **kullanıcı onayıyla tek bir test isteği** atıldığında, çalışan `b_ihalearama` tabanında **404**
+  döndü (`"Url: /api/KurulKararlari/GetKurulKararlari, Not Found"`) → bu controller farklı/muhtemelen
+  iç bir backend'de duruyor, tahmin edip taramak (`/b_admin` vb.) güvenlik sınıflandırıcısı tarafından
+  haklı olarak engellendi (tek istek onayının kapsamı aşılıyordu). Ayrıca genel kullanıcı menüsündeki
+  "Kurul Kararları" linki bizzat uygulamanın kendi kodunda `externalLink:true` işaretli — yani EKAP'ın
+  KENDİSİ de normal kullanıcıları muhtemelen aynı WAF-engelli `www.kik.gov.tr` sayfasına gönderiyor,
+  kendi API'sini kullanmıyor. **Sonuç: bu gerçekten "doğru endpoint'i bulamadık" değil, "public bir
+  API bilerek yok" durumu — E4 düşük öncelikte kalmalı, ciddi stealth/proxy olmadan ilerlemez.**
 - **E5. Gazete/İstihbarat kaynağı (madde 5)** düşük öncelik: E1-E4 bitmeden BAŞLAMA.
 
 ## 10.F Uygulama sırası & disiplin (Sonnet için)
