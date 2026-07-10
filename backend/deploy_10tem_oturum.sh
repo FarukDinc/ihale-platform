@@ -26,10 +26,18 @@ cd "$REPO_DIR"
 git pull origin main
 
 echo "── 2/5: 3 migration uygulanıyor (psql, sırayla) ───────"
+# semantik_esleme.sql "CREATE EXTENSION vector" içeriyor — self-hosted image'da pgvector
+# önceden kurulu olmayabilir. Bu TEK migration başarısız olsa bile diğer 2'si zaten
+# uygulanmış olur ve script'in geri kalanı (restart, doğrulama) yine de çalışsın diye
+# set -e'yi SADECE bu döngü için devre dışı bırakıyoruz.
+set +e
 for dosya in migration_esik_katsayi.sql migration_takip_firmalar.sql migration_semantik_esleme.sql; do
   echo "  → $dosya"
-  docker exec -i supabase-db psql -U postgres -d postgres < "backend/$dosya"
+  if ! docker exec -i supabase-db psql -U postgres -d postgres < "backend/$dosya"; then
+    echo "  ⚠ $dosya BAŞARISIZ — diğer adımlara devam ediliyor, bunu elle incele."
+  fi
 done
+set -e
 
 echo "── 3/5: run_scraper.sh'e eksik satırlar ekleniyor ─────"
 if [ -f "$RUN_SCRAPER" ]; then
