@@ -245,34 +245,60 @@ def metin_pdf_analiz_et(metin: str, sirket_profili: dict) -> dict:
 
 
 # ── Gemini Analiz — Taranmış PDF (Vision) ────────────────
+INLINE_LIMIT_BYTES = 18 * 1024 * 1024  # ~18MB ham dosya (base64 + prompt ile 20MB istek sınırına yaklaşmadan)
+
 def taranmis_pdf_analiz_et(dosya_yolu: str, sirket_profili: dict) -> dict:
     """
-    PDF'i Gemini File API ile doğrudan yükler.
-    Google kendi sunucularında OCR yaparak okur.
+    Taranmış/görsel PDF'i Gemini Vision'a verir.
+    ÖNCELİK: inline veri (generate_content'e ham bayt) — deprecated google-generativeai
+    SDK'sının File API upload_file() akışı artık $discovery/rest uç noktasında "API key
+    not valid" hatası veriyor (canlıda doğrulandı — normal generate_content/list_files
+    AYNI key ile çalışıyor, sadece upload_file'ın kullandığı ayrı discovery-tabanlı yol
+    kırık — SDK "support ended" uyarısıyla tutarlı). Dosya inline sınırın altındaysa bu
+    kırık yolu tamamen atlıyoruz. Üstündeyse File API'yi son çare olarak dener.
     """
+    boyut = os.path.getsize(dosya_yolu)
+    prompt = prompt_olustur(sirket_profili)
+
+    if boyut <= INLINE_LIMIT_BYTES:
+        try:
+            print(f"  → Gemini Vision'a inline gönderiliyor ({boyut//1024}KB)...")
+            with open(dosya_yolu, "rb") as f:
+                pdf_bytes = f.read()
+            response = model.generate_content([
+                prompt,
+                {"mime_type": "application/pdf", "data": pdf_bytes},
+            ])
+            return json_parse_et(response.text)
+        except Exception as e:
+            print(f"  ✗ Gemini Vision (inline) hatası: {e}")
+            return {"hata": str(e)}
+
+    # Büyük dosya — File API dene (şu an kırık olabilir, bkz. yukarıdaki not)
     yuklenen_dosya = None
     try:
-        print("  → Gemini File API'ye yükleniyor...")
-        yuklenen_dosya = genai.upload_file(
-            dosya_yolu,
-            mime_type="application/pdf"
-        )
+        print(f"  → Dosya inline sınırını aşıyor ({boyut//1024//1024}MB) — Gemini File API'ye yükleniyor...")
+        yuklenen_dosya = genai.upload_file(dosya_yolu, mime_type="application/pdf")
 
-        # Dosya işlenene kadar bekle
         for _ in range(30):
             dosya_durumu = genai.get_file(yuklenen_dosya.name)
             if dosya_durumu.state.name == "ACTIVE":
                 break
             time.sleep(2)
 
-        print("  → Gemini Vision analiz ediyor...")
-        prompt = prompt_olustur(sirket_profili)
         response = model.generate_content([prompt, yuklenen_dosya])
         return json_parse_et(response.text)
 
     except Exception as e:
-        print(f"  ✗ Gemini Vision hatası: {e}")
+        print(f"  ✗ Gemini Vision (File API) hatası: {e}")
         return {"hata": str(e)}
+
+    finally:
+        if yuklenen_dosya:
+            try:
+                genai.delete_file(yuklenen_dosya.name)
+            except Exception:
+                pass
 
     finally:
         # Dosyayı Gemini'den temizle
