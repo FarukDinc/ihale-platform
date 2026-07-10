@@ -1396,9 +1396,41 @@ iki ayrı, birbirini pekiştiren bug bulundu:
    kartı, gerçek para hareketi yok) — canlıya (gerçek para) geçmeden önce prod key'lere çevrilmeli.
    **BU EKLENMEDEN ödeme akışı test edilemez/çalışmaz — sıradaki oturumun ilk işi bu olmalı.**
 
-**Sıradaki mantıklı adım:** (1) Kullanıcı onayıyla IYZICO key'lerini edge-functions'a ekle → sandbox kartla
-uçtan uca ödeme testi yap (İyzico test kartı: 5528790000000008). (2) manual_backfill.log'u izle → bittiğinde
-veri hacmini tekrar say. (3) C4/E1/E3/E4'e geç.
+**🔴🔴🔴 EN KRİTİK BULGU — hiçbir kullanıcı için kullanici_krediler satırı hiç oluşturulmuyordu, AI analiz
+BAŞTAN İTİBAREN KİMSE İÇİN ÇALIŞAMAZDI (bu da düzeltildi, kullanıcı onayıyla VDS'e uygulandı):**
+`kullanici_krediler` (FK: `kullanici_id → kullanici_profiller.id`) satırını oluşturan HİÇBİR mekanizma
+yoktu — ne bir DB trigger'ı (auth.users'ta trigger arandı, 0 sonuç), ne backend kodu (`kullanici_profiller`
+insert/upsert için repo genelinde arama yapıldı, hiçbir sonuç çıkmadı — `api.py`'nin `PUT /profil`'i bile
+düz `.update()` kullanıyor, satır yoksa sessizce 0 satır etkiler). **Sonuç: `worker.py`'deki
+`kullanici_analiz_isle()` — yani "Analiz Et" butonunun kod yolu — en baştaki `kullanici_krediler` sorgusunda
+(`.single()`) 0 satırla patlıyordu.** VDS'te doğrulandı: `kullanici_krediler` tablosu **tamamen BOŞTU** (0 satır,
+6 kayıtlı kullanıcıya rağmen). Bu, yukarıdaki `kredi_dus` parametre-adı bug'ından bile önce gelen, ondan
+BAĞIMSIZ ikinci bir "AI analiz asla tamamlanamaz" nedeniydi — ikisi üst üste binmiş iki ayrı kırık halka.
+
+**DÜZELTME (commit `9643129`, kullanıcı onayıyla VDS'e uygulandı):** `backend/migration_yeni_kullanici_kredi.sql`
+— `auth.users` INSERT'inde otomatik `kullanici_profiller`+`kullanici_krediler` (free plan, 3 kredi —
+`planlar.free.aylik_kredi` ile aynı) satırı oluşturan bir trigger + halihazırda kayıtlı 6 kullanıcı için
+tek seferlik backfill. **Uygulandı ve doğrulandı:** `auth_users=6, profiller=6, krediler=6` (öncesi:
+profiller=4, krediler=**0**). Rolled-back transaction ile uçtan uca test edildi: `kredi_dus(...)` artık
+gerçek bir kullanıcı satırına karşı `basari=true` dönüyor, `kalan_kredi=3` doğru okunuyor.
+
+**Aynı oturumda ayrıca düzeltildi (commit `f2f1663`):** `worker.py`'deki HER İKİ `kredi_dus` çağrısı da
+var olmayan `p_ihale_id` parametresiyle çağrılıyordu (gerçek imza: `p_kullanici_id/p_miktar/p_referans_id/
+p_referans_tip/p_islem_turu/p_aciklama`, ilk ikisi hariç hepsi DEFAULT'lu). PostgREST bu isimle eşleşen
+fonksiyon bulamadığı için `.execute()` istisna fırlatıyordu; hiçbir try/except olmadığı için bu, **Gemini
+analizi zaten tamamlanmış/API maliyeti harcanmışken** FastAPI'nin çıplak 500'üne dönüşüyordu. `p_referans_id`'ye
+düzeltildi + artık istisna yakalanıp temiz JSON hatası dönüyor. `api.py`'deki AI Firma Yorumu'nun kredi
+düşümü de aynı hataya sahipti (try/except ile yutuluyordu, crash olmuyordu ama kredi hiç düşmüyordu) — o da
+düzeltildi.
+
+**→ Bu üç düzeltme birlikte: AI analiz özelliği (platformun asıl ücretli değer önerisi) VDS'te ŞU AN İLK KEZ
+uçtan uca çalışabilir durumda.** Gerçek bir kullanıcı hesabıyla (giriş yapıp bir ihalede "Analiz Et"
+tıklayarak) canlı doğrulama yapılmadı — sıradaki oturumun/kullanıcının ilk işi bu olmalı.
+
+**Sıradaki mantıklı adım:** (1) Gerçek girişle "Analiz Et" uçtan uca test et (en kritik — yukarıya bak).
+(2) Kullanıcı onayıyla IYZICO key'lerini edge-functions'a ekle → sandbox kartla ödeme testi yap (İyzico test
+kartı: 5528790000000008). (3) manual_backfill.log'u izle → bittiğinde veri hacmini tekrar say (şu an ~39.5k,
+20.689'dan başladı). (4) C4/E1/E3/E4'e geç.
 
 <details><summary>(tarihsel — cutover öncesi durum notları)</summary>
 
