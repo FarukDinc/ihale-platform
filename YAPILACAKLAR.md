@@ -1563,16 +1563,50 @@ ended" — uzun vadede sorun çıkarabilir, acil değil).
      otomatik yansımaz (VDS'te elle `git pull` gerekir, auto-deploy workflow'u yok — `.github/workflows/`
      içinde sadece `ekap_scraper.yml` var). Yani commit+push GÜVENLİ, canlıyı bozmaz.
 
+3. **Faz E1 — Rakip Takibi TAMAMLANDI (kod, migration dosyası hazır — VDS'e UYGULANMADI):**
+   - `backend/migration_takip_firmalar.sql` (yeni): `takip_firmalar(kullanici_id, firma_ad)` tablosu,
+     own-row RLS (select/insert/delete `auth.uid() = kullanici_id`), `authenticated` GRANT. **VDS'e
+     UYGULANMADI** (aynı prod-yazma sınırı — bkz. yukarıdaki not).
+   - `firma-analiz.html`: firma başlığına "⭐ Rakibi Takip Et" butonu — giriş yapmamışsa `login?donus=...`
+     ile yönlendirir (login sonrası aynı firma sayfasına döner), girişliyse `takip_firmalar`'a
+     upsert/delete. `takip_firmalar` yoksa (migration uygulanmadan) try/catch ile sessizce "⭐ Rakibi
+     Takip Et" varsayılanında kalır — local preview'da doğrulandı (buton render oldu, konsol temiz,
+     login redirect + `donus` round-trip doğru çalıştı).
+   - `login.html`: yeni `donusHedefi()` — `?donus=` parametresini okur, **sadece site-içi göreli yol**
+     kabul eder (`/` ile başlayıp `//` ile başlamayan — open-redirect koruması), yoksa `dashboard`'a
+     düşer. Hem "giriş başarılı" hem "zaten girişli" yollarına bağlandı.
+   - `backend/rakip_bildirim.py` (yeni): gece cron'da `ekap_sonuc_backfill.py`'den SONRA çalışacak —
+     son 26 saatte `scrape_tarihi`'si güncellenen `ihale_sonuclari` satırlarını `takip_firmalar` ile
+     eşleştirir (iki yönlü substring, `firma-analiz.html`'in ILIKE aramasıyla aynı mantık), eşleşme
+     varsa `bildirimler`'e kayıt açar. `takip_firmalar`/`ihale_sonuclari.scrape_tarihi` yoksa (migration
+     sırası gelmemişse) 404'te sessizce çıkar, cron'u çökertmez. **Migration uygulanmadan test
+     EDİLEMEDİ** (service key ile prod'a yazmak ayrı bir onay gerektirir) — ama `esleşiyor()` fonksiyonu
+     yerel olarak birim test edildi.
+     🐛 **Yazım sırasında bulunan+düzeltilen bug:** Python'un `str.lower()`'ı Türkçe "İ"yi yanlış çevirir
+     (`"İ".lower()` → `"i̇"`, birleşik karakter, düz `"i"` DEĞİL) → `"DEMİR YAPI".lower()` içinde
+     `"demir yapı"` (düz ASCII i) hiç bulunamıyordu, tüm büyük-harfli firma eşleşmeleri sessizce
+     kaçırılırdı. `_tr_lower()` yardımcı fonksiyonu eklendi (İ→i, I→ı, sonra `.lower()`) — aynı ders
+     `backend/firma_normalize.py`'de zaten biliniyordu (TR locale notu), burada tekrarlandı çünkü ayrı
+     bir yeni dosyaydı.
+   - **KALAN:** `run_scraper.sh`'e `rakip_bildirim.py` çağrısını eklemek (`yuklenici_yenile_calistir.py`
+     satırından hemen sonra) — bu da production dosya yazma, migration'la birlikte kullanıcı/sonraki
+     oturum tarafından yapılmalı.
+
 **🔲 SIRADAKİ OTURUM/KULLANICI İÇİN:**
 1. `backend/migration_esik_katsayi.sql`'i VDS'e uygula (yukarıdaki komut).
-2. VDS'te `cd /opt/ihale-platform && git pull origin main` (hem scraper hem ihaleler.html güncellensin).
-3. Gece cron'unun yeni scraper'ı kullandığını doğrulamaya gerek yok (aynı dosya, sadece yeni alan
+2. `backend/migration_takip_firmalar.sql`'i VDS'e uygula (aynı yöntem: `docker exec -i supabase-db psql
+   -U postgres -d postgres < backend/migration_takip_firmalar.sql`).
+3. VDS'te `cd /opt/ihale-platform && git pull origin main` (scraper + ihaleler.html + firma-analiz.html +
+   login.html + rakip_bildirim.py güncellensin).
+4. `run_scraper.sh`'e şu satırı `yuklenici_yenile_calistir.py` çağrısından sonra ekle:
+   `$VENV/python rakip_bildirim.py >> /opt/ihale-platform/logs/scraper.log 2>&1`
+5. Gece cron'unun yeni scraper'ı kullandığını doğrulamaya gerek yok (aynı dosya, sadece yeni alan
    ekliyor) — bir sonraki gece turu otomatik `esik_katsayi` dolduracak. Mevcut ilanlar geriye dönük
    doldurulmaz (yalnızca yeni/yeniden-çekilen kayıtlarda dolar) — istenirse ayrı bir "detay yeniden çek"
    turu gerekir, düşük öncelik.
-4. Hâlâ bekleyen (önceki oturumlardan): IYZICO_API_KEY/SECRET edge-functions'a ekleme (ödeme testi için
+6. Hâlâ bekleyen (önceki oturumlardan): IYZICO_API_KEY/SECRET edge-functions'a ekleme (ödeme testi için
    şart), manual_backfill.log'un bitip bitmediğini kontrol (403/429 ile durduysa Webshare proxy
-   değerlendir). Sonra E1 (Rakip Takibi) / E3 (SEO firma sayfaları)'a geç.
+   değerlendir). Sonra E3 (SEO firma sayfaları) / E4 (KİK — düşük öncelik, WAF engelli)'e geç.
 
 <details><summary>(tarihsel — cutover öncesi durum notları)</summary>
 

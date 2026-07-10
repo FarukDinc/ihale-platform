@@ -255,6 +255,7 @@
           <div class="firma-meta" id="firma-meta">—</div>
           <div style="margin-top:16px;display:flex;gap:10px;flex-wrap:wrap;">
             <a id="firma-ihaleler-btn" href="#" class="btn-ara" style="text-decoration:none;padding:9px 18px;font-size:13px;">📋 İhalelerini Gör</a>
+            <button id="firma-takip-btn" class="btn-ara" style="background:transparent;border:1px solid var(--border);color:var(--white);" onclick="firmaTakipToggle()">⭐ Rakibi Takip Et</button>
             <button class="btn-ara" style="background:transparent;border:1px solid var(--border);color:var(--white);" onclick="document.getElementById('arama-wrap').style.display='';document.getElementById('firma-icerik').style.display='none';">🔍 Yeni Arama</button>
           </div>
         </div>
@@ -755,7 +756,44 @@
 
     // Sonuçlar sekmesi açıksa hemen doldur
     if (document.getElementById('tab-sonuclar')?.classList.contains('active')) sonuclariGoster();
+
+    firmaTakipDurumuGuncelle();
   }
+
+  // ── Faz E1: Rakip Takibi ──────────────────────────────────
+  async function firmaTakipDurumuGuncelle() {
+    const btn = document.getElementById('firma-takip-btn');
+    if (!btn || !FIRMA) return;
+    try {
+      const { data: { user } } = await sb.auth.getUser();
+      if (!user) { btn.textContent = '⭐ Rakibi Takip Et'; btn.dataset.takipte = ''; return; }
+      const { data } = await sb.from('takip_firmalar')
+        .select('id').eq('kullanici_id', user.id).eq('firma_ad', FIRMA).limit(1);
+      const takipte = !!(data && data.length);
+      btn.textContent = takipte ? '✓ Takip Ediliyor' : '⭐ Rakibi Takip Et';
+      btn.dataset.takipte = takipte ? '1' : '';
+    } catch { /* takip_firmalar migration henüz uygulanmamışsa sessizce geç */ }
+  }
+
+  window.firmaTakipToggle = async function() {
+    if (!FIRMA) return;
+    const btn = document.getElementById('firma-takip-btn');
+    const { data: { user } } = await sb.auth.getUser();
+    if (!user) { window.location.href = `login?donus=${encodeURIComponent(window.location.pathname + window.location.search)}`; return; }
+    try {
+      if (btn.dataset.takipte === '1') {
+        await sb.from('takip_firmalar').delete().eq('kullanici_id', user.id).eq('firma_ad', FIRMA);
+      } else {
+        await sb.from('takip_firmalar').upsert(
+          { kullanici_id: user.id, firma_ad: FIRMA },
+          { onConflict: 'kullanici_id,firma_ad', ignoreDuplicates: true }
+        );
+      }
+      firmaTakipDurumuGuncelle();
+    } catch (e) {
+      alert('Takip işlemi şu an yapılamıyor, lütfen daha sonra tekrar deneyin.');
+    }
+  };
 
   let _yilChart = null;
   function firmaIstatistikGoster(rows) {
