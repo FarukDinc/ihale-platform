@@ -1362,7 +1362,43 @@ RESEND_API_KEY olacak), sonra C4/E1/E3/E4'e geç (bkz. yukarıdaki "10.F Uygulam
   bu router'daki `/odeme/baslat`+`/webhook/iyzico` aktif kullanılmıyor gibi görünüyor; kafa karışıklığı
   yaratmasın diye yorum güncellenebilir, düşük öncelik.
 
-**Sıradaki mantıklı adım:** manual_backfill.log'u izle → bittiğinde veri hacmini tekrar say → C4/E1/E3/E4'e geç.
+**🔴🔴 KRİTİK BULGU + BÜYÜK KISMI DÜZELTİLDİ — ödeme yapan HİÇBİR kullanıcı Pro olamıyordu:**
+Ödeme akışını incelerken (Render kaldırma sonrası "gerçek checkout hangi yolu kullanıyor" kontrolünde)
+iki ayrı, birbirini pekiştiren bug bulundu:
+1. **`js/plan.js`'nin `PRO_PLANS` listesi** (`isPro()`/`getPlan()` bunu kullanıyor) sadece
+   `'pro'|'Pro'|'PRO'|'premium'|'enterprise'` değerlerini tanıyordu. Ama `kullanici_krediler.plan` kolonu
+   `planlar.kod`'a FK'li ve orada **SADECE** `'free'|'standart'|'kurumsal'` geçerli. Yani DB'ye doğru yazılsa
+   bile hiçbir ödeme frontend'de asla "pro" görünemezdi — 8 Tem'deki "js/plan.js profil.plan yerine
+   kullanici_krediler.plan okusun" düzeltmesi (bkz. yukarıdaki "STATİK BUG AVI" bölümü) HANGİ TABLODAN
+   okunacağını düzeltti ama DEĞER eşleşmesini kontrol etmemişti. **DÜZELTİLDİ:** `PRO_PLANS`'a
+   `'standart'`+`'kurumsal'` eklendi (commit `57b6e1c`).
+2. **Gerçek checkout butonu payment.py'yi DEĞİL, Supabase Edge Function `odeme-baslat`'ı çağırıyor**
+   (`fiyatlandirma_odeme_bolumu.html:484`, `sb.functions.invoke('odeme-baslat', ...)`). Bu fonksiyon:
+   (a) **VDS'in self-hosted functions volume'üne HİÇ DEPLOY EDİLMEMİŞTİ** — `curl .../functions/v1/odeme-baslat`
+   500 "could not find an appropriate entrypoint" dönüyordu (repo'da kod vardı, VDS'te dosya yoktu — Render'ın
+   webhook'unda olduğu gibi yine "deploy eksikliği" değil ama benzer bir "kod var ama canlı değil" sınıfı).
+   (b) Kod, var OLMAYAN `profil.plan`/`plan_baslangic`/`plan_bitis`/`iyzico_payment_id` kolonlarına upsert
+   atıyordu (`profil` tablosunda bu kolonlar hiç yok) — hata kontrol edilmediği için İyzico'dan para alınıp
+   DB güncellenemese bile kullanıcıya sahte "ödeme başarılı" mesajı dönerdi.
+   **DÜZELTİLDİ (commit `57b6e1c`):** artık `kullanici_krediler`'e (payment.py'nin `kredi_yukle()`'siyle aynı
+   hedef) yazıyor, `pro→standart` kod çevirisi yapıyor (frontend "pro" der, DB "standart" ister),
+   `kredi_hareketleri`+`bildirimler` kaydı ekliyor, DB yazımı başarısız olursa artık gerçek hatayı dönüyor.
+   **VDS'e deploy edildi** (dosya `/opt/supabase/docker/volumes/functions/odeme-baslat/index.ts`'e kopyalandı,
+   `docker compose restart functions`) — doğrulandı: `curl .../functions/v1/odeme-baslat` artık 401
+   (auth gerekli) dönüyor, 404/500-entrypoint değil.
+   **⚠️ KALAN — kullanıcı özel onayı istedi, henüz yapılmadı:** edge-functions container'ında
+   `IYZICO_API_KEY`/`IYZICO_SECRET_KEY` env değişkenleri YOK (backend/.env'de var ama edge function ayrı
+   container, ayrı env alır). Bu eklenmeden fonksiyon "iyzico anahtarları tanımlı değil" (500) döner.
+   Ekleme yeri: `/opt/supabase/docker/.env`'e `IYZICO_API_KEY=`/`IYZICO_SECRET_KEY=` satırları (backend/.env'deki
+   ile aynı değer) + `/opt/supabase/docker/docker-compose.yml`'deki `functions:` servisinin `environment:`
+   bloğuna `IYZICO_API_KEY: ${IYZICO_API_KEY}` / `IYZICO_SECRET_KEY: ${IYZICO_SECRET_KEY}` satırları + `docker
+   compose up -d functions`. Şu an İyzico sandbox modda (`IYZICO_BASE_URL=https://sandbox.iyzipay.com`, test
+   kartı, gerçek para hareketi yok) — canlıya (gerçek para) geçmeden önce prod key'lere çevrilmeli.
+   **BU EKLENMEDEN ödeme akışı test edilemez/çalışmaz — sıradaki oturumun ilk işi bu olmalı.**
+
+**Sıradaki mantıklı adım:** (1) Kullanıcı onayıyla IYZICO key'lerini edge-functions'a ekle → sandbox kartla
+uçtan uca ödeme testi yap (İyzico test kartı: 5528790000000008). (2) manual_backfill.log'u izle → bittiğinde
+veri hacmini tekrar say. (3) C4/E1/E3/E4'e geç.
 
 <details><summary>(tarihsel — cutover öncesi durum notları)</summary>
 
