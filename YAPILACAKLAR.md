@@ -1423,14 +1423,60 @@ düzeltildi + artık istisna yakalanıp temiz JSON hatası dönüyor. `api.py`'d
 düşümü de aynı hataya sahipti (try/except ile yutuluyordu, crash olmuyordu ama kredi hiç düşmüyordu) — o da
 düzeltildi.
 
-**→ Bu üç düzeltme birlikte: AI analiz özelliği (platformun asıl ücretli değer önerisi) VDS'te ŞU AN İLK KEZ
-uçtan uca çalışabilir durumda.** Gerçek bir kullanıcı hesabıyla (giriş yapıp bir ihalede "Analiz Et"
-tıklayarak) canlı doğrulama yapılmadı — sıradaki oturumun/kullanıcının ilk işi bu olmalı.
+**✅✅✅ AI ANALİZ UÇTAN UCA CANLI DOĞRULANDI (10 Tem, aynı oturum devamı) — platformun asıl ücretli
+özelliği artık gerçekten çalışıyor.** Yukarıdaki 3 düzeltmeden sonra bile "Analiz Et" hâlâ çalışamazdı —
+**6 AYRI EK KIRIK HALKA daha bulunup düzeltildi** (hepsi canlı VDS'te gerçek bir EKAP ihalesi + gerçek
+CAPTCHA çözme + gerçek Gemini çağrısıyla test edildi, sonunda gerçek/kaliteli bir analiz raporu üretildi):
 
-**Sıradaki mantıklı adım:** (1) Gerçek girişle "Analiz Et" uçtan uca test et (en kritik — yukarıya bak).
-(2) Kullanıcı onayıyla IYZICO key'lerini edge-functions'a ekle → sandbox kartla ödeme testi yap (İyzico test
-kartı: 5528790000000008). (3) manual_backfill.log'u izle → bittiğinde veri hacmini tekrar say (şu an ~39.5k,
-20.689'dan başladı). (4) C4/E1/E3/E4'e geç.
+1. **Hiçbir aktif ihalede `pdf_url` dolu değildi (0/38.029)** — belgeler sadece CAPTCHA korumalı bir EKAP
+   linki içeriyordu, gerçek dosya hiç indirilmemişti. Gece turu bilerek "link-only" modda
+   (`EKAP_BELGE_LINK=1`) — ağır indirme (`EKAP_BELGE_INDIR`, Gemini ile CAPTCHA çözüp Storage'a yükleme)
+   zaten yazılmıştı ama HİÇBİR YERDEN çağrılmıyordu. **Kullanıcı onayıyla:** `worker.py`'ye yeni
+   `belge_url_getir()` eklendi — talep anında (kullanıcı "Analiz Et" dediğinde) `ekap_scraper.
+   ekap_captcha_indir()`'i çağırıp indirir, `ilanlar.belgeler`'i kalıcı günceller (commit `a204ecf`,
+   düzeltme `efb8d76` — ilk denemede yanlış EKAP id'siyle `GetDokumanUrl`'e tekrar sorulmuştu, 500 aldı;
+   asıl çözüm gece turunun zaten doğruladığı `belgeler[0].url` linkini DOĞRUDAN kullanmak).
+2. **`belgeler` Storage bucket'ı hiç yoktu** (`docker exec supabase-db psql -c "select * from storage.
+   buckets"` → 0 satır) — canlı testte "Bucket not found" ile ortaya çıktı. **Kullanıcı onayıyla** public
+   bucket olarak oluşturuldu (200MB limit — EKAP döküman ZIP'leri 88MB'a kadar çıkabiliyor).
+3. **storage-api'nin global `FILE_SIZE_LIMIT`'i 50MB'da sabitti** (docker-compose.yml, bucket'ın kendi
+   limitinden BAĞIMSIZ, onu ezip geçiyor) — 88MB'lık gerçek bir belge "Payload too large" (413) verdi.
+   200MB'a çıkarıldı + `docker compose up -d storage`.
+4. **`analiz_gecmisi` insert'i var olmayan `ihale_id` kolonunu kullanıyordu** (gerçek kolon: `ilan_id`) —
+   canlı testte doğrulandı: kredi zaten düşülmüş, rapor üretilmişken bu adımda çıplak istisna fırlatıp
+   tüm isteği çökertiyordu. Düzeltildi + artık try/except (rapor kullanıcıya dönmüş olmalı, geçmiş kaydı
+   ikincil) (commit `c32d72c`).
+5. **Gemini hata verince bile kredi düşülüyordu** — `metin_pdf_analiz_et`/`taranmis_pdf_analiz_et` hata
+   durumunda `{"hata": "..."}` döner ama ana pipeline bunu hiç kontrol etmeden "başarılı" sayıyordu (canlı
+   testte doğrulandı: Gemini File API hatası → yine de "2 kredi harcandı"). Artık `rapor` sadece hata
+   içeriyorsa (gerçek analiz alanı yoksa) başarısız sayılıyor, kredi düşülmüyor (commit `c32d72c`).
+6. **Gemini File API (`genai.upload_file`) kırıktı — "API key not valid"** (canlıda doğrulandı: AYNI key ile
+   `list_models()`/`generate_content()`/`list_files()` sorunsuz, sadece `upload_file()`'ın kullandığı ayrı
+   `$discovery/rest` uç noktası key'i reddediyor — deprecated `google-generativeai` SDK'sının "support
+   ended" duyurusuyla tutarlı bir sunset belirtisi). **Çözüm:** taranmış/görsel PDF'ler artık File API'ye
+   hiç uğramadan `generate_content()`'e **inline bayt** olarak veriliyor (18MB altı — çoğu belge), File API
+   sadece daha büyük dosyalarda son çare (commit `cb02529`, ardından bir syntax hatası acilen düzeltildi:
+   `337aca6` — bu commit'ler arası VDS API kısa süre 500 crash-loop'taydı, servis sağlıklı halde bırakıldı).
+7. **`gemini-1.5-flash` Google tarafından TAMAMEN KALDIRILMIŞ** (404 "model not found for API version
+   v1beta") — deprecated SDK'nın son noktası. `ekap_scraper.py`'nin CAPTCHA çözücüsü zaten `gemini-2.5-flash`
+   kullanıyordu (kanıtlanmış çalışıyor) — `analyzer.py` + `firma_ai_yorum.py` aynı modele geçirildi
+   (commit `d40a4f3`).
+
+**SONUÇ — canlı uçtan uca test (VDS, gerçek EKAP ihalesi, sirket_profili sahte ama zararsız):** CAPTCHA
+3/3 denemede ilk seferde çözüldü, 88MB+16MB gerçek belge indirildi, ZIP'ten PDF çıkarıldı, taranmış PDF
+tespit edildi, Gemini Vision (inline) gerçek ve tutarlı bir analiz raporu üretti (`ozet`, `uygunluk_skoru`,
+`karar`, `karar_gerekce`, `kirmizi_alarmlar`, `firsatlar`, `giris_engelleri`, `mali_yuk`, `aksiyon_listesi`
+— hepsi doldu, doğru ihale bilgisini tanıdı). `analiz_gecmisi` insert'i ayrıca rolled-back transaction ile
+doğrulandı (doğru şema, hatasız). **Kredi tükendiği için (test kullanıcısı 3→1) tam DB-yazan
+`kullanici_analiz_isle()` akışı 2-kredi gerektiren bir belgeyle uçtan uca tekrar koşulmadı ama tüm parçaları
+ayrı ayrı doğrulandı — yüksek güvenilirlik.**
+
+**Sıradaki mantıklı adım:** (1) Gerçek bir kullanıcı hesabıyla tarayıcıdan "Analiz Et" dene (nihai UI/UX
+doğrulaması — backend artık sağlam). (2) Kullanıcı onayıyla IYZICO key'lerini edge-functions'a ekle →
+sandbox kartla ödeme testi yap (İyzico test kartı: 5528790000000008). (3) manual_backfill.log'u izle →
+bittiğinde veri hacmini tekrar say (şu an ~44.8k, 20.689'dan başladı). (4) C4/E1/E3/E4'e geç.
+(5) `google.generativeai` → `google.genai` tam SDK migrasyonu düşünülebilir (şu an çalışıyor ama SDK "support
+ended" — uzun vadede sorun çıkarabilir, acil değil).
 
 <details><summary>(tarihsel — cutover öncesi durum notları)</summary>
 
