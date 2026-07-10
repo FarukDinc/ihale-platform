@@ -26,7 +26,8 @@
       .select('plan, plan_bitis')
       .eq('kullanici_id', user.id)
       .single();
-    const PRO = ['pro', 'Pro', 'PRO', 'premium', 'enterprise'];
+    // DB'deki gerçek geçerli değerler (planlar.kod FK): 'standart' | 'kurumsal' — bkz. js/plan.js
+    const PRO = ['standart', 'kurumsal', 'pro', 'Pro', 'PRO', 'premium', 'enterprise'];
     let planKodu = kredi?.plan;
     if (planKodu && kredi?.plan_bitis && new Date(kredi.plan_bitis) < new Date()) planKodu = null;
 

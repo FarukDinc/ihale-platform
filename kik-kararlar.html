@@ -383,8 +383,11 @@
     const u = session.user;
     document.getElementById('sb-avatar').textContent = (u.email || '?')[0].toUpperCase();
     document.getElementById('sb-name').textContent = u.user_metadata?.full_name || u.email;
-    const { data: p } = await sb.from('kullanicilar').select('plan').eq('id', u.id).single();
-    document.getElementById('sb-plan').textContent = p?.plan === 'premium' ? 'Premium' : 'Ücretsiz';
+    const { data: kredi } = await sb.from('kullanici_krediler').select('plan, plan_bitis').eq('kullanici_id', u.id).single();
+    const PRO = ['standart', 'kurumsal', 'pro', 'Pro', 'PRO', 'premium', 'enterprise'];
+    let planKodu = kredi?.plan;
+    if (planKodu && kredi?.plan_bitis && new Date(kredi.plan_bitis) < new Date()) planKodu = null;
+    document.getElementById('sb-plan').textContent = PRO.includes(planKodu) ? 'Pro Plan' : 'Ücretsiz';
   }
   kullaniciyiYukle();
 
