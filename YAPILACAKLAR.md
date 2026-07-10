@@ -1696,34 +1696,30 @@ ended" — uzun vadede sorun çıkarabilir, acil değil).
      yapılmadı). Migration + cron gelene kadar ihaleler.html tamamen eskisi gibi (salt kural-tabanlı)
      çalışmaya devam eder, hiçbir regresyon yok.
 
-**🔲 SIRADAKİ OTURUM/KULLANICI İÇİN:**
-1. `backend/migration_esik_katsayi.sql`'i VDS'e uygula (yukarıdaki komut).
-2. `backend/migration_takip_firmalar.sql`'i VDS'e uygula (aynı yöntem: `docker exec -i supabase-db psql
-   -U postgres -d postgres < backend/migration_takip_firmalar.sql`).
-2b. `backend/migration_semantik_esleme.sql`'i VDS'e uygula (aynı yöntem). `CREATE EXTENSION vector`
-    içerir — VDS'in self-hosted Postgres'inde pgvector extension'ı kurulu olmalı (Supabase docker
-    image'ları genelde önceden yükler; değilse `docker exec supabase-db sh -c "..."` ile eklenmesi
-    gerekebilir, önce dene, hata alırsan araştır).
-3. VDS'te `cd /opt/ihale-platform && git pull origin main` (scraper + ihaleler.html + firma-analiz.html +
-   login.html + rakip_bildirim.py + teklif_ai.py + api.py + teklif-olustur.html + embed_ortak.py +
-   ilan_embed_uret.py + 1.696 statik `firma/*.html` + `robots.txt` + `sitemap-firmalar.xml`
-   güncellensin/eklensin) + `systemctl restart ihale-api` (yeni `/teklif-olustur` endpoint'i canlı olsun).
-4. `run_scraper.sh`'e şu 2 satırı `yuklenici_yenile_calistir.py` çağrısından sonra ekle:
-   ```
-   $VENV/python rakip_bildirim.py >> /opt/ihale-platform/logs/scraper.log 2>&1
-   $VENV/python ilan_embed_uret.py --max 300 >> /opt/ihale-platform/logs/scraper.log 2>&1
-   ```
-   (`--max 300` ihtiyaten düşük tutuldu — hız artırılmak istenirse yükseltilebilir, bkz. D3 notundaki
-   maliyet/hız kararı.)
-5. Gece cron'unun yeni scraper'ı kullandığını doğrulamaya gerek yok (aynı dosya, sadece yeni alan
-   ekliyor) — bir sonraki gece turu otomatik `esik_katsayi` dolduracak. Mevcut ilanlar geriye dönük
-   doldurulmaz (yalnızca yeni/yeniden-çekilen kayıtlarda dolar) — istenirse ayrı bir "detay yeniden çek"
-   turu gerekir, düşük öncelik.
-6. `POST /teklif-olustur`'u gerçek bir giriş yapmış kullanıcı + gerçek ihale ID'siyle test et (D4,
-   yukarıya bak — henüz uçtan uca doğrulanmadı).
-7. Hâlâ bekleyen (önceki oturumlardan): IYZICO_API_KEY/SECRET edge-functions'a ekleme (ödeme testi için
-   şart), manual_backfill.log'un bitip bitmediğini kontrol (403/429 ile durduysa Webshare proxy
-   değerlendir). Sonra D3 (semantik embedding, kapsamlı/pgvector gerektirir) düşünülebilir.
+**🔲 SIRADAKİ OTURUM/KULLANICI İÇİN — TEK KOMUTA İNDİRİLDİ:**
+
+`backend/deploy_10tem_oturum.sh` (yeni) bu oturumdaki 3 migration + `run_scraper.sh` satırları +
+`ihale-api` restart + doğrulama adımlarının HEPSİNİ tek seferde uygular (idempotent — birden fazla
+çalıştırılsa da güvenli). VDS'te:
+```bash
+ssh -i ~/.ssh/ihale_oracle root@195.85.207.126
+cd /opt/ihale-platform && git pull origin main
+bash backend/deploy_10tem_oturum.sh
+```
+Script sonunda 3 doğrulama sorgusu (`esik_katsayi` kolonu, `takip_firmalar` tablosu,
+`semantik_skor_batch` RPC) `1` dönüyorsa hepsi canlı demektir.
+
+**Script'ten SONRA elle yapılması gerekenler:**
+1. `POST /teklif-olustur`'u gerçek bir giriş yapmış kullanıcı + gerçek ihale ID'siyle tarayıcıdan test
+   et (D4 — henüz uçtan uca doğrulanmadı, backend/Gemini local'de canlı değildi).
+2. `ihaleler.html`'de "Sınır Değer Katsayısı" dropdown filtresini gerçek veriyle dene (C4).
+3. Hâlâ bekleyen (önceki oturumlardan): IYZICO_API_KEY/SECRET edge-functions'a ekleme (ödeme testi
+   için şart — bkz. yukarıdaki "🔴🔴 KRİTİK BULGU" notu), manual_backfill.log'un durumu (10 Tem son
+   kontrolde sağlıklı ilerliyordu: `ilanlar` 66.387, `ihale_sonuclari` 107.155, checkpoint skip=56.900
+   — hâlâ artıyor, 403/429 ile durduysa Webshare proxy değerlendir).
+4. Mevcut ~14k aktif ilanın geçmişe dönük semantik embed'lenmesi (D3) bilinçli olarak otomatik
+   BAŞLATILMADI — Gemini API maliyeti/kota kararı sana ait (script gece başına sadece 300 yeni ilan
+   işler varsayılan olarak, `ilan_embed_uret.py --max` değeriyle hızlandırılabilir).
 
 <details><summary>(tarihsel — cutover öncesi durum notları)</summary>
 
