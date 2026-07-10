@@ -108,6 +108,54 @@ def analiz_kaydet(ihale_id: str, rapor: dict, pdf_turu: str):
         print(f"  ✗ Cache yazma hatası: {e}")
 
 
+# ── Talep anında belge indirme (CAPTCHA çöz + Storage'a yükle) ───
+def belge_url_getir(ihale: dict) -> str | None:
+    """
+    ihale['belgeler']'de zaten indirilmiş (storage_url dolu) bir belge varsa onu döndürür.
+    Yoksa EKAP'tan CAPTCHA çözerek indirir (ekap_scraper.belge_indir_yukle — gece turunda
+    BELGE_INDIR bayrağı arkasında kapalı duran aynı mekanizma, burada kullanıcı "Analiz Et"
+    dediğinde talep-anında/on-demand tetikleniyor), ilanlar.belgeler'i kalıcı olarak
+    günceller (sonraki analizler tekrar indirmez) ve storage_url'i döndürür.
+    """
+    belgeler = ihale.get("belgeler") or []
+    for b in belgeler:
+        if b.get("storage_url"):
+            return b["storage_url"]
+
+    ekap_id = ihale.get("ekap_id")
+    if not ekap_id:
+        return None
+
+    import asyncio
+    import httpx
+    from ekap_scraper import belge_indir_yukle, ssl_ctx
+
+    async def _indir():
+        async with httpx.AsyncClient(verify=ssl_ctx(), http2=False, timeout=60.0) as client:
+            return await belge_indir_yukle(client, ekap_id, ekap_id, supabase)
+
+    try:
+        yeni_belgeler = asyncio.run(_indir())
+    except Exception as e:
+        print(f"  ✗ Talep anında belge indirme hatası: {e}")
+        return None
+
+    if not yeni_belgeler:
+        return None
+
+    try:
+        supabase.table("ilanlar").update({"belgeler": yeni_belgeler}).eq(
+            "id", ihale["id"]
+        ).execute()
+    except Exception as e:
+        print(f"  ⚠ ilanlar.belgeler güncellenemedi (analiz yine de devam eder): {e}")
+
+    for b in yeni_belgeler:
+        if b.get("storage_url"):
+            return b["storage_url"]
+    return None
+
+
 # ── Kullanıcı analiz isteği işle ─────────────────────────
 def kullanici_analiz_isle(
     kullanici_id: str,
@@ -133,7 +181,7 @@ def kullanici_analiz_isle(
         ).eq("id", kullanici_id).single().execute()
 
         ihale_bilgi = supabase.table("ilanlar").select(
-            "id, ikn, baslik, pdf_url"
+            "id, ikn, baslik, ekap_id, belgeler"
         ).eq("id", ihale_id).single().execute()
 
     except Exception as e:
@@ -143,8 +191,12 @@ def kullanici_analiz_isle(
     profil = firma_profil.data
     ihale = ihale_bilgi.data
 
-    if not ihale.get("pdf_url"):
-        return {"basari": False, "hata": "Bu ihale için PDF bulunamadı"}
+    # Belge henüz indirilmemişse (storage_url yok) talep anında CAPTCHA çözüp indirir —
+    # bkz. belge_url_getir(). Gece turu bilerek sadece linki saklar (EKAP_BELGE_LINK), ağır
+    # indirme burada, kullanıcı gerçekten analiz isteyince tetiklenir.
+    pdf_url = belge_url_getir(ihale)
+    if not pdf_url:
+        return {"basari": False, "hata": "Bu ihale için doküman indirilemedi (EKAP'ta belge bulunamadı ya da CAPTCHA çözülemedi)"}
 
     # 2. Cache kontrolü
     cache = cache_kontrol(ihale_id)
@@ -200,7 +252,7 @@ def kullanici_analiz_isle(
     }
 
     analiz_sonuc = ihale_analiz_et(
-        pdf_url=ihale["pdf_url"],
+        pdf_url=pdf_url,
         sirket_profili=sirket_profili,
         kullanici_kredi=kalan_kredi
     )

@@ -18,6 +18,7 @@ import json
 import re
 import time
 import tempfile
+import zipfile
 import requests
 import pdfplumber
 import google.generativeai as genai
@@ -67,6 +68,11 @@ OPERASYONEL RİSKLER:
 
 # ── PDF İndirme ───────────────────────────────────────────
 def pdf_indir(url: str) -> str | None:
+    """
+    URL'den dosyayı indirir. EKAP'ın "İhale Dokümanı" (islem_id=1) bundle'ı genelde
+    ZIP olarak gelir (bkz. ekap_scraper.belge_indir_yukle) — bu durumda içindeki
+    ilk .pdf üyesi çıkarılıp onun yolu döndürülür (analiz tek bir PDF bekliyor).
+    """
     try:
         headers = {
             "User-Agent": (
@@ -77,9 +83,27 @@ def pdf_indir(url: str) -> str | None:
         }
         r = requests.get(url, headers=headers, timeout=30, stream=True)
         r.raise_for_status()
+        icerik = r.content
+
+        if icerik[:4] == b"PK\x03\x04":
+            with tempfile.TemporaryDirectory() as tmpdir:
+                zip_yolu = os.path.join(tmpdir, "belge.zip")
+                with open(zip_yolu, "wb") as f:
+                    f.write(icerik)
+                with zipfile.ZipFile(zip_yolu) as zf:
+                    pdf_uyeler = [n for n in zf.namelist() if n.lower().endswith(".pdf")]
+                    if not pdf_uyeler:
+                        print("  ✗ ZIP içinde PDF bulunamadı")
+                        return None
+                    # En büyük PDF genelde asıl şartname (ekler/formlar daha küçük olur)
+                    en_buyuk = max(pdf_uyeler, key=lambda n: zf.getinfo(n).file_size)
+                    tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".pdf")
+                    tmp.write(zf.read(en_buyuk))
+                    tmp.close()
+                    return tmp.name
+
         tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".pdf")
-        for chunk in r.iter_content(8192):
-            tmp.write(chunk)
+        tmp.write(icerik)
         tmp.close()
         return tmp.name
     except Exception as e:
