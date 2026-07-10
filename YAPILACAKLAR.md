@@ -1500,6 +1500,21 @@ ended" — uzun vadede sorun çıkarabilir, acil değil).
   (kullanicilar, kik_kararlar) dışında sapma bulunmadı. `teklif-olustur.html`'in `teklifler` insert'i
   şemayla uyumlu doğrulandı (8 Tem'deki düzeltme kalıcıymış). `notify.py`/`bulten_gonder.py`'nin tablo/kolon
   referansları da statik olarak doğru bulundu (ayrıca cron loglarında hatasız çalıştıkları zaten görülmüştü).
+  Yerel önizlemede `sektorler.html` (yeni RPC, tek istekle "48 sektör" doğru geldi) ve `kik-kararlar.html`
+  (tablo artık var, konsol hatasız) manuel doğrulandı.
+
+- 🔴🔴 **GİZLİLİK AÇIĞI BULUNDU + DÜZELTİLDİ (kullanıcı onayıyla) — `kullanici_profiller` RLS'i çok
+  gevşekti:** SELECT policy'si `auth.role()='authenticated'` şartıyla (satır filtresi YOK) tanımlıydı —
+  yani **giriş yapmış HER kullanıcı, BAŞKA firmaların** `vergi_no`, `mersisi_no`, `telefon`,
+  `yillik_ciro_tl`, `calisma_illeri`, `referanslar` gibi özel iş bilgilerini okuyabiliyordu (tam anonim
+  değil — hesap açmak yeterliydi). Hiçbir mevcut özellik bu geniş erişime ihtiyaç duymuyor doğrulandı
+  (Firmalar Dizini ayrı tablodan/`yukleniciler`'den okuyor; `teklif-olustur.html`/`sidebar-user.js` zaten
+  sadece `.eq('id', user.id)` ile kendi satırını okuyor). `migration_kullanici_profiller_rls_sikilastir.sql`
+  ile `auth.uid() = id`'ye sıkılaştırıldı, VDS'e uygulandı, doğrulandı (4 policy de artık own-row).
+  **Ayrıca tüm public tablolardaki RLS policy'leri tek tek gözden geçirildi** (`ilanlar`, `ihale_sonuclari`,
+  `kik_kararlar`, `yukleniciler`, `dokuman_sablonlari`, `konsorsiyumlar` — hepsi kasıtlı/gerekçeli geniş
+  erişimli: kamu ihale verisi, paylaşılan şablonlar, "açık" konsorsiyum ilanları) — `kullanici_profiller`
+  dışında başka anomali bulunmadı.
 
 <details><summary>(tarihsel — cutover öncesi durum notları)</summary>
 
