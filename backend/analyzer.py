@@ -331,6 +331,13 @@ def ihale_analiz_et(
         else:
             rapor = taranmis_pdf_analiz_et(dosya_yolu, sirket_profili)
 
+        # metin_pdf_analiz_et/taranmis_pdf_analiz_et/json_parse_et Gemini hatasında
+        # {"hata": "..."} döner — bu ÖNCEDEN kontrol edilmeden "başarılı" sayılıp kredi
+        # düşülüyordu (kullanıcı boş/hatalı rapor için ücretlendiriliyordu). Artık engelleniyor.
+        if rapor.get("hata") and not any(k for k in rapor if k != "hata" and k != "ham_yanit"):
+            print(f"  ✗ Analiz başarısız, kredi düşülmeyecek: {rapor['hata']}")
+            return {"basari": False, "hata": f"AI analiz hatası: {rapor['hata']}", "kredi": 0}
+
         # 5. Sonuç
         rapor["_meta"] = {
             "pdf_turu": pdf_bilgi["durum"],

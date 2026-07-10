@@ -233,15 +233,18 @@ def kullanici_analiz_isle(
         if not kredi_sonuc.data:
             return {"basari": False, "hata": "Yetersiz kredi"}
 
-        # Geçmişe kaydet
-        supabase.table("analiz_gecmisi").insert({
-            "kullanici_id": kullanici_id,
-            "ihale_id": ihale_id,
-            "harcanan_kredi": 1,
-            "cache_den_mi": True,
-            "firma_profili_snapshot": profil,
-            "rapor": cache
-        }).execute()
+        # Geçmişe kaydet (analiz_gecmisi.ilan_id — 'ihale_id' değil)
+        try:
+            supabase.table("analiz_gecmisi").insert({
+                "kullanici_id": kullanici_id,
+                "ilan_id": ihale_id,
+                "harcanan_kredi": 1,
+                "cache_den_mi": True,
+                "firma_profili_snapshot": profil,
+                "rapor": cache
+            }).execute()
+        except Exception as e:
+            print(f"  ⚠ analiz_gecmisi kaydı başarısız (kredi zaten düşüldü, rapor yine dönüyor): {e}")
 
         return {
             "basari": True,
@@ -297,24 +300,30 @@ def kullanici_analiz_isle(
     # 6. Cache'e yaz (başkası aynı ihaleyi isterse bedava döner)
     analiz_kaydet(ihale_id, rapor, pdf_turu)
 
-    # 7. Geçmişe kaydet
-    supabase.table("analiz_gecmisi").insert({
-        "kullanici_id": kullanici_id,
-        "ihale_id": ihale_id,
-        "harcanan_kredi": harcanan,
-        "cache_den_mi": False,
-        "firma_profili_snapshot": profil,
-        "rapor": rapor
-    }).execute()
+    # 7. Geçmişe kaydet (analiz_gecmisi.ilan_id — 'ihale_id' değil)
+    try:
+        supabase.table("analiz_gecmisi").insert({
+            "kullanici_id": kullanici_id,
+            "ilan_id": ihale_id,
+            "harcanan_kredi": harcanan,
+            "cache_den_mi": False,
+            "firma_profili_snapshot": profil,
+            "rapor": rapor
+        }).execute()
+    except Exception as e:
+        print(f"  ⚠ analiz_gecmisi kaydı başarısız (kredi zaten düşüldü, rapor yine dönüyor): {e}")
 
     # 8. Bildirim gönder
-    supabase.table("bildirimler").insert({
-        "kullanici_id": kullanici_id,
-        "baslik": "Analiz tamamlandı",
-        "icerik": f"{ihale['baslik'][:60]} ihalesi analiz edildi.",
-        "tur": "ihale",
-        "ilan_id": ihale_id
-    }).execute()
+    try:
+        supabase.table("bildirimler").insert({
+            "kullanici_id": kullanici_id,
+            "baslik": "Analiz tamamlandı",
+            "icerik": f"{ihale['baslik'][:60]} ihalesi analiz edildi.",
+            "tur": "ihale",
+            "ilan_id": ihale_id
+        }).execute()
+    except Exception as e:
+        print(f"  ⚠ Bildirim gönderilemedi (rapor yine dönüyor): {e}")
 
     return {
         "basari": True,
