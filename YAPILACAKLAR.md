@@ -1592,12 +1592,43 @@ ended" — uzun vadede sorun çıkarabilir, acil değil).
      satırından hemen sonra) — bu da production dosya yazma, migration'la birlikte kullanıcı/sonraki
      oturum tarafından yapılmalı.
 
+4. **Faz E3 — SEO Firma Sayfaları TAMAMLANDI (kod + gerçek veriyle üretilmiş 1.696 statik sayfa,
+   repo'ya commit'lendi — VDS'e henüz git pull YAPILMADI):**
+   - `backend/firma_sayfa_uret.py` (yeni): sadece **public REST API'yi (anon key) okur** — production'a
+     hiç yazmıyor, bu yüzden hiçbir onay engeline takılmadan yerel makineden çalıştırılabildi.
+     `yukleniciler`'den `toplam_sozlesme_sayisi >= 3` olan firmaları (1.696 kayıt — ince/thin-content
+     SEO riskinden kaçınmak için eşik konuldu, `>=1` ile 11.187 olurdu) çekip her biri için gerçek
+     `<title>`/`<meta description>`/canonical/OG/JSON-LD Organization içeren, arama motorunun ilk
+     yüklemede göreceği statik bir HTML sayfası üretiyor. Türkçe→ASCII slug fonksiyonu (İ/I/ğ/ş/ü/ö/ç
+     dahil) + çakışma durumunda `-2/-3` son eki güvenlik ağı (test setinde hiç tetiklenmedi, 1696/1696
+     benzersiz).
+   - **1.696 dosya üretilip `firma/<slug>.html`'e yazıldı** (14MB, repo'ya commit edildi) + gerçek
+     veriyle `sitemap-firmalar.xml` (1.696 URL) + yeni `robots.txt` (dashboard/profil/bildirimler/
+     teklif-olustur/ödeme/api gibi giriş-gerektiren yolları Disallow eder, sitemap'i işaret eder).
+   - Her sayfa: firma adı/il/sektör/KPI özeti (toplam sözleşme, toplam ciro, ilk/son iş) + "📊 Detaylı
+     Analizi Gör" CTA'sı → `firma-analiz?firma=<ad>` (tam etkileşimli/AI destekli sürüm — "özet public,
+     derinlik uygulama-içi" stratejisi). Sayfa şablonu marka tutarlılığı için `index.html`'in public
+     nav+footer kabuğunu (`landing-nav`, `css/style.css` değişkenleri) yeniden kullanıyor, app-shell/
+     sidebar YOK (hafif/hızlı SEO iniş sayfası).
+   - Local preview'da doğrulandı: `<title>`/meta/canonical/JSON-LD/CTA linki hepsi doğru render oldu,
+     CSS (amber renk) yüklendi, konsol hatasız. CTA linkinin local'de 404 vermesi **beklenen davranış**
+     (uzantısız URL'ler local Python server'da çalışmaz, prod nginx'te çalışır — bkz. [[project-stack]]
+     memory'si, sitedeki TÜM diğer iç linklerle aynı desen).
+   - Çakışma kontrolü yapıldı: yeni `firma/` klasörü mevcut `firma-analiz.html` (tekil) ve `firmalar.html`
+     (dizin sayfası) ile isim çakışmıyor.
+   - **KALAN:** VDS'te `git pull` (statik dosyalar otomatik canlı olur, nginx zaten her yolu genel
+     `try_files` ile sunuyor — ekstra config GEREKMİYOR, sadece dosya senkronu). İstenirse ileride:
+     (a) eşiği düşürüp daha fazla firma kapsanabilir, (b) gece cron'una eklenip yeni firmalar
+     otomatik sayfa alabilir (şu an manuel/tek seferlik üretim), (c) Google Search Console'a
+     sitemap gönderilmesi (kullanıcı tarafında, hesap gerektirir).
+
 **🔲 SIRADAKİ OTURUM/KULLANICI İÇİN:**
 1. `backend/migration_esik_katsayi.sql`'i VDS'e uygula (yukarıdaki komut).
 2. `backend/migration_takip_firmalar.sql`'i VDS'e uygula (aynı yöntem: `docker exec -i supabase-db psql
    -U postgres -d postgres < backend/migration_takip_firmalar.sql`).
 3. VDS'te `cd /opt/ihale-platform && git pull origin main` (scraper + ihaleler.html + firma-analiz.html +
-   login.html + rakip_bildirim.py güncellensin).
+   login.html + rakip_bildirim.py + 1.696 statik `firma/*.html` + `robots.txt` + `sitemap-firmalar.xml`
+   güncellensin/eklensin).
 4. `run_scraper.sh`'e şu satırı `yuklenici_yenile_calistir.py` çağrısından sonra ekle:
    `$VENV/python rakip_bildirim.py >> /opt/ihale-platform/logs/scraper.log 2>&1`
 5. Gece cron'unun yeni scraper'ı kullandığını doğrulamaya gerek yok (aynı dosya, sadece yeni alan

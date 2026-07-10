@@ -1,0 +1,11 @@
+User-agent: *
+Allow: /
+Disallow: /dashboard
+Disallow: /profil
+Disallow: /bildirimler
+Disallow: /takipte
+Disallow: /teklif-olustur
+Disallow: /fiyatlandirma_odeme_bolumu
+Disallow: /api/
+
+Sitemap: https://ihaleglobal.com/sitemap-firmalar.xml
