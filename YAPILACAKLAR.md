@@ -1209,10 +1209,9 @@ PY
 - **Çözüm:** Playwright kurulumu VDS'e (`playwright install chromium`) → headless browser ile kik.gov.tr atlatılabilir
 - Veya ücretli proxy servisi (brightdata.com) — düşük öncelik, ileride değerlendir
 
-### 🔲 4. Eşik Katsayısı Filtresi — KÜÇÜK, AMA EKSİK
-ihaleciler'de 0.70–1.20 eşik katsayısı filtresi var (ihale sınır değer hesabında kullanılır).
-- `ilanlar` tablosunda bu kolon yok → scraper'a eklenmeli + filtre dropdown'ı
-- Düşük öncelik; KİK kararlarından sonra yapılabilir.
+### ✅ 4. Eşik Katsayısı Filtresi — TAMAMLANDI (10 Tem 2026, Faz C4, bkz. yukarıdaki SON DURUM notu)
+`ilanlar.esik_katsayi` kolonu + scraper regex parse + `ihaleler.html` dropdown filtresi kodu hazır
+(`backend/migration_esik_katsayi.sql` — VDS'e henüz uygulanmadı, bkz. "SIRADAKİ OTURUM" listesi).
 
 ### 🔲 5. Gazete / Yerel İhaleler — BÜYÜK İŞ, DÜŞÜK ÖNCELİK
 ihaleciler EKAP dışında gazete ve "istihbarat" kaynaklı ilanlar da gösteriyor (özel sektör alımları vb.).
