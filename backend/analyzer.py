@@ -300,14 +300,6 @@ def taranmis_pdf_analiz_et(dosya_yolu: str, sirket_profili: dict) -> dict:
             except Exception:
                 pass
 
-    finally:
-        # Dosyayı Gemini'den temizle
-        if yuklenen_dosya:
-            try:
-                genai.delete_file(yuklenen_dosya.name)
-            except Exception:
-                pass
-
 
 # ── Ana Pipeline ──────────────────────────────────────────
 def ihale_analiz_et(
