@@ -11,8 +11,8 @@ const API = (() => {
 
     // ── Yapılandırma ────────────────────────────────────
     const CONFIG = {
-        // Render.com API URL — deploy sonrası güncelle
-        BASE_URL: "https://ihale-api.onrender.com",
+        // VDS'in kendi FastAPI'si — nginx /api/ proxy ile aynı origin
+        BASE_URL: "https://ihaleglobal.com/api",
 
         // Supabase — Auth için
         SUPABASE_URL: "https://ihaleglobal.com",
