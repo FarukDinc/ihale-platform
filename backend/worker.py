@@ -112,37 +112,55 @@ def analiz_kaydet(ihale_id: str, rapor: dict, pdf_turu: str):
 def belge_url_getir(ihale: dict) -> str | None:
     """
     ihale['belgeler']'de zaten indirilmiş (storage_url dolu) bir belge varsa onu döndürür.
-    Yoksa EKAP'tan CAPTCHA çözerek indirir (ekap_scraper.belge_indir_yukle — gece turunda
-    BELGE_INDIR bayrağı arkasında kapalı duran aynı mekanizma, burada kullanıcı "Analiz Et"
-    dediğinde talep-anında/on-demand tetikleniyor), ilanlar.belgeler'i kalıcı olarak
-    günceller (sonraki analizler tekrar indirmez) ve storage_url'i döndürür.
+    Yoksa gece turunun (EKAP_BELGE_LINK) sakladığı hazır CAPTCHA linkini (belgeler[0].url —
+    içinde EKAP'ın gerçek dahili ihaleId'si hex olarak gömülü; ilanlar.ekap_id bunun YERİNE
+    İKN'yi tutuyor, GetDokumanUrl'e tekrar sorarsak yanlış id ile 500 alırız — bu yüzden
+    dokuman_url_al'ı TEKRAR ÇAĞIRMIYORUZ, doğrudan zaten doğrulanmış linki kullanıyoruz)
+    ekap_scraper.ekap_captcha_indir ile CAPTCHA çözüp indirir, Supabase Storage'a yükler,
+    ilanlar.belgeler'i kalıcı günceller (sonraki analizler tekrar indirmez) ve storage_url
+    döndürür.
     """
     belgeler = ihale.get("belgeler") or []
     for b in belgeler:
         if b.get("storage_url"):
             return b["storage_url"]
 
-    ekap_id = ihale.get("ekap_id")
-    if not ekap_id:
+    link = next((b["url"] for b in belgeler if b.get("url")), None)
+    if not link:
         return None
 
     import asyncio
-    import httpx
-    from ekap_scraper import belge_indir_yukle, ssl_ctx
-
-    async def _indir():
-        async with httpx.AsyncClient(verify=ssl_ctx(), http2=False, timeout=60.0) as client:
-            return await belge_indir_yukle(client, ekap_id, ekap_id, supabase)
+    from ekap_scraper import ekap_captcha_indir, dosya_adi_temizle
 
     try:
-        yeni_belgeler = asyncio.run(_indir())
+        icerik = asyncio.run(ekap_captcha_indir(link))
     except Exception as e:
         print(f"  ✗ Talep anında belge indirme hatası: {e}")
         return None
 
-    if not yeni_belgeler:
+    if not icerik or len(icerik) < 200:
         return None
 
+    if icerik[:4] == b"PK\x03\x04":
+        uzanti, ct = ".zip", "application/zip"
+    elif icerik[:4] == b"%PDF":
+        uzanti, ct = ".pdf", "application/pdf"
+    else:
+        uzanti, ct = ".bin", "application/octet-stream"
+
+    dosya_adi = f"1_{dosya_adi_temizle('Ihale_Dokumani')}{uzanti}"
+    path = f"{ihale['id']}/{dosya_adi}"
+
+    try:
+        supabase.storage.from_("belgeler").upload(
+            path, icerik, file_options={"content-type": ct, "upsert": "true"}
+        )
+        storage_url = supabase.storage.from_("belgeler").get_public_url(path)
+    except Exception as e:
+        print(f"  ✗ Storage yükleme hatası: {e}")
+        return None
+
+    yeni_belgeler = [dict(b, storage_url=storage_url) if b.get("url") == link else b for b in belgeler]
     try:
         supabase.table("ilanlar").update({"belgeler": yeni_belgeler}).eq(
             "id", ihale["id"]
@@ -150,10 +168,7 @@ def belge_url_getir(ihale: dict) -> str | None:
     except Exception as e:
         print(f"  ⚠ ilanlar.belgeler güncellenemedi (analiz yine de devam eder): {e}")
 
-    for b in yeni_belgeler:
-        if b.get("storage_url"):
-            return b["storage_url"]
-    return None
+    return storage_url
 
 
 # ── Kullanıcı analiz isteği işle ─────────────────────────
