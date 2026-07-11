@@ -237,6 +237,11 @@
     document.getElementById('panel-kayit').classList.toggle('aktif', panel === 'kayit');
   }
 
+  // Anasayfadan ?panel=kayit ile gelindiyse kayıt panelini otomatik aç
+  if (new URLSearchParams(window.location.search).get('panel') === 'kayit') {
+    panelGoster('kayit');
+  }
+
   // Giriş sonrası dönülecek sayfa — sadece site-içi göreli yol kabul edilir (open-redirect koruması).
   // NOT: sadece "//" ile başlayanları reddetmek YETERLİ DEĞİL — tarayıcılar özel şemalarda (http/https)
   // ters eğik çizgiyi (\) normal eğik çizgiye çevirir, yani "/\evil.com" gibi karışık bir dizi de
