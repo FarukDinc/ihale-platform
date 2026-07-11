@@ -289,6 +289,7 @@
           <div class="kurum-meta" id="kurum-meta">Veri yükleniyor…</div>
           <div class="kurum-actions">
             <a id="kurum-ihaleler-btn" href="#" class="btn-ihaleler">📋 Tüm İhalelerini Gör</a>
+            <button id="kurum-takip-btn" class="btn-ihaleler" style="background:transparent;border:1px solid var(--border);color:var(--white);" onclick="kurumTakipToggle()">🔔 Kurumu Takip Et</button>
           </div>
         </div>
 
@@ -695,6 +696,7 @@
 
     document.getElementById('kurum-ihaleler-btn').href = `ihaleler?idare=${encodeURIComponent(KURUM)}`;
     document.getElementById('bc-kurum').textContent = KURUM;
+    kurumTakipDurumuGuncelle();
 
     tumIhaleler = await topluCek();
 
@@ -768,6 +770,41 @@
       console.info('analiz_pivot henüz kullanılamıyor (migration bekliyor):', err?.message || err);
     }
   }
+
+  // ── Kurum Takibi ───────────────────────────────────────
+  async function kurumTakipDurumuGuncelle() {
+    const btn = document.getElementById('kurum-takip-btn');
+    if (!btn || !KURUM) return;
+    try {
+      const { data: { user } } = await sb.auth.getUser();
+      if (!user) { btn.textContent = '🔔 Kurumu Takip Et'; btn.dataset.takipte = ''; return; }
+      const { data } = await sb.from('takip_idareler')
+        .select('id').eq('kullanici_id', user.id).eq('idare_ad', KURUM).limit(1);
+      const takipte = !!(data && data.length);
+      btn.textContent = takipte ? '✓ Takip Ediliyor' : '🔔 Kurumu Takip Et';
+      btn.dataset.takipte = takipte ? '1' : '';
+    } catch { /* takip_idareler migration henüz uygulanmamışsa sessizce geç */ }
+  }
+
+  window.kurumTakipToggle = async function() {
+    if (!KURUM) return;
+    const btn = document.getElementById('kurum-takip-btn');
+    const { data: { user } } = await sb.auth.getUser();
+    if (!user) { window.location.href = `login?donus=${encodeURIComponent(window.location.pathname + window.location.search)}`; return; }
+    try {
+      if (btn.dataset.takipte === '1') {
+        await sb.from('takip_idareler').delete().eq('kullanici_id', user.id).eq('idare_ad', KURUM);
+      } else {
+        await sb.from('takip_idareler').upsert(
+          { kullanici_id: user.id, idare_ad: KURUM },
+          { onConflict: 'kullanici_id,idare_ad', ignoreDuplicates: true }
+        );
+      }
+      kurumTakipDurumuGuncelle();
+    } catch (e) {
+      alert('Takip işlemi şu an yapılamıyor, lütfen daha sonra tekrar deneyin.');
+    }
+  };
 
   main().catch(e => {
     console.error(e);
