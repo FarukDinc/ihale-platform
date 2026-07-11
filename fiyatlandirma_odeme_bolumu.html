@@ -85,6 +85,18 @@
     .guven-badge { display: flex; align-items: center; gap: 7px; font-size: 12px; color: var(--muted); }
     .guven-badge .g-ikon { font-size: 18px; }
 
+    /* ── KUPON KODU ── */
+    .kupon-kutu { max-width: 460px; margin: 8px auto 32px; padding: 20px 24px; background: var(--card, #fff); border: 1.5px dashed #94a3b8; border-radius: 12px; text-align: center; }
+    .kupon-baslik { font-size: 14px; font-weight: 700; margin-bottom: 12px; }
+    .kupon-form { display: flex; gap: 8px; }
+    .kupon-form input { flex: 1; padding: 10px 12px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 14px; outline: none; text-transform: uppercase; }
+    .kupon-form input:focus { border-color: #0A1628; }
+    .kupon-form button { padding: 10px 16px; background: #0A1628; color: white; border: none; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; white-space: nowrap; }
+    .kupon-form button:disabled { opacity: .5; cursor: default; }
+    #kupon-sonuc { margin-top: 10px; font-size: 13px; font-weight: 600; display: none; }
+    #kupon-sonuc.basari { color: #166534; }
+    #kupon-sonuc.hata { color: #991b1b; }
+
     /* ── ÖDEME MODAL ── */
     #odeme-modal {
       display: none; position: fixed; inset: 0; z-index: 2000;
@@ -259,6 +271,16 @@
           </div>
         </div>
 
+      </div>
+
+      <!-- KUPON KODU -->
+      <div class="kupon-kutu">
+        <div class="kupon-baslik">🎟️ Deneme kuponunuz mu var?</div>
+        <div class="kupon-form">
+          <input type="text" id="kupon-input" placeholder="Örn: IHP-A1B2C3D4" maxlength="20" autocomplete="off">
+          <button type="button" id="kupon-btn" onclick="kuponKullan()">Kuponu Kullan</button>
+        </div>
+        <div id="kupon-sonuc"></div>
       </div>
 
       <!-- Güven rozetleri -->
@@ -540,6 +562,47 @@
       window.location.reload();
     } catch (e) {
       alert('Plan iptali başarısız: ' + e.message);
+    }
+  }
+
+  async function kuponKullan() {
+    const input = document.getElementById('kupon-input');
+    const btn = document.getElementById('kupon-btn');
+    const sonucEl = document.getElementById('kupon-sonuc');
+    const kod = input.value.trim();
+    if (!kod) return;
+
+    const { data: { session } } = await sb.auth.getSession();
+    if (!session) { alert('Kupon kullanmak için giriş yapmalısınız.'); return; }
+
+    btn.disabled = true;
+    btn.textContent = 'Kontrol ediliyor...';
+    sonucEl.style.display = 'none';
+
+    try {
+      const res = await fetch(`${API.CONFIG.BASE_URL}/kupon-kullan`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ kod }),
+      });
+      const sonuc = await res.json().catch(() => ({}));
+      if (!res.ok || !sonuc.basari) throw new Error(sonuc.detail || sonuc.hata || 'Kupon geçersiz');
+
+      sonucEl.className = 'basari';
+      sonucEl.textContent = '✓ ' + sonuc.mesaj;
+      sonucEl.style.display = 'block';
+      Plan.clearCache();
+      setTimeout(() => window.location.reload(), 1800);
+    } catch (e) {
+      sonucEl.className = 'hata';
+      sonucEl.textContent = e.message;
+      sonucEl.style.display = 'block';
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Kuponu Kullan';
     }
   }
 

@@ -1,5 +1,60 @@
 # İhalePlatform — Yapılacaklar Listesi
 
+## 🟢 ŞU AN NE DURUMDAYIZ (10 Temmuz 2026, en son güncelleme) — HERKES ÖNCE BUNU OKUSUN
+
+> Bu blok her oturumun sonunda güncellenir ve dosyanın en güncel/otoriter özetidir. Altındaki
+> binlerce satır tarihsel kayıt/detay — çelişki olursa BU BLOK geçerlidir.
+
+**Canlı site:** `https://ihaleglobal.com` (VDS `195.85.207.126`, self-hosted Supabase). Managed
+Supabase terk edildi, Render tamamen kaldırıldı. 11 Tem: 10 Tem oturumunun deploy'u kullanıcı
+tarafından uygulandı ve AI iki özelliği tarayıcıda uçtan uca doğruladı (↓). `ilanlar` artık 74.6K.
+
+### 👤 SENİN YAPMAN GEREKEN (AI'ın erişimi/onayı olmayan production adımları)
+
+**1. GÜNCEL DEPLOY (11 Tem — kupon sistemi + sidebar düzeltmesi, main'e push'landı):**
+```bash
+ssh -i ~/.ssh/ihale_oracle root@195.85.207.126
+cd /opt/ihale-platform && git pull origin main
+docker exec -i supabase-db psql -U postgres -d postgres < backend/migration_kuponlar.sql
+sudo systemctl restart ihale-api
+```
+(`js/sidebar-user.js` düzeltmesi statik dosya, restart gerektirmez — pull yeterli.)
+
+**2. Kupon üretmek için (iyzico gelmeden önce tanıdık firmalara ücretsiz Pro/Kurumsal vermek):**
+```bash
+cd /opt/ihale-platform/backend && source venv/bin/activate
+python kupon_olustur.py --plan standart --ay 3 --adet 5 --aciklama "Beta test firmaları"
+```
+`--plan` (`standart`|`kurumsal`), `--ay` (`1`|`3`|`6`|`12`), `--adet` kaç kod üretileceği. Çıkan
+kodları ilgili firmalara ver; kullanıcı `fiyatlandirma_odeme_bolumu.html`'deki "🎟️ Deneme
+kuponunuz mu var?" kutusuna girip kendi kendine aktifleştiriyor (backend `/kupon-kullan`,
+service_role ile `kullanici_krediler.plan`+`plan_bitis` günceller). Her kod varsayılan tek
+kullanımlık (`max_kullanim=1`); aynı kullanıcı aynı kodu iki kez kullanamaz.
+
+**3. Bekleyen (önceki oturumlardan, hâlâ açık):**
+   - İyzico entegrasyonu **kullanıcı kararıyla en sona bırakıldı** — lisans anlaşması netleşince
+     yapılacak. O zamana kadar kupon sistemi ücretsiz test erişimi karşılıyor.
+   - **Karar gerektiren:** Faz D3 (semantik eşleşme) ~14 bin mevcut aktif ilanı geriye dönük embed'lemiyor
+     (bilinçli — Gemini API maliyeti). Gece başına 300 ile mi devam, yoksa `ilan_embed_uret.py --max`
+     değerini büyütüp hızlandırmak mı istersin?
+   - `manual_backfill.log`'un durumunu ara sıra kontrol et (403/429 ile durursa Webshare proxy gerekir).
+
+### 🤖 AI'IN (Claude'un) SIRADA YAPACAĞI — sen "devam" dediğinde ya da yeni bir yön verdiğinde
+
+1. Kupon migration'ı VDS'te uygulanınca uçtan uca doğrula (gerçek kullanıcıyla kupon kodu üret+kullan).
+2. `Faz E1`in cron parçası (`rakip_bildirim.py`) VDS'te ilk gece turunda gerçek veri ile doğrulanmalı.
+3. Sonraki plan maddeleri (düşük öncelik, net yön verirsen): "Sözleşme Listesi" (madde 7, aşağıda),
+   E4 (KİK kararları — ciddi altyapı gerektirir, düşük öncelik), D3'ün eski-ilan backfill'i (karar sonrası).
+
+**11 Tem oturumu:** 10 Tem'in 5 özelliği canlıda doğrulandı (esik_katsayi filtresi + AI teklif
+taslağı gerçek kullanıcı/ihale ile test edildi — ikisi de çalışıyor). `js/sidebar-user.js`daki
+`profil` tablosu 406 hatası düzeltildi (`kullanici_profiller` fallback + `maybeSingle`). Yeni:
+**ücretsiz deneme kupon sistemi** (`kuponlar`+`kupon_kullanimlari` tabloları, `kupon_olustur.py`
+CLI, backend `/kupon-kullan`, `fiyatlandirma_odeme_bolumu.html`'de kupon kutusu) — iyzico'dan
+önce tanıdık firmalara 1/3/6/12 aylık ücretsiz Pro/Kurumsal vermek için. Commit'ler main'e push'landı.
+
+---
+
 > Son güncelleme: 10 Temmuz 2026 (Sonnet oturumu devamı #2 — Faz C4 tamamlandı, prod-yazma sınırları
 > netleşti → en alttaki "📍 SON DURUM (10 Tem 2026, otonom oturum devamı — C4 + prod-yazma sınırı)"
 > bölümüne bak. Önceki oturum notu: "3 gün içinde canlıya al" dedi ve otonom yetki verdi — 3 bekleyen

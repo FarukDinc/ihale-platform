@@ -18,11 +18,12 @@ Kurulum:
 """
 
 import os
+import calendar
 import hashlib
 import hmac
 import json
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 from fastapi import APIRouter, Request, HTTPException, Header
 from pydantic import BaseModel
 from supabase import create_client, Client
@@ -59,6 +60,10 @@ PLANLAR = {
 
 
 # ── Request Modelleri ─────────────────────────────────────
+class KuponKullan(BaseModel):
+    kod: str
+
+
 class OdemeBaslat(BaseModel):
     plan_kodu: str          # 'standart' | 'kurumsal'
     kart_sahibi_ad: str
@@ -200,9 +205,12 @@ def kredi_yukle(
     plan_kodu: str,
     kredi_miktari: int,
     siparis_id: str,
-    odeme_miktari: int
+    odeme_miktari: int,
+    plan_bitis: str = None
 ):
-    """Başarılı ödemeden sonra Supabase'i günceller."""
+    """Başarılı ödemeden (veya kupon kullanımından) sonra Supabase'i günceller.
+    plan_bitis verilirse (kupon akışı) plana bir bitiş tarihi eklenir;
+    kart ödemesinde (plan_bitis=None) mevcut davranış değişmez."""
     plan = PLANLAR[plan_kodu]
 
     # Kredi güncelle
@@ -212,11 +220,15 @@ def kredi_yukle(
 
     yeni_toplam = (mevcut.data.get("toplam_kredi", 0) if mevcut.data else 0) + kredi_miktari
 
-    supabase.table("kullanici_krediler").update({
+    guncelleme = {
         "toplam_kredi":  yeni_toplam,
         "plan":          plan_kodu,
         "plan_baslangic": datetime.now().isoformat()
-    }).eq("kullanici_id", kullanici_id).execute()
+    }
+    if plan_bitis:
+        guncelleme["plan_bitis"] = plan_bitis
+
+    supabase.table("kullanici_krediler").update(guncelleme).eq("kullanici_id", kullanici_id).execute()
 
     # Hareket kaydı
     supabase.table("kredi_hareketleri").insert({
@@ -352,6 +364,75 @@ async def plan_iptal(authorization: str = Header(None)):
         return {"basari": True, "mesaj": "Planınız ücretsize düşürüldü"}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+
+def _ay_ekle(dt: datetime, ay: int) -> datetime:
+    """dt'ye takvim ayı ekler (31 Oca + 1 ay → 28/29 Şub gibi taşmaları düzeltir)."""
+    ay_toplam = dt.month - 1 + ay
+    yil = dt.year + ay_toplam // 12
+    ay_yeni = ay_toplam % 12 + 1
+    gun = min(dt.day, calendar.monthrange(yil, ay_yeni)[1])
+    return dt.replace(year=yil, month=ay_yeni, day=gun)
+
+
+@router.post("/kupon-kullan")
+async def kupon_kullan(istek: KuponKullan, authorization: str = Header(None)):
+    """Kullanıcı bir kupon kodu girer; geçerliyse planı service_role ile
+    doğrudan aktifleştirir (kullanici_krediler RLS salt-okur, bkz. plan-iptal)."""
+    kullanici_id, _email = kullanici_dogrula_payment(authorization)
+    kod = istek.kod.strip().upper()
+    if not kod:
+        raise HTTPException(status_code=400, detail="Kupon kodu girin")
+
+    sonuc = supabase.table("kuponlar").select("*").eq("kod", kod).limit(1).execute()
+    satirlar = sonuc.data or []
+    if not satirlar:
+        raise HTTPException(status_code=404, detail="Kupon kodu bulunamadı")
+    kupon = satirlar[0]
+
+    if not kupon.get("aktif", True):
+        raise HTTPException(status_code=400, detail="Bu kupon devre dışı bırakılmış")
+    if kupon.get("kullanim_sayisi", 0) >= kupon.get("max_kullanim", 1):
+        raise HTTPException(status_code=400, detail="Bu kupon kullanım limitine ulaşmış")
+
+    bitis_str = kupon.get("son_kullanma_tarihi")
+    if bitis_str:
+        bitis_dt = datetime.fromisoformat(bitis_str.replace("Z", "+00:00"))
+        if bitis_dt < datetime.now(timezone.utc):
+            raise HTTPException(status_code=400, detail="Bu kuponun süresi dolmuş")
+
+    zaten_kullanildi = supabase.table("kupon_kullanimlari").select("id") \
+        .eq("kupon_id", kupon["id"]).eq("kullanici_id", kullanici_id).execute()
+    if zaten_kullanildi.data:
+        raise HTTPException(status_code=400, detail="Bu kuponu zaten kullandınız")
+
+    plan_kodu = kupon["plan_kodu"]
+    plan = PLANLAR[plan_kodu]
+    plan_bitis = _ay_ekle(datetime.now(timezone.utc), kupon["sure_ay"]).isoformat()
+
+    kredi_yukle(
+        kullanici_id=kullanici_id,
+        plan_kodu=plan_kodu,
+        kredi_miktari=plan["kredi"],
+        siparis_id=f"KUPON-{kod}",
+        odeme_miktari=0,
+        plan_bitis=plan_bitis,
+    )
+
+    supabase.table("kuponlar").update({
+        "kullanim_sayisi": kupon.get("kullanim_sayisi", 0) + 1
+    }).eq("id", kupon["id"]).execute()
+    supabase.table("kupon_kullanimlari").insert({
+        "kupon_id": kupon["id"],
+        "kullanici_id": kullanici_id,
+    }).execute()
+
+    return {
+        "basari": True,
+        "mesaj": f"{plan['ad']} — {kupon['sure_ay']} ay ücretsiz aktifleştirildi!",
+        "plan": plan_kodu,
+        "plan_bitis": plan_bitis,
+    }
 
 
 @router.get("/planlar")
