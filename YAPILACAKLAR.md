@@ -13,7 +13,7 @@ Supabase terk edildi, Render tamamen kaldırıldı. `ilanlar` 74.6K, `ihale_sonu
 
 ### 👤 SENİN YAPMAN GEREKEN
 
-**1. GÜNCEL DEPLOY (12 Tem — kurum takibi + rakip takibine e-posta + Doğrudan Temin scraper):**
+**1. GÜNCEL DEPLOY (12 Tem — kurum takibi + rakip takibine e-posta + Doğrudan Temin scraper + açık tema):**
 ```bash
 ssh -i ~/.ssh/ihale_oracle root@195.85.207.126
 cd /opt/ihale-platform && git pull origin main
@@ -22,7 +22,8 @@ bash backend/deploy_12tem_dogrudan_temin.sh
 ```
 İkisi de migration uygular + `run_scraper.sh`'e ilgili script satırını ekler. **Restart
 GEREKMİYOR** (statik sayfa + bağımsız cron script'leri, FastAPI'ye dokunmuyor). İdempotent.
-`rakip_bildirim.py`'ye eklenen e-posta özelliği ayrı migration istemiyor, sadece `git pull` yeterli.
+`rakip_bildirim.py`'ye eklenen e-posta özelliği VE açık tema özelliği ayrı migration istemiyor,
+sadece `git pull` yeterli (ikisi de statik dosya).
 
 `deploy_12tem_dogrudan_temin.sh` VDS'ten gerçek bir dry-run da çalıştırır (2 sayfa) — çıktısında
 gerçek DT kayıtları görünmeli. **Derin tarihsel backfill İSTEĞE BAĞLI ayrı bir adım** (script
@@ -68,6 +69,7 @@ kullanım doğru reddedildi.
 
 1. Kurum takibi, rakip takibi e-postası VE Doğrudan Temin scraper'ı VDS'te uygulanınca uçtan uca
    doğrula (gerçek kullanıcıyla "Kurumu/Rakibi Takip Et" → bildirim/e-posta; DT scraper dry-run çıktısı).
+   Açık tema statik olduğu için VDS'te ekstra doğrulama gerekmiyor, pull sonrası canlıda göz atılabilir.
 2. Proxy netleşince: varsa hızlandırılmış backfill'i başlat (`ekap_sonuc_backfill.py --max-pages`
    büyük bir değerle, günler içinde bitecek şekilde); yoksa proxy alım sürecini konuş.
 3. Doğrudan Temin derin backfill kararı netleşince (↑) `--backfill --max-pages N` ile başlat.
@@ -76,6 +78,14 @@ kullanım doğru reddedildi.
    E4 (KİK kararları — ciddi altyapı gerektirir, düşük öncelik), D3'ün eski-ilan backfill'i (karar sonrası).
 
 **12 Tem oturumu (devam):**
+- ✅ **YENİ ÖZELLİK — Açık (Gündüz) Tema:** kullanıcı isteği ("herkes siyah modu sevmez"). Mevcut CSS
+  değişken sistemi üzerine `[data-theme="light"]` override + `js/theme.js` (sağ altta geçiş düğmesi,
+  localStorage kalıcı, varsayılan koyu). 20 sayfaya eklendi, hardcoded `rgba(255,255,255,X)` kullanımları
+  (~93 yer) `var(--overlay-rgb)`'ye çevrildi ki temayla uyumlu olsun. Kapsam dışı: hakkimizda/iletisim/
+  kvkk/mesafeli-satis (kendi ayrı `:root`'ları var, dokunulmadı) + 1715 firma SEO sayfası. Yol boyu
+  gerçek bir bug bulundu+düzeltildi: `fiyatlandirma_odeme_bolumu.html`'deki kupon kutusu `var(--card, #fff)`
+  (hiç var olmayan bir değişken) yüzünden hep beyaz zemine düşüyordu, üstündeki beyaz başlık görünmezdi
+  (canlıda doğrulandı, gerçek bug). Commit `6296971`.
 - ✅ **YENİ ÖZELLİK — Doğrudan Temin Scraper (kullanıcının düzeltmesiyle):** AI önce "17 Temmuz'u
   bekleyelim" demişti ama kullanıcı haklı çıktı — Doğrudan Temin ilanları EKAP'ta ZATEN yayınlanıyor.
   ekapv2'deki "yeni pilot" (17 Tem, henüz boş) ile KARIŞTIRILMAMASI gereken, EKAP'ın eski (legacy)
