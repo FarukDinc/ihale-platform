@@ -38,6 +38,12 @@ CREATE TABLE IF NOT EXISTS public.kupon_kullanimlari (
 ALTER TABLE public.kuponlar ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.kupon_kullanimlari ENABLE ROW LEVEL SECURITY;
 
+-- Bu self-hosted kurulumda service_role'e yeni tablolarda varsayılan GRANT
+-- verilmiyor (managed Supabase'in aksine) — service_role RLS'i bypass eder
+-- ama önce tablo düzeyinde GRANT olması gerekir.
+GRANT SELECT, INSERT, UPDATE ON public.kuponlar TO service_role;
+GRANT SELECT, INSERT ON public.kupon_kullanimlari TO service_role;
+
 NOTIFY pgrst, 'reload schema';
 
 COMMIT;
