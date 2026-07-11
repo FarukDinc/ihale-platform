@@ -15,23 +15,19 @@
     const email = user.email || '';
     const initials = email.substring(0, 2).toUpperCase();
 
-    // Firma adı — profil tablosundan
-    const { data: profil } = await sb.from('profil')
-      .select('firma_adi')
-      .eq('user_id', user.id)
-      .single();
-
-    // Plan — kullanici_krediler tablosundan (payment.py buraya yazar)
-    const { data: kredi } = await sb.from('kullanici_krediler')
-      .select('plan, plan_bitis')
-      .eq('kullanici_id', user.id)
-      .single();
+    // Firma adı — önce profil (tercih tablosu), yoksa kullanici_profiller (firma detay tablosu)
+    const [{ data: profil }, { data: kProfil }, { data: kredi }] = await Promise.all([
+      sb.from('profil').select('firma_adi').eq('user_id', user.id).maybeSingle(),
+      sb.from('kullanici_profiller').select('firma_adi').eq('id', user.id).maybeSingle(),
+      // Plan — kullanici_krediler tablosundan (payment.py buraya yazar)
+      sb.from('kullanici_krediler').select('plan, plan_bitis').eq('kullanici_id', user.id).maybeSingle()
+    ]);
     // DB'deki gerçek geçerli değerler (planlar.kod FK): 'standart' | 'kurumsal' — bkz. js/plan.js
     const PRO = ['standart', 'kurumsal', 'pro', 'Pro', 'PRO', 'premium', 'enterprise'];
     let planKodu = kredi?.plan;
     if (planKodu && kredi?.plan_bitis && new Date(kredi.plan_bitis) < new Date()) planKodu = null;
 
-    const gosterilenAd = profil?.firma_adi || email.split('@')[0];
+    const gosterilenAd = profil?.firma_adi || kProfil?.firma_adi || email.split('@')[0];
     const plan = PRO.includes(planKodu) ? 'Pro Plan' : 'Ücretsiz Plan';
 
     // Tüm sidebar avatar + name elementlerini güncelle
