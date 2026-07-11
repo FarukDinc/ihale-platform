@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>İhale Detay — İhalePlatform</title>
+  <title>İhale Detay — İhaleGlobal</title>
   <link rel="stylesheet" href="css/style.css" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
@@ -238,7 +238,7 @@
     <div class="sidebar-logo">
       <a href="/">
         <span style="width:6px;height:6px;background:var(--amber);border-radius:50%;display:inline-block;animation:pulse 2s infinite;"></span>
-        İhale<span>Platform</span>
+        İhale<span>Global</span>
       </a>
     </div>
     <nav class="sidebar-nav">
@@ -426,7 +426,7 @@
     const gun = gunHesapla(d.son_teklif_tarihi);
     const belgeler = Array.isArray(d.belgeler) ? d.belgeler : [];
 
-    document.title = `${d.baslik} — İhalePlatform`;
+    document.title = `${d.baslik} — İhaleGlobal`;
     document.getElementById('bc-baslik').textContent = d.baslik ? d.baslik.substring(0, 40) + (d.baslik.length > 40 ? '…' : '') : 'Detay';
 
     document.getElementById('page-content').innerHTML = `

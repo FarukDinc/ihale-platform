@@ -1,5 +1,5 @@
 /**
- * İhalePlatform — UI Yardımcıları
+ * İhaleGlobal — UI Yardımcıları
  * Bildirim, yükleme, modal vb.
  */
 

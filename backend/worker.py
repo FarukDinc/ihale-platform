@@ -1,5 +1,5 @@
 """
-İhalePlatform Worker
+İhaleGlobal Worker
 Scraper + Analyzer + Supabase entegrasyonu
 
 Kurulum:

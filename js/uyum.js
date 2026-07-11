@@ -1,5 +1,5 @@
 /**
- * İhalePlatform — Profil Uyum Skoru (paylaşılan modül)
+ * İhaleGlobal — Profil Uyum Skoru (paylaşılan modül)
  *
  * Kullanım:
  *   <script src="js/uyum.js"></script>

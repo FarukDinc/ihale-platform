@@ -1,5 +1,5 @@
 """
-İhalePlatform — Ücretsiz Deneme Kuponu Üretici
+İhaleGlobal — Ücretsiz Deneme Kuponu Üretici
 
 Tanıdık firmalara test amaçlı belirli süreli (1/3/6/12 ay) ücretsiz
 Pro/Kurumsal üyelik vermek için kupon kodu üretir. Kullanıcı kodu

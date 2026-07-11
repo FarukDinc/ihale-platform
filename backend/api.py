@@ -1,5 +1,5 @@
 """
-İhalePlatform FastAPI — Backend API
+İhaleGlobal FastAPI — Backend API
 Frontend'den gelen istekleri karşılar
 
 Çalıştırma:
@@ -21,7 +21,7 @@ from datetime import datetime, timedelta, timezone
 
 load_dotenv()
 
-app = FastAPI(title="İhalePlatform API", version="1.0.0")
+app = FastAPI(title="İhaleGlobal API", version="1.0.0")
 app.include_router(payment_router)
 
 # CORS — Netlify frontend'e izin ver

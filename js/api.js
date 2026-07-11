@@ -1,5 +1,5 @@
 /**
- * İhalePlatform — API İstemcisi
+ * İhaleGlobal — API İstemcisi
  * Tüm backend iletişimi buradan geçer
  * 
  * Kullanım:

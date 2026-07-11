@@ -223,7 +223,7 @@ def bulten_email_html(kullanici_ad: str, bulten_ad: str, filtre: dict, ilanlar: 
               Bu bülteni kapatmak için
               <a href="{SITE_URL}/bildirimler" style="color:#f59e0b;">Bildirimler</a> sayfanızdan
               "<strong>{bulten_ad}</strong>" bültenini kapatın.
-              <br>© 2026 İhalePlatform &nbsp;·&nbsp; ihaleglobal.com
+              <br>© 2026 İhaleGlobal &nbsp;·&nbsp; ihaleglobal.com
             </p>
           </td>
         </tr>
@@ -312,7 +312,7 @@ def main():
 
         # E-posta gönder
         html = bulten_email_html(kinfo["ad"], ad, filtre, eslesme)
-        konu = f"⭐ {ad} — {len(eslesme)} yeni ihale | İhalePlatform"
+        konu = f"⭐ {ad} — {len(eslesme)} yeni ihale | İhaleGlobal"
         ok   = email_gonder(kinfo["email"], konu, html)
 
         if ok:

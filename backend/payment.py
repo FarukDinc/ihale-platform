@@ -1,5 +1,5 @@
 """
-İhalePlatform — İyzico Ödeme Entegrasyonu
+İhaleGlobal — İyzico Ödeme Entegrasyonu
 Webhook ile Supabase kredi güncelleme
 
 Kurulum:

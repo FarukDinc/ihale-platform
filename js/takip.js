@@ -1,5 +1,5 @@
 /**
- * İhalePlatform — Takip Listesi
+ * İhaleGlobal — Takip Listesi
  *
  * localStorage birincil kaynak (anlık, senkron).
  * Kullanıcı giriş yaptıysa Supabase `takip` tablosuyla senkronize olur:

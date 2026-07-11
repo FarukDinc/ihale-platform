@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Bildirimler — İhalePlatform</title>
+  <title>Bildirimler — İhaleGlobal</title>
   <link rel="stylesheet" href="css/style.css" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
@@ -168,7 +168,7 @@
 <div class="app">
   <aside class="sidebar">
     <div class="sidebar-logo">
-      <a href="/"><span style="width:6px;height:6px;background:var(--amber);border-radius:50%;display:inline-block;animation:pulse 2s infinite;"></span>İhale<span>Platform</span></a>
+      <a href="/"><span style="width:6px;height:6px;background:var(--amber);border-radius:50%;display:inline-block;animation:pulse 2s infinite;"></span>İhale<span>Global</span></a>
     </div>
     <nav class="sidebar-nav">
       <div class="nav-section-label">Genel</div>
@@ -415,7 +415,7 @@
     liste.push({
       id: 'sys-1', tip: 'sistem', okunmus: false,
       ikon: '🚀', ikonKlass: 'sistem',
-      baslik: 'İhalePlatform\'a hoş geldiniz!',
+      baslik: 'İhaleGlobal\'a hoş geldiniz!',
       aciklama: 'Takip listenize ihale ekleyerek bildirimleri aktifleştirin.',
       zaman: new Date(Date.now() - 2*3600000).toISOString(), link: null,
     });
@@ -895,7 +895,7 @@
       const banner = document.getElementById('push-banner');
       if (banner) banner.style.display = 'none';
       if (perm === 'granted') {
-        new Notification('İhalePlatform', {
+        new Notification('İhaleGlobal', {
           body: 'Bildirimler etkinleştirildi! Yeni eşleşen ihaleler için uyarı alacaksınız.',
           icon: '/favicon.ico'
         });

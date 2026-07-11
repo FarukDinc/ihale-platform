@@ -1,5 +1,5 @@
 """
-İhalePlatform — Rotating Proxy Yapılandırması
+İhaleGlobal — Rotating Proxy Yapılandırması
 EKAP IP blokajını önlemek için Webshare proxy entegrasyonu
 
 Webshare.io:

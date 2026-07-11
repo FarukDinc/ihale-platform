@@ -135,7 +135,7 @@ SAYFA_SABLON = """<!DOCTYPE html>
 
 <nav class="landing-nav">
   <div class="nav-inner">
-    <a href="/" class="logo"><span class="logo-dot"></span>İhale<span>Platform</span></a>
+    <a href="/" class="logo"><span class="logo-dot"></span>İhale<span>Global</span></a>
     <ul class="nav-links">
       <li><a href="/firmalar">Firmalar Dizini</a></li>
       <li><a href="/ihaleler">İhaleler</a></li>
@@ -173,7 +173,7 @@ SAYFA_SABLON = """<!DOCTYPE html>
 <footer>
   <div class="container">
     <div class="footer-bottom">
-      <p>© {yil} İhalePlatform. Tüm hakları saklıdır.</p>
+      <p>© {yil} İhaleGlobal. Tüm hakları saklıdır.</p>
       <p style="font-size:12px;">Veriler EKAP kamu ihale ilanlarından derlenmiştir, resmi teyit için EKAP'a başvurunuz.</p>
     </div>
   </div>
@@ -200,7 +200,7 @@ def sayfa_uret(f: dict) -> tuple[str, str]:
         f"toplam {para_formatla(ciro)} ciro" + (f", {il}" if il else "") + ". "
         f"EKAP kamu ihale verilerinden derlenmiştir."
     )
-    baslik = f"{ad} — İhale Geçmişi ve Firma Analizi | İhalePlatform"
+    baslik = f"{ad} — İhale Geçmişi ve Firma Analizi | İhaleGlobal"
 
     sektor_blok = ""
     if sektorler:

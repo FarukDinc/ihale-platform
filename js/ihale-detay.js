@@ -68,7 +68,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
 
         // Sayfa başlığını güncelle
-        document.title = `${ihale.baslik} — İhalePlatform`;
+        document.title = `${ihale.baslik} — İhaleGlobal`;
 
         // Analiz varsa göster
         if (ihale.yapay_zeka_ozeti && el.analiz_bolum) {

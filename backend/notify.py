@@ -1,5 +1,5 @@
 """
-İhalePlatform — E-posta Bildirim Servisi
+İhaleGlobal — E-posta Bildirim Servisi
 
 Akış:
   1. Supabase'den bildirim_email=true olan kullanıcıları çek
@@ -169,7 +169,7 @@ def email_html(kullanici_adi, ihaleler):
             <p style="margin:0;font-size:12px;color:#9ca3af;text-align:center;">
               Bu e-postayı almak istemiyorsanız
               <a href="{SITE_URL}/bildirimler" style="color:#f59e0b;">bildirim tercihlerinizi güncelleyin</a>.
-              <br>© 2026 İhalePlatform
+              <br>© 2026 İhaleGlobal
             </p>
           </td>
         </tr>
@@ -294,7 +294,7 @@ def main():
                     ilan["kalan_gun"] = 0
 
         kullanici_adi = profil.get("firma_adi") or email.split("@")[0]
-        subject = f"⏰ {len(yaklaşan)} takip ihalende son tarih yaklaşıyor — İhalePlatform"
+        subject = f"⏰ {len(yaklaşan)} takip ihalende son tarih yaklaşıyor — İhaleGlobal"
         html = email_html(kullanici_adi, yaklaşan)
 
         print(f"\n  → {email}: {len(yaklaşan)} ihale yaklaşıyor")

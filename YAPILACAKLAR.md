@@ -91,7 +91,7 @@ CLI, backend `/kupon-kullan`, `fiyatlandirma_odeme_bolumu.html`'de kupon kutusu)
 - **🔴 GECE CRON'U ÇÖKMÜŞTÜ (4 gün 0 kayıt)** → kök neden: `upsert(ignore_duplicates=True)` sahte supabase wrapper'ında desteklenmiyordu, her yazma sessizce TypeError. Wrapper düzeltildi (commit 5e5a08e). Cron yarından itibaren tekrar çalışır. Bugünkü veri elle tam turla tazelendi.
 
 **⏳ Devam eden / planlanan:**
-- **Tüm geçmiş (2003+) backfill** (kullanıcı kararı): EKAP'ın sonuçlanmış listesi (~1.68M) taranacak → milyonlarca kayıt. GEREKSİNİM: (a) Webshare proxy (boş — IP ban riski), (b) Supabase plan yükseltme (free tier milyonları kaldırmaz), (c) ayrı checkpoint'li backfill workflow'u (`ekap_sonuc_backfill.py` temeli var). Firma/yüklenici verisi bunun çıktısı olarak gelecek.
+- **Tüm geçmiş (2003+) backfill** (kullanıcı kararı): EKAP'ın sonuçlanmış listesi (~1.68M) taranacak → milyonlarca kayıt. GEREKSİNİM: (a) Webshare proxy (boş — IP ban riski), ~~(b) Supabase plan yükseltme (free tier milyonları kaldırmaz)~~ **ARTIK GEÇERSİZ (11 Tem 2026): VDS'e taşınalı beri self-hosted Supabase kullanıyoruz, plan/satır limiti yok, disk bol — bu madde sadece proxy'ye bağlı.** (c) ayrı checkpoint'li backfill workflow'u (`ekap_sonuc_backfill.py` temeli var, gece cron'unda 50 sayfa/gece ilerliyor, 11 Tem itibarıyla ~Ağu 2025'e kadar gitmiş). Firma/yüklenici verisi bunun çıktısı olarak gelecek.
 - Cron'un GitHub Actions'ta gerçekten yeşil döndüğünü ilk gece sonrası doğrula (`olusturulma` bugüne yakın mı).
 
 ---
