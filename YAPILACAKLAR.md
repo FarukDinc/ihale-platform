@@ -13,14 +13,16 @@ Supabase terk edildi, Render tamamen kaldırıldı. `ilanlar` 74.6K, `ihale_sonu
 
 ### 👤 SENİN YAPMAN GEREKEN
 
-**1. GÜNCEL DEPLOY (12 Tem — kurum takibi özelliği, main'e push'landı):**
+**1. GÜNCEL DEPLOY (12 Tem — kurum takibi özelliği + rakip takibine e-posta, main'e push'landı):**
 ```bash
 ssh -i ~/.ssh/ihale_oracle root@195.85.207.126
 cd /opt/ihale-platform && git pull origin main
 bash backend/deploy_12tem_kurum_takibi.sh
 ```
 Bu script migration'ı uygular + `run_scraper.sh`'e `idare_bildirim.py` satırını ekler. **Restart
-GEREKMİYOR** (statik sayfa + bağımsız cron script'i, FastAPI'ye dokunmuyor). İdempotent.
+GEREKMİYOR** (statik sayfa + bağımsız cron script'leri, FastAPI'ye dokunmuyor). İdempotent.
+`rakip_bildirim.py`'ye eklenen e-posta özelliği ayrı bir migration istemiyor (mevcut tabloları
+kullanıyor) — sadece `git pull` yeterli, `run_scraper.sh`'te zaten satırı vardı (10 Tem'den beri).
 
 ⚠️ **DİKKAT (12 Tem'de bir kez yaşandı):** SSH bağlantısı koptuktan sonra yanlışlıkla yerel
 Windows `cmd.exe`'de (`C:\Users\dncla>`) komut çalıştırılmaya devam edildi. Komutları çalıştırmadan
@@ -51,13 +53,14 @@ kullanım doğru reddedildi.
    - **Doğrudan Temin scraper'ı — 17 Temmuz'a ERTELENDİ (kullanıcı onayladı):** EKAP'ın yeni Doğrudan
      Temin duyuru sistemi henüz **canlı değil, 17 Temmuz 2026'da pilot olarak başlıyor** (sadece
      belirli idareler). 17 Tem'de veya sonrasında hatırlat.
-   - **SMS bildirimi YOK:** Kurum takibi (↓) şu an sadece e-posta + uygulama-içi bildirim gönderiyor.
-     SMS istenirse ayrı bir sağlayıcı entegrasyonu gerekir (Netgsm/Twilio gibi) — henüz konuşulmadı.
+   - **SMS bildirimi YOK:** Kurum takibi VE rakip (firma) takibi şu an sadece e-posta + uygulama-içi
+     bildirim gönderiyor. SMS istenirse ayrı bir sağlayıcı entegrasyonu gerekir (Netgsm/Twilio gibi)
+     — henüz konuşulmadı, tekrar sorulacak olursa bu netleşmeli.
 
 ### 🤖 AI'IN (Claude'un) SIRADA YAPACAĞI — sen "devam" dediğinde ya da yeni bir yön verdiğinde
 
-1. Kurum takibi migration'ı VDS'te uygulanınca uçtan uca doğrula (gerçek kullanıcıyla "Kurumu Takip
-   Et" → o kurumun yeni ilanı → bildirim/e-posta geldi mi).
+1. Kurum takibi VE rakip takibi e-postası VDS'te uygulanınca uçtan uca doğrula (gerçek kullanıcıyla
+   "Kurumu Takip Et"/"Rakibi Takip Et" → yeni ilan/kazanım → bildirim + e-posta geldi mi).
 2. Proxy netleşince: varsa hızlandırılmış backfill'i başlat (`ekap_sonuc_backfill.py --max-pages`
    büyük bir değerle, günler içinde bitecek şekilde); yoksa proxy alım sürecini konuş.
 3. 17 Temmuz'da (veya kullanıcı "şimdi başla" derse) Doğrudan Temin'in gerçek API'sini keşfet
@@ -72,6 +75,10 @@ kullanım doğru reddedildi.
   "Kurumu Takip Et" butonu, `idare_bildirim.py` (gece cron, `notify.py`'nin e-posta altyapısını reuse
   eder) yeni ilan → anlık bildirim + e-posta (deadline özeti gibi ertesi güne ertelenmiyor, zaman-hassas).
   SMS YOK (↑). Commit `b88b3bc`, deploy `backend/deploy_12tem_kurum_takibi.sh` ile (↑).
+- ✅ **YENİ ÖZELLİK — Rakip (Firma) Takibine E-posta:** kullanıcı isteği ("aynısını firma takibinde
+  de yapalım"). `rakip_bildirim.py` artık takip edilen firma yeni ihale kazanınca sadece bildirimler
+  tablosuna yazmıyor, `idare_bildirim.py` ile aynı desende `bildirim_email` açık kullanıcılara anlık
+  e-posta da gönderiyor (birden fazla kazanım tek e-postada gruplanıyor). SMS YOK (↑). Commit `a0a717a`.
 - ✅ Marka rename script'inin kaçırdığı 2 e-posta şablonu logosu (notify.py, bulten_gonder.py —
   `<span style="...">` içerdikleri için ilk taramadan kaçmışlardı) düzeltildi, commit `c6c6a1d`.
 - ✅ Kupon sistemi VDS'te uçtan uca doğrulandı (gerçek kupon üretildi/kullanıldı, plan değişti, tekrar kullanım reddedildi).
