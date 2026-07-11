@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>İhale Detay — İhaleGlobal</title>
   <link rel="stylesheet" href="css/style.css" />
+  <script src="js/theme.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
   <style>
@@ -103,7 +104,7 @@
     .badge-soon { background: rgba(245,158,11,0.12); color: var(--amber); }
     .badge-closed { background: rgba(239,68,68,0.1); color: #f87171; }
     .badge-tur { background: rgba(99,102,241,0.12); color: #a5b4fc; }
-    .badge-usul { background: rgba(255,255,255,0.06); color: var(--muted); }
+    .badge-usul { background: rgba(var(--overlay-rgb),0.06); color: var(--muted); }
 
     .detay-actions { display: flex; gap: 10px; }
     .btn-takip {
@@ -116,7 +117,7 @@
       background: transparent; color: var(--white); border: 1px solid var(--border); cursor: pointer;
       text-decoration: none; display: inline-flex; align-items: center; gap: 6px; transition: all .2s;
     }
-    .btn-ekap:hover { border-color: rgba(255,255,255,.4); background: rgba(255,255,255,.04); }
+    .btn-ekap:hover { border-color: rgba(var(--overlay-rgb),.4); background: rgba(var(--overlay-rgb),.04); }
 
     /* KPI GRID */
     .kpi-grid {
@@ -156,8 +157,8 @@
     .ilan-metni td, .ilan-metni th {
       border: 1px solid var(--border); padding: 8px 12px; text-align: left; vertical-align: top;
     }
-    .ilan-metni th { background: rgba(255,255,255,.05); font-weight: 700; color: var(--white); }
-    .ilan-metni tr:nth-child(even) td { background: rgba(255,255,255,.02); }
+    .ilan-metni th { background: rgba(var(--overlay-rgb),.05); font-weight: 700; color: var(--white); }
+    .ilan-metni tr:nth-child(even) td { background: rgba(var(--overlay-rgb),.02); }
     .ilan-metni h1,.ilan-metni h2,.ilan-metni h3,.ilan-metni h4 {
       color: var(--white); font-weight: 700; margin: 16px 0 8px;
     }
@@ -167,7 +168,7 @@
     /* BELGELER */
     .belge-item {
       display: flex; justify-content: space-between; align-items: center;
-      padding: 14px 16px; border-radius: 8px; background: rgba(255,255,255,.03);
+      padding: 14px 16px; border-radius: 8px; background: rgba(var(--overlay-rgb),.03);
       border: 1px solid var(--border); margin-bottom: 10px;
     }
     .belge-info { display: flex; align-items: center; gap: 12px; }
@@ -189,7 +190,7 @@
       padding-bottom: 12px; border-bottom: 1px solid var(--border);
     }
 
-    .info-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid rgba(255,255,255,.04); }
+    .info-row { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid rgba(var(--overlay-rgb),.04); }
     .info-row:last-child { border-bottom: none; }
     .info-label { font-size: 13px; color: var(--muted); }
     .info-value { font-size: 13px; color: var(--white); font-weight: 600; text-align: right; max-width: 60%; }
@@ -221,7 +222,7 @@
     .benzer-list { display: flex; flex-direction: column; gap: 10px; }
     .benzer-item {
       display: flex; justify-content: space-between; align-items: center;
-      padding: 12px; border-radius: 7px; background: rgba(255,255,255,.03);
+      padding: 12px; border-radius: 7px; background: rgba(var(--overlay-rgb),.03);
       border: 1px solid var(--border); text-decoration: none; transition: all .15s;
     }
     .benzer-item:hover { border-color: var(--amber); background: rgba(240,165,0,.04); }

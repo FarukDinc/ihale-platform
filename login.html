@@ -15,7 +15,8 @@
       --amber-dim: #C98A00;
       --white: #FFFFFF;
       --muted: #8A96A8;
-      --border: rgba(255,255,255,0.08);
+      --overlay-rgb: 255,255,255;
+      --border: rgba(var(--overlay-rgb),0.08);
       --font: 'Plus Jakarta Sans', sans-serif;
     }
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -115,7 +116,7 @@
       font-size: 14px; font-weight: 600; border-radius: 6px;
       cursor: pointer; text-align: center; transition: all .2s;
     }
-    .btn-secondary:hover { border-color: rgba(255,255,255,.3); background: rgba(255,255,255,.04); }
+    .btn-secondary:hover { border-color: rgba(var(--overlay-rgb),.3); background: rgba(var(--overlay-rgb),.04); }
 
     .terms { font-size: 11px; color: var(--muted); text-align: center; margin-top: 24px; line-height: 1.6; }
     .terms a { color: var(--muted); }

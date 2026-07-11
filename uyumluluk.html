@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Uyumluluk Analizi — İhaleGlobal</title>
   <link rel="stylesheet" href="css/style.css" />
+  <script src="js/theme.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
   <style>
@@ -55,7 +56,7 @@
       border: 1px solid rgba(240,165,0,0.25);
       padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 600;
     }
-    .chip-sm.muted { background: rgba(255,255,255,0.05); color: var(--off-white); border-color: var(--border); }
+    .chip-sm.muted { background: rgba(var(--overlay-rgb),0.05); color: var(--off-white); border-color: var(--border); }
     .profil-eksik {
       background: rgba(240,165,0,0.07); border: 1px dashed rgba(240,165,0,0.3);
       border-radius: var(--radius-md); padding: 16px 24px; margin-bottom: 24px;
@@ -73,10 +74,10 @@
     /* TABLO */
     .table-wrap { background: var(--navy-mid); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
     table { width: 100%; border-collapse: collapse; }
-    thead th { background: rgba(255,255,255,0.03); padding: 12px 16px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); border-bottom: 1px solid var(--border); text-align: left; }
+    thead th { background: rgba(var(--overlay-rgb),0.03); padding: 12px 16px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); border-bottom: 1px solid var(--border); text-align: left; }
     tbody tr { border-bottom: 1px solid var(--border); transition: background .15s; }
     tbody tr:last-child { border-bottom: none; }
-    tbody tr:hover { background: rgba(255,255,255,0.02); }
+    tbody tr:hover { background: rgba(var(--overlay-rgb),0.02); }
     tbody td { padding: 14px 16px; font-size: 13px; color: var(--off-white); vertical-align: middle; }
     .ihale-title { font-weight: 600; color: var(--white); text-decoration: none; display: block; margin-bottom: 3px; }
     .ihale-title:hover { color: var(--amber); }
@@ -101,7 +102,7 @@
 
     .action-btns { display: flex; gap: 6px; }
     .action-btn { padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; border: 1px solid var(--border); background: var(--card-bg); color: var(--white); text-decoration: none; display: inline-flex; align-items: center; transition: all .15s; }
-    .action-btn:hover { border-color: rgba(255,255,255,.2); }
+    .action-btn:hover { border-color: rgba(var(--overlay-rgb),.2); }
     .action-btn.primary { background: var(--amber); color: var(--navy); border-color: transparent; }
 
     .pag-bar { display: flex; align-items: center; justify-content: space-between; padding: 14px 16px; border-top: 1px solid var(--border); font-size: 12px; color: var(--muted); }

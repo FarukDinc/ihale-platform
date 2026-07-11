@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Firmalar Dizini — İhaleGlobal</title>
   <link rel="stylesheet" href="css/style.css" />
+  <script src="js/theme.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
   <style>
@@ -107,11 +108,11 @@
 
     .firma-row {
       display: grid; grid-template-columns: 2fr 100px 110px 130px 120px 110px;
-      padding: 13px 18px; border-bottom: 1px solid rgba(255,255,255,.04);
+      padding: 13px 18px; border-bottom: 1px solid rgba(var(--overlay-rgb),.04);
       align-items: center; transition: background .12s;
     }
     .firma-row:last-child { border-bottom: none; }
-    .firma-row:hover { background: rgba(255,255,255,.03); }
+    .firma-row:hover { background: rgba(var(--overlay-rgb),.03); }
 
     .firma-ad { font-size: 13px; font-weight: 600; color: var(--white); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding-right: 12px; }
     .firma-ad a { color: inherit; text-decoration: none; transition: color .15s; }

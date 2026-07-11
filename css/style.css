@@ -16,6 +16,8 @@
   --muted:     #8A96A8;
   --border:    rgba(255,255,255,0.08);
   --card-bg:   rgba(255,255,255,0.04);
+  --overlay-rgb: 255,255,255;   /* rgba(var(--overlay-rgb), X) ile kullanılan ham beyaz overlay'ler için */
+  --navy-rgb:  10,22,40;        /* rgba(var(--navy-rgb), X) — örn. yarı saydam nav bar zemini için */
 
   --font-display: 'Plus Jakarta Sans', sans-serif;
   --font-body:    'Inter', sans-serif;
@@ -25,6 +27,25 @@
   --radius-lg: 16px;
 
   --transition: 220ms ease;
+}
+
+/* ============================================
+   AÇIK TEMA — data-theme="light" (js/theme.js ile kullanıcı tercihiyle açılır)
+   Aynı değişken isimleri, ters kontrast: koyu metin/açık zemin.
+   ============================================ */
+:root[data-theme="light"] {
+  --navy:      #FFFFFF;
+  --navy-mid:  #F3F5F8;
+  --navy-soft: #E7EBF0;
+  --amber:     #F0A500;
+  --amber-dim: #C98A00;
+  --off-white: #47516B;
+  --white:     #0A1628;
+  --muted:     #64748B;
+  --border:    rgba(10,22,40,0.10);
+  --card-bg:   rgba(10,22,40,0.035);
+  --overlay-rgb: 10,22,40;
+  --navy-rgb:  255,255,255;
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -117,7 +138,7 @@ h1, h2, h3, h4 { font-family: var(--font-display); line-height: 1.15; }
   position: fixed;
   top: 0; left: 0; right: 0;
   z-index: 100;
-  background: rgba(10, 22, 40, 0.92);
+  background: rgba(var(--navy-rgb), 0.92);
   backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--border);
 }
@@ -207,7 +228,7 @@ h1, h2, h3, h4 { font-family: var(--font-display); line-height: 1.15; }
 }
 
 .btn-ghost:hover {
-  border-color: rgba(255,255,255,0.3);
+  border-color: rgba(var(--overlay-rgb),0.3);
   background: var(--card-bg);
 }
 

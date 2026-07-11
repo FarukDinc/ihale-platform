@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Rekabet Analizi — İhaleGlobal</title>
   <link rel="stylesheet" href="css/style.css" />
+  <script src="js/theme.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
   <style>
@@ -71,10 +72,10 @@
     .table-card-header { padding: 16px 20px 12px; border-bottom: 1px solid var(--border); }
     .table-card-header .chart-title { margin-bottom: 2px; }
     table { width: 100%; border-collapse: collapse; }
-    thead th { background: rgba(255,255,255,0.03); padding: 10px 16px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); border-bottom: 1px solid var(--border); text-align: left; white-space: nowrap; }
+    thead th { background: rgba(var(--overlay-rgb),0.03); padding: 10px 16px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); border-bottom: 1px solid var(--border); text-align: left; white-space: nowrap; }
     tbody tr { border-bottom: 1px solid var(--border); transition: background .15s; }
     tbody tr:last-child { border-bottom: none; }
-    tbody tr:hover { background: rgba(255,255,255,0.02); }
+    tbody tr:hover { background: rgba(var(--overlay-rgb),0.02); }
     tbody td { padding: 11px 16px; font-size: 13px; color: var(--off-white); vertical-align: middle; }
     .rank-num { font-size: 11px; color: var(--muted); font-weight: 600; width: 24px; }
     .idare-name { font-weight: 500; }
@@ -86,22 +87,22 @@
     .budget-bars { display: flex; flex-direction: column; gap: 10px; }
     .budget-row { display: flex; align-items: center; gap: 12px; }
     .budget-label { font-size: 12px; color: var(--muted); width: 130px; flex-shrink: 0; text-align: right; }
-    .budget-track { flex: 1; background: rgba(255,255,255,0.06); border-radius: 4px; height: 22px; position: relative; overflow: hidden; }
+    .budget-track { flex: 1; background: rgba(var(--overlay-rgb),0.06); border-radius: 4px; height: 22px; position: relative; overflow: hidden; }
     .budget-fill { height: 100%; background: linear-gradient(90deg, var(--amber-dim), var(--amber)); border-radius: 4px; transition: width 0.6s ease; display: flex; align-items: center; padding-left: 8px; min-width: 0; }
     .budget-fill-text { font-size: 11px; font-weight: 700; color: var(--navy); white-space: nowrap; }
     .budget-count { font-size: 12px; color: var(--muted); width: 56px; flex-shrink: 0; text-align: right; }
 
     /* SKELETON */
-    .skeleton { background: rgba(255,255,255,0.07); border-radius: 4px; animation: shimmer 1.5s infinite; }
+    .skeleton { background: rgba(var(--overlay-rgb),0.07); border-radius: 4px; animation: shimmer 1.5s infinite; }
     @keyframes shimmer { 0%,100%{opacity:.6} 50%{opacity:1} }
 
     /* BADGE */
-    .badge { display: inline-block; font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 20px; background: rgba(255,255,255,0.07); color: var(--muted); }
+    .badge { display: inline-block; font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 20px; background: rgba(var(--overlay-rgb),0.07); color: var(--muted); }
     .badge.open { background: rgba(76,175,80,0.12); color: #4CAF50; }
 
     /* ACTION BTN */
     .action-btn { padding: 7px 16px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; border: 1px solid var(--border); background: var(--card-bg); color: var(--white); text-decoration: none; display: inline-flex; align-items: center; transition: all .15s; }
-    .action-btn:hover { border-color: rgba(255,255,255,.2); }
+    .action-btn:hover { border-color: rgba(var(--overlay-rgb),.2); }
     .action-btn.primary { background: var(--amber); color: var(--navy); border-color: transparent; }
 
     @media (max-width: 1100px) { .kpi-grid { grid-template-columns: repeat(2, 1fr); } .chart-grid { grid-template-columns: 1fr; } .idare-grid { grid-template-columns: 1fr; } }
@@ -314,7 +315,7 @@
         plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ` ${ctx.raw.toLocaleString('tr')} ihale` } } },
         scales: {
           x: { grid: { display: false }, ticks: { color: '#8A96A8', font: { size: 10 }, maxTicksLimit: 12 } },
-          y: { grid: { color: 'rgba(255,255,255,.05)' }, ticks: { color: '#8A96A8', font: { size: 11 } }, beginAtZero: true }
+          y: { grid: { color: 'rgba(var(--overlay-rgb),.05)' }, ticks: { color: '#8A96A8', font: { size: 11 } }, beginAtZero: true }
         }
       }
     });
@@ -426,7 +427,7 @@
         maintainAspectRatio: false,
         plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ` ${ctx.raw} ihale` } } },
         scales: {
-          x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#8A96A8', font: { size: 11 } } },
+          x: { grid: { color: 'rgba(var(--overlay-rgb),0.05)' }, ticks: { color: '#8A96A8', font: { size: 11 } } },
           y: { grid: { display: false }, ticks: { color: '#F5F6F8', font: { size: 11 }, maxTicksLimit: 10 } }
         }
       }
@@ -459,7 +460,7 @@
         maintainAspectRatio: false,
         plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ` ${ctx.raw} ihale` } } },
         scales: {
-          x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#8A96A8', font: { size: 11 } } },
+          x: { grid: { color: 'rgba(var(--overlay-rgb),0.05)' }, ticks: { color: '#8A96A8', font: { size: 11 } } },
           y: { grid: { display: false }, ticks: { color: '#F5F6F8', font: { size: 11 } } }
         }
       }
@@ -486,7 +487,7 @@
         maintainAspectRatio: false,
         plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ` ${ctx.raw.toLocaleString('tr')} ihale` } } },
         scales: {
-          x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#8A96A8', font: { size: 11 } } },
+          x: { grid: { color: 'rgba(var(--overlay-rgb),0.05)' }, ticks: { color: '#8A96A8', font: { size: 11 } } },
           y: { grid: { display: false }, ticks: { color: '#F5F6F8', font: { size: 11 } } }
         }
       }

@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Dashboard — İhaleGlobal</title>
   <link rel="stylesheet" href="css/style.css" />
+  <script src="js/theme.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
@@ -217,7 +218,7 @@
       transition: all var(--transition);
       position: relative;
     }
-    .icon-btn:hover { color: var(--white); border-color: rgba(255,255,255,0.2); }
+    .icon-btn:hover { color: var(--white); border-color: rgba(var(--overlay-rgb),0.2); }
 
     .notif-dot {
       position: absolute;
@@ -310,7 +311,7 @@
       transition: border-color var(--transition);
     }
 
-    .filter-select:hover, .filter-select:focus { border-color: rgba(255,255,255,0.3); }
+    .filter-select:hover, .filter-select:focus { border-color: rgba(var(--overlay-rgb),0.3); }
 
     .filter-chip {
       display: flex;
@@ -381,7 +382,7 @@
     .view-btn.active {
       background: var(--card-bg);
       color: var(--white);
-      border-color: rgba(255,255,255,0.2);
+      border-color: rgba(var(--overlay-rgb),0.2);
     }
 
     table {
@@ -414,7 +415,7 @@
     td {
       padding: 14px 16px;
       font-size: 13px;
-      border-bottom: 1px solid rgba(255,255,255,0.04);
+      border-bottom: 1px solid rgba(var(--overlay-rgb),0.04);
       vertical-align: middle;
     }
 
@@ -458,7 +459,7 @@
 
     .badge-open { background: rgba(76,175,80,0.12); color: #4CAF50; }
     .badge-soon { background: rgba(240,165,0,0.12); color: var(--amber); }
-    .badge-closed { background: rgba(255,255,255,0.06); color: var(--muted); }
+    .badge-closed { background: rgba(var(--overlay-rgb),0.06); color: var(--muted); }
 
     .budget-cell {
       font-family: var(--font-display);
@@ -504,7 +505,7 @@
       transition: all var(--transition);
     }
 
-    .action-btn:hover { color: var(--white); border-color: rgba(255,255,255,0.3); }
+    .action-btn:hover { color: var(--white); border-color: rgba(var(--overlay-rgb),0.3); }
 
     .action-btn.primary {
       background: rgba(240,165,0,0.1);
@@ -544,7 +545,7 @@
     .page-btn:hover, .page-btn.active {
       background: var(--card-bg);
       color: var(--white);
-      border-color: rgba(255,255,255,0.2);
+      border-color: rgba(var(--overlay-rgb),0.2);
     }
 
     .page-btn.active {
@@ -1537,7 +1538,7 @@
           const bugün = key === bugunKey;
           const barH = Math.max(Math.round((sayi / max) * 46), 3);
           const renk = bugün ? 'var(--amber)' : '#334155';
-          const textRenk = bugün ? 'var(--amber)' : 'rgba(255,255,255,.55)';
+          const textRenk = bugün ? 'var(--amber)' : 'rgba(var(--overlay-rgb),.55)';
           return `<div style="flex:1;display:flex;flex-direction:column;align-items:center;height:64px;justify-content:flex-end;gap:2px;">
             <div style="font-size:10px;font-weight:600;color:${textRenk};line-height:1;">${sayi || '0'}</div>
             <div style="width:100%;height:${barH}px;background:${renk};border-radius:3px 3px 0 0;"></div>
@@ -1605,7 +1606,7 @@
           const bedel = ilan.tahmini_bedel ? '₺' + (ilan.tahmini_bedel / 1e6).toFixed(1) + 'M' : '—';
           const kalan = ilan.son_teklif_tarihi ? Math.ceil((new Date(ilan.son_teklif_tarihi) - Date.now()) / 86400000) : null;
           const kalanStr = kalan !== null ? (kalan <= 0 ? 'Bugün!' : `${kalan}g`) : '';
-          return `<a href="ihale-detay?id=${ilan.id}" style="display:block; padding:12px 16px; border-right:1px solid var(--border); border-bottom:1px solid var(--border); text-decoration:none; transition:background .15s;" onmouseover="this.style.background='rgba(255,255,255,.03)'" onmouseout="this.style.background=''">
+          return `<a href="ihale-detay?id=${ilan.id}" style="display:block; padding:12px 16px; border-right:1px solid var(--border); border-bottom:1px solid var(--border); text-decoration:none; transition:background .15s;" onmouseover="this.style.background='rgba(var(--overlay-rgb),.03)'" onmouseout="this.style.background=''">
             <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;">
               <span style="font-size:20px; font-weight:800; color:${renk(skor)};">${skor}%</span>
               ${kalanStr ? `<span style="font-size:11px; color:${kalan <= 3 ? '#f87171' : 'var(--muted)'}; font-weight:600;">${kalanStr} kaldı</span>` : ''}

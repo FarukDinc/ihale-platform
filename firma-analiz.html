@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Firma Analizi — İhaleGlobal</title>
   <link rel="stylesheet" href="css/style.css" />
+  <script src="js/theme.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
   <style>
@@ -147,7 +148,7 @@
     .durum-kapandi { background: rgba(239,68,68,.1); color: #f87171; }
     .ik-meta { display: flex; gap: 14px; margin-top: 8px; font-size: 12px; color: var(--muted); flex-wrap: wrap; }
     .ik-badges { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
-    .etiket { font-size: 11px; padding: 2px 8px; border-radius: 10px; font-weight: 600; background: rgba(255,255,255,.06); color: var(--muted); }
+    .etiket { font-size: 11px; padding: 2px 8px; border-radius: 10px; font-weight: 600; background: rgba(var(--overlay-rgb),.06); color: var(--muted); }
     .et-tur { background: rgba(99,102,241,.12); color: #a5b4fc; }
     .no-data { text-align: center; padding: 40px; color: var(--muted); font-size: 14px; }
     .pager { display: flex; justify-content: center; gap: 8px; margin-top: 20px; }
@@ -441,7 +442,7 @@
       if (e1 || e2) throw (e1 || e2);
       _pivotYuklendi = true;
       const satirHtml = (list, ikon) => (list || []).slice(0, 8).map(r => `
-        <div style="display:flex;justify-content:space-between;align-items:center;font-size:12.5px;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.04);">
+        <div style="display:flex;justify-content:space-between;align-items:center;font-size:12.5px;padding:6px 0;border-bottom:1px solid rgba(var(--overlay-rgb),.04);">
           <span style="color:var(--white);">${ikon} ${r.grup_deger}</span>
           <span style="display:flex;gap:10px;color:var(--muted);">
             <span style="color:var(--amber);font-weight:700;">${r.ihale_sayisi} iş</span>
@@ -812,7 +813,7 @@
     rows.forEach(i => { if (i.il) ilSay[i.il] = (ilSay[i.il] || 0) + 1; });
     const ilSirali = Object.entries(ilSay).sort((a, b) => b[1] - a[1]);
     document.getElementById('il-list').innerHTML = ilSirali.map(([ad, cnt]) =>
-      `<div style="display:flex;justify-content:space-between;font-size:13px;padding:5px 0;border-bottom:1px solid rgba(255,255,255,.04);">
+      `<div style="display:flex;justify-content:space-between;font-size:13px;padding:5px 0;border-bottom:1px solid rgba(var(--overlay-rgb),.04);">
         <span style="color:var(--white);">📍 ${ad}</span><span style="color:var(--amber);font-weight:700;">${cnt}</span></div>`
     ).join('') || '<div style="color:var(--muted);font-size:13px;">İl bilgisi yok.</div>';
 
@@ -849,7 +850,7 @@
           plugins: { legend: { display: false } },
           scales: {
             x: { ticks: { color: '#94a3b8', font: { size: 11 } }, grid: { display: false } },
-            y: { ticks: { color: '#94a3b8', font: { size: 11 } }, grid: { color: 'rgba(255,255,255,.05)' }, beginAtZero: true }
+            y: { ticks: { color: '#94a3b8', font: { size: 11 } }, grid: { color: 'rgba(var(--overlay-rgb),.05)' }, beginAtZero: true }
           }
         }
       });
