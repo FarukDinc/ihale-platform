@@ -1,57 +1,92 @@
 # İhalePlatform — Yapılacaklar Listesi
 
-## 🟢 ŞU AN NE DURUMDAYIZ (10 Temmuz 2026, en son güncelleme) — HERKES ÖNCE BUNU OKUSUN
+## 🟢 ŞU AN NE DURUMDAYIZ (12 Temmuz 2026, en son güncelleme) — HERKES ÖNCE BUNU OKUSUN
 
 > Bu blok her oturumun sonunda güncellenir ve dosyanın en güncel/otoriter özetidir. Altındaki
 > binlerce satır tarihsel kayıt/detay — çelişki olursa BU BLOK geçerlidir.
+> **KALICI TALİMAT (12 Tem, kullanıcı emri):** Bu blok + ilgili bölümler her oturumda otomatik
+> güncellenir, kullanıcı hatırlatmak zorunda değil. Bkz. hafıza `yapilacaklar-auto-update`.
 
 **Canlı site:** `https://ihaleglobal.com` (VDS `195.85.207.126`, self-hosted Supabase). Managed
-Supabase terk edildi, Render tamamen kaldırıldı. 11 Tem: 10 Tem oturumunun deploy'u kullanıcı
-tarafından uygulandı ve AI iki özelliği tarayıcıda uçtan uca doğruladı (↓). `ilanlar` artık 74.6K.
+Supabase terk edildi, Render tamamen kaldırıldı. `ilanlar` 74.6K, `ihale_sonuclari` 123.3K
+(11-12 Tem arası cron henüz yeni turu atmadı — UTC 02:00'de çalışıyor, gecikme değil).
 
-### 👤 SENİN YAPMAN GEREKEN (AI'ın erişimi/onayı olmayan production adımları)
+### 👤 SENİN YAPMAN GEREKEN
 
-**1. GÜNCEL DEPLOY (11 Tem — kupon sistemi + sidebar düzeltmesi, main'e push'landı):**
+**1. GÜNCEL DEPLOY (11-12 Tem — kupon sistemi, sidebar düzeltmesi, marka adı, EKAP link düzeltmesi):**
 ```bash
 ssh -i ~/.ssh/ihale_oracle root@195.85.207.126
 cd /opt/ihale-platform && git pull origin main
 docker exec -i supabase-db psql -U postgres -d postgres < backend/migration_kuponlar.sql
 sudo systemctl restart ihale-api
 ```
-(`js/sidebar-user.js` düzeltmesi statik dosya, restart gerektirmez — pull yeterli.)
+⚠️ **DİKKAT (12 Tem'de bir kez yaşandı):** SSH bağlantısı koptuktan sonra yanlışlıkla yerel
+Windows `cmd.exe`'de (`C:\Users\dncla>`) komut çalıştırılmaya devam edildi — `grep` orada yok.
+Komutları çalıştırmadan önce prompt'un gerçekten `root@ubuntu:...#` olduğunu doğrula.
 
-**2. Kupon üretmek için (iyzico gelmeden önce tanıdık firmalara ücretsiz Pro/Kurumsal vermek):**
+**2. Proxy durumunu doğrula (backfill kararı için gerekli, hâlâ cevap bekleniyor):**
+VDS'e bağlandıktan SONRA (yukarıdaki uyarıya bak), VDS'in içinde:
+```bash
+grep -c "PROXY_KULLANICI=.\+" /opt/ihale-platform/backend/.env
+```
+`1` → Webshare proxy tanımlı, hızlandırılmış backfill'e başlayabiliriz. `0` → önce proxy alınıp
+`.env`'e eklenmeli.
+
+**3. Kupon üretmek için (iyzico gelmeden önce tanıdık firmalara ücretsiz Pro/Kurumsal vermek):**
 ```bash
 cd /opt/ihale-platform/backend && source venv/bin/activate
 python kupon_olustur.py --plan standart --ay 3 --adet 5 --aciklama "Beta test firmaları"
 ```
 `--plan` (`standart`|`kurumsal`), `--ay` (`1`|`3`|`6`|`12`), `--adet` kaç kod üretileceği. Çıkan
 kodları ilgili firmalara ver; kullanıcı `fiyatlandirma_odeme_bolumu.html`'deki "🎟️ Deneme
-kuponunuz mu var?" kutusuna girip kendi kendine aktifleştiriyor (backend `/kupon-kullan`,
-service_role ile `kullanici_krediler.plan`+`plan_bitis` günceller). Her kod varsayılan tek
-kullanımlık (`max_kullanim=1`); aynı kullanıcı aynı kodu iki kez kullanamaz.
+kuponunuz mu var?" kutusuna girip kendi kendine aktifleştiriyor. **Uçtan uca doğrulandı (11 Tem):**
+kod üretildi, kullanıldı, plan gerçekten Standart'a geçti, ikinci kullanım doğru reddedildi.
 
-**3. Bekleyen (önceki oturumlardan, hâlâ açık):**
+**4. Bekleyen (önceki oturumlardan, hâlâ açık):**
    - İyzico entegrasyonu **kullanıcı kararıyla en sona bırakıldı** — lisans anlaşması netleşince
      yapılacak. O zamana kadar kupon sistemi ücretsiz test erişimi karşılıyor.
    - **Karar gerektiren:** Faz D3 (semantik eşleşme) ~14 bin mevcut aktif ilanı geriye dönük embed'lemiyor
      (bilinçli — Gemini API maliyeti). Gece başına 300 ile mi devam, yoksa `ilan_embed_uret.py --max`
      değerini büyütüp hızlandırmak mı istersin?
-   - `manual_backfill.log`'un durumunu ara sıra kontrol et (403/429 ile durursa Webshare proxy gerekir).
+   - **YENİ KARAR GEREK — Doğrudan Temin scraper'ı (12 Tem araştırması, ↓ detay):** EKAP'ın yeni
+     Doğrudan Temin duyuru sistemi henüz **canlı değil, 17 Temmuz 2026'da pilot olarak başlıyor**
+     (sadece belirli idareler). AI önerisi: 17 Tem'i bekleyip yeni sistemin gerçek API'sini o zaman
+     keşfetmek — şimdi yazılan kod muhtemelen 1 hafta içinde eskir. Onay bekleniyor.
 
 ### 🤖 AI'IN (Claude'un) SIRADA YAPACAĞI — sen "devam" dediğinde ya da yeni bir yön verdiğinde
 
-1. Kupon migration'ı VDS'te uygulanınca uçtan uca doğrula (gerçek kullanıcıyla kupon kodu üret+kullan).
-2. `Faz E1`in cron parçası (`rakip_bildirim.py`) VDS'te ilk gece turunda gerçek veri ile doğrulanmalı.
-3. Sonraki plan maddeleri (düşük öncelik, net yön verirsen): "Sözleşme Listesi" (madde 7, aşağıda),
+1. Proxy cevabı gelince: varsa hızlandırılmış backfill'i başlat (`ekap_sonuc_backfill.py --max-pages`
+   büyük bir değerle, günler içinde bitecek şekilde); yoksa proxy alım sürecini konuş.
+2. 17 Temmuz'da (veya kullanıcı "şimdi başla" derse) Doğrudan Temin'in gerçek API'sini keşfet
+   (ekapv2.kik.gov.tr/ekap-dt/search üzerinden network istekleri incele — bugünkü ekap/search
+   keşfiyle aynı yöntem) ve scraper'ı yaz.
+3. `Faz E1`in cron parçası (`rakip_bildirim.py`) VDS'te ilk gece turunda gerçek veri ile doğrulanmalı.
+4. Sonraki plan maddeleri (düşük öncelik, net yön verirsen): "Sözleşme Listesi" (madde 7, aşağıda),
    E4 (KİK kararları — ciddi altyapı gerektirir, düşük öncelik), D3'ün eski-ilan backfill'i (karar sonrası).
 
-**11 Tem oturumu:** 10 Tem'in 5 özelliği canlıda doğrulandı (esik_katsayi filtresi + AI teklif
-taslağı gerçek kullanıcı/ihale ile test edildi — ikisi de çalışıyor). `js/sidebar-user.js`daki
-`profil` tablosu 406 hatası düzeltildi (`kullanici_profiller` fallback + `maybeSingle`). Yeni:
-**ücretsiz deneme kupon sistemi** (`kuponlar`+`kupon_kullanimlari` tabloları, `kupon_olustur.py`
-CLI, backend `/kupon-kullan`, `fiyatlandirma_odeme_bolumu.html`'de kupon kutusu) — iyzico'dan
-önce tanıdık firmalara 1/3/6/12 aylık ücretsiz Pro/Kurumsal vermek için. Commit'ler main'e push'landı.
+**12 Tem oturumu (11 Tem'in devamı):**
+- ✅ Kupon sistemi VDS'te uçtan uca doğrulandı (gerçek kupon üretildi/kullanıldı, plan değişti, tekrar kullanım reddedildi).
+- ✅ **Site genelinde marka adı İhalePlatform → İhaleGlobal** (1735 dosya: tüm sayfalar + 1715 üretilmiş
+  firma SEO sayfası + `firma_sayfa_uret.py` üreteç + API/OpenAPI başlığı + e-posta şablonları). Mekanik
+  toplu script ile, commit `86201d1`.
+- ✅ **EKAP link bug'ı düzeltildi:** `ihale-detay.html` (ekapLink) ve `dokumanlar.html`, Doğrudan Temin
+  ihalelerini yanlışlıkla normal `ekap/search`'e yönlendiriyordu — artık `usul`'e göre `ekap/search` vs
+  `ekap-dt/search` arasında doğru ayrım yapıyor (commit `e5330e9`). Not: şu an DB'de hiç Doğrudan Temin
+  kaydı olmadığı için pratik etkisi henüz yok.
+- 🔍 **Araştırma — EKAP deep-link (IKN'ye özel tek-tık link):** Teknik olarak imkansız olduğu doğrulandı
+  (Angular SPA, filtre state URL'e hiç yansımıyor — test edildi, `/ekap/search` URL'i hep sabit kaldı).
+  Ama bonus bulgu: EKAP'ın ana arama kutusu IKN'yi zaten direkt tanıyor (yapıştır+Enter → tek sonuç),
+  mevcut "EKAP'ta Ara" akışı zaten yeterince basit. Konu kapatıldı.
+- 🔍 **Araştırma — Doğrudan Temin scraper'ı:** `ilanlar`'da hiç Doğrudan Temin kaydı yok çünkü scraper
+  sadece `/b_ihalearama/api/Ihale/GetListByParameters` (rekabetçi ihale arama) endpoint'ini çağırıyor —
+  Doğrudan Temin EKAP'ta yapısal olarak ayrı bir modül. Web araştırması: yeni/yenilenmiş Doğrudan Temin
+  duyuru sistemi **17 Temmuz 2026'da pilot olarak** (sınırlı idare listesiyle) başlıyor; eski (2022'den
+  beri var olan, gönüllü katılımlı) sistem hâlâ ayakta ama düşük katılımlı. Karar bekleniyor (↑).
+- 📊 **Backfill matematiği:** `ekap_sonuc_backfill.py` gece 50 sayfa ile ~Ağu 2025'e kadar gelmiş ama bu
+  hızla 2003'e ulaşmak ~2-3,5 yıl sürer — gerçek backfill için proxy + hızlandırılmış tek seferlik koşu
+  şart, mevcut pasif gece temposu yeterli değil.
+- 📌 **Kalıcı talimat eklendi:** kullanıcı YAPILACAKLAR.md'nin her oturumda otomatik güncellenmesini
+  istedi, hatırlatmaya gerek yok (hafıza: `yapilacaklar-auto-update`).
 
 ---
 
