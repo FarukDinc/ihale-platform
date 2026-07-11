@@ -13,16 +13,22 @@ Supabase terk edildi, Render tamamen kaldırıldı. `ilanlar` 74.6K, `ihale_sonu
 
 ### 👤 SENİN YAPMAN GEREKEN
 
-**1. GÜNCEL DEPLOY (12 Tem — kurum takibi özelliği + rakip takibine e-posta, main'e push'landı):**
+**1. GÜNCEL DEPLOY (12 Tem — kurum takibi + rakip takibine e-posta + Doğrudan Temin scraper):**
 ```bash
 ssh -i ~/.ssh/ihale_oracle root@195.85.207.126
 cd /opt/ihale-platform && git pull origin main
 bash backend/deploy_12tem_kurum_takibi.sh
+bash backend/deploy_12tem_dogrudan_temin.sh
 ```
-Bu script migration'ı uygular + `run_scraper.sh`'e `idare_bildirim.py` satırını ekler. **Restart
+İkisi de migration uygular + `run_scraper.sh`'e ilgili script satırını ekler. **Restart
 GEREKMİYOR** (statik sayfa + bağımsız cron script'leri, FastAPI'ye dokunmuyor). İdempotent.
-`rakip_bildirim.py`'ye eklenen e-posta özelliği ayrı bir migration istemiyor (mevcut tabloları
-kullanıyor) — sadece `git pull` yeterli, `run_scraper.sh`'te zaten satırı vardı (10 Tem'den beri).
+`rakip_bildirim.py`'ye eklenen e-posta özelliği ayrı migration istemiyor, sadece `git pull` yeterli.
+
+`deploy_12tem_dogrudan_temin.sh` VDS'ten gerçek bir dry-run da çalıştırır (2 sayfa) — çıktısında
+gerçek DT kayıtları görünmeli. **Derin tarihsel backfill İSTEĞE BAĞLI ayrı bir adım** (script
+çalıştıktan sonra): `cd backend && python ekap_dogrudan_temin_scraper.py --backfill --max-pages 2000`
+— checkpoint'li, kesintiye uğrarsa aynı komutla kaldığı yerden devam eder. Ne kadar geriye
+gidileceği (2022'den beri kaç kayıt var bilinmiyor, "sp" alanı toplam sayı değil) netleşmedi.
 
 ⚠️ **DİKKAT (12 Tem'de bir kez yaşandı):** SSH bağlantısı koptuktan sonra yanlışlıkla yerel
 Windows `cmd.exe`'de (`C:\Users\dncla>`) komut çalıştırılmaya devam edildi. Komutları çalıştırmadan
@@ -50,26 +56,37 @@ kullanım doğru reddedildi.
    - **Karar gerektiren:** Faz D3 (semantik eşleşme) ~14 bin mevcut aktif ilanı geriye dönük embed'lemiyor
      (bilinçli — Gemini API maliyeti). Gece başına 300 ile mi devam, yoksa `ilan_embed_uret.py --max`
      değerini büyütüp hızlandırmak mı istersin?
-   - **Doğrudan Temin scraper'ı — 17 Temmuz'a ERTELENDİ (kullanıcı onayladı):** EKAP'ın yeni Doğrudan
-     Temin duyuru sistemi henüz **canlı değil, 17 Temmuz 2026'da pilot olarak başlıyor** (sadece
-     belirli idareler). 17 Tem'de veya sonrasında hatırlat.
+   - **Doğrudan Temin backfill kararı:** scraper hazır ve VDS'e deploy edilebilir durumda (↑), ama
+     ne kadar geriye gidilecek (2022'den beri toplam kayıt sayısı bilinmiyor, muhtemelen 100binler)
+     netleşmedi. Gece modu zaten en yeni ~2560 kaydı (20 sayfa) her gece tazeler — bu yeterli mi,
+     yoksa derin backfill de mi başlatılsın?
    - **SMS bildirimi YOK:** Kurum takibi VE rakip (firma) takibi şu an sadece e-posta + uygulama-içi
      bildirim gönderiyor. SMS istenirse ayrı bir sağlayıcı entegrasyonu gerekir (Netgsm/Twilio gibi)
      — henüz konuşulmadı, tekrar sorulacak olursa bu netleşmeli.
 
 ### 🤖 AI'IN (Claude'un) SIRADA YAPACAĞI — sen "devam" dediğinde ya da yeni bir yön verdiğinde
 
-1. Kurum takibi VE rakip takibi e-postası VDS'te uygulanınca uçtan uca doğrula (gerçek kullanıcıyla
-   "Kurumu Takip Et"/"Rakibi Takip Et" → yeni ilan/kazanım → bildirim + e-posta geldi mi).
+1. Kurum takibi, rakip takibi e-postası VE Doğrudan Temin scraper'ı VDS'te uygulanınca uçtan uca
+   doğrula (gerçek kullanıcıyla "Kurumu/Rakibi Takip Et" → bildirim/e-posta; DT scraper dry-run çıktısı).
 2. Proxy netleşince: varsa hızlandırılmış backfill'i başlat (`ekap_sonuc_backfill.py --max-pages`
    büyük bir değerle, günler içinde bitecek şekilde); yoksa proxy alım sürecini konuş.
-3. 17 Temmuz'da (veya kullanıcı "şimdi başla" derse) Doğrudan Temin'in gerçek API'sini keşfet
-   (ekapv2.kik.gov.tr/ekap-dt/search üzerinden network istekleri incele) ve scraper'ı yaz.
+3. Doğrudan Temin derin backfill kararı netleşince (↑) `--backfill --max-pages N` ile başlat.
 4. `Faz E1`in cron parçası (`rakip_bildirim.py`) VDS'te ilk gece turunda gerçek veri ile doğrulanmalı.
 5. Sonraki plan maddeleri (düşük öncelik, net yön verirsen): "Sözleşme Listesi" (madde 7, aşağıda),
    E4 (KİK kararları — ciddi altyapı gerektirir, düşük öncelik), D3'ün eski-ilan backfill'i (karar sonrası).
 
 **12 Tem oturumu (devam):**
+- ✅ **YENİ ÖZELLİK — Doğrudan Temin Scraper (kullanıcının düzeltmesiyle):** AI önce "17 Temmuz'u
+  bekleyelim" demişti ama kullanıcı haklı çıktı — Doğrudan Temin ilanları EKAP'ta ZATEN yayınlanıyor.
+  ekapv2'deki "yeni pilot" (17 Tem, henüz boş) ile KARIŞTIRILMAMASI gereken, EKAP'ın eski (legacy)
+  domaininde 2022'den beri çalışan, herkese açık, oturumsuz bir sistem bulundu:
+  `ekap.kik.gov.tr/EKAP/Ortak/YeniIhaleAramaData.ashx?metot=dtAra`. Alan eşlemesi EKAP'ın kendi
+  `/metot=dtEnum`'undan doğrulandı (4 tür, 5 durum, 81 il), canlı veriyle test edildi (3 sayfa/384
+  kayıt). Yeni tablo `dogrudan_temin_ilanlari` + `ekap_dogrudan_temin_scraper.py` (gece modu: her
+  zaman 1. sayfadan başlar çünkü sıralama en-yeniden-en-eskiye; `--backfill` modu: checkpoint'li
+  derin tarama, kullanıcı kararıyla ayrı çalıştırılır). SSL için `ekap_sonuc_backfill.py`'deki aynı
+  zayıflatılmış TLS context gerekti (kullanıcı onayıyla, EKAP eski cipher kullanıyor). Commit
+  `cade8e0`, deploy `backend/deploy_12tem_dogrudan_temin.sh` ile.
 - ✅ **YENİ ÖZELLİK — Kurum (İdare) Takibi:** kullanıcı fikri ("kurum da takip edilebilsin, yeni ihale
   yayınlayınca mail/SMS gitsin"). `takip_firmalar` (Faz E1) ile birebir aynı desen: `kurum-analiz.html`'e
   "Kurumu Takip Et" butonu, `idare_bildirim.py` (gece cron, `notify.py`'nin e-posta altyapısını reuse
@@ -93,11 +110,10 @@ kullanım doğru reddedildi.
   (Angular SPA, filtre state URL'e hiç yansımıyor — test edildi, `/ekap/search` URL'i hep sabit kaldı).
   Ama bonus bulgu: EKAP'ın ana arama kutusu IKN'yi zaten direkt tanıyor (yapıştır+Enter → tek sonuç),
   mevcut "EKAP'ta Ara" akışı zaten yeterince basit. Konu kapatıldı.
-- 🔍 **Araştırma — Doğrudan Temin scraper'ı:** `ilanlar`'da hiç Doğrudan Temin kaydı yok çünkü scraper
-  sadece `/b_ihalearama/api/Ihale/GetListByParameters` (rekabetçi ihale arama) endpoint'ini çağırıyor —
-  Doğrudan Temin EKAP'ta yapısal olarak ayrı bir modül. Web araştırması: yeni/yenilenmiş Doğrudan Temin
-  duyuru sistemi **17 Temmuz 2026'da pilot olarak** (sınırlı idare listesiyle) başlıyor; eski (2022'den
-  beri var olan, gönüllü katılımlı) sistem hâlâ ayakta ama düşük katılımlı. Karar bekleniyor (↑).
+- ~~🔍 Araştırma — Doğrudan Temin scraper'ı: 17 Temmuz'u bekle~~ **DÜZELTİLDİ, bkz. yukarıdaki "YENİ
+  ÖZELLİK" maddesi.** İlk bulgu (sadece `/b_ihalearama/api/Ihale/GetListByParameters` çağrıldığı, DT'nin
+  ayrı modül olduğu) doğruydu, ama "17 Temmuz'u bekle" tavsiyesi YANLIŞTI — kullanıcı düzeltti, gerçek
+  ve zaten canlı bir sistem (`ekap.kik.gov.tr`, 2022'den beri) bulundu ve scraper'ı yazıldı (↑).
 - 📊 **Backfill matematiği:** `ekap_sonuc_backfill.py` gece 50 sayfa ile ~Ağu 2025'e kadar gelmiş ama bu
   hızla 2003'e ulaşmak ~2-3,5 yıl sürer — gerçek backfill için proxy + hızlandırılmış tek seferlik koşu
   şart, mevcut pasif gece temposu yeterli değil.
