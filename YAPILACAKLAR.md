@@ -8,39 +8,38 @@
 > güncellenir, kullanıcı hatırlatmak zorunda değil. Bkz. hafıza `yapilacaklar-auto-update`.
 
 **Canlı site:** `https://ihaleglobal.com` (VDS `195.85.207.126`, self-hosted Supabase). Managed
-Supabase terk edildi, Render tamamen kaldırıldı. `ilanlar` 74.6K, `ihale_sonuclari` 123.3K
-(11-12 Tem arası cron henüz yeni turu atmadı — UTC 02:00'de çalışıyor, gecikme değil).
+Supabase terk edildi, Render tamamen kaldırıldı. `ilanlar` 74.6K, `ihale_sonuclari` 123.3K,
+`dogrudan_temin_ilanlari` YENİ (12 Tem gece itibarıyla ~1.664 kayıt, backfill sürüyor — ↓).
+
+**12 Tem SONU — İKİ DEPLOY DA TAMAMLANDI VE DOĞRULANDI (kullanıcı SSH ile çalıştırdı):**
+`deploy_12tem_kurum_takibi.sh` ✅ ve `deploy_12tem_dogrudan_temin.sh` ✅ ikisi de VDS'te
+çalıştırıldı, migration'lar uygulandı, dry-run gerçek DT kaydı döndürdü. **Doğrudan Temin derin
+backfill şu an VDS'te arka planda çalışıyor** (`nohup ... --backfill --max-pages 100000 &`,
+PID 3839631) — checkpoint'li, kesintiye dayanıklı, EKAP boş sayfa dönene kadar kendi duracak.
+12 Tem gece son kontrol: 1.664 kayıt, en eski ulaşılan tarih Ağustos 2023 (2022'ye doğru iniyor).
 
 ### 👤 SENİN YAPMAN GEREKEN
 
-**1. GÜNCEL DEPLOY (12 Tem — kurum takibi + rakip takibine e-posta + Doğrudan Temin scraper + açık tema):**
+**1. Backfill'i arada bir kontrol et (otomatik duracak, ama ilerlemeyi görmek istersen):**
 ```bash
 ssh -i ~/.ssh/ihale_oracle root@195.85.207.126
-cd /opt/ihale-platform && git pull origin main
-bash backend/deploy_12tem_kurum_takibi.sh
-bash backend/deploy_12tem_dogrudan_temin.sh
+tail -20 /opt/ihale-platform/logs/dt_backfill.log   # buffering yüzünden gecikmeli görünebilir
 ```
-İkisi de migration uygular + `run_scraper.sh`'e ilgili script satırını ekler. **Restart
-GEREKMİYOR** (statik sayfa + bağımsız cron script'leri, FastAPI'ye dokunmuyor). İdempotent.
-`rakip_bildirim.py`'ye eklenen e-posta özelliği VE açık tema özelliği ayrı migration istemiyor,
-sadece `git pull` yeterli (ikisi de statik dosya).
+Kesintiye uğrarsa (VDS restart vb.) aynı komutla (`nohup python ekap_dogrudan_temin_scraper.py
+--backfill --max-pages 100000 >> ../logs/dt_backfill.log 2>&1 &`) kaldığı yerden devam eder.
 
-`deploy_12tem_dogrudan_temin.sh` VDS'ten gerçek bir dry-run da çalıştırır (2 sayfa) — çıktısında
-gerçek DT kayıtları görünmeli. **Derin tarihsel backfill İSTEĞE BAĞLI ayrı bir adım** (script
-çalıştıktan sonra): `cd backend && python ekap_dogrudan_temin_scraper.py --backfill --max-pages 2000`
-— checkpoint'li, kesintiye uğrarsa aynı komutla kaldığı yerden devam eder. Ne kadar geriye
-gidileceği (2022'den beri kaç kayıt var bilinmiyor, "sp" alanı toplam sayı değil) netleşmedi.
-
-⚠️ **DİKKAT (12 Tem'de bir kez yaşandı):** SSH bağlantısı koptuktan sonra yanlışlıkla yerel
-Windows `cmd.exe`'de (`C:\Users\dncla>`) komut çalıştırılmaya devam edildi. Komutları çalıştırmadan
-önce prompt'un gerçekten `root@ubuntu:...#` olduğunu doğrula.
+⚠️ **DİKKAT (12 Tem'de birkaç kez yaşandı):** SSH bağlantısı sık kopuyor gibi görünüyor. Koptuktan
+sonra yanlışlıkla yerel Windows `cmd.exe`'de (`C:\Users\dncla>`) komut çalıştırmaya devam edildi —
+`grep`/`nohup` orada çalışmaz. Her komuttan önce prompt'un gerçekten `root@ubuntu:...#` (veya
+`(venv) root@ubuntu:...#`) olduğunu doğrula, gerekirse SSH'ı yeniden başlat.
 
 **2. Proxy YOK (12 Tem'de doğrulandı — `grep` sonucu `0`):** Webshare proxy `.env`'de tanımlı
 değil. Kullanıcı "sanırım satın almıştık" demişti ama sistemde iz yok — ya hiç alınmadı ya da
 alındıysa `.env`'e hiç eklenmedi. **Netleştirilmesi gereken:** Webshare hesabı gerçekten var mı
 (varsa sadece kullanıcı adı/şifreyi `.env`'e ekle — `PROXY_KULLANICI`/`PROXY_SIFRE`), yoksa yeni
-kayıt mı olunacak (~$10/ay, bkz. `backend/proxy_config.py` üstündeki yorum). Bu netleşmeden derin
-backfill başlatılamaz (bkz. aşağıdaki backfill matematiği).
+kayıt mı olunacak (~$10/ay, bkz. `backend/proxy_config.py` üstündeki yorum). Bu netleşmeden
+rekabetçi ihalelerin (ilanlar, ayrı sistem) derin backfill'i başlatılamaz — Doğrudan Temin backfill'i
+buna gerek duymuyor, o zaten proxy'siz sorunsuz çalışıyor.
 
 **3. Kupon üretmek için (iyzico gelmeden önce tanıdık firmalara ücretsiz Pro/Kurumsal vermek):**
 ```bash
@@ -57,22 +56,18 @@ kullanım doğru reddedildi.
    - **Karar gerektiren:** Faz D3 (semantik eşleşme) ~14 bin mevcut aktif ilanı geriye dönük embed'lemiyor
      (bilinçli — Gemini API maliyeti). Gece başına 300 ile mi devam, yoksa `ilan_embed_uret.py --max`
      değerini büyütüp hızlandırmak mı istersin?
-   - **Doğrudan Temin backfill kararı:** scraper hazır ve VDS'e deploy edilebilir durumda (↑), ama
-     ne kadar geriye gidilecek (2022'den beri toplam kayıt sayısı bilinmiyor, muhtemelen 100binler)
-     netleşmedi. Gece modu zaten en yeni ~2560 kaydı (20 sayfa) her gece tazeler — bu yeterli mi,
-     yoksa derin backfill de mi başlatılsın?
    - **SMS bildirimi YOK:** Kurum takibi VE rakip (firma) takibi şu an sadece e-posta + uygulama-içi
      bildirim gönderiyor. SMS istenirse ayrı bir sağlayıcı entegrasyonu gerekir (Netgsm/Twilio gibi)
      — henüz konuşulmadı, tekrar sorulacak olursa bu netleşmeli.
 
 ### 🤖 AI'IN (Claude'un) SIRADA YAPACAĞI — sen "devam" dediğinde ya da yeni bir yön verdiğinde
 
-1. Kurum takibi, rakip takibi e-postası VE Doğrudan Temin scraper'ı VDS'te uygulanınca uçtan uca
-   doğrula (gerçek kullanıcıyla "Kurumu/Rakibi Takip Et" → bildirim/e-posta; DT scraper dry-run çıktısı).
-   Açık tema statik olduğu için VDS'te ekstra doğrulama gerekmiyor, pull sonrası canlıda göz atılabilir.
-2. Proxy netleşince: varsa hızlandırılmış backfill'i başlat (`ekap_sonuc_backfill.py --max-pages`
-   büyük bir değerle, günler içinde bitecek şekilde); yoksa proxy alım sürecini konuş.
-3. Doğrudan Temin derin backfill kararı netleşince (↑) `--backfill --max-pages N` ile başlat.
+1. Doğrudan Temin backfill'inin ilerlemesini (kayıt sayısı, en eski tarih) REST API üzerinden ara
+   sıra kontrol et; bitince (EKAP boş sayfa dönünce) kullanıcıya toplam kayıt/tarih aralığını bildir.
+2. Kurum takibi VE rakip takibi e-postasının gerçek kullanıcıyla uçtan uca çalıştığını doğrula
+   (henüz yapılmadı — deploy tamamlandı ama fonksiyonel test edilmedi).
+3. Proxy netleşince: varsa rekabetçi ihaleler için hızlandırılmış backfill'i başlat
+   (`ekap_sonuc_backfill.py --max-pages` büyük bir değerle); yoksa proxy alım sürecini konuş.
 4. `Faz E1`in cron parçası (`rakip_bildirim.py`) VDS'te ilk gece turunda gerçek veri ile doğrulanmalı.
 5. Sonraki plan maddeleri (düşük öncelik, net yön verirsen): "Sözleşme Listesi" (madde 7, aşağıda),
    E4 (KİK kararları — ciddi altyapı gerektirir, düşük öncelik), D3'ün eski-ilan backfill'i (karar sonrası).
