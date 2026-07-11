@@ -13,34 +13,34 @@ Supabase terk edildi, Render tamamen kaldırıldı. `ilanlar` 74.6K, `ihale_sonu
 
 ### 👤 SENİN YAPMAN GEREKEN
 
-**1. GÜNCEL DEPLOY (11-12 Tem — kupon sistemi, sidebar düzeltmesi, marka adı, EKAP link düzeltmesi):**
+**1. GÜNCEL DEPLOY (12 Tem — kurum takibi özelliği, main'e push'landı):**
 ```bash
 ssh -i ~/.ssh/ihale_oracle root@195.85.207.126
 cd /opt/ihale-platform && git pull origin main
-docker exec -i supabase-db psql -U postgres -d postgres < backend/migration_kuponlar.sql
-sudo systemctl restart ihale-api
+bash backend/deploy_12tem_kurum_takibi.sh
 ```
-⚠️ **DİKKAT (12 Tem'de bir kez yaşandı):** SSH bağlantısı koptuktan sonra yanlışlıkla yerel
-Windows `cmd.exe`'de (`C:\Users\dncla>`) komut çalıştırılmaya devam edildi — `grep` orada yok.
-Komutları çalıştırmadan önce prompt'un gerçekten `root@ubuntu:...#` olduğunu doğrula.
+Bu script migration'ı uygular + `run_scraper.sh`'e `idare_bildirim.py` satırını ekler. **Restart
+GEREKMİYOR** (statik sayfa + bağımsız cron script'i, FastAPI'ye dokunmuyor). İdempotent.
 
-**2. Proxy durumunu doğrula (backfill kararı için gerekli, hâlâ cevap bekleniyor):**
-VDS'e bağlandıktan SONRA (yukarıdaki uyarıya bak), VDS'in içinde:
-```bash
-grep -c "PROXY_KULLANICI=.\+" /opt/ihale-platform/backend/.env
-```
-`1` → Webshare proxy tanımlı, hızlandırılmış backfill'e başlayabiliriz. `0` → önce proxy alınıp
-`.env`'e eklenmeli.
+⚠️ **DİKKAT (12 Tem'de bir kez yaşandı):** SSH bağlantısı koptuktan sonra yanlışlıkla yerel
+Windows `cmd.exe`'de (`C:\Users\dncla>`) komut çalıştırılmaya devam edildi. Komutları çalıştırmadan
+önce prompt'un gerçekten `root@ubuntu:...#` olduğunu doğrula.
+
+**2. Proxy YOK (12 Tem'de doğrulandı — `grep` sonucu `0`):** Webshare proxy `.env`'de tanımlı
+değil. Kullanıcı "sanırım satın almıştık" demişti ama sistemde iz yok — ya hiç alınmadı ya da
+alındıysa `.env`'e hiç eklenmedi. **Netleştirilmesi gereken:** Webshare hesabı gerçekten var mı
+(varsa sadece kullanıcı adı/şifreyi `.env`'e ekle — `PROXY_KULLANICI`/`PROXY_SIFRE`), yoksa yeni
+kayıt mı olunacak (~$10/ay, bkz. `backend/proxy_config.py` üstündeki yorum). Bu netleşmeden derin
+backfill başlatılamaz (bkz. aşağıdaki backfill matematiği).
 
 **3. Kupon üretmek için (iyzico gelmeden önce tanıdık firmalara ücretsiz Pro/Kurumsal vermek):**
 ```bash
 cd /opt/ihale-platform/backend && source venv/bin/activate
 python kupon_olustur.py --plan standart --ay 3 --adet 5 --aciklama "Beta test firmaları"
 ```
-`--plan` (`standart`|`kurumsal`), `--ay` (`1`|`3`|`6`|`12`), `--adet` kaç kod üretileceği. Çıkan
-kodları ilgili firmalara ver; kullanıcı `fiyatlandirma_odeme_bolumu.html`'deki "🎟️ Deneme
-kuponunuz mu var?" kutusuna girip kendi kendine aktifleştiriyor. **Uçtan uca doğrulandı (11 Tem):**
-kod üretildi, kullanıldı, plan gerçekten Standart'a geçti, ikinci kullanım doğru reddedildi.
+`--plan` (`standart`|`kurumsal`), `--ay` (`1`|`3`|`6`|`12`), `--adet` kaç kod üretileceği. **Uçtan
+uca doğrulandı (11 Tem):** kod üretildi, kullanıldı, plan gerçekten Standart'a geçti, ikinci
+kullanım doğru reddedildi.
 
 **4. Bekleyen (önceki oturumlardan, hâlâ açık):**
    - İyzico entegrasyonu **kullanıcı kararıyla en sona bırakıldı** — lisans anlaşması netleşince
@@ -48,23 +48,32 @@ kod üretildi, kullanıldı, plan gerçekten Standart'a geçti, ikinci kullanım
    - **Karar gerektiren:** Faz D3 (semantik eşleşme) ~14 bin mevcut aktif ilanı geriye dönük embed'lemiyor
      (bilinçli — Gemini API maliyeti). Gece başına 300 ile mi devam, yoksa `ilan_embed_uret.py --max`
      değerini büyütüp hızlandırmak mı istersin?
-   - **YENİ KARAR GEREK — Doğrudan Temin scraper'ı (12 Tem araştırması, ↓ detay):** EKAP'ın yeni
-     Doğrudan Temin duyuru sistemi henüz **canlı değil, 17 Temmuz 2026'da pilot olarak başlıyor**
-     (sadece belirli idareler). AI önerisi: 17 Tem'i bekleyip yeni sistemin gerçek API'sini o zaman
-     keşfetmek — şimdi yazılan kod muhtemelen 1 hafta içinde eskir. Onay bekleniyor.
+   - **Doğrudan Temin scraper'ı — 17 Temmuz'a ERTELENDİ (kullanıcı onayladı):** EKAP'ın yeni Doğrudan
+     Temin duyuru sistemi henüz **canlı değil, 17 Temmuz 2026'da pilot olarak başlıyor** (sadece
+     belirli idareler). 17 Tem'de veya sonrasında hatırlat.
+   - **SMS bildirimi YOK:** Kurum takibi (↓) şu an sadece e-posta + uygulama-içi bildirim gönderiyor.
+     SMS istenirse ayrı bir sağlayıcı entegrasyonu gerekir (Netgsm/Twilio gibi) — henüz konuşulmadı.
 
 ### 🤖 AI'IN (Claude'un) SIRADA YAPACAĞI — sen "devam" dediğinde ya da yeni bir yön verdiğinde
 
-1. Proxy cevabı gelince: varsa hızlandırılmış backfill'i başlat (`ekap_sonuc_backfill.py --max-pages`
+1. Kurum takibi migration'ı VDS'te uygulanınca uçtan uca doğrula (gerçek kullanıcıyla "Kurumu Takip
+   Et" → o kurumun yeni ilanı → bildirim/e-posta geldi mi).
+2. Proxy netleşince: varsa hızlandırılmış backfill'i başlat (`ekap_sonuc_backfill.py --max-pages`
    büyük bir değerle, günler içinde bitecek şekilde); yoksa proxy alım sürecini konuş.
-2. 17 Temmuz'da (veya kullanıcı "şimdi başla" derse) Doğrudan Temin'in gerçek API'sini keşfet
-   (ekapv2.kik.gov.tr/ekap-dt/search üzerinden network istekleri incele — bugünkü ekap/search
-   keşfiyle aynı yöntem) ve scraper'ı yaz.
-3. `Faz E1`in cron parçası (`rakip_bildirim.py`) VDS'te ilk gece turunda gerçek veri ile doğrulanmalı.
-4. Sonraki plan maddeleri (düşük öncelik, net yön verirsen): "Sözleşme Listesi" (madde 7, aşağıda),
+3. 17 Temmuz'da (veya kullanıcı "şimdi başla" derse) Doğrudan Temin'in gerçek API'sini keşfet
+   (ekapv2.kik.gov.tr/ekap-dt/search üzerinden network istekleri incele) ve scraper'ı yaz.
+4. `Faz E1`in cron parçası (`rakip_bildirim.py`) VDS'te ilk gece turunda gerçek veri ile doğrulanmalı.
+5. Sonraki plan maddeleri (düşük öncelik, net yön verirsen): "Sözleşme Listesi" (madde 7, aşağıda),
    E4 (KİK kararları — ciddi altyapı gerektirir, düşük öncelik), D3'ün eski-ilan backfill'i (karar sonrası).
 
-**12 Tem oturumu (11 Tem'in devamı):**
+**12 Tem oturumu (devam):**
+- ✅ **YENİ ÖZELLİK — Kurum (İdare) Takibi:** kullanıcı fikri ("kurum da takip edilebilsin, yeni ihale
+  yayınlayınca mail/SMS gitsin"). `takip_firmalar` (Faz E1) ile birebir aynı desen: `kurum-analiz.html`'e
+  "Kurumu Takip Et" butonu, `idare_bildirim.py` (gece cron, `notify.py`'nin e-posta altyapısını reuse
+  eder) yeni ilan → anlık bildirim + e-posta (deadline özeti gibi ertesi güne ertelenmiyor, zaman-hassas).
+  SMS YOK (↑). Commit `b88b3bc`, deploy `backend/deploy_12tem_kurum_takibi.sh` ile (↑).
+- ✅ Marka rename script'inin kaçırdığı 2 e-posta şablonu logosu (notify.py, bulten_gonder.py —
+  `<span style="...">` içerdikleri için ilk taramadan kaçmışlardı) düzeltildi, commit `c6c6a1d`.
 - ✅ Kupon sistemi VDS'te uçtan uca doğrulandı (gerçek kupon üretildi/kullanıldı, plan değişti, tekrar kullanım reddedildi).
 - ✅ **Site genelinde marka adı İhalePlatform → İhaleGlobal** (1735 dosya: tüm sayfalar + 1715 üretilmiş
   firma SEO sayfası + `firma_sayfa_uret.py` üreteç + API/OpenAPI başlığı + e-posta şablonları). Mekanik
