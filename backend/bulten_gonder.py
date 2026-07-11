@@ -175,7 +175,7 @@ def bulten_email_html(kullanici_ad: str, bulten_ad: str, filtre: dict, ilanlar: 
         <tr>
           <td style="background:#0A1628;padding:24px 32px;">
             <span style="font-size:22px;font-weight:800;color:white;">
-              İhale<span style="color:#F0A500;">Platform</span>
+              İhale<span style="color:#F0A500;">Global</span>
             </span>
           </td>
         </tr>
