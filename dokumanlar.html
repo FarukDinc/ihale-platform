@@ -227,8 +227,11 @@
     const liste = Array.isArray(belgeler) ? belgeler : [];
     const ekap_id = ihale.ekap_id;
 
+    // Doğrudan Temin EKAP'ta ayrı bir modül (ekap-dt/search) — normal ihale arama
+    // sayfasına (ekap/search) girmiyor, o yüzden usul'e göre ayırıyoruz.
+    const dt = (ihale.usul || '').toLocaleLowerCase('tr').includes('doğrudan temin');
     const ekapUrl = ekap_id
-      ? `https://ekap.kik.gov.tr/EKAP/ilandetay.aspx?ihale=${ekap_id}`
+      ? (dt ? 'https://ekapv2.kik.gov.tr/ekap-dt/search' : 'https://ekapv2.kik.gov.tr/ekap/search')
       : null;
 
     const dokContent = liste.length === 0
@@ -297,7 +300,7 @@
 
     const { data, error } = await sb
       .from('ilanlar')
-      .select('id,ekap_id,baslik,idare,il,belgeler')
+      .select('id,ekap_id,baslik,idare,il,belgeler,usul')
       .in('id', ids);
 
     if (error) {

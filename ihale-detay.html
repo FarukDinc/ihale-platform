@@ -342,11 +342,16 @@
     return `₺${Number(b).toLocaleString('tr')}`;
   }
 
-  // EKAP public ihale arama sayfası. NOT: EKAP, IKN'ye özel public deep-link SUNMUYOR
+  // EKAP public arama sayfası. NOT: EKAP, IKN'ye özel public deep-link SUNMUYOR
   // (ekapv2/ekap/ihale-detay rotası oturum ister → 406 hata sayfası). Bu yüzden çalışan
-  // public "İhale Arama" sayfasına yönlendiriyoruz; kullanıcı IKN'yi (sayfada görünür) aratır.
-  function ekapLink(ikn) {
-    return 'https://ekap.kik.gov.tr/EKAP/Ortak/IhaleArama/index.html';
+  // public arama sayfasına yönlendiriyoruz; kullanıcı IKN'yi (sayfada görünür) aratır.
+  // Doğrudan Temin, EKAP'ta ayrı bir modül (ekap-dt/search) — normal ihale arama
+  // sayfasına (ekap/search) girmiyor, o yüzden usul'e göre ayırıyoruz.
+  function ekapLink(ikn, usul) {
+    const dt = (usul || '').toLocaleLowerCase('tr').includes('doğrudan temin');
+    return dt
+      ? 'https://ekapv2.kik.gov.tr/ekap-dt/search'
+      : 'https://ekapv2.kik.gov.tr/ekap/search';
   }
 
   function gunHesapla(bitis) {
@@ -445,7 +450,7 @@
         <div class="detay-actions">
           <button class="btn-takip" id="main-takip" onclick="takibeAl()">☆ Takibe Al</button>
           <a class="btn-takip" href="teklif-olustur?ihale_id=${d.id}" style="background:linear-gradient(135deg,#F0A500,#C98A00);display:inline-flex;align-items:center;gap:6px;text-decoration:none;">✏ Teklif Hazırla</a>
-          ${d.ikn ? `<a class="btn-ekap" href="${ekapLink(d.ikn)}" target="_blank" rel="noopener" title="EKAP İhale Arama — İKN: ${d.ikn}">↗ EKAP'ta Ara</a>` : ''}
+          ${d.ikn ? `<a class="btn-ekap" href="${ekapLink(d.ikn, d.usul)}" target="_blank" rel="noopener" title="EKAP İhale Arama — İKN: ${d.ikn}">↗ EKAP'ta Ara</a>` : ''}
           <button class="btn-ekap" id="link-kopyala-btn" onclick="linkKopyala(this)" title="Sayfa linkini panoya kopyala">🔗 Paylaş</button>
         </div>
       </div>
