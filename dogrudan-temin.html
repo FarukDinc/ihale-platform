@@ -329,7 +329,7 @@
         ${k.dokuman_var ? `<span class="etiket dokuman">📄 Doküman var</span>` : ''}
       </div>
       <div class="dt-meta">
-        ${k.idare ? `<span>🏛️ ${esc(k.idare)}</span>` : ''}
+        ${k.idare ? `<a href="kurum-analiz?kurum=${encodeURIComponent(k.idare)}" style="color:inherit;text-decoration:none;">🏛️ ${esc(k.idare)}</a>` : ''}
         ${k.tarih ? `<span>📅 ${tarihFormat(k.tarih)}</span>` : ''}
         ${k.durum ? `<span>${esc(k.durum)}</span>` : ''}
       </div>
