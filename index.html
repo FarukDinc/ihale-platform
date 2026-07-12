@@ -5,6 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>İhaleGlobal — Akıllı İhale Takip Sistemi</title>
   <meta name="description" content="Türkiye'nin tüm kamu ihalelerini tek ekranda takip edin. EKAP entegrasyonu, AI destekli uyumluluk analizi, otomatik bildirimler." />
+  <script>
+    // E-posta onay linki (GoTrue) allow-list boşken SITE_URL'e = anasayfaya döner.
+    // Token'lı hash'i login sayfasına taşı; login.html onu işleyip oturumu kurar.
+    // (Her şeyden önce çalışmalı — bu yüzden en üstte, senkron.)
+    if (window.location.hash.indexOf('access_token') !== -1) {
+      window.location.replace('/login' + window.location.hash);
+    }
+  </script>
   <link rel="stylesheet" href="css/style.css" />
   <script src="js/theme.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
