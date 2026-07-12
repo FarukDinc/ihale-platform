@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Sonuçlananlar — İhaleGlobal</title>
+  <title>Doğrudan Temin — İhaleGlobal</title>
   <link rel="stylesheet" href="css/style.css" />
   <script src="js/theme.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -54,85 +54,58 @@
     .page-body { padding: 24px; }
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* Stats bar */
-    .stats-bar {
-      display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px;
+    .info-banner {
+      background: rgba(240,165,0,.06); border: 1px solid rgba(240,165,0,.2);
+      border-radius: 10px; padding: 12px 16px; margin-bottom: 18px;
+      font-size: 12.5px; color: var(--off-white); line-height: 1.5;
     }
-    .stat-card {
-      background: var(--navy-mid); border: 1px solid var(--border);
-      border-radius: 10px; padding: 16px 18px;
-    }
+    .info-banner b { color: var(--amber); }
+
+    .stats-bar { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
+    .stat-card { background: var(--navy-mid); border: 1px solid var(--border); border-radius: 10px; padding: 16px 18px; }
     .stat-label { font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; margin-bottom: 6px; }
     .stat-val { font-size: 22px; font-weight: 800; color: var(--white); }
     .stat-val.amber { color: var(--amber); }
-    .stat-val.green { color: #4ade80; }
 
-    /* Toolbar */
-    .toolbar {
-      display: flex; align-items: center; gap: 10px; margin-bottom: 16px; flex-wrap: wrap;
+    .toolbar { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
+    .toolbar input, .toolbar select {
+      background: var(--navy-mid); border: 1px solid var(--border); color: var(--white);
+      padding: 8px 12px; border-radius: 6px; font-size: 13px; font-family: var(--font-body);
     }
-    .toolbar-label { font-size: 12px; color: var(--muted); font-weight: 500; }
+    .toolbar input { flex: 1; min-width: 200px; }
+    .toolbar input:focus, .toolbar select:focus { outline: none; border-color: var(--amber); }
     .sort-btn {
       background: var(--navy-mid); border: 1px solid var(--border); color: var(--muted);
-      padding: 6px 14px; border-radius: 6px; font-size: 12px; font-weight: 600;
+      padding: 8px 14px; border-radius: 6px; font-size: 12px; font-weight: 600;
       cursor: pointer; transition: all .15s; font-family: var(--font-body);
     }
     .sort-btn:hover, .sort-btn.active { border-color: var(--amber); color: var(--amber); }
-    .toolbar-spacer { flex: 1; }
     .results-count { font-size: 13px; color: var(--muted); }
 
-    /* Sonuç kart */
-    .sonuc-kart {
+    .dt-kart {
       background: var(--navy-mid); border: 1px solid var(--border);
-      border-radius: 10px; padding: 18px 20px; margin-bottom: 10px;
+      border-radius: 10px; padding: 16px 20px; margin-bottom: 10px;
       transition: border-color .15s;
     }
-    .sonuc-kart:hover { border-color: rgba(240,165,0,.4); }
-    .sk-ust { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 8px; }
-    .sk-firma {
-      font-size: 15px; font-weight: 800; color: var(--amber);
-      text-decoration: none; transition: color .15s;
-    }
-    .sk-firma:hover { color: var(--white); }
-    .sk-tenzilat {
-      font-size: 12px; font-weight: 700; padding: 3px 10px; border-radius: 20px;
-      white-space: nowrap; flex-shrink: 0;
-    }
-    .tenz-yuksek { background: rgba(34,197,94,.12); color: #4ade80; }
-    .tenz-orta { background: rgba(240,165,0,.12); color: var(--amber); }
-    .tenz-dusuk { background: rgba(239,68,68,.1); color: #f87171; }
-    .sk-baslik {
-      font-size: 13px; color: var(--off-white); text-decoration: none;
-      line-height: 1.4; display: block; margin-bottom: 8px; font-weight: 500;
-    }
-    .sk-baslik:hover { color: var(--amber); }
-    .sk-meta { display: flex; gap: 14px; font-size: 12px; color: var(--muted); flex-wrap: wrap; align-items: center; }
-    .sk-bedel { font-size: 14px; font-weight: 700; color: var(--white); }
-    .sk-badges { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 6px; }
+    .dt-kart:hover { border-color: rgba(240,165,0,.4); }
+    .dt-ust { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 8px; }
+    .dt-baslik { font-size: 14px; font-weight: 700; color: var(--off-white); line-height: 1.4; }
+    .dt-no { font-size: 11px; font-weight: 700; color: var(--amber); white-space: nowrap; flex-shrink: 0; font-family: var(--font-body); }
+    .dt-badges { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 6px; }
     .etiket { font-size: 11px; padding: 2px 8px; border-radius: 10px; font-weight: 600; background: rgba(var(--overlay-rgb),.06); color: var(--muted); }
+    .etiket.tur { background: rgba(59,130,246,.12); color: #60a5fa; }
+    .etiket.dokuman { background: rgba(34,197,94,.12); color: #4ade80; }
+    .dt-meta { display: flex; gap: 14px; font-size: 12px; color: var(--muted); flex-wrap: wrap; align-items: center; }
 
-    /* Loading & empty */
     .loading-wrap { text-align: center; padding: 60px 20px; color: var(--muted); }
-    .loading-spinner {
-      width: 32px; height: 32px; border: 3px solid var(--border);
-      border-top-color: var(--amber); border-radius: 50%;
-      animation: spin .8s linear infinite; margin: 0 auto 16px;
-    }
-    .empty-wrap {
-      background: var(--navy-mid); border: 1px solid var(--border);
-      border-radius: 12px; padding: 48px; text-align: center;
-    }
+    .loading-spinner { width: 32px; height: 32px; border: 3px solid var(--border); border-top-color: var(--amber); border-radius: 50%; animation: spin .8s linear infinite; margin: 0 auto 16px; }
+    .empty-wrap { background: var(--navy-mid); border: 1px solid var(--border); border-radius: 12px; padding: 48px; text-align: center; }
     .empty-icon { font-size: 40px; margin-bottom: 14px; }
     .empty-baslik { font-size: 16px; font-weight: 700; color: var(--white); margin-bottom: 8px; }
     .empty-alt { font-size: 13px; color: var(--muted); max-width: 400px; margin: 0 auto; line-height: 1.6; }
 
-    /* Pager */
     .pager { display: flex; justify-content: center; gap: 8px; margin-top: 20px; }
-    .pager-btn {
-      padding: 7px 14px; border-radius: 6px; font-size: 13px; font-weight: 600;
-      background: var(--navy-soft); border: 1px solid var(--border); color: var(--white);
-      cursor: pointer; transition: all .15s;
-    }
+    .pager-btn { padding: 7px 14px; border-radius: 6px; font-size: 13px; font-weight: 600; background: var(--navy-soft); border: 1px solid var(--border); color: var(--white); cursor: pointer; transition: all .15s; }
     .pager-btn:hover { border-color: var(--amber); color: var(--amber); }
     .pager-btn:disabled { opacity: .4; cursor: default; }
     .pager-info { display: flex; align-items: center; font-size: 13px; color: var(--muted); padding: 0 6px; }
@@ -141,9 +114,7 @@
       .sidebar { display: none; }
       .stats-bar { grid-template-columns: repeat(2,1fr); }
     }
-    @media (max-width: 480px) {
-      .stats-bar { grid-template-columns: 1fr 1fr; }
-    }
+    @media (max-width: 480px) { .stats-bar { grid-template-columns: 1fr 1fr; } }
   </style>
 </head>
 <body>
@@ -161,8 +132,8 @@
       <div class="nav-section-label">Genel</div>
       <a href="dashboard" class="nav-item"><span class="icon">◉</span> Dashboard</a>
       <a href="ihaleler" class="nav-item"><span class="icon">⊞</span> İhaleler</a>
-      <a href="dogrudan-temin" class="nav-item"><span class="icon">⚡</span> Doğrudan Temin</a>
-      <a href="sonuclananlar" class="nav-item active"><span class="icon">🏆</span> Sonuçlananlar</a>
+      <a href="dogrudan-temin" class="nav-item active"><span class="icon">⚡</span> Doğrudan Temin</a>
+      <a href="sonuclananlar" class="nav-item"><span class="icon">🏆</span> Sonuçlananlar</a>
       <a href="takipte" class="nav-item"><span class="icon">☆</span> Takipte</a>
       <a href="bildirimler" class="nav-item"><span class="icon">🔔</span> Bildirimler</a>
       <div class="nav-section-label">Analiz</div>
@@ -194,7 +165,7 @@
   <div class="main">
     <div class="topbar">
       <div class="topbar-left">
-        <span style="font-size:14px;font-weight:700;color:var(--white);">🏆 Sonuçlananlar</span>
+        <span style="font-size:14px;font-weight:700;color:var(--white);">⚡ Doğrudan Temin</span>
         <span style="font-size:12px;color:var(--muted);" id="results-count"></span>
       </div>
       <button onclick="csvIndir()" style="background:var(--card-bg);border:1px solid var(--border);color:var(--muted);padding:7px 14px;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;font-family:var(--font-body);">↓ CSV</button>
@@ -202,33 +173,52 @@
 
     <div class="page-body">
 
-      <!-- İSTATİSTİK BAR -->
+      <div class="info-banner">
+        <b>Doğrudan Temin nedir?</b> 4734 sayılı Kanun'un 22. maddesi kapsamında, rekabetçi ihale süreci
+        olmadan doğrudan yapılan alımlardır. İdareler bu duyuruları EKAP'ta yayımlar. Aşağıdaki liste EKAP'ın
+        kamuya açık Doğrudan Temin duyurularından her gece otomatik güncellenir.
+      </div>
+
+      <!-- İSTATİSTİK -->
       <div class="stats-bar">
         <div class="stat-card">
-          <div class="stat-label">Toplam Sonuç</div>
+          <div class="stat-label">Toplam Duyuru</div>
           <div class="stat-val amber" id="st-toplam">—</div>
         </div>
         <div class="stat-card">
-          <div class="stat-label">Toplam Sözleşme</div>
-          <div class="stat-val" id="st-bedel">—</div>
+          <div class="stat-label">Farklı İdare</div>
+          <div class="stat-val" id="st-idare">—</div>
         </div>
         <div class="stat-card">
-          <div class="stat-label">Ort. Tenzilat</div>
-          <div class="stat-val green" id="st-tenzilat">—</div>
+          <div class="stat-label">Mal Alımı</div>
+          <div class="stat-val" id="st-mal">—</div>
         </div>
         <div class="stat-card">
-          <div class="stat-label">Farklı Firma</div>
-          <div class="stat-val" id="st-firma">—</div>
+          <div class="stat-label">Hizmet Alımı</div>
+          <div class="stat-val" id="st-hizmet">—</div>
         </div>
       </div>
 
       <!-- TOOLBAR -->
       <div class="toolbar">
-        <span class="toolbar-label">Sıralama:</span>
-        <button class="sort-btn active" onclick="sirala('tarih',this)">📅 Tarih</button>
-        <button class="sort-btn" onclick="sirala('bedel',this)">₺ Bedel</button>
-        <button class="sort-btn" onclick="sirala('tenzilat',this)">% Tenzilat</button>
-        <div class="toolbar-spacer"></div>
+        <input type="text" id="f-ara" placeholder="🔍 Başlık veya idare ara…" oninput="filtreDegisti()" />
+        <select id="f-tur" onchange="filtreDegisti()">
+          <option value="">Tüm Türler</option>
+          <option value="Mal">Mal</option>
+          <option value="Hizmet">Hizmet</option>
+          <option value="Yapım">Yapım</option>
+          <option value="Danışmanlık">Danışmanlık</option>
+        </select>
+        <select id="f-il" onchange="filtreDegisti()">
+          <option value="">Tüm İller</option>
+        </select>
+      </div>
+
+      <div class="toolbar">
+        <span class="toolbar-label" style="font-size:12px;color:var(--muted);font-weight:500;">Sıralama:</span>
+        <button class="sort-btn active" onclick="sirala('tarih',this)">📅 En Yeni</button>
+        <button class="sort-btn" onclick="sirala('idare',this)">🏛️ İdare</button>
+        <div style="flex:1;"></div>
         <span class="results-count" id="liste-sayi"></span>
       </div>
 
@@ -236,7 +226,7 @@
       <div id="liste-container">
         <div class="loading-wrap">
           <div class="loading-spinner"></div>
-          <div>Sonuçlar yükleniyor…</div>
+          <div>Doğrudan temin duyuruları yükleniyor…</div>
         </div>
       </div>
 
@@ -261,7 +251,8 @@
   const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzgzMzUwMDE1LCJleHAiOjE5NDEwMzAwMTV9.sRB61a8oNXwzSKL9No8gt7cmkmnkoQstT0ZtHIxl1Hs";
   const sb = window.supabase.createClient(SB_URL, SB_KEY);
 
-  let tumSonuclar = [];
+  let tumKayitlar = [];
+  let filtreli = [];
   let siralamaAlan = 'tarih';
   let sayfa = 1;
   let topSayfa = 1;
@@ -272,91 +263,77 @@
     return new Date(s).toLocaleDateString('tr-TR', { day:'2-digit', month:'short', year:'numeric' });
   }
 
-  function formatBedel(b) {
-    if (!b) return '—';
-    if (b >= 1_000_000_000) return (b / 1_000_000_000).toFixed(1) + ' Mrd TL';
-    if (b >= 1_000_000) return (b / 1_000_000).toFixed(1) + ' M TL';
-    if (b >= 1000) return (b / 1000).toFixed(0) + ' K TL';
-    return b.toLocaleString('tr') + ' TL';
-  }
+  function esc(s) { return (s || '').replace(/[<>&"]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c])); }
 
-  function tenzClass(t) {
-    if (t == null) return '';
-    if (t >= 20) return 'tenz-yuksek';
-    if (t >= 5) return 'tenz-orta';
-    return 'tenz-dusuk';
-  }
-
-  function siralaSonuclar(alan) {
-    return [...tumSonuclar].sort((a, b) => {
-      if (alan === 'bedel') return (b.kazanan_teklif || 0) - (a.kazanan_teklif || 0);
-      if (alan === 'tenzilat') return (b.kazanan_teklif_farki_yuzde || 0) - (a.kazanan_teklif_farki_yuzde || 0);
-      return new Date(b.sonuc_tarihi || 0) - new Date(a.sonuc_tarihi || 0);
+  function uygula() {
+    const q = (document.getElementById('f-ara').value || '').toLocaleLowerCase('tr').trim();
+    const tur = document.getElementById('f-tur').value;
+    const il = document.getElementById('f-il').value;
+    filtreli = tumKayitlar.filter(k => {
+      if (tur && k.tur !== tur) return false;
+      if (il && k.il !== il) return false;
+      if (q) {
+        const hay = ((k.baslik || '') + ' ' + (k.idare || '')).toLocaleLowerCase('tr');
+        if (!hay.includes(q)) return false;
+      }
+      return true;
     });
+    filtreli.sort((a, b) => {
+      if (siralamaAlan === 'idare') return (a.idare || '').localeCompare(b.idare || '', 'tr');
+      return new Date(b.tarih || 0) - new Date(a.tarih || 0);
+    });
+    sayfa = 1;
+    render();
   }
+
+  window.filtreDegisti = uygula;
 
   window.sirala = function(alan, btn) {
     siralamaAlan = alan;
     document.querySelectorAll('.sort-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
-    sayfa = 1;
-    renderSayfa(siralaSonuclar(alan));
+    uygula();
   };
 
   window.sayfaGit = function(s) {
     sayfa = Math.max(1, Math.min(s, topSayfa));
-    renderSayfa(siralaSonuclar(siralamaAlan));
+    render();
   };
 
-  function renderSayfa(sirali) {
+  function render() {
+    topSayfa = Math.max(1, Math.ceil(filtreli.length / PER_PAGE));
     const bas = (sayfa - 1) * PER_PAGE;
-    const dilim = sirali.slice(bas, bas + PER_PAGE);
-    topSayfa = Math.ceil(sirali.length / PER_PAGE);
-    const sayiEl = document.getElementById('liste-sayi');
-    if (sayiEl) sayiEl.textContent = `${sirali.length.toLocaleString('tr')} sonuç`;
+    const dilim = filtreli.slice(bas, bas + PER_PAGE);
+
+    document.getElementById('liste-sayi').textContent = `${filtreli.length.toLocaleString('tr')} duyuru`;
 
     const cont = document.getElementById('liste-container');
     if (!dilim.length) {
       cont.innerHTML = `<div class="empty-wrap">
-        <div class="empty-icon">📋</div>
-        <div class="empty-baslik">Henüz sonuç kaydı yok</div>
-        <div class="empty-alt">EKAP'tan kazanan firma ve sözleşme verisi her gece otomatik toplanmaktadır.</div>
+        <div class="empty-icon">🔍</div>
+        <div class="empty-baslik">Eşleşen duyuru bulunamadı</div>
+        <div class="empty-alt">Arama veya filtre kriterlerinizi değiştirmeyi deneyin.</div>
       </div>`;
       document.getElementById('pager').style.display = 'none';
       return;
     }
 
-    cont.innerHTML = dilim.map(s => {
-      const ilan = s.ilan || {};
-      const tenz = s.kazanan_teklif_farki_yuzde != null
-        ? Number(s.kazanan_teklif_farki_yuzde).toFixed(1)
-        : null;
-      const tenzBadge = tenz != null
-        ? `<span class="sk-tenzilat ${tenzClass(Number(tenz))}">%${tenz} tenzilat</span>`
-        : '';
-      const idareKisa = (ilan.idare || '').length > 50
-        ? ilan.idare.substring(0, 50) + '…'
-        : (ilan.idare || '');
-      return `<div class="sonuc-kart">
-        <div class="sk-ust">
-          <a class="sk-firma" href="firma-analiz?firma=${encodeURIComponent(s.kazanan_firma || '')}">${s.kazanan_firma || '—'}</a>
-          ${tenzBadge}
-        </div>
-        ${ilan.baslik
-          ? `<a class="sk-baslik" href="ihale-detay?id=${s.ilan_id}">${ilan.baslik}</a>`
-          : `<span class="sk-baslik" style="color:var(--muted);cursor:default;">İhale başlığı yükleniyor…</span>`}
-        <div class="sk-badges">
-          ${ilan.il ? `<span class="etiket">📍 ${ilan.il}</span>` : ''}
-          ${ilan.tur ? `<span class="etiket">${ilan.tur}</span>` : ''}
-          ${s.toplam_teklif_sayisi ? `<span class="etiket">👥 ${s.toplam_teklif_sayisi} teklif</span>` : ''}
-        </div>
-        <div class="sk-meta">
-          ${s.kazanan_teklif ? `<span class="sk-bedel">₺ ${formatBedel(s.kazanan_teklif)}</span>` : ''}
-          ${s.sonuc_tarihi ? `<span>📅 ${tarihFormat(s.sonuc_tarihi)}</span>` : ''}
-          ${idareKisa ? `<span>${idareKisa}</span>` : ''}
-        </div>
-      </div>`;
-    }).join('');
+    cont.innerHTML = dilim.map(k => `<div class="dt-kart">
+      <div class="dt-ust">
+        <div class="dt-baslik">${esc(k.baslik) || '(başlık yok)'}</div>
+        <div class="dt-no">${esc(k.dt_no)}</div>
+      </div>
+      <div class="dt-badges">
+        ${k.tur ? `<span class="etiket tur">${esc(k.tur)}</span>` : ''}
+        ${k.il ? `<span class="etiket">📍 ${esc(k.il)}</span>` : ''}
+        ${k.dokuman_var ? `<span class="etiket dokuman">📄 Doküman var</span>` : ''}
+      </div>
+      <div class="dt-meta">
+        ${k.idare ? `<span>🏛️ ${esc(k.idare)}</span>` : ''}
+        ${k.tarih ? `<span>📅 ${tarihFormat(k.tarih)}</span>` : ''}
+        ${k.durum ? `<span>${esc(k.durum)}</span>` : ''}
+      </div>
+    </div>`).join('');
 
     const pg = document.getElementById('pager');
     pg.style.display = topSayfa > 1 ? 'flex' : 'none';
@@ -367,83 +344,62 @@
     document.getElementById('pg-son').disabled = sayfa >= topSayfa;
   }
 
-  function istatistikGoster(data) {
-    const toplam = data.length;
-    const toplamBedel = data.reduce((a, s) => a + (s.kazanan_teklif || 0), 0);
-    const tenzList = data.filter(s => s.kazanan_teklif_farki_yuzde != null);
-    const ortTenz = tenzList.length
-      ? tenzList.reduce((a, s) => a + Number(s.kazanan_teklif_farki_yuzde), 0) / tenzList.length
-      : null;
-    const firmalar = new Set(data.map(s => s.kazanan_firma).filter(Boolean));
-
+  function istatistik() {
+    const idareler = new Set(tumKayitlar.map(k => k.idare).filter(Boolean));
     const el = id => document.getElementById(id);
-    el('st-toplam').textContent = toplam.toLocaleString('tr');
-    el('st-bedel').textContent = formatBedel(toplamBedel);
-    el('st-tenzilat').textContent = ortTenz != null ? '%' + ortTenz.toFixed(1) : '—';
-    el('st-firma').textContent = firmalar.size.toLocaleString('tr');
-    el('results-count').textContent = `${toplam.toLocaleString('tr')} kayıt`;
+    el('st-toplam').textContent = tumKayitlar.length.toLocaleString('tr');
+    el('st-idare').textContent = idareler.size.toLocaleString('tr');
+    el('st-mal').textContent = tumKayitlar.filter(k => k.tur === 'Mal').length.toLocaleString('tr');
+    el('st-hizmet').textContent = tumKayitlar.filter(k => k.tur === 'Hizmet').length.toLocaleString('tr');
+    el('results-count').textContent = `${tumKayitlar.length.toLocaleString('tr')} kayıt`;
+
+    // İl dropdown'ını doldur
+    const iller = [...new Set(tumKayitlar.map(k => k.il).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'tr'));
+    const sel = document.getElementById('f-il');
+    iller.forEach(il => {
+      const o = document.createElement('option');
+      o.value = il; o.textContent = il;
+      sel.appendChild(o);
+    });
   }
 
   window.csvIndir = function() {
-    if (!tumSonuclar.length) { alert('Veri yükleniyor, lütfen bekleyin.'); return; }
-    const sirali = siralaSonuclar(siralamaAlan);
+    if (!filtreli.length) { alert('Veri yükleniyor, lütfen bekleyin.'); return; }
     const satirlar = [
-      ['Firma', 'İhale Başlığı', 'İdare', 'İl', 'Sözleşme Bedeli (TL)', 'Tenzilat %', 'Teklif Sayısı', 'Sonuç Tarihi'],
-      ...sirali.map(s => [
-        `"${(s.kazanan_firma || '').replace(/"/g,'""')}"`,
-        `"${((s.ilan?.baslik) || '').replace(/"/g,'""')}"`,
-        `"${((s.ilan?.idare) || '').replace(/"/g,'""')}"`,
-        s.ilan?.il || '',
-        s.kazanan_teklif || '',
-        s.kazanan_teklif_farki_yuzde != null ? Number(s.kazanan_teklif_farki_yuzde).toFixed(3) : '',
-        s.toplam_teklif_sayisi || '',
-        s.sonuc_tarihi ? s.sonuc_tarihi.split('T')[0] : '',
+      ['DT No', 'Başlık', 'İdare', 'Tür', 'İl', 'Tarih', 'Durum'],
+      ...filtreli.map(k => [
+        k.dt_no || '',
+        `"${(k.baslik || '').replace(/"/g,'""')}"`,
+        `"${(k.idare || '').replace(/"/g,'""')}"`,
+        k.tur || '', k.il || '',
+        k.tarih ? k.tarih.split('T')[0] : '',
+        `"${(k.durum || '').replace(/"/g,'""')}"`,
       ]),
     ];
     const icerik = '﻿' + satirlar.map(r => r.join(',')).join('\r\n');
     const blob = new Blob([icerik], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.href = url;
-    a.download = `sonuclananlar_${new Date().toISOString().split('T')[0]}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+    a.href = url; a.download = `dogrudan_temin_${new Date().toISOString().split('T')[0]}.csv`;
+    a.click(); URL.revokeObjectURL(url);
   };
 
   async function yukle() {
-    // ihale_sonuclari tümünü çek
+    // En yeni 5000 kayıt (gece cron ~2560 güncel tutuyor; derin backfill büyürse artırılır)
     const rows = [];
-    for (let off = 0; ; off += 1000) {
-      const { data } = await sb.from('ihale_sonuclari')
-        .select('ilan_id,kazanan_firma,kazanan_teklif,kazanan_teklif_farki_yuzde,toplam_teklif_sayisi,en_dusuk_teklif,en_yuksek_teklif,sonuc_tarihi')
-        .order('sonuc_tarihi', { ascending: false })
+    for (let off = 0; off < 5000; off += 1000) {
+      const { data, error } = await sb.from('dogrudan_temin_ilanlari')
+        .select('dt_no,baslik,idare,tur,il,tarih,durum,dokuman_var,duyuru_var')
+        .order('tarih', { ascending: false })
         .range(off, off + 999);
+      if (error) throw error;
       if (!data || !data.length) break;
       rows.push(...data);
       if (data.length < 1000) break;
     }
-
-    // ilan başlıklarını zenginleştir
-    if (rows.length) {
-      const ids = [...new Set(rows.map(r => r.ilan_id).filter(Boolean))];
-      if (ids.length) {
-        const ilanlar = [];
-        for (let off = 0; off < ids.length; off += 500) {
-          const batch = ids.slice(off, off + 500);
-          const { data } = await sb.from('ilanlar')
-            .select('id,baslik,idare,il,tur')
-            .in('id', batch);
-          if (data) ilanlar.push(...data);
-        }
-        const mp = {};
-        ilanlar.forEach(i => { mp[i.id] = i; });
-        rows.forEach(r => { r.ilan = mp[r.ilan_id] || null; });
-      }
-    }
-
-    tumSonuclar = rows;
-    istatistikGoster(rows);
-    renderSayfa(siralaSonuclar(siralamaAlan));
+    tumKayitlar = rows;
+    istatistik();
+    uygula();
   }
 
   yukle().catch(e => {
