@@ -389,13 +389,13 @@
     return `${Math.floor(fark/1440)} gün önce`;
   };
 
-  const ikonMap = { ihale: '⏰', sistem: '⚙', email: '📧' };
-  const ikonKlassMap = { ihale: 'songun', sistem: 'sistem', email: 'yeni' };
+  const ikonMap = { ihale: '⏰', sistem: '⚙', email: '📧', kurum_takip: '🏛️', rakip_hareketi: '🏆' };
+  const ikonKlassMap = { ihale: 'songun', sistem: 'sistem', email: 'yeni', kurum_takip: 'yeni', rakip_hareketi: 'yeni' };
 
   // ── DB'den yükle ─────────────────────────────────────────
   async function dbBildirimleriYukle(user) {
     const { data } = await sb.from('bildirimler')
-      .select('id,tur,baslik,icerik,ilan_id,okundu,olusturulma')
+      .select('id,tur,baslik,icerik,ilan_id,aksiyon_url,okundu,olusturulma')
       .eq('kullanici_id', user.id)
       .order('olusturulma', { ascending: false })
       .limit(50);
@@ -405,7 +405,9 @@
       ikonKlass: ikonKlassMap[b.tur] || 'yeni',
       baslik: b.baslik, aciklama: b.icerik || '',
       zaman: b.olusturulma,
-      link: b.ilan_id ? `ihale-detay?id=${b.ilan_id}` : null,
+      // aksiyon_url öncelikli (kurum/rakip takibi gibi ilan_id'siz bildirimler için) —
+      // yoksa ilan_id'den türet (eski davranış, geriye dönük uyumluluk).
+      link: b.aksiyon_url || (b.ilan_id ? `ihale-detay?id=${b.ilan_id}` : null),
       _db: true,
     }));
   }
@@ -483,7 +485,7 @@
           <div class="notif-icerik">
             <div class="notif-baslik">${b.baslik}</div>
             <div class="notif-aciklama">${b.aciklama}</div>
-            ${b.link ? `<a class="notif-link" href="${b.link}" onclick="event.stopPropagation()">İhaleye Git →</a>` : ''}
+            ${b.link ? `<a class="notif-link" href="${b.link}" onclick="event.stopPropagation()">${b.tip === 'kurum_takip' ? 'Kuruma Git' : b.tip === 'rakip_hareketi' ? 'Firmaya Git' : 'İhaleye Git'} →</a>` : ''}
             <div class="notif-zaman">${tarihFormatla(b.zaman)}</div>
           </div>
         </div>`).join('');
