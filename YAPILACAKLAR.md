@@ -72,6 +72,19 @@ bu oturumda düzeltildi. Model her yerde `gemini-2.5-flash`.
    ciddi kısıtlayan bir bug). Bildirim kaydı artık sektör kontrolünden önce, `upsert` ile (update
    değil — satır yoksa update sessizce hiçbir şey yapmıyordu) ayrı kaydediliyor. Yerel sunucuda
    gerçek production Supabase'e karşı test edildi, çalışıyor. Commit `ad993c9`, pull yeterli.
+4. **✅ DÜZELTİLDİ — `bildirimler.html` `aksiyon_url` hiç kullanılmıyordu:** DB sorgusu bu kolonu
+   SEÇMİYORDU bile — `idare_bildirim.py`/`rakip_bildirim.py`'nin yazdığı link tamamen kayboluyordu,
+   kurum/rakip bildirimleri tıklanamaz kalıyordu. Ayrıca `kurum_takip`/`rakip_hareketi` için ikon
+   yoktu (🔔'ye düşüyordu) — artık 🏛️/🏆. Commit `94b7b87`.
+5. **✅ EKLENDİ — `dogrudan-temin.html`'de idare adı artık Kurum Analizi'ne link veriyor** (önceden
+   düz metindi). Commit `70770d0`.
+6. **✅ EKLENDİ — Sidebar bildirim rozeti artık gerçek okunmamış sayısı:** tüm sayfalarda sabit "4"
+   hardcode edilmişti. `js/bildirim-sayaci.js` (18 sayfaya eklendi) canlı sayıyı gösteriyor, 0 ise
+   gizliyor. Commit `52947c9`.
+7. **✅ EKLENDİ — `takipte.html`'e "Takip Ettiğim Kurumlar/Firmalar" bölümleri:** bugüne kadar
+   kullanıcının kurum/firma takiplerini görebileceği/yönetebileceği merkezi bir yer yoktu. Artık
+   liste + "Takibi Bırak" butonu var. `takip_idareler` düzelene kadar o bölüm zarifçe boş görünür
+   (crash yok). Commit `37c3700`.
 
 ### 👤 SENİN YAPMAN GEREKEN
 
