@@ -24,6 +24,24 @@ sayfalama + CSV; 16 sayfanın sidebar'ına "⚡ Doğrudan Temin" linki eklendi. 
 derin tarihsel DT backfill (`--backfill --max-pages 5000`, checkpoint `.dt_scraper_checkpoint.json`)
 elle başlatılabilir — launch'ı bloklamıyor, gece cron zaten en yeniyi çekiyor.
 
+**✅ KAYIT E-POSTA ONAY AKIŞI DÜZELTİLDİ (12 Tem, kullanıcı bug bildirdi):** Sorun: `signUp`'ta
+`emailRedirectTo` yoktu → onay e-postasındaki bağlantı SITE_URL'e (anasayfa) dönüyordu, anasayfa hash'teki
+token'ı işlemediği için kullanıcı "hiçbir şey olmadı" sanıyordu (aslında onaylanıyordu). Çözüm: (1) `js/api.js`
+signUp'a `emailRedirectTo=SITE_URL+"/login"`; (2) `index.html` en üste senkron hash-yakalayıcı (allow-list
+boşken link anasayfaya düşse bile #access_token'ı `/login`'e taşır); (3) `login.html` hash işleyici →
+setSession ile token'ı DOĞRULAR (geçersiz/süresi dolmuşsa hata gösterir, dashboard'a atmaz), geçerliyse
+oturumu kurup dashboard'a alır; (4) kayıt sonrası mesaj netleşti. **Canlıda test edildi** (sahte token →
+`/login`'de kalıp doğru hata veriyor; gerçek token aynı yolla oturum kurup dashboard'a gider). Commit'ler
+`5159815`/`5ddafec`/`91b1d78`. **Opsiyonel (zorunlu değil):** VDS `ADDITIONAL_REDIRECT_URLS`'e
+`https://ihaleglobal.com/**` eklenirse onay linki anasayfa-hop'u olmadan doğrudan `/login`'e döner
+(kozmetik; classifier auth-config değişikliğini bloke etti, kullanıcı onayıyla yapılabilir).
+
+**🎟️ PRO KUPON ÜRETİLDİ (12 Tem, kullanıcı talebi):** `IHP-35533C91` — standart (Pro) plan, 12 ay,
+1 kullanım. Kupon sistemi zaten kuruluydu (`backend/kupon_olustur.py`, `kuponlar`/`kupon_kullanimlari`
+tabloları, payment.py `/kupon-kullan` endpoint'i — router bu oturumda bağlandı, canlı 401 dönüyor).
+Kullanıcı `fiyatlandirma_odeme_bolumu` sayfasındaki kupon kutusuna girip kendi hesabını Pro yapar
+(kredi_yukle service_role ile yazar, plan='standart' → js/plan.js artık tanıyor).
+
 **🤖 GEMINI/AI KULLANIM HARİTASI (12 Tem, kullanıcı sordu — netleştirildi):** Gemini 4 yerde bağlı:
 (1) **Şartname Analizi** `/analiz` (ihale-detay "Analiz Et") — bu oturumda uçtan uca test edildi, gerçek
 rapor üretti ✅; (2) **AI Firma/Rakip Yorumu** `/ai/firma-yorum` (firma-analiz) 🟡; (3) **AI Teklif
