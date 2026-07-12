@@ -104,10 +104,10 @@ bu oturumda düzeltildi. Model her yerde `gemini-2.5-flash`.
    konsol hatası için tek tek ziyaret edildi — hepsi temiz. EKAP linki (bugünkü erken düzeltme)
    ve eşik_katsayı verisi (diğer oturumun regex düzeltmesi, 784 kayıt dolu) canlıda doğrulandı.
    Email onay akışı düzeltmesi (diğer oturum) de canlıda doğrulandı — bu ikisi zaten pull edilmişti.
-9. **💡 GELECEK FİKİR (küçük, düşük öncelik):** `kurum-analiz.html`'den o kurumun Doğrudan Temin
-   kayıtlarına link vermek güzel olurdu (örn. KPI grid'e "N Doğrudan Temin" kartı), ama
-   `dogrudan-temin.html` şu an URL query parametresi okumuyor (arama tamamen JS state'inde) —
-   önce oraya `?idare=X` desteği eklemek gerekir. Küçük ama şimdilik ertelendi.
+9. **✅ EKLENDİ (aynı oturumda hemen yapıldı) — Kurum Analizi ↔ Doğrudan Temin çapraz linki:**
+   `dogrudan-temin.html` artık `?idare=X` okuyup arama kutusunu dolduruyor; `kurum-analiz.html`'e
+   bunu kullanan "⚡ Doğrudan Temin Kayıtları" butonu eklendi. Yerel sunucuda test edildi (Erciyes
+   Üniversitesi → 9 duyuru doğru filtrelendi). Commit `002b592`.
 
 ### 👤 SENİN YAPMAN GEREKEN
 
