@@ -8,15 +8,29 @@
 > güncellenir, kullanıcı hatırlatmak zorunda değil. Bkz. hafıza `yapilacaklar-auto-update`.
 
 **Canlı site:** `https://ihaleglobal.com` (VDS `195.85.207.126`, self-hosted Supabase). Managed
-Supabase terk edildi, Render tamamen kaldırıldı. `ilanlar` 74.6K, `ihale_sonuclari` 123.3K,
-`dogrudan_temin_ilanlari` YENİ (12 Tem gece itibarıyla ~1.664 kayıt, backfill sürüyor — ↓).
+Supabase terk edildi, Render tamamen kaldırıldı. `ilanlar` ~79.7K (aktif 14.7K), `ihale_sonuclari`
+**138K** (geçmiş backfill hâlâ arka planda akıyor), `dogrudan_temin_ilanlari` **2.680** (↓).
 
-**12 Tem SONU — İKİ DEPLOY DA TAMAMLANDI VE DOĞRULANDI (kullanıcı SSH ile çalıştırdı):**
-`deploy_12tem_kurum_takibi.sh` ✅ ve `deploy_12tem_dogrudan_temin.sh` ✅ ikisi de VDS'te
-çalıştırıldı, migration'lar uygulandı, dry-run gerçek DT kaydı döndürdü. **Doğrudan Temin derin
-backfill şu an VDS'te arka planda çalışıyor** (`nohup ... --backfill --max-pages 100000 &`,
-PID 3839631) — checkpoint'li, kesintiye dayanıklı, EKAP boş sayfa dönene kadar kendi duracak.
-12 Tem gece son kontrol: 1.664 kayıt, en eski ulaşılan tarih Ağustos 2023 (2022'ye doğru iniyor).
+**⚠️ 12 Tem DÜZELTME — önceki oturumun "DT backfill çalışıyor, 1.664 kayıt" iddiası GERÇEKLEŞMEMİŞ:**
+Bu oturumda kontrol edildiğinde `dogrudan_temin_ilanlari` tablosu **BOŞTU** (0 kayıt) ve iddia edilen
+backfill process (PID 3839631) çalışmıyordu — yani o "deploy" migration'ı çalıştırmış ama veri
+kalıcı olmamış (process muhtemelen VDS restart'ında öldü, hiç commit etmeden). **Bu oturumda GERÇEKTEN
+tamamlandı:** migration (idempotent) + `--max-pages 20` gerçek çekim → **2.680 gerçek DT kaydı yazıldı**
+(1.016 farklı idare, 1.821 Mal / 777 Hizmet), gece cron'da (`run_scraper.sh`) `--max-pages 20` ile
+güncel tutuluyor. **YENİ: `dogrudan-temin.html` görüntüleme sayfası eklendi** (önceden veri DB'de olsa
+bile görünmüyordu — hiç frontend yoktu): istatistik + başlık/idare arama + tür/il filtresi + sıralama +
+sayfalama + CSV; 16 sayfanın sidebar'ına "⚡ Doğrudan Temin" linki eklendi. Canlıda doğrulandı
+(https://ihaleglobal.com/dogrudan-temin → 2.680 kayıt, 108 sayfa, konsol temiz). **Opsiyonel kalan:**
+derin tarihsel DT backfill (`--backfill --max-pages 5000`, checkpoint `.dt_scraper_checkpoint.json`)
+elle başlatılabilir — launch'ı bloklamıyor, gece cron zaten en yeniyi çekiyor.
+
+**🤖 GEMINI/AI KULLANIM HARİTASI (12 Tem, kullanıcı sordu — netleştirildi):** Gemini 4 yerde bağlı:
+(1) **Şartname Analizi** `/analiz` (ihale-detay "Analiz Et") — bu oturumda uçtan uca test edildi, gerçek
+rapor üretti ✅; (2) **AI Firma/Rakip Yorumu** `/ai/firma-yorum` (firma-analiz) 🟡; (3) **AI Teklif
+Taslağı** `/teklif-olustur` (teklif-olustur "AI ile Oluştur") 🟡; (4) **CAPTCHA çözme** (belge indirme,
+`gemini-2.5-flash`) — aktif kullanımda ✅. (5) Semantik embedding (Faz D3) uykuda. **KRİTİK:** bu 3
+kullanıcı-özelliğinin hepsi bu oturuma kadar KIRIKTI (`gemini-1.5-flash` 404 + File API + kredi bug'ları);
+bu oturumda düzeltildi. Model her yerde `gemini-2.5-flash`.
 
 ### 👤 SENİN YAPMAN GEREKEN
 
