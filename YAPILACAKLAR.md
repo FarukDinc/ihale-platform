@@ -7,6 +7,20 @@
 > **KALICI TALİMAT (12 Tem, kullanıcı emri):** Bu blok + ilgili bölümler her oturumda otomatik
 > güncellenir, kullanıcı hatırlatmak zorunda değil. Bkz. hafıza `yapilacaklar-auto-update`.
 
+> ## 🔴🔴🔴 KRİTİK — GİT PULL YAPILMADI, BUGÜNKÜ ~8 COMMIT CANLIDA YOK (12 Tem, otonom oturum sonu)
+> **VDS'te `git pull` çalıştırılmadan bu oturumu bitirme.** Canlıda test edildi (`curl` ile
+> dosya içeriği kontrol edildi — nginx'in extensionless-fallback'i yüzünden "200 dönüyor" YANILTICI,
+> gerçek içerik anasayfa HTML'i dönüyordu): `profil.html`, `bildirimler.html`, `dogrudan-temin.html`,
+> `takipte.html`, `js/bildirim-sayaci.js` ve 17 sayfaya eklenen script satırı **HİÇBİRİ VDS'te YOK**.
+> Yani commit `ad993c9`'dan `b409422`'ye kadar olan (bu oturumun TÜM bulguları/düzeltmeleri) sadece
+> GitHub'da, VDS'e hiç ulaşmamış. **Tek komut yeterli, migration/restart GEREKMİYOR:**
+> ```bash
+> ssh -i ~/.ssh/ihale_oracle root@195.85.207.126
+> cd /opt/ihale-platform && git pull origin main
+> ```
+> Bunu yapmadan önceki "canlıda doğrulandı" notlarının çoğu artık geçersiz sayılmalı — sadece
+> GitHub'daki koda karşı doğrulandı, o an canlı olan koda karşı değil.
+
 **Canlı site:** `https://ihaleglobal.com` (VDS `195.85.207.126`, self-hosted Supabase). Managed
 Supabase terk edildi, Render tamamen kaldırıldı. `ilanlar` ~79.7K (aktif 14.7K), `ihale_sonuclari`
 **138K** (geçmiş backfill hâlâ arka planda akıyor), `dogrudan_temin_ilanlari` **2.680** (↓).
