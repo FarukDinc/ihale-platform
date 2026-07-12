@@ -403,7 +403,14 @@
     uygula();
   }
 
-  yukle().catch(e => {
+  yukle().then(() => {
+    // kurum-analiz.html gibi sayfalardan ?idare=X ile gelindiyse arama kutusunu doldur
+    const idareParam = new URLSearchParams(window.location.search).get('idare');
+    if (idareParam) {
+      document.getElementById('f-ara').value = idareParam;
+      filtreDegisti();
+    }
+  }).catch(e => {
     document.getElementById('liste-container').innerHTML = `<div class="empty-wrap">
       <div class="empty-icon">⚠️</div>
       <div class="empty-baslik">Veri yüklenemedi</div>

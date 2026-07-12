@@ -291,6 +291,7 @@
           <div class="kurum-meta" id="kurum-meta">Veri yükleniyor…</div>
           <div class="kurum-actions">
             <a id="kurum-ihaleler-btn" href="#" class="btn-ihaleler">📋 Tüm İhalelerini Gör</a>
+            <a id="kurum-dt-btn" href="#" class="btn-ihaleler" style="background:transparent;border:1px solid var(--border);color:var(--white);">⚡ Doğrudan Temin Kayıtları</a>
             <button id="kurum-takip-btn" class="btn-ihaleler" style="background:transparent;border:1px solid var(--border);color:var(--white);" onclick="kurumTakipToggle()">🔔 Kurumu Takip Et</button>
           </div>
         </div>
@@ -698,6 +699,7 @@
     }
 
     document.getElementById('kurum-ihaleler-btn').href = `ihaleler?idare=${encodeURIComponent(KURUM)}`;
+    document.getElementById('kurum-dt-btn').href = `dogrudan-temin?idare=${encodeURIComponent(KURUM)}`;
     document.getElementById('bc-kurum').textContent = KURUM;
     kurumTakipDurumuGuncelle();
 
