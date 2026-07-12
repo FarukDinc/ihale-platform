@@ -376,8 +376,11 @@ def itiraz_parse(s):
 def maliyet_araligi(b):
     return MALIYET_TABLOSU.get(b, (None, None)) if b else (None, None)
 
-# Yapım işi ilanlarında ilan metninin sonunda geçer: "...sınır değer katsayısı (N) = 1,00"
-ESIK_KATSAYI_RE = re.compile(r"sınır\s*değer\s*katsayısı\s*\(?\s*n\s*\)?\s*[:=]\s*([\d]+[.,]\d+)", re.IGNORECASE)
+# Yapım işi ilanlarında ilan metninin sonunda geçer. Gerçek formatlar (canlı veriden):
+#   "...Sınır Değer Katsayısı (N) = 1,00" / "...Sınır Değer Katsayısı (N) : 1" / "(N) : 1,20"
+# ÖNEMLİ: değer çoğu zaman ONDALIKSIZ tam sayı ("1") olarak yazılıyor — eski regex zorunlu
+# ondalık (\d+[.,]\d+) istediği için bu ihalelerin ~2/3'ünü kaçırıyordu. Ondalık artık opsiyonel.
+ESIK_KATSAYI_RE = re.compile(r"sınır\s*değer\s*katsayısı\s*\(?\s*n\s*\)?\s*[:=;]\s*(\d+(?:[.,]\d+)?)", re.IGNORECASE)
 
 def esik_katsayi_parse(metin):
     if not metin: return None
