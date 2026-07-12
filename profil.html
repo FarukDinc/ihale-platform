@@ -797,8 +797,19 @@
     const { data: { user } } = await sb.auth.getUser();
     if (!user) { window.location.href = 'login'; return; }
 
+    // Bildirim tercihleri sektör seçimine bağımlı DEĞİL — sektör seçilmemiş olsa bile
+    // (aşağıdaki kontrol nedeniyle geri kalan kayıt engellenir) bu ayar kaydedilsin.
+    // upsert (update DEĞİL): kullanıcının profil satırı hiç yoksa update sessizce hiçbir
+    // şey yapmaz — satır yoksa oluşturması için onConflict'li upsert gerekir.
+    sb.from('profil').upsert({
+      user_id: user.id,
+      bildirim_email: document.getElementById('bildirim-email').checked,
+      bildirim_son_teklif: document.getElementById('bildirim-son-teklif').checked,
+      bildirim_gun_oncesi: parseInt(document.getElementById('bildirim-gun-oncesi').value) || 3
+    }, { onConflict: 'user_id' }).then(() => {});
+
     if (seciliSektorler.size === 0) {
-      toast('En az bir sektör seçmelisiniz!', 'hata');
+      toast('Bildirim tercihleri kaydedildi. Filtreleri kaydetmek için en az bir sektör seçmelisiniz.', 'hata');
       btn.disabled = false; btn.textContent = 'Değişiklikleri Kaydet'; return;
     }
 
@@ -829,12 +840,7 @@
       if (kelimelerMetin) {
         sb.from('profil').update({ anahtar_kelimeler: kelimelerMetin }).eq('user_id', user.id).then(() => {});
       }
-      // Bildirim tercihleri ayrıca kaydedilir (kolonlar DB'de olmayabilir — sessiz hata)
-      sb.from('profil').update({
-        bildirim_email: document.getElementById('bildirim-email').checked,
-        bildirim_son_teklif: document.getElementById('bildirim-son-teklif').checked,
-        bildirim_gun_oncesi: parseInt(document.getElementById('bildirim-gun-oncesi').value) || 3
-      }).eq('user_id', user.id).then(() => {});
+      // Bildirim tercihleri fonksiyonun başında zaten (upsert ile) kaydedildi.
       toast('✓ Profil kaydedildi! Uyum skorları güncelleniyor...', 'basari');
     }
 
