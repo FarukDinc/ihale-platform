@@ -50,6 +50,29 @@ Taslağı** `/teklif-olustur` (teklif-olustur "AI ile Oluştur") 🟡; (4) **CAP
 kullanıcı-özelliğinin hepsi bu oturuma kadar KIRIKTI (`gemini-1.5-flash` 404 + File API + kredi bug'ları);
 bu oturumda düzeltildi. Model her yerde `gemini-2.5-flash`.
 
+**⚠️ 12 Tem (otonom devam oturumu) — 2 GERÇEK SORUN BULUNDU + 1 DÜZELTİLDİ:**
+
+1. **`takip_idareler` tablosu şemada YOK (404 PGRST205):** Kurum takibi butonu (`kurum-analiz.html`)
+   test edildi — tıklanınca "✓ Takip Ediliyor"a dönmüyor, network'te `takip_idareler` sorgusu 404
+   dönüyor. Önceki oturumun deploy çıktısı migration'ın başarılı olduğunu gösteriyordu (policy'ler
+   listelendi) ama şu an tablo PostgREST şema önbelleğinde yok — muhtemelen transaction commit
+   olmadan bağlantı koptu (bugün SSH birkaç kez koptu). **Çözüm: migration'ı tekrar çalıştır**
+   (idempotent, zararsız): `docker exec -i supabase-db psql -U postgres -d postgres <
+   backend/migration_takip_idareler.sql`. Buna karşın `takip_firmalar` (rakip takibi) SORUNSUZ
+   çalışıyor — canlıda gerçek kullanıcıyla test edildi, DB'ye yazdı.
+2. **DT backfill process (PID 3839631) yine ölü:** `dogrudan_temin_ilanlari` iki kontrol arasında
+   (birkaç dakika) hiç büyümedi (2.680'de sabit, en eski tarih hâlâ Mayıs 2023) — process artık
+   çalışmıyor. Devam ettirmek istersen tekrar başlat (checkpoint kaldığı yerden devam eder):
+   `cd /opt/ihale-platform/backend && source venv/bin/activate && nohup python
+   ekap_dogrudan_temin_scraper.py --backfill --max-pages 100000 >> ../logs/dt_backfill.log 2>&1 &`
+   — bu sefer `disown` da eklemek SSH kopmalarına karşı ekstra güvenlik sağlar.
+3. **✅ DÜZELTİLDİ — `profil.html` bildirim tercihi bug'ı:** `kaydet()` fonksiyonu sektör
+   seçilmemişse en başta `return` ediyordu — bu yüzden `bildirim_email` gibi sektörle alakasız bir
+   ayar bile kaydedilemiyordu (bugünkü kurum/rakip takibi e-posta özelliğinin pratik faydasını
+   ciddi kısıtlayan bir bug). Bildirim kaydı artık sektör kontrolünden önce, `upsert` ile (update
+   değil — satır yoksa update sessizce hiçbir şey yapmıyordu) ayrı kaydediliyor. Yerel sunucuda
+   gerçek production Supabase'e karşı test edildi, çalışıyor. Commit `ad993c9`, pull yeterli.
+
 ### 👤 SENİN YAPMAN GEREKEN
 
 **1. Backfill'i arada bir kontrol et (otomatik duracak, ama ilerlemeyi görmek istersen):**
