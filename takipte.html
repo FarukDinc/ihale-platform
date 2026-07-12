@@ -394,6 +394,24 @@
         </table>
       </div>
 
+      <!-- TAKİP EDİLEN KURUMLAR -->
+      <div class="table-wrap" style="margin-top:24px;">
+        <div class="table-header">
+          <span class="table-title">🏛️ Takip Ettiğim Kurumlar</span>
+          <span style="font-size:12px; color:var(--muted);" id="kurum-takip-count"></span>
+        </div>
+        <div id="kurum-takip-liste" style="padding:14px 18px;font-size:13px;color:var(--muted);">Yükleniyor...</div>
+      </div>
+
+      <!-- TAKİP EDİLEN FİRMALAR -->
+      <div class="table-wrap" style="margin-top:20px;">
+        <div class="table-header">
+          <span class="table-title">🏆 Takip Ettiğim Firmalar (Rakip Takibi)</span>
+          <span style="font-size:12px; color:var(--muted);" id="firma-takip-count"></span>
+        </div>
+        <div id="firma-takip-liste" style="padding:14px 18px;font-size:13px;color:var(--muted);">Yükleniyor...</div>
+      </div>
+
     </div><!-- /page-body -->
   </div><!-- /main -->
 </div><!-- /app -->
@@ -672,7 +690,58 @@
     istatistikleriGuncelle();
   }
 
+  // ── Takip Ettiğim Kurumlar / Firmalar ────────────────────────────
+  function takipSatiri(ad, href, tablo) {
+    return `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border);">
+      <a href="${href}" style="color:var(--white);text-decoration:none;font-size:13px;font-weight:600;">${ad}</a>
+      <button onclick="takipSil('${tablo}','${encodeURIComponent(ad)}',this)" style="background:none;border:1px solid var(--border);color:var(--muted);border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer;">Takibi Bırak</button>
+    </div>`;
+  }
+
+  window.takipSil = async function(tablo, adEncoded, btn) {
+    const ad = decodeURIComponent(adEncoded);
+    const { data: { user } } = await sb.auth.getUser();
+    if (!user) return;
+    const kolon = tablo === 'takip_idareler' ? 'idare_ad' : 'firma_ad';
+    await sb.from(tablo).delete().eq('kullanici_id', user.id).eq(kolon, ad);
+    btn.closest('div').remove();
+  };
+
+  async function kurumFirmaTakipleriniYukle() {
+    const { data: { user } } = await sb.auth.getUser();
+    if (!user) return;
+
+    try {
+      const { data: kurumlar } = await sb.from('takip_idareler').select('idare_ad').eq('kullanici_id', user.id);
+      const kEl = document.getElementById('kurum-takip-liste');
+      const kCount = document.getElementById('kurum-takip-count');
+      if (!kurumlar || kurumlar.length === 0) {
+        kEl.innerHTML = 'Henüz bir kurum takip etmiyorsunuz. Kurum Analizi sayfasında "🔔 Kurumu Takip Et" butonuna basarak ekleyin.';
+      } else {
+        kCount.textContent = `${kurumlar.length} kurum`;
+        kEl.innerHTML = kurumlar.map(k => takipSatiri(k.idare_ad, `kurum-analiz?kurum=${encodeURIComponent(k.idare_ad)}`, 'takip_idareler')).join('');
+      }
+    } catch (e) {
+      document.getElementById('kurum-takip-liste').textContent = 'Bu özellik henüz kullanıma açılmadı.';
+    }
+
+    try {
+      const { data: firmalar } = await sb.from('takip_firmalar').select('firma_ad').eq('kullanici_id', user.id);
+      const fEl = document.getElementById('firma-takip-liste');
+      const fCount = document.getElementById('firma-takip-count');
+      if (!firmalar || firmalar.length === 0) {
+        fEl.innerHTML = 'Henüz bir firma takip etmiyorsunuz. Firma Analizi sayfasında "⭐ Rakibi Takip Et" butonuna basarak ekleyin.';
+      } else {
+        fCount.textContent = `${firmalar.length} firma`;
+        fEl.innerHTML = firmalar.map(f => takipSatiri(f.firma_ad, `firma-analiz?firma=${encodeURIComponent(f.firma_ad)}`, 'takip_firmalar')).join('');
+      }
+    } catch (e) {
+      document.getElementById('firma-takip-liste').textContent = 'Bu özellik henüz kullanıma açılmadı.';
+    }
+  }
+
   profilCek().then(() => takipListesiniYukle());
+  kurumFirmaTakipleriniYukle();
 </script>
 </body>
 </html>
