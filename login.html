@@ -282,17 +282,23 @@
     const access_token = params.get('access_token');
     const refresh_token = params.get('refresh_token');
     const type = params.get('type');
+    history.replaceState(null, '', window.location.pathname); // token'ı adres çubuğundan hemen temizle
     try {
       const sb = window.supabase.createClient(API.CONFIG.SUPABASE_URL, API.CONFIG.SUPABASE_ANON_KEY);
-      if (access_token && refresh_token) {
-        await sb.auth.setSession({ access_token, refresh_token });
+      // Token'ı DOĞRULA — geçersiz/süresi dolmuş linkte kullanıcıyı bozuk oturumla bırakma.
+      const { data: sd, error: se } = await sb.auth.setSession({ access_token, refresh_token });
+      if (se || !sd || !sd.session || !sd.user) {
+        _onayIsleniyor = false;
+        localStorage.removeItem('ihale_token');
+        toast('Onay bağlantısı geçersiz veya süresi dolmuş. Lütfen giriş yapmayı deneyin.', 'hata');
+        return;
       }
-      localStorage.setItem('ihale_token', access_token);
-      history.replaceState(null, '', window.location.pathname); // token'ı adres çubuğundan temizle
+      localStorage.setItem('ihale_token', sd.session.access_token);
       toast(type === 'recovery' ? 'Doğrulandı! Yönlendiriliyorsunuz…' : '✓ E-postanız onaylandı! Giriş yapılıyor…', 'basari');
       setTimeout(() => window.location.href = 'dashboard', 1400);
     } catch (e) {
       _onayIsleniyor = false;
+      localStorage.removeItem('ihale_token');
       toast('Doğrulama tamamlanamadı. Lütfen giriş yapın.', 'hata');
     }
   })();
