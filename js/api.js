@@ -97,7 +97,13 @@ const API = (() => {
             const { data, error } = await supabase.auth.signUp({
                 email,
                 password: sifre,
-                options: { data: { firma_adi } }
+                options: {
+                    data: { firma_adi },
+                    // E-posta onay linki buraya döner; login.html hash'teki token'ı
+                    // işleyip oturumu kurar. Boş bırakılırsa SITE_URL'e (anasayfa) döner
+                    // ve anasayfa hash'i işlemediği için kullanıcı "hiçbir şey olmadı" sanır.
+                    emailRedirectTo: CONFIG.SUPABASE_URL + "/login"
+                }
             });
             if (error) throw new Error(error.message);
             if (data.session) token.yaz(data.session.access_token);

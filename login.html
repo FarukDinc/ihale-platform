@@ -261,6 +261,42 @@
     setTimeout(() => el.className = '', 3000);
   }
 
+  // ── E-posta onay linki işleyici ────────────────────────────
+  // GoTrue onay e-postasındaki bağlantı buraya #access_token=...&type=signup ile döner.
+  // Anasayfa hash'i işlemediği için eskiden kullanıcı onay linkine tıklayınca "hiçbir şey
+  // olmuyor" sanıyordu. Burada token'ı yakalayıp oturumu kurup dashboard'a alıyoruz.
+  let _onayIsleniyor = false;
+  (async () => {
+    const hash = window.location.hash || '';
+    if (hash.indexOf('access_token') === -1) {
+      // Hata ile döndüyse (?error=... veya #error=...) kullanıcıya bildir
+      const sp = new URLSearchParams((hash.startsWith('#') ? hash.slice(1) : window.location.search.slice(1)));
+      if (sp.get('error') || sp.get('error_description')) {
+        toast(decodeURIComponent(sp.get('error_description') || 'Bağlantı geçersiz veya süresi dolmuş').replace(/\+/g,' '), 'hata');
+        history.replaceState(null, '', window.location.pathname);
+      }
+      return;
+    }
+    _onayIsleniyor = true;
+    const params = new URLSearchParams(hash.slice(1));
+    const access_token = params.get('access_token');
+    const refresh_token = params.get('refresh_token');
+    const type = params.get('type');
+    try {
+      const sb = window.supabase.createClient(API.CONFIG.SUPABASE_URL, API.CONFIG.SUPABASE_ANON_KEY);
+      if (access_token && refresh_token) {
+        await sb.auth.setSession({ access_token, refresh_token });
+      }
+      localStorage.setItem('ihale_token', access_token);
+      history.replaceState(null, '', window.location.pathname); // token'ı adres çubuğundan temizle
+      toast(type === 'recovery' ? 'Doğrulandı! Yönlendiriliyorsunuz…' : '✓ E-postanız onaylandı! Giriş yapılıyor…', 'basari');
+      setTimeout(() => window.location.href = 'dashboard', 1400);
+    } catch (e) {
+      _onayIsleniyor = false;
+      toast('Doğrulama tamamlanamadı. Lütfen giriş yapın.', 'hata');
+    }
+  })();
+
   // Giriş
   async function girisYap(e) {
     e.preventDefault();
@@ -295,8 +331,9 @@
 
     try {
       await API.auth.kayit(email, sifre, firma_adi);
-      toast('Kayıt başarılı! E-postanızı onaylayın.', 'basari');
-      setTimeout(() => panelGoster('giris'), 2000);
+      toast('Kaydınız alındı! E-postanıza gönderdiğimiz onay bağlantısına tıklayın, ardından giriş yapabilirsiniz.', 'basari');
+      document.getElementById('kayit-firma')?.closest('form')?.reset?.();
+      setTimeout(() => panelGoster('giris'), 3500);
     } catch (err) {
       toast(err.message || 'Kayıt başarısız', 'hata');
       btn.textContent = 'Ücretsiz Başla';
@@ -304,8 +341,9 @@
     }
   }
 
-  // Zaten giriş yapılmışsa dashboard'a (veya ?donus hedefine)
-  if (typeof API !== 'undefined' && API.auth.girisli_mi()) {
+  // Zaten giriş yapılmışsa dashboard'a (veya ?donus hedefine) — ama e-posta onayı
+  // işleniyorsa (hash'te access_token var) o akışın yönlendirmesini bekle, çakışma olmasın.
+  if (!_onayIsleniyor && typeof API !== 'undefined' && API.auth.girisli_mi()) {
     window.location.href = donusHedefi();
   }
 </script>
