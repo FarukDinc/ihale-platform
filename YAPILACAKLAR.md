@@ -7,19 +7,35 @@
 > **KALICI TALİMAT (12 Tem, kullanıcı emri):** Bu blok + ilgili bölümler her oturumda otomatik
 > güncellenir, kullanıcı hatırlatmak zorunda değil. Bkz. hafıza `yapilacaklar-auto-update`.
 
-> ## 🔴🔴🔴 KRİTİK — GİT PULL YAPILMADI, BUGÜNKÜ ~8 COMMIT CANLIDA YOK (12 Tem, otonom oturum sonu)
-> **VDS'te `git pull` çalıştırılmadan bu oturumu bitirme.** Canlıda test edildi (`curl` ile
-> dosya içeriği kontrol edildi — nginx'in extensionless-fallback'i yüzünden "200 dönüyor" YANILTICI,
-> gerçek içerik anasayfa HTML'i dönüyordu): `profil.html`, `bildirimler.html`, `dogrudan-temin.html`,
-> `takipte.html`, `js/bildirim-sayaci.js` ve 17 sayfaya eklenen script satırı **HİÇBİRİ VDS'te YOK**.
-> Yani commit `ad993c9`'dan `b409422`'ye kadar olan (bu oturumun TÜM bulguları/düzeltmeleri) sadece
-> GitHub'da, VDS'e hiç ulaşmamış. **Tek komut yeterli, migration/restart GEREKMİYOR:**
+> ## 🔴🔴🔴 KRİTİK — GİT PULL HÂLÂ YAPILMADI (13 Tem'de tekrar doğrulandı)
+> **VDS'te `git pull` çalıştırılmadan bu oturumu bitirme.** 12 Tem'de tespit edilmiş, 13 Tem'de
+> tekrar kontrol edildi — hâlâ düzelmemiş (`profil.html`'deki fix canlıda yok, `takip_idareler`
+> hâlâ 404). Bu oturumda EKLENEN yeni commit'ler de dahil (KİK Kurul Kararları scraper'ı!) hiçbiri
+> canlıda değil. **Tek komut yeterli, migration/restart genelde GEREKMİYOR (KİK scraper'ı hariç,
+> aşağıya bak):**
 > ```bash
 > ssh -i ~/.ssh/ihale_oracle root@195.85.207.126
 > cd /opt/ihale-platform && git pull origin main
 > ```
 > Bunu yapmadan önceki "canlıda doğrulandı" notlarının çoğu artık geçersiz sayılmalı — sadece
 > GitHub'daki koda karşı doğrulandı, o an canlı olan koda karşı değil.
+
+> ## 🟢🟢🟢 BÜYÜK BULGU — KİK Kurul Kararları scraper'ı ARTIK ÇALIŞIYOR (13 Tem)
+> Önceki oturumların "E4, büyük ayrı proje, düşük öncelik" değerlendirmesi ARTIK GEÇERSİZ.
+> Kullanıcı onayıyla (Doğrudan Temin scraper'ındaki TLS/crypto tekniğini farklı bir endpoint'e
+> uygulamak için ayrı izin istendi ve verildi) gerçek, çalışan bir API bulundu:
+> `POST ekapv2.kik.gov.tr/b_ihalearaclari/api/KurulKararlari/GetKurulKararlari` — eski script
+> yanlış bir URL kullanıyordu (`ekap.kik.gov.tr/EKAP/karar/arama`, 302 redirect, hiç veri yok,
+> "IP-bloklu" sanılmıştı). `kik_backfill.py` tamamen yeniden yazıldı, yerelde dry-run ile
+> doğrulandı: **14 günde 97 gerçek karar**, Türkçe karakterler doğru. `kik-kararlar.html`'in
+> sorgu kolonları zaten şemayla tam uyumluydu — tek eksik gerçek veriydi.
+> **Deploy (SSH gerekiyor, migration zaten önceki oturumdan hazır):**
+> ```bash
+> cd /opt/ihale-platform && git pull origin main
+> bash backend/deploy_12tem_kik_kararlari.sh
+> ```
+> **Sınırlama:** liste görünümünde tam karar metni/sonucu (iptal/kabul/red) yok — ayrı bir "detay"
+> API çağrısı gerektiriyor, henüz çözülmedi (gelecek iş).
 
 **Canlı site:** `https://ihaleglobal.com` (VDS `195.85.207.126`, self-hosted Supabase). Managed
 Supabase terk edildi, Render tamamen kaldırıldı. `ilanlar` ~79.7K (aktif 14.7K), `ihale_sonuclari`
@@ -160,8 +176,10 @@ kullanım doğru reddedildi.
 3. Proxy netleşince: varsa rekabetçi ihaleler için hızlandırılmış backfill'i başlat
    (`ekap_sonuc_backfill.py --max-pages` büyük bir değerle); yoksa proxy alım sürecini konuş.
 4. `Faz E1`in cron parçası (`rakip_bildirim.py`) VDS'te ilk gece turunda gerçek veri ile doğrulanmalı.
-5. Sonraki plan maddeleri (düşük öncelik, net yön verirsen): "Sözleşme Listesi" (madde 7, aşağıda),
-   E4 (KİK kararları — ciddi altyapı gerektirir, düşük öncelik), D3'ün eski-ilan backfill'i (karar sonrası).
+5. KİK Kurul Kararları deploy edilince (↑ büyük bulgu), gerçek veri gelip gelmediğini `kik-kararlar.html`
+   üzerinden canlıda doğrula. İsteğe bağlı: tam karar metni/sonucu için "detay" API'sini keşfet.
+6. Sonraki plan maddeleri (düşük öncelik, net yön verirsen): "Sözleşme Listesi" (madde 7, aşağıda),
+   D3'ün eski-ilan backfill'i (karar sonrası).
 
 **12 Tem oturumu (devam):**
 - ✅ **YENİ ÖZELLİK — Açık (Gündüz) Tema:** kullanıcı isteği ("herkes siyah modu sevmez"). Mevcut CSS
