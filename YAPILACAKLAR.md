@@ -68,6 +68,19 @@
 > `scraper.log`'u düzenli (haftalık?) tarama, sessiz cron hatalarını yakalamanın en etkili yolu
 > çıktı — bu oturumda organik olarak yapıldı ama düzenli bir alışkanlık olabilir.
 
+> ## ✅ 14 Tem (devam) — `idareler.html` performans optimizasyonu + 7. bug (kullanıcı onayıyla)
+> `idare_sayim()` RPC'si `migration_sonuc_schema.sql`'de tanımlıydı ama prod'da HİÇ VAR OLMAMIŞTI
+> (PGRST202 — muhtemelen migration ilk çalıştırıldığında script daha önceki bir ifadede durmuş).
+> `migration_idare_sayim_grant.sql` ile deploy edildi + GRANT eklendi (commit `2fc2d30`).
+> `idareler.html` bu RPC'yi kullanacak şekilde yeniden yazıldı (commit `72bdbe7`) — önceden TÜM
+> `ilanlar` tablosunu (89.975 satır) 1000'lik sayfalarla tarayıcıya indirip JS'te GROUP BY yapıyordu.
+> **Deploy sırasında 7. bir bug bulundu + hemen düzeltildi:** ilk versiyon RPC'yi `.range()` ile
+> çağırıyordu ama PostgREST sunucusu POST isteklerinde sabit 1000 satır limiti uyguluyor (`db-max-rows`,
+> Range header'ı yok sayıyor) — canlıda test edilirken "15.130 idareden sadece 1.000'i" göründüğü
+> fark edildi. Düzeltme (commit `4482133`): GET + `limit`/`offset` query param'larıyla sayfalı çekim
+> (PostgREST bunu doğru destekliyor, curl ile doğrulandı). **Canlıda tam doğrulandı:** 15.130 idare,
+> 89.974 toplam ihale (gerçek `ilanlar` sayısıyla eşleşiyor), arama/filtre çalışıyor, konsol temiz.
+
 > ## ℹ️ 14 Tem (devam) — YANLIŞ ALARM: DT backfill log'u yanıltıcı görünüyordu (buffering)
 > `dt_backfill.log`'un son satırları eski bir traceback gösteriyordu (self-healing fix'ten önceki
 > bir çöküşten kalma) ve 11 dakika boyunca yeni satır eklenmemiş gibi görünüyordu — süreç ölmüş
