@@ -338,50 +338,20 @@
   let siraKey = 'toplam_desc';
 
   // ── Veri çekme ──────────────────────────────────────────
+  // idare_sayim() RPC'si sunucuda GROUP BY yapar — 80K+ satırı tarayıcıya
+  // indirip JS'te gruplamak yerine tek istekte hazır özet döner.
   async function veriCek() {
-    const sayim = {};  // { idare: { toplam, aktif, iller: {il: count} } }
-    let offset = 0;
-    const batchSize = 1000;
-    let toplamKayit = 0;
+    document.getElementById('yukleniyor-mesaj').textContent = 'İdare verileri çekiliyor…';
+    document.getElementById('progress-fill').style.width = '60%';
 
-    // Önce toplam sayıyı öğren (progress bar için)
-    const { count } = await sb.from('ilanlar').select('*', { count: 'exact', head: true });
-    toplamKayit = count || 12000;
-
-    while (true) {
-      const { data, error } = await sb.from('ilanlar')
-        .select('idare, il, durum')
-        .not('idare', 'is', null)
-        .range(offset, offset + batchSize - 1);
-
-      if (error || !data || data.length === 0) break;
-
-      data.forEach(r => {
-        if (!r.idare) return;
-        if (!sayim[r.idare]) sayim[r.idare] = { toplam: 0, aktif: 0, iller: {} };
-        sayim[r.idare].toplam++;
-        if (r.durum === 'aktif') sayim[r.idare].aktif++;
-        if (r.il) {
-          sayim[r.idare].iller[r.il] = (sayim[r.idare].iller[r.il] || 0) + 1;
-        }
-      });
-
-      offset += batchSize;
-      const yuzde = Math.min(Math.round(offset / toplamKayit * 100), 99);
-      document.getElementById('progress-fill').style.width = yuzde + '%';
-      document.getElementById('yukleniyor-mesaj').textContent =
-        `İdare verileri çekiliyor… (${offset.toLocaleString('tr-TR')} / ${toplamKayit.toLocaleString('tr-TR')})`;
-
-      if (data.length < batchSize) break;
-    }
+    const { data, error } = await sb.rpc('idare_sayim');
+    if (error) throw error;
 
     document.getElementById('progress-fill').style.width = '100%';
 
-    // Map → dizi dönüştür
-    tumIdare = Object.entries(sayim).map(([ad, v]) => {
-      const ilEn = Object.entries(v.iller).sort((a, b) => b[1] - a[1])[0]?.[0] || '—';
-      return { ad, il: ilEn, toplam: v.toplam, aktif: v.aktif };
-    });
+    tumIdare = (data || []).map(r => ({
+      ad: r.idare, il: r.en_yakin_il || '—', toplam: r.toplam, aktif: r.aktif,
+    }));
 
     // İstatistik kartları
     const toplamIhale = tumIdare.reduce((s, i) => s + i.toplam, 0);
