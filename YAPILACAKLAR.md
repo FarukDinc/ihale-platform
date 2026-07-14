@@ -100,8 +100,18 @@
 > `idareler.html`, `sektorler.html`'e `trFold()` (İ/I/ı→i, Ş/ş→s, Ğ/ğ→g, Ü/ü→u, Ö/ö→o, Ç/ç→c +
 > toLowerCase) eklendi, aramanın her iki tarafına uygulandı. Commit `cb8291d`. **Canlıda doğrulandı:**
 > "prefabrik" → 46 firma (önceden 0), "insaat" → 11.898 firma (İNŞAAT eşleşiyor), "saglik" → 1.348
-> idare (SAĞLIK BAKANLIĞI eşleşiyor), konsol temiz. **Not:** aynı desen `ihaleler.html` aramasında da
-> olabilir — kontrol edilmedi, gelecek tur için aday.
+> idare (SAĞLIK BAKANLIĞI eşleşiyor), konsol temiz.
+>
+> ## 🔴 14 Tem (devam) — 10. bug TESPİT EDİLDİ (henüz DÜZELTİLMEDİ, büyük iş): ihaleler.html Türkçe arama
+> `ihaleler.html` (ANA arama sayfası) aramayı sunucu-side Postgres `ILIKE` ile yapıyor (client-side JS
+> değil — `baslik/idare/okas/isin_yapilacagi_yer/ilan_metni` üzerinde `.or(...ilike...)`). Bu DB'nin
+> locale'inde ILIKE Türkçe İ/ş/ğ katlamıyor. **Ampirik olarak REST ile doğrulandı:**
+> `baslik ILIKE '%insaat%'` → **0 sonuç**; `'%İNŞAAT%'` → **1998**; `'%inşaat%'` (küçük ş) → **74**.
+> Yani kullanıcı "insaat" yazınca ~2000 inşaat ihalesinin HİÇBİRİNİ görmüyor — ana sayfada ciddi bug.
+> **Çözüm (büyük iş, ayrı oturum):** `ilanlar` (90K satır) üzerinde ya `unaccent`+trigram, ya da
+> Türkçe-katlanmış generated kolon(lar) + GIN/trigram indeks + frontend'in arama terimini de aynı
+> şekilde katlayıp o kolonları sorgulaması. En büyük tabloda şema değişikliği + performans indeksi +
+> sorgu yeniden yazımı → dikkatli tasarım ve test ister, oturum sonunda aceleye getirilmemeli.
 
 > ## ℹ️ 14 Tem (devam) — YANLIŞ ALARM: DT backfill log'u yanıltıcı görünüyordu (buffering)
 > `dt_backfill.log`'un son satırları eski bir traceback gösteriyordu (self-healing fix'ten önceki
