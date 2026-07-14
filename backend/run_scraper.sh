@@ -1,0 +1,27 @@
+#!/bin/bash
+# Gece scraper turu — VDS cron (GitHub Actions'in yerini alir)
+cd /opt/ihale-platform/backend
+set -a
+source /opt/ihale-platform/backend/.env
+set +a
+export EKAP_BELGE_LINK=1
+VENV=/opt/ihale-platform/backend/venv/bin
+TS=$(date +'%Y-%m-%d %H:%M:%S')
+echo "[$TS] === Scraper baslatiliyor ===" >> /opt/ihale-platform/logs/scraper.log
+$VENV/python ekap_scraper.py >> /opt/ihale-platform/logs/scraper.log 2>&1
+echo "[$TS] === Bildirimler ===" >> /opt/ihale-platform/logs/scraper.log
+$VENV/python notify.py >> /opt/ihale-platform/logs/scraper.log 2>&1
+echo "[$TS] === Bitti ===" >> /opt/ihale-platform/logs/scraper.log
+
+$VENV/python kik_backfill.py --gun 3 >> /opt/ihale-platform/logs/scraper.log 2>&1
+$VENV/python bulten_gonder.py >> /opt/ihale-platform/logs/scraper.log 2>&1
+
+# ÖNCELİK 10 Faz A1/B2 — sonuç verisi taraması + firma sözlüğü tazeleme (9 Tem 2026)
+echo "[$TS] === Sonuc backfill ===" >> /opt/ihale-platform/logs/scraper.log
+$VENV/python ekap_sonuc_backfill.py --tum-kayitlar --max-pages 50 >> /opt/ihale-platform/logs/scraper.log 2>&1
+echo "[$TS] === Yuklenici tazeleme ===" >> /opt/ihale-platform/logs/scraper.log
+$VENV/python yuklenici_yenile_calistir.py >> /opt/ihale-platform/logs/scraper.log 2>&1
+$VENV/python rakip_bildirim.py >> /opt/ihale-platform/logs/scraper.log 2>&1
+$VENV/python ilan_embed_uret.py --max 300 >> /opt/ihale-platform/logs/scraper.log 2>&1
+$VENV/python ekap_dogrudan_temin_scraper.py --max-pages 20 >> /opt/ihale-platform/logs/scraper.log 2>&1
+$VENV/python idare_bildirim.py >> /opt/ihale-platform/logs/scraper.log 2>&1

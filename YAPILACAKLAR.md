@@ -33,6 +33,21 @@
 >    checkpoint'ten devam) — PID `2122545` doğrulandı, çalışıyor. Önceki çöküşte kayıt 2.680→**5.247**'ye
 >    çıkmıştı (en eski tarih Mayıs 2023→24 Ara 2021), şimdi kaldığı yerden devam ediyor.
 
+> ## 🔴 14 Tem — 2 GERÇEK CRON BUG'I BULUNDU + DÜZELTİLDİ (VDS `run_scraper.sh`, git'te takip edilmiyor!)
+> `run_scraper.sh` repoda YOK (sadece VDS'te elle düzenleniyor) — bu yüzden geçmiş deploy script'lerinin
+> "eklendi" varsayımları asıl dosyada doğrulanmamıştı. Kontrol edilince:
+> 1. **`idare_bildirim.py` (kurum takibi bildirimi) hiç cron'da değildi** — `deploy_12tem_kurum_takibi.sh`
+>    muhtemelen bir önceki SSH-kopması yüzünden 3. adıma hiç ulaşmamış (aynı oturumda `takip_idareler`
+>    tablosunun da commit olmadan kopması gibi). Yani **kurum takibi özelliği deploy edildiğinden beri
+>    (12 Tem) hiçbir kullanıcıya kurum bildirimi gitmemiş.** Satır eklendi (sona), doğrulandı.
+> 2. **`kik_backfill.py --max-pages 10`** — bu flag scraper'ın script'inde HİÇ YOK (argparse sadece
+>    `--gun`/`--baslangic`/`--bitis`/`--dry-run` kabul ediyor), muhtemelen eski (13 Tem öncesi) bir
+>    kik_backfill.py sürümünden kalma satır, yeniden yazımda flag'i kaldırılmış ama cron satırı
+>    güncellenmemiş — **her gece argparse hatasıyla sessizce başarısız oluyordu.** `--gun 3`'e
+>    düzeltildi (deploy script'inin öngördüğü doğru değer).
+> **Ders/tavsiye:** `run_scraper.sh` git'e alınmalı (şu an tek kopyası VDS'te, tarihi yok, bu tür
+> sessiz sapmalar fark edilmiyor) — gelecek oturum için öneri.
+
 **Canlı site:** `https://ihaleglobal.com` (VDS `195.85.207.126`, self-hosted Supabase). Managed
 Supabase terk edildi, Render tamamen kaldırıldı. `ilanlar` ~79.7K (aktif 14.7K), `ihale_sonuclari`
 **138K** (geçmiş backfill hâlâ arka planda akıyor), `dogrudan_temin_ilanlari` **2.680** (↓).
