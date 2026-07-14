@@ -63,6 +63,8 @@ from dotenv import load_dotenv
 
 load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), ".env"))
 
+from proxy_config import rastgele_proxy_url
+
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "")
 SUPABASE_KEY = os.environ.get("SUPABASE_SERVICE_KEY", "")
 
@@ -492,7 +494,14 @@ async def calis(max_pages: int, dry_run: bool, start_skip: int | None, tum_kayit
     taranan, eslesen, yazilan, hata = 0, 0, 0, 0
     sayfa_basina_yeni = []  # son N sayfada yeni yazma oldu mu (plato tespiti için)
 
-    async with httpx.AsyncClient(verify=ssl_ctx(), http2=False, timeout=30.0) as client:
+    # Rekabetçi (ilanlar) derin backfill EKAP'ı yoğun tarıyor — IP kısıtlaması riskine karşı
+    # Webshare'in 100 IP'lik havuzundan rastgele biri seçilir (PROXY_LIST yapılandırılmamışsa
+    # None döner, direkt bağlantıya düşer). Bloklanırsa script'i yeniden başlatmak (checkpoint
+    # kaldığı yerden devam eder) farklı bir IP'ye düşürür.
+    secilen_proxy = rastgele_proxy_url()
+    if secilen_proxy:
+        print(f"→ Proxy kullanılıyor: {secilen_proxy.split('@')[-1]}")
+    async with httpx.AsyncClient(verify=ssl_ctx(), http2=False, timeout=30.0, proxy=secilen_proxy) as client:
         for sayfa in range(max_pages):
             veri = await post(client, "/b_ihalearama/api/Ihale/GetListByParameters", {
                 "searchText": "", "paginationSkip": skip, "paginationTake": SAYFA_BOYUTU,
