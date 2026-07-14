@@ -7,6 +7,38 @@
 > **KALICI TALİMAT (12 Tem, kullanıcı emri):** Bu blok + ilgili bölümler her oturumda otomatik
 > güncellenir, kullanıcı hatırlatmak zorunda değil. Bkz. hafıza `yapilacaklar-auto-update`.
 
+> ## 📋 15 TEMMUZ OTURUMU (devam) — Webshare proxy alındı + bağlandı + backfill başlatıldı
+> Kullanıcı Webshare'de **100 Türkiye datacenter proxy** satın aldı (Shared/Datacenter, 100 IP,
+> 250GB/ay, ~$3/ay). Kurulum:
+> - `backend/proxy_config.py` YENİDEN YAZILDI — önceden hiçbir scraper tarafından kullanılmıyordu
+>   (kod hazırdı ama bağlanmamıştı). Webshare'in paylaşımlı rotating gateway'i bu planda KAPALI
+>   ("not in your list" hatası) — rotasyon istemci tarafında `PROXY_LIST`'ten (100× ip:port, ortak
+>   kullanıcı/şifre) rastgele seçimle yapılıyor (`rastgele_proxy_url()`).
+> - `backend/ekap_sonuc_backfill.py`'nin derin backfill döngüsündeki EKAP'a giden `httpx.AsyncClient`'ına
+>   proxy bağlandı (SADECE bu — kendi Supabase REST çağrılarımız proxy'siz kalıyor). Proxy
+>   yapılandırılmamışsa None döner, nightly cron etkilenmez.
+> - VDS `backend/.env`'e kimlikler eklendi (yedek alındı). Commit `cf2ac0b`.
+> - **Uçtan uca doğrulandı:** tekil istek (5 gerçek EKAP kaydı) VE sürdürülebilir test (10 sayfa/1000
+>   kayıt, tek proxy IP, 0 hata) ikisi de başarılı.
+> - **Kullanıcı onayıyla derin backfill BAŞLATILDI** (15 Tem ~22:21 UTC): `nohup python3
+>   ekap_sonuc_backfill.py --max-pages 50000` (PID değişebilir, checkpoint'ten devam eder,
+>   `disown` ile SSH kopmalarına dayanıklı). Log: `logs/sonuc_backfill_proxy.log` (buffering
+>   nedeniyle gecikmeli görünebilir — bilinen zararsız durum, REST/checkpoint ile doğrula).
+>   Checkpoint başlangıç `skip=81200`, hızlı ilerliyor (~3400 kayıt/dk gözlemlendi).
+> - **Sıradaki oturum:** ilerlemeyi kontrol et (`cat backend/.sonuc_backfill_checkpoint.json` +
+>   REST'ten `ihale_sonuclari` toplam sayısı), süreç ölmüşse proxy ile yeniden başlat (checkpoint
+>   kaldığı yerden devam eder). Not: Webshare planında "10 manual replacement" hakkı var — bir IP
+>   gerçekten bloklanırsa panelden değiştirilebilir, ama şu ana kadar hiç blok yaşanmadı.
+
+> ## 📋 15 TEMMUZ OTURUMU — DASHBOARD: KPI kartları tıklanabilir + bildirim dropdown eklendi
+> Kullanıcı isteği: KPI sayılarına (7 Gün İçinde Bitecek vb.) tıklayınca filtrelenmiş ihale listesine
+> gitmeli; bildirim ziline tıklayınca açılır panel gösterilmeli. Uygulandı ve yerelde gerçek prod
+> verisiyle test edildi (her kart hedefi dashboard sayısıyla eşleşiyor: 15.381 aktif, 1.195 büyük
+> ihale, 1 bugün son teklif). Yol boyu gerçek bug bulundu+düzeltildi: `kpiYukle()`'nin "bugün" sınırı
+> tarayıcı saatini gerçek UTC'ye çeviriyordu ama DB'deki tarihler ham Türkiye-yerel saat (UTC etiketli
+> ama dönüştürülmemiş) — TR gece yarısı sonrası (21:00-23:59 UTC) "bugün" bir gün kayıyordu. Commit
+> `5dffde9`, VDS'e deploy edildi, canlıda doğrulandı.
+
 > ## 📋 15 TEMMUZ OTURUMU — 3 İŞ TAMAMLANDI (kullanıcı "üçünü de yap" dedi)
 > Kullanıcı 3 işi birden istedi; hepsi bitti:
 >
