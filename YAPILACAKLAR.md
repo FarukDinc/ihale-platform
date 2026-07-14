@@ -7,6 +7,68 @@
 > **KALICI TALİMAT (12 Tem, kullanıcı emri):** Bu blok + ilgili bölümler her oturumda otomatik
 > güncellenir, kullanıcı hatırlatmak zorunda değil. Bkz. hafıza `yapilacaklar-auto-update`.
 
+> ## 📋 15 TEMMUZ OTURUMU — 3 İŞ TAMAMLANDI (kullanıcı "üçünü de yap" dedi)
+> Kullanıcı 3 işi birden istedi; hepsi bitti:
+>
+> **1. ✅ 10. bug ÇÖZÜLDÜ — `ihaleler.html` ANA arama Türkçe eşleşmesi (canlıda doğrulandı):**
+> Sunucu-side ILIKE Türkçe katlamıyordu → "insaat" yazınca "İNŞAAT" içeren ihalelerin hiçbiri
+> gelmiyordu (ampirik: `baslik ILIKE %insaat%`→0, `%İNŞAAT%`→1998). **Çözüm:**
+> `migration_ilanlar_arama_fold.sql` — IMMUTABLE `tr_fold()` (frontend `trFold` ile BİREBİR:
+> İ/I/ı→i, Ş/ş→s, Ğ/ğ→g, Ü/ü→u, Ö/ö→o, Ç/ç→c + lower) + generated STORED `arama_fold` kolonu
+> (baslik+idare+okas+isin_yapilacagi_yer+ilan_metni katlanmış) + pg_trgm GIN indeks. `ihaleler.html`
+> `arama_fold`'a ILIKE atıyor (terim de trFold'lanıyor), kolon yoksa legacy'ye düşüyor. Migration
+> prod'da 71sn'de uygulandı (90K satır, kolon+indeks). **Canlıda doğrulandı:** `arama_fold ILIKE
+> %insaat%`→**6757** (eskiden 0); tarayıcıda "insaat" araması 8+ sayfa inşaat ihalesi, konsol temiz.
+> Commit `d695714`, VDS'e pull edildi. **Not:** benzer sunucu-side arama `dogrudan-temin.html`'de de
+> olabilir (DT artık 154K kayıt) — kontrol edilmedi, olası takip işi.
+>
+> **2. ✅ Gece cron log taraması — TEMİZ (yeni sorun yok):** `scraper.log` son tur 14 Tem 02:00,
+> sağlıklı başlayıp bitmiş; sunucu UTC saati 14 Tem 21:10, sıradaki tur bu gece 15 Tem 02:00 UTC.
+> Logdaki 2 hata (yuklenici_yenile timeout, takip_firmalar 403) = 14 Tem GÜNDÜZ düzeltilen bug'ların
+> ÖNCEki turdaki hali (beklenen); fix'ler + `idare_bildirim` cron eklemesi ilk kez BU GECE sınanacak.
+> "E-posta bildirimi açık: 1 kullanıcı". Yeni/beklenmedik hata yok. (Kozmetik: notify.py konsol
+> banner'ı hâlâ "İHALE PLATFORM" yazıyor, kullanıcıya gitmiyor.)
+>
+> **3. ✅ DT backfill kontrolü — 154.942 kayıt** (14 Tem sonunda 47.615'ti; ~3×). Tarih aralığı
+> **2002-05-24 → 2027-07-02** — çok derin geçmişe inmiş. Süreç sağlıklı.
+>
+> **Bu geceki (15 Tem 02:00 UTC) cron turundan sonra kontrol edilecek:** yuklenici_yenile timeout
+> fix'i, takip_firmalar GRANT'i, idare_bildirim cron'u gerçek turda tuttu mu (log'dan).
+
+> ## 📋 14 TEMMUZ OTURUMU — KAPANIŞ ÖZETİ (kullanıcı "bu kadar yeter" dedi)
+> Bu oturumda yapılan her şeyin tek-bakış özeti (detaylar aşağıdaki bloklarda):
+>
+> **Deploy/altyapı (kullanıcı onaylarıyla, SSH):**
+> - VDS `git pull` (önceki ~10 commit canlıya alındı) → şu an `origin/main`'de son commit `30b79e7`.
+> - Eşik katsayısı backfill migration'ı (1.767 kayıt, doluluk 866→2.633/3.169 aktif Yapım).
+> - KİK Kurul Kararları deploy (97 gerçek karar, `kik-kararlar` sayfasında canlı doğrulandı).
+> - `takip_idareler` 404 düzeltildi (migration tekrar çalıştı, REST 200).
+> - DT backfill self-healing yapıldı + yeniden başlatıldı: **2.680 → 47.615 kayıt** (hâlâ akıyor).
+> - `run_scraper.sh` ilk kez git'e alındı (tek kopyası VDS'teydi, sessiz sapmalar görünmüyordu).
+>
+> **Bu oturumda bulunup DÜZELTİLEN 9 gerçek prod bug'ı** (hepsi ya gece log'unu okurken ya da sayfa
+> test ederken çıktı):
+> 1. `idare_bildirim.py` cron'da hiç yoktu → kurum bildirimi 12 Tem'den beri hiç gitmemiş (eklendi).
+> 2. `kik_backfill.py --max-pages 10` geçersiz flag → her gece argparse hatası (`--gun 3` yapıldı).
+> 3. `takip_firmalar` service_role GRANT eksik → rakip bildirimi her gece 403 (GRANT eklendi).
+> 4. `yuklenici_yenile()` statement timeout → yukleniciler hiç tazelenmiyordu (özel timeout; artık
+>    35.454 satır dolu — Firmalar Dizini'ni de besliyor).
+> 5. DT backfill tekrarlayan ReadTimeout crash-loop → self-healing retry eklendi.
+> 6. `kazanan_teklif_farki_yuzde` NUMERIC(5,2) overflow → NUMERIC(9,3)'e genişletildi.
+> 7. `idare_sayim()` RPC'si prod'da hiç yoktu → deploy + GRANT; idareler.html buna geçirildi.
+> 8. `firmalar.html` PostgREST 1000 satır limiti → 35.454 firmadan 1.000'i görünüyordu (sayfalandı).
+> 9. Türkçe İ/ş/ğ arama eşleşmesi (firmalar/idareler/sektorler) → `trFold()` eklendi, canlı doğrulandı.
+>
+> **Tespit edilen ama DÜZELTİLMEYEN (büyük iş, ayrı görev chip'i açıldı):**
+> - 10. `ihaleler.html` ANA arama: sunucu-side Postgres ILIKE Türkçe katlamıyor ("insaat"→0, ~2000
+>   inşaat ihalesi kaçıyor). `ilanlar` (90K) şema değişikliği + trigram indeks gerektiriyor.
+>
+> **HÂLÂ KULLANICI GİRİŞİ/KARARI BEKLEYEN (bunları AI yapamadı):**
+> - Kurum + rakip takibi e-posta bildiriminin gerçek kullanıcıyla uçtan uca testi (giriş gerekiyor,
+>   AI parola giremez). GRANT+cron tarafı hazır; bu geceki 02:00 UTC cron turu ilk canlı testtir.
+> - Webshare proxy: hesap var mı? (rekabetçi ihale derin backfill'i buna bağlı; DT buna gerek duymaz).
+> - Faz D3 embed hızı (gece 300 mü, artırılsın mı?), İyzico (en sona bırakıldı), SMS (konuşulmadı).
+
 > ## ✅ 14 Tem — 3 KRİTİK PROD İŞLEMİ TAMAMLANDI (kullanıcı onayıyla, SSH)
 > 1. **Git pull yapıldı** — VDS artık `83bd5d2`'de, önceki oturumların tüm bekleyen commit'leri
 >    (profil.html fix, takip_idareler, bildirim-sayaci.js, dogrudan-temin çapraz link, vb.) canlıda.
