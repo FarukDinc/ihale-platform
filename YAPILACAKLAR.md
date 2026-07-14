@@ -68,6 +68,17 @@
 > `scraper.log`'u düzenli (haftalık?) tarama, sessiz cron hatalarını yakalamanın en etkili yolu
 > çıktı — bu oturumda organik olarak yapıldı ama düzenli bir alışkanlık olabilir.
 
+> ## ℹ️ 14 Tem (devam) — YANLIŞ ALARM: DT backfill log'u yanıltıcı görünüyordu (buffering)
+> `dt_backfill.log`'un son satırları eski bir traceback gösteriyordu (self-healing fix'ten önceki
+> bir çöküşten kalma) ve 11 dakika boyunca yeni satır eklenmemiş gibi görünüyordu — süreç ölmüş
+> sanıldı. Ama REST API'den kayıt sayısı kontrol edilince **14.211→19.723**'e çıktığı görüldü —
+> süreç aslında sorunsuz çalışıyormuş. Kök neden: `nohup python script.py >> log` non-tty stdout'ta
+> Python'u block-buffered yapıyor, `print()` çıktıları hemen dosyaya yazılmıyor (traceback'ler
+> stderr üzerinden anlık yazılıyor, bu yüzden "en son" içerik yanıltıcı şekilde eski bir hata
+> gibi görünüyor). **Gerçek bug değil, sadece gözlemlenebilirlik sorunu.** İleride süreç yeniden
+> başlatılırken `python -u` (unbuffered) eklenirse log gerçek zamanlı, güvenilir takip için daha
+> iyi olur — şu an çalışan süreci bunun için kesintiye uğratmaya değmez.
+
 > ## ✅ 14 Tem — 2 EK DÜZELTME TAMAMLANDI (kullanıcı ayrı onayıyla)
 > 1. **`takip_idareler` düzeltildi** — migration tekrar çalıştırıldı, tablo+3 RLS policy oluştu,
 >    `NOTIFY pgrst, 'reload schema'` tetiklendi. **REST API ile doğrulandı: artık 200 OK** (önceden
