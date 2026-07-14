@@ -408,6 +408,18 @@
   let topSayfa = 1;
   const PER_PAGE = 20;
 
+  // Türkçe karakter katlama — SQL tr_fold() ile BİREBİR aynı (migration_ihale_sonuclari_arama_fold.sql).
+  function trFold(s) {
+    return (s || '')
+      .replace(/İ/g, 'i').replace(/I/g, 'i').replace(/ı/g, 'i')
+      .replace(/Ş/g, 's').replace(/ş/g, 's')
+      .replace(/Ğ/g, 'g').replace(/ğ/g, 'g')
+      .replace(/Ü/g, 'u').replace(/ü/g, 'u')
+      .replace(/Ö/g, 'o').replace(/ö/g, 'o')
+      .replace(/Ç/g, 'c').replace(/ç/g, 'c')
+      .toLowerCase();
+  }
+
   function tarihFormat(s) {
     if (!s) return '—';
     return new Date(s).toLocaleDateString('tr-TR', { day:'2-digit', month:'2-digit', year:'numeric' });
@@ -707,47 +719,39 @@
     const iBtn = document.getElementById('firma-ihaleler-btn');
     if (iBtn) iBtn.href = `ihaleler?idare=${encodeURIComponent(FIRMA)}`;
 
-    // Kazanım sorgusu + ilanlar sorgusu paralel başlat
-    const sonucProm = sb.from('ihale_sonuclari')
+    // Firmanın katıldığı/kazandığı ihaleler TEK kaynaktan gelir: ihale_sonuclari.kazanan_firma
+    // (EKAP sadece kazananları yayınlıyor, "katılan ama kaybeden" listesi elimizde yok).
+    // ÖNCEDEN burada ayrıca ilanlar.idare/baslik alanlarında da aynı terim aranıyordu —
+    // bu YANLIŞTI: firma adıyla hiç ilgisi olmayan idare/başlık eşleşmeleri (örn. terim bir
+    // kurum adında geçiyorsa) sonuçlara karışıyordu ("çok alakasız şeyler çıkıyor" bug'ı).
+    // kazanan_firma_fold (generated, Türkçe katlanmış — migration_ihale_sonuclari_arama_fold.sql)
+    // yoksa eski düz ILIKE'a zarifçe düşer (Türkçe katlamaz ama çökmez).
+    let { data: sonucRaw, error: sonucErr } = await sb.from('ihale_sonuclari')
       .select('ilan_id,kazanan_firma,kazanan_teklif,kazanan_teklif_farki_yuzde,toplam_teklif_sayisi,en_dusuk_teklif,en_yuksek_teklif,sonuc_tarihi')
-      .ilike('kazanan_firma', `%${FIRMA}%`)
+      .ilike('kazanan_firma_fold', `%${trFold(FIRMA)}%`)
       .order('sonuc_tarihi', { ascending: false })
       .limit(500);
-
-    const rows = [];
-    for (let off = 0; ; off += 1000) {
-      const { data } = await sb.from('ilanlar')
-        .select('id,ekap_id,baslik,idare,il,tur,kategori,ilan_tarihi,son_teklif_tarihi')
-        .or(`idare.ilike.%${FIRMA}%,baslik.ilike.%${FIRMA}%`)
-        .range(off, off + 999);
-      if (!data || !data.length) break;
-      rows.push(...data);
-      if (data.length < 1000) break;
+    if (sonucErr && /kazanan_firma_fold/.test(sonucErr.message || '')) {
+      console.info('kazanan_firma_fold kolonu henüz yok, düz aramayla tekrar deneniyor:', sonucErr.message);
+      ({ data: sonucRaw, error: sonucErr } = await sb.from('ihale_sonuclari')
+        .select('ilan_id,kazanan_firma,kazanan_teklif,kazanan_teklif_farki_yuzde,toplam_teklif_sayisi,en_dusuk_teklif,en_yuksek_teklif,sonuc_tarihi')
+        .ilike('kazanan_firma', `%${FIRMA}%`)
+        .order('sonuc_tarihi', { ascending: false })
+        .limit(500));
     }
 
-    tumIhaleler = rows;
-    const iller  = new Set(rows.filter(i => i.il).map(i => i.il));
-    const katlar = new Set(rows.filter(i => i.kategori).map(i => i.kategori));
-    document.getElementById('kpi-katilan').textContent = rows.length.toLocaleString('tr');
-    document.getElementById('kpi-sozlesme').textContent = iller.size;
-    document.getElementById('kpi-tenzilat').textContent = katlar.size;
-    document.getElementById('firma-meta').textContent = rows.length
-      ? `${rows.length} ihale kaydı bulundu · ${iller.size} il · ${katlar.size} sektör`
-      : 'Bu arama için sonuç bulunamadı.';
-    if (rows.length) firmaIstatistikGoster(rows);
-
-    // Kazanım verisini al ve ilan başlıklarını zenginleştir
-    const { data: sonucRaw } = await sonucProm;
     sonucVeri = sonucRaw || [];
+    tumIhaleler = [];
     if (sonucVeri.length) {
       const ids = [...new Set(sonucVeri.map(s => s.ilan_id).filter(Boolean))];
       if (ids.length) {
         const { data: ilanDetay } = await sb.from('ilanlar')
-          .select('id,baslik,ekap_id,idare,il,tur')
+          .select('id,ekap_id,baslik,idare,il,tur,kategori,ilan_tarihi,son_teklif_tarihi')
           .in('id', ids);
         const mp = {};
         (ilanDetay || []).forEach(i => { mp[i.id] = i; });
         sonucVeri = sonucVeri.map(s => ({ ...s, ilan: mp[s.ilan_id] || null }));
+        tumIhaleler = Object.values(mp); // kazanılan ihalelerin kendisi ("Katıldığı İhaleler" listesi)
       }
       document.getElementById('kpi-kazanilan').textContent = sonucVeri.length.toLocaleString('tr');
       const toplamBedel = sonucVeri.reduce((a, s) => a + (s.kazanan_teklif || 0), 0);
@@ -756,6 +760,16 @@
     } else {
       document.getElementById('kpi-kazanilan').textContent = '0';
     }
+
+    const iller  = new Set(tumIhaleler.filter(i => i.il).map(i => i.il));
+    const katlar = new Set(tumIhaleler.filter(i => i.kategori).map(i => i.kategori));
+    document.getElementById('kpi-katilan').textContent = tumIhaleler.length.toLocaleString('tr');
+    document.getElementById('kpi-sozlesme').textContent = iller.size;
+    document.getElementById('kpi-tenzilat').textContent = katlar.size;
+    document.getElementById('firma-meta').textContent = tumIhaleler.length
+      ? `${tumIhaleler.length} ihale kaydı bulundu · ${iller.size} il · ${katlar.size} sektör`
+      : 'Bu arama için sonuç bulunamadı.';
+    if (tumIhaleler.length) firmaIstatistikGoster(tumIhaleler);
 
     // Sonuçlar sekmesi açıksa hemen doldur
     if (document.getElementById('tab-sonuclar')?.classList.contains('active')) sonuclariGoster();
