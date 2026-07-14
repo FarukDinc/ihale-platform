@@ -25,6 +25,25 @@
 > **Sınırlama (KİK):** liste görünümünde tam karar metni/sonucu (iptal/kabul/red) yok — ayrı bir
 > "detay" API çağrısı gerektiriyor, henüz çözülmedi (gelecek iş).
 
+> ## 🔴 14 Tem (devam) — 2 DAHA GERÇEK CRON BUG'I BULUNDU + DÜZELTİLDİ (gece log'u incelenirken)
+> Dünkü (14 Tem 02:00) `scraper.log`'da 2 hata daha bulundu, ikisi de kullanıcı onayıyla düzeltildi:
+> 1. **`takip_firmalar` 403 permission denied** — `migration_takip_firmalar.sql` (Faz E1, eski)
+>    service_role'e hiç GRANT vermemiş (sonradan yazılan `migration_takip_idareler.sql`'de bu
+>    unutulmamıştı — karşılaştırınca fark edildi). **Sonuç: rakip (firma) takibi bildirimleri
+>    12 Tem'den beri muhtemelen HİÇ gönderilmemiş.** `migration_takip_firmalar_service_role_grant.sql`
+>    ile düzeltildi, GRANT SQL seviyesinde doğrulandı. **Ama `rakip_bildirim.py`'yi manuel test
+>    ETMEDİM** — script'te dedup yoksa (sadece 26 saatlik zaman penceresi kontrolü var) gerçek
+>    eşleşme varsa kullanıcıya mükerrer e-posta gidebilirdi. Gerçek doğrulama bu geceki (02:00 UTC)
+>    cron turunda `scraper.log`'dan kontrol edilmeli.
+> 2. **`yuklenici_yenile()` 500 statement timeout** — `ihale_sonuclari` büyüdükçe (138K+, backfill
+>    ile artıyor) agregasyon sorgusu varsayılan timeout'u aşıyordu. `ALTER FUNCTION ... SET
+>    statement_timeout='300000'` ile düzeltildi VE **uçtan uca doğrulandı**: hem doğrudan psql
+>    (49sn, 35.454 satır) hem de gerçek cron'un kullandığı REST/script yolu (`yuklenici_yenile_calistir.py`,
+>    43.7sn, aynı sonuç) ile çalıştı. `yukleniciler` tablosu artık gerçekten tazeleniyor.
+> **Ders:** `takip_idareler` ile `takip_firmalar` migration'larını karşılaştırınca ortaya çıktı —
+> benzer/kopyalanan migration'lar arasında GRANT gibi tekrar eden parçalar tutarlılık için
+> karşılaştırmalı kontrol edilmeli (gelecekte yeni "takip_X" tabloları eklenirse).
+
 > ## ✅ 14 Tem — 2 EK DÜZELTME TAMAMLANDI (kullanıcı ayrı onayıyla)
 > 1. **`takip_idareler` düzeltildi** — migration tekrar çalıştırıldı, tablo+3 RLS policy oluştu,
 >    `NOTIFY pgrst, 'reload schema'` tetiklendi. **REST API ile doğrulandı: artık 200 OK** (önceden
