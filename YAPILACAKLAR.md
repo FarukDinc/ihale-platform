@@ -1,41 +1,37 @@
 # İhalePlatform — Yapılacaklar Listesi
 
-## 🟢 ŞU AN NE DURUMDAYIZ (12 Temmuz 2026, en son güncelleme) — HERKES ÖNCE BUNU OKUSUN
+## 🟢 ŞU AN NE DURUMDAYIZ (14 Temmuz 2026, en son güncelleme) — HERKES ÖNCE BUNU OKUSUN
 
 > Bu blok her oturumun sonunda güncellenir ve dosyanın en güncel/otoriter özetidir. Altındaki
 > binlerce satır tarihsel kayıt/detay — çelişki olursa BU BLOK geçerlidir.
 > **KALICI TALİMAT (12 Tem, kullanıcı emri):** Bu blok + ilgili bölümler her oturumda otomatik
 > güncellenir, kullanıcı hatırlatmak zorunda değil. Bkz. hafıza `yapilacaklar-auto-update`.
 
-> ## 🔴🔴🔴 KRİTİK — GİT PULL HÂLÂ YAPILMADI (13 Tem'de tekrar doğrulandı)
-> **VDS'te `git pull` çalıştırılmadan bu oturumu bitirme.** 12 Tem'de tespit edilmiş, 13 Tem'de
-> tekrar kontrol edildi — hâlâ düzelmemiş (`profil.html`'deki fix canlıda yok, `takip_idareler`
-> hâlâ 404). Bu oturumda EKLENEN yeni commit'ler de dahil (KİK Kurul Kararları scraper'ı!) hiçbiri
-> canlıda değil. **Tek komut yeterli, migration/restart genelde GEREKMİYOR (KİK scraper'ı hariç,
-> aşağıya bak):**
-> ```bash
-> ssh -i ~/.ssh/ihale_oracle root@195.85.207.126
-> cd /opt/ihale-platform && git pull origin main
-> ```
-> Bunu yapmadan önceki "canlıda doğrulandı" notlarının çoğu artık geçersiz sayılmalı — sadece
-> GitHub'daki koda karşı doğrulandı, o an canlı olan koda karşı değil.
+> ## ✅ 14 Tem — 3 KRİTİK PROD İŞLEMİ TAMAMLANDI (kullanıcı onayıyla, SSH)
+> 1. **Git pull yapıldı** — VDS artık `83bd5d2`'de, önceki oturumların tüm bekleyen commit'leri
+>    (profil.html fix, takip_idareler, bildirim-sayaci.js, dogrudan-temin çapraz link, vb.) canlıda.
+> 2. **Eşik katsayısı backfill çalıştırıldı** — `migration_esik_katsayi_backfill.sql` prod DB'de
+>    uygulandı: **1767 kayıt güncellendi**, doluluk 866→**2633/3169** aktif Yapım ihalesi.
+> 3. **KİK Kurul Kararları deploy edildi** — `deploy_12tem_kik_kararlari.sh` çalıştırıldı, gerçek
+>    çekim testi **97 karar** yazdı (canlıda REST API ile doğrulandı: `kik_kararlar` tablosu 97
+>    kayıt, örn. `2026/UH.I-1835`, idare="MALATYA EĞİTİM VE ARAŞTIRMA HASTANESİ"). Gece cron'una
+>    zaten ekliydi (`kik_backfill.py --gun 3`), tekrar eklenmedi. **Canlıda tarayıcıyla doğrulandı**
+>    (https://ihaleglobal.com/kik-kararlar → "Ara"ya basınca 97 karar, 5 sayfa, konsol temiz).
+>    Not: migration script'inde 1 policy-already-exists ERROR'u vardı ama zararsız (idempotent
+>    migration'ın beklenen NOTICE'larından biri, script durmadı). Not 2: sayfadaki
+>    İptal/Kabul/Red sayaçları hepsi 0 gösteriyor çünkü `sonuc` alanı şu an tüm kayıtlarda "diger" —
+>    bu zaten bilinen sınırlama (aşağıdaki "detay API" eksikliği), bug değil.
+>
+> **Sınırlama (KİK):** liste görünümünde tam karar metni/sonucu (iptal/kabul/red) yok — ayrı bir
+> "detay" API çağrısı gerektiriyor, henüz çözülmedi (gelecek iş).
 
-> ## 🟢🟢🟢 BÜYÜK BULGU — KİK Kurul Kararları scraper'ı ARTIK ÇALIŞIYOR (13 Tem)
-> Önceki oturumların "E4, büyük ayrı proje, düşük öncelik" değerlendirmesi ARTIK GEÇERSİZ.
-> Kullanıcı onayıyla (Doğrudan Temin scraper'ındaki TLS/crypto tekniğini farklı bir endpoint'e
-> uygulamak için ayrı izin istendi ve verildi) gerçek, çalışan bir API bulundu:
-> `POST ekapv2.kik.gov.tr/b_ihalearaclari/api/KurulKararlari/GetKurulKararlari` — eski script
-> yanlış bir URL kullanıyordu (`ekap.kik.gov.tr/EKAP/karar/arama`, 302 redirect, hiç veri yok,
-> "IP-bloklu" sanılmıştı). `kik_backfill.py` tamamen yeniden yazıldı, yerelde dry-run ile
-> doğrulandı: **14 günde 97 gerçek karar**, Türkçe karakterler doğru. `kik-kararlar.html`'in
-> sorgu kolonları zaten şemayla tam uyumluydu — tek eksik gerçek veriydi.
-> **Deploy (SSH gerekiyor, migration zaten önceki oturumdan hazır):**
-> ```bash
-> cd /opt/ihale-platform && git pull origin main
-> bash backend/deploy_12tem_kik_kararlari.sh
-> ```
-> **Sınırlama:** liste görünümünde tam karar metni/sonucu (iptal/kabul/red) yok — ayrı bir "detay"
-> API çağrısı gerektiriyor, henüz çözülmedi (gelecek iş).
+> ## ✅ 14 Tem — 2 EK DÜZELTME TAMAMLANDI (kullanıcı ayrı onayıyla)
+> 1. **`takip_idareler` düzeltildi** — migration tekrar çalıştırıldı, tablo+3 RLS policy oluştu,
+>    `NOTIFY pgrst, 'reload schema'` tetiklendi. **REST API ile doğrulandı: artık 200 OK** (önceden
+>    404). Kurum takibi butonu artık çalışmalı — henüz tarayıcıda tıklama testi yapılmadı.
+> 2. **DT backfill process yeniden başlatıldı** (`nohup ... --backfill --max-pages 100000 & disown`,
+>    checkpoint'ten devam) — PID `2122545` doğrulandı, çalışıyor. Önceki çöküşte kayıt 2.680→**5.247**'ye
+>    çıkmıştı (en eski tarih Mayıs 2023→24 Ara 2021), şimdi kaldığı yerden devam ediyor.
 
 **Canlı site:** `https://ihaleglobal.com` (VDS `195.85.207.126`, self-hosted Supabase). Managed
 Supabase terk edildi, Render tamamen kaldırıldı. `ilanlar` ~79.7K (aktif 14.7K), `ihale_sonuclari`
