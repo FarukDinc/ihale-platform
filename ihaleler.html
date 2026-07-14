@@ -796,6 +796,7 @@
   let yukluIlanlar = [];
   let aktifSekme = 'guncel';
   let okunduGizle = false;
+  let urlDurumFiltresi = ''; // dashboard'daki KPI kartlarından gelen ?durum=aktif gibi bağlantılar için
 
   // ── Okuduklarım (localStorage) ────────────────────────────
   const Okundu = (() => {
@@ -1004,6 +1005,7 @@
     else if (aktifSekme === 'gecmis') query = query.lt('son_teklif_tarihi', simdiISO);
 
     if (arama)    query = query.ilike('arama_fold', `%${trFold(arama)}%`);
+    if (urlDurumFiltresi) query = query.eq('durum', urlDurumFiltresi);
     if (il)       query = query.eq('il', il);
     if (kategori) query = query.eq('kategori', kategori);
     if (tur)      query = query.eq('tur', tur);
@@ -1046,6 +1048,7 @@
       if      (aktifSekme === 'guncel') fallback = fallback.gte('son_teklif_tarihi', simdiISO);
       else if (aktifSekme === 'gecmis') fallback = fallback.lt('son_teklif_tarihi', simdiISO);
       if (arama)    fallback = fallback.or(`baslik.ilike.%${arama}%,idare.ilike.%${arama}%,okas.ilike.%${arama}%,isin_yapilacagi_yer.ilike.%${arama}%,ilan_metni.ilike.%${arama}%`);
+      if (urlDurumFiltresi) fallback = fallback.eq('durum', urlDurumFiltresi);
       if (il)       fallback = fallback.eq('il', il);
       if (kategori) fallback = fallback.eq('kategori', kategori);
       if (tur)      fallback = fallback.eq('tur', tur);
@@ -1245,7 +1248,8 @@
       TR_ILLER.map(il => `<option value="${il.toLocaleUpperCase('tr')}">${il}</option>`).join('');
   }
 
-  // URL parametrelerini filtrelere uygula (örn. haritadan ihaleler?il=İSTANBUL)
+  // URL parametrelerini filtrelere uygula (örn. haritadan ihaleler?il=İSTANBUL,
+  // ya da dashboard'daki KPI kartlarından ihaleler?durum=aktif&minBedel=... gibi)
   function urlFiltreleriUygula() {
     const p = new URLSearchParams(window.location.search);
     const il = p.get('il');
@@ -1260,6 +1264,20 @@
     if (usul) document.getElementById('f-usul').value = usul;
     const tur = p.get('tur');
     if (tur) document.getElementById('f-tur').value = tur;
+    const minBedel = p.get('minBedel');
+    if (minBedel) document.getElementById('f-min-bedel').value = minBedel;
+    const maxBedel = p.get('maxBedel');
+    if (maxBedel) document.getElementById('f-max-bedel').value = maxBedel;
+    const yayinBas = p.get('yayinBas');
+    if (yayinBas) document.getElementById('f-yayin-bas').value = yayinBas;
+    const yayinBit = p.get('yayinBit');
+    if (yayinBit) document.getElementById('f-yayin-bit').value = yayinBit;
+    const teklifBas = p.get('teklifBas');
+    if (teklifBas) document.getElementById('f-teklif-bas').value = teklifBas;
+    const teklifBit = p.get('teklifBit');
+    if (teklifBit) document.getElementById('f-teklif-bit').value = teklifBit;
+    const durum = p.get('durum');
+    if (durum) urlDurumFiltresi = durum;
     const sekme = p.get('sekme');
     if (sekme && ['guncel','gecmis','sonuc','detayli'].includes(sekme)) sekmeDegistir(sekme);
   }

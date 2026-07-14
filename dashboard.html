@@ -262,7 +262,74 @@
       border: 1px solid var(--border);
       border-radius: var(--radius-md);
       padding: 20px;
+      display: block;
+      text-decoration: none;
+      color: inherit;
+      transition: border-color var(--transition), transform var(--transition);
+      cursor: pointer;
     }
+    .kpi-card:hover {
+      border-color: rgba(var(--overlay-rgb),0.25);
+      transform: translateY(-1px);
+    }
+
+    .stat-card {
+      background: var(--navy-mid);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px 18px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+      color: inherit;
+      transition: border-color var(--transition), transform var(--transition);
+      cursor: pointer;
+    }
+    .stat-card:hover {
+      border-color: rgba(var(--overlay-rgb),0.25);
+      transform: translateY(-1px);
+    }
+
+    /* ---- BİLDİRİM DROPDOWN ---- */
+    .notif-dropdown {
+      position: absolute;
+      top: 44px; right: 0;
+      width: 340px;
+      max-height: 420px;
+      overflow-y: auto;
+      background: var(--navy-mid);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      box-shadow: 0 12px 32px rgba(0,0,0,0.35);
+      z-index: 100;
+      cursor: default;
+    }
+    .notif-dropdown-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 12px 16px; border-bottom: 1px solid var(--border);
+      font-size: 13px; font-weight: 700; color: var(--white);
+    }
+    .notif-dropdown-header a { font-size: 12px; font-weight: 500; color: var(--muted); text-decoration: none; }
+    .notif-dropdown-header a:hover { color: var(--amber); }
+    .notif-dropdown-list { display: flex; flex-direction: column; }
+    .notif-dropdown-item {
+      display: flex; gap: 10px; padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      text-decoration: none; color: inherit;
+    }
+    .notif-dropdown-item:last-child { border-bottom: none; }
+    .notif-dropdown-item:hover { background: rgba(var(--overlay-rgb),0.04); }
+    .notif-dropdown-item.okunmamis { background: rgba(240,165,0,0.05); }
+    .notif-dropdown-ikon {
+      width: 30px; height: 30px; border-radius: 50%; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center; font-size: 14px;
+      background: rgba(var(--overlay-rgb),0.06);
+    }
+    .notif-dropdown-baslik { font-size: 13px; font-weight: 600; color: var(--white); margin-bottom: 2px; }
+    .notif-dropdown-icerik { font-size: 12px; color: var(--muted); line-height: 1.4;
+      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .notif-dropdown-empty { padding: 28px 16px; text-align: center; color: var(--muted); font-size: 13px; }
 
     .kpi-label {
       font-size: 12px;
@@ -686,9 +753,18 @@
         <input type="text" placeholder="İhale ara... (Ctrl + K)" id="main-search" />
       </div>
       <div class="topbar-actions">
-        <div class="icon-btn" title="Bildirimler">
+        <div class="icon-btn" title="Bildirimler" id="bell-btn" onclick="bildirimDropdownToggle(event)">
           🔔
-          <span class="notif-dot"></span>
+          <span class="notif-dot" id="notif-dot" style="display:none;"></span>
+          <div class="notif-dropdown" id="notif-dropdown" style="display:none;" onclick="event.stopPropagation()">
+            <div class="notif-dropdown-header">
+              <span>Bildirimler</span>
+              <a href="bildirimler">Tümünü Gör →</a>
+            </div>
+            <div class="notif-dropdown-list" id="notif-dropdown-list">
+              <div class="notif-dropdown-empty">Yükleniyor…</div>
+            </div>
+          </div>
         </div>
         <a href="fiyatlandirma_odeme_bolumu" class="btn btn-primary" style="padding:8px 16px; font-size:13px;">Pro'ya Geç ↑</a>
       </div>
@@ -710,51 +786,51 @@
 
       <!-- GÜNLÜK CANLI SAYAÇ -->
       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px;" id="gunluk-strip">
-        <div style="background:var(--navy-mid);border:1px solid var(--border);border-radius:10px;padding:14px 18px;display:flex;align-items:center;gap:12px;">
+        <a class="stat-card" id="stat-eklendi" href="ihaleler" title="Bugün eklenen ihaleleri gör">
           <span style="font-size:22px;">📅</span>
           <div>
             <div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;">Bugün Eklendi</div>
             <div style="font-size:22px;font-weight:800;color:var(--white);" id="gs-eklendi">—</div>
           </div>
-        </div>
-        <div style="background:var(--navy-mid);border:1px solid var(--border);border-radius:10px;padding:14px 18px;display:flex;align-items:center;gap:12px;">
+        </a>
+        <a class="stat-card" id="stat-sonteklif" href="ihaleler" title="Bugün son teklif günü olan ihaleleri gör">
           <span style="font-size:22px;">⏰</span>
           <div>
             <div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;">Bugün Son Teklif</div>
             <div style="font-size:22px;font-weight:800;color:var(--amber);" id="gs-sonteklif">—</div>
           </div>
-        </div>
-        <div style="background:var(--navy-mid);border:1px solid var(--border);border-radius:10px;padding:14px 18px;display:flex;align-items:center;gap:12px;">
+        </a>
+        <a class="stat-card" id="stat-kazanim" href="ihaleler?sekme=sonuc" title="Sonuçlanmış (kazanım kaydı olan) ihaleleri gör">
           <span style="font-size:22px;">🏆</span>
           <div>
             <div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;">Toplam Kazanım Kaydı</div>
             <div style="font-size:22px;font-weight:800;color:#4ade80;" id="gs-kazanim">—</div>
           </div>
-        </div>
+        </a>
       </div>
 
       <!-- KPI CARDS -->
       <div class="kpi-grid">
-        <div class="kpi-card">
+        <a class="kpi-card" id="kpi-card-takip" href="takipte" title="Takip ettiğim ihaleleri gör">
           <div class="kpi-label">Takipteki İhale</div>
           <div class="kpi-value" style="color:var(--amber);" id="kpi-takip">—</div>
           <div class="kpi-delta" style="color:var(--muted);">Takip listenizde</div>
-        </div>
-        <div class="kpi-card">
+        </a>
+        <a class="kpi-card" id="kpi-card-aktif" href="ihaleler?sekme=detayli&amp;durum=aktif" title="Aktif ihaleleri gör">
           <div class="kpi-label">Aktif Türkiye İhalesi</div>
           <div class="kpi-value" id="kpi-aktif">—</div>
           <div class="kpi-delta up">EKAP'tan güncel</div>
-        </div>
-        <div class="kpi-card">
+        </a>
+        <a class="kpi-card" id="kpi-card-yaklasan" href="ihaleler?sekme=guncel&amp;durum=aktif" title="7 gün içinde bitecek ihaleleri gör">
           <div class="kpi-label">7 Gün İçinde Bitecek</div>
           <div class="kpi-value" style="color:var(--amber);" id="kpi-yaklasan">—</div>
           <div class="kpi-delta" style="color:var(--muted);">Teklif süresi yaklaşıyor</div>
-        </div>
-        <div class="kpi-card">
+        </a>
+        <a class="kpi-card" id="kpi-card-buyuk" href="ihaleler?sekme=detayli&amp;durum=aktif&amp;minBedel=43142132" title="Yüksek yaklaşık maliyetli ihaleleri gör">
           <div class="kpi-label">Büyük İhale (₺43M+)</div>
           <div class="kpi-value" style="color:#4CAF50;" id="kpi-buyuk">—</div>
           <div class="kpi-delta" style="color:var(--muted);">Yüksek yaklaşık maliyet</div>
-        </div>
+        </a>
       </div>
 
       <!-- WIDGET: Türkiye Haritası -->
@@ -1244,8 +1320,27 @@
     const simdi = new Date();
     const birHaftaSonra = new Date(simdi.getTime() + 7 * 86400000).toISOString();
 
-    const bugunBaslangic = new Date(simdi); bugunBaslangic.setHours(0,0,0,0);
-    const bugunBitis     = new Date(simdi); bugunBitis.setHours(23,59,59,999);
+    // ÖNEMLİ: ilanlar.son_teklif_tarihi/ilan_tarihi DB'de "+00:00" (UTC) etiketli
+    // ama EKAP'tan gelen değerler aslında ham Türkiye-yerel saat (örn. 10:00, 14:30
+    // gibi tipik ihale saatleri) — gerçek UTC'ye çevrilmeden öyle yazılmış. Bu yüzden
+    // "bugün" sınırını tarayıcının yerel takvim gününü (Türkiye saati varsayılan
+    // kullanıcı için) GERÇEK UTC'YE ÇEVİRMEDEN, doğrudan UTC-etiketli saat olarak
+    // inşa etmek gerekiyor — yoksa .toISOString() 21:00-23:59 UTC aralığında
+    // (Türkiye'nin gece yarısı sonrası saatleri) günü bir gün kaydırıp yanlış
+    // sonuç veriyordu (test: 378 ihale vs gerçek 1).
+    const bugunBaslangic = new Date(Date.UTC(simdi.getFullYear(), simdi.getMonth(), simdi.getDate(), 0, 0, 0, 0));
+    const bugunBitis     = new Date(Date.UTC(simdi.getFullYear(), simdi.getMonth(), simdi.getDate(), 23, 59, 59, 999));
+
+    // Kart bağlantılarına "bugün"/"+7 gün" tarihlerini işle (ihaleler.html'in
+    // f-yayin-bas/f-yayin-bit/f-teklif-bas/f-teklif-bit URL parametreleri, YYYY-MM-DD).
+    const gununTarihi = bugunBaslangic.toISOString().slice(0, 10);
+    const yediGunSonraTarihi = new Date(bugunBaslangic.getTime() + 7 * 86400000).toISOString().slice(0, 10);
+    const setHref = (id, href) => { const el = document.getElementById(id); if (el) el.href = href; };
+    setHref('stat-eklendi', `ihaleler?sekme=detayli&yayinBas=${gununTarihi}&yayinBit=${gununTarihi}`);
+    setHref('stat-sonteklif', `ihaleler?sekme=detayli&durum=aktif&teklifBas=${gununTarihi}&teklifBit=${gununTarihi}`);
+    // sekme=guncel bilinçli tercih: son_teklif_tarihi >= şu an (alt sınır) sağlıyor,
+    // detayli'de alt sınır olmazdı (2010'dan beri süresi geçmiş ihaleler de dahil olurdu).
+    setHref('kpi-card-yaklasan', `ihaleler?sekme=guncel&durum=aktif&teklifBit=${yediGunSonraTarihi}`);
 
     try {
       const [aktif, yaklasan, buyuk, bugunEklenen, bugunSonGun] = await Promise.all([
@@ -1552,8 +1647,82 @@
     } catch { el.innerHTML = ''; }
   }
 
+  // ── Bildirim dropdown (topbar 🔔) ──────────────────────
+  function _escHtml(s) {
+    return String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
+  }
+
+  let _notifDropdownYuklendi = false;
+
+  function bildirimDropdownToggle(event) {
+    event.stopPropagation();
+    const panel = document.getElementById('notif-dropdown');
+    const acik = panel.style.display !== 'none';
+    if (acik) { panel.style.display = 'none'; return; }
+    panel.style.display = 'block';
+    if (!_notifDropdownYuklendi) {
+      _notifDropdownYuklendi = true;
+      bildirimDropdownYukle();
+    }
+  }
+
+  document.addEventListener('click', (e) => {
+    const btn = document.getElementById('bell-btn');
+    const panel = document.getElementById('notif-dropdown');
+    if (panel && panel.style.display !== 'none' && btn && !btn.contains(e.target)) {
+      panel.style.display = 'none';
+    }
+  });
+
+  async function bildirimDropdownYukle() {
+    const list = document.getElementById('notif-dropdown-list');
+    try {
+      const { data: { user } } = await sb.auth.getUser();
+      if (!user) { list.innerHTML = '<div class="notif-dropdown-empty">Bildirimleri görmek için giriş yapın.</div>'; return; }
+      const { data, error } = await sb.from('bildirimler')
+        .select('id,tur,baslik,icerik,ilan_id,aksiyon_url,okundu,olusturulma')
+        .eq('kullanici_id', user.id)
+        .order('olusturulma', { ascending: false })
+        .limit(6);
+      if (error) throw error;
+      if (!data || !data.length) {
+        list.innerHTML = '<div class="notif-dropdown-empty">Henüz bildiriminiz yok.</div>';
+        return;
+      }
+      const ikonMap = { ihale: '⏰', sistem: '⚙', email: '📧', kurum_takip: '🏛️', rakip_hareketi: '🏆' };
+      list.innerHTML = data.map(b => {
+        const link = b.aksiyon_url || (b.ilan_id ? `ihale-detay?id=${b.ilan_id}` : 'bildirimler');
+        const ikon = ikonMap[b.tur] || '🔔';
+        return `<a class="notif-dropdown-item ${b.okundu ? '' : 'okunmamis'}" href="${_escHtml(link)}">
+          <div class="notif-dropdown-ikon">${ikon}</div>
+          <div>
+            <div class="notif-dropdown-baslik">${_escHtml(b.baslik || 'Bildirim')}</div>
+            <div class="notif-dropdown-icerik">${_escHtml(b.icerik || '')}</div>
+          </div>
+        </a>`;
+      }).join('');
+    } catch (e) {
+      list.innerHTML = '<div class="notif-dropdown-empty">Bildirimler yüklenemedi.</div>';
+      console.warn('Bildirim dropdown yüklenemedi:', e);
+    }
+  }
+
+  async function bildirimDotGuncelle() {
+    try {
+      const { data: { user } } = await sb.auth.getUser();
+      if (!user) return;
+      const { count } = await sb.from('bildirimler')
+        .select('id', { count: 'exact', head: true })
+        .eq('kullanici_id', user.id)
+        .eq('okundu', false);
+      const dot = document.getElementById('notif-dot');
+      if (dot) dot.style.display = count ? '' : 'none';
+    } catch (_) {}
+  }
+
   // ── Sayfa yüklenince ─────────────────────────────────
   kpiYukle();
+  bildirimDotGuncelle();
   ilDropdownDoldur();
   trendYukle();
   topKurumlarYukle();
