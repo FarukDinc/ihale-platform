@@ -308,22 +308,35 @@
     return v.toLocaleString('tr-TR') + ' ₺';
   }
 
-  // ── Veri çekme (yukleniciler — agregasyon zaten DB'de, ilanlar gibi büyük tarama gerekmez) ──
+  // ── Veri çekme (yukleniciler) ──
+  // NOT: PostgREST sunucusu tek istekte sabit 1000 satır limiti uyguluyor (db-max-rows) —
+  // .limit(5000) bunu aşamaz, sunucuda 1000'e kesilir. yukleniciler artık 35.000+ satır
+  // (14 Tem'de yuklenici_yenile ilk kez tam çalıştı) olduğu için sayfalı çekim şart,
+  // yoksa Firmalar Dizini sadece cirosu en yüksek 1000 firmayı gösterir ve arama geri
+  // kalan ~34.000 firmayı sessizce bulamaz. (idareler.html ile aynı desen.)
   async function veriCek() {
-    const { data, error, count } = await sb.from('yukleniciler')
-      .select('normalize_ad, ad, il, toplam_sozlesme_sayisi, toplam_ciro, son_sozlesme_tarihi, ortak_girisim', { count: 'exact' })
-      .order('toplam_ciro', { ascending: false })
-      .limit(5000);
+    const hepsi = [];
+    let offset = 0;
+    const SAYFA = 1000;
+    while (true) {
+      const { data, error } = await sb.from('yukleniciler')
+        .select('normalize_ad, ad, il, toplam_sozlesme_sayisi, toplam_ciro, son_sozlesme_tarihi, ortak_girisim')
+        .order('toplam_ciro', { ascending: false })
+        .range(offset, offset + SAYFA - 1);
+      if (error) throw error;
+      if (!data || data.length === 0) break;
+      hepsi.push(...data);
+      if (data.length < SAYFA) break;
+      offset += SAYFA;
+    }
 
-    if (error) throw error;
-
-    if (!data || data.length === 0) {
+    if (hepsi.length === 0) {
       document.getElementById('yukleniyor-blok').style.display = 'none';
       document.getElementById('veri-yok-blok').style.display = 'block';
       return;
     }
 
-    tumFirma = data.map(r => ({
+    tumFirma = hepsi.map(r => ({
       normalizeAd: r.normalize_ad,
       ad: r.ad || r.normalize_ad,
       il: r.il || '—',
