@@ -92,15 +92,16 @@
 > çekime geçirildi (commit `5121ced`). **Canlıda doğrulandı:** 35.454 firma / 710 sayfa yükleniyor,
 > "kalyon" araması 6 firma buluyor, konsol temiz.
 >
-> ## 🟡 14 Tem (devam) — TESPİT EDİLEN AMA HENÜZ DÜZELTİLMEYEN: Türkçe İ/ş/ğ arama eşleşmesi
-> Dizin sayfalarındaki arama `f.ad.toLowerCase().includes(aramaVal)` kullanıyor. JS `toLowerCase()`
+> ## ✅ 14 Tem (devam) — 9. bug DÜZELTİLDİ: Türkçe İ/ş/ğ arama eşleşmesi
+> Dizin sayfalarındaki arama `f.ad.toLowerCase().includes(aramaVal)` kullanıyordu. JS `toLowerCase()`
 > Türkçe-duyarsız: `"PREFABRİK".toLowerCase()` → `"prefabri̇k"` (i + combining dot), bu yüzden düz
-> `"prefabrik"` yazınca eşleşmiyor. Aynı şekilde `Ş/Ğ/İ/I/ı` içeren firma/idare adları normal yazımla
-> bulunamıyor (canlıda doğrulandı: "prefabrik" → 0 sonuç, ama "SAYIN PREFABRİK" firması mevcut).
-> **Etki:** firmalar/idareler (ve muhtemelen ihaleler) aramasında Türkçe karakterli isimler kaçıyor —
-> Türk kamu ihale platformu için ciddi UX sorunu. **Çözüm:** her iki tarafa (needle+haystack)
-> uygulanan bir Türkçe karakter-katlama fonksiyonu (İ/I/ı→i, Ş/ş→s, Ğ/ğ→g, Ü/ü→u, Ö/ö→o, Ç/ç→c).
-> Ayrı/odaklı iş olarak işaretlendi (birden fazla sayfaya dokunuyor, her biri ayrı doğrulama ister).
+> `"prefabrik"` yazınca eşleşmiyordu. `Ş/Ğ/İ/I/ı` içeren firma/idare adları normal yazımla
+> bulunamıyordu — Türk kamu ihale platformu için ciddi UX sorunu. **Çözüm uygulandı:** `firmalar.html`,
+> `idareler.html`, `sektorler.html`'e `trFold()` (İ/I/ı→i, Ş/ş→s, Ğ/ğ→g, Ü/ü→u, Ö/ö→o, Ç/ç→c +
+> toLowerCase) eklendi, aramanın her iki tarafına uygulandı. Commit `cb8291d`. **Canlıda doğrulandı:**
+> "prefabrik" → 46 firma (önceden 0), "insaat" → 11.898 firma (İNŞAAT eşleşiyor), "saglik" → 1.348
+> idare (SAĞLIK BAKANLIĞI eşleşiyor), konsol temiz. **Not:** aynı desen `ihaleler.html` aramasında da
+> olabilir — kontrol edilmedi, gelecek tur için aday.
 
 > ## ℹ️ 14 Tem (devam) — YANLIŞ ALARM: DT backfill log'u yanıltıcı görünüyordu (buffering)
 > `dt_backfill.log`'un son satırları eski bir traceback gösteriyordu (self-healing fix'ten önceki
