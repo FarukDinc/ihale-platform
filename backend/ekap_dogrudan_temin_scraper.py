@@ -202,7 +202,17 @@ def main():
 
         toplam_kayit = 0
         for i in range(args.max_pages):
-            ham = sayfa_cek(client, sayfa)
+            try:
+                ham = sayfa_cek(client, sayfa)
+            except (httpx.TimeoutException, httpx.HTTPStatusError, httpx.TransportError) as e:
+                # sayfa_cek kendi içinde 3 deneme yaptı ve yine de başarısız oldu —
+                # uzun süren bir EKAP kesintisi olabilir (--backfill saatlerce/günlerce
+                # gözetimsiz çalışması bekleniyor). Checkpoint zaten güvende (bir önceki
+                # başarılı sayfada), o yüzden process'i öldürmek yerine daha uzun bekleyip
+                # AYNI sayfadan tekrar dene — manuel restart'a gerek kalmasın.
+                print(f"  ⚠ sayfa {sayfa} tüm denemelerde başarısız ({e}), 60sn bekleyip tekrar denenecek...")
+                time.sleep(60)
+                continue
             if not ham:
                 print(f"  Sayfa {sayfa}: boş — veri bitti.")
                 break
