@@ -952,6 +952,20 @@
     okunduSayiGuncelle();
   }
 
+  // Türkçe karakter katlama — SQL tr_fold() ile BİREBİR aynı (migration_ilanlar_arama_fold.sql).
+  // Arama terimini normalize edip DB'nin arama_fold (generated, katlanmış) kolonuyla eşleştirir;
+  // böylece "insaat" yazınca "İNŞAAT" içeren ihaleler de bulunur.
+  function trFold(s) {
+    return (s || '')
+      .replace(/İ/g, 'i').replace(/I/g, 'i').replace(/ı/g, 'i')
+      .replace(/Ş/g, 's').replace(/ş/g, 's')
+      .replace(/Ğ/g, 'g').replace(/ğ/g, 'g')
+      .replace(/Ü/g, 'u').replace(/ü/g, 'u')
+      .replace(/Ö/g, 'o').replace(/ö/g, 'o')
+      .replace(/Ç/g, 'c').replace(/ç/g, 'c')
+      .toLowerCase();
+  }
+
   async function ilanlariYukle(sayfa = 1) {
     mevcutSayfa = sayfa;
     const liste = document.getElementById('ihale-liste');
@@ -989,7 +1003,7 @@
     if      (aktifSekme === 'guncel') query = query.gte('son_teklif_tarihi', simdiISO);
     else if (aktifSekme === 'gecmis') query = query.lt('son_teklif_tarihi', simdiISO);
 
-    if (arama)    query = query.or(`baslik.ilike.%${arama}%,idare.ilike.%${arama}%,okas.ilike.%${arama}%,isin_yapilacagi_yer.ilike.%${arama}%,ilan_metni.ilike.%${arama}%`);
+    if (arama)    query = query.ilike('arama_fold', `%${trFold(arama)}%`);
     if (il)       query = query.eq('il', il);
     if (kategori) query = query.eq('kategori', kategori);
     if (tur)      query = query.eq('tur', tur);
@@ -1021,8 +1035,10 @@
     let { data, error, count } = await query;
 
     // esik_katsayi migration henüz uygulanmamışsa (kolon yok) — sessizce o alan olmadan tekrar dene.
-    if (error && /esik_katsayi/.test(error.message || '')) {
-      console.info('esik_katsayi kolonu henüz yok, filtresiz tekrar deneniyor:', error.message);
+    // Kolon henüz yoksa (esik_katsayi VEYA arama_fold migration'ı uygulanmamışsa)
+    // legacy çok-kolon ILIKE ile tekrar dene (Türkçe katlamaz ama çökmez).
+    if (error && /esik_katsayi|arama_fold/.test(error.message || '')) {
+      console.info('arama_fold/esik_katsayi kolonu henüz yok, legacy aramayla tekrar deneniyor:', error.message);
       let fallback = sb.from('ilanlar').select(
         `id,ekap_id,baslik,idare,il,tur,usul,durum,ilan_tarihi,son_teklif_tarihi,tahmini_bedel,yaklasik_maliyet_min,yaklasik_maliyet_max,itiraz_bedeli,${sonucEmbed}(kazanan_firma,kazanan_teklif,kazanan_teklif_farki_yuzde,sonuc_tarihi)`,
         { count: 'exact' }
