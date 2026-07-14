@@ -368,13 +368,28 @@
     goster();
   }
 
+  // Türkçe karakter-duyarsız arama: JS toLowerCase() Türkçe-duyarsız olduğu için
+  // "PREFABRİK".toLowerCase() → "prefabri̇k" (i + combining dot) olur ve düz "prefabrik"
+  // yazınca eşleşmez. İki tarafa da uygulanan bu katlama İ/I/ı→i, Ş→s, Ğ→g, Ü→u, Ö→o, Ç→c
+  // yaparak Türkçe adların normal yazımla bulunmasını sağlar.
+  function trFold(s) {
+    return (s || '')
+      .replace(/İ/g, 'i').replace(/I/g, 'i').replace(/ı/g, 'i')
+      .replace(/Ş/g, 's').replace(/ş/g, 's')
+      .replace(/Ğ/g, 'g').replace(/ğ/g, 'g')
+      .replace(/Ü/g, 'u').replace(/ü/g, 'u')
+      .replace(/Ö/g, 'o').replace(/ö/g, 'o')
+      .replace(/Ç/g, 'c').replace(/ç/g, 'c')
+      .toLowerCase();
+  }
+
   function goster() {
-    const aramaVal = document.getElementById('arama').value.trim().toLowerCase();
+    const aramaVal = trFold(document.getElementById('arama').value.trim());
     const ilVal = document.getElementById('il-filtre').value;
     const siraKey = document.getElementById('sirala').value;
 
     filtrelenmis = tumFirma.filter(f => {
-      if (aramaVal && !f.ad.toLowerCase().includes(aramaVal)) return false;
+      if (aramaVal && !trFold(f.ad).includes(aramaVal)) return false;
       if (ilVal && f.il !== ilVal) return false;
       return true;
     });
