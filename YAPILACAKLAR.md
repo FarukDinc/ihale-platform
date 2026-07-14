@@ -44,6 +44,16 @@
 > benzer/kopyalanan migration'lar arasında GRANT gibi tekrar eden parçalar tutarlılık için
 > karşılaştırmalı kontrol edilmeli (gelecekte yeni "takip_X" tabloları eklenirse).
 
+> ## ✅ 14 Tem (devam) — DT backfill artık kendi kendini iyileştiriyor + hızlı ilerliyor
+> Süreç bu oturumda 2 kez `httpx.ReadTimeout` ile ölmüştü (EKAP tarafı geçici kesinti, `sayfa_cek()`
+> zaten 3 deneme yapıyordu ama üçü de tükenince exception process'i öldürüyordu). `ekap_dogrudan_temin_scraper.py`'ye
+> ana döngü seviyesinde ek bir katman eklendi: son hata da yakalanıyor, checkpoint bozulmadan 60sn
+> beklenip AYNI sayfadan devam ediliyor — artık manuel restart gerektirmemeli. Commit `7d96b02`,
+> VDS'e pull edilip backfill yeniden başlatıldı (PID `2221006`). **İlerleme hızlı:** 2.680→5.247→**14.211**
+> kayıt (en eski tarih artık 2021-04-01'e inmiş, sistem 2022'den beri diye biliniyorduk — yani
+> EKAP'ın dt sistemi düşünülenden daha eskiye gidiyor ya da nadir 2021 kayıtları da var). Bitince
+> (boş sayfa dönünce) toplam kayıt/tarih aralığı kullanıcıya bildirilecek.
+
 > ## ✅ 14 Tem — 2 EK DÜZELTME TAMAMLANDI (kullanıcı ayrı onayıyla)
 > 1. **`takip_idareler` düzeltildi** — migration tekrar çalıştırıldı, tablo+3 RLS policy oluştu,
 >    `NOTIFY pgrst, 'reload schema'` tetiklendi. **REST API ile doğrulandı: artık 200 OK** (önceden
