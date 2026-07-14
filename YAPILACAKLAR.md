@@ -180,17 +180,20 @@ kullanım doğru reddedildi.
 
 ### 🤖 AI'IN (Claude'un) SIRADA YAPACAĞI — sen "devam" dediğinde ya da yeni bir yön verdiğinde
 
-1. Doğrudan Temin backfill'inin ilerlemesini (kayıt sayısı, en eski tarih) REST API üzerinden ara
-   sıra kontrol et; bitince (EKAP boş sayfa dönünce) kullanıcıya toplam kayıt/tarih aralığını bildir.
-2. Kurum takibi VE rakip takibi e-postasının gerçek kullanıcıyla uçtan uca çalıştığını doğrula
-   (henüz yapılmadı — deploy tamamlandı ama fonksiyonel test edilmedi).
+1. ✅ (14 Tem) DT backfill ilerlemesi kontrol edildi + yeniden başlatıldı (2.680→5.247, hâlâ akıyor).
+2. Kurum takibi VE rakip takibi e-postasının gerçek kullanıcıyla uçtan uca çalıştığını doğrula —
+   **hâlâ yapılamadı, giriş gerektiriyor** (AI parola giremez, güvenlik kuralı). Kullanıcı kendi
+   hesabıyla "Kurumu Takip Et" butonuna basıp e-posta/bildirim geldiğini teyit etmeli.
 3. Proxy netleşince: varsa rekabetçi ihaleler için hızlandırılmış backfill'i başlat
    (`ekap_sonuc_backfill.py --max-pages` büyük bir değerle); yoksa proxy alım sürecini konuş.
-4. `Faz E1`in cron parçası (`rakip_bildirim.py`) VDS'te ilk gece turunda gerçek veri ile doğrulanmalı.
-5. KİK Kurul Kararları deploy edilince (↑ büyük bulgu), gerçek veri gelip gelmediğini `kik-kararlar.html`
-   üzerinden canlıda doğrula. İsteğe bağlı: tam karar metni/sonucu için "detay" API'sini keşfet.
+4. ✅ (14 Tem) `rakip_bildirim.py` VE `idare_bildirim.py` artık ikisi de cron'da (ikincisi hiç
+   yoktu, bu oturumda eklendi) — ilk gece turunda gerçek veriyle doğrulanmalı (log kontrolü).
+5. ✅ (14 Tem) KİK Kurul Kararları canlıda doğrulandı (97 karar, tarayıcıda test edildi).
 6. Sonraki plan maddeleri (düşük öncelik, net yön verirsen): "Sözleşme Listesi" (madde 7, aşağıda),
    D3'ün eski-ilan backfill'i (karar sonrası).
+7. Küçük/düşük öncelik: `ihale-api` systemd servisi 11 Tem'den beri restart edilmedi, o tarihten
+   sonraki tek değişiklik (86201d1, marka adı string'leri) canlıda değil — fonksiyonel risk yok,
+   istenirse `systemctl restart ihale-api` ile senkronize edilebilir (ayrı onay gerekir).
 
 **12 Tem oturumu (devam):**
 - ✅ **YENİ ÖZELLİK — Açık (Gündüz) Tema:** kullanıcı isteği ("herkes siyah modu sevmez"). Mevcut CSS
