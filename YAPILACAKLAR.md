@@ -54,6 +54,20 @@
 > EKAP'ın dt sistemi düşünülenden daha eskiye gidiyor ya da nadir 2021 kayıtları da var). Bitince
 > (boş sayfa dönünce) toplam kayıt/tarih aralığı kullanıcıya bildirilecek.
 
+> ## ✅ 14 Tem (devam) — 3. GERÇEK BUG: `kazanan_teklif_farki_yuzde` overflow (düzeltildi)
+> Aynı gece log'unda `numeric field overflow` hatası bulundu: kolon `NUMERIC(5,2)` (maks ±999.99)
+> ama `ekap_sonuc_backfill.py` tenzilat'ı 3 ondalıkla hesaplıyor (`round(...,3)`, zaten scale
+> uyumsuzluğu vardı) ve yaklaşık maliyet kazanan teklife göre çok küçükse yüzde ±999.99'u aşıyor —
+> bu satırlar sessizce yazılamıyordu. Kardeş kolon `tenzilat_yuzde` (Design B) zaten NUMERIC(6,3) idi.
+> `migration_kazanan_teklif_farki_genislet.sql` ile NUMERIC(9,3)'e genişletildi (veri kaybı
+> riski yok, sadece genişletme), VDS'te uygulandı + doğrulandı.
+>
+> **Bu oturumun genel özeti — 6 bağımsız gerçek prod bug'ı bulundu, hepsi gece log'larını okurken
+> ortaya çıktı** (idare_bildirim cron'da yok, kik_backfill yanlış flag, takip_firmalar GRANT eksik,
+> yuklenici_yenile timeout, DT backfill crash-loop, kazanan_teklif_farki_yuzde overflow). **Tavsiye:**
+> `scraper.log`'u düzenli (haftalık?) tarama, sessiz cron hatalarını yakalamanın en etkili yolu
+> çıktı — bu oturumda organik olarak yapıldı ama düzenli bir alışkanlık olabilir.
+
 > ## ✅ 14 Tem — 2 EK DÜZELTME TAMAMLANDI (kullanıcı ayrı onayıyla)
 > 1. **`takip_idareler` düzeltildi** — migration tekrar çalıştırıldı, tablo+3 RLS policy oluştu,
 >    `NOTIFY pgrst, 'reload schema'` tetiklendi. **REST API ile doğrulandı: artık 200 OK** (önceden
