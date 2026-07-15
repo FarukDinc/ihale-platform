@@ -41,12 +41,17 @@
 > - YAN FAYDA: firmalar artık 31 değil TÜM 41 kanonik kategoriyi seçebilir (Hayvancılık, Madencilik, Reklam,
 >   Savunma, Turizm, Menkul Mallar, Odun-Kömür, İnşaat Malzemeleri, Kent Mobilyaları, Sanat eklendi).
 >
-> **▶ 1b — BİLDİRİM EŞLEŞTİRME (SIRADAKİ ADIM, henüz YOK):** notify.py sadece **takip edilen** ihaleler için
->   son-teklif hatırlatıcısı; sektör-bazlı "yeni ihale/RFQ sana uygun" bildirimi YOK. Plan: SECURITY DEFINER
->   RPC `yeni_ilan_bildirim_uret(p_gun)` → son N günün aktif ilanları × profil.sektorler eşleşmesi (+ il/tür
->   filtre) → bildirimler tablosuna ekle (dedup: kullanıcı+ilan_id+tur='ihale'; NOT EXISTS). Aynısı RFQ için
->   (satinalma_talepleri × tedarikçi sektörü). Gece cron'a bağla; e-posta ikinci faz. ÖN KONTROL: bildirimler
->   FK (kullanici_id → kullanici_profiller mı auth.users mı?) profil.user_id ile hizalı mı doğrula.
+> **✅ 1b — BİLDİRİM EŞLEŞTİRME TAMAM + CANLI (commit `444ce1b`):** notify.py sadece takip edilen ihale
+>   hatırlatıcısıydı; sektör-bazlı "sana uygun yeni ihale/RFQ" YOKtu. Eklendi (`migration_bildirim_uret.sql`):
+>   - `yeni_ilan_bildirim_uret(p_gun)` SECURITY DEFINER → aktif ilanlar × profil.sektorler (kanonik eşleşme)
+>     + tercih_iller/tercih_turler filtresi → bildirimler'e ekle (tur='ihale', aksiyon_url=ihale-detay).
+>   - `yeni_rfq_bildirim_uret(p_gun)` → yeni RFQ × tedarikçi sektörü (kendi RFQ'su hariç, tur='eslestirme',
+>     ilan_id FK ilanlar'a baktığı için RFQ'da NULL; dedup aksiyon_url'den).
+>   - Dedup NOT EXISTS (ikinci çağrı 0 döndü ✓). FK doğrulandı: profil.user_id = kullanici_profiller.id =
+>     auth.users.id (3/3). Format önizlemeyle doğrulandı (kanonik İnşaat eşleşti → taksonomi hizalaması işe yaradı).
+>   - Gece cron'a bağlandı (`run_scraper.sh` sonu, p_gun=1 → retroaktif spam yok). Bu gece ilk gerçek üretim.
+>   - AÇIK (iyileştirme): geniş-sektör firma günde ~50 bildirim alabilir (370/7gün 1 firma) → ileride
+>     e-posta digest + günlük cap. Şimdilik in-app yeterli (bildirimler sayfası sayfalı). E-posta = 2. faz.
 
 > ## 🐞 15 TEMMUZ (devam) — ULUSLARARASI + FİRMA-ANALİZ HATA DÜZELTMELERİ + CANLI (commit `7d2c63a`)
 > Kullanıcı 3 hata bildirdi (uluslararası ihaleler ekran görüntüleri):
