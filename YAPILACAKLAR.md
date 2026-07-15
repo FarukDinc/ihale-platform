@@ -128,8 +128,16 @@
 >   miktar/bedel/tarih) → "🎯 Uygun Tedarikçileri Bul" eşleştirme motorunu çağırır (giriş gerekmez, anında
 >   10 firma) → "İhaleyi Yayınla" satinalma_talepleri'ne kaydeder (giriş+RLS) → açık ihaleler listelenir.
 >   Nav placeholder→gerçek link (20 sayfa, e-Satınalma artık aktif). **Canlıda doğrulandı** (Mobilya+Ankara
->   +20M→10 tedarikçi, konsol temiz). **FAZ 2 (kalan):** tedarikçi teklif verme ekranı (tablo hazır) +
->   eşleşen üye firmalara BİLDİRİM + (izinli) davet e-postası + alıcının teklifleri kıyaslayıp kazanan seçmesi.
+>   +20M→10 tedarikçi, konsol temiz).
+> - **✅ e-SATINALMA FAZ 2 YAPILDI + CANLI (commit `b99bbd3`):** `ozel-ihale-detay.html` — rol bazlı:
+>   ALICI(gelen teklifler[kapalı-zarf, fiyata sıralı]+"Kazanan Seç"[kazanan_teklif_id]+önerilen tedarikçiler),
+>   TEDARİKÇİ(gizli teklif ver / kendi teklifini gör), MİSAFİR(RFQ'yu görür + giriş-ile-teklif). v3 RLS:
+>   açık RFQ'lar HERKESE görünür (tedarikçi keşif hunisi+SEO, kamu ihaleleri gibi); teklifler gizli kalır.
+>   Liste kartları detaya linkli. **3 örnek RFQ eklendi** (info@dnclaser.com hesabıyla — o hesapla giriş
+>   yapınca ALICI akışını [gelen teklif+kazanan seç] test edebilirsin). Canlıda doğrulandı (liste 3 RFQ,
+>   detay header+KPI+rozet, konsol temiz). **KALAN:** eşleşen ÜYE firmalara yayında BİLDİRİM (frontend
+>   başkasına bildirimler yazamaz → DB trigger ya da backend script gerekir) + (izinli) davet e-postası
+>   (temiz ayrı domain) + "teklifim/ihalelerim" kullanıcı paneli.
 > - **İNŞA SIRASI (kalan):** (1)✅ Eşleştirme motoru — YAPILDI, (2)✅ RFQ açma + eşleştirme — YAPILDI,
 >   (2) alıcı RFQ açma (kapalı-zarf, ÖNERİLEN model) + üye firmalara bildirim, (3) firma profil + büyüme
 >   döngüsü, (4) İYS-uyumlu izinli gönderim + ayrı subdomain. **Model kararı (kapalı-zarf/reverse-auction/
