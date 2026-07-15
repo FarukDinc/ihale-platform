@@ -568,46 +568,18 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/api.js"></script>
 <script src="js/bildirim-sayaci.js"></script>
+<script src="js/kategoriler.js"></script>
 <script>
   const SUPABASE_URL = "https://ihaleglobal.com";
   const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzgzMzUwMDE1LCJleHAiOjE5NDEwMzAwMTV9.sRB61a8oNXwzSKL9No8gt7cmkmnkoQstT0ZtHIxl1Hs";
   const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
   // ── Veri tanımları ─────────────────────────────────────────────────────
-  const SEKTORLER = [
-    { id: 'insaat',       emoji: '🏗️', ad: 'İnşaat - Altyapı - Yapım',        aciklama: 'Bina, yol, köprü, yıkım işleri' },
-    { id: 'saglik',       emoji: '🏥', ad: 'Sağlık - Medikal - İlaç',          aciklama: 'Hastane, ilaç, kozmetik' },
-    { id: 'tibbi_cihaz',  emoji: '🔬', ad: 'Tıbbi Cihaz - Laboratuvar',        aciklama: 'Hastane ekipmanları, lab malzemeleri' },
-    { id: 'elektronik',   emoji: '💻', ad: 'Elektronik - Bilgisayar - BT',     aciklama: 'Donanım, iletişim, ölçü aletleri' },
-    { id: 'yazilim',      emoji: '🖥️', ad: 'Yazılım - Bilişim - BYH',          aciklama: 'Yazılım, bilgi yönetim hizmetleri' },
-    { id: 'enerji',       emoji: '⚡', ad: 'Enerji - Elektrik - Aydınlatma',   aciklama: 'Elektrik tesisatı, sinyalizasyon' },
-    { id: 'kanalizasyon', emoji: '🚰', ad: 'Kanalizasyon - Su - Doğalgaz',     aciklama: 'Boru, sıhhi tesisat' },
-    { id: 'temizlik',     emoji: '🧹', ad: 'Temizlik - İlaçlama - Geri Dönüşüm', aciklama: 'Temizlik hizmetleri' },
-    { id: 'guvenlik',     emoji: '🛡️', ad: 'Özel Güvenlik - Koruma',           aciklama: 'Güvenlik, bekçilik hizmetleri' },
-    { id: 'hirdavat',     emoji: '🔧', ad: 'Hırdavat - Metal - Plastik',       aciklama: 'Nalburiye, metal ve plastik ürünler' },
-    { id: 'makine',       emoji: '⚙️', ad: 'Endüstriyel Makine - Motor',       aciklama: 'Konveyör, motor, sanayi makineleri' },
-    { id: 'tasit',        emoji: '🚗', ad: 'Taşıt - İş Makinesi - Yedek Parça', aciklama: 'Araç, yedek parça alımı' },
-    { id: 'nakliye',      emoji: '🚚', ad: 'Nakliye - Servis - Taşımacılık',   aciklama: 'Lojistik, kargo, servis hizmetleri' },
-    { id: 'gida',         emoji: '🌾', ad: 'Gıda - Tarım - Yiyecek - İçecek', aciklama: 'Gıda ürünleri, tarım malzemeleri' },
-    { id: 'hazir_yemek',  emoji: '🍽️', ad: 'Hazır Yemek - Lokantacılık',       aciklama: 'Toplu yemek, catering hizmetleri' },
-    { id: 'klima',        emoji: '❄️', ad: 'Klima - Soğutma - Isıtma - HVAC', aciklama: 'Havalandırma, iklimlendirme' },
-    { id: 'yangin',       emoji: '🔥', ad: 'Yangın Algılama - Söndürme',       aciklama: 'İhbar sistemleri, yangın ekipmanı' },
-    { id: 'asansor',      emoji: '🏢', ad: 'Asansör - Yapı Otomasyonu',        aciklama: 'Mekanik güvenlik sistemleri' },
-    { id: 'kimyasal',     emoji: '🧪', ad: 'Kimyasal - Dezenfektan - Gübre',   aciklama: 'Kimyasal maddeler' },
-    { id: 'tekstil',      emoji: '👕', ad: 'Tekstil - Giyim - Spor',           aciklama: 'Kıyafet, spor ekipmanları' },
-    { id: 'mobilya',      emoji: '🛋️', ad: 'Mobilya - Beyaz Eşya - Mutfak',    aciklama: 'Büro mobilyaları, züccaciye' },
-    { id: 'matbaa',       emoji: '🖨️', ad: 'Matbaa - Kırtasiye - Ambalaj',     aciklama: 'Toner, kartuş, baskı malzemeleri' },
-    { id: 'egitim',       emoji: '📚', ad: 'Eğitim - Araştırma - Tercümanlık', aciklama: 'Kurs, anket, eğitim hizmetleri' },
-    { id: 'is_sagligi',   emoji: '⛑️', ad: 'İş Sağlığı - İş Güvenliği',       aciklama: 'Ekipman, danışmanlık' },
-    { id: 'uydu',         emoji: '📡', ad: 'Uydu - Kamera - SCADA',            aciklama: 'Haberleşme, izleme sistemleri' },
-    { id: 'muhendislik',  emoji: '📐', ad: 'Mühendislik - Mimarlık - Danışmanlık', aciklama: 'Teknik danışmanlık hizmetleri' },
-    { id: 'isletmecilik', emoji: '👷', ad: 'İşletmecilik - İşçilik - Sosyal', aciklama: 'Sosyal hizmetler, işçilik' },
-    { id: 'tarim',        emoji: '🌳', ad: 'Ormancılık - Bahçıvanlık - Peyzaj', aciklama: 'Bitki, kozlak, peyzaj' },
-    { id: 'sigortacilik', emoji: '⚖️', ad: 'Sigortacılık - Mali - Hukuki',     aciklama: 'Hukuki ve mali hizmetler' },
-    { id: 'gayrimenkul',  emoji: '🏠', ad: 'Gayrimenkul - Arsa - İşyeri',      aciklama: 'Kiralama, satış ihaleleri' },
-    { id: 'akaryakit',    emoji: '⛽', ad: 'Akaryakıt - Gazyakıt - Madeni Yağ', aciklama: 'Yakıt ve yağ alımları' },
-    { id: 'diger',        emoji: '📦', ad: 'Diğer',                             aciklama: 'Diğer kategoriler' },
-  ];
+  // Kanonik ~41 kategori tek kaynaktan (js/kategoriler.js) — ilanlar.kategori ile BİREBİR aynı adlar.
+  // DOM id olarak index kullanılır (kanonik adlarda boşluk var, geçersiz id olur); Set'te kanonik ad tutulur.
+  const SEKTORLER = (window.KATEGORILER || []).map((k, i) => ({ i, kod: k.kod, emoji: k.emoji, aciklama: k.aciklama }));
+  const KOD_INDEX = {}; SEKTORLER.forEach(s => { KOD_INDEX[s.kod] = s.i; });
+  const ESKI_MAP  = window.KATEGORI_ESKI_MAP || {};
 
   const ILLER = [
     'Ankara','İstanbul','İzmir','Bursa','Antalya','Adana',
@@ -630,10 +602,10 @@
   // ── Grid'leri oluştur ───────────────────────────────────────────────────
   function sektorGridOlustur() {
     document.getElementById('sektor-grid').innerHTML = SEKTORLER.map(s => `
-      <div class="sektor-kart" id="sektor-${s.id}" onclick="sektorToggle('${s.id}')">
+      <div class="sektor-kart" id="sektor-${s.i}" onclick="sektorToggle(${s.i})">
         <div class="sektor-emoji">${s.emoji}</div>
         <div>
-          <div class="sektor-adi">${s.ad}</div>
+          <div class="sektor-adi">${s.kod}</div>
           <div class="sektor-aciklama">${s.aciklama}</div>
         </div>
         <div class="sektor-check">✓</div>
@@ -681,10 +653,12 @@
   }
 
   // ── Toggle fonksiyonları ────────────────────────────────────────────────
-  function sektorToggle(id) {
-    if (seciliSektorler.has(id)) seciliSektorler.delete(id);
-    else seciliSektorler.add(id);
-    document.getElementById('sektor-' + id).classList.toggle('secili', seciliSektorler.has(id));
+  function sektorToggle(i) {
+    const kod = SEKTORLER[i] && SEKTORLER[i].kod;
+    if (!kod) return;
+    if (seciliSektorler.has(kod)) seciliSektorler.delete(kod);
+    else seciliSektorler.add(kod);
+    document.getElementById('sektor-' + i).classList.toggle('secili', seciliSektorler.has(kod));
     dolulukGuncelle();
   }
 
@@ -734,10 +708,12 @@
         localStorage.setItem('ihale_anahtar_kelimeler', kelimelerGoster);
       }
 
-      // Seçimleri geri yükle
+      // Seçimleri geri yükle (eski kısa anahtar → kanonik; migrate edilmemiş satırlar da doğru gösterilir)
       (data.sektorler || []).forEach(s => {
-        seciliSektorler.add(s);
-        const el = document.getElementById('sektor-' + s);
+        const kod = ESKI_MAP[s] || s;
+        if (!(kod in KOD_INDEX)) return;   // taksonomide yok (ör. 'diger') → atla
+        seciliSektorler.add(kod);
+        const el = document.getElementById('sektor-' + KOD_INDEX[kod]);
         if (el) el.classList.add('secili');
       });
       (data.tercih_iller || []).forEach(il => {
