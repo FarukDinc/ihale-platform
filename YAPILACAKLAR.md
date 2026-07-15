@@ -7,6 +7,29 @@
 > **KALICI TALİMAT (12 Tem, kullanıcı emri):** Bu blok + ilgili bölümler her oturumda otomatik
 > güncellenir, kullanıcı hatırlatmak zorunda değil. Bkz. hafıza `yapilacaklar-auto-update`.
 
+> ## 🔴 15 TEMMUZ (devam) — GERÇEK BUG: gece cron'u SESSİZCE ÇALIŞMADI (run_scraper.sh +x kaybı)
+> Durum kontrolü sırasında bulundu: **15 Tem 02:00 UTC gece turu HİÇ çalışmadı** (scraper.log 14 Tem
+> 03:01'den beri değişmemiş, bildirimler/scrape_log boş, aktif sayı 15.381'de sabit). Cron tetiklenmiş
+> (syslog doğruladı) ama **`run_scraper.sh` executable değildi**: git'e 14 Tem'de mode 100644 (Windows
+> +x korumaz) kaydedilmiş, sonraki bir `git pull` VDS'teki +x'i sıfırlamış (14 Tem 17:39). Crontab
+> `sh -c '.../run_scraper.sh'` non-executable dosyayı çalıştıramaz → "Permission denied" → sistemde MTA
+> olmadığı için hata sessizce kayboldu. 14 Tem çalıştı çünkü +x sıfırlaması o turdan SONRAYDI.
+> **FIX (commit `1f30011`):** `git update-index --chmod=+x` (git mode 755 → gelecek pull'lar korur) +
+> VDS'te `chmod +x`. VDS pull edildi, `mode change 100644 => 100755` doğrulandı, `-rwxr-xr-x`.
+> **Bu geceki (16 Tem 02:00) tur artık çalışacak.** Kaçan tur elle kurtarıldı: `ekap_scraper.py -u`
+> manuel çalıştırıldı (12.296 güncel ihale). Bkz. hafıza `scraper-cron-silent-fail` (2. kök neden eklendi).
+> **Küçük gözlem:** ekap_scraper.py log'unda her ihale için `[DEBUG-ILAN0-KEYS]` spam'i var — zararsız
+> debug çıktısı, ileride temizlenebilir. **YARIN KONTROL:** 16 Tem 02:00 turu gerçekten çalıştı mı
+> (`stat scraper.log` mtime + yeni `=== Scraper baslatiliyor ===` damgası).
+
+> ## 📋 15 TEMMUZ (devam) — durum kontrolü: backfill'ler patladı (kullanıcı "kontrol et" dedi)
+> Proxy'li derin backfill'ler ~10 saatte muazzam büyüdü: `ilanlar` 90K→**157K**, `ihale_sonuclari`
+> 153K→**254K**, `dogrudan_temin_ilanlari` 230K→**559K**. `--tum-kayitlar` modu (EKAP'ın 1.68M sonuç
+> listesinden bizim bilmediğimiz eski ihaleleri de doğrudan ekliyor) çok verimli çıktı. İki süreç de
+> checkpoint'li, arka planda sağlıklı çalışıyor. Disk hâlâ %14 (132GB boş) — kapasite sorunu YOK.
+> **Not:** rekabetçi backfill'in ilk turu (skip 81200→91200) platoya takılmıştı (0 eşleşme); çözüm
+> `--tum-kayitlar --start-skip 200000` ile bağımsız moda geçmek oldu (PID 2996790).
+
 > ## 📋 15 TEMMUZ OTURUMU (devam) — Webshare proxy alındı + bağlandı + backfill başlatıldı
 > Kullanıcı Webshare'de **100 Türkiye datacenter proxy** satın aldı (Shared/Datacenter, 100 IP,
 > 250GB/ay, ~$3/ay). Kurulum:
