@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Özel İhaleler / e-Satınalma — İhaleGlobal</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <script src="js/theme.js?v=2"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    body { background: var(--navy); }
+    .app { display: flex; min-height: 100vh; }
+    .sidebar { background: var(--navy-mid); border-right: 1px solid var(--border); width: 240px; flex-shrink: 0; position: sticky; top: 0; height: 100vh; display: flex; flex-direction: column; overflow-y: auto; }
+    .sidebar-logo { padding: 20px 20px 16px; border-bottom: 1px solid var(--border); }
+    .sidebar-logo a { font-family: var(--font-display); font-size: 18px; font-weight: 800; color: var(--white); text-decoration: none; display: flex; align-items: center; gap: 8px; }
+    .sidebar-logo span { color: var(--amber); }
+    .sidebar-nav { flex: 1; padding: 16px 12px; overflow-y: auto; }
+    .nav-section-label { font-size: 10px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); padding: 12px 8px 6px; }
+    .nav-item { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 6px; color: var(--muted); text-decoration: none; font-size: 13px; font-weight: 500; transition: all .15s; margin-bottom: 2px; }
+    .nav-item:hover { background: var(--card-bg); color: var(--white); }
+    .nav-item.active { background: rgba(240,165,0,0.12); color: var(--amber); }
+    .nav-item .icon { font-size: 16px; width: 20px; text-align: center; }
+    .sidebar-footer { padding: 16px; border-top: 1px solid var(--border); }
+    .user-row { display: flex; align-items: center; gap: 10px; }
+    .user-avatar { width: 32px; height: 32px; border-radius: 50%; background: var(--amber); color: var(--navy); font-size: 12px; font-weight: 800; display: flex; align-items: center; justify-content: center; }
+    .user-name { font-size: 13px; font-weight: 600; color: var(--white); }
+    .user-plan { font-size: 11px; color: var(--muted); }
+    .main { display: flex; flex-direction: column; flex: 1; min-width: 0; height: 100vh; overflow-y: auto; }
+    .topbar { background: var(--navy-mid); border-bottom: 1px solid var(--border); padding: 0 24px; height: 56px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 10; }
+    .page-body { padding: 24px; max-width: 1100px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .info-banner { background: rgba(139,92,246,.08); border: 1px solid rgba(139,92,246,.28); border-radius: 10px; padding: 12px 16px; margin-bottom: 20px; font-size: 12.5px; color: var(--off-white); line-height: 1.55; }
+    .info-banner b { color: #a78bfa; }
+
+    .card { background: var(--navy-mid); border: 1px solid var(--border); border-radius: 12px; padding: 22px; margin-bottom: 20px; }
+    .card-title { font-size: 15px; font-weight: 700; color: var(--white); margin-bottom: 4px; }
+    .card-sub { font-size: 12.5px; color: var(--muted); margin-bottom: 18px; }
+
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .form-group { display: flex; flex-direction: column; gap: 6px; }
+    .form-group.full { grid-column: 1 / -1; }
+    .form-group label { font-size: 12px; font-weight: 600; color: var(--muted); }
+    .form-group input, .form-group select, .form-group textarea { background: var(--navy); border: 1px solid var(--border); color: var(--white); padding: 9px 12px; border-radius: 7px; font-size: 13px; font-family: var(--font-body); outline: none; transition: border-color .15s; }
+    .form-group input:focus, .form-group select:focus, .form-group textarea:focus { border-color: var(--amber); }
+    .form-group textarea { resize: vertical; min-height: 70px; }
+    .form-group select option { background: var(--navy-mid); }
+
+    .btn-primary { background: var(--amber); color: var(--navy); border: none; padding: 11px 22px; border-radius: 8px; font-size: 14px; font-weight: 700; cursor: pointer; font-family: var(--font-body); transition: opacity .15s; }
+    .btn-primary:hover { opacity: .88; }
+    .btn-ghost { background: transparent; color: var(--muted); border: 1px solid var(--border); padding: 11px 20px; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; font-family: var(--font-body); }
+    .btn-ghost:hover { color: var(--white); border-color: rgba(var(--overlay-rgb),.25); }
+
+    .firma-satir { display: flex; align-items: center; gap: 12px; padding: 11px 4px; border-bottom: 1px solid var(--border); }
+    .firma-no { width: 26px; height: 26px; border-radius: 50%; background: rgba(240,165,0,.14); color: var(--amber); font-size: 12px; font-weight: 800; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .firma-ad { font-size: 13px; font-weight: 600; color: var(--white); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .firma-ad a { color: inherit; text-decoration: none; }
+    .firma-ad a:hover { color: var(--amber); }
+    .firma-meta { font-size: 11.5px; color: var(--muted); margin-top: 2px; }
+    .rozet { font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 10px; white-space: nowrap; }
+    .rozet-il { background: rgba(59,130,246,.14); color: #60a5fa; }
+    .rozet-kap { background: rgba(34,197,94,.12); color: #4ade80; }
+
+    .talep-kart { background: var(--navy-mid); border: 1px solid var(--border); border-radius: 10px; padding: 16px 20px; margin-bottom: 10px; }
+    .talep-ust { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 6px; }
+    .talep-baslik { font-size: 14px; font-weight: 700; color: var(--white); }
+    .talep-badges { display: flex; gap: 6px; flex-wrap: wrap; margin: 4px 0; }
+    .etiket { font-size: 11px; padding: 2px 8px; border-radius: 10px; font-weight: 600; background: rgba(var(--overlay-rgb),.06); color: var(--muted); }
+    .etiket.kat { background: rgba(240,165,0,.1); color: var(--amber); }
+    .talep-meta { font-size: 12px; color: var(--muted); display: flex; gap: 14px; flex-wrap: wrap; }
+    .durum-acik { color: #4ade80; }
+
+    .giris-uyari { background: var(--navy-mid); border: 1px dashed var(--border); border-radius: 12px; padding: 40px; text-align: center; }
+    .giris-uyari a { color: var(--amber); font-weight: 700; text-decoration: none; }
+    .bos { color: var(--muted); font-size: 13px; padding: 20px 0; text-align: center; }
+    .loading-spinner { width: 26px; height: 26px; border: 3px solid var(--border); border-top-color: var(--amber); border-radius: 50%; animation: spin .8s linear infinite; margin: 12px auto; }
+
+    @media (max-width: 900px) { .sidebar { display: none; } .form-grid { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="sidebar-logo"><a href="/"><span style="width:6px;height:6px;background:var(--amber);border-radius:50%;display:inline-block;"></span> İhale<span>Global</span></a></div>
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">Genel</div>
+      <a href="dashboard" class="nav-item"><span class="icon">◉</span> Dashboard</a>
+      <div class="nav-section-label">Kamu İhaleleri</div>
+      <a href="ihaleler" class="nav-item"><span class="icon">⊞</span> İhaleler</a>
+      <a href="dogrudan-temin" class="nav-item"><span class="icon">⚡</span> Doğrudan Temin</a>
+      <a href="sonuclananlar" class="nav-item"><span class="icon">🏆</span> Sonuçlananlar</a>
+      <div class="nav-section-label" style="padding-left:16px;opacity:.85;">— Analiz —</div>
+      <a href="rekabet-analizi" class="nav-item"><span class="icon">📊</span> Rekabet Analizi</a>
+      <a href="idareler" class="nav-item"><span class="icon">🏛️</span> İdareler Dizini</a>
+      <a href="firmalar" class="nav-item"><span class="icon">🏢</span> Firmalar Dizini</a>
+      <a href="sektorler" class="nav-item"><span class="icon">🏭</span> Sektörler Dizini</a>
+      <a href="kurum-analiz" class="nav-item"><span class="icon">🔍</span> Kurum Analizi</a>
+      <a href="firma-analiz" class="nav-item"><span class="icon">🏢</span> Firma Analizi</a>
+      <a href="kik-kararlar" class="nav-item"><span class="icon">⚖️</span> KİK Kararlar</a>
+      <div class="nav-section-label">Uluslararası</div>
+      <a href="uluslararasi" class="nav-item"><span class="icon">🌍</span> Uluslararası İhaleler</a>
+      <div class="nav-section-label">Özel İhaleler</div>
+      <a href="ozel-ihaleler" class="nav-item active"><span class="icon">🤝</span> e-Satınalma</a>
+      <div class="nav-section-label">Firmam</div>
+      <a href="takipte" class="nav-item"><span class="icon">☆</span> Takibim</a>
+      <a href="bildirimler" class="nav-item"><span class="icon">🔔</span> Bildirimler</a>
+      <a href="uyumluluk" class="nav-item"><span class="icon">✓</span> Uyumluluk</a>
+      <a href="dokumanlar" class="nav-item"><span class="icon">📁</span> Dökümanlar</a>
+      <a href="profil" class="nav-item"><span class="icon">⚙</span> Profil & Filtreler</a>
+      <a href="fiyatlandirma_odeme_bolumu" class="nav-item"><span class="icon">💳</span> Abonelik</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-row" id="sb-user-row">
+        <div class="user-avatar" id="sb-avatar">?</div>
+        <div><div class="user-name" id="sb-name">Yükleniyor…</div><div class="user-plan" id="sb-plan">—</div></div>
+      </div>
+    </div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <span style="font-size:14px;font-weight:700;color:var(--white);">🤝 Özel İhaleler / e-Satınalma</span>
+      <a href="fiyatlandirma_odeme_bolumu" class="btn btn-primary" style="padding:8px 16px;font-size:13px;">Pro'ya Geç ↑</a>
+    </div>
+
+    <div class="page-body">
+      <div class="info-banner">
+        🤝 <b>e-Satınalma</b> — Firmanız bir alım ihtiyacı için <b>özel ihale (RFQ)</b> açar; sistem, geçmişte
+        EKAP'ta benzer işleri almış <b>en uygun tedarikçileri</b> otomatik önerir. Kapalı-zarf usulü: tedarikçiler
+        gizli teklif verir, siz değerlendirip seçersiniz. <b>(Bu ihaleler kamu/uluslararası listelerinden ayrıdır.)</b>
+      </div>
+
+      <!-- YENİ İHALE FORMU -->
+      <div class="card">
+        <div class="card-title">➕ Yeni Satınalma İhalesi Aç</div>
+        <div class="card-sub">Kategori, il ve tahmini bedeli girdiğinizde en uygun tedarikçiler anında önerilir.</div>
+        <div class="form-grid">
+          <div class="form-group full"><label>İhale Başlığı *</label><input type="text" id="f-baslik" placeholder="Örn: 500 adet ofis sandalyesi alımı" /></div>
+          <div class="form-group"><label>Kategori *</label><select id="f-kategori"><option value="">Seçiniz…</option></select></div>
+          <div class="form-group"><label>İl</label><select id="f-il"><option value="">Tüm Türkiye</option></select></div>
+          <div class="form-group"><label>Miktar</label><input type="text" id="f-miktar" placeholder="Örn: 500 adet" /></div>
+          <div class="form-group"><label>Tahmini Bedel (₺)</label><input type="number" id="f-bedel" placeholder="0" min="0" /></div>
+          <div class="form-group"><label>Son Teklif Tarihi</label><input type="date" id="f-tarih" /></div>
+          <div class="form-group"><label>Firma Adınız</label><input type="text" id="f-firma" placeholder="Alıcı firma" /></div>
+          <div class="form-group full"><label>Açıklama</label><textarea id="f-aciklama" placeholder="İhtiyacın detayları, teknik özellikler, şartlar…"></textarea></div>
+        </div>
+        <div style="display:flex;gap:10px;margin-top:16px;flex-wrap:wrap;">
+          <button class="btn-ghost" onclick="tedarikciBul()">🎯 Uygun Tedarikçileri Bul</button>
+          <button class="btn-primary" onclick="ihaleYayinla()">İhaleyi Yayınla →</button>
+        </div>
+      </div>
+
+      <!-- UYGUN TEDARİKÇİLER -->
+      <div class="card" id="tedarikci-card" style="display:none;">
+        <div class="card-title">🎯 Bu İhaleye Uygun Tedarikçiler</div>
+        <div class="card-sub" id="tedarikci-sub">Geçmiş EKAP kazanımlarına göre önerilen firmalar</div>
+        <div id="tedarikci-liste"></div>
+      </div>
+
+      <!-- AÇIK İHALELER -->
+      <div class="card">
+        <div class="card-title">📋 Açık Satınalma İhaleleri</div>
+        <div class="card-sub">Platformda yayınlanan güncel özel ihaleler</div>
+        <div id="talepler-liste"><div class="loading-spinner"></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="js/sidebar-user.js"></script>
+<script src="js/bildirim-sayaci.js"></script>
+<script>
+(() => {
+  const SB_URL = "https://ihaleglobal.com";
+  const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzgzMzUwMDE1LCJleHAiOjE5NDEwMzAwMTV9.sRB61a8oNXwzSKL9No8gt7cmkmnkoQstT0ZtHIxl1Hs";
+  const sb = window.supabase.createClient(SB_URL, SB_KEY);
+
+  const KATEGORILER = ["Akaryakıt - Gazyakıt - Madeni Yağ","Asansör - Yapı Otomasyon - Mekanik Güvenlik","Eğitim - Araştırma - Anket - Tercümanlık","Elektronik - Bilgisayar - İletişim - Ölçü Aletleri","Endüstriyel Makine - Motor - Konveyör","Enerji - Aydınlatma - Sinyalizasyon - Elektrik Tesisatı","Gayrimenkul - Arsa Satışı - Kantin","Gıda - Tarım Ürünleri - Yiyecek - İçecek","Hayvancılık - Veterinerlik - Hayvan Yemi","Hazır Yemek - Lokantacılık","Hırdavat - Nalburiye - Metal ve Plastik","İnşaat - Altyapı - Üstyapı - Yapım","İnşaat Malzemeleri","İş Sağlığı - İş Güvenliği ve Ekipmanları","İşletmecilik - İşçilik - Sosyal Hizmetler","Kanalizasyon - Boru - Su - Doğalgaz - Sıhhi Tesisat","Kent Mobilyaları - Prefabrik - Doğramacılık","Kimyasal Maddeler - Dezenfektan - Gübre","Klima - Soğutma - Isıtma - Havalandırma","Madencilik - Sondaj - Doğal Kaynaklar","Matbaa - Kırtasiye - Toner - Kartuş - Ambalaj","Menkul Mallar - Araç ve Hurda Satışı","Mobilya - Beyaz Eşya - Mutfak - Züccaciye","Mühendislik - Mimarlık - Danışmanlık","Nakliye - Servis - Taşımacılık","Odun - Kömür - Katıyakıt","Ormancılık - Bahçıvanlık - Peyzaj","Özel Güvenlik - Koruma - Bekçilik","Reklam - Tabela - Billboard - Tanıtım","Sağlık - Medikal - İlaç - Kozmetik","Sanat Eserleri - Müzik Aletleri - Heykel","Savunma Sanayi - Silah - Denizcilik - Havacılık","Sigortacılık - Mali ve Hukuki Hizmetler","Tekstil - Giyim - Spor Ekipmanları","Temizlik - İlaçlama - Geri Dönüşüm","Turizm - Organizasyon - Ödüllendirme","Taşıt - İş Makinesi - Yedek Parça","Tıbbi Cihaz - Laboratuvar - Hastane Ekipmanları","Uydu Takip - Kamera - Scada - Haberleşme","Yangın Algılama - Söndürme","Yazılım - Bilişim - Bilgi Yönetim"];
+  const ILLER = ["Adana","Adıyaman","Afyonkarahisar","Ağrı","Aksaray","Amasya","Ankara","Antalya","Ardahan","Artvin","Aydın","Balıkesir","Bartın","Batman","Bayburt","Bilecik","Bingöl","Bitlis","Bolu","Burdur","Bursa","Çanakkale","Çankırı","Çorum","Denizli","Diyarbakır","Düzce","Edirne","Elazığ","Erzincan","Erzurum","Eskişehir","Gaziantep","Giresun","Gümüşhane","Hakkari","Hatay","Iğdır","Isparta","İstanbul","İzmir","Kahramanmaraş","Karabük","Karaman","Kars","Kastamonu","Kayseri","Kırıkkale","Kırklareli","Kırşehir","Kilis","Kocaeli","Konya","Kütahya","Malatya","Manisa","Mardin","Mersin","Muğla","Muş","Nevşehir","Niğde","Ordu","Osmaniye","Rize","Sakarya","Samsun","Siirt","Sinop","Sivas","Şanlıurfa","Şırnak","Tekirdağ","Tokat","Trabzon","Tunceli","Uşak","Van","Yalova","Yozgat","Zonguldak"];
+
+  let user = null;
+
+  function esc(s){ return (s||'').replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c])); }
+  function paraKisa(v){ v=Number(v)||0; if(v>=1e9)return '₺'+(v/1e9).toFixed(1)+' Mr'; if(v>=1e6)return '₺'+(v/1e6).toFixed(1)+' M'; if(v>=1e3)return '₺'+(v/1e3).toFixed(0)+' B'; return '₺'+v; }
+  function tarihFmt(s){ if(!s)return '—'; return new Date(s).toLocaleDateString('tr-TR',{day:'2-digit',month:'short',year:'numeric'}); }
+
+  // Dropdown'ları doldur
+  const kSel=document.getElementById('f-kategori'), iSel=document.getElementById('f-il');
+  KATEGORILER.forEach(k=>{const o=document.createElement('option');o.value=k;o.textContent=k;kSel.appendChild(o);});
+  ILLER.forEach(i=>{const o=document.createElement('option');o.value=i;o.textContent=i;iSel.appendChild(o);});
+
+  window.tedarikciBul = async function() {
+    const kategori = document.getElementById('f-kategori').value;
+    if (!kategori) { alert('Lütfen önce bir kategori seçin.'); return; }
+    const il = document.getElementById('f-il').value || null;
+    const bedel = parseFloat(document.getElementById('f-bedel').value) || null;
+    const card = document.getElementById('tedarikci-card'), liste = document.getElementById('tedarikci-liste');
+    card.style.display = 'block';
+    liste.innerHTML = '<div class="loading-spinner"></div>';
+    document.getElementById('tedarikci-sub').textContent = `"${kategori}"${il ? ' · ' + il : ''}${bedel ? ' · ~' + paraKisa(bedel) : ''} için önerilen firmalar`;
+    try {
+      const { data, error } = await sb.rpc('ihaleye_uygun_firmalar', { p_kategori: kategori, p_il: il, p_bedel: bedel, p_limit: 10 });
+      if (error || !data || !data.length) { liste.innerHTML = '<div class="bos">Bu kriterlere uygun geçmiş kazanımı olan firma bulunamadı.</div>'; return; }
+      liste.innerHTML = data.map((f, i) => `
+        <div class="firma-satir">
+          <div class="firma-no">${i + 1}</div>
+          <div style="flex:1;min-width:0;">
+            <div class="firma-ad"><a href="firma-analiz?ara=${encodeURIComponent(f.kazanan_firma)}" target="_blank">${esc(f.kazanan_firma)}</a></div>
+            <div class="firma-meta">${f.firma_il ? '📍 ' + esc(f.firma_il) + ' · ' : ''}bu kategoride <b style="color:var(--off-white)">${f.kategori_kazanim}</b> kazanım · en büyük <b style="color:var(--off-white)">${paraKisa(f.max_kazanim)}</b></div>
+          </div>
+          ${f.ayni_il ? '<span class="rozet rozet-il">Aynı il</span>' : ''}
+          ${f.kapasite_uygun ? '<span class="rozet rozet-kap">Kapasite ✓</span>' : ''}
+        </div>`).join('');
+    } catch (e) { liste.innerHTML = '<div class="bos">Öneri alınamadı.</div>'; }
+  };
+
+  window.ihaleYayinla = async function() {
+    if (!user) { alert('İhale yayınlamak için giriş yapmalısınız.'); location.href = 'login'; return; }
+    const baslik = document.getElementById('f-baslik').value.trim();
+    const kategori = document.getElementById('f-kategori').value;
+    if (!baslik) { alert('İhale başlığı zorunludur.'); return; }
+    if (!kategori) { alert('Kategori seçiniz.'); return; }
+    const talep = {
+      olusturan_user_id: user.id,
+      olusturan_firma: document.getElementById('f-firma').value.trim() || null,
+      baslik, kategori,
+      aciklama: document.getElementById('f-aciklama').value.trim() || null,
+      il: document.getElementById('f-il').value || null,
+      miktar: document.getElementById('f-miktar').value.trim() || null,
+      tahmini_bedel: parseFloat(document.getElementById('f-bedel').value) || null,
+      son_teklif_tarihi: document.getElementById('f-tarih').value || null,
+      durum: 'acik',
+    };
+    const { error } = await sb.from('satinalma_talepleri').insert([talep]);
+    if (error) { alert('Kaydedilirken hata: ' + error.message); return; }
+    alert('✓ İhaleniz yayınlandı! Uygun tedarikçilere önerilecek.');
+    ['f-baslik','f-miktar','f-bedel','f-tarih','f-firma','f-aciklama'].forEach(id => document.getElementById(id).value = '');
+    taleplerYukle();
+  };
+
+  async function taleplerYukle() {
+    const liste = document.getElementById('talepler-liste');
+    if (!user) { liste.innerHTML = '<div class="giris-uyari">Açık ihaleleri görmek ve ihale açmak için <a href="login">giriş yapın</a>.</div>'; return; }
+    const { data, error } = await sb.from('satinalma_talepleri')
+      .select('id,baslik,kategori,il,miktar,tahmini_bedel,son_teklif_tarihi,durum,olusturan_firma,olusturulma')
+      .eq('durum', 'acik').order('olusturulma', { ascending: false }).limit(50);
+    if (error) { liste.innerHTML = '<div class="bos">Yüklenemedi: ' + esc(error.message) + '</div>'; return; }
+    if (!data || !data.length) { liste.innerHTML = '<div class="bos">Henüz açık ihale yok — ilk ihaleyi siz açın!</div>'; return; }
+    liste.innerHTML = data.map(t => `
+      <div class="talep-kart">
+        <div class="talep-ust">
+          <div class="talep-baslik">${esc(t.baslik)}</div>
+          ${t.tahmini_bedel ? `<div style="color:var(--amber);font-weight:700;font-size:13px;white-space:nowrap;">${paraKisa(t.tahmini_bedel)}</div>` : ''}
+        </div>
+        <div class="talep-badges">
+          ${t.kategori ? `<span class="etiket kat">${esc(t.kategori)}</span>` : ''}
+          ${t.il ? `<span class="etiket">📍 ${esc(t.il)}</span>` : ''}
+          ${t.miktar ? `<span class="etiket">${esc(t.miktar)}</span>` : ''}
+        </div>
+        <div class="talep-meta">
+          ${t.olusturan_firma ? `<span>🏢 ${esc(t.olusturan_firma)}</span>` : ''}
+          <span class="durum-acik">● Açık</span>
+          ${t.son_teklif_tarihi ? `<span>⏰ Son teklif: ${tarihFmt(t.son_teklif_tarihi)}</span>` : ''}
+        </div>
+      </div>`).join('');
+  }
+
+  (async () => {
+    try { const { data } = await sb.auth.getUser(); user = data.user; } catch {}
+    taleplerYukle();
+  })();
+})();
+</script>
+</body>
+</html>
