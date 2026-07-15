@@ -26,6 +26,12 @@
 >   firma analizi YAPILAMAZ. Yani analiz verisi kamuya ait (menüde Kamu altında dürüst), ama ürettiği firma
 >   zekâsı MOTORU özel RFQ eşleştirmesini de perde arkasında besler. UX notu: Firmalar Dizini'ni "kamu ihale
 >   karnesi" olarak konumlandır (kullanıcı özel/yurtdışı iş beklentisine girmesin).
+> - **✅ MENÜ UYGULANDI + CANLI (commit `f79a356`):** 20 sayfanın sidebar'ı script'le yeniden yazıldı —
+>   bölümler: Genel · Kamu İhaleleri (İhaleler/DT/Sonuçlananlar + "— Analiz —" alt-grubu: Rekabet/İdareler/
+>   Firmalar/Sektörler/Kurum/Firma Analizi/KİK) · Uluslararası · Özel İhaleler ("🤝 e-Satınalma YAKINDA"
+>   placeholder, tıklanamaz) · Firmam (Takibim/Bildirimler/Uyumluluk/Dökümanlar/Profil/Abonelik). Sayfa
+>   başına doğru `active`. Canlıda doğrulandı (firmalar+dashboard, konsol temiz). Sidebar hâlâ her sayfada
+>   inline (tekrar) — gelecekte tek js/sidebar.js bileşenine çekilebilir (nav değişikliği tek dosya olur).
 > - **DEĞERLENDİRİLİYOR (karar bekliyor):** kök `ihaleglobal.com`=pazarlama/public + `app.ihaleglobal.com`=
 >   uygulama ayrımı. SEO: asıl kazanç public tender/kategori/firma sayfalarını KÖKte indexlenebilir yapmak
 >   (organik lead), app'i noindex/private tutmak — subdomain'in kendisi ranking'i sihirli artırmaz (subdir
