@@ -415,7 +415,7 @@
   const params = new URLSearchParams(window.location.search);
   const KURUM = params.get('kurum') || '';
 
-  function csvIndir() {
+  window.csvIndir = function() {
     if (!tumIhaleler.length) { alert('Veri yüklenmedi.'); return; }
     const satirlar = [
       ['EKAP No', 'Başlık', 'İl', 'Tür', 'Usul', 'Kategori', 'Durum', 'İlan Tarihi', 'Son Teklif', 'Yaklaşık Maliyet (Min)'],
@@ -437,7 +437,7 @@
     a.click(); URL.revokeObjectURL(url);
   }
 
-  function linkPaylasKurum(btn) {
+  window.linkPaylasKurum = function(btn) {
     navigator.clipboard.writeText(window.location.href).then(() => {
       const orig = btn.innerHTML;
       btn.innerHTML = '✓ Kopyalandı';
