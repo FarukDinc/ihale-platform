@@ -7,6 +7,58 @@
 > **KALICI TALİMAT (12 Tem, kullanıcı emri):** Bu blok + ilgili bölümler her oturumda otomatik
 > güncellenir, kullanıcı hatırlatmak zorunda değil. Bkz. hafıza `yapilacaklar-auto-update`.
 
+> ## 🚀 15 TEMMUZ (devam) — DENETİM OTURUMU: 17 fix commit'lendi+push'landı, DEPLOY SSH-ENGELLİ
+> Kullanıcı "deploy et, cron'lara bak, ne görürsen düzelt, otomatik iznin var" dedi. 30-agent
+> denetim workflow'u çalıştırıldı → **21 onaylanmış bulgu**. Yapılanlar:
+>
+> **✅ C) Sidebar kullanıcı bloğu → profil** (önceki açık iş) — `js/sidebar-user.js`'e giriş-bağımsız
+> click+keyboard, kik-kararlar'a inline. 17+ sayfa. Tarayıcıda doğrulandı (commit `804dd74`).
+>
+> **✅ KRİTİK — notify.py + bulten_gonder.py e-postaları SESSİZCE KIRIKMIŞ** (`652eb0f`): sahte
+> `backend/supabase/__init__.py` wrapper'ında `.gte/.lte` yoktu → AttributeError yutuluyordu →
+> son-teklif-yaklaşan e-postaları HİÇ gitmiyordu, bülten çöküyordu. gte/lte/gt/lt/neq eklendi
+> (aynı kolonda gte+lte aralığı için `_filter_list` tekrarlı param). Unit-test+httpx doğrulandı.
+> **DEPLOY olunca bu geceki cron'da deadline e-postaları İLK KEZ gidecek** (dedup pencere de 20h'e
+> çekildiği için mükerrer değil).
+>
+> **✅ GÜVENLİK — firma-analiz.html reflected+stored XSS** (`652eb0f`): `?ara=/?firma=` URL param'ı
+> 3 sink'e escape'siz gidiyordu (not-found kartı, firma listesi, son-aramalar chip'i URL→localStorage
+> →render). escapeHtml + sonuç render'ı escape. Payload'lu URL tarayıcıda test → artık çalışmıyor.
+>
+> **✅ ana sayfa "Aktif İhale" sayacı** (`652eb0f`): durum='aktif' (15.381, 11K'sı süresi geçmiş)
+> yerine son_teklif>=now (4.063 gerçek açık). Tarayıcıda doğrulandı.
+>
+> **✅ dogrudan-temin.html server-side dönüşümü** (`652eb0f`): 620K kayıtta "5.000" gösterip 600K'yı
+> aranamaz bırakıyordu → tam server-side sayım/arama/sayfalama (arama ILIKE exact-count timeout
+> ettiğinden count'suz+probe'lu göreli pager). Tüm modlar tarayıcıda doğrulandı.
+>
+> **✅ 8 backend cron/bildirim fix** (`4e3a05f`): DEBUG log spam kaldırıldı; DT json.JSONDecodeError
+> yakalandı; embed throttle backoff; profil 403 sessiz-yutma loglandı; aksiyon_url URL-encode
+> (JOHNSON & JOHNSON linki); esleşiyor() kelime-tabanlı (MERT≠DEMERT, 6 test geçti); haftalık
+> bülten dedup; run_scraper.sh inline timestamp.
+>
+> **✅ 2 davranışsal fix** (`9cf78c0`): mükerrer bildirim penceresi 26h→20h (#5); gecelik sonuç
+> taraması `--start-skip 0 --no-checkpoint` ile en-yeniden (#7, checkpoint 2023'e kaymıştı, yeni
+> sonuçlar yakalanmıyordu).
+>
+> **🔴 DEPLOY YAPILAMADI — SSH auto-mode classifier engeli:** Tüm commit'ler GitHub'da
+> (`origin/main` = `9cf78c0`) ama VDS `git pull` prod'a SSH gerektiriyor ve classifier genel
+> "otomatik izin"le bunu AÇMIYOR (hafıza `prod-ssh-auto-mode-limits`). **Fix'ler VDS pull olana
+> kadar CANLI DEĞİL** (frontend nginx'ten, backend cron VDS repo'sundan). Kullanıcı ya SSH hedefini
+> açıkça adlandırmalı ("root@195.85.207.126'ya bağlan deploy et") ya da Bash izin kuralı eklemeli.
+>
+> **📋 DÜZELTİLMEYEN (düşük-sev / borderline / migration gerektiren) — bilinçli ertelendi:**
+> - #9 ihale-detay OKAS linki 'guncel' sekmede açılıyor → kapalı ihalede tıklanınca geçmiş
+>   eşleşmeler görünmez (düşük/borderline; veri Geçmiş/Sonuç sekmelerinden erişilebilir).
+> - #11 notify.py in-app bildirim dedup yok (deadline countdown günlük tekrarı — büyük ölçüde
+>   kasıtlı hatırlatma pattern'i; düşük).
+> - #14 run_scraper.sh adım başına `timeout` yok (N'i kör seçmek meşru uzun adımı öldürür — riskli).
+> - #17 kik-kararlar sonuc facet'i %100 'diger' (İptal/Kabul/Red hep 0) — liste endpoint outcome
+>   vermiyor; gerçek fix KİK detay API'si (backend iş). Facet'i gizlemek UI-yargısı, ertelendi.
+> - #18 kazanan_teklif_farki_yuzde uç değerler (-993% gibi) firma/idare AVG'lerini bozuyor —
+>   ana yüzey analiz_pivot RPC (SUM/AVG), düzeltmesi migration (SSH) gerektiriyor.
+> - `il` kolonunda mojibake (AĞRI→"A�RI", ELAZIĞ, ESKİŞEHİR) — `mojibake_fix.py` konusu, DB-write.
+
 > ## 🎯 15 TEMMUZ — KULLANICI GERİ BİLDİRİMİ
 >
 > **✅ D) OKAS/CPV KODU ARAMASI — TAMAMLANDI + CANLIDA (commit `516fc31`).** Kullanıcı fikri: OKAS
