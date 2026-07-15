@@ -37,6 +37,9 @@ class QueryBuilder:
         self._method = "GET"
         self._body: Optional[dict] = None
         self._params: dict = {}
+        # Aynı kolonda birden fazla koşul (ör. gte+lte aralığı) dict'te birbirini ezer;
+        # bu operatörleri (kolon, "op.deger") tuple listesinde tutup execute'da birleştiririz.
+        self._filter_list: list = []
         self._single = False
         self._rpc_name: Optional[str] = None
 
@@ -67,6 +70,28 @@ class QueryBuilder:
     def not_(self, column: str, operator: str, value: Any):
         # PostgREST negasyon: örn. not_("ekap_id", "in", "(a,b)") → ekap_id=not.in.(a,b)
         self._params[column] = f"not.{operator}.{value}"
+        return self
+
+    # Karşılaştırma operatörleri — aynı kolonda üst üste gelebildiğinden (gte+lte aralığı)
+    # dict yerine _filter_list'e eklenir ki biri diğerini ezmesin.
+    def gte(self, column: str, value: Any):
+        self._filter_list.append((column, f"gte.{value}"))
+        return self
+
+    def lte(self, column: str, value: Any):
+        self._filter_list.append((column, f"lte.{value}"))
+        return self
+
+    def gt(self, column: str, value: Any):
+        self._filter_list.append((column, f"gt.{value}"))
+        return self
+
+    def lt(self, column: str, value: Any):
+        self._filter_list.append((column, f"lt.{value}"))
+        return self
+
+    def neq(self, column: str, value: Any):
+        self._filter_list.append((column, f"neq.{value}"))
         return self
 
     def order(self, column: str, desc: bool = False):
@@ -120,10 +145,9 @@ class QueryBuilder:
     def execute(self) -> ExecuteResult:
         endpoint = f"{self._url}/rest/v1/{self._table}"
 
-        # Params: PostgREST için column=eq.value formatı
-        params = {}
-        for k, v in self._params.items():
-            params[k] = v
+        # Params: PostgREST için column=eq.value formatı. Tuple listesi kullanırız ki
+        # aynı kolonda birden fazla koşul (gte+lte) tekrarlı query param olarak gitsin.
+        params = list(self._params.items()) + self._filter_list
 
         with httpx.Client(timeout=30) as client:
             resp = client.request(

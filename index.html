@@ -826,11 +826,15 @@
       const simdi = new Date();
       const bugunBaslangic = new Date(simdi); bugunBaslangic.setHours(0,0,0,0);
 
+      // "Aktif İhale" = teklif süresi HÂLÂ AÇIK olanlar (son_teklif_tarihi >= şimdi). durum='aktif'
+      // flag'i süresi geçince güncellenmediğinden ~15K'da takılı kalıyor (11K'sı süresi geçmiş) — bu
+      // ihaleler.html "Güncel" sekmesiyle (aynı filtre) tutarlı, gerçek açık-ihale sayısını verir.
+      const acikFiltre = simdi.toISOString();
       const [aktif, bugun, butce] = await Promise.all([
-        sb.from('ilanlar').select('id', { count: 'exact', head: true }).eq('durum', 'aktif'),
+        sb.from('ilanlar').select('id', { count: 'exact', head: true }).gte('son_teklif_tarihi', acikFiltre),
         sb.from('ilanlar').select('id', { count: 'exact', head: true })
           .gte('ilan_tarihi', bugunBaslangic.toISOString()),
-        sb.from('ilanlar').select('yaklasik_maliyet_min').eq('durum', 'aktif').not('yaklasik_maliyet_min', 'is', null),
+        sb.from('ilanlar').select('yaklasik_maliyet_min').gte('son_teklif_tarihi', acikFiltre).not('yaklasik_maliyet_min', 'is', null),
       ]);
 
       const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };

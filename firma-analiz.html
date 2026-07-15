@@ -457,6 +457,13 @@
       .toLowerCase();
   }
 
+  // innerHTML'e gömülen kullanıcı/DB kaynaklı metni kaçır (reflected/stored XSS önlemi)
+  function escapeHtml(s) {
+    return (s == null ? '' : String(s)).replace(/[<>&"']/g, c => (
+      { '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;', "'": '&#39;' }[c]
+    ));
+  }
+
   function tarihFormat(s) {
     if (!s) return '—';
     return new Date(s).toLocaleDateString('tr-TR', { day:'2-digit', month:'2-digit', year:'numeric' });
@@ -494,7 +501,7 @@
       _pivotYuklendi = true;
       const satirHtml = (list, ikon) => (list || []).slice(0, 8).map(r => `
         <div style="display:flex;justify-content:space-between;align-items:center;font-size:12.5px;padding:6px 0;border-bottom:1px solid rgba(var(--overlay-rgb),.04);">
-          <span style="color:var(--white);">${ikon} ${r.grup_deger}</span>
+          <span style="color:var(--white);">${ikon} ${escapeHtml(r.grup_deger)}</span>
           <span style="display:flex;gap:10px;color:var(--muted);">
             <span style="color:var(--amber);font-weight:700;">${r.ihale_sayisi} iş</span>
             ${r.ort_tenzilat != null ? `<span>ort. %${Number(r.ort_tenzilat).toFixed(1)} tenz.</span>` : ''}
@@ -674,15 +681,15 @@
       const d = durumSec(i.son_teklif_tarihi);
       return `<div class="ihale-kart">
         <div class="ik-ust">
-          <a class="ik-baslik" href="ihale-detay?id=${i.id}">${i.baslik || '—'}</a>
+          <a class="ik-baslik" href="ihale-detay?id=${encodeURIComponent(i.id)}">${escapeHtml(i.baslik || '—')}</a>
           <span class="ik-durum ${d.cls}">${d.etiket}</span>
         </div>
         <div class="ik-badges">
-          ${i.tur ? `<span class="etiket et-tur">${i.tur}</span>` : ''}
-          ${i.il ? `<span class="etiket">📍 ${i.il}</span>` : ''}
+          ${i.tur ? `<span class="etiket et-tur">${escapeHtml(i.tur)}</span>` : ''}
+          ${i.il ? `<span class="etiket">📍 ${escapeHtml(i.il)}</span>` : ''}
         </div>
         <div class="ik-meta">
-          ${i.idare ? `<span><a href="kurum-analiz?kurum=${encodeURIComponent(i.idare)}" style="color:var(--muted);text-decoration:none;">${i.idare}</a></span>` : ''}
+          ${i.idare ? `<span><a href="kurum-analiz?kurum=${encodeURIComponent(i.idare)}" style="color:var(--muted);text-decoration:none;">${escapeHtml(i.idare)}</a></span>` : ''}
           ${i.son_teklif_tarihi ? `<span>⏰ ${tarihFormat(i.son_teklif_tarihi)}</span>` : ''}
         </div>
       </div>`;
@@ -717,13 +724,15 @@
       if (!liste.length || !wrap || !chips) { if (wrap) wrap.style.display = 'none'; return; }
       wrap.style.display = '';
       chips.innerHTML = liste.map(ad =>
-        `<button onclick="firmaSectiClick(${JSON.stringify(ad)})"
+        // ad kullanıcı arama terimi (?ara= ile URL'den localStorage'a düşebilir) → hem onclick
+        // JS-string'i hem de görünen etiket XSS'e karşı escape edilir.
+        `<button onclick="firmaSectiClick(${escapeHtml(JSON.stringify(ad))})"
           style="background:var(--navy-mid); border:1px solid var(--border); color:var(--white);
                  border-radius:20px; padding:5px 14px; font-size:12px; font-weight:600;
                  cursor:pointer; transition:all .15s;"
           onmouseover="this.style.borderColor='var(--amber)';this.style.color='var(--amber)';"
           onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--white)';">
-          🕐 ${ad}
+          🕐 ${escapeHtml(ad)}
         </button>`
       ).join('');
     } catch {}
@@ -796,7 +805,7 @@
       document.getElementById('liste-ozet').textContent = 'Eşleşen firma bulunamadı.';
       cont.innerHTML = `<div class="veri-yok-card">
         <div class="veri-yok-icon">🔍</div>
-        <div class="veri-yok-baslik">“${term}” için firma bulunamadı</div>
+        <div class="veri-yok-baslik">“${escapeHtml(term)}” için firma bulunamadı</div>
         <div class="veri-yok-alt">Yalnızca EKAP sonuç ilanlarında KAZANAN olarak geçen firmalar aranabilir.
           Geçmiş veri arka planda toplanmaya devam ediyor — daha küçük bir firma parçası deneyin.</div>
       </div>`;
@@ -808,13 +817,13 @@
 
     document.getElementById('liste-ozet').textContent = `${liste.length}${liste.length === 100 ? '+' : ''} firma bulundu · cirosu en yüksekten sıralı`;
     cont.innerHTML = liste.map(f => `
-      <div class="firma-liste-item" onclick="firmaSec('${f.id}')">
+      <div class="firma-liste-item" onclick="firmaSec('${escapeHtml(f.id)}')">
         <div>
-          <div class="fli-ad">${(f.ad || '—')}</div>
+          <div class="fli-ad">${escapeHtml(f.ad || '—')}</div>
           <div class="fli-stats">
             <span>📋 <b>${(f.toplam_sozlesme_sayisi || 0).toLocaleString('tr')}</b> sözleşme</span>
             <span>💰 <b>${formatBedel(f.toplam_ciro)}</b></span>
-            ${f.il ? `<span>📍 ${f.il}</span>` : ''}
+            ${f.il ? `<span>📍 ${escapeHtml(f.il)}</span>` : ''}
             ${f.son_sozlesme_tarihi ? `<span>🕐 son: ${tarihFormat(f.son_sozlesme_tarihi)}</span>` : ''}
           </div>
         </div>
