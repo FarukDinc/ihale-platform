@@ -24,6 +24,30 @@
 > **Not:** Aynı "tümünü client'a indir" kalıbı başka sayfalarda kaldıysa (firmalar/idareler/sektörler
 >   dizinleri zaten server-side sanıyorum) benzer şekilde taranmalı.
 
+> ## 🧭 15 TEMMUZ (devam) — 3 SİSTEM SIRASI (kullanıcı: "hepsini sırasıyla yap") + TAKSONOMİ HİZALANDI
+> Kullanıcı 3 işi sırayla istedi. Sıra (bağımlılık): **1) Sektör taksonomi + bildirim → 2) Harita MVP →
+> 3) Kurumsal doğrulama (GİB/MERSİS)**.
+>
+> **✅ 1a — SEKTÖR TAKSONOMİ HİZALAMA TAMAM + CANLI (commit `59bf492`):**
+> - Kök sorun: profil.html **31 eski kısa anahtar** (`insaat`...) saklıyordu ama `ilanlar.kategori` /
+>   uluslararası / RFQ hepsi **kanonik ad** ("İnşaat - Altyapı - Üstyapı - Yapım") → eşleşme kopuk.
+> - `js/kategoriler.js` = TEK KAYNAK (41 kanonik + emoji/açıklama + eski→kanonik map). profil.html artık
+>   buradan besleniyor (index-tabanlı DOM id, Set'te kanonik ad; eski satırlar da doğru gösterilir).
+> - Migration (`migration_taksonomi_hizala.sql`): ilanlar'da eski **"İnşaat & Yapım" → kanonik: 17.415 satır**
+>   birleşti; mevcut 1 profil kısa-anahtar→kanonik remap. Doğrulandı (kategoriler.js 41 geçerli; İnşaat&Yapım
+>   ~0'a düştü, 45 karakter-varyantı straggler ihmal edilebilir).
+> - Not: `ilanlar.kategori`'de hâlâ genel fallback'ler var ("Mal Alımı" 173+, "Hizmet Alımı", "Diğer") —
+>   bunlar gerçekten sınıflandırılamamış (keyword yok), hedeflenebilir sektör değil; bırakıldı.
+> - YAN FAYDA: firmalar artık 31 değil TÜM 41 kanonik kategoriyi seçebilir (Hayvancılık, Madencilik, Reklam,
+>   Savunma, Turizm, Menkul Mallar, Odun-Kömür, İnşaat Malzemeleri, Kent Mobilyaları, Sanat eklendi).
+>
+> **▶ 1b — BİLDİRİM EŞLEŞTİRME (SIRADAKİ ADIM, henüz YOK):** notify.py sadece **takip edilen** ihaleler için
+>   son-teklif hatırlatıcısı; sektör-bazlı "yeni ihale/RFQ sana uygun" bildirimi YOK. Plan: SECURITY DEFINER
+>   RPC `yeni_ilan_bildirim_uret(p_gun)` → son N günün aktif ilanları × profil.sektorler eşleşmesi (+ il/tür
+>   filtre) → bildirimler tablosuna ekle (dedup: kullanıcı+ilan_id+tur='ihale'; NOT EXISTS). Aynısı RFQ için
+>   (satinalma_talepleri × tedarikçi sektörü). Gece cron'a bağla; e-posta ikinci faz. ÖN KONTROL: bildirimler
+>   FK (kullanici_id → kullanici_profiller mı auth.users mı?) profil.user_id ile hizalı mı doğrula.
+
 > ## 🐞 15 TEMMUZ (devam) — ULUSLARARASI + FİRMA-ANALİZ HATA DÜZELTMELERİ + CANLI (commit `7d2c63a`)
 > Kullanıcı 3 hata bildirdi (uluslararası ihaleler ekran görüntüleri):
 > 1. **TED linki 404** — `orijinal_url` formatı `/en/notice/{pub}` YANLIŞ (404). Doğru: `/en/notice/-/detail/{pub}`.
