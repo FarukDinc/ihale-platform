@@ -291,9 +291,14 @@ def main():
         frekans   = bulten.get("frekans", "gunluk")
         son_g     = bulten.get("son_gonderim")
 
-        # Haftalık bülten: son 7 gün
+        # Haftalık bülten: son gönderimden 7 gün geçmediyse ATLA. Aksi halde cron her gece
+        # çalıştığından haftalık abone her gece (kayan 7-günlük pencereyle) e-posta alırdı.
         if frekans == "haftalik":
-            since = (simdi - timedelta(days=7)).isoformat()
+            hafta_once = (simdi - timedelta(days=7)).isoformat()
+            if son_g and son_g > hafta_once:
+                log.debug(f"Bülten {bid}: haftalık, son gönderim <7 gün önce, atlanıyor")
+                continue
+            since = son_g or hafta_once
         else:
             since = son_g or gun_once
 

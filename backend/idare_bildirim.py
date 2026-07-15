@@ -19,6 +19,7 @@ Env: SUPABASE_URL, SUPABASE_SERVICE_KEY, RESEND_API_KEY (backend/.env)
 import os
 import sys
 from datetime import datetime, timedelta, timezone
+from urllib.parse import quote
 
 import httpx
 from dotenv import load_dotenv
@@ -179,6 +180,9 @@ def main():
             params={"select": "user_id,firma_adi,bildirim_email", "user_id": f"in.({','.join(kullanici_ids)})"},
             headers=_headers(),
         )
+        if r3.status_code >= 300:
+            # Sessizce {} dönmek e-postaları bastırıp 'başarılı' raporlar (bkz. takip_firmalar 403 dersi) — uyar.
+            print(f"    ⚠ profil sorgusu başarısız ({r3.status_code}): {r3.text[:150]} — e-posta tercihleri okunamadı, e-posta atlanacak")
         profil_map = {p["user_id"]: p for p in r3.json()} if r3.status_code < 300 else {}
         email_map = auth_email_map() if any(profil_map.get(k, {}).get("bildirim_email") for k in kullanici_ids) else {}
 
@@ -195,7 +199,7 @@ def main():
                     "kullanici_id": kid,
                     "tur": "kurum_takip",
                     "icerik": icerik,
-                    "aksiyon_url": f"/kurum-analiz?kurum={idare}",
+                    "aksiyon_url": f"/kurum-analiz?kurum={quote(idare, safe='')}",
                     "okundu": False,
                 }
                 rb = c.post(f"{SUPABASE_URL}/rest/v1/bildirimler", json=bildirim, headers=_headers())

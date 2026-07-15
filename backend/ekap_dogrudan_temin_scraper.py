@@ -128,7 +128,8 @@ def sayfa_cek(client: httpx.Client, sayfa: int, deneme: int = 3) -> list:
             )
             r.raise_for_status()
             return r.json().get("yeniDogrudanTeminAramaResultList", []) or []
-        except (httpx.TimeoutException, httpx.HTTPStatusError) as e:
+        except (httpx.TimeoutException, httpx.HTTPStatusError, json.JSONDecodeError) as e:
+            # json.JSONDecodeError: EKAP bazen 200 ile HTML bakım/hata sayfası döner (JSON değil) → retry
             if i == deneme - 1:
                 raise
             print(f"    ⚠ sayfa {sayfa} isteği başarısız ({e}), tekrar deneniyor ({i+1}/{deneme})...")
@@ -204,7 +205,7 @@ def main():
         for i in range(args.max_pages):
             try:
                 ham = sayfa_cek(client, sayfa)
-            except (httpx.TimeoutException, httpx.HTTPStatusError, httpx.TransportError) as e:
+            except (httpx.TimeoutException, httpx.HTTPStatusError, httpx.TransportError, json.JSONDecodeError) as e:
                 # sayfa_cek kendi içinde 3 deneme yaptı ve yine de başarısız oldu —
                 # uzun süren bir EKAP kesintisi olabilir (--backfill saatlerce/günlerce
                 # gözetimsiz çalışması bekleniyor). Checkpoint zaten güvende (bir önceki

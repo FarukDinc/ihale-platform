@@ -23,6 +23,7 @@ Env: SUPABASE_URL, SUPABASE_SERVICE_KEY, RESEND_API_KEY (backend/.env)
 import os
 import sys
 from datetime import datetime, timedelta, timezone
+from urllib.parse import quote
 
 import httpx
 from dotenv import load_dotenv
@@ -48,8 +49,22 @@ def _headers():
 
 
 def esleşiyor(firma_ad: str, kazanan: str) -> bool:
+    # Çıplak iki-yönlü substring ('MERT' → 'DEMERT YAPI') alakasız firmalarda yanlış
+    # bildirim üretiyordu. Kelime-tabanlı: tam eşitlik VEYA kısa adın TÜM kelimeleri
+    # uzun adda tam kelime olarak geçmeli.
     a, b = normalize_ad(firma_ad), normalize_ad(kazanan)
-    return bool(a) and bool(b) and (a in b or b in a)
+    if not a or not b:
+        return False
+    if a == b:
+        return True
+    ta, tb = set(a.split()), set(b.split())
+    if not ta or not tb:
+        return False
+    kucuk, buyuk = (ta, tb) if len(ta) <= len(tb) else (tb, ta)
+    # Tek kelimelik çok kısa adlarda (<3 harf) aşırı-eşleşmeyi engelle
+    if len(kucuk) == 1 and len(next(iter(kucuk))) < 3:
+        return False
+    return kucuk.issubset(buyuk)
 
 
 def email_html(kullanici_adi, kazanan, kazanimlar):
@@ -103,7 +118,7 @@ def email_html(kullanici_adi, kazanan, kazanimlar):
         <tr><td><table width="100%" cellpadding="0" cellspacing="0">{satirlar}</table></td></tr>
         <tr>
           <td style="padding:24px 32px;text-align:center;border-top:1px solid #e5e7eb;">
-            <a href="{SITE_URL}/firma-analiz?firma={kazanan}"
+            <a href="{SITE_URL}/firma-analiz?firma={quote(kazanan, safe='')}"
                style="display:inline-block;background:#0A1628;color:white;padding:12px 28px;border-radius:8px;text-decoration:none;font-size:14px;font-weight:700;">
               Firmanın Tüm Geçmişini Gör →
             </a>
@@ -199,6 +214,9 @@ def main():
             params={"select": "user_id,firma_adi,bildirim_email", "user_id": f"in.({','.join(kullanici_ids)})"},
             headers=_headers(),
         )
+        if r4.status_code >= 300:
+            # Sessizce {} dönmek e-postaları bastırıp 'başarılı' raporlar (bkz. takip_firmalar 403 dersi) — uyar.
+            print(f"    ⚠ profil sorgusu başarısız ({r4.status_code}): {r4.text[:150]} — e-posta tercihleri okunamadı, e-posta atlanacak")
         profil_map = {p["user_id"]: p for p in r4.json()} if r4.status_code < 300 else {}
         email_map = auth_email_map() if any(profil_map.get(k, {}).get("bildirim_email") for k in kullanici_ids) else {}
 
@@ -216,7 +234,7 @@ def main():
                     "kullanici_id": kid,
                     "tur": "rakip_hareketi",
                     "icerik": icerik,
-                    "aksiyon_url": f"/firma-analiz?firma={kazanan}",
+                    "aksiyon_url": f"/firma-analiz?firma={quote(kazanan, safe='')}",
                     "okundu": False,
                 }
                 rb = c.post(f"{SUPABASE_URL}/rest/v1/bildirimler", json=bildirim, headers=_headers())

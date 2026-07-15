@@ -461,7 +461,6 @@ async def detay_cek(client: httpx.AsyncClient, ihale_id: str, dokuman_sayisi: in
         ilanlar = item.get("ilanList") or []
         if ilanlar:
             ilan0 = ilanlar[0]
-            print(f"  [DEBUG-ILAN0-KEYS] {[k for k in ilan0.keys() if 'html' not in k.lower()]}")
             ham_html = ilan0.get("veriHtml") or ""
             sonuc["ilan_html"]  = ham_html or None
             sonuc["ilan_metni"] = html_temizle(ham_html) or None
@@ -481,7 +480,6 @@ async def detay_cek(client: httpx.AsyncClient, ihale_id: str, dokuman_sayisi: in
         )
         if raw:
             sonuc["belgeler"] = [belge_isle(b) for b in raw]
-            print(f"    [DOK-DETAY] {len(raw)} dok alanlar: {list(raw[0].keys())[:6]}")
 
     # NOT: GetDokumanListByIhaleId endpoint'i artık 404 veriyor (kaldırıldı).
     # Belge bilgisi GetDokumanUrl linkinden (aşağıda) geliyor.

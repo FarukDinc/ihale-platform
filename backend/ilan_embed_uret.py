@@ -80,6 +80,7 @@ def main():
             metin = f"{ilan.get('baslik') or ''}\n\n{(ilan.get('ilan_metni') or '')[:3000]}".strip()
             vec = embed_uret(metin)
             if vec is None:
+                time.sleep(0.5)  # embed hatası (çoğunlukla kota/429) → geri çekil, sıkı döngü yapma
                 continue
             rp = c.patch(
                 f"{SUPABASE_URL}/rest/v1/ilanlar",
