@@ -44,7 +44,18 @@
     if (planKodu && kredi?.plan_bitis && new Date(kredi.plan_bitis) < new Date()) planKodu = null;
 
     const gosterilenAd = profil?.firma_adi || kProfil?.firma_adi || email.split('@')[0];
-    const plan = PRO.includes(planKodu) ? 'Pro Plan' : 'Ücretsiz Plan';
+    const proMu = PRO.includes(planKodu);
+    const plan = proMu ? 'Pro Plan' : 'Ücretsiz Plan';
+
+    // Pro kullanıcıda topbar "Pro'ya Geç" CTA'sını "Pro Plan" rozetine çevir (yükseltme değil, durum göster)
+    if (proMu) {
+      document.querySelectorAll('.topbar-actions a[href="fiyatlandirma_odeme_bolumu"]').forEach(btn => {
+        btn.textContent = '⭐ Pro Plan';
+        btn.classList.remove('btn-primary');
+        btn.title = 'Pro plan aktif — abonelik detayları';
+        btn.style.cssText = 'padding:7px 14px!important;font-size:13px!important;font-weight:700!important;background:rgba(240,165,0,0.12)!important;border:1px solid var(--amber)!important;color:var(--amber)!important;border-radius:8px!important;text-decoration:none!important;transition:none!important;';
+      });
+    }
 
     // Tüm sidebar avatar + name elementlerini güncelle
     document.querySelectorAll('.sidebar .user-avatar, .sidebar-footer .user-avatar, #avatar-text').forEach(el => {

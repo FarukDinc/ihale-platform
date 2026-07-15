@@ -274,6 +274,10 @@
       width: 100%; min-width: 80px;
     }
     .fiyat-table input:focus { border-color: rgba(240,165,0,0.5); }
+    /* ₺ ön-eki sayının üstüne binmesin diye fiyat input'una sol boşluk */
+    .fiyat-table .input-wrap input { padding-left: 24px; }
+    .fiyat-table .input-wrap .input-prefix { font-size: 13px; }
+    .fiyat-table select { background: var(--navy); border: 1px solid var(--border); border-radius: 5px; padding: 6px 8px; color: var(--white); font-size: 13px; width: 100%; }
     .fiyat-total-row td {
       border-top: 2px solid var(--border); padding-top: 14px;
       font-weight: 700; font-size: 14px;
@@ -876,22 +880,14 @@
           </div>
 
           <div class="card">
-            <div class="card-title">Para Birimi & KDV</div>
-            <div class="form-grid cols-3">
+            <div class="card-title">Para Birimi & Geçerlilik</div>
+            <div class="form-grid cols-2">
               <div class="form-group">
                 <label>Para Birimi</label>
                 <select id="para-birimi">
                   <option value="TRY">₺ Türk Lirası (TRY)</option>
                   <option value="USD">$ ABD Doları (USD)</option>
                   <option value="EUR">€ Euro (EUR)</option>
-                </select>
-              </div>
-              <div class="form-group">
-                <label>KDV Oranı (%)</label>
-                <select id="kdv-orani">
-                  <option value="0">%0 — KDV'den Muaf</option>
-                  <option value="10">%10</option>
-                  <option value="20" selected>%20</option>
                 </select>
               </div>
               <div class="form-group">
@@ -904,6 +900,7 @@
                 </select>
               </div>
             </div>
+            <p style="font-size:12px;color:var(--muted);margin-top:10px;">KDV oranı aşağıda her iş kalemi için ayrı seçilir. Tutarlar <strong style="color:var(--white);">KDV hariç</strong> girilir.</p>
           </div>
 
           <div class="card">
@@ -915,8 +912,9 @@
                   <th>İş Kalemi / Açıklama</th>
                   <th style="width:80px;">Miktar</th>
                   <th style="width:80px;">Birim</th>
-                  <th style="width:130px;">Birim Fiyat (₺)</th>
-                  <th style="width:130px;">Toplam (₺)</th>
+                  <th style="width:120px;">Birim Fiyat (₺)<br><span style="font-weight:400;text-transform:none;letter-spacing:0;">KDV hariç</span></th>
+                  <th style="width:90px;">KDV %</th>
+                  <th style="width:120px;">Toplam (₺)<br><span style="font-weight:400;text-transform:none;letter-spacing:0;">KDV hariç</span></th>
                   <th style="width:36px;"></th>
                 </tr>
               </thead>
@@ -937,6 +935,15 @@
                       <input type="number" placeholder="0,00" min="0" step="0.01" oninput="toplamHesapla()" />
                     </div>
                   </td>
+                  <td>
+                    <select class="kdv-satir" oninput="toplamHesapla()">
+                      <option value="1">%1</option>
+                      <option value="8">%8</option>
+                      <option value="10">%10</option>
+                      <option value="18">%18</option>
+                      <option value="20" selected>%20</option>
+                    </select>
+                  </td>
                   <td style="color:var(--amber);font-weight:700;" class="satir-toplam">₺0,00</td>
                   <td><button onclick="satirSil(this)" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;">×</button></td>
                 </tr>
@@ -956,23 +963,32 @@
                       <input type="number" placeholder="0,00" min="0" step="0.01" oninput="toplamHesapla()" />
                     </div>
                   </td>
+                  <td>
+                    <select class="kdv-satir" oninput="toplamHesapla()">
+                      <option value="1">%1</option>
+                      <option value="8">%8</option>
+                      <option value="10">%10</option>
+                      <option value="18">%18</option>
+                      <option value="20" selected>%20</option>
+                    </select>
+                  </td>
                   <td style="color:var(--amber);font-weight:700;" class="satir-toplam">₺0,00</td>
                   <td><button onclick="satirSil(this)" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;">×</button></td>
                 </tr>
               </tbody>
               <tfoot>
                 <tr class="fiyat-total-row">
-                  <td colspan="5" style="color:var(--muted);">Ara Toplam (KDV Hariç)</td>
+                  <td colspan="6" style="color:var(--muted);">Ara Toplam (KDV Hariç)</td>
                   <td class="tutar" id="ara-toplam">₺0,00</td>
                   <td></td>
                 </tr>
                 <tr class="fiyat-total-row">
-                  <td colspan="5" style="color:var(--muted);">KDV (<span id="kdv-label">%20</span>)</td>
+                  <td colspan="6" style="color:var(--muted);">KDV Toplamı</td>
                   <td class="tutar" id="kdv-tutar">₺0,00</td>
                   <td></td>
                 </tr>
                 <tr class="fiyat-total-row" style="background:rgba(240,165,0,.05);">
-                  <td colspan="5" style="color:var(--white);font-size:15px;">TOPLAM TEKLİF BEDELİ</td>
+                  <td colspan="6" style="color:var(--white);font-size:15px;">TOPLAM TEKLİF BEDELİ (KDV Dahil)</td>
                   <td class="tutar" id="genel-toplam" style="font-size:20px;">₺0,00</td>
                   <td></td>
                 </tr>
@@ -1004,52 +1020,53 @@
           </div>
 
           <div class="card">
-            <div class="card-title">Zorunlu Belgeler</div>
+            <div class="card-title">Sık İstenen Belgeler</div>
+            <p style="font-size:12px;color:var(--muted);margin:-6px 0 14px;">Bu belgeler çoğu ihalede istenir ancak zorunlu değildir — yalnızca paylaşmak istediklerinizi işaretleyin.</p>
             <div class="ek-listesi">
               <div class="ek-item">
-                <input type="checkbox" class="ek-check" checked />
+                <input type="checkbox" class="ek-check" />
                 <span class="ek-icon">📎</span>
                 <div class="ek-info">
                   <div class="ek-ad">Vergi Levhası</div>
                   <div class="ek-aciklama">Son 1 yıl içinde alınmış vergi levhası fotokopisi</div>
                 </div>
-                <span class="ek-zorunlu">Zorunlu</span>
+                <span class="ek-opsiyonel">Opsiyonel</span>
               </div>
               <div class="ek-item">
-                <input type="checkbox" class="ek-check" checked />
+                <input type="checkbox" class="ek-check" />
                 <span class="ek-icon">📎</span>
                 <div class="ek-info">
                   <div class="ek-ad">Ticaret Sicil Gazetesi</div>
                   <div class="ek-aciklama">Son 6 ay içindeki yetki belgesi veya imza sirküleri</div>
                 </div>
-                <span class="ek-zorunlu">Zorunlu</span>
+                <span class="ek-opsiyonel">Opsiyonel</span>
               </div>
               <div class="ek-item">
-                <input type="checkbox" class="ek-check" checked />
+                <input type="checkbox" class="ek-check" />
                 <span class="ek-icon">📎</span>
                 <div class="ek-info">
                   <div class="ek-ad">İş Deneyim Belgesi</div>
                   <div class="ek-aciklama">Benzer iş deneyim belgesi (son 15 yıl içinde)</div>
                 </div>
-                <span class="ek-zorunlu">Zorunlu</span>
+                <span class="ek-opsiyonel">Opsiyonel</span>
               </div>
               <div class="ek-item">
-                <input type="checkbox" class="ek-check" checked />
+                <input type="checkbox" class="ek-check" />
                 <span class="ek-icon">📎</span>
                 <div class="ek-info">
                   <div class="ek-ad">Geçici Teminat Mektubu</div>
                   <div class="ek-aciklama">Tahmini bedelin %3'ü tutarında banka teminat mektubu</div>
                 </div>
-                <span class="ek-zorunlu">Zorunlu</span>
+                <span class="ek-opsiyonel">Opsiyonel</span>
               </div>
               <div class="ek-item">
-                <input type="checkbox" class="ek-check" checked />
+                <input type="checkbox" class="ek-check" />
                 <span class="ek-icon">📎</span>
                 <div class="ek-info">
                   <div class="ek-ad">Bilanço Bilgileri</div>
                   <div class="ek-aciklama">Son 3 yıla ait bilanço ve gelir tablosu</div>
                 </div>
-                <span class="ek-zorunlu">Zorunlu</span>
+                <span class="ek-opsiyonel">Opsiyonel</span>
               </div>
             </div>
           </div>
@@ -1171,15 +1188,18 @@
                       <th>İş Kalemi</th>
                       <th>Miktar</th>
                       <th>Birim</th>
-                      <th>Birim Fiyat</th>
-                      <th>Toplam</th>
+                      <th>Birim Fiyat<br>(KDV hariç)</th>
+                      <th>KDV %</th>
+                      <th>Toplam<br>(KDV hariç)</th>
                     </tr>
                   </thead>
                   <tbody id="belge-fiyat-body">
-                    <tr><td colspan="6" style="text-align:center;color:#9ca3af;">Fiyat cetveli Adım 4'te doldurulduğunda burada görünecektir.</td></tr>
+                    <tr><td colspan="7" style="text-align:center;color:#9ca3af;">Fiyat cetveli Adım 4'te doldurulduğunda burada görünecektir.</td></tr>
                   </tbody>
                   <tfoot>
-                    <tr><td colspan="5" style="font-weight:700;">Toplam (KDV Dahil)</td><td class="tutar" id="belge-toplam">—</td></tr>
+                    <tr><td colspan="6" style="font-weight:700;">Ara Toplam (KDV Hariç)</td><td class="tutar" id="belge-ara-toplam">—</td></tr>
+                    <tr><td colspan="6" style="font-weight:700;">KDV Toplamı</td><td class="tutar" id="belge-kdv">—</td></tr>
+                    <tr class="toplam-row"><td colspan="6" style="font-weight:700;">Toplam (KDV Dahil)</td><td class="tutar" id="belge-toplam">—</td></tr>
                   </tfoot>
                 </table>
               </div>
@@ -1541,6 +1561,15 @@
           <input type="number" placeholder="0,00" min="0" step="0.01" oninput="toplamHesapla()" />
         </div>
       </td>
+      <td>
+        <select class="kdv-satir" oninput="toplamHesapla()">
+          <option value="1">%1</option>
+          <option value="8">%8</option>
+          <option value="10">%10</option>
+          <option value="18">%18</option>
+          <option value="20" selected>%20</option>
+        </select>
+      </td>
       <td style="color:var(--amber);font-weight:700;" class="satir-toplam">₺0,00</td>
       <td><button onclick="satirSil(this)" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:16px;">×</button></td>`;
     tbody.appendChild(tr);
@@ -1591,26 +1620,25 @@
 
   // ── Mali teklif toplamı ───────────────────────────────
   function toplamHesapla() {
-    let ara = 0;
+    let ara = 0, kdvToplam = 0;
     const satirlar = document.getElementById('fiyat-body').rows;
     Array.from(satirlar).forEach(tr => {
       const inputs = tr.querySelectorAll('input[type="number"]');
       const miktar = parseFloat(inputs[0]?.value) || 0;
-      const birimFiyat = parseFloat(inputs[1]?.value) || 0;
-      const satirToplam = miktar * birimFiyat;
+      const birimFiyat = parseFloat(inputs[1]?.value) || 0;      // KDV hariç
+      const satirToplam = miktar * birimFiyat;                    // KDV hariç satır tutarı
+      const kdvOran = parseInt(tr.querySelector('.kdv-satir')?.value) || 0;
       ara += satirToplam;
+      kdvToplam += satirToplam * (kdvOran / 100);
       const toplamCell = tr.querySelector('.satir-toplam');
       if (toplamCell) toplamCell.textContent = paraCikti(satirToplam);
     });
 
-    const kdvOran = parseInt(document.getElementById('kdv-orani').value) || 0;
-    const kdv = ara * (kdvOran / 100);
-    const genel = ara + kdv;
+    const genel = ara + kdvToplam;
 
     document.getElementById('ara-toplam').textContent = paraCikti(ara);
-    document.getElementById('kdv-tutar').textContent  = paraCikti(kdv);
+    document.getElementById('kdv-tutar').textContent  = paraCikti(kdvToplam);
     document.getElementById('genel-toplam').textContent = paraCikti(genel);
-    document.getElementById('kdv-label').textContent  = `%${kdvOran}`;
   }
 
   // ── Dosya yükle ───────────────────────────────────────
@@ -1666,16 +1694,17 @@
     // Fiyat tablosu
     const satirlar = document.getElementById('fiyat-body').rows;
     let tblHTML = '';
-    let toplam = 0;
+    let araToplam = 0, kdvToplam = 0;
     Array.from(satirlar).forEach((tr, i) => {
-      const td = tr.querySelectorAll('td');
       const inputs = tr.querySelectorAll('input[type="number"]');
       const aciklama = tr.querySelector('input[type="text"]')?.value || '—';
       const miktar = parseFloat(inputs[0]?.value) || 0;
       const birim  = tr.querySelector('select')?.value || '';
-      const birimFiyat = parseFloat(inputs[1]?.value) || 0;
-      const satirToplam = miktar * birimFiyat;
-      toplam += satirToplam;
+      const birimFiyat = parseFloat(inputs[1]?.value) || 0;      // KDV hariç
+      const kdvOran = parseInt(tr.querySelector('.kdv-satir')?.value) || 0;
+      const satirToplam = miktar * birimFiyat;                    // KDV hariç
+      araToplam += satirToplam;
+      kdvToplam += satirToplam * (kdvOran / 100);
       if (aciklama !== '—' || miktar > 0) {
         tblHTML += `<tr>
           <td>${i+1}</td>
@@ -1683,17 +1712,18 @@
           <td>${miktar}</td>
           <td>${birim}</td>
           <td class="tutar">${paraCikti(birimFiyat)}</td>
+          <td>%${kdvOran}</td>
           <td class="tutar">${paraCikti(satirToplam)}</td>
         </tr>`;
       }
     });
 
-    if (!tblHTML) tblHTML = '<tr><td colspan="6" style="text-align:center;color:#9ca3af;">Fiyat kalemi girilmedi.</td></tr>';
+    if (!tblHTML) tblHTML = '<tr><td colspan="7" style="text-align:center;color:#9ca3af;">Fiyat kalemi girilmedi.</td></tr>';
     document.getElementById('belge-fiyat-body').innerHTML = tblHTML;
 
-    const kdvOran  = parseInt(document.getElementById('kdv-orani').value) || 0;
-    const genel    = toplam * (1 + kdvOran/100);
-    document.getElementById('belge-toplam').textContent = paraCikti(genel);
+    document.getElementById('belge-ara-toplam').textContent = paraCikti(araToplam);
+    document.getElementById('belge-kdv').textContent = paraCikti(kdvToplam);
+    document.getElementById('belge-toplam').textContent = paraCikti(araToplam + kdvToplam);
   }
 
   // ── Word / PDF indirme ────────────────────────────────
@@ -1763,7 +1793,11 @@
       olusturulma: new Date().toISOString(),
     };
 
-    const { error } = await sb.from('teklifler').insert([teklif]);
+    // ilan_id + teklif_veren_id UNIQUE — aynı ihaleye ikinci kez kaydederken çakışmayı önle:
+    // varsa mevcut taslağı GÜNCELLE (upsert), yeni satır zorlama (duplicate key hatası veriyordu).
+    const { error } = ihaleId
+      ? await sb.from('teklifler').upsert([teklif], { onConflict: 'ilan_id,teklif_veren_id' })
+      : await sb.from('teklifler').insert([teklif]);
     if (error) {
       toast('Kaydedilirken hata: ' + error.message, 'hata');
       return;
@@ -1779,7 +1813,7 @@
   // ── Başlat ────────────────────────────────────────────
   ihaleYukle();
   krediYukle();
-  document.getElementById('kdv-orani').addEventListener('change', toplamHesapla);
+  toplamHesapla();
 </script>
 </body>
 </html>
