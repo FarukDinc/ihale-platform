@@ -24,6 +24,45 @@
 > **Not:** Aynı "tümünü client'a indir" kalıbı başka sayfalarda kaldıysa (firmalar/idareler/sektörler
 >   dizinleri zaten server-side sanıyorum) benzer şekilde taranmalı.
 
+> ## 🔐 15 TEMMUZ (devam) — e-SATINALMA v4: KURUMSAL GATE + VKN/ÜNVAN/ADRES ZORUNLU + CANLI (commit `e80d92a`)
+> Kullanıcı kararı: "her önüne gelen ihale açamamalı" + "adres de zorunlu (MaaS harita için hazır veri)".
+> **Önemli veri gerçeği (doğrulandı):** yüklenicilerin VKN'sini ALAMIYORUZ — `yukleniciler.vergi_no` (53.897)
+> ve `ihale_sonuclari.yuklenici_vergi_no` (355K) **ikisi de %0 dolu**. Scraper `yukleniciVergiNo` alanını
+> deniyor ama EKAP kamu sonuç feed'i VKN döndürmüyor. Önceki "EKAP'tan otomatik VKN doğrularız" varsayımı YANLIŞ.
+> **Yapıldı:**
+> - RFQ YAYINLAMA yalnız geçerli `kurumsal` abonelikle. Asıl zorlama RLS'te (anon key ile herkes POST atabilir):
+>   `SECURITY DEFINER public.kullanici_kurumsal_mi()` + INSERT policy `talep_kurumsal_ekler`
+>   (sahiplik + VKN 10-hane + ünvan + il/ilçe/açık adres + kurumsal). `backend/migration_ozel_ihaleler_v4.sql`.
+> - Form (ozel-ihaleler.html): VKN (Türk checksum, advisory) + ünvan + **il(zorunlu)/ilçe/açık adres** eklendi.
+>   `js/plan.js`'e `getPlanKod()`/`isKurumsal()` (getPlan 'standart'+'kurumsal'ı ayıramıyordu).
+> - Adres YAPISAL saklanıyor (il/ilce/acik_adres + enlem/boylam kolonları) → MaaS harita/geocode için hazır.
+> **ÇEKİŞMELİ İNCELEME (Workflow, 12 ajan, 5 bulgu onaylandı) → DÜZELTİLDİ:**
+>   - 3 açı bağımsız aynı kusuru buldu: "Kamuda tanınan alıcı" güven rozeti SAHTELENEBİLİR (ünvan beyan,
+>     kimliğe bağlanamıyor → ünlü firma karnesi taklidi; fuzzy `%ilike%`+en-büyük+kaçırılmamış `%`/`_` → dürüst
+>     kullanıcıda bile yanlış eşleşme). **Rozet KALDIRILDI**; kimlik "Alıcı (beyan) · ⓘ doğrulanmamış" gösteriliyor.
+>   - esc() tek-tırnak hardening. Sağlam çıkanlar: kurumsal-gate/SECURITY DEFINER ✓, anon-VKN-görünürlüğü kasıtlı ✓.
+>   - Ünvan→yukleniciler eşleştirme TEKNOLOJİSİ meşru yerinde kalıyor: RFQ→**tedarikçi** önerisi (o firmanın
+>     kamu-sonucu karnesi, beyan değil). Alıcı-tarafı rozet olarak KULLANILMAMALI.
+> - **Cache tuzağı:** CF edge eski `js/plan.js`'i sunuyordu → `Plan.isKurumsal` undefined. Fix: `?v=v4` cache-bust
+>   + savunmacı `typeof Plan.isKurumsal==='function'` guard. (Ders: js/ dosyası değişince ?v= şart, CF cache'liyor.)
+> **AÇIK (gelecek):** gerçek kimlik doğrulama = VKN↔ünvan'ı yetkili kaynağa (GİB VKN sorgu / MERSİS / KEP) bağlamak;
+>   o zamana kadar güven = Kurumsal-abonelik kapısı + tedarikçinin beyan VKN'yi bağımsız doğrulaması.
+
+> ## 🗺️ 15 TEMMUZ (devam) — e-SATINALMA HARİTA + MaaS KÖPRÜSÜ (kullanıcı fikri, PLANLAMA — karar bekliyor)
+> Kullanıcı: e-Satınalma ekranı Türkiye haritasında açılsın (kırmızı pin=talep/RFQ); ileride MaaS fasoncularıyla
+> (yeşil pin=boş kapasite) aynı ekranda; mesafe-bazlı lokal eşleştirme + "acil iş radarı" (spot piyasa push).
+> **Benim önerim (kullanıcıya sunuldu):**
+> - **Otonom sıralama + insan-onaylı davet** (manuel pin-avı DEĞİL, tam-otomatik atama da DEĞİL). Mevcut
+>   `ihaleye_uygun_firmalar` RPC'sine coğrafi (il/mesafe) boyut eklenerek "Bu İş İçin En Uygun 3 Üretici" hesaplanır;
+>   alıcı seçer/davet eder (güven+sorumluluk). Bu bizim asıl moat'ımız (EKAP karnesi + kapasite + coğrafya).
+> - **Soğuk-başlangıç dürüstlüğü:** şu an 3 test RFQ var → boş harita kötü görünür. Çözüm: haritayı ELİMİZDEKİ
+>   veriyle doldur — RFQ pinleri + `yukleniciler.il` yoğunluğu (53.897 firma) → gün-1'de değerli, MaaS beklemeden.
+> - **Geocode gerçeği:** pin koordinat ister, düz adres yetmez. Faz-1: il/ilçe MERKEZ (81 il, offline tablo, bedava).
+>   Faz-2 (MaaS): açık adres → lat/lng geocode + canlı boş-kapasite yeşil pin + "5 km'de acil lazer kesim" push.
+> - **Gizlilik:** açık adres pin'i ne aldığını+nerede olduğunu ifşa eder → herkese ilçe-pin, açık adres yalnız
+>   teklif veren/davetli tedarikçiye. (v4'te adres anon-okunur; harita fazında bu kısıt gözden geçirilecek.)
+> Karar bekleyen: manuel mi otonom mu → önerim OTONOM sıralama + onaylı davet.
+
 > ## 🏛️ 15 TEMMUZ (devam) — MİMARİ/IA KARARI: TEK ENTEGRE APP + MODÜLLER (subdomain'e BÖLME)
 > Kullanıcıyla netleşen ürün mimarisi (kararlaştırıldı):
 > - **3-yönlü subdomain'e (kamu/özel/yurtdışı) BÖLME.** Tek entegre uygulama, bunlar İÇERİDE modül/sekme.
