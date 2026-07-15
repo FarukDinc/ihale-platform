@@ -206,14 +206,7 @@ def kullanici_analiz_isle(
     profil = firma_profil.data
     ihale = ihale_bilgi.data
 
-    # Belge henüz indirilmemişse (storage_url yok) talep anında CAPTCHA çözüp indirir —
-    # bkz. belge_url_getir(). Gece turu bilerek sadece linki saklar (EKAP_BELGE_LINK), ağır
-    # indirme burada, kullanıcı gerçekten analiz isteyince tetiklenir.
-    pdf_url = belge_url_getir(ihale)
-    if not pdf_url:
-        return {"basari": False, "hata": "Bu ihale için doküman indirilemedi (EKAP'ta belge bulunamadı ya da CAPTCHA çözülemedi)"}
-
-    # 2. Cache kontrolü
+    # 2. Cache kontrolü (belge indirmeden ÖNCE — cache varsa dokümana hiç gerek yok; #17 düzeltmesi)
     cache = cache_kontrol(ihale_id)
     if cache:
         print(f"  → Cache hit! Gemini'ye gitmiyor")
@@ -256,6 +249,11 @@ def kullanici_analiz_isle(
     # 3. Kredi ön kontrolü (en az 1 kredi lazım)
     if kalan_kredi < 1:
         return {"basari": False, "hata": "Yetersiz kredi", "kalan": kalan_kredi}
+
+    # Belge indir (yalnız cache YOKken — talep anında CAPTCHA çözüp indirir; gece turu sadece link saklar).
+    pdf_url = belge_url_getir(ihale)
+    if not pdf_url:
+        return {"basari": False, "hata": "Bu ihale için doküman indirilemedi (EKAP'ta belge bulunamadı ya da CAPTCHA çözülemedi)"}
 
     # 4. Gemini analizi
     sirket_profili = {

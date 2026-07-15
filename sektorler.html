@@ -330,8 +330,9 @@
   async function veriCek() {
     const sayim = {};
     let offset = 0;
-    const { count } = await sb.from('ilanlar').select('*', { count: 'exact', head: true });
-    const toplamKayit = count || 12000;
+    // Not: eskiden burada count:'exact' ile ~256K satır sayılıyordu — RPC gerçek toplamı verdiği için gereksiz.
+    // toplamKayit yalnız RPC BAŞARISIZ olursa çalışan fallback loop'unun ilerleme çubuğu için (kozmetik).
+    const toplamKayit = 250000;
 
     // Önce kategori_sayim() RPC'yi dene (migration SQL çalıştırıldıysa)
     try {
