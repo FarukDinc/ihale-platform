@@ -7,6 +7,15 @@
 > **KALICI TALİMAT (12 Tem, kullanıcı emri):** Bu blok + ilgili bölümler her oturumda otomatik
 > güncellenir, kullanıcı hatırlatmak zorunda değil. Bkz. hafıza `yapilacaklar-auto-update`.
 
+> ## ✅ 15 TEMMUZ (devam) — DEPLOY EDİLDİ (kullanıcı "sen push et VDS'e" dedi)
+> Bu oturumun TÜM commit'leri VDS'e pull edildi: `516fc31 → 6d3ba07` (17 dosya, fast-forward).
+> **Doğrulandı:** (1) `run_scraper.sh` mode 755 executable (bu geceki cron çalışacak); (2) supabase
+> shim gte/lte VDS venv'de çalışıyor → **notify.py deadline e-postaları bu gece İLK KEZ gidecek**;
+> (3) tüm bildirim scriptleri syntax OK; (4) canlı frontend güncel (nginx) — ihaleglobal.com aktif
+> sayacı artık **4.063** (gerçek açık), dogrudan-temin/teklif-olustur/Pro-rozeti/rekabet-analizi hepsi
+> canlı. **YARIN KONTROL:** bu geceki 02:00 UTC cron turu — notify e-postası gitti mi + usul temiz
+> yazıldı mı (`scraper.log`).
+
 > ## 📊 15 TEMMUZ (devam) — rekabet-analizi fix + KATEGORİ/OKAS analizi + ilan.gov.tr (yeni kaynak)
 >
 > **✅ REKABET ANALİZİ "İhale Usulü" bug'ı DÜZELTİLDİ (commit `5e53e4e`):** usul chart'ında EKAP'ın
