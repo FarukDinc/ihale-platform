@@ -420,7 +420,7 @@
 
   // Akıllı geri: sayfa pushState kullandığı için history.back() sayfada döner. Geldiği yere (aynı origin,
   // farklı sayfa) dön; referrer yok/aynı sayfaysa firmalar dizinine düş.
-  function geriGit(){
+  window.geriGit = function(){
     try {
       const ref = document.referrer;
       if (ref) {
@@ -431,7 +431,7 @@
     location.href = 'firmalar';
   }
 
-  function csvIndir() {
+  window.csvIndir = function() {
     if (!tumIhaleler.length) { alert('Önce bir firma analiz edin.'); return; }
     const satirlar = [
       ['EKAP No', 'Başlık', 'İdare', 'İl', 'Tür', 'Kategori', 'İlan Tarihi', 'Son Teklif'],
@@ -453,7 +453,7 @@
     a.click(); URL.revokeObjectURL(url);
   }
 
-  function linkPaylas(btn) {
+  window.linkPaylas = function(btn) {
     navigator.clipboard.writeText(window.location.href).then(() => {
       const orig = btn.innerHTML;
       btn.innerHTML = '✓ Kopyalandı';
