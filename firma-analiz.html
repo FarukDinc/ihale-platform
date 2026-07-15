@@ -54,10 +54,12 @@
     }
     .topbar-left { display: flex; align-items: center; gap: 12px; }
     .back-btn {
-      display: flex; align-items: center; gap: 6px; color: var(--muted);
-      text-decoration: none; font-size: 13px; font-weight: 500; transition: color .15s;
+      display: inline-flex; align-items: center; gap: 6px; color: var(--off-white, #e6e6e6);
+      text-decoration: none; font-size: 13px; font-weight: 600; cursor: pointer;
+      background: var(--card-bg, #151a24); border: 1px solid var(--border, #2a3140);
+      padding: 7px 14px; border-radius: 7px; transition: all .15s;
     }
-    .back-btn:hover { color: var(--white); }
+    .back-btn:hover { color: var(--white); border-color: var(--amber, #f0a500); background: rgba(240,165,0,.08); }
     .breadcrumb { font-size: 13px; color: var(--muted); }
     .breadcrumb span { color: var(--white); }
 
@@ -251,7 +253,7 @@
   <div class="main">
     <div class="topbar">
       <div class="topbar-left">
-        <a href="javascript:history.back()" class="back-btn">← Geri</a>
+        <a href="firmalar" onclick="geriGit();return false;" class="back-btn">← Geri</a>
         <div class="breadcrumb">/ <span id="bc-firma">Firma Analizi</span></div>
       </div>
       <button onclick="csvIndir()" style="background:var(--card-bg);border:1px solid var(--border);color:var(--muted);padding:7px 14px;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;font-family:var(--font-body);">↓ CSV</button>
@@ -415,6 +417,19 @@
 
   const params = new URLSearchParams(window.location.search);
   let FIRMA = '';  // aktif detaydaki firmanın adı (firmaDetayYukle doldurur)
+
+  // Akıllı geri: sayfa pushState kullandığı için history.back() sayfada döner. Geldiği yere (aynı origin,
+  // farklı sayfa) dön; referrer yok/aynı sayfaysa firmalar dizinine düş.
+  function geriGit(){
+    try {
+      const ref = document.referrer;
+      if (ref) {
+        const u = new URL(ref);
+        if (u.origin === location.origin && !u.pathname.includes('firma-analiz')) { location.href = ref; return; }
+      }
+    } catch {}
+    location.href = 'firmalar';
+  }
 
   function csvIndir() {
     if (!tumIhaleler.length) { alert('Önce bir firma analiz edin.'); return; }

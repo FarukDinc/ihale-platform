@@ -94,6 +94,10 @@
     .etiket.kategori { background: rgba(240,165,0,.1); color: var(--amber); }
     .ui-meta { display: flex; gap: 14px; font-size: 12px; color: var(--muted); flex-wrap: wrap; align-items: center; }
     .ui-orijinal { font-size: 11px; color: var(--muted); font-style: italic; margin-top: 4px; }
+    .ui-ac-btn { display: inline-flex; align-items: center; gap: 6px; margin-top: 12px;
+      background: var(--amber, #f0a500); color: #0b0e14; font-weight: 700; font-size: 12.5px;
+      padding: 8px 16px; border-radius: 7px; text-decoration: none; transition: filter .15s, transform .15s; }
+    .ui-ac-btn:hover { filter: brightness(1.08); transform: translateY(-1px); }
 
     .loading-wrap { text-align: center; padding: 60px 20px; color: var(--muted); }
     .loading-spinner { width: 32px; height: 32px; border: 3px solid var(--border); border-top-color: var(--amber); border-radius: 50%; animation: spin .8s linear infinite; margin: 0 auto 16px; }
@@ -270,7 +274,7 @@
   async function veriYukle(resetSayfa = true) {
     if (resetSayfa) sayfa = 1;
     let query = sb.from('uluslararasi_ihaleler')
-      .select('publication_no,baslik,orijinal_baslik,ulke,ulke_kodu,idare,kategori,tur,tahmini_bedel,para_birimi,son_teklif_tarihi,ilan_tarihi,orijinal_url', { count: 'exact' });
+      .select('publication_no,kaynak,baslik,orijinal_baslik,ulke,ulke_kodu,idare,kategori,tur,tahmini_bedel,para_birimi,son_teklif_tarihi,ilan_tarihi,orijinal_url', { count: 'exact' });
     query = filtreleriUygula(query);
     // son_teklif_tarihi olanlar önce (nulls last), sonra en yeni ilan
     query = query.order(siralamaAlan, { ascending: false, nullsFirst: false });
@@ -286,6 +290,13 @@
     topSayfa = Math.max(1, Math.ceil(toplam / PER_PAGE));
     sonSatirlar = data || [];
     render();
+  }
+
+  // Kaynağa göre "aç" butonu metni (TED / Gürcistan portalı / diğer).
+  function kaynakAc(kaynak){
+    if(kaynak === 'ted') return "TED'de İncele";
+    if(kaynak === 'georgia') return "Gürcistan Portalında İncele";
+    return "Kaynağında İncele";
   }
 
   function render() {
@@ -311,9 +322,9 @@
       <div class="ui-meta">
         ${k.idare ? `<span>🏛️ ${esc(k.idare)}</span>` : ''}
         ${k.son_teklif_tarihi ? `<span>⏰ Son teklif: ${tarihFormat(k.son_teklif_tarihi)}</span>` : ''}
-        <span><a href="${esc(k.orijinal_url)}" target="_blank" rel="noopener" style="color:#60a5fa;text-decoration:none;">↗ TED'de Aç</a></span>
       </div>
       ${k.orijinal_baslik && k.orijinal_baslik !== k.baslik ? `<div class="ui-orijinal">Orijinal: ${esc(k.orijinal_baslik)}</div>` : ''}
+      ${k.orijinal_url ? `<a class="ui-ac-btn" href="${esc(k.orijinal_url)}" target="_blank" rel="noopener">${esc(kaynakAc(k.kaynak))} ↗</a>` : ''}
     </div>`).join('');
     const pg = document.getElementById('pager');
     pg.style.display = topSayfa > 1 ? 'flex' : 'none';

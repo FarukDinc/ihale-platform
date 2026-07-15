@@ -155,7 +155,7 @@ def notice_donustur(n):
         "para_birimi": "EUR",
         "ilan_tarihi": _tarih(n.get("publication-date")),
         "son_teklif_tarihi": _tarih(n.get("deadline-receipt-tender-date-lot")),
-        "orijinal_url": f"https://ted.europa.eu/en/notice/{pub}",
+        "orijinal_url": f"https://ted.europa.eu/en/notice/-/detail/{pub}",  # doğru format (/en/notice/{pub} 404 verir)
         "olusturulma": datetime.now(timezone.utc).isoformat(),
     }
 
