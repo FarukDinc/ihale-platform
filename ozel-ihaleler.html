@@ -249,7 +249,7 @@
     if (error) { liste.innerHTML = '<div class="bos">Yüklenemedi: ' + esc(error.message) + '</div>'; return; }
     if (!data || !data.length) { liste.innerHTML = '<div class="bos">Henüz açık ihale yok — ilk ihaleyi siz açın!</div>'; return; }
     liste.innerHTML = data.map(t => `
-      <div class="talep-kart">
+      <div class="talep-kart" onclick="location.href='ozel-ihale-detay?id=${t.id}'" style="cursor:pointer;">
         <div class="talep-ust">
           <div class="talep-baslik">${esc(t.baslik)}</div>
           ${t.tahmini_bedel ? `<div style="color:var(--amber);font-weight:700;font-size:13px;white-space:nowrap;">${paraKisa(t.tahmini_bedel)}</div>` : ''}
