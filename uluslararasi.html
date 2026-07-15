@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Uluslararası İhaleler — İhaleGlobal</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <script src="js/theme.js?v=2"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    body { background: var(--navy); }
+    .app { display: flex; min-height: 100vh; }
+    .sidebar {
+      background: var(--navy-mid); border-right: 1px solid var(--border);
+      width: 240px; flex-shrink: 0; position: sticky; top: 0;
+      height: 100vh; display: flex; flex-direction: column; overflow-y: auto;
+    }
+    .sidebar-logo { padding: 20px 20px 16px; border-bottom: 1px solid var(--border); }
+    .sidebar-logo a {
+      font-family: var(--font-display); font-size: 18px; font-weight: 800;
+      color: var(--white); text-decoration: none; display: flex; align-items: center; gap: 8px;
+    }
+    .sidebar-logo span { color: var(--amber); }
+    .sidebar-nav { flex: 1; padding: 16px 12px; overflow-y: auto; }
+    .nav-section-label {
+      font-size: 10px; font-weight: 700; letter-spacing: .1em;
+      text-transform: uppercase; color: var(--muted); padding: 12px 8px 6px;
+    }
+    .nav-item {
+      display: flex; align-items: center; gap: 10px; padding: 9px 12px;
+      border-radius: 6px; color: var(--muted); text-decoration: none;
+      font-size: 13px; font-weight: 500; transition: all .15s; margin-bottom: 2px;
+    }
+    .nav-item:hover { background: var(--card-bg); color: var(--white); }
+    .nav-item.active { background: rgba(240,165,0,0.12); color: var(--amber); }
+    .nav-item .icon { font-size: 16px; width: 20px; text-align: center; }
+    .sidebar-footer { padding: 16px; border-top: 1px solid var(--border); }
+    .user-row { display: flex; align-items: center; gap: 10px; }
+    .user-avatar {
+      width: 32px; height: 32px; border-radius: 50%;
+      background: var(--amber); color: var(--navy);
+      font-size: 12px; font-weight: 800; display: flex; align-items: center; justify-content: center;
+    }
+    .user-name { font-size: 13px; font-weight: 600; color: var(--white); }
+    .user-plan { font-size: 11px; color: var(--muted); }
+    .main { display: flex; flex-direction: column; flex: 1; min-width: 0; height: 100vh; overflow-y: auto; }
+    .topbar {
+      background: var(--navy-mid); border-bottom: 1px solid var(--border);
+      padding: 0 24px; height: 56px; display: flex; align-items: center;
+      justify-content: space-between; position: sticky; top: 0; z-index: 10;
+    }
+    .topbar-left { display: flex; align-items: center; gap: 12px; }
+    .page-body { padding: 24px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .info-banner {
+      background: rgba(59,130,246,.07); border: 1px solid rgba(59,130,246,.25);
+      border-radius: 10px; padding: 12px 16px; margin-bottom: 18px;
+      font-size: 12.5px; color: var(--off-white); line-height: 1.5;
+    }
+    .info-banner b { color: #60a5fa; }
+
+    .stats-bar { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 20px; }
+    .stat-card { background: var(--navy-mid); border: 1px solid var(--border); border-radius: 10px; padding: 16px 18px; }
+    .stat-label { font-size: 11px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; margin-bottom: 6px; }
+    .stat-val { font-size: 22px; font-weight: 800; color: var(--white); }
+    .stat-val.amber { color: var(--amber); }
+
+    .toolbar { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; }
+    .toolbar input, .toolbar select {
+      background: var(--navy-mid); border: 1px solid var(--border); color: var(--white);
+      padding: 8px 12px; border-radius: 6px; font-size: 13px; font-family: var(--font-body);
+    }
+    .toolbar input { flex: 1; min-width: 200px; }
+    .toolbar input:focus, .toolbar select:focus { outline: none; border-color: var(--amber); }
+    .results-count { font-size: 13px; color: var(--muted); margin-left: auto; }
+
+    .ui-kart {
+      background: var(--navy-mid); border: 1px solid var(--border);
+      border-radius: 10px; padding: 16px 20px; margin-bottom: 10px;
+      transition: border-color .15s;
+    }
+    .ui-kart:hover { border-color: rgba(240,165,0,.4); }
+    .ui-ust { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 8px; }
+    .ui-baslik { font-size: 14px; font-weight: 700; color: var(--off-white); line-height: 1.4; }
+    .ui-baslik a { color: inherit; text-decoration: none; }
+    .ui-baslik a:hover { color: var(--amber); }
+    .ui-bedel { font-size: 13px; font-weight: 700; color: var(--amber); white-space: nowrap; flex-shrink: 0; }
+    .ui-badges { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 6px; }
+    .etiket { font-size: 11px; padding: 2px 8px; border-radius: 10px; font-weight: 600; background: rgba(var(--overlay-rgb),.06); color: var(--muted); }
+    .etiket.ulke { background: rgba(59,130,246,.14); color: #60a5fa; }
+    .etiket.tur { background: rgba(99,102,241,.12); color: #a5b4fc; }
+    .etiket.kategori { background: rgba(240,165,0,.1); color: var(--amber); }
+    .ui-meta { display: flex; gap: 14px; font-size: 12px; color: var(--muted); flex-wrap: wrap; align-items: center; }
+    .ui-orijinal { font-size: 11px; color: var(--muted); font-style: italic; margin-top: 4px; }
+
+    .loading-wrap { text-align: center; padding: 60px 20px; color: var(--muted); }
+    .loading-spinner { width: 32px; height: 32px; border: 3px solid var(--border); border-top-color: var(--amber); border-radius: 50%; animation: spin .8s linear infinite; margin: 0 auto 16px; }
+    .empty-wrap { background: var(--navy-mid); border: 1px solid var(--border); border-radius: 12px; padding: 48px; text-align: center; }
+    .empty-icon { font-size: 40px; margin-bottom: 14px; }
+    .empty-baslik { font-size: 16px; font-weight: 700; color: var(--white); margin-bottom: 8px; }
+    .empty-alt { font-size: 13px; color: var(--muted); max-width: 400px; margin: 0 auto; line-height: 1.6; }
+
+    .pager { display: flex; justify-content: center; gap: 8px; margin-top: 20px; }
+    .pager-btn { padding: 7px 14px; border-radius: 6px; font-size: 13px; font-weight: 600; background: var(--navy-soft); border: 1px solid var(--border); color: var(--white); cursor: pointer; transition: all .15s; }
+    .pager-btn:hover { border-color: var(--amber); color: var(--amber); }
+    .pager-btn:disabled { opacity: .4; cursor: default; }
+    .pager-info { display: flex; align-items: center; font-size: 13px; color: var(--muted); padding: 0 6px; }
+
+    @media (max-width: 900px) {
+      .sidebar { display: none; }
+      .stats-bar { grid-template-columns: repeat(2,1fr); }
+    }
+    @media (max-width: 480px) { .stats-bar { grid-template-columns: 1fr 1fr; } }
+  </style>
+</head>
+<body>
+<div class="app">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <a href="/">
+        <span style="width:6px;height:6px;background:var(--amber);border-radius:50%;display:inline-block;"></span>
+        İhale<span>Global</span>
+      </a>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">Genel</div>
+      <a href="dashboard" class="nav-item"><span class="icon">◉</span> Dashboard</a>
+      <a href="ihaleler" class="nav-item"><span class="icon">⊞</span> İhaleler</a>
+      <a href="dogrudan-temin" class="nav-item"><span class="icon">⚡</span> Doğrudan Temin</a>
+      <a href="uluslararasi" class="nav-item active"><span class="icon">🌍</span> Uluslararası İhaleler</a>
+      <a href="sonuclananlar" class="nav-item"><span class="icon">🏆</span> Sonuçlananlar</a>
+      <a href="takipte" class="nav-item"><span class="icon">☆</span> Takipte</a>
+      <a href="bildirimler" class="nav-item"><span class="icon">🔔</span> Bildirimler</a>
+      <div class="nav-section-label">Analiz</div>
+      <a href="rekabet-analizi" class="nav-item"><span class="icon">📊</span> Rekabet Analizi</a>
+      <a href="idareler" class="nav-item"><span class="icon">🏛️</span> İdareler Dizini</a>
+      <a href="firmalar" class="nav-item"><span class="icon">🏢</span> Firmalar Dizini</a>
+      <a href="sektorler" class="nav-item"><span class="icon">🏭</span> Sektörler Dizini</a>
+      <a href="kurum-analiz" class="nav-item"><span class="icon">🔍</span> Kurum Analizi</a>
+      <a href="kik-kararlar" class="nav-item"><span class="icon">⚖️</span> KİK Kararlar</a>
+      <a href="firma-analiz" class="nav-item"><span class="icon">🏢</span> Firma Analizi</a>
+      <a href="uyumluluk" class="nav-item"><span class="icon">✓</span> Uyumluluk</a>
+      <a href="dokumanlar" class="nav-item"><span class="icon">📁</span> Dökümanlar</a>
+      <div class="nav-section-label">Ayarlar</div>
+      <a href="profil" class="nav-item"><span class="icon">⚙</span> Profil & Filtreler</a>
+      <a href="fiyatlandirma_odeme_bolumu" class="nav-item"><span class="icon">💳</span> Abonelik</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-row" id="sb-user-row">
+        <div class="user-avatar" id="sb-avatar">?</div>
+        <div>
+          <div class="user-name" id="sb-name">Yükleniyor…</div>
+          <div class="user-plan" id="sb-plan">—</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-left">
+        <span style="font-size:14px;font-weight:700;color:var(--white);">🌍 Uluslararası İhaleler</span>
+        <span style="font-size:12px;color:var(--muted);" id="results-count-top"></span>
+      </div>
+      <a href="fiyatlandirma_odeme_bolumu" class="btn btn-primary" style="padding:8px 16px; font-size:13px;">Pro'ya Geç ↑</a>
+    </div>
+
+    <div class="page-body">
+      <div class="info-banner">
+        🌍 <b>Uluslararası İhaleler</b> — TED Europa (Avrupa Birliği resmi ihale gazetesi) ve diğer yurtdışı
+        kaynaklardan çekilen ihaleler <b>Türkçe'ye çevrilerek</b> gösterilir. Bu ihaleler Türkiye
+        analizlerinden (firma/sektör/kurum) ayrıdır. Detay için ilgili kaynağa yönlendirilirsiniz.
+      </div>
+
+      <div class="stats-bar">
+        <div class="stat-card">
+          <div class="stat-label">Toplam İhale</div>
+          <div class="stat-val amber" id="st-toplam">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Ülke Sayısı</div>
+          <div class="stat-val" id="st-ulke">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Yapım İşi</div>
+          <div class="stat-val" id="st-yapim">—</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Hizmet Alımı</div>
+          <div class="stat-val" id="st-hizmet">—</div>
+        </div>
+      </div>
+
+      <div class="toolbar">
+        <input type="text" id="f-ara" placeholder="🔍 Başlık ara (Türkçe)…" oninput="aramaDegisti()" />
+        <select id="f-ulke" onchange="filtreDegisti()"><option value="">Tüm Ülkeler</option></select>
+        <select id="f-kategori" onchange="filtreDegisti()"><option value="">Tüm Kategoriler</option></select>
+        <select id="f-tur" onchange="filtreDegisti()">
+          <option value="">Tüm Türler</option>
+          <option value="Mal">Mal</option>
+          <option value="Hizmet">Hizmet</option>
+          <option value="Yapım">Yapım</option>
+        </select>
+        <span class="results-count" id="liste-sayi"></span>
+      </div>
+
+      <div id="liste-container">
+        <div class="loading-wrap"><div class="loading-spinner"></div><div>Uluslararası ihaleler yükleniyor…</div></div>
+      </div>
+
+      <div class="pager" id="pager" style="display:none;">
+        <button class="pager-btn" id="pg-ilk" onclick="sayfaGit('ilk')">« İlk</button>
+        <button class="pager-btn" id="pg-prev" onclick="sayfaGit('prev')">‹ Önceki</button>
+        <span class="pager-info" id="pg-info"></span>
+        <button class="pager-btn" id="pg-next" onclick="sayfaGit('next')">Sonraki ›</button>
+        <button class="pager-btn" id="pg-son" onclick="sayfaGit('son')">Son »</button>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="js/sidebar-user.js"></script>
+<script src="js/bildirim-sayaci.js"></script>
+<script>
+(() => {
+  const SB_URL = "https://ihaleglobal.com";
+  const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzgzMzUwMDE1LCJleHAiOjE5NDEwMzAwMTV9.sRB61a8oNXwzSKL9No8gt7cmkmnkoQstT0ZtHIxl1Hs";
+  const sb = window.supabase.createClient(SB_URL, SB_KEY);
+
+  const PER_PAGE = 25;
+  let sayfa = 1, topSayfa = 1, toplam = 0, siralamaAlan = 'son_teklif_tarihi';
+  let aramaTimer = null;
+  let sonSatirlar = [];
+
+  function esc(s) { return (s || '').replace(/[<>&"]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c])); }
+  function tarihFormat(s) { if (!s) return '—'; return new Date(s).toLocaleDateString('tr-TR', { day:'2-digit', month:'short', year:'numeric' }); }
+  function bedelFormat(v, pb) {
+    if (!v) return '';
+    const p = pb || 'EUR'; const sembol = p === 'EUR' ? '€' : (p === 'USD' ? '$' : p + ' ');
+    if (v >= 1e6) return `${sembol}${(v/1e6).toFixed(1)}M`;
+    if (v >= 1e3) return `${sembol}${(v/1e3).toFixed(0)}K`;
+    return `${sembol}${Number(v).toLocaleString('tr')}`;
+  }
+  function aramaTemizle(q) { return (q || '').replace(/[,()*%\\]/g, ' ').trim(); }
+
+  function filtreleriUygula(query) {
+    const q = aramaTemizle(document.getElementById('f-ara').value);
+    const ulke = document.getElementById('f-ulke').value;
+    const kat = document.getElementById('f-kategori').value;
+    const tur = document.getElementById('f-tur').value;
+    if (ulke) query = query.eq('ulke', ulke);
+    if (kat) query = query.eq('kategori', kat);
+    if (tur) query = query.eq('tur', tur);
+    if (q) query = query.or(`baslik.ilike.*${q}*,idare.ilike.*${q}*`);
+    return query;
+  }
+
+  async function veriYukle(resetSayfa = true) {
+    if (resetSayfa) sayfa = 1;
+    let query = sb.from('uluslararasi_ihaleler')
+      .select('publication_no,baslik,orijinal_baslik,ulke,ulke_kodu,idare,kategori,tur,tahmini_bedel,para_birimi,son_teklif_tarihi,ilan_tarihi,orijinal_url', { count: 'exact' });
+    query = filtreleriUygula(query);
+    // son_teklif_tarihi olanlar önce (nulls last), sonra en yeni ilan
+    query = query.order(siralamaAlan, { ascending: false, nullsFirst: false });
+    const bas = (sayfa - 1) * PER_PAGE;
+    query = query.range(bas, bas + PER_PAGE - 1);
+    const { data, count, error } = await query;
+    if (error) {
+      document.getElementById('liste-container').innerHTML = `<div class="empty-wrap"><div class="empty-icon">⚠️</div><div class="empty-baslik">Veri yüklenemedi</div><div class="empty-alt">${esc(error.message)}</div></div>`;
+      document.getElementById('pager').style.display = 'none';
+      return;
+    }
+    toplam = count || 0;
+    topSayfa = Math.max(1, Math.ceil(toplam / PER_PAGE));
+    sonSatirlar = data || [];
+    render();
+  }
+
+  function render() {
+    const say = `${toplam.toLocaleString('tr')} ihale`;
+    document.getElementById('liste-sayi').textContent = say;
+    document.getElementById('results-count-top').textContent = say;
+    const cont = document.getElementById('liste-container');
+    if (!sonSatirlar.length) {
+      cont.innerHTML = `<div class="empty-wrap"><div class="empty-icon">🌍</div><div class="empty-baslik">Eşleşen uluslararası ihale bulunamadı</div><div class="empty-alt">Arama veya filtre kriterlerinizi değiştirin.</div></div>`;
+      document.getElementById('pager').style.display = 'none';
+      return;
+    }
+    cont.innerHTML = sonSatirlar.map(k => `<div class="ui-kart">
+      <div class="ui-ust">
+        <div class="ui-baslik"><a href="${esc(k.orijinal_url)}" target="_blank" rel="noopener">${esc(k.baslik) || '(başlık yok)'}</a></div>
+        ${k.tahmini_bedel ? `<div class="ui-bedel">${bedelFormat(k.tahmini_bedel, k.para_birimi)}</div>` : ''}
+      </div>
+      <div class="ui-badges">
+        ${k.ulke ? `<span class="etiket ulke">🌍 ${esc(k.ulke)}</span>` : ''}
+        ${k.kategori ? `<span class="etiket kategori">${esc(k.kategori)}</span>` : ''}
+        ${k.tur ? `<span class="etiket tur">${esc(k.tur)}</span>` : ''}
+      </div>
+      <div class="ui-meta">
+        ${k.idare ? `<span>🏛️ ${esc(k.idare)}</span>` : ''}
+        ${k.son_teklif_tarihi ? `<span>⏰ Son teklif: ${tarihFormat(k.son_teklif_tarihi)}</span>` : ''}
+        <span><a href="${esc(k.orijinal_url)}" target="_blank" rel="noopener" style="color:#60a5fa;text-decoration:none;">↗ TED'de Aç</a></span>
+      </div>
+      ${k.orijinal_baslik && k.orijinal_baslik !== k.baslik ? `<div class="ui-orijinal">Orijinal: ${esc(k.orijinal_baslik)}</div>` : ''}
+    </div>`).join('');
+    const pg = document.getElementById('pager');
+    pg.style.display = topSayfa > 1 ? 'flex' : 'none';
+    document.getElementById('pg-info').textContent = `${sayfa} / ${topSayfa}`;
+    document.getElementById('pg-ilk').disabled = sayfa <= 1;
+    document.getElementById('pg-prev').disabled = sayfa <= 1;
+    document.getElementById('pg-next').disabled = sayfa >= topSayfa;
+    document.getElementById('pg-son').disabled = sayfa >= topSayfa;
+  }
+
+  window.filtreDegisti = () => veriYukle(true);
+  window.aramaDegisti = function() { clearTimeout(aramaTimer); aramaTimer = setTimeout(() => veriYukle(true), 350); };
+  window.sayfaGit = function(yon) {
+    let h = sayfa;
+    if (yon === 'ilk') h = 1; else if (yon === 'prev') h = sayfa - 1;
+    else if (yon === 'next') h = sayfa + 1; else if (yon === 'son') h = topSayfa;
+    h = Math.max(1, Math.min(h, topSayfa));
+    if (h === sayfa) return;
+    sayfa = h; veriYukle(false); window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  async function istatistikYukle() {
+    const el = id => document.getElementById(id);
+    const say = async (extra) => {
+      let q = sb.from('uluslararasi_ihaleler').select('id', { count: 'exact', head: true });
+      if (extra) q = extra(q);
+      const { count } = await q;
+      return count || 0;
+    };
+    const [toplamS, yapim, hizmet] = await Promise.all([
+      say(null), say(q => q.eq('tur', 'Yapım')), say(q => q.eq('tur', 'Hizmet')),
+    ]);
+    el('st-toplam').textContent = toplamS.toLocaleString('tr');
+    el('st-yapim').textContent = yapim.toLocaleString('tr');
+    el('st-hizmet').textContent = hizmet.toLocaleString('tr');
+    // Ülke + kategori dropdown + ülke sayısı (örneklemden)
+    const { data } = await sb.from('uluslararasi_ihaleler').select('ulke,kategori').limit(5000);
+    const ulkeler = [...new Set((data || []).map(x => x.ulke).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'tr'));
+    const kats = [...new Set((data || []).map(x => x.kategori).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'tr'));
+    el('st-ulke').textContent = ulkeler.length;
+    const uSel = document.getElementById('f-ulke'), kSel = document.getElementById('f-kategori');
+    ulkeler.forEach(u => { const o = document.createElement('option'); o.value = u; o.textContent = u; uSel.appendChild(o); });
+    kats.forEach(k => { const o = document.createElement('option'); o.value = k; o.textContent = k; kSel.appendChild(o); });
+  }
+
+  istatistikYukle();
+  veriYukle(true);
+})();
+</script>
+</body>
+</html>
