@@ -7,6 +7,16 @@
 > **KALICI TALİMAT (12 Tem, kullanıcı emri):** Bu blok + ilgili bölümler her oturumda otomatik
 > güncellenir, kullanıcı hatırlatmak zorunda değil. Bkz. hafıza `yapilacaklar-auto-update`.
 
+> ## 🧾 15 TEMMUZ (devam) — teklif-olustur 5 kullanıcı bildirimi + Pro rozeti (commit `f103075`)
+> Kullanıcı ekran görüntüleriyle 5 sorun bildirdi, hepsi düzeltildi + push'landı (tarayıcıda doğrulandı):
+> 1. Pro hesapta topbar "Pro'ya Geç" hâlâ görünüyordu → `js/sidebar-user.js` Pro'da "⭐ Pro Plan" rozeti (8 sayfa).
+> 2. Mali Teklif ₺ sembolü sayının üstüne biniyordu → fiyat input'una `padding-left:24px`.
+> 3. Zorunlu belgeler hepsi opsiyonel yapıldı ("Sık İstenen Belgeler", işaretsiz) — müşteri paylaşmak zorunda değil.
+> 4. KDV artık KALEM KALEM (%1/8/10/18/20), tutarlar KDV HARİÇ → tabloya KDV% kolonu + satır select,
+>    toplamlar satır oranlarından, önizleme belgesi de güncellendi (karışık oran doğrulandı).
+> 5. Kaydet'te `duplicate key ... teklifler_ilan_id_teklif_veren_id_key` → insert yerine upsert (onConflict).
+> **⚠️ Bunlar da VDS pull ile deploy bekliyor** (aşağıdaki SSH-engeli notuyla aynı — `origin/main`=`f103075`).
+
 > ## 🚀 15 TEMMUZ (devam) — DENETİM OTURUMU: 17 fix commit'lendi+push'landı, DEPLOY SSH-ENGELLİ
 > Kullanıcı "deploy et, cron'lara bak, ne görürsen düzelt, otomatik iznin var" dedi. 30-agent
 > denetim workflow'u çalıştırıldı → **21 onaylanmış bulgu**. Yapılanlar:
