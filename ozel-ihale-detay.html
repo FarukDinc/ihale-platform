@@ -134,9 +134,15 @@
   const id = new URLSearchParams(location.search).get('id');
   let user = null, talep = null;
 
-  const esc = s => (s||'').replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));
+  const esc = s => (s||'').replace(/[<>&"']/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&#39;'}[c]));
   const para = v => v ? '₺' + Number(v).toLocaleString('tr') : '—';
   const tarih = s => s ? new Date(s).toLocaleDateString('tr-TR',{day:'2-digit',month:'short',year:'numeric'}) : '—';
+
+  // arama_fold ile aynı normalize (küçük harf + Türkçe karakter katlama).
+  // NOT: Alıcı ünvanını yukleniciler kamu karnesine eşleştirip "tanınan alıcı" rozeti göstermek
+  // KALDIRILDI. Ünvan/VKN beyan; kimliğe bağlı değil (VKN sahipliğini doğrulayamıyoruz). Eşleştirme
+  // beyan edilen bir isme dayandığından ünlü bir firmanın kamu karnesi taklit edilebiliyordu.
+  // Güven, Kurumsal-abonelik kapısından + beyan edilen VKN'yi tedarikçinin bağımsız doğrulamasından gelir.
 
   function rfqHeaderHTML() {
     const t = talep;
@@ -146,7 +152,7 @@
       <div class="rfq-baslik">${esc(t.baslik)}</div>
       <div class="rfq-badges">
         ${t.kategori ? `<span class="etiket kat">${esc(t.kategori)}</span>` : ''}
-        ${t.il ? `<span class="etiket">📍 ${esc(t.il)}</span>` : ''}
+        ${t.il ? `<span class="etiket">📍 ${esc(t.il)}${t.ilce ? ' / ' + esc(t.ilce) : ''}</span>` : ''}
         <span class="etiket ${durumCls}">● ${t.durum === 'acik' ? 'Açık' : 'Kapandı'}</span>
       </div>
       <div class="rfq-grid">
@@ -154,7 +160,8 @@
         <div class="rfq-kpi"><div class="l">Miktar</div><div class="v">${esc(t.miktar) || '—'}</div></div>
         <div class="rfq-kpi"><div class="l">Son Teklif</div><div class="v">${tarih(t.son_teklif_tarihi)}</div></div>
       </div>
-      ${t.olusturan_firma ? `<div style="font-size:12.5px;color:var(--muted);margin-bottom:10px;">🏢 Alıcı: ${esc(t.olusturan_firma)}</div>` : ''}
+      ${(t.olusturan_firma || t.olusturan_vkn) ? `<div style="font-size:12.5px;color:var(--muted);margin-bottom:6px;">🏢 Alıcı (beyan): <b style="color:var(--off-white)">${esc(t.olusturan_firma) || '—'}</b>${t.olusturan_vkn ? ` · <span title="Vergi Kimlik No — teklif öncesi bağımsız doğrulayın">VKN: ${esc(t.olusturan_vkn)}</span>` : ''} <span style="opacity:.7;" title="Bilgiler alıcı beyanıdır, platformca doğrulanmamıştır">ⓘ doğrulanmamış</span></div>` : ''}
+      ${t.acik_adres ? `<div style="font-size:12px;color:var(--muted);margin-bottom:10px;">📍 ${esc(t.acik_adres)}${(t.ilce || t.il) ? ' — ' + esc([t.ilce, t.il].filter(Boolean).join(', ')) : ''}</div>` : ''}
       ${t.aciklama ? `<div class="rfq-aciklama">${esc(t.aciklama)}</div>` : ''}
     </div>`;
   }

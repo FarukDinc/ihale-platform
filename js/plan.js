@@ -52,6 +52,30 @@ window.Plan = (() => {
     return _cache === 'pro';
   }
 
+  // Ham plan kodunu döndürür ('kurumsal' | 'standart' | 'free' | legacy). getPlan()
+  // 'standart' ile 'kurumsal'ı ikisini 'pro'ya çevirdiği için ayırt EDEMEZ; RFQ yayınlama
+  // gibi yalnız-kurumsal kapılar için bunu kullan. 30 sn cache (getPlan'dan ayrı).
+  let _kodCache = null, _kodTs = 0;
+  async function getPlanKod() {
+    if (_kodCache && Date.now() - _kodTs < CACHE_MS) return _kodCache;
+    const res = await getUser();
+    if (!res || !res.user) { _kodCache = 'free'; _kodTs = Date.now(); return _kodCache; }
+    let kod = 'free';
+    try {
+      const { data } = await res.sb.from('kullanici_krediler')
+        .select('plan, plan_bitis').eq('kullanici_id', res.user.id).single();
+      kod = data?.plan || 'free';
+      if (data?.plan_bitis && new Date(data.plan_bitis) < new Date()) kod = 'free';  // süre doldu → free
+    } catch { kod = 'free'; }
+    _kodCache = kod || 'free';
+    _kodTs = Date.now();
+    return _kodCache;
+  }
+
+  async function isKurumsal() {
+    return (await getPlanKod()) === 'kurumsal';
+  }
+
   /**
    * Bir element üzerine Pro kilitli overlay koyar.
    * el: HTMLElement, mesaj: string (opsiyonel)
@@ -99,7 +123,9 @@ window.Plan = (() => {
   function clearCache() {
     _cache = null;
     _cacheTs = 0;
+    _kodCache = null;
+    _kodTs = 0;
   }
 
-  return { getPlan, isPro, lockElement, lockPage, clearCache };
+  return { getPlan, getPlanKod, isKurumsal, isPro, lockElement, lockPage, clearCache };
 })();

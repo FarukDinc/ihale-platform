@@ -139,11 +139,14 @@
         <div class="form-grid">
           <div class="form-group full"><label>İhale Başlığı *</label><input type="text" id="f-baslik" placeholder="Örn: 500 adet ofis sandalyesi alımı" /></div>
           <div class="form-group"><label>Kategori *</label><select id="f-kategori"><option value="">Seçiniz…</option></select></div>
-          <div class="form-group"><label>İl</label><select id="f-il"><option value="">Tüm Türkiye</option></select></div>
+          <div class="form-group"><label>İl (İş Yeri) *</label><select id="f-il"><option value="">Seçiniz…</option></select></div>
+          <div class="form-group"><label>İlçe *</label><input type="text" id="f-ilce" placeholder="Örn: Çankaya" autocomplete="off" /></div>
           <div class="form-group"><label>Miktar</label><input type="text" id="f-miktar" placeholder="Örn: 500 adet" /></div>
           <div class="form-group"><label>Tahmini Bedel (₺)</label><input type="number" id="f-bedel" placeholder="0" min="0" /></div>
           <div class="form-group"><label>Son Teklif Tarihi</label><input type="date" id="f-tarih" /></div>
-          <div class="form-group"><label>Firma Adınız</label><input type="text" id="f-firma" placeholder="Alıcı firma" /></div>
+          <div class="form-group"><label>Firma Ünvanınız *</label><input type="text" id="f-firma" placeholder="Alıcı firma tam ünvanı" autocomplete="off" /><div id="f-firma-hint" style="font-size:11px;margin-top:4px;min-height:14px;"></div></div>
+          <div class="form-group"><label>Vergi Kimlik No (VKN) *</label><input type="text" id="f-vkn" placeholder="10 haneli VKN" maxlength="10" inputmode="numeric" autocomplete="off" /><div id="f-vkn-hint" style="font-size:11px;margin-top:4px;min-height:14px;">Tedarikçiler kime teklif verdiğini bu bilgiyle görür.</div></div>
+          <div class="form-group full"><label>Açık Adres (İş/Teslimat Yeri) *</label><input type="text" id="f-adres" placeholder="Mahalle, cadde, no — tedarikçiler mesafe/lojistik için görür" autocomplete="off" /><div style="font-size:11px;margin-top:4px;color:var(--muted);">📍 Konum, ileride harita üzerinde ve MaaS eşleştirmesinde kullanılacak.</div></div>
           <div class="form-group full"><label>Açıklama</label><textarea id="f-aciklama" placeholder="İhtiyacın detayları, teknik özellikler, şartlar…"></textarea></div>
         </div>
         <div style="display:flex;gap:10px;margin-top:16px;flex-wrap:wrap;">
@@ -172,6 +175,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/sidebar-user.js"></script>
 <script src="js/bildirim-sayaci.js"></script>
+<script src="js/plan.js"></script>
 <script>
 (() => {
   const SB_URL = "https://ihaleglobal.com";
@@ -183,7 +187,7 @@
 
   let user = null;
 
-  function esc(s){ return (s||'').replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c])); }
+  function esc(s){ return (s||'').replace(/[<>&"']/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&#39;'}[c])); }
   function paraKisa(v){ v=Number(v)||0; if(v>=1e9)return '₺'+(v/1e9).toFixed(1)+' Mr'; if(v>=1e6)return '₺'+(v/1e6).toFixed(1)+' M'; if(v>=1e3)return '₺'+(v/1e3).toFixed(0)+' B'; return '₺'+v; }
   function tarihFmt(s){ if(!s)return '—'; return new Date(s).toLocaleDateString('tr-TR',{day:'2-digit',month:'short',year:'numeric'}); }
 
@@ -191,6 +195,35 @@
   const kSel=document.getElementById('f-kategori'), iSel=document.getElementById('f-il');
   KATEGORILER.forEach(k=>{const o=document.createElement('option');o.value=k;o.textContent=k;kSel.appendChild(o);});
   ILLER.forEach(i=>{const o=document.createElement('option');o.value=i;o.textContent=i;iSel.appendChild(o);});
+
+  // Türk VKN doğrulama (GİB algoritması) — checksum danışma amaçlı; zorunlu olan 10 hane formatı.
+  function vknGecerli(vkn){
+    if(!/^[0-9]{10}$/.test(vkn)) return false;
+    const v = vkn.split('').map(Number);
+    let sum = 0;
+    for(let i=0;i<9;i++){
+      let t = (v[i] + (9 - i)) % 10;
+      if(t !== 0){ t = (t * Math.pow(2, 9 - i)) % 9; if(t === 0) t = 9; }
+      sum += t;
+    }
+    return ((10 - (sum % 10)) % 10) === v[9];
+  }
+  // VKN girdisi: yalnız rakam, canlı format/checksum ipucu.
+  const vknEl = document.getElementById('f-vkn'), vknHint = document.getElementById('f-vkn-hint');
+  vknEl.addEventListener('input', () => {
+    vknEl.value = vknEl.value.replace(/\D/g,'').slice(0,10);
+    const v = vknEl.value;
+    if(!v){ vknHint.textContent = 'Tedarikçiler kime teklif verdiğini bu bilgiyle görür.'; vknHint.style.color='var(--muted)'; return; }
+    if(v.length < 10){ vknHint.textContent = `${v.length}/10 hane`; vknHint.style.color='var(--muted)'; return; }
+    if(vknGecerli(v)){ vknHint.textContent = '✓ VKN formatı geçerli'; vknHint.style.color='#3fb950'; }
+    else { vknHint.textContent = '⚠ Doğrulama hanesi tutmuyor — kontrol edin'; vknHint.style.color='var(--amber)'; }
+  });
+
+  // Ünvan: tam ticari ünvan (beyan). NOT: Ünvanı kamu karnesine eşleştirip "tanınan firma" rozeti
+  // göstermek KALDIRILDI — beyan bir isme dayandığı için ünlü bir firmanın karnesi taklit edilebiliyordu
+  // ve fuzzy substring dürüst kullanıcıyı bile yanlış eşleştiriyordu. Tedarikçi bu beyanı bağımsız doğrular.
+  const firmaHint = document.getElementById('f-firma-hint');
+  if (firmaHint) { firmaHint.textContent = 'Tam ticari ünvanınız — tedarikçiler kime teklif verdiğini görür.'; firmaHint.style.color = 'var(--muted)'; }
 
   window.tedarikciBul = async function() {
     const kategori = document.getElementById('f-kategori').value;
@@ -219,25 +252,49 @@
 
   window.ihaleYayinla = async function() {
     if (!user) { alert('İhale yayınlamak için giriş yapmalısınız.'); location.href = 'login'; return; }
+    // Kurumsal kapısı — asıl zorlama RLS'te (talep_kurumsal_ekler); bu erken/anlaşılır UX için.
+    if (!(await Plan.isKurumsal())) {
+      if (confirm('İhale (RFQ) yayınlamak Kurumsal plana özeldir — bu, tedarikçilerin karşısına yalnızca ciddi/doğrulanmış alıcıların çıkmasını sağlar.\n\nKurumsal planları görüntülemek ister misiniz?'))
+        location.href = 'fiyatlandirma_odeme_bolumu';
+      return;
+    }
     const baslik = document.getElementById('f-baslik').value.trim();
     const kategori = document.getElementById('f-kategori').value;
+    const unvan = document.getElementById('f-firma').value.trim();
+    const vkn = document.getElementById('f-vkn').value.trim();
+    const il = document.getElementById('f-il').value;
+    const ilce = document.getElementById('f-ilce').value.trim();
+    const adres = document.getElementById('f-adres').value.trim();
     if (!baslik) { alert('İhale başlığı zorunludur.'); return; }
     if (!kategori) { alert('Kategori seçiniz.'); return; }
+    if (!unvan) { alert('Firma ünvanınız zorunludur — tedarikçiler kime teklif verdiğini görmeli.'); document.getElementById('f-firma').focus(); return; }
+    if (!/^[0-9]{10}$/.test(vkn)) { alert('Vergi Kimlik No 10 haneli rakam olmalıdır.'); document.getElementById('f-vkn').focus(); return; }
+    if (!il) { alert('İl (iş yeri) zorunludur — harita ve tedarikçi eşleştirmesi için gerekli.'); document.getElementById('f-il').focus(); return; }
+    if (!ilce) { alert('İlçe zorunludur.'); document.getElementById('f-ilce').focus(); return; }
+    if (!adres) { alert('Açık adres zorunludur — tedarikçiler lojistik/mesafe için görür.'); document.getElementById('f-adres').focus(); return; }
     const talep = {
       olusturan_user_id: user.id,
-      olusturan_firma: document.getElementById('f-firma').value.trim() || null,
+      olusturan_firma: unvan,
+      olusturan_vkn: vkn,
       baslik, kategori,
       aciklama: document.getElementById('f-aciklama').value.trim() || null,
-      il: document.getElementById('f-il').value || null,
+      il, ilce, acik_adres: adres,
       miktar: document.getElementById('f-miktar').value.trim() || null,
       tahmini_bedel: parseFloat(document.getElementById('f-bedel').value) || null,
       son_teklif_tarihi: document.getElementById('f-tarih').value || null,
       durum: 'acik',
     };
     const { error } = await sb.from('satinalma_talepleri').insert([talep]);
-    if (error) { alert('Kaydedilirken hata: ' + error.message); return; }
+    if (error) {
+      const m = /row-level security|violates|policy/i.test(error.message)
+        ? 'İhale yayınlanamadı. Geçerli bir Kurumsal aboneliğiniz olduğundan ve VKN/ünvan/adres alanlarını doğru girdiğinizden emin olun.'
+        : 'Kaydedilirken hata: ' + error.message;
+      alert(m); return;
+    }
     alert('✓ İhaleniz yayınlandı! Uygun tedarikçilere önerilecek.');
-    ['f-baslik','f-miktar','f-bedel','f-tarih','f-firma','f-aciklama'].forEach(id => document.getElementById(id).value = '');
+    ['f-baslik','f-miktar','f-bedel','f-tarih','f-firma','f-vkn','f-ilce','f-adres','f-aciklama'].forEach(id => document.getElementById(id).value = '');
+    firmaHint.textContent = 'Tam ticari ünvanınız — tedarikçiler kime teklif verdiğini görür.'; firmaHint.style.color = 'var(--muted)';
+    vknHint.textContent = 'Tedarikçiler kime teklif verdiğini bu bilgiyle görür.'; vknHint.style.color = 'var(--muted)';
     taleplerYukle();
   };
 
@@ -270,6 +327,12 @@
   (async () => {
     try { const { data } = await sb.auth.getUser(); user = data.user; } catch {}
     taleplerYukle();
+    // Kurumsal değilse yayınla butonunu kilitli göster (tıklama yine upsell'e götürür; RLS asıl kapı).
+    try {
+      const kurumsal = user ? await Plan.isKurumsal() : false;
+      const btn = document.querySelector('button.btn-primary[onclick="ihaleYayinla()"]');
+      if (btn && !kurumsal) { btn.textContent = '🔒 Yayınla — Kurumsal Plan'; btn.title = 'İhale yayınlama Kurumsal plana özeldir'; }
+    } catch {}
   })();
 })();
 </script>
