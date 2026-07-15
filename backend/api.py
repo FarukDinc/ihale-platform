@@ -401,7 +401,7 @@ def firma_ai_yorum(
         #    önceden yanlışlıkla var olmayan p_ihale_id kullanılıyordu, PostgREST'in fonksiyonu
         #    hiç bulamamasına (dolayısıyla kredinin hiç düşmemesine) yol açıyordu)
         try:
-            supabase.rpc("kredi_dus", {
+            kredi_sonuc = supabase.rpc("kredi_dus", {
                 "p_kullanici_id": kullanici_id,
                 "p_miktar": 1,
                 "p_referans_id": None,
@@ -411,6 +411,10 @@ def firma_ai_yorum(
             }).execute()
         except Exception as e:
             print(f"  ⚠ kredi_dus (firma-yorum) hatası: {e}")
+            raise HTTPException(status_code=500, detail="Kredi işlemi tamamlanamadı, lütfen tekrar deneyin")
+        # Sessizce yutup bedava AI verme (worker.py deseni): düşme başarısız/yetersizse hata dön
+        if not getattr(kredi_sonuc, "data", None):
+            raise HTTPException(status_code=402, detail="Yetersiz kredi")
 
         # 6. Cache'e yaz
         supabase.table("yukleniciler").update({
@@ -481,7 +485,7 @@ def teklif_olustur(
             raise HTTPException(status_code=500, detail=sonuc["hata"])
 
         try:
-            supabase.rpc("kredi_dus", {
+            kredi_sonuc = supabase.rpc("kredi_dus", {
                 "p_kullanici_id": kullanici_id,
                 "p_miktar": 1,
                 "p_referans_id": ihale_id,
@@ -491,6 +495,9 @@ def teklif_olustur(
             }).execute()
         except Exception as e:
             print(f"  ⚠ kredi_dus (teklif-olustur) hatası: {e}")
+            raise HTTPException(status_code=500, detail="Kredi işlemi tamamlanamadı, lütfen tekrar deneyin")
+        if not getattr(kredi_sonuc, "data", None):
+            raise HTTPException(status_code=402, detail="Yetersiz kredi")
 
         return {
             "basari": True,
@@ -522,10 +529,7 @@ async def scraper_tetikle(
     if token != SUPABASE_KEY:
         raise HTTPException(status_code=403, detail="Yetkisiz")
 
-    import asyncio
-    from worker import scraper_cron
-
-    # Background'da çalıştır (timeout vermez)
-    asyncio.create_task(scraper_cron())
-
-    return {"basari": True, "mesaj": "Scraper arka planda başlatıldı"}
+    # NOT: worker.scraper_cron kaldırılmış sembolleri import ettiği için bozuktu (çağrıldığında ImportError→500).
+    # Scraping artık VDS gece cron'u (run_scraper.sh) ile yapılıyor; bu endpoint kullanımdan kaldırıldı.
+    raise HTTPException(status_code=503,
+                        detail="Bu endpoint kullanımdan kaldırıldı — scraping VDS gece cron'u (run_scraper.sh) ile çalışıyor.")

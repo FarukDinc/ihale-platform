@@ -919,7 +919,10 @@ async def main():
         ozet(tum)
         supabase_yaz(tum, sb)
     else:
-        print("❌ Veri çekilemedi.")
+        # Sessiz başarısızlık cron'da 0 kayıtla exit 0 görünüyordu (bayat veriyle notify/bulten çalışıyordu).
+        print("❌ Veri çekilemedi (0 kayıt) — cron bunu HATA saymalı.")
+        return False
+    return True
 
 
 if __name__ == "__main__":
@@ -930,4 +933,6 @@ if __name__ == "__main__":
         sys.stderr.reconfigure(encoding="utf-8")
     except Exception:
         pass
-    asyncio.run(main())
+    import sys as _sys
+    _ok = asyncio.run(main())
+    _sys.exit(0 if _ok else 1)

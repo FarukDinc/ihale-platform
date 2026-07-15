@@ -284,6 +284,21 @@ def main():
         if not yaklaşan:
             continue
 
+        # DEDUP: bu kullanıcıya bu ilan için son (gun_oncesi+1) günde zaten deadline bildirimi attıysak atla
+        # (deadline kalıcı durum olduğu için her gece tekrar spam etmesini önler).
+        try:
+            yaklasan_ids = [i["id"] for i in yaklaşan]
+            mevcut = sb.table("bildirimler").select("ilan_id") \
+                .eq("kullanici_id", user_id).eq("tur", "ihale") \
+                .in_("ilan_id", yaklasan_ids) \
+                .gte("olusturulma", (simdi - timedelta(days=gun_oncesi + 1)).isoformat()).execute()
+            bildirilmis = {r["ilan_id"] for r in (mevcut.data or [])}
+            yaklaşan = [i for i in yaklaşan if i["id"] not in bildirilmis]
+        except Exception as e:
+            print(f"  ⚠ {email} dedup sorgusu hatası: {e}")
+        if not yaklaşan:
+            continue
+
         # Gün sayısını ekle
         for ilan in yaklaşan:
             if ilan.get("son_teklif_tarihi"):

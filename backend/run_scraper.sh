@@ -8,6 +8,9 @@ export EKAP_BELGE_LINK=1
 VENV=/opt/ihale-platform/backend/venv/bin
 echo "[$(date +'%Y-%m-%d %H:%M:%S')] === Scraper baslatiliyor ===" >> /opt/ihale-platform/logs/scraper.log
 $VENV/python ekap_scraper.py >> /opt/ihale-platform/logs/scraper.log 2>&1
+if [ $? -ne 0 ]; then
+  echo "[$(date +'%Y-%m-%d %H:%M:%S')] !!! UYARI: EKAP SCRAPER BAŞARISIZ (exit≠0) — bayat veri riski, bildirim/bülten atlanmalı" >> /opt/ihale-platform/logs/scraper.log
+fi
 echo "[$(date +'%Y-%m-%d %H:%M:%S')] === Bildirimler ===" >> /opt/ihale-platform/logs/scraper.log
 $VENV/python notify.py >> /opt/ihale-platform/logs/scraper.log 2>&1
 echo "[$(date +'%Y-%m-%d %H:%M:%S')] === Bitti ===" >> /opt/ihale-platform/logs/scraper.log
