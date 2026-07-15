@@ -501,6 +501,9 @@
         </div>
       </div>
 
+      <!-- 🎯 BU İHALEYE UYGUN FİRMALAR (eşleştirme motoru) -->
+      <div id="uygun-firmalar-wrap" style="margin-bottom:20px;"></div>
+
       <!-- UYUM SKORU -->
       <div class="uyum-bar-wrap" style="margin-bottom:20px;">
         <div class="uyum-header">
@@ -677,6 +680,9 @@
       if (fill) fill.style.width = uyum + '%';
     }, 200);
 
+    // 🎯 Bu ihaleye uygun firmalar (eşleştirme motoru)
+    uygunFirmalarYukle(d);
+
     // AI Analiz render — ### başlıklı bölümleri kartlara dönüştür
     const aiEl = document.getElementById('ai-analiz-content');
     if (aiEl && d.yapay_zeka_ozeti) {
@@ -739,6 +745,49 @@
         ilanEl.textContent = 'İlan metni bulunamadı.';
       }
     }
+  }
+
+  // 🎯 Eşleştirme motoru — bu ihaleye (kategori+il+bedel) geçmiş kazanımlarına göre en uygun firmalar
+  async function uygunFirmalarYukle(d) {
+    const wrap = document.getElementById('uygun-firmalar-wrap');
+    if (!wrap || !d.kategori) return;
+    const bedel = d.yaklasik_maliyet_min || d.yaklasik_maliyet_max || d.tahmini_bedel || null;
+    try {
+      const { data, error } = await sb.rpc('ihaleye_uygun_firmalar', {
+        p_kategori: d.kategori, p_il: d.il || null, p_bedel: bedel, p_limit: 8
+      });
+      if (error || !data || !data.length) { wrap.innerHTML = ''; return; }
+      const esc = (s) => (s || '').replace(/[<>&"]/g, c => ({ '<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;' }[c]));
+      const paraKisa = (v) => {
+        v = Number(v) || 0;
+        if (v >= 1e9) return '₺' + (v / 1e9).toFixed(1) + ' Mr';
+        if (v >= 1e6) return '₺' + (v / 1e6).toFixed(1) + ' M';
+        if (v >= 1e3) return '₺' + (v / 1e3).toFixed(0) + ' B';
+        return '₺' + v;
+      };
+      const satirlar = data.map((f, i) => `
+        <div style="display:flex;align-items:center;gap:12px;padding:11px 14px;border-bottom:1px solid var(--border);">
+          <div style="width:26px;height:26px;border-radius:50%;background:rgba(240,165,0,.14);color:var(--amber);font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center;flex-shrink:0;">${i + 1}</div>
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:13px;font-weight:600;color:var(--white);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+              <a href="firma-analiz?ara=${encodeURIComponent(f.kazanan_firma)}" style="color:inherit;text-decoration:none;" title="Firma analizini gör">${esc(f.kazanan_firma)}</a>
+            </div>
+            <div style="font-size:11.5px;color:var(--muted);margin-top:2px;">
+              ${f.firma_il ? '📍 ' + esc(f.firma_il) + ' · ' : ''}bu kategoride <b style="color:var(--off-white);">${f.kategori_kazanim}</b> kazanım · en büyük <b style="color:var(--off-white);">${paraKisa(f.max_kazanim)}</b>
+            </div>
+          </div>
+          ${f.ayni_il ? '<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;background:rgba(59,130,246,.14);color:#60a5fa;white-space:nowrap;">Aynı il</span>' : ''}
+          ${f.kapasite_uygun ? '<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;background:rgba(34,197,94,.12);color:#4ade80;white-space:nowrap;">Kapasite ✓</span>' : ''}
+        </div>`).join('');
+      wrap.innerHTML = `
+        <div class="detay-header" style="padding:0;overflow:hidden;">
+          <div style="padding:16px 20px 12px;border-bottom:1px solid var(--border);">
+            <div style="font-size:14px;font-weight:700;color:var(--white);">🎯 Bu İhaleye Uygun Firmalar</div>
+            <div style="font-size:12px;color:var(--muted);margin-top:3px;">Geçmişte bu kategoride${d.il ? ' / ' + esc(d.il) + ' bölgesinde' : ''} iş almış, ölçek kapasitesi uygun firmalar — EKAP verisinden</div>
+          </div>
+          ${satirlar}
+        </div>`;
+    } catch (e) { wrap.innerHTML = ''; }
   }
 
   async function sonucBilgiGoster(ilanId) {
