@@ -7,6 +7,40 @@
 > **KALICI TALİMAT (12 Tem, kullanıcı emri):** Bu blok + ilgili bölümler her oturumda otomatik
 > güncellenir, kullanıcı hatırlatmak zorunda değil. Bkz. hafıza `yapilacaklar-auto-update`.
 
+> ## 🗺️ 15 TEMMUZ (devam) — YENİ 2 SİSTEM ROADMAP (kullanıcı stratejik yön verdi, PLANLAMA)
+> Kullanıcı ihaleglobal'e 2 yeni sistem eklemek istiyor (mevcut Türkiye-kamu sistemine ek):
+>
+> **SİSTEM A — ULUSLARARASI İHALELER (yurtdışı kaynaklardan, TÜRKÇE'ye çevrilerek):**
+> - Kaynaklar: TED Europa (https://ted.europa.eu — AB), Gürcistan (tenders.procurement.gov.ge), ileride diğerleri.
+> - **Fizibilite (araştırıldı):** TED'in RESMİ REST API'si var ve ÇALIŞIYOR: `POST api.ted.europa.eu/v3/
+>   notices/search` (JSON; publication-number, CPV sorgu dili, çok-dilli XML/PDF linkleri, sayfalama).
+>   Gürcistan JS web app → iç API reverse-engineer gerekir (ilan.gov.tr gibi). TED en zengin/kolay başlangıç.
+> - **Çeviri:** başlık/açıklama Türkçe'ye çevrilmeli → Gemini ZATEN entegre (şartname analizi/CAPTCHA'da
+>   kullanılıyor). `gemini-2.5-flash` ile toplu çeviri. Orijinal metni de saklamak iyi olur (`orijinal_dil`).
+> - **Şema:** `kaynak='uluslararasi'` (CHECK'te ZATEN var, migration YOK). Yeni kolonlar gerekebilir:
+>   ulke, orijinal_dil, orijinal_baslik, orijinal_url, para_birimi (EUR/GEL). il/idare yurtdışı için farklı.
+> - **Plan (fazlı):** (1) TED scraper POC (son N ihale çek + Türkçe çevir + kaynak=uluslararasi insert),
+>   (2) frontend'de ayrı sekme/filtre "🌍 Uluslararası" + kaynak rozeti (EKAP/Gazete gibi), (3) gece cron,
+>   (4) Gürcistan + diğer kaynaklar. Dedup: publication-number bazlı.
+>
+> **SİSTEM B — PROMENA BENZERİ E-SATINALMA (firmaların kendi ihale/RFQ açtığı platform):**
+> - Promena = Koç'un e-sourcing platformu: ALICI firmalar satınalma ihtiyacı (RFQ) açar, TEDARİKÇİ firmalar
+>   rekabetçi teklif verir (çoğu zaman reverse auction — tedarikçiler fiyat kırarak yarışır), alıcı en iyiyi seçer.
+> - **Kullanıcının belirsizliği:** "sabit tutar mı, yoksa Promena gibi firmalarla yarıştırmak mı?" +
+>   "Koç gibi köklü gruplar zaten kendi tedarikçi ağıyla destekliyor" → bizim farkımız ne olacak?
+> - **BİZİM AVANTAJIMIZ (öneri notu):** ihaleglobal'de ZATEN 53K+ firma dizini (yukleniciler) + kategori/OKAS
+>   eşleştirme + bildirim altyapısı + teklif-olustur var. Yani alıcı bir "satınalma ihalesi" açınca, İLGİLİ
+>   tedarikçilere (kategoriye göre) otomatik bildirim gidebilir — Promena'nın aksine alıcı kendi tedarikçi
+>   ağını getirmek zorunda değil. Bu güçlü bir farklılaştırıcı.
+> - **Model seçenekleri (KARAR BEKLİYOR):** (1) Kapalı-zarf RFQ/e-teklif (tedarikçi tek teklif verir, alıcı
+>   değerlendirir — kamu ihale modeline yakın, teklif-olustur altyapısını kullanır) — ÖNERİLEN başlangıç;
+>   (2) Reverse auction (canlı fiyat kırma) — Faz 2; (3) basit teklif-toplama. **Öneri: Faz 1 kapalı-zarf RFQ.**
+> - **Gerekli (büyük):** yeni tablolar (satinalma_talepleri, tedarikci_teklifleri), alıcı/tedarikçi rolleri,
+>   davet/bildirim akışı, teklif kıyas ekranı, kazanan seçimi. Gelir modeli (alıcı SaaS / tedarikçi üyelik /
+>   işlem ücreti) ayrı karar.
+>
+> **DURUM:** Sistem A için TED API doğrulandı, POC'ye hazır. Sistem B model kararı bekliyor (kullanıcıya soruldu).
+
 > ## ✅ 15 TEMMUZ (devam) — kaynak rozeti + gündüz/gece modu (commit `e095e45`, CANLI)
 > **1) Kaynak rozeti:** ihaleler.html kartlarında her ihalenin kaynağı — "EKAP" veya ilan.gov.tr için
 > "📰 Gazete" (kaynakBadge() + select'e kaynak eklendi). Doğrulandı: "belediyesine ait"→5 EKAP+5 Gazete.
