@@ -375,6 +375,16 @@
       transform: translateY(8px); transition: all .25s; pointer-events: none;
     }
     .toast.show { opacity: 1; transform: translateY(0); }
+    /* Mobil responsive (eksikti — sabit 240px sidebar + 320px arama içeriği sıkıştırıyordu) */
+    @media (max-width: 900px) {
+      .sidebar { display: none; }
+      .topbar { padding: 0 14px; }
+      .topbar-search { width: auto; flex: 1; min-width: 0; }
+      .page-body { padding: 16px; }
+    }
+    @media (max-width: 600px) {
+      .topbar-actions { gap: 6px; }
+    }
   </style>
 </head>
 <body>
@@ -1527,6 +1537,7 @@
     } catch {}
   })();
 </script>
+<script src="js/main.js"></script>
 </body>
 </html>
 
