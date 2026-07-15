@@ -99,7 +99,7 @@ def kayit_donustur(ad):
     url = ad.get("urlStr") or ""
     return {
         "ekap_id":            str(kimlik),
-        "ikn":                str(ikn or ""),
+        "ikn":                str(ikn) if ikn else None,  # IKN yoksa NULL (boş string ikn UNIQUE'inde çakışır)
         "kaynak":             "ilan_gov",
         "baslik":             baslik or None,
         "idare":              (ad.get("advertiserName") or "").strip() or None,
