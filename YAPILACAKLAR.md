@@ -9,6 +9,15 @@
 
 > ## 🎯 15 TEMMUZ — KULLANICI GERİ BİLDİRİMİ
 >
+> **✅ D) OKAS/CPV KODU ARAMASI — TAMAMLANDI + CANLIDA (commit `516fc31`).** Kullanıcı fikri: OKAS
+> resmi sınıflandırma, anahtar kelimeden kesin. `ihaleler.html` detaylı aramaya "OKAS / CPV Kodu"
+> filtresi (`okas ILIKE %kod%`, ?okas= URL param + kayıtlı arama + sıfırlama). `ihale-detay.html`'de
+> OKAS artık tıklanabilir (çoklu kodu ayrı linklere böler → o koda sahip diğer ihaleler). **Kapsam:**
+> OKAS aktif ihalelerin ~%61'inde var (9.449/15.381); EKAP kalanında vermiyor, ilan metninde de yok
+> (teyit edildi). Backfill edilen eskilerde %0 (backfill detay çekmiyor). Anahtar kelime aramasını
+> TAMAMLAR. **Gelecek fikir:** OKAS kapsamını artırmak için EKAP mal-kalem/detay endpoint araştırması;
+> OKAS ana-kategori dropdown'u (44 CPV bölümü, `_CPV_KATEGORI` kodda var).
+>
 > **✅ A) FİRMA ANALİZİ REDESIGN — TAMAMLANDI + CANLIDA (commit `7b686c5`).** ihaleciler.com modeli:
 > arama → `yukleniciler`'den AYRI firma listesi (isim+sözleşme+ciro+il, ciroya sıralı, Türkçe katlamalı)
 > → firmaya tıkla → `yuklenici_id` ile kesin detay (zengin ihale_sonuclari + ilan başlık/idare). "(Başlık
