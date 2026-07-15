@@ -671,6 +671,10 @@ def durum_donustur(d):
     return "aktif"
 
 # CPV/OKAS kodunun ilk 2 hanesi → ana kategori
+# Yeni iş-dostu kategori sınıflandırıcı (ihaleciler.com tarzı, OKAS açıklaması + başlık keyword).
+# Eski _CPV_KATEGORI/kategori_tur artık kullanılmıyor ama fallback referansı için tutuluyor.
+from kategori_siniflandir import kategori_belirle
+
 _CPV_KATEGORI = {
     "03": "Tarım & Ormancılık", "09": "Enerji", "14": "Madencilik",
     "15": "Gıda & İçecek", "16": "Tarım Makineleri", "18": "Giyim & Tekstil",
@@ -793,7 +797,7 @@ def ihaleleri_isle(ham_liste: list, detaylar: dict) -> list:
             "isin_yapilacagi_yer":  d.get("isin_yapilacagi_yer"),
             "ihale_yeri":           d.get("ihale_yeri"),
             "okas":                 d.get("okas"),
-            "kategori":             kategori_tur(d.get("okas"), tur_donustur(i.get("ihaleTipAciklama")),
+            "kategori":             kategori_belirle(d.get("okas"), tur_donustur(i.get("ihaleTipAciklama")),
                                         (i.get("ihaleAdi") or "").strip()),
             "ilan_metni":           d.get("ilan_metni"),
             "ilan_html":            d.get("ilan_html"),
