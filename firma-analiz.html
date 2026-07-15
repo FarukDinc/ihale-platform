@@ -80,6 +80,30 @@
     }
     .firma-arama-input:focus { border-color: var(--amber); }
     .firma-arama-input::placeholder { color: var(--muted); }
+
+    /* Firma listesi (arama sonucu) */
+    .firma-liste-topbar { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; margin-bottom:18px; }
+    .firma-liste-baslik { font-size: 20px; font-weight: 800; color: var(--white); margin-top:4px; }
+    .firma-liste-alt { font-size: 13px; color: var(--muted); margin-top: 4px; }
+    .firma-liste-item {
+      display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 12px;
+      background: var(--navy-mid); border: 1px solid var(--border); border-radius: 10px;
+      padding: 16px 20px; margin-bottom: 10px; cursor: pointer;
+      transition: border-color .15s, transform .1s;
+    }
+    .firma-liste-item:hover { border-color: var(--amber); transform: translateY(-1px); }
+    .fli-ad { font-size: 15px; font-weight: 700; color: var(--white); line-height: 1.4; margin-bottom: 8px; }
+    .fli-stats { display: flex; flex-wrap: wrap; gap: 8px 16px; font-size: 12.5px; color: var(--muted); }
+    .fli-stats b { color: var(--amber); font-weight: 700; }
+    .fli-analiz {
+      font-size: 13px; font-weight: 700; color: var(--amber); white-space: nowrap;
+      border: 1px solid var(--amber); border-radius: 8px; padding: 8px 14px;
+    }
+    .firma-liste-item:hover .fli-analiz { background: var(--amber); color: var(--navy); }
+    @media (max-width: 600px) {
+      .firma-liste-item { grid-template-columns: 1fr; }
+      .fli-analiz { justify-self: start; }
+    }
     .btn-ara {
       background: var(--amber); color: var(--navy); border: none;
       padding: 12px 20px; border-radius: 8px; font-weight: 700; cursor: pointer;
@@ -248,6 +272,19 @@
         </div>
       </div>
 
+      <!-- FİRMA LİSTESİ (arama sonucu — birden çok firma eşleşir, ihaleciler.com modeli) -->
+      <div id="firma-liste" style="display:none;">
+        <div class="firma-liste-topbar">
+          <div>
+            <div class="firma-eyebrow">🏢 Firma Analizi</div>
+            <div class="firma-liste-baslik">“<span id="liste-terim"></span>” için eşleşen firmalar</div>
+            <div class="firma-liste-alt" id="liste-ozet">Yükleniyor…</div>
+          </div>
+          <button class="btn-ara" onclick="yeniAramaGoster()" style="background:transparent;border:1px solid var(--border);color:var(--white);flex-shrink:0;">🔍 Yeni Arama</button>
+        </div>
+        <div id="firma-liste-container"></div>
+      </div>
+
       <!-- FİRMA İÇERİĞİ -->
       <div id="firma-icerik" style="display:none;">
 
@@ -258,7 +295,7 @@
           <div style="margin-top:16px;display:flex;gap:10px;flex-wrap:wrap;">
             <a id="firma-ihaleler-btn" href="#" class="btn-ara" style="text-decoration:none;padding:9px 18px;font-size:13px;">📋 İhalelerini Gör</a>
             <button id="firma-takip-btn" class="btn-ara" style="background:transparent;border:1px solid var(--border);color:var(--white);" onclick="firmaTakipToggle()">⭐ Rakibi Takip Et</button>
-            <button class="btn-ara" style="background:transparent;border:1px solid var(--border);color:var(--white);" onclick="document.getElementById('arama-wrap').style.display='';document.getElementById('firma-icerik').style.display='none';">🔍 Yeni Arama</button>
+            <button class="btn-ara" style="background:transparent;border:1px solid var(--border);color:var(--white);" onclick="yeniAramaGoster()">🔍 Yeni Arama</button>
           </div>
         </div>
 
@@ -370,7 +407,7 @@
   let sonucVeri = [];
 
   const params = new URLSearchParams(window.location.search);
-  let FIRMA = params.get('firma') || '';
+  let FIRMA = '';  // aktif detaydaki firmanın adı (firmaDetayYukle doldurur)
 
   function csvIndir() {
     if (!tumIhaleler.length) { alert('Önce bir firma analiz edin.'); return; }
@@ -575,25 +612,35 @@
       <div>
         ${sonucVeri.map(s => {
           const ilan = s.ilan || {};
-          const tenz = s.kazanan_teklif_farki_yuzde != null
-            ? `<span class="ik-durum durum-acik">%${Number(s.kazanan_teklif_farki_yuzde).toFixed(1)} tenz.</span>`
+          const tenzVal = s.tenzilat_yuzde != null ? s.tenzilat_yuzde : s.kazanan_teklif_farki_yuzde;
+          const tenz = tenzVal != null
+            ? `<span class="ik-durum durum-acik">%${Number(tenzVal).toFixed(1)} tenz.</span>`
             : '';
-          const idareKisa = (ilan.idare || '').length > 45
-            ? ilan.idare.substring(0, 45) + '…'
-            : (ilan.idare || '');
+          const bedel = s.sozlesme_bedeli || s.kazanan_teklif;
+          const teklifSay = s.katilimci_sayisi || s.toplam_teklif_sayisi;
+          const baslik = ilan.baslik || (s.ikn ? `İhale ${s.ikn}${s.kisim_no ? ' · Kısım ' + s.kisim_no : ''}` : 'İhale kaydı');
+          // İhaleyi YAPAN kurum (idare) — Kurum Analizi'ne link
+          const idareHtml = ilan.idare
+            ? `<a href="kurum-analiz?kurum=${encodeURIComponent(ilan.idare)}" style="color:var(--muted);text-decoration:none;" onclick="event.stopPropagation()">🏛️ ${ilan.idare}</a>`
+            : '';
+          // İhaleyi ALAN firmanın tam adı (isim varyasyonları için faydalı)
+          const firmaHtml = s.kazanan_firma
+            ? `<span style="color:var(--muted);">🏢 ${s.kazanan_firma}</span>` : '';
+          const detayLink = ilan.id ? `ihale-detay?id=${ilan.id}` : null;
           return `<div class="ihale-kart">
             <div class="ik-ust">
-              <a class="ik-baslik" href="ihale-detay?id=${s.ilan_id}">${ilan.baslik || '(Başlık yok)'}</a>
+              ${detayLink ? `<a class="ik-baslik" href="${detayLink}">${baslik}</a>` : `<span class="ik-baslik">${baslik}</span>`}
               ${tenz}
             </div>
-            <div class="ik-badges">
-              ${ilan.il ? `<span class="etiket">📍 ${ilan.il}</span>` : ''}
-              ${idareKisa ? `<span class="etiket">${idareKisa}</span>` : ''}
+            <div class="ik-badges" style="flex-direction:column;align-items:flex-start;gap:4px;">
+              ${idareHtml}
+              ${firmaHtml}
             </div>
             <div class="ik-meta">
-              ${s.kazanan_teklif ? `<span style="color:var(--amber);font-weight:700;">₺ ${formatBedel(s.kazanan_teklif)}</span>` : ''}
+              ${ilan.il ? `<span>📍 ${ilan.il}</span>` : ''}
+              ${bedel ? `<span style="color:var(--amber);font-weight:700;">₺ ${formatBedel(bedel)}</span>` : ''}
               ${s.sonuc_tarihi ? `<span>📅 ${tarihFormat(s.sonuc_tarihi)}</span>` : ''}
-              ${s.toplam_teklif_sayisi ? `<span>👥 ${s.toplam_teklif_sayisi} teklif</span>` : ''}
+              ${teklifSay ? `<span>👥 ${teklifSay} teklif</span>` : ''}
             </div>
           </div>`;
         }).join('')}
@@ -682,98 +729,162 @@
     } catch {}
   }
 
-  window.firmaSectiClick = function(ad) {
-    document.getElementById('firma-ara-input').value = ad;
+  let AKTIF_YID = '';  // detayı açık firmanın yuklenici_id'si
+
+  // ── 3 görünüm arası geçiş ───────────────────────────────
+  function goster(hangi) { // 'arama' | 'liste' | 'detay'
+    document.getElementById('arama-wrap').style.display   = hangi === 'arama' ? '' : 'none';
+    document.getElementById('firma-liste').style.display  = hangi === 'liste' ? 'block' : 'none';
+    document.getElementById('firma-icerik').style.display = hangi === 'detay' ? 'block' : 'none';
+  }
+  window.yeniAramaGoster = function() {
     const url = new URL(window.location);
-    url.searchParams.set('firma', ad);
+    url.searchParams.delete('firma'); url.searchParams.delete('yid'); url.searchParams.delete('ara');
     window.history.pushState({}, '', url);
-    FIRMA = ad;
-    firmaYukle();
+    sonAramalariGoster();
+    goster('arama');
   };
 
+  // Arama kutusu / Enter → FİRMA LİSTESİ (ihaleciler.com modeli: önce firmalar)
   window.firmaAra = function() {
     const v = document.getElementById('firma-ara-input').value.trim();
     if (!v) return;
-    const url = new URL(window.location);
-    url.searchParams.set('firma', v);
-    window.history.pushState({}, '', url);
-    FIRMA = v;
-    firmaYukle();
+    firmaListesiYukle(v, true);
+  };
+  // Son arama chip'i → aynı şekilde liste araması yap
+  window.firmaSectiClick = function(term) {
+    document.getElementById('firma-ara-input').value = term;
+    firmaListesiYukle(term, true);
+  };
+  // Listeden bir firmaya tıkla → o firmanın DETAYI
+  window.firmaSec = function(yid) {
+    firmaDetayYukle(yid, true);
   };
 
-  async function firmaYukle() {
-    if (!FIRMA) return;
+  // ── Firma LİSTESİ (yukleniciler tablosundan, arama_fold ile) ──────────────
+  async function firmaListesiYukle(term, pushUrl) {
+    if (!term) return;
+    sonAramaKaydet(term);
+    if (pushUrl) {
+      const url = new URL(window.location);
+      url.searchParams.set('ara', term);
+      url.searchParams.delete('yid'); url.searchParams.delete('firma');
+      window.history.pushState({}, '', url);
+    }
+    goster('liste');
+    document.getElementById('liste-terim').textContent = term;
+    document.getElementById('liste-ozet').textContent = 'Yükleniyor…';
+    const cont = document.getElementById('firma-liste-container');
+    cont.innerHTML = `<div class="veri-yok-card"><div class="loading-spinner"></div><div style="font-size:13px;color:var(--muted);">Firmalar aranıyor…</div></div>`;
+
+    // arama_fold (Türkçe katlanmış) ile ara; kolon yoksa düz ad ILIKE'a düş.
+    let { data, error } = await sb.from('yukleniciler')
+      .select('id,ad,il,toplam_sozlesme_sayisi,toplam_ciro,son_sozlesme_tarihi')
+      .ilike('arama_fold', `%${trFold(term)}%`)
+      .order('toplam_ciro', { ascending: false, nullsFirst: false })
+      .limit(100);
+    if (error && /arama_fold/.test(error.message || '')) {
+      ({ data } = await sb.from('yukleniciler')
+        .select('id,ad,il,toplam_sozlesme_sayisi,toplam_ciro,son_sozlesme_tarihi')
+        .ilike('ad', `%${term}%`)
+        .order('toplam_ciro', { ascending: false, nullsFirst: false })
+        .limit(100));
+    }
+    const liste = data || [];
+
+    if (!liste.length) {
+      document.getElementById('liste-ozet').textContent = 'Eşleşen firma bulunamadı.';
+      cont.innerHTML = `<div class="veri-yok-card">
+        <div class="veri-yok-icon">🔍</div>
+        <div class="veri-yok-baslik">“${term}” için firma bulunamadı</div>
+        <div class="veri-yok-alt">Yalnızca EKAP sonuç ilanlarında KAZANAN olarak geçen firmalar aranabilir.
+          Geçmiş veri arka planda toplanmaya devam ediyor — daha küçük bir firma parçası deneyin.</div>
+      </div>`;
+      return;
+    }
+
+    // Tek eşleşme → doğrudan detaya atla (dizinden "Analiz" gibi)
+    if (liste.length === 1) { firmaDetayYukle(liste[0].id, true); return; }
+
+    document.getElementById('liste-ozet').textContent = `${liste.length}${liste.length === 100 ? '+' : ''} firma bulundu · cirosu en yüksekten sıralı`;
+    cont.innerHTML = liste.map(f => `
+      <div class="firma-liste-item" onclick="firmaSec('${f.id}')">
+        <div>
+          <div class="fli-ad">${(f.ad || '—')}</div>
+          <div class="fli-stats">
+            <span>📋 <b>${(f.toplam_sozlesme_sayisi || 0).toLocaleString('tr')}</b> sözleşme</span>
+            <span>💰 <b>${formatBedel(f.toplam_ciro)}</b></span>
+            ${f.il ? `<span>📍 ${f.il}</span>` : ''}
+            ${f.son_sozlesme_tarihi ? `<span>🕐 son: ${tarihFormat(f.son_sozlesme_tarihi)}</span>` : ''}
+          </div>
+        </div>
+        <div class="fli-analiz">Analiz →</div>
+      </div>`).join('');
+  }
+
+  // ── Firma DETAYI (yuklenici_id ile — zengin ihale_sonuclari + ilan başlık/idare) ──
+  async function firmaDetayYukle(yid, pushUrl) {
+    if (!yid) return;
+    AKTIF_YID = yid;
     _pivotYuklendi = false;
     document.getElementById('pivot-kirilim-container').innerHTML = '';
     document.getElementById('ai-yorum-container').innerHTML = '';
-    sonAramaKaydet(FIRMA);
-    document.getElementById('arama-wrap').style.display = 'none';
-    document.getElementById('firma-icerik').style.display = 'block';
-    document.getElementById('bc-firma').textContent = FIRMA;
-    document.getElementById('firma-ad').textContent = FIRMA;
+
+    goster('detay');
     document.getElementById('firma-meta').textContent = 'Veri yükleniyor…';
     document.getElementById('kpi-katilan').textContent = '—';
     document.getElementById('kpi-kazanilan').textContent = '—';
+    document.getElementById('kpi-sozlesme').textContent = '—';
+    document.getElementById('kpi-tenzilat').textContent = '—';
     document.getElementById('sonuclar-container').innerHTML =
       `<div class="veri-yok-card"><div class="loading-spinner"></div><div style="font-size:13px;color:var(--muted);">Sonuç verisi yükleniyor…</div></div>`;
-    const iBtn = document.getElementById('firma-ihaleler-btn');
-    if (iBtn) iBtn.href = `ihaleler?idare=${encodeURIComponent(FIRMA)}`;
 
-    // Firmanın katıldığı/kazandığı ihaleler TEK kaynaktan gelir: ihale_sonuclari.kazanan_firma
-    // (EKAP sadece kazananları yayınlıyor, "katılan ama kaybeden" listesi elimizde yok).
-    // ÖNCEDEN burada ayrıca ilanlar.idare/baslik alanlarında da aynı terim aranıyordu —
-    // bu YANLIŞTI: firma adıyla hiç ilgisi olmayan idare/başlık eşleşmeleri (örn. terim bir
-    // kurum adında geçiyorsa) sonuçlara karışıyordu ("çok alakasız şeyler çıkıyor" bug'ı).
-    // kazanan_firma_fold (generated, Türkçe katlanmış — migration_ihale_sonuclari_arama_fold.sql)
-    // yoksa eski düz ILIKE'a zarifçe düşer (Türkçe katlamaz ama çökmez).
-    let { data: sonucRaw, error: sonucErr } = await sb.from('ihale_sonuclari')
-      .select('ilan_id,kazanan_firma,kazanan_teklif,kazanan_teklif_farki_yuzde,toplam_teklif_sayisi,en_dusuk_teklif,en_yuksek_teklif,sonuc_tarihi')
-      .ilike('kazanan_firma_fold', `%${trFold(FIRMA)}%`)
+    // Firma başlığı + resmi istatistikler (yukleniciler)
+    const { data: yRows } = await sb.from('yukleniciler')
+      .select('id,ad,il,toplam_sozlesme_sayisi,toplam_ciro,ilk_sozlesme_tarihi,son_sozlesme_tarihi')
+      .eq('id', yid).limit(1);
+    const y = (yRows && yRows[0]) || null;
+    FIRMA = y ? y.ad : (FIRMA || '');
+    document.getElementById('bc-firma').textContent = FIRMA || 'Firma';
+    document.getElementById('firma-ad').textContent = FIRMA || 'Firma';
+    const iBtn = document.getElementById('firma-ihaleler-btn');
+    if (iBtn) iBtn.href = `ihaleler?ara=${encodeURIComponent(FIRMA || '')}`;
+    if (pushUrl) {
+      const url = new URL(window.location);
+      url.searchParams.set('yid', yid);
+      url.searchParams.delete('ara'); url.searchParams.delete('firma');
+      window.history.pushState({}, '', url);
+    }
+    sonAramaKaydet(FIRMA);
+
+    // Kazandığı ihaleler — yuklenici_id ile kesin eşleşme + ilan başlık/idare embed'i
+    const { data: sonucRaw } = await sb.from('ihale_sonuclari')
+      .select('ilan_id,ikn,kazanan_firma,kazanan_teklif,sozlesme_bedeli,kazanan_teklif_farki_yuzde,tenzilat_yuzde,toplam_teklif_sayisi,katilimci_sayisi,sonuc_tarihi,sozlesme_tarihi,kisim_no,ilanlar(id,ekap_id,baslik,idare,il,tur,kategori,ilan_tarihi,son_teklif_tarihi)')
+      .eq('yuklenici_id', yid)
       .order('sonuc_tarihi', { ascending: false })
       .limit(500);
-    if (sonucErr && /kazanan_firma_fold/.test(sonucErr.message || '')) {
-      console.info('kazanan_firma_fold kolonu henüz yok, düz aramayla tekrar deneniyor:', sonucErr.message);
-      ({ data: sonucRaw, error: sonucErr } = await sb.from('ihale_sonuclari')
-        .select('ilan_id,kazanan_firma,kazanan_teklif,kazanan_teklif_farki_yuzde,toplam_teklif_sayisi,en_dusuk_teklif,en_yuksek_teklif,sonuc_tarihi')
-        .ilike('kazanan_firma', `%${FIRMA}%`)
-        .order('sonuc_tarihi', { ascending: false })
-        .limit(500));
-    }
 
-    sonucVeri = sonucRaw || [];
-    tumIhaleler = [];
-    if (sonucVeri.length) {
-      const ids = [...new Set(sonucVeri.map(s => s.ilan_id).filter(Boolean))];
-      if (ids.length) {
-        const { data: ilanDetay } = await sb.from('ilanlar')
-          .select('id,ekap_id,baslik,idare,il,tur,kategori,ilan_tarihi,son_teklif_tarihi')
-          .in('id', ids);
-        const mp = {};
-        (ilanDetay || []).forEach(i => { mp[i.id] = i; });
-        sonucVeri = sonucVeri.map(s => ({ ...s, ilan: mp[s.ilan_id] || null }));
-        tumIhaleler = Object.values(mp); // kazanılan ihalelerin kendisi ("Katıldığı İhaleler" listesi)
-      }
-      document.getElementById('kpi-kazanilan').textContent = sonucVeri.length.toLocaleString('tr');
-      const toplamBedel = sonucVeri.reduce((a, s) => a + (s.kazanan_teklif || 0), 0);
-      const sub = document.getElementById('kpi-kazanilan-sub');
-      if (sub && toplamBedel) sub.textContent = formatBedel(toplamBedel) + ' toplam';
-    } else {
-      document.getElementById('kpi-kazanilan').textContent = '0';
-    }
+    sonucVeri = (sonucRaw || []).map(s => ({ ...s, ilan: s.ilanlar || null }));
+    // "Katıldığı İhaleler" = kazandığı ihalelerin kendisi (EKAP kaybedeni yayınlamaz)
+    tumIhaleler = sonucVeri.map(s => s.ilan).filter(Boolean);
 
-    const iller  = new Set(tumIhaleler.filter(i => i.il).map(i => i.il));
-    const katlar = new Set(tumIhaleler.filter(i => i.kategori).map(i => i.kategori));
-    document.getElementById('kpi-katilan').textContent = tumIhaleler.length.toLocaleString('tr');
-    document.getElementById('kpi-sozlesme').textContent = iller.size;
-    document.getElementById('kpi-tenzilat').textContent = katlar.size;
-    document.getElementById('firma-meta').textContent = tumIhaleler.length
-      ? `${tumIhaleler.length} ihale kaydı bulundu · ${iller.size} il · ${katlar.size} sektör`
-      : 'Bu arama için sonuç bulunamadı.';
+    const iller  = new Set(sonucVeri.map(s => (s.ilan && s.ilan.il) || s.yuklenici_il).filter(Boolean));
+    const katlar = new Set(tumIhaleler.map(i => i.kategori).filter(Boolean));
+    const toplamBedel = sonucVeri.reduce((a, s) => a + (s.sozlesme_bedeli || s.kazanan_teklif || 0), 0);
+
+    document.getElementById('kpi-katilan').textContent  = sonucVeri.length.toLocaleString('tr');
+    document.getElementById('kpi-kazanilan').textContent = sonucVeri.length.toLocaleString('tr');
+    document.getElementById('kpi-sozlesme').textContent  = iller.size;
+    document.getElementById('kpi-tenzilat').textContent  = katlar.size;
+    const sub = document.getElementById('kpi-kazanilan-sub');
+    if (sub) sub.textContent = toplamBedel ? formatBedel(toplamBedel) + ' toplam' : 'EKAP sonuç kaydı';
+
+    document.getElementById('firma-meta').textContent = sonucVeri.length
+      ? `${sonucVeri.length} kazanılan ihale · ${formatBedel(toplamBedel)} · ${iller.size} il${y && y.son_sozlesme_tarihi ? ' · son: ' + tarihFormat(y.son_sozlesme_tarihi) : ''}`
+      : 'Bu firma için henüz kazanım kaydı toplanmadı (geçmiş veri arka planda çekiliyor).';
     if (tumIhaleler.length) firmaIstatistikGoster(tumIhaleler);
 
-    // Sonuçlar sekmesi açıksa hemen doldur
     if (document.getElementById('tab-sonuclar')?.classList.contains('active')) sonuclariGoster();
-
     firmaTakipDurumuGuncelle();
   }
 
@@ -873,12 +984,17 @@
     }
   }
 
+  // ── Başlangıç yönlendirmesi ──────────────────────────────
   sonAramalariGoster();
-  if (FIRMA) {
-    const el = document.getElementById('firma-ara-input');
-    if (el) el.value = FIRMA;
-    firmaYukle();
-  }
+  (function rota() {
+    const qYid   = params.get('yid');
+    const qAra   = params.get('ara');
+    const qFirma = params.get('firma');  // eski/dış linkler (firmalar.html "Analiz")
+    if (qYid) { firmaDetayYukle(qYid, false); return; }
+    if (qAra) { const el = document.getElementById('firma-ara-input'); if (el) el.value = qAra; firmaListesiYukle(qAra, false); return; }
+    if (qFirma) { const el = document.getElementById('firma-ara-input'); if (el) el.value = qFirma; firmaListesiYukle(qFirma, false); return; }
+    goster('arama');
+  })();
 })();
 </script>
 </body>
