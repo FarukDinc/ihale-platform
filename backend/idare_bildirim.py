@@ -32,7 +32,11 @@ load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), ".env"))
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "")
 SUPABASE_KEY = os.environ.get("SUPABASE_SERVICE_KEY", "")
 SITE_URL     = os.environ.get("SITE_URL", "https://ihaleglobal.com")
-PENCERE_SAAT = 26  # gece cron ~24h aralıklı; taşma payı için 26h
+# Pencere yalnızca AYNI turda (bu run'ın scraper'ının) yeni yazdığı satırları kapsamalı —
+# idare_bildirim ana taramadan hemen sonra çalışır, o satırlar en fazla ~2 saatlik. 26h idi;
+# ~24h cron ile 2h örtüşüp aynı ihaleyi ARDIŞIK İKİ GECE bildiriyordu (mükerrer e-posta). 20h
+# same-run satırları rahat kapsar, önceki gecenin (~24h) satırlarını dışlar.
+PENCERE_SAAT = 20
 
 
 def _headers():

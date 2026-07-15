@@ -17,7 +17,9 @@ $VENV/python bulten_gonder.py >> /opt/ihale-platform/logs/scraper.log 2>&1
 
 # ÖNCELİK 10 Faz A1/B2 — sonuç verisi taraması + firma sözlüğü tazeleme (9 Tem 2026)
 echo "[$(date +'%Y-%m-%d %H:%M:%S')] === Sonuc backfill ===" >> /opt/ihale-platform/logs/scraper.log
-$VENV/python ekap_sonuc_backfill.py --tum-kayitlar --max-pages 50 >> /opt/ihale-platform/logs/scraper.log 2>&1
+# Gecelik: EKAP sonuç listesinin BAŞINDAN (en yeni) tara — yeni sonuçlanan ihaleler burada belirir.
+# --no-checkpoint ile paylaşılan checkpoint'i ilerletmez (deep --backfill onu kullanmaya devam eder).
+$VENV/python ekap_sonuc_backfill.py --tum-kayitlar --max-pages 50 --start-skip 0 --no-checkpoint >> /opt/ihale-platform/logs/scraper.log 2>&1
 echo "[$(date +'%Y-%m-%d %H:%M:%S')] === Yuklenici tazeleme ===" >> /opt/ihale-platform/logs/scraper.log
 $VENV/python yuklenici_yenile_calistir.py >> /opt/ihale-platform/logs/scraper.log 2>&1
 $VENV/python rakip_bildirim.py >> /opt/ihale-platform/logs/scraper.log 2>&1

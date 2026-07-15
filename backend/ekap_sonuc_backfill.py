@@ -463,7 +463,8 @@ def ilan_kompakt_ekle(item: dict, dry_run: bool) -> dict | None:
 SAYFA_BOYUTU = 100
 
 
-async def calis(max_pages: int, dry_run: bool, start_skip: int | None, tum_kayitlar: bool = False):
+async def calis(max_pages: int, dry_run: bool, start_skip: int | None, tum_kayitlar: bool = False,
+                no_checkpoint: bool = False):
     """
     EKAP'ın 'Result Announcement Published' (durum filtresi=5) listesini baştan/kaldığı
     yerden sayfalar, kendi ilanlar tablomuzdaki IKN'lerle eşleşenleri bulur, detayını
@@ -558,11 +559,16 @@ async def calis(max_pages: int, dry_run: bool, start_skip: int | None, tum_kayit
                     # kullanıcının proxy doldurmasını beklemek daha güvenli.
                     if "403" in str(e) or "429" in str(e):
                         print("  ⏹ 403/429 alındı — IP kısıtlanmış olabilir. PROXY GEREK. Durduruluyor.")
-                        checkpoint_yaz(skip)
+                        if not no_checkpoint:
+                            checkpoint_yaz(skip)
                         return
 
             skip += SAYFA_BOYUTU
-            checkpoint_yaz(skip)
+            # no_checkpoint: gecelik en-yeniden-tara modu paylaşılan checkpoint'i İLERLETMEZ
+            # (aksi halde deep --backfill'in derin skip'ini ezerdi ve gecelik tur her gece daha
+            # eskiye kayıp yeni sonuçları hiç görmezdi). Deep backfill checkpoint'i kullanmaya devam eder.
+            if not no_checkpoint:
+                checkpoint_yaz(skip)
             if (sayfa + 1) % 10 == 0:
                 print(f"  … {taranan} kayıt tarandı, {eslesen} eşleşme, {yazilan} yazıldı (skip={skip})")
 
@@ -594,9 +600,13 @@ def main():
     ap.add_argument("--tum-kayitlar", action="store_true",
                      help="ÖNCELİK 10 Faz A3: bizim ilanlar tablomuzda olmayan IKN'leri de "
                           "kompakt satır olarak ekleyip işler (havuzdan bağımsız geniş backfill).")
+    ap.add_argument("--no-checkpoint", action="store_true",
+                     help="Checkpoint dosyasını OKUMA/YAZMA. Gecelik 'en yeniden tara' turu için: "
+                          "--start-skip 0 --no-checkpoint ile her gece skip=0'dan başlar, deep "
+                          "--backfill'in checkpoint'ini bozmaz (yeni sonuçlar EKAP listesinin başında).")
     args = ap.parse_args()
     start_skip = 0 if args.reset else args.start_skip
-    asyncio.run(calis(args.max_pages, args.dry_run, start_skip, args.tum_kayitlar))
+    asyncio.run(calis(args.max_pages, args.dry_run, start_skip, args.tum_kayitlar, args.no_checkpoint))
 
 
 if __name__ == "__main__":

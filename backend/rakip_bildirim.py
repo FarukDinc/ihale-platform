@@ -37,7 +37,10 @@ load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), ".env"))
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "")
 SUPABASE_KEY = os.environ.get("SUPABASE_SERVICE_KEY", "")
 SITE_URL     = os.environ.get("SITE_URL", "https://ihaleglobal.com")
-PENCERE_SAAT = 26  # gece cron ~24h aralıklı; taşma payı için 26h
+# Pencere yalnızca AYNI turda yeni yazılan sonuç satırlarını kapsamalı (yaş ~saatler). 26h idi;
+# ~24h cron ile örtüşüp aynı kazanımı ardışık iki gece bildiriyordu (mükerrer e-posta). Bkz.
+# idare_bildirim.py aynı düzeltme. (Kalıcı çözüm: bildirimler'de (kullanici_id,ilan_id,tur) dedup.)
+PENCERE_SAAT = 20
 
 
 def _headers():
