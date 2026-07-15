@@ -39,7 +39,18 @@
 >   davet/bildirim akışı, teklif kıyas ekranı, kazanan seçimi. Gelir modeli (alıcı SaaS / tedarikçi üyelik /
 >   işlem ücreti) ayrı karar.
 >
-> **DURUM:** Sistem A için TED API doğrulandı, POC'ye hazır. Sistem B model kararı bekliyor (kullanıcıya soruldu).
+> **✅ SİSTEM A FAZ 1 (TED) TAMAMLANDI + CANLI (commit `adba908`):** Kullanıcı "ayrı ekranda göster,
+> Türkiye analizine karışmasın" dedi → AYRI `uluslararasi_ihaleler` tablosu (migration uygulandı) +
+> AYRI sayfa `uluslararasi.html`. `ted_scraper.py` TED v3 API'den çeker, İngilizce başlığı Gemini ile
+> TOPLU Türkçe'ye çevirir, ülke ISO→TR, kategori (CPV+başlık), tür (CPV). **183 ihale yüklendi.**
+> Sayfa: server-side arama/ülke(26)/kategori/tür filtresi + EUR bedel + TED linki + orijinal başlık.
+> Sidebar'a "🌍 Uluslararası İhaleler" linki (18 sayfa). Gece cron'a eklendi. **Canlıda doğrulandı**
+> (183 ihale, Almanya filtresi→53, Türkçe başlıklar, konsol temiz). **Sıradaki:** Gürcistan
+> (tenders.procurement.gov.ge iç API RE), TED derin backfill (--max-pages yüksek), opsiyonel dashboard
+> özeti. Not: kategori bazen İngilizce artifaktı taşıyabilir (CPV 50 "bakım/onarım"→Taşıt fallback) —
+> ince ayar ile düzeltilebilir.
+>
+> **SİSTEM B (Promena) — model kararı bekliyor** (kullanıcıya soruldu, henüz seçilmedi).
 
 > ## ✅ 15 TEMMUZ (devam) — kaynak rozeti + gündüz/gece modu (commit `e095e45`, CANLI)
 > **1) Kaynak rozeti:** ihaleler.html kartlarında her ihalenin kaynağı — "EKAP" veya ilan.gov.tr için
