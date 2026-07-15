@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>İhalelerim & Tekliflerim — İhaleGlobal</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <script src="js/theme.js?v=2"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    body { background: var(--navy); }
+    .app { display: flex; min-height: 100vh; }
+    .sidebar { background: var(--navy-mid); border-right: 1px solid var(--border); width: 240px; flex-shrink: 0; position: sticky; top: 0; height: 100vh; display: flex; flex-direction: column; overflow-y: auto; }
+    .sidebar-logo { padding: 20px 20px 16px; border-bottom: 1px solid var(--border); }
+    .sidebar-logo a { font-family: var(--font-display); font-size: 18px; font-weight: 800; color: var(--white); text-decoration: none; display: flex; align-items: center; gap: 8px; }
+    .sidebar-logo span { color: var(--amber); }
+    .sidebar-nav { flex: 1; padding: 16px 12px; overflow-y: auto; }
+    .nav-section-label { font-size: 10px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); padding: 12px 8px 6px; }
+    .nav-item { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 6px; color: var(--muted); text-decoration: none; font-size: 13px; font-weight: 500; transition: all .15s; margin-bottom: 2px; }
+    .nav-item:hover { background: var(--card-bg); color: var(--white); }
+    .nav-item.active { background: rgba(240,165,0,0.12); color: var(--amber); }
+    .nav-item .icon { font-size: 16px; width: 20px; text-align: center; }
+    .sidebar-footer { padding: 16px; border-top: 1px solid var(--border); }
+    .user-row { display: flex; align-items: center; gap: 10px; }
+    .user-avatar { width: 32px; height: 32px; border-radius: 50%; background: var(--amber); color: var(--navy); font-size: 12px; font-weight: 800; display: flex; align-items: center; justify-content: center; }
+    .user-name { font-size: 13px; font-weight: 600; color: var(--white); }
+    .user-plan { font-size: 11px; color: var(--muted); }
+    .main { display: flex; flex-direction: column; flex: 1; min-width: 0; height: 100vh; overflow-y: auto; }
+    .topbar { background: var(--navy-mid); border-bottom: 1px solid var(--border); padding: 0 24px; height: 56px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 10; }
+    .page-body { padding: 24px; max-width: 960px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--border); margin-bottom: 20px; }
+    .tab-btn { padding: 12px 20px; font-size: 14px; font-weight: 600; color: var(--muted); background: none; border: none; border-bottom: 2px solid transparent; cursor: pointer; transition: all .15s; margin-bottom: -1px; font-family: var(--font-body); }
+    .tab-btn:hover { color: var(--white); }
+    .tab-btn.active { color: var(--amber); border-bottom-color: var(--amber); }
+    .tab-panel { display: none; } .tab-panel.active { display: block; }
+
+    .kart { background: var(--navy-mid); border: 1px solid var(--border); border-radius: 10px; padding: 16px 20px; margin-bottom: 10px; cursor: pointer; transition: border-color .15s; }
+    .kart:hover { border-color: rgba(240,165,0,.4); }
+    .kart-ust { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 6px; }
+    .kart-baslik { font-size: 14px; font-weight: 700; color: var(--white); }
+    .kart-badges { display: flex; gap: 6px; flex-wrap: wrap; margin: 4px 0; }
+    .etiket { font-size: 11px; padding: 2px 8px; border-radius: 10px; font-weight: 600; background: rgba(var(--overlay-rgb),.06); color: var(--muted); }
+    .etiket.kat { background: rgba(240,165,0,.1); color: var(--amber); }
+    .etiket.acik { background: rgba(34,197,94,.12); color:#4ade80; }
+    .etiket.kapali { background: rgba(148,163,184,.12); color:#94a3b8; }
+    .etiket.kazandi { background: rgba(34,197,94,.16); color:#4ade80; }
+    .etiket.teklif { background: rgba(59,130,246,.14); color:#60a5fa; }
+    .kart-meta { font-size: 12px; color: var(--muted); display: flex; gap: 14px; flex-wrap: wrap; align-items: center; }
+    .bedel { color: var(--amber); font-weight: 700; font-size: 13px; white-space: nowrap; }
+    .bos { color: var(--muted); font-size: 13px; padding: 30px; text-align: center; }
+    .bos a { color: var(--amber); font-weight: 700; text-decoration: none; }
+    .giris-uyari { background: var(--navy-mid); border: 1px dashed var(--border); border-radius: 12px; padding: 40px; text-align: center; }
+    .giris-uyari a { color: var(--amber); font-weight: 700; text-decoration: none; }
+    .loading-spinner { width: 28px; height: 28px; border: 3px solid var(--border); border-top-color: var(--amber); border-radius: 50%; animation: spin .8s linear infinite; margin: 30px auto; }
+    @media (max-width: 900px) { .sidebar { display: none; } }
+  </style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="sidebar-logo"><a href="/"><span style="width:6px;height:6px;background:var(--amber);border-radius:50%;display:inline-block;"></span> İhale<span>Global</span></a></div>
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">Genel</div>
+      <a href="dashboard" class="nav-item"><span class="icon">◉</span> Dashboard</a>
+      <div class="nav-section-label">Kamu İhaleleri</div>
+      <a href="ihaleler" class="nav-item"><span class="icon">⊞</span> İhaleler</a>
+      <a href="dogrudan-temin" class="nav-item"><span class="icon">⚡</span> Doğrudan Temin</a>
+      <a href="sonuclananlar" class="nav-item"><span class="icon">🏆</span> Sonuçlananlar</a>
+      <div class="nav-section-label" style="padding-left:16px;opacity:.85;">— Analiz —</div>
+      <a href="rekabet-analizi" class="nav-item"><span class="icon">📊</span> Rekabet Analizi</a>
+      <a href="idareler" class="nav-item"><span class="icon">🏛️</span> İdareler Dizini</a>
+      <a href="firmalar" class="nav-item"><span class="icon">🏢</span> Firmalar Dizini</a>
+      <a href="sektorler" class="nav-item"><span class="icon">🏭</span> Sektörler Dizini</a>
+      <a href="kurum-analiz" class="nav-item"><span class="icon">🔍</span> Kurum Analizi</a>
+      <a href="firma-analiz" class="nav-item"><span class="icon">🏢</span> Firma Analizi</a>
+      <a href="kik-kararlar" class="nav-item"><span class="icon">⚖️</span> KİK Kararlar</a>
+      <div class="nav-section-label">Uluslararası</div>
+      <a href="uluslararasi" class="nav-item"><span class="icon">🌍</span> Uluslararası İhaleler</a>
+      <div class="nav-section-label">Özel İhaleler</div>
+      <a href="ozel-ihaleler" class="nav-item"><span class="icon">🤝</span> e-Satınalma</a>
+      <div class="nav-section-label">Firmam</div>
+      <a href="ihalelerim" class="nav-item active"><span class="icon">📑</span> İhalelerim</a>
+      <a href="takipte" class="nav-item"><span class="icon">☆</span> Takibim</a>
+      <a href="bildirimler" class="nav-item"><span class="icon">🔔</span> Bildirimler</a>
+      <a href="uyumluluk" class="nav-item"><span class="icon">✓</span> Uyumluluk</a>
+      <a href="dokumanlar" class="nav-item"><span class="icon">📁</span> Dökümanlar</a>
+      <a href="profil" class="nav-item"><span class="icon">⚙</span> Profil & Filtreler</a>
+      <a href="fiyatlandirma_odeme_bolumu" class="nav-item"><span class="icon">💳</span> Abonelik</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-row" id="sb-user-row"><div class="user-avatar" id="sb-avatar">?</div><div><div class="user-name" id="sb-name">Yükleniyor…</div><div class="user-plan" id="sb-plan">—</div></div></div>
+    </div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <span style="font-size:14px;font-weight:700;color:var(--white);">📑 İhalelerim & Tekliflerim</span>
+      <a href="ozel-ihaleler" class="btn btn-primary" style="padding:8px 16px;font-size:13px;">+ Yeni İhale Aç</a>
+    </div>
+    <div class="page-body">
+      <div id="giris-wrap"></div>
+      <div id="panel-wrap" style="display:none;">
+        <div class="tabs">
+          <button class="tab-btn active" onclick="sekme('actigim',this)">Açtığım İhaleler</button>
+          <button class="tab-btn" onclick="sekme('teklifim',this)">Verdiğim Teklifler</button>
+        </div>
+        <div class="tab-panel active" id="tab-actigim"><div class="loading-spinner"></div></div>
+        <div class="tab-panel" id="tab-teklifim"><div class="loading-spinner"></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="js/sidebar-user.js"></script>
+<script src="js/bildirim-sayaci.js"></script>
+<script>
+(() => {
+  const SB_URL = "https://ihaleglobal.com";
+  const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzgzMzUwMDE1LCJleHAiOjE5NDEwMzAwMTV9.sRB61a8oNXwzSKL9No8gt7cmkmnkoQstT0ZtHIxl1Hs";
+  const sb = window.supabase.createClient(SB_URL, SB_KEY);
+  let user = null;
+
+  const esc = s => (s||'').replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));
+  const para = v => v ? '₺' + Number(v).toLocaleString('tr') : '—';
+  const tarih = s => s ? new Date(s).toLocaleDateString('tr-TR',{day:'2-digit',month:'short',year:'numeric'}) : '—';
+
+  window.sekme = function(ad, btn) {
+    document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('tab-'+ad).classList.add('active');
+  };
+
+  async function actigimYukle() {
+    const el = document.getElementById('tab-actigim');
+    const { data, error } = await sb.from('satinalma_talepleri')
+      .select('id,baslik,kategori,il,tahmini_bedel,durum,son_teklif_tarihi,kazanan_teklif_id,olusturulma,tedarikci_teklifleri(count)')
+      .eq('olusturan_user_id', user.id).order('olusturulma',{ascending:false});
+    if (error) { el.innerHTML = `<div class="bos">Yüklenemedi: ${esc(error.message)}</div>`; return; }
+    if (!data || !data.length) { el.innerHTML = '<div class="bos">Henüz ihale açmadınız. <a href="ozel-ihaleler">İlk ihaleni aç →</a></div>'; return; }
+    el.innerHTML = data.map(t => {
+      const teklifSay = (t.tedarikci_teklifleri && t.tedarikci_teklifleri[0] && t.tedarikci_teklifleri[0].count) || 0;
+      return `<div class="kart" onclick="location.href='ozel-ihale-detay?id=${t.id}'">
+        <div class="kart-ust"><div class="kart-baslik">${esc(t.baslik)}</div>${t.tahmini_bedel?`<div class="bedel">${para(t.tahmini_bedel)}</div>`:''}</div>
+        <div class="kart-badges">
+          ${t.kategori?`<span class="etiket kat">${esc(t.kategori)}</span>`:''}
+          ${t.il?`<span class="etiket">📍 ${esc(t.il)}</span>`:''}
+          <span class="etiket ${t.durum==='acik'?'acik':'kapali'}">● ${t.durum==='acik'?'Açık':'Kapandı'}</span>
+        </div>
+        <div class="kart-meta"><span>📥 ${teklifSay} teklif</span>${t.son_teklif_tarihi?`<span>⏰ ${tarih(t.son_teklif_tarihi)}</span>`:''}</div>
+      </div>`;
+    }).join('');
+  }
+
+  async function teklifimYukle() {
+    const el = document.getElementById('tab-teklifim');
+    const { data, error } = await sb.from('tedarikci_teklifleri')
+      .select('id,teklif_bedeli,durum,olusturulma,talep_id,satinalma_talepleri(baslik,kategori,durum,kazanan_teklif_id)')
+      .eq('teklif_veren_user_id', user.id).order('olusturulma',{ascending:false});
+    if (error) { el.innerHTML = `<div class="bos">Yüklenemedi: ${esc(error.message)}</div>`; return; }
+    if (!data || !data.length) { el.innerHTML = '<div class="bos">Henüz teklif vermediniz. <a href="ozel-ihaleler">Açık ihalelere göz at →</a></div>'; return; }
+    el.innerHTML = data.map(tk => {
+      const t = tk.satinalma_talepleri || {};
+      const kazandim = t.kazanan_teklif_id === tk.id;
+      const durumEt = kazandim ? '<span class="etiket kazandi">🏆 Kazandınız</span>'
+        : (t.durum==='kapali' ? '<span class="etiket kapali">Kapandı</span>' : '<span class="etiket teklif">Değerlendirmede</span>');
+      return `<div class="kart" onclick="location.href='ozel-ihale-detay?id=${tk.talep_id}'">
+        <div class="kart-ust"><div class="kart-baslik">${esc(t.baslik)||'İhale'}</div><div class="bedel">${para(tk.teklif_bedeli)}</div></div>
+        <div class="kart-badges">${t.kategori?`<span class="etiket kat">${esc(t.kategori)}</span>`:''}${durumEt}</div>
+        <div class="kart-meta"><span>Teklif tarihi: ${tarih(tk.olusturulma)}</span></div>
+      </div>`;
+    }).join('');
+  }
+
+  (async () => {
+    try { const { data } = await sb.auth.getUser(); user = data.user; } catch {}
+    if (!user) {
+      document.getElementById('giris-wrap').innerHTML = '<div class="giris-uyari">İhalelerinizi ve tekliflerinizi görmek için <a href="login">giriş yapın</a>.</div>';
+      return;
+    }
+    document.getElementById('panel-wrap').style.display = 'block';
+    actigimYukle();
+    teklifimYukle();
+  })();
+})();
+</script>
+</body>
+</html>
