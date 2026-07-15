@@ -50,7 +50,34 @@
 > özeti. Not: kategori bazen İngilizce artifaktı taşıyabilir (CPV 50 "bakım/onarım"→Taşıt fallback) —
 > ince ayar ile düzeltilebilir.
 >
-> **SİSTEM B (Promena) — model kararı bekliyor** (kullanıcıya soruldu, henüz seçilmedi).
+> **SİSTEM B (Promena benzeri) — TASARIM NETLEŞTİ, kullanıcıyla uzun tartışıldı (model kararı bekliyor):**
+> Çekirdek fikir (kullanıcı): alıcı firma ihale/RFQ açar → Gemini başlık/açıklamayı tarar → o işe EN
+> UYGUN firmalara (geçmişte EKAP'ta o/benzeri işe girmiş/kazanmış) davet gönderilir. Aynısı EKAP'tan
+> çıkan ihaleler için de: yeni ihaleye geçmişte benzer iş almış firmaları otomatik öner.
+> - **EŞLEŞTİRME MOTORU = en değerli kart, BUGÜN yapılabilir (kanıtlandı):** kategori + il/çevre iller +
+>   KAPASİTE KADEMESİ (50M'lik işe 1M altı almışı çağırma) → hepsi `ihale_sonuclari`+`yukleniciler`+
+>   kategori+il verisinden SQL ile çıkıyor. Örn REST sorgusu: "Mobilya" kategorisinde İSTİKBAL MOBİLYA
+>   Ankara'da 193M/102M'lik iş kazanmış → büyük mobilya ihalesine uygun aday. AI'a gerek yok (Gemini
+>   sadece RFQ metninden kategori çıkarma + davet metni + firma-adı bulanık eşleştirmede kullanılır).
+> - **İLETİŞİM/DAVET — YASAL ANALİZ (kullanıcı itirazıyla netleşti):** Başta "İYS kesin blokör" dedim,
+>   B2B için FAZLA katıydı. Gerçek: (1) KVKK m.5/2-d "alenileştirme" — firma kendi iletişimini kendi
+>   sitesinde yayınladıysa, iş amacıyla ulaşmak açık rıza olmadan meşru; (2) ticari ileti mevzuatı
+>   TACİR/ESNAF alıcıya önceden onay ARAMAZ (B2B istisnası). Yani "self-published iş iletişimine, İLGİLİ
+>   bir iş için, ret hakkıyla" ulaşmak savunulabilir. **Şartlar:** ret/opt-out ZORUNLU (suppression
+>   listesi), mesaj firmanın işiyle İLGİLİ olmalı (eşleştirme motoru bunu garanti eder → "spam" değil),
+>   kaynak self-published/doğrulanmış olmalı — **Gemini'ye kişisel cep no TAHMİN ettirme (uydurur +
+>   alenileştirme dışı)**. Ölçeklenirken KVKK/İYS avukatı teyidi önerildi.
+> - **GÖNDERİM MİMARİSİ (deliverability, kullanıcıyla netleşti):** Ana domaini korumak için ayrı
+>   SUBDOMAIN'den gönder (`firsatlar.ihaleglobal.com`) + SPF/DKIM/DMARC + ayrı IP + warm-up. **YAPMA:**
+>   ayrı `.co` lookalike domain + otomatik redirect (`getihaleglobal.co→ihaleglobal.com`) — bu tam
+>   PHISHING deseni, filtreler işaretler, itibarı bozar. Maildeki link DOĞRUDAN ihaleglobal.com'a
+>   (redirect/kısaltıcı yok). Asıl kaldıraç: İLGİLİLİK + düşük şikâyet + kolay ret.
+> - **BÜYÜME DÖNGÜSÜ (üye olmayan firmalar için):** eşleşen ama üye olmayan firmayı alıcıya "önerilen"
+>   göster + herkese açık firma profil sayfası → firma kendini bulunca "sahiplen/üye ol" → doğaçlama müşteri.
+> - **İNŞA SIRASI:** (1) Eşleştirme motoru POC ("bu ihaleye en uygun N firma + kapasite kademesi"),
+>   (2) alıcı RFQ açma (kapalı-zarf, ÖNERİLEN model) + üye firmalara bildirim, (3) firma profil + büyüme
+>   döngüsü, (4) İYS-uyumlu izinli gönderim + ayrı subdomain. **Model kararı (kapalı-zarf/reverse-auction/
+>   basit) kullanıcıdan bekleniyor; önerim kapalı-zarf RFQ.**
 
 > ## ✅ 15 TEMMUZ (devam) — kaynak rozeti + gündüz/gece modu (commit `e095e45`, CANLI)
 > **1) Kaynak rozeti:** ihaleler.html kartlarında her ihalenin kaynağı — "EKAP" veya ilan.gov.tr için
