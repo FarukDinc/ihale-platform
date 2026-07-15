@@ -7,6 +7,32 @@
 > **KALICI TALİMAT (12 Tem, kullanıcı emri):** Bu blok + ilgili bölümler her oturumda otomatik
 > güncellenir, kullanıcı hatırlatmak zorunda değil. Bkz. hafıza `yapilacaklar-auto-update`.
 
+> ## ✅ 15 TEMMUZ (devam) — KATEGORİ REDESIGN + ilan.gov.tr SCRAPER (kullanıcı "ikisini yap" dedi, İKİSİ DE CANLI)
+>
+> **✅ 1) İŞ-DOSTU KATEGORİ SİSTEMİ (ihaleciler.com tarzı) — CANLI.** Eski: CPV-2-hane ham AB isimleri
+> + OKAS'sız ~%39 jenerik "Mal/Hizmet Alımı"ya düşüyordu. Yeni: `backend/kategori_siniflandir.py` —
+> OKAS AÇIKLAMASI + BAŞLIK üzerinde Türkçe-katlanmış kelime-sınırı (\b) eşleştirmesiyle ~40 iş-dostu
+> kategori. Kapsam aktiflerde **%73.5** (Diğer %26.5, eski jenerik ~%39'a karşı). ekap_scraper entegre.
+> **backfill (`kategori_backfill.py`) VDS'te çalıştırıldı: 178.353 satır yeniden sınıflandırıldı**
+> (kategoriye göre toplu PATCH; CHUNK=60 çünkü UUID id'ler 414 veriyordu). sektorler.html SEKTOR_IKON
+> yeni ~40 kategoriye güncellendi. **Canlıda doğrulandı:** sektorler yeni isimleri ikonlarıyla gösteriyor
+> (🏗️ İnşaat-Altyapı, 🍽️ Gıda, ❤️ Sağlık...). rekabet-analizi kategori chart'ı da otomatik besleniyor.
+> **Kalan:** Diğer %26.5 (çoğu OKAS'sız niş: maden/demiryolu/savunma) — keyword eklemeyle zamanla düşürülür.
+> 43 straggler eski isim kaldı (concurrent yazım, ihmal edilebilir; nightly düzeltir).
+>
+> **✅ 2) ilan.gov.tr (Basın İlan Kurumu "Gazete") SCRAPER — CANLI.** `backend/ilan_gov_scraper.py`:
+> AdsByFilter ABP API'sinden İHALE duyurularını çeker (newest-first, 20/sayfa), client-side
+> "İlan Türü==İHALE" filtreler, IKN/tür/usul/il/son-teklif/başlık çıkarır. **kaynak='ilan_gov'**
+> (ekap_id=IKN, yoksa adNo; ikn NULL→UNIQUE çakışması yok). ilanlar upsert on_conflict=ekap_id
+> ignore_duplicates → EKAP'ta zaten olan IKN'ler ATLANIR, yalnızca gazete-özel ihaleler eklenir.
+> Migration `migration_kaynak_ilan_gov.sql` (kaynak CHECK'ine 'ilan_gov' eklendi) VDS'te uygulandı.
+> **VDS'te çalıştırıldı: 128 yeni gazete-özel ihale eklendi** (özellikle EKAP'ın kapsamadığı 2886 satış/
+> kira ihaleleri). Gece cron'una eklendi (`--max-pages 40`, DT sonrası). **KRİTİK KURAL SAĞLANDI:**
+> ihale-detay bu kayıtlarda kaynağı "EKAP" DEĞİL "📰 Resmi İlan · ilan.gov.tr" gösteriyor, aksiyon
+> butonu ilan.gov.tr'ye linkli, hiçbir EKAP referansı yok (canlıda doğrulandı). **Kalan/gelecek:**
+> ihaleler.html liste kartlarında da kaynak rozeti gösterilebilir; derin geçmiş backfill (--max-pages
+> yüksek) opsiyonel; TEBLİGAT/İCRA/PERSONEL türleri şu an alınmıyor (sadece İHALE).
+
 > ## ✅ 15 TEMMUZ (devam) — DEPLOY EDİLDİ (kullanıcı "sen push et VDS'e" dedi)
 > Bu oturumun TÜM commit'leri VDS'e pull edildi: `516fc31 → 6d3ba07` (17 dosya, fast-forward).
 > **Doğrulandı:** (1) `run_scraper.sh` mode 755 executable (bu geceki cron çalışacak); (2) supabase
