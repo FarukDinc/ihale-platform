@@ -707,6 +707,8 @@
   const SUPABASE_URL = "https://ihaleglobal.com";
   const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzgzMzUwMDE1LCJleHAiOjE5NDEwMzAwMTV9.sRB61a8oNXwzSKL9No8gt7cmkmnkoQstT0ZtHIxl1Hs";
   const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  // XSS: innerHTML'e giren scrape edilen DB metni (baslik/idare/il/tur/firma) bundan geçmeli.
+  const esc = s => (s == null ? '' : String(s)).replace(/[<>&"']/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&#39;'}[c]));
 
   // ── Kullanıcı profili (sayfa yüklenince çekilir) ─────
   let kullaniciProfil = null;
@@ -910,16 +912,16 @@
     const okunduStyle = okunduGizle && okundu ? 'display:none;' : '';
     const etiketler = [
       `<span class="etiket etiket-ekap">EKAP</span>`,
-      ilan.tur  ? `<span class="etiket">${ilan.tur}</span>` : '',
+      ilan.tur  ? `<span class="etiket">${esc(ilan.tur)}</span>` : '',
       usulEtiket(ilan.usul),
-      ilan.il   ? `<span class="etiket">📍 ${ilan.il}</span>` : '',
+      ilan.il   ? `<span class="etiket">📍 ${esc(ilan.il)}</span>` : '',
       ilan.esik_katsayi != null ? `<span class="etiket" title="Sınır Değer Katsayısı">N: ${String(ilan.esik_katsayi).replace('.', ',')}</span>` : ''
     ].filter(Boolean).join('');
     const sonuc = Array.isArray(ilan.ihale_sonuclari) ? ilan.ihale_sonuclari[0] : null;
     const sonucBlok = sonuc ? `
       <div style="background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.25);border-radius:8px;padding:8px 12px;margin-top:10px;font-size:12px;color:var(--off-white);">
         <span style="color:#4ade80;font-weight:700;">✓ Sonuçlandı</span> —
-        Kazanan: <b style="color:var(--white);">${sonuc.kazanan_firma || '—'}</b>
+        Kazanan: <b style="color:var(--white);">${esc(sonuc.kazanan_firma) || '—'}</b>
         ${sonuc.kazanan_teklif ? ` · ${butceFormatla(sonuc.kazanan_teklif)}` : ''}
         ${sonuc.kazanan_teklif_farki_yuzde != null ? ` · Tenzilat %${sonuc.kazanan_teklif_farki_yuzde}` : ''}
       </div>` : '';
@@ -931,8 +933,8 @@
               Kayıt No: ${ilan.ekap_id || '—'}
               ${okundu ? '<span class="okundu-badge">Okundu</span>' : ''}
             </div>
-            <a class="kart-baslik" href="ihale-detay?id=${ilan.id}" onclick="kartOku('${ilan.id}')">${ilan.baslik || '—'}</a>
-            <div class="kart-idare">${ilan.idare ? `<a href="kurum-analiz?kurum=${encodeURIComponent(ilan.idare)}" style="color:inherit;text-decoration:none;" onmouseover="this.style.color='var(--amber)'" onmouseout="this.style.color=''">${ilan.idare}</a>` : '—'}</div>
+            <a class="kart-baslik" href="ihale-detay?id=${ilan.id}" onclick="kartOku('${ilan.id}')">${esc(ilan.baslik) || '—'}</a>
+            <div class="kart-idare">${ilan.idare ? `<a href="kurum-analiz?kurum=${encodeURIComponent(ilan.idare)}" style="color:inherit;text-decoration:none;" onmouseover="this.style.color='var(--amber)'" onmouseout="this.style.color=''">${esc(ilan.idare)}</a>` : '—'}</div>
             <div class="kart-etiketler">${etiketler}</div>
           </div>
           <div class="kart-sag">
@@ -1439,7 +1441,7 @@
       <div class="kayitli-item" id="ki-${item.id}">
         <span class="kayitli-item-icon">⭐</span>
         <div class="kayitli-item-info">
-          <div class="kayitli-item-ad">${item.ad}</div>
+          <div class="kayitli-item-ad">${esc(item.ad)}</div>
           <div class="kayitli-item-ozet">${filtrelerOzet(item.params)}</div>
         </div>
         <div class="kayitli-item-actions">
