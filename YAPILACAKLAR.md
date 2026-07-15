@@ -7,6 +7,32 @@
 > **KALICI TALİMAT (12 Tem, kullanıcı emri):** Bu blok + ilgili bölümler her oturumda otomatik
 > güncellenir, kullanıcı hatırlatmak zorunda değil. Bkz. hafıza `yapilacaklar-auto-update`.
 
+> ## 🏛️ 15 TEMMUZ (devam) — MİMARİ/IA KARARI: TEK ENTEGRE APP + MODÜLLER (subdomain'e BÖLME)
+> Kullanıcıyla netleşen ürün mimarisi (kararlaştırıldı):
+> - **3-yönlü subdomain'e (kamu/özel/yurtdışı) BÖLME.** Tek entegre uygulama, bunlar İÇERİDE modül/sekme.
+>   Gerekçe: rakip avantajı (moat) ENTEGRASYON — özel RFQ, EKAP firma-geçmişini kullanır (eşleştirme
+>   motoru bunu kanıtladı); firma dizini/kategori/bildirim/profil/ödeme hepsi ortak. Bölmek veri+kullanıcı
+>   grafiğini parçalar, tek-hesap/SSO'yu zorlaştırır, kod tekrarı yaratır.
+> - **MENÜ YAPISI (kullanıcı kararı — "Analiz, Kamu İhaleleri altına"):**
+>   ```
+>   ├── Kamu İhaleleri  ▸ İhaleler(EKAP) · Doğrudan Temin · Sonuçlananlar · ANALİZ(Firmalar/Sektörler/
+>   │                     Rekabet/Kurum-Firma Analizi/KİK/Eşleştirme)
+>   ├── Uluslararası İhaleler  (TED, Gürcistan — yalnız ilan; analiz YOK)
+>   ├── Özel İhaleler / e-Satınalma  (RFQ; arkada kamu firma-zekâsını kullanır)
+>   └── Firmam · Takibim · Bildirimler
+>   ```
+>   **Neden Analiz Kamu altında:** İş bitirme/kim-kazandı/tenzilat SADECE EKAP kamu sonucundan (`ihale_
+>   sonuclari`) doğuyor. Uluslararası'da sonuç/kazanan yayınlanmıyor, özel RFQ'da sonuç gizli → o alanlarda
+>   firma analizi YAPILAMAZ. Yani analiz verisi kamuya ait (menüde Kamu altında dürüst), ama ürettiği firma
+>   zekâsı MOTORU özel RFQ eşleştirmesini de perde arkasında besler. UX notu: Firmalar Dizini'ni "kamu ihale
+>   karnesi" olarak konumlandır (kullanıcı özel/yurtdışı iş beklentisine girmesin).
+> - **DEĞERLENDİRİLİYOR (karar bekliyor):** kök `ihaleglobal.com`=pazarlama/public + `app.ihaleglobal.com`=
+>   uygulama ayrımı. SEO: asıl kazanç public tender/kategori/firma sayfalarını KÖKte indexlenebilir yapmak
+>   (organik lead), app'i noindex/private tutmak — subdomain'in kendisi ranking'i sihirli artırmaz (subdir
+>   otoriteyi biraz daha iyi toplar), asıl kaldıraç public sayfaların SSR/prerender+sitemap ile taranabilir
+>   olması (mevcut SPA bu konuda zayıf). Güvenlik: app auth çerezini `app.`'e scope'larsan izolasyon + sıkı
+>   CSP/başlık avantajı GERÇEK (parent-domain çerezle SSO yaparsan bu avantaj kaybolur).
+
 > ## 🗺️ 15 TEMMUZ (devam) — YENİ 2 SİSTEM ROADMAP (kullanıcı stratejik yön verdi, PLANLAMA)
 > Kullanıcı ihaleglobal'e 2 yeni sistem eklemek istiyor (mevcut Türkiye-kamu sistemine ek):
 >
