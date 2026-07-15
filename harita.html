@@ -190,19 +190,21 @@
 
   function paraKisa(v){ v=Number(v)||0; if(v>=1e12)return '₺'+(v/1e12).toFixed(1)+' Tn'; if(v>=1e9)return '₺'+(v/1e9).toFixed(1)+' Mr'; if(v>=1e6)return '₺'+(v/1e6).toFixed(1)+' M'; if(v>=1e3)return '₺'+(v/1e3).toFixed(0)+' B'; return '₺'+v; }
 
-  // Choropleth kova + renk (tek-hue amber, koyu→parlak; dark surface sequential)
-  const KOVA = [
-    { esik: 0,    renk: '#1a2130', et: '0' },
-    { esik: 1,    renk: '#3a2f16', et: '1–25' },
-    { esik: 25,   renk: '#6b5015', et: '25–100' },
-    { esik: 100,  renk: '#9a7016', et: '100–300' },
-    { esik: 300,  renk: '#caa11f', et: '300–1000' },
-    { esik: 1000, renk: '#f0a500', et: '1000+' },
-  ];
+  // Choropleth: tek-hue sıcak (amber) sequential, koyu→parlak; dark surface'te en düşük kova bile görünür.
+  // Eşikler QUANTILE ile veriden hesaplanır (veri 300-1000'de yığılı → sabit kova ayrım yapmıyordu).
+  const RENKLER = ['#3d3a2e', '#5c4f22', '#856a1a', '#b0891a', '#d9a81e', '#f5b301'];
+  let esikler = [];  // 5 kırılım (6 kova) — veriYukle dolduruyor
+  function esikleriHesapla(){
+    const vals = Object.values(firmaMap).map(v => v.adet).filter(a => a > 0).sort((a, b) => a - b);
+    esikler = [];
+    if (!vals.length) return;
+    for (let i = 1; i <= 5; i++) esikler.push(vals[Math.floor(vals.length * i / 6)]);
+  }
   function renkAl(adet){
-    let r = KOVA[0].renk;
-    for (const k of KOVA) if (adet >= k.esik) r = k.renk;
-    return r;
+    if (!adet) return '#1a2130';           // veri yok/0 → nötr
+    let idx = 0;
+    for (let i = 0; i < esikler.length; i++) if (adet >= esikler[i]) idx = i + 1;
+    return RENKLER[Math.min(idx, RENKLER.length - 1)];
   }
 
   let firmaMap = {};   // key -> {adet, ciro}
@@ -262,8 +264,14 @@
   function lejantCiz(){
     const el = document.getElementById('lejant');
     if (aktifKatman === 'firma') {
-      el.innerHTML = '<span style="margin-right:4px;">Firma sayısı:</span>' +
-        KOVA.map(k => `<span class="box" style="background:${k.renk}"></span><span style="margin-right:8px;">${k.et}</span>`).join('');
+      const sinir = [1, ...esikler];
+      const et = RENKLER.map((renk, i) => {
+        const alt = sinir[i];
+        const ust = i < RENKLER.length - 1 ? esikler[i] : null;
+        const label = ust ? `${alt.toLocaleString('tr')}–${ust.toLocaleString('tr')}` : `${alt.toLocaleString('tr')}+`;
+        return `<span class="box" style="background:${renk}"></span><span style="margin-right:8px;">${label}</span>`;
+      }).join('');
+      el.innerHTML = '<span style="margin-right:4px;">Firma sayısı:</span>' + et;
     } else {
       el.innerHTML = '<span class="box" style="background:#4ade80"></span><span style="margin-right:8px;">Açık RFQ olan il</span><span style="color:var(--muted)">Yeşil pin = talep sayısı</span>';
     }
@@ -362,6 +370,7 @@
       if (!enYogun || v.adet > enYogun.adet) enYogun = { key: k, adet: v.adet };
     });
     Object.values(rfqMap).forEach(n => toplamRfq += n);
+    esikleriHesapla();
     document.getElementById('st-firma').textContent = toplamFirma.toLocaleString('tr');
     document.getElementById('st-yogun').textContent = enYogun ? (ilAdMap[enYogun.key] || enYogun.key) : '—';
     document.getElementById('st-yogun-s').textContent = enYogun ? enYogun.adet.toLocaleString('tr') + ' firma' : '—';
