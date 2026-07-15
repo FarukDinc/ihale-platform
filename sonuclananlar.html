@@ -321,9 +321,6 @@
 
   function renderSayfa() {
     const dilim = sonSatirlar;
-    const sayiEl = document.getElementById('liste-sayi');
-    if (sayiEl) sayiEl.textContent = `${toplam.toLocaleString('tr')} sonuç`;
-
     const cont = document.getElementById('liste-container');
     if (!dilim.length) {
       cont.innerHTML = `<div class="empty-wrap">
@@ -367,6 +364,12 @@
       </div>`;
     }).join('');
 
+    pagerGuncelle();
+  }
+
+  function pagerGuncelle() {
+    const sayiEl = document.getElementById('liste-sayi');
+    if (sayiEl) sayiEl.textContent = `${toplam.toLocaleString('tr')} sonuç`;
     const pg = document.getElementById('pager');
     pg.style.display = topSayfa > 1 ? 'flex' : 'none';
     document.getElementById('pg-info').textContent = `${sayfa} / ${topSayfa}`;
@@ -385,6 +388,12 @@
       el('st-bedel').textContent = formatBedel(Number(r.toplam_bedel) || 0);
       el('st-tenzilat').textContent = r.ort_tenzilat != null ? '%' + Number(r.ort_tenzilat).toFixed(1) : '—';
       el('st-firma').textContent = Number(r.farkli_firma || 0).toLocaleString('tr');
+      // Toplam sayfalama için RPC'den gelir (353K satır üzerinde count=exact timeout veriyordu).
+      toplam = Number(r.toplam || 0);
+      topSayfa = Math.max(1, Math.ceil(toplam / PER_PAGE));
+      const rc = document.getElementById('results-count');
+      if (rc) rc.textContent = `${toplam.toLocaleString('tr')} kayıt`;
+      pagerGuncelle();
     } catch (e) { console.error('istatistik', e); }
   }
 
@@ -394,9 +403,10 @@
     const cont = document.getElementById('liste-container');
     if (reset) cont.innerHTML = '<div class="loading-wrap"><div class="loading-spinner"></div><div>Yükleniyor…</div></div>';
     const bas = (sayfa - 1) * PER_PAGE;
-    const { data, count, error } = await sb.from('ihale_sonuclari')
-      .select('ilan_id,kazanan_firma,kazanan_teklif,kazanan_teklif_farki_yuzde,toplam_teklif_sayisi,sonuc_tarihi,ilanlar(baslik,idare,il,tur)', { count: 'exact' })
+    const { data, error } = await sb.from('ihale_sonuclari')
+      .select('ilan_id,kazanan_firma,kazanan_teklif,kazanan_teklif_farki_yuzde,toplam_teklif_sayisi,sonuc_tarihi,ilanlar(baslik,idare,il,tur)')
       .not('kazanan_firma', 'is', null)
+      .neq('kazanan_firma', '')
       .order(ALAN[siralamaAlan], { ascending: false, nullsFirst: false })
       .range(bas, bas + PER_PAGE - 1);
     if (error) {
@@ -406,14 +416,10 @@
       console.error(error);
       return;
     }
-    toplam = count || 0;
-    topSayfa = Math.max(1, Math.ceil(toplam / PER_PAGE));
     sonSatirlar = (data || []).map(s => {
       s.ilan = Array.isArray(s.ilanlar) ? s.ilanlar[0] : s.ilanlar;
       return s;
     });
-    const rc = document.getElementById('results-count');
-    if (rc) rc.textContent = `${toplam.toLocaleString('tr')} kayıt`;
     renderSayfa();
   }
 
@@ -425,6 +431,7 @@
       const { data } = await sb.from('ihale_sonuclari')
         .select('kazanan_firma,kazanan_teklif,kazanan_teklif_farki_yuzde,toplam_teklif_sayisi,sonuc_tarihi,ilanlar(baslik,idare,il)')
         .not('kazanan_firma', 'is', null)
+        .neq('kazanan_firma', '')
         .order(ALAN[siralamaAlan], { ascending: false, nullsFirst: false })
         .limit(5000);
       if (!data || !data.length) { alert('Dışa aktarılacak veri bulunamadı.'); return; }
