@@ -37,7 +37,11 @@
 >    belirgin bordered buton. **YAN BULGU:** `csvIndir`/`linkPaylas`/`geriGit` IIFE içinde düz `function` idi →
 >    inline `onclick` global arıyor → CSV+Paylaş+Geri HEPSİ bozuktu; üçü de `window.X=` ile expose edildi.
 > Ders: IIFE'li sayfalarda inline `onclick="fn()"` çağrılan her fonksiyon `window.X=` ile expose EDİLMELİ
->    (closure fonksiyonu onclick'ten erişilemez); bu sayfalarda başka bozuk onclick var mı taranmalı.
+>    (closure fonksiyonu onclick'ten erişilemez).
+> **AUDIT YAPILDI (tüm .html tarandı, line-start IIFE + plain-function imzasıyla):** bozuk yalnız
+>    firma-analiz + **kurum-analiz** (csvIndir/linkPaylasKurum) idi → ikisi de düzeltildi+canlıda doğrulandı
+>    (commit `e2166df`). Diğer sayfalar (ihaleler/takipte/firmalar/idareler/sektörler...) ana script IIFE
+>    DEĞİL → fonksiyonları zaten global, sağlam (canlı `typeof` ile teyit edildi).
 
 > ## 🔐 15 TEMMUZ (devam) — e-SATINALMA v4: KURUMSAL GATE + VKN/ÜNVAN/ADRES ZORUNLU + CANLI (commit `e80d92a`)
 > Kullanıcı kararı: "her önüne gelen ihale açamamalı" + "adres de zorunlu (MaaS harita için hazır veri)".
