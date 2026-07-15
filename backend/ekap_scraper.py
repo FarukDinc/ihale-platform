@@ -677,7 +677,7 @@ _CPV_KATEGORI = {
     "19": "Deri & Kauçuk", "22": "Basın & Yayın", "24": "Kimyasal Ürünler",
     "30": "BT Ekipmanları", "31": "Elektrik Malzemeleri", "32": "İletişim",
     "33": "Tıbbi Cihazlar", "34": "Ulaşım Araçları", "35": "Güvenlik",
-    "37": "Spor & Eğlence", "38": "Labaratuvar", "39": "Mobilya & Temizlik",
+    "37": "Spor & Eğlence", "38": "Laboratuvar", "39": "Mobilya & Temizlik",
     "41": "Su", "42": "Sanayi Makineleri", "43": "Madencilik Ekipmanı",
     "44": "İnşaat Malzemeleri", "45": "İnşaat & Yapım", "48": "Yazılım",
     "50": "Bakım & Onarım", "51": "Montaj", "55": "Konaklama & Yemek",
@@ -724,6 +724,13 @@ def usul_donustur(s):
     for frag, label in _USUL_HARITA:
         if frag in s_upper:
             return label
+    # EKAP bazen çevrilmemiş ham i18n key döndürüyor:
+    # "TENDER_SEARCH.MAIN.PAGEITEM.TENDER_TYPE 4734 / 3-g" → 4734 sayılı Kanun istisna maddesi
+    if "TENDER_TYPE" in s_upper or "TENDER_SEARCH" in s_upper:
+        m = re.search(r"(4734)\s*/\s*(3-[A-Za-zÇĞİÖŞÜçğıöşü])", s)
+        if m:
+            return f"İstisna ({m.group(1)} {m.group(2).lower()})"
+        return "Diğer / İstisna"
     # Zaten okunabilir metin (örn. "Açık İhale Usulü" → "Açık İhale Usulü")
     return s.replace("İhale Usulü:", "").strip() or None
 

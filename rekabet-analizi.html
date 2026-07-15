@@ -86,7 +86,7 @@
     /* BÜTÇE DAĞILIMI */
     .budget-bars { display: flex; flex-direction: column; gap: 10px; }
     .budget-row { display: flex; align-items: center; gap: 12px; }
-    .budget-label { font-size: 12px; color: var(--muted); width: 130px; flex-shrink: 0; text-align: right; }
+    .budget-label { font-size: 12px; color: var(--muted); width: 130px; flex-shrink: 0; text-align: right; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .budget-track { flex: 1; background: rgba(var(--overlay-rgb),0.06); border-radius: 4px; height: 22px; position: relative; overflow: hidden; }
     .budget-fill { height: 100%; background: linear-gradient(90deg, var(--amber-dim), var(--amber)); border-radius: 4px; transition: width 0.6s ease; display: flex; align-items: center; padding-left: 8px; min-width: 0; }
     .budget-fill-text { font-size: 11px; font-weight: 700; color: var(--navy); white-space: nowrap; }
@@ -532,11 +532,22 @@
     }).join('');
   }
 
+  // EKAP bazı istisna usullerini çevrilmemiş ham i18n key olarak veriyor
+  // ("TENDER_SEARCH.MAIN.PAGEITEM.TENDER_TYPE 4734 / 3-g") → okunur etikete çevir.
+  function usulTemizle(usul) {
+    if (!usul) return usul;
+    const m = usul.match(/TENDER_TYPE\s+(4734)\s*\/\s*(3-[a-zçğıöşü])/i);
+    if (m) return `İstisna (${m[1]} ${m[2]})`;
+    if (/TENDER_SEARCH|TENDER_TYPE/i.test(usul)) return 'Diğer / İstisna';
+    return usul;
+  }
+
   function usulBarsRender(data) {
     const sayac = {};
     data.forEach(d => {
       if (!d.usul) return;
-      const k = d.usul.length > 40 ? d.usul.slice(0,40)+'…' : d.usul;
+      const temiz = usulTemizle(d.usul);
+      const k = temiz.length > 40 ? temiz.slice(0,40)+'…' : temiz;
       sayac[k] = (sayac[k] || 0) + 1;
     });
     const sirali = Object.entries(sayac).sort((a,b) => b[1]-a[1]).slice(0,8);
