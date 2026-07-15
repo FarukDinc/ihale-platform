@@ -393,6 +393,19 @@
   }
   kullaniciyiYukle();
 
+  // Sidebar alt-köşe kullanıcı bloğu → profil sayfasına git
+  document.querySelectorAll('.sidebar-footer .user-row, .sidebar .user-row').forEach(el => {
+    el.style.cursor = 'pointer';
+    el.setAttribute('role', 'link');
+    el.setAttribute('tabindex', '0');
+    el.title = 'Profil ve ayarlar';
+    const git = () => { window.location.href = 'profil'; };
+    el.addEventListener('click', git);
+    el.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); git(); }
+    });
+  });
+
   // --- Arama ---
   window.ara = async function(yeniSayfa = 1) {
     sayfa = yeniSayfa;

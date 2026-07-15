@@ -4,6 +4,22 @@
   const SUPABASE_URL = "https://ihaleglobal.com";
   const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzgzMzUwMDE1LCJleHAiOjE5NDEwMzAwMTV9.sRB61a8oNXwzSKL9No8gt7cmkmnkoQstT0ZtHIxl1Hs";
 
+  // Sidebar alt-köşedeki kullanıcı bloğu tıklanınca profil sayfasına git
+  // (giriş durumundan bağımsız — Supabase yüklenmese bile çalışmalı).
+  document.querySelectorAll('.sidebar-footer .user-row, .sidebar .user-row').forEach(el => {
+    if (el.dataset.profilLink) return; // iki kez bağlama
+    el.dataset.profilLink = '1';
+    el.style.cursor = 'pointer';
+    el.setAttribute('role', 'link');
+    el.setAttribute('tabindex', '0');
+    el.title = 'Profil ve ayarlar';
+    const git = () => { window.location.href = 'profil'; };
+    el.addEventListener('click', git);
+    el.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); git(); }
+    });
+  });
+
   if (!window.supabase) return;
   const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 

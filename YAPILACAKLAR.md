@@ -29,9 +29,15 @@
 > **✅ B) Son aramalar tıklanınca arama** — TAMAMLANDI (A ile birlikte): chip'ler artık `firmaSectiClick`
 > → liste araması yapıyor.
 >
-> **🔲 C) Sol-alt kullanıcı adı/"Ücretsiz Plan" → profil ayarları** (kullanıcı: "buna da bakacağız"): HÂLÂ
-> AÇIK. Sidebar'daki üye adı+plan bloğu (`js/sidebar-user.js` render ediyor gibi) tıklanınca `profil`
-> sayfasına gitmeli. Bir sonraki iş.
+> **✅ C) Sol-alt kullanıcı adı/"Ücretsiz Plan" → profil ayarları — TAMAMLANDI (15 Tem).** Sidebar
+> alt-köşedeki `.user-row` bloğu artık tıklanabilir → `profil` sayfasına gider (temiz URL, tüm nav ile
+> aynı kural). Merkezi `js/sidebar-user.js`'e giriş durumundan BAĞIMSIZ tıklama+keyboard(Enter/Space)
+> +cursor:pointer+role=link+tabindex bağlandı → 17 sayfa tek noktadan kapsanıyor. `kik-kararlar.html`
+> UMD sidebar-user.js yerine kendi ES-module'ünü kullandığı için oraya aynı davranış inline eklendi
+> (çift supabase yüklememek için). `profil.html` zaten hedef, atlandı. **Tarayıcıda doğrulandı:**
+> dashboard + kik-kararlar user-row tıklaması `→ /profil`'e yönlendi (yerelde python http.server temiz
+> URL rewrite yapmadığı için 404 gösteriyor, nginx prod'da mevcut `href="profil"` nav linkleriyle aynı
+> şekilde çözülür).
 >
 > --- (eski geri bildirim detayı aşağıda) ---
 >
