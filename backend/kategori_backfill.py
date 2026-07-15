@@ -27,7 +27,7 @@ load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), ".env"))
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "").rstrip("/")
 SUPABASE_KEY = os.environ.get("SUPABASE_SERVICE_KEY", "")
 SAYFA = 1000
-CHUNK = 400  # tek PATCH'te kaç id (URL uzunluk sınırı için)
+CHUNK = 60   # tek PATCH'te kaç id — id'ler UUID (36 char); 60×~40=~2.4KB URL (nginx 414 sınırı altı)
 
 
 def _headers():
