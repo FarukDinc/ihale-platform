@@ -28,4 +28,7 @@ $VENV/python ekap_dogrudan_temin_scraper.py --max-pages 20 >> /opt/ihale-platfor
 # ilan.gov.tr (Basın İlan Kurumu) gazete İHALE ilanları — EKAP'ta olmayan (2886 satış/kira vb.) eklenir
 echo "[$(date +'%Y-%m-%d %H:%M:%S')] === ilan.gov.tr ===" >> /opt/ihale-platform/logs/scraper.log
 $VENV/python ilan_gov_scraper.py --max-pages 40 >> /opt/ihale-platform/logs/scraper.log 2>&1
+# TED Europa uluslararası ihaleler (ayrı tablo, Türkçe'ye çevrilerek)
+echo "[$(date +'%Y-%m-%d %H:%M:%S')] === TED uluslararasi ===" >> /opt/ihale-platform/logs/scraper.log
+$VENV/python ted_scraper.py --max-pages 6 --limit 50 >> /opt/ihale-platform/logs/scraper.log 2>&1
 $VENV/python idare_bildirim.py >> /opt/ihale-platform/logs/scraper.log 2>&1
