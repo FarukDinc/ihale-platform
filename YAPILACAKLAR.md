@@ -7,6 +7,45 @@
 > **KALICI TALİMAT (12 Tem, kullanıcı emri):** Bu blok + ilgili bölümler her oturumda otomatik
 > güncellenir, kullanıcı hatırlatmak zorunda değil. Bkz. hafıza `yapilacaklar-auto-update`.
 
+> ## 📊 15 TEMMUZ (devam) — rekabet-analizi fix + KATEGORİ/OKAS analizi + ilan.gov.tr (yeni kaynak)
+>
+> **✅ REKABET ANALİZİ "İhale Usulü" bug'ı DÜZELTİLDİ (commit `5e53e4e`):** usul chart'ında EKAP'ın
+> çevrilmemiş ham i18n key'leri (`TENDER_SEARCH.MAIN.PAGEITEM.TENDER_TYPE 4734 / 3-g`) 40-karakter
+> kırpmayla birbirine girip bara taşıyordu. `usulTemizle()` istisna maddelerini "İstisna (4734 3-g)"
+> gibi okunur etikete çeviriyor + `.budget-label`'a overflow koruması. Kök neden de düzeltildi:
+> `ekap_scraper.py usul_donustur()` artık scrape'te temizliyor (yeni veride oluşmaz). "Labaratuvar"→
+> "Laboratuvar" typo da giderildi. **Not:** rekabet-analizi Pro-kilitli sayfa; tarayıcı doğrulaması
+> giriş gerektirdi, usulTemizle mantığı ham değerlerle bağımsız test edildi.
+>
+> **🔍 KATEGORİ SİSTEMİ — KULLANICI SORUSU "OKAS'a göre mi?" CEVABI + iyileştirme önerisi:**
+> - **Bizim kategoriler ZATEN OKAS/CPV-tabanlı:** `ekap_scraper.py:_CPV_KATEGORI` OKAS kodunun İLK 2
+>   HANESİNDEN (CPV bölümü, 44 adet) türetiyor ("45"→İnşaat & Yapım, "85"→Sağlık, "33"→Tıbbi Cihazlar).
+> - **İKİ SORUN:** (1) Aktif ihalelerin **~%39'unda OKAS YOK** (9.449/15.381) → jenerik "Mal Alımı"
+>   (333)/"Hizmet Alımı"(106) kovasına düşüyor, bilgisiz. (2) OKAS olsa bile ham CPV-bölümü isimleri
+>   (AB tarzı) ihaleciler.com'un iş-dostu kürate isimlerinden farklı.
+> - **ihaleciler.com (WebFetch ile teyit):** ~36 kürate kategori; isimler birden çok kodu/anahtar
+>   kelimeyi BİRLEŞTİRİYOR ("Kanalizasyon - Boru - Su - Doğalgaz - Sıhhi Tesisat", "Tıbbi Cihaz -
+>   Laboratuvar - Hastane Ekipmanları"). Muhtemelen CPV/OKAS-tabanlı ama iş-dostu bundle isimlerle +
+>   OKAS'sız ihaleler için başlık anahtar-kelime eşleştirmesi. Yani fark KÜRASYON/İSİMLENDİRME, temel
+>   sınıflandırma değil.
+> - **ÖNERİ (kullanıcı onayı gerekli — ürün kararı):** `_CPV_KATEGORI`'yi ihaleciler.com tarzı ~36 iş-dostu
+>   bundle kategoriye dönüştür (birden çok CPV-2-hane → tek zengin isim) + OKAS'sız ~%39 için başlık
+>   anahtar-kelime sınıflandırması ekle (jenerik "Mal/Hizmet Alımı" yerine gerçek sektör). Backfill
+>   gerekir (mevcut kategoriyi yeniden hesapla). Büyük iş; hangi kategori isimlerini istediğinize göre
+>   şekillenmeli. `sektorler.html` + rekabet-analizi kategori chart'ı bundan beslenir.
+>
+> **🆕 YENİ VERİ KAYNAĞI — ilan.gov.tr / Basın İlan Kurumu "Gazete" ilanları (kullanıcı talebi):**
+> ihaleciler.com 3 kaynak kullanıyor (WebFetch teyidi): **Ekap (7.150) + Gazete (1.259) + İstihbarat
+> (1.921)**. Biz SADECE EKAP çekiyoruz. Kullanıcı: ilan.gov.tr'den (https://www.ilan.gov.tr/ilan/
+> tum-ilanlar — Basın İlan Kurumu resmi gazete/ihale ilanları) de veri çekip yansıtmalıyız.
+> **KRİTİK KURAL (kullanıcı):** Bu ilanların kaynağını "EKAP" olarak GÖSTERMEYECEĞİZ (ayrı kaynak
+> etiketi — ör. "Resmi İlan"/"Gazete"). **Yapılacak (yeni scraper işi, henüz başlanmadı):**
+> - ilan.gov.tr yapısını incele (SSL/API/HTML — WebFetch cert doğrulayamadı, tarayıcı/httpx ile bak).
+> - Yeni scraper: ilan.gov.tr ihale/resmi ilanlarını çek → `ilanlar` (veya ayrı tablo) + `kaynak`
+>   kolonu ('ekap'|'ilan_gov'). Frontend'de kaynak etiketini buna göre göster (EKAP deme).
+> - Mükerrer tespiti (aynı ihale hem EKAP hem gazetede olabilir — IKN/başlık eşleştirme).
+> - Gece cron'una ekle.
+
 > ## 🧾 15 TEMMUZ (devam) — teklif-olustur 5 kullanıcı bildirimi + Pro rozeti (commit `f103075`)
 > Kullanıcı ekran görüntüleriyle 5 sorun bildirdi, hepsi düzeltildi + push'landı (tarayıcıda doğrulandı):
 > 1. Pro hesapta topbar "Pro'ya Geç" hâlâ görünüyordu → `js/sidebar-user.js` Pro'da "⭐ Pro Plan" rozeti (8 sayfa).
