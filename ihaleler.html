@@ -760,7 +760,7 @@
 
   // ── Uyum skoru hesabı (kategori bazlı) ──────────────────
   function uyumHesapla(ilan) {
-    if (!kullaniciProfil) return Math.floor(Math.random() * 20 + 55);
+    if (!kullaniciProfil) return null;   // profil yoksa UYDURMA skor gösterme (eskiden Math.random 55-74 idi)
     let puan = 0;
 
     // Kategori eşleşmesi (40 puan) — ihale başlığına anahtar kelime bakılır
@@ -954,10 +954,10 @@
             <div class="kart-tarih"><span>Son Teklif</span><b>${tarihFormatla(ilan.son_teklif_tarihi)}</b></div>
           </div>
           <div class="kart-aksiyon">
-            <div class="compat-bar" title="Profilinize uyum skoru">
+            ${uyum != null ? `<div class="compat-bar" title="Profilinize uyum skoru">
               <div class="compat-track"><div class="compat-fill" style="width:${uyum}%;"></div></div>
               <span class="compat-num">${uyum}%</span>
-            </div>
+            </div>` : `<a href="profil" class="compat-bar" style="text-decoration:none;color:var(--muted);font-size:11px;" title="Uyum skoru için profil oluşturun">⚙ Profil ekle</a>`}
             <button class="action-btn ${takipte ? 'takipte' : 'primary'}" onclick="takibeAl(this,'${ilan.id}')">${takipte ? '✓ Takipte' : '☆ Takibe Al'}</button>
             <a class="action-btn" href="ihale-detay?id=${ilan.id}" onclick="kartOku('${ilan.id}')">Detay →</a>
           </div>

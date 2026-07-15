@@ -880,7 +880,8 @@
     document.getElementById('bc-firma').textContent = FIRMA || 'Firma';
     document.getElementById('firma-ad').textContent = FIRMA || 'Firma';
     const iBtn = document.getElementById('firma-ihaleler-btn');
-    if (iBtn) iBtn.href = `ihaleler?ara=${encodeURIComponent(FIRMA || '')}`;
+    // Bu sayfanın kendi "İhaleler" sekmesini aç (ihaleler?ara= ilan metnini arar, kazanan firmayı DEĞİL → alakasız sonuç).
+    if (iBtn) { iBtn.href = '#'; iBtn.onclick = (e) => { e.preventDefault(); const tb=[...document.querySelectorAll('.tab-btn')].find(b=>/ihaleler/.test(b.getAttribute('onclick')||'')); if(tb) tb.click(); const el=document.querySelector('.tabs,.tab-bar,.tab-btn'); if(el) el.scrollIntoView({behavior:'smooth',block:'center'}); }; }
     if (pushUrl) {
       const url = new URL(window.location);
       url.searchParams.set('yid', yid);

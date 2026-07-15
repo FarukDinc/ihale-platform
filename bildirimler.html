@@ -725,7 +725,7 @@
     const min    = document.getElementById('bf-min').value;
     const frekans = document.getElementById('bf-frekans').value;
     if (kelime) filtre.kelime = kelime;
-    if (il)     filtre.il = il.toUpperCase();
+    if (il)     filtre.il = il.toLocaleUpperCase('tr');   // 'izmir'→'İZMİR' (toUpperCase 'IZMIR' verip DB ile eşleşmiyordu)
     if (tur)    filtre.tur = tur;
     if (min)    filtre.min_bedel = parseInt(min);
 
