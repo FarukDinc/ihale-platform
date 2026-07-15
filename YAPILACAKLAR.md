@@ -7,6 +7,23 @@
 > **KALICI TALİMAT (12 Tem, kullanıcı emri):** Bu blok + ilgili bölümler her oturumda otomatik
 > güncellenir, kullanıcı hatırlatmak zorunda değil. Bkz. hafıza `yapilacaklar-auto-update`.
 
+> ## 🐞 15 TEMMUZ (devam) — SONUÇLANANLAR SAYFASI DÜZELTİLDİ + CANLI (commit `cb307f7`)
+> **Sorun:** `sonuclananlar.html` tüm `ihale_sonuclari`'yı (355K+ satır) client'a `for(off+=1000)`
+> döngüsüyle indiriyor + tüm ilanları ayrıca çekiyordu → tablo büyüyünce "Sonuçlar yükleniyor…"
+> sonsuza kadar asılı kalıyor, istatistikler "—". (dogrudan-temin ile aynı sınıf bug.)
+> **Çözüm (server-side'a çevrildi):**
+> - İstatistik kartları → yeni `sonuc_ozet()` RPC (count / sum(kazanan_teklif) / avg(tenzilat, |x|≤100
+>   uç-değer filtresi) / count(distinct firma)). `backend/migration_sonuc_ozet_rpc.sql`.
+> - Liste → sunucu sayfalı sorgu + embed `ilanlar(baslik,idare,il,tur)` join; `.order()` sunucuda;
+>   `.range()` ile 25'lik sayfalama. `count=exact` 355K'da **timeout** verdi → kaldırıldı, toplam RPC'den.
+> - Sıralama (tarih/bedel/tenzilat) için 3 **partial index** (`WHERE kazanan_firma IS NOT NULL`):
+>   `backend/migration_sonuc_index.sql` → ORDER BY+LIMIT full-sort'tan index-scan'e (~1.5s).
+> - CSV → capped 5000 satır sunucu fetch (tüm tabloyu indirmez).
+> - Canlıda doğrulandı: 355.275 kayıt, ₺4665 Mrd, %51.7 tenzilat, 65.443 firma; sıralama+sayfalama
+>   (1/14211) çalışıyor, konsol temiz.
+> **Not:** Aynı "tümünü client'a indir" kalıbı başka sayfalarda kaldıysa (firmalar/idareler/sektörler
+>   dizinleri zaten server-side sanıyorum) benzer şekilde taranmalı.
+
 > ## 🏛️ 15 TEMMUZ (devam) — MİMARİ/IA KARARI: TEK ENTEGRE APP + MODÜLLER (subdomain'e BÖLME)
 > Kullanıcıyla netleşen ürün mimarisi (kararlaştırıldı):
 > - **3-yönlü subdomain'e (kamu/özel/yurtdışı) BÖLME.** Tek entegre uygulama, bunlar İÇERİDE modül/sekme.
