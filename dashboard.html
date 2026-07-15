@@ -1011,6 +1011,7 @@
   const SUPABASE_URL  = "https://ihaleglobal.com";
   const SUPABASE_KEY  = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzgzMzUwMDE1LCJleHAiOjE5NDEwMzAwMTV9.sRB61a8oNXwzSKL9No8gt7cmkmnkoQstT0ZtHIxl1Hs";
   const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  const esc = s => (s == null ? '' : String(s)).replace(/[<>&"']/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&#39;'}[c]));
 
   // ── Tarih formatlama ─────────────────────────────────
   function tarihFormatla(tarih) {
@@ -1377,27 +1378,20 @@
   async function topKurumlarYukle() {
     const el = document.getElementById('top-kurumlar-list');
     try {
-      const sayim = {};
-      for (let off = 0; ; off += 1000) {
-        const { data } = await sb.from('ilanlar')
-          .select('idare').eq('durum', 'aktif').not('idare', 'is', null)
-          .range(off, off + 999);
-        if (!data || !data.length) break;
-        data.forEach(r => { if (r.idare) sayim[r.idare] = (sayim[r.idare] || 0) + 1; });
-        if (data.length < 1000) break;
-      }
-      const sirali = Object.entries(sayim).sort((a, b) => b[1] - a[1]).slice(0, 7);
-      const maks = sirali[0]?.[1] || 1;
-      el.innerHTML = sirali.map(([idare, sayi]) => `
+      // Server-side aggregate RPC (eskiden tüm aktif ilanlar client'a inip JS'te sayılıyordu — ~16 istek/açılış)
+      const { data } = await sb.rpc('idare_sayim');
+      const sirali = (data || []).filter(r => (r.aktif || 0) > 0).sort((a, b) => (b.aktif || 0) - (a.aktif || 0)).slice(0, 7);
+      const maks = sirali[0]?.aktif || 1;
+      el.innerHTML = sirali.map(r => { const idare = r.idare, sayi = r.aktif; return `
         <a href="kurum-analiz?kurum=${encodeURIComponent(idare)}" style="display:block; padding:9px 18px; text-decoration:none; transition:background .15s;" onmouseover="this.style.background='var(--card-bg)'" onmouseout="this.style.background=''">
           <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
-            <span style="font-size:13px; color:var(--white); font-weight:500; max-width:75%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${idare}</span>
+            <span style="font-size:13px; color:var(--white); font-weight:500; max-width:75%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${esc(idare)}</span>
             <span style="font-size:12px; color:var(--amber); font-weight:600;">${sayi}</span>
           </div>
           <div style="height:3px; background:var(--navy-soft); border-radius:2px;">
             <div style="height:3px; background:var(--amber); border-radius:2px; width:${Math.round(sayi/maks*100)}%;"></div>
           </div>
-        </a>`).join('');
+        </a>`; }).join('');
     } catch (e) { el.innerHTML = '<div style="padding:12px 18px; color:var(--muted); font-size:13px;">Yüklenemedi</div>'; }
   }
 
@@ -1417,9 +1411,9 @@
         const sonTeklif = d.son_teklif_tarihi ? new Date(d.son_teklif_tarihi).toLocaleDateString('tr-TR',{day:'2-digit',month:'short'}) : '—';
         const yayinTarih = d.ilan_tarihi ? new Date(d.ilan_tarihi).toLocaleDateString('tr-TR',{day:'2-digit',month:'short'}) : '';
         return `<a href="ihale-detay?id=${d.id}" style="display:block; padding:9px 18px; text-decoration:none; border-bottom:1px solid var(--border); transition:background .15s;" onmouseover="this.style.background='var(--card-bg)'" onmouseout="this.style.background=''">
-          <div style="font-size:13px; color:var(--white); font-weight:500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; margin-bottom:3px;">${d.baslik || '—'}</div>
+          <div style="font-size:13px; color:var(--white); font-weight:500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; margin-bottom:3px;">${esc(d.baslik) || '—'}</div>
           <div style="display:flex; gap:8px; font-size:11px; color:var(--muted);">
-            <span>📍 ${d.il || '—'}</span>
+            <span>📍 ${esc(d.il) || '—'}</span>
             <span style="color:var(--amber);">₺ ${maliyet}</span>
             ${yayinTarih ? `<span>📅 ${yayinTarih}</span>` : ''}
             <span>⏰ ${sonTeklif}</span>
@@ -1433,24 +1427,17 @@
   async function topKategorilerYukle() {
     const el = document.getElementById('top-kategoriler-list');
     try {
-      // Tüm aktif ihalelerin kategori sayımı — sayfalı çek
-      const sayac = {};
-      let toplam = 0;
-      for (let offset = 0; ; offset += 1000) {
-        const { data } = await sb.from('ilanlar')
-          .select('kategori').eq('durum','aktif').range(offset, offset + 999);
-        if (!data || !data.length) break;
-        data.forEach(d => { const k = d.kategori || 'Diğer'; sayac[k] = (sayac[k]||0)+1; toplam++; });
-        if (data.length < 1000) break;
-      }
-      const sirali = Object.entries(sayac).sort((a,b)=>b[1]-a[1]).slice(0,12);
+      // Server-side aggregate RPC (eskiden tüm aktif ilanlar client'a inip JS'te sayılıyordu)
+      const { data } = await sb.rpc('kategori_sayim');
+      const sirali = (data || []).filter(r => (r.aktif || 0) > 0).sort((a,b)=>(b.aktif||0)-(a.aktif||0)).slice(0,12)
+        .map(r => [r.kategori || 'Diğer', r.aktif]);
       const maks = sirali[0]?.[1] || 1;
       const RENKLER = ['#f0a500','#6366f1','#10b981','#ef4444','#3b82f6','#8b5cf6','#f59e0b','#06b6d4','#84cc16','#f97316','#ec4899','#14b8a6'];
       el.innerHTML = `<div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:6px 16px;">
         ${sirali.map(([kat, sayi], i) => `
           <a href="ihaleler?kategori=${encodeURIComponent(kat)}" style="text-decoration:none; padding:4px 0;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:3px;">
-              <span style="font-size:12px; color:var(--white); font-weight:500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:80%;">${kat}</span>
+              <span style="font-size:12px; color:var(--white); font-weight:500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:80%;">${esc(kat)}</span>
               <span style="font-size:11px; color:${RENKLER[i % RENKLER.length]}; font-weight:600; margin-left:6px;">${sayi.toLocaleString('tr')}</span>
             </div>
             <div style="height:3px; background:var(--navy-soft); border-radius:2px;">
