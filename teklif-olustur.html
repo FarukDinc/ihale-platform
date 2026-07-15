@@ -1644,6 +1644,7 @@
     });
 
     const genel = ara + kdvToplam;
+    window._genelToplam = genel;   // kaydEt buradan okur (formatlı metni parse etmek binlik ayraçta bozuluyordu)
 
     document.getElementById('ara-toplam').textContent = paraCikti(ara);
     document.getElementById('kdv-tutar').textContent  = paraCikti(kdvToplam);
@@ -1787,7 +1788,7 @@
     const teklif = {
       teklif_veren_id: user.id,
       ilan_id: ihaleId || null,
-      teklif_tutari: Math.round(parseFloat(document.getElementById('genel-toplam').textContent.replace(/[^0-9.,]/g,'').replace(',','.')) || 0),
+      teklif_tutari: Math.round(Number(window._genelToplam) || 0),   // hesaplanan sayısal değer (formatlı metin parse etme — binlik ayraçta bozuluyordu)
       teklif_metni: JSON.stringify({
         teklif_adi: document.getElementById('teklif-adi').value,
         firma_adi: document.getElementById('firma-adi').value,

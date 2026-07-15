@@ -382,6 +382,8 @@
   const SUPABASE_URL = "https://ihaleglobal.com";
   const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzgzMzUwMDE1LCJleHAiOjE5NDEwMzAwMTV9.sRB61a8oNXwzSKL9No8gt7cmkmnkoQstT0ZtHIxl1Hs";
   const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  // XSS koruması: innerHTML'e giren TÜM DB/kullanıcı verisi bundan geçmeli (bildirim başlığı kullanıcı-kontrollü RFQ başlığından gelir).
+  const esc = s => (s == null ? '' : String(s)).replace(/[<>&"']/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&#39;'}[c]));
 
   const tarihFormatla = (iso) => {
     if (!iso) return '';
@@ -487,9 +489,9 @@
         <div class="notif-item ${b.okunmus ? 'okunmus' : 'okunmamis'}" id="notif-${b.id}" onclick="okunduIsaretle('${b.id}')">
           <div class="notif-ikon ${b.ikonKlass}">${b.ikon}</div>
           <div class="notif-icerik">
-            <div class="notif-baslik">${b.baslik}</div>
-            <div class="notif-aciklama">${b.aciklama}</div>
-            ${b.link ? `<a class="notif-link" href="${b.link}" onclick="event.stopPropagation()">${b.tip === 'kurum_takip' ? 'Kuruma Git' : b.tip === 'rakip_hareketi' ? 'Firmaya Git' : 'İhaleye Git'} →</a>` : ''}
+            <div class="notif-baslik">${esc(b.baslik)}</div>
+            <div class="notif-aciklama">${esc(b.aciklama)}</div>
+            ${b.link ? `<a class="notif-link" href="${esc(b.link)}" onclick="event.stopPropagation()">${b.tip === 'kurum_takip' ? 'Kuruma Git' : b.tip === 'rakip_hareketi' ? 'Firmaya Git' : 'İhaleye Git'} →</a>` : ''}
             <div class="notif-zaman">${tarihFormatla(b.zaman)}</div>
           </div>
         </div>`).join('');
@@ -674,8 +676,8 @@
       <div class="bulten-kart" id="bk-${b.id}">
         <div class="bulten-ikon">⭐</div>
         <div class="bulten-info">
-          <div class="bulten-ad">${b.ad}</div>
-          <div class="bulten-ozet">${ozet}</div>
+          <div class="bulten-ad">${esc(b.ad)}</div>
+          <div class="bulten-ozet">${esc(ozet)}</div>
           <div class="bulten-tarih" style="display:flex;gap:10px;flex-wrap:wrap;">
             ${emailDurum} &nbsp;·&nbsp; ${freknasEtk} &nbsp;·&nbsp; ${sonG} &nbsp;·&nbsp; Oluşturuldu: ${tarih}
           </div>
@@ -780,8 +782,8 @@
         <a href="ihale-detay?id=${ilan.id}" class="oku-kart">
           <div class="oku-ikon">📄</div>
           <div class="oku-info">
-            <div class="oku-baslik">${ilan.baslik}</div>
-            <div class="oku-meta">${meta} · Son: ${tarih} &nbsp;${durum}</div>
+            <div class="oku-baslik">${esc(ilan.baslik)}</div>
+            <div class="oku-meta">${esc(meta)} · Son: ${tarih} &nbsp;${durum}</div>
           </div>
         </a>`;
     }).join('');
@@ -853,8 +855,8 @@
         <a href="ihale-detay?id=${ilan.id}" class="oku-kart">
           <div class="oku-ikon">📋</div>
           <div class="oku-info">
-            <div class="oku-baslik">${ilan.baslik}</div>
-            <div class="oku-meta">${meta}${bedel ? ' · ' + bedel : ''}</div>
+            <div class="oku-baslik">${esc(ilan.baslik)}</div>
+            <div class="oku-meta">${esc(meta)}${bedel ? ' · ' + bedel : ''}</div>
             <div style="margin-top:4px;display:flex;gap:10px;align-items:center;">
               <span style="color:var(--muted);font-size:11px;">Son: ${tarihStr}</span>
               ${kalanHtml}
