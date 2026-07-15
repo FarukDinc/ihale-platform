@@ -7,7 +7,24 @@
 > **KALICI TALİMAT (12 Tem, kullanıcı emri):** Bu blok + ilgili bölümler her oturumda otomatik
 > güncellenir, kullanıcı hatırlatmak zorunda değil. Bkz. hafıza `yapilacaklar-auto-update`.
 
-> ## 🎯 15 TEMMUZ — KULLANICI GERİ BİLDİRİMİ (henüz YAPILMADI, sıradaki iş)
+> ## 🎯 15 TEMMUZ — KULLANICI GERİ BİLDİRİMİ
+>
+> **✅ A) FİRMA ANALİZİ REDESIGN — TAMAMLANDI + CANLIDA (commit `7b686c5`).** ihaleciler.com modeli:
+> arama → `yukleniciler`'den AYRI firma listesi (isim+sözleşme+ciro+il, ciroya sıralı, Türkçe katlamalı)
+> → firmaya tıkla → `yuklenici_id` ile kesin detay (zengin ihale_sonuclari + ilan başlık/idare). "(Başlık
+> yok)" giderildi; sonuç kartlarında kurum(idare, linkli)+firma tam adı+başlık+bedel+tenzilat. Tek eşleşmede
+> doğrudan detaya atlar. `migration_yukleniciler_arama_fold.sql` + `yuklenici_yenile()` (firma 35.454→53.897,
+> yuklenici_id bağları dolduruldu). **Canlıda doğrulandı:** "dinç"→72 firma, Onur Dinçer→11 kazanım/92.8M/7 il.
+> Sınırlama: rakamlar backfill ilerledikçe artacak (bizde sadece KAZANAN veri var, EKAP kaybedeni yayınlamaz).
+>
+> **✅ B) Son aramalar tıklanınca arama** — TAMAMLANDI (A ile birlikte): chip'ler artık `firmaSectiClick`
+> → liste araması yapıyor.
+>
+> **🔲 C) Sol-alt kullanıcı adı/"Ücretsiz Plan" → profil ayarları** (kullanıcı: "buna da bakacağız"): HÂLÂ
+> AÇIK. Sidebar'daki üye adı+plan bloğu (`js/sidebar-user.js` render ediyor gibi) tıklanınca `profil`
+> sayfasına gitmeli. Bir sonraki iş.
+>
+> --- (eski geri bildirim detayı aşağıda) ---
 >
 > **A) FİRMA ANALİZİ KÖKLÜ YENİDEN TASARIM (kullanıcı: "firma analizinde berbatız, ihaleciler.com'u
 > örnek al").** Kök tasarım hatası tespit edildi: `firma-analiz.html?firma=X` aramada X terimini TEK
