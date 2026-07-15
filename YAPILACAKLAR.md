@@ -45,10 +45,16 @@
 > TOPLU Türkçe'ye çevirir, ülke ISO→TR, kategori (CPV+başlık), tür (CPV). **183 ihale yüklendi.**
 > Sayfa: server-side arama/ülke(26)/kategori/tür filtresi + EUR bedel + TED linki + orijinal başlık.
 > Sidebar'a "🌍 Uluslararası İhaleler" linki (18 sayfa). Gece cron'a eklendi. **Canlıda doğrulandı**
-> (183 ihale, Almanya filtresi→53, Türkçe başlıklar, konsol temiz). **Sıradaki:** Gürcistan
-> (tenders.procurement.gov.ge iç API RE), TED derin backfill (--max-pages yüksek), opsiyonel dashboard
-> özeti. Not: kategori bazen İngilizce artifaktı taşıyabilir (CPV 50 "bakım/onarım"→Taşıt fallback) —
-> ince ayar ile düzeltilebilir.
+> (183 ihale, Almanya filtresi→53, Türkçe başlıklar, konsol temiz).
+>
+> **✅ GÜRCİSTAN (2. kaynak) EKLENDİ + CANLI:** `georgia_scraper.py` — tenders.procurement.gov.ge'nin
+> `controller.php POST action=search_app` API'si reverse-engineer edildi (HTML tablo parse). Announcment
+> number(dedup)+tarih+idare+Procuring category(CPV+açıklama)+değer(GEL). Başlık Gemini Türkçe, kategori
+> CPV'den. **4 açık ihale eklendi** (varsayılan arama güncel seti verir; nightly biriktirir). Gece cron'a
+> eklendi. Toplam artık **187 ihale, 27 ülke** (TED 183 + Gürcistan 4). Canlıda doğrulandı (Gürcistan
+> filtresi→4, Türkçe başlık + GEL + rozet). **Sıradaki:** TED derin backfill (--max-pages yüksek),
+> Gürcistan pagination (şu an 4; daha fazlası için sayfalama), diğer kaynaklar, opsiyonel dashboard özeti.
+> Not: kategori bazen CPV fallback artifaktı taşır (CPV 50 "bakım/onarım"→Taşıt) — ince ayarla düzeltilir.
 >
 > **SİSTEM B (Promena benzeri) — TASARIM NETLEŞTİ, kullanıcıyla uzun tartışıldı (model kararı bekliyor):**
 > Çekirdek fikir (kullanıcı): alıcı firma ihale/RFQ açar → Gemini başlık/açıklamayı tarar → o işe EN
