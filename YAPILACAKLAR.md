@@ -122,7 +122,15 @@
 >   50M mobilya senaryosu→küçük firmalar elendi, kapasiteliler geldi. **Bu, EKAP lead-gen + Promena
 >   eşleştirmesinin görünür ilk ürünü.** Sonraki: RFQ açma ekranı, üye firmaya bildirim, çevre-il komşuluk
 >   haritası (şu an sadece aynı il), landing page + davet (temiz ayrı domain + ret hakkı).
-> - **İNŞA SIRASI (kalan):** (1)✅ Eşleştirme motoru POC — YAPILDI,
+> - **✅ e-SATINALMA MODÜLÜ v1 YAPILDI + CANLI (commit `49e3fb0`):** `migration_ozel_ihaleler.sql` →
+>   `satinalma_talepleri` + `tedarikci_teklifleri` tabloları (RLS: kapalı-zarf — tedarikçi sadece kendi
+>   teklifini görür, alıcı hepsini). `ozel-ihaleler.html`: alıcı ihale formu (başlık/kategori[41]/il[81]/
+>   miktar/bedel/tarih) → "🎯 Uygun Tedarikçileri Bul" eşleştirme motorunu çağırır (giriş gerekmez, anında
+>   10 firma) → "İhaleyi Yayınla" satinalma_talepleri'ne kaydeder (giriş+RLS) → açık ihaleler listelenir.
+>   Nav placeholder→gerçek link (20 sayfa, e-Satınalma artık aktif). **Canlıda doğrulandı** (Mobilya+Ankara
+>   +20M→10 tedarikçi, konsol temiz). **FAZ 2 (kalan):** tedarikçi teklif verme ekranı (tablo hazır) +
+>   eşleşen üye firmalara BİLDİRİM + (izinli) davet e-postası + alıcının teklifleri kıyaslayıp kazanan seçmesi.
+> - **İNŞA SIRASI (kalan):** (1)✅ Eşleştirme motoru — YAPILDI, (2)✅ RFQ açma + eşleştirme — YAPILDI,
 >   (2) alıcı RFQ açma (kapalı-zarf, ÖNERİLEN model) + üye firmalara bildirim, (3) firma profil + büyüme
 >   döngüsü, (4) İYS-uyumlu izinli gönderim + ayrı subdomain. **Model kararı (kapalı-zarf/reverse-auction/
 >   basit) kullanıcıdan bekleniyor; önerim kapalı-zarf RFQ.**
