@@ -203,7 +203,7 @@
         <span style="font-size:14px;font-weight:700;color:var(--white);">🏆 Sonuçlananlar</span>
         <span style="font-size:12px;color:var(--muted);" id="results-count"></span>
       </div>
-      <button onclick="csvIndir()" style="background:var(--card-bg);border:1px solid var(--border);color:var(--muted);padding:7px 14px;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;font-family:var(--font-body);">↓ CSV</button>
+      <button id="csv-btn" onclick="csvIndir()" style="background:var(--card-bg);border:1px solid var(--border);color:var(--muted);padding:7px 14px;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;font-family:var(--font-body);">↓ CSV</button>
     </div>
 
     <div class="page-body">
@@ -248,11 +248,11 @@
 
       <!-- PAGER -->
       <div class="pager" id="pager" style="display:none;">
-        <button class="pager-btn" id="pg-ilk" onclick="sayfaGit(1)">« İlk</button>
-        <button class="pager-btn" id="pg-prev" onclick="sayfaGit(sayfa-1)">‹ Önceki</button>
+        <button class="pager-btn" id="pg-ilk" onclick="sayfaGit('ilk')">« İlk</button>
+        <button class="pager-btn" id="pg-prev" onclick="sayfaGit('prev')">‹ Önceki</button>
         <span class="pager-info" id="pg-info"></span>
-        <button class="pager-btn" id="pg-next" onclick="sayfaGit(sayfa+1)">Sonraki ›</button>
-        <button class="pager-btn" id="pg-son" onclick="sayfaGit(topSayfa)">Son »</button>
+        <button class="pager-btn" id="pg-next" onclick="sayfaGit('next')">Sonraki ›</button>
+        <button class="pager-btn" id="pg-son" onclick="sayfaGit('son')">Son »</button>
       </div>
 
     </div>
@@ -268,11 +268,14 @@
   const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzgzMzUwMDE1LCJleHAiOjE5NDEwMzAwMTV9.sRB61a8oNXwzSKL9No8gt7cmkmnkoQstT0ZtHIxl1Hs";
   const sb = window.supabase.createClient(SB_URL, SB_KEY);
 
-  let tumSonuclar = [];
-  let siralamaAlan = 'tarih';
+  // Server-side: 353K+ sonuç client'a indirilemez → sayfalı sorgu + embed ilanlar join + istatistik RPC.
+  let sonSatirlar = [];
+  let toplam = 0;
+  let siralamaAlan = 'tarih';   // 'tarih' | 'bedel' | 'tenzilat'
   let sayfa = 1;
   let topSayfa = 1;
   const PER_PAGE = 25;
+  const ALAN = { tarih: 'sonuc_tarihi', bedel: 'kazanan_teklif', tenzilat: 'kazanan_teklif_farki_yuzde' };
 
   function tarihFormat(s) {
     if (!s) return '—';
@@ -294,33 +297,32 @@
     return 'tenz-dusuk';
   }
 
-  function siralaSonuclar(alan) {
-    return [...tumSonuclar].sort((a, b) => {
-      if (alan === 'bedel') return (b.kazanan_teklif || 0) - (a.kazanan_teklif || 0);
-      if (alan === 'tenzilat') return (b.kazanan_teklif_farki_yuzde || 0) - (a.kazanan_teklif_farki_yuzde || 0);
-      return new Date(b.sonuc_tarihi || 0) - new Date(a.sonuc_tarihi || 0);
-    });
-  }
-
   window.sirala = function(alan, btn) {
+    if (siralamaAlan === alan) return;
     siralamaAlan = alan;
     document.querySelectorAll('.sort-btn').forEach(b => b.classList.remove('active'));
     btn.classList.add('active');
-    sayfa = 1;
-    renderSayfa(siralaSonuclar(alan));
+    veriYukle(true);
   };
 
-  window.sayfaGit = function(s) {
-    sayfa = Math.max(1, Math.min(s, topSayfa));
-    renderSayfa(siralaSonuclar(siralamaAlan));
+  window.sayfaGit = function(yon) {
+    let hedef = sayfa;
+    if (yon === 'ilk') hedef = 1;
+    else if (yon === 'prev') hedef = sayfa - 1;
+    else if (yon === 'next') hedef = sayfa + 1;
+    else if (yon === 'son') hedef = topSayfa;
+    else hedef = Number(yon) || 1;
+    hedef = Math.max(1, Math.min(hedef, topSayfa));
+    if (hedef === sayfa) return;
+    sayfa = hedef;
+    veriYukle(false);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  function renderSayfa(sirali) {
-    const bas = (sayfa - 1) * PER_PAGE;
-    const dilim = sirali.slice(bas, bas + PER_PAGE);
-    topSayfa = Math.ceil(sirali.length / PER_PAGE);
+  function renderSayfa() {
+    const dilim = sonSatirlar;
     const sayiEl = document.getElementById('liste-sayi');
-    if (sayiEl) sayiEl.textContent = `${sirali.length.toLocaleString('tr')} sonuç`;
+    if (sayiEl) sayiEl.textContent = `${toplam.toLocaleString('tr')} sonuç`;
 
     const cont = document.getElementById('liste-container');
     if (!dilim.length) {
@@ -374,93 +376,91 @@
     document.getElementById('pg-son').disabled = sayfa >= topSayfa;
   }
 
-  function istatistikGoster(data) {
-    const toplam = data.length;
-    const toplamBedel = data.reduce((a, s) => a + (s.kazanan_teklif || 0), 0);
-    const tenzList = data.filter(s => s.kazanan_teklif_farki_yuzde != null);
-    const ortTenz = tenzList.length
-      ? tenzList.reduce((a, s) => a + Number(s.kazanan_teklif_farki_yuzde), 0) / tenzList.length
-      : null;
-    const firmalar = new Set(data.map(s => s.kazanan_firma).filter(Boolean));
-
-    const el = id => document.getElementById(id);
-    el('st-toplam').textContent = toplam.toLocaleString('tr');
-    el('st-bedel').textContent = formatBedel(toplamBedel);
-    el('st-tenzilat').textContent = ortTenz != null ? '%' + ortTenz.toFixed(1) : '—';
-    el('st-firma').textContent = firmalar.size.toLocaleString('tr');
-    el('results-count').textContent = `${toplam.toLocaleString('tr')} kayıt`;
+  async function istatistikYukle() {
+    try {
+      const { data } = await sb.rpc('sonuc_ozet');
+      const r = (data && data[0]) || {};
+      const el = id => document.getElementById(id);
+      el('st-toplam').textContent = Number(r.toplam || 0).toLocaleString('tr');
+      el('st-bedel').textContent = formatBedel(Number(r.toplam_bedel) || 0);
+      el('st-tenzilat').textContent = r.ort_tenzilat != null ? '%' + Number(r.ort_tenzilat).toFixed(1) : '—';
+      el('st-firma').textContent = Number(r.farkli_firma || 0).toLocaleString('tr');
+    } catch (e) { console.error('istatistik', e); }
   }
 
-  window.csvIndir = function() {
-    if (!tumSonuclar.length) { alert('Veri yükleniyor, lütfen bekleyin.'); return; }
-    const sirali = siralaSonuclar(siralamaAlan);
-    const satirlar = [
-      ['Firma', 'İhale Başlığı', 'İdare', 'İl', 'Sözleşme Bedeli (TL)', 'Tenzilat %', 'Teklif Sayısı', 'Sonuç Tarihi'],
-      ...sirali.map(s => [
-        `"${(s.kazanan_firma || '').replace(/"/g,'""')}"`,
-        `"${((s.ilan?.baslik) || '').replace(/"/g,'""')}"`,
-        `"${((s.ilan?.idare) || '').replace(/"/g,'""')}"`,
-        s.ilan?.il || '',
-        s.kazanan_teklif || '',
-        s.kazanan_teklif_farki_yuzde != null ? Number(s.kazanan_teklif_farki_yuzde).toFixed(3) : '',
-        s.toplam_teklif_sayisi || '',
-        s.sonuc_tarihi ? s.sonuc_tarihi.split('T')[0] : '',
-      ]),
-    ];
-    const icerik = '﻿' + satirlar.map(r => r.join(',')).join('\r\n');
-    const blob = new Blob([icerik], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `sonuclananlar_${new Date().toISOString().split('T')[0]}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+  // Görüntülenen sayfayı sunucudan çeker (embed ilanlar join). reset=true → sayfa 1'e döner.
+  async function veriYukle(reset = true) {
+    if (reset) sayfa = 1;
+    const cont = document.getElementById('liste-container');
+    if (reset) cont.innerHTML = '<div class="loading-wrap"><div class="loading-spinner"></div><div>Yükleniyor…</div></div>';
+    const bas = (sayfa - 1) * PER_PAGE;
+    const { data, count, error } = await sb.from('ihale_sonuclari')
+      .select('ilan_id,kazanan_firma,kazanan_teklif,kazanan_teklif_farki_yuzde,toplam_teklif_sayisi,sonuc_tarihi,ilanlar(baslik,idare,il,tur)', { count: 'exact' })
+      .not('kazanan_firma', 'is', null)
+      .order(ALAN[siralamaAlan], { ascending: false, nullsFirst: false })
+      .range(bas, bas + PER_PAGE - 1);
+    if (error) {
+      cont.innerHTML = `<div class="empty-wrap"><div class="empty-icon">⚠️</div>
+        <div class="empty-baslik">Veri yüklenemedi</div><div class="empty-alt">${error.message}</div></div>`;
+      document.getElementById('pager').style.display = 'none';
+      console.error(error);
+      return;
+    }
+    toplam = count || 0;
+    topSayfa = Math.max(1, Math.ceil(toplam / PER_PAGE));
+    sonSatirlar = (data || []).map(s => {
+      s.ilan = Array.isArray(s.ilanlar) ? s.ilanlar[0] : s.ilanlar;
+      return s;
+    });
+    const rc = document.getElementById('results-count');
+    if (rc) rc.textContent = `${toplam.toLocaleString('tr')} kayıt`;
+    renderSayfa();
+  }
+
+  window.csvIndir = async function() {
+    const btn = document.getElementById('csv-btn');
+    const eski = btn ? btn.textContent : '';
+    if (btn) { btn.disabled = true; btn.textContent = 'Hazırlanıyor…'; }
+    try {
+      const { data } = await sb.from('ihale_sonuclari')
+        .select('kazanan_firma,kazanan_teklif,kazanan_teklif_farki_yuzde,toplam_teklif_sayisi,sonuc_tarihi,ilanlar(baslik,idare,il)')
+        .not('kazanan_firma', 'is', null)
+        .order(ALAN[siralamaAlan], { ascending: false, nullsFirst: false })
+        .limit(5000);
+      if (!data || !data.length) { alert('Dışa aktarılacak veri bulunamadı.'); return; }
+      const satirlar = [
+        ['Firma', 'İhale Başlığı', 'İdare', 'İl', 'Sözleşme Bedeli (TL)', 'Tenzilat %', 'Teklif Sayısı', 'Sonuç Tarihi'],
+        ...data.map(s => {
+          const ilan = (Array.isArray(s.ilanlar) ? s.ilanlar[0] : s.ilanlar) || {};
+          return [
+            `"${(s.kazanan_firma || '').replace(/"/g,'""')}"`,
+            `"${(ilan.baslik || '').replace(/"/g,'""')}"`,
+            `"${(ilan.idare || '').replace(/"/g,'""')}"`,
+            ilan.il || '',
+            s.kazanan_teklif || '',
+            s.kazanan_teklif_farki_yuzde != null ? Number(s.kazanan_teklif_farki_yuzde).toFixed(3) : '',
+            s.toplam_teklif_sayisi || '',
+            s.sonuc_tarihi ? s.sonuc_tarihi.split('T')[0] : '',
+          ];
+        }),
+      ];
+      const icerik = '﻿' + satirlar.map(r => r.join(',')).join('\r\n');
+      const blob = new Blob([icerik], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `sonuclananlar_en_yeni_${data.length}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (e) {
+      alert('Dışa aktarma hatası: ' + e.message);
+    } finally {
+      if (btn) { btn.disabled = false; btn.textContent = eski; }
+    }
   };
 
-  async function yukle() {
-    // ihale_sonuclari tümünü çek
-    const rows = [];
-    for (let off = 0; ; off += 1000) {
-      const { data } = await sb.from('ihale_sonuclari')
-        .select('ilan_id,kazanan_firma,kazanan_teklif,kazanan_teklif_farki_yuzde,toplam_teklif_sayisi,en_dusuk_teklif,en_yuksek_teklif,sonuc_tarihi')
-        .order('sonuc_tarihi', { ascending: false })
-        .range(off, off + 999);
-      if (!data || !data.length) break;
-      rows.push(...data);
-      if (data.length < 1000) break;
-    }
-
-    // ilan başlıklarını zenginleştir
-    if (rows.length) {
-      const ids = [...new Set(rows.map(r => r.ilan_id).filter(Boolean))];
-      if (ids.length) {
-        const ilanlar = [];
-        for (let off = 0; off < ids.length; off += 500) {
-          const batch = ids.slice(off, off + 500);
-          const { data } = await sb.from('ilanlar')
-            .select('id,baslik,idare,il,tur')
-            .in('id', batch);
-          if (data) ilanlar.push(...data);
-        }
-        const mp = {};
-        ilanlar.forEach(i => { mp[i.id] = i; });
-        rows.forEach(r => { r.ilan = mp[r.ilan_id] || null; });
-      }
-    }
-
-    tumSonuclar = rows;
-    istatistikGoster(rows);
-    renderSayfa(siralaSonuclar(siralamaAlan));
-  }
-
-  yukle().catch(e => {
-    document.getElementById('liste-container').innerHTML = `<div class="empty-wrap">
-      <div class="empty-icon">⚠️</div>
-      <div class="empty-baslik">Veri yüklenemedi</div>
-      <div class="empty-alt">${e.message}</div>
-    </div>`;
-    console.error(e);
-  });
+  istatistikYukle();
+  veriYukle(true);
 })();
 </script>
 </body>
