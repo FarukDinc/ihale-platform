@@ -7,6 +7,37 @@
 > **KALICI TALİMAT (12 Tem, kullanıcı emri):** Bu blok + ilgili bölümler her oturumda otomatik
 > güncellenir, kullanıcı hatırlatmak zorunda değil. Bkz. hafıza `yapilacaklar-auto-update`.
 
+> ## 🎯 15 TEMMUZ — KULLANICI GERİ BİLDİRİMİ (henüz YAPILMADI, sıradaki iş)
+>
+> **A) FİRMA ANALİZİ KÖKLÜ YENİDEN TASARIM (kullanıcı: "firma analizinde berbatız, ihaleciler.com'u
+> örnek al").** Kök tasarım hatası tespit edildi: `firma-analiz.html?firma=X` aramada X terimini TEK
+> BİR FİRMA sanıp `kazanan_firma`'da fuzzy ILIKE yapıyor → "dinç" arayınca "Dinç Grup", "Onur Dinçer",
+> "Dinçerler Yapı", "Dinç Güvenlik" gibi FARKLI firmaları tek sahte "dinç" firması altında topluyor
+> (164 kazanım, 1 Mrd TL = hepsinin toplamı, anlamsız). **Doğru model (ihaleciler.com gibi, ki bizde
+> ZATEN VAR):** `yukleniciler` tablosu (35K+ firma, normalize edilmiş, toplam_sozlesme_sayisi/toplam_ciro/
+> il/sektor ile) tam olarak bu listeyi veriyor ama firma-analiz onu HİÇ kullanmıyor. **Yapılacak:**
+> 1. Arama → `yukleniciler`'den eşleşen AYRI firmaların LİSTESİ gösterilsin (isim + sözleşme sayısı +
+>    ciro + il), tıpkı ihaleciler.com "Yükleniciler" sekmesi gibi.
+> 2. Bir firmaya tıkla → o firmanın DETAYI (kazandığı ihaleler, katıldığı ihaleler [bizde sadece
+>    kazanılan var — EKAP kaybedeni yayınlamıyor], yıllara/il/sektöre dağılım).
+> 3. `yukleniciler`'e `arama_fold` (tr_fold) kolonu + trigram indeks ekle (şu an "dinç" araması İ/ç
+>    yüzünden 0 dönüyor — aynı Türkçe katlama sorunu; migration_ilanlar_arama_fold.sql şablonu).
+> 4. Detay/Sonuçlar sekmesinde "(Başlık yok)" bug'ı: `ihale_sonuclari.ilan_id`→`ilanlar` join'i baslik
+>    getirmiyor (backfill'in eklediği kompakt ilanlar satırlarında baslik null). Sonuçlarda İHALEYİ
+>    YAPAN KURUM (idare) + İHALEYİ ALAN FİRMANIN TAM ADI (kazanan_firma) + ihale başlığı gösterilmeli;
+>    ihaleye tıklayınca detay açılmalı (şu an "veri bulamıyor"). Kompakt satırlara baslik/idare
+>    doldurmak ya da ihale_sonuclari'na bu alanları denormalize etmek gerekebilir.
+>
+> **B) Son aramalar tıklanınca aramıyor** (kullanıcı bildirdi): firma-analiz landing'de "SON ARAMALAR"
+> chip'lerine (örn. "dinç lazer makine") tıklayınca otomatik o firmayı tekrar aratmalı. Kod
+> `firmaSectiClick` onclick'i doğru GÖRÜNÜYOR ama kullanıcı çalışmadığını söylüyor — redesign sırasında
+> tarayıcıda test edilip düzeltilecek.
+>
+> **C) Sol-alt kullanıcı adı/"Ücretsiz Plan" tıklanınca profil ayarları açılsın** (kullanıcı: "buna da
+> bakacağız"): tüm sayfaların sidebar'ında sol-altta üye adı + plan yazan blok var; tıklanınca
+> `profil` sayfasına gitmeli (şu an tıklanamıyor). Sidebar tüm sayfalarda ortak → tek tek ya da paylaşılan
+> parça olarak eklenmeli.
+
 > ## 🔴 15 TEMMUZ (devam) — GERÇEK BUG: gece cron'u SESSİZCE ÇALIŞMADI (run_scraper.sh +x kaybı)
 > Durum kontrolü sırasında bulundu: **15 Tem 02:00 UTC gece turu HİÇ çalışmadı** (scraper.log 14 Tem
 > 03:01'den beri değişmemiş, bildirimler/scrape_log boş, aktif sayı 15.381'de sabit). Cron tetiklenmiş
