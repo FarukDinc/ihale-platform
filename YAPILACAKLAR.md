@@ -96,6 +96,23 @@
 > **AÇIK (gelecek):** gerçek kimlik doğrulama = VKN↔ünvan'ı yetkili kaynağa (GİB VKN sorgu / MERSİS / KEP) bağlamak;
 >   o zamana kadar güven = Kurumsal-abonelik kapısı + tedarikçinin beyan VKN'yi bağımsız doğrulaması.
 
+> ## 🔎 16 TEMMUZ — #3 KURUMSAL DOĞRULAMA: FİZİBİLİTE (araştırıldı, KARAR KULLANICIDA)
+> Soru: beyan VKN'yi yetkili kaynağa bağlayıp gerçek "Doğrulanmış Firma" yapabilir miyiz?
+> **Bulgu (araştırıldı):** GİB'in ÜCRETSİZ açık VKN→ünvan API'si YOK. Seçenekler:
+>  1. **Ücretli entegratör API** (Nilvera / İZİBİZ / Digital Planet): VKN→tam ünvan+adres+FAAL verir.
+>     Hesap + ödeme gerekir → **KULLANICININ İŞ KARARI** (ben hesap açamam/ödeme giremem). Etkinleştirince
+>     `dogrulama_durumu='dogrulanmis'` yazılır + yeşil "Doğrulanmış Firma" rozeti (o zaman gerçek olur).
+>  2. **GİB/e-Devlet ücretsiz web sorgu** (turkiye.gov.tr/gib-intvrg-...): sadece MASKELİ ad (ilk harfler) +
+>     FAAL durumu; muhtemelen captcha/rate-limit. Prod VDS'ten gov tax endpoint scrape = kırılgan + ToS/KVKK
+>     riski (kamu-hassas proje) → **otonom kurulmadı** (bilinçli karar). Sadece "VKN gerçek+FAAL mı" doğrular,
+>     tam ünvan vermez.
+>  3. **KEP / kurumsal e-posta / manuel onay**: uygulanabilir ama e-posta altyapısı (temiz domain, ertelendi)
+>     veya insan-ops gerekir.
+> **Zaten yapılan (v4) yeterli baz:** Kurumsal-plan gate (ödeme+audit izi) + zorunlu VKN (checksum) + dürüst
+> "beyan · doğrulanmamış" etiketi. Sahtelenebilir "kamuda tanınan" rozeti kaldırıldı. Yani anti-fraud'un kod
+> kısmı tamam; kalan tek şey DIŞ doğrulama = para/iş kararı. **Öneri:** hacim artınca (1) ücretli API entegre et;
+> `satinalma_talepleri`'ne `dogrulama_durumu` kolonu + 3-kademeli rozet (beyan / kurumsal-üye / doğrulanmış).
+
 > ## ✅ 16 TEMMUZ — HARİTA MVP TAMAM + CANLI (gece otonom, commit `31596a9`)
 > Kullanıcı "hepsini sırasıyla yap + gece boyu tam yetki" dedi. #2 Harita MVP yapıldı:
 > - **Coğrafya verisi:** alpers/Turkey-Maps-GeoJSON (MIT) tr-cities.json → Python projeksiyon (equirectangular,
