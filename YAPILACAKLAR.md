@@ -7,6 +7,16 @@
 > **KALICI TALİMAT (12 Tem, kullanıcı emri):** Bu blok + ilgili bölümler her oturumda otomatik
 > güncellenir, kullanıcı hatırlatmak zorunda değil. Bkz. hafıza `yapilacaklar-auto-update`.
 
+> ## ✅ 15 TEMMUZ (devam) — kaynak rozeti + gündüz/gece modu (commit `e095e45`, CANLI)
+> **1) Kaynak rozeti:** ihaleler.html kartlarında her ihalenin kaynağı — "EKAP" veya ilan.gov.tr için
+> "📰 Gazete" (kaynakBadge() + select'e kaynak eklendi). Doğrulandı: "belediyesine ait"→5 EKAP+5 Gazete.
+> **2) Gündüz/gece modu (sistem ZATEN vardı, theme.js+css light değişkenleri 21 sayfada):** kullanıcı
+> küçük sağ-alt ☀️ butonunu fark etmemişti → etiketli PILL'e çevrildi ("☀️ Gündüz Modu"/"🌙 Gece Modu"),
+> varsayılan hâlâ gece. **Light-mode bug düzeltildi:** `.hizli-chip.active` tanımsız `var(--blue)` →
+> şeffaf zemin → beyaz metin light modda görünmezdi; #3b82f6'ya çevrildi. Denetim: diğer hardcoded
+> beyazlar renkli/koyu zemin üstünde (OK), Chart.js ticks orta-gri (OK). **Not:** theme.js cache'li
+> kullanıcılar yeni pill'i hard-refresh sonrası görür (script src'de version yok — istenirse eklenir).
+
 > ## ✅ 15 TEMMUZ (devam) — KATEGORİ REDESIGN + ilan.gov.tr SCRAPER (kullanıcı "ikisini yap" dedi, İKİSİ DE CANLI)
 >
 > **✅ 1) İŞ-DOSTU KATEGORİ SİSTEMİ (ihaleciler.com tarzı) — CANLI.** Eski: CPV-2-hane ham AB isimleri
