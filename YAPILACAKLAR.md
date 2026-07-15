@@ -80,7 +80,17 @@
 >   (redirect/kısaltıcı yok). Asıl kaldıraç: İLGİLİLİK + düşük şikâyet + kolay ret.
 > - **BÜYÜME DÖNGÜSÜ (üye olmayan firmalar için):** eşleşen ama üye olmayan firmayı alıcıya "önerilen"
 >   göster + herkese açık firma profil sayfası → firma kendini bulunca "sahiplen/üye ol" → doğaçlama müşteri.
-> - **İNŞA SIRASI:** (1) Eşleştirme motoru POC ("bu ihaleye en uygun N firma + kapasite kademesi"),
+> - **✅ EŞLEŞTİRME MOTORU POC YAPILDI + CANLI (otonom oturum, commit `b5d9401`):** `migration_ihaleye_
+>   uygun_firmalar.sql` → RPC `ihaleye_uygun_firmalar(p_kategori,p_il,p_bedel,p_limit,p_kapasite_esik)`:
+>   ihale_sonuclari⨝ilanlar'dan kategoride kazanan firmaları puanlar (deneyim üst-sınırlı + AYNI İL
+>   bonusu[ilanlar.il=kazandığı bölge] + KAPASİTE). Kapasite bir FİLTRE: p_bedel verilince max kazanım
+>   < p_bedel×%10 olan firmalar ELENİR (kullanıcı kuralı: 50M işe küçük firma çağırma). ihale-detay'a
+>   "🎯 Bu İhaleye Uygun Firmalar" bölümü eklendi (her EKAP ihalesinde otomatik, firma-analiz linkli).
+>   **Canlıda doğrulandı:** Sulama Yapım işi→MARMARA BETON BORU/BALDAN ASFALT vb. inşaat firmaları; Bolu
+>   50M mobilya senaryosu→küçük firmalar elendi, kapasiteliler geldi. **Bu, EKAP lead-gen + Promena
+>   eşleştirmesinin görünür ilk ürünü.** Sonraki: RFQ açma ekranı, üye firmaya bildirim, çevre-il komşuluk
+>   haritası (şu an sadece aynı il), landing page + davet (temiz ayrı domain + ret hakkı).
+> - **İNŞA SIRASI (kalan):** (1)✅ Eşleştirme motoru POC — YAPILDI,
 >   (2) alıcı RFQ açma (kapalı-zarf, ÖNERİLEN model) + üye firmalara bildirim, (3) firma profil + büyüme
 >   döngüsü, (4) İYS-uyumlu izinli gönderim + ayrı subdomain. **Model kararı (kapalı-zarf/reverse-auction/
 >   basit) kullanıcıdan bekleniyor; önerim kapalı-zarf RFQ.**
