@@ -242,7 +242,6 @@
 
   async function taleplerYukle() {
     const liste = document.getElementById('talepler-liste');
-    if (!user) { liste.innerHTML = '<div class="giris-uyari">Açık ihaleleri görmek ve ihale açmak için <a href="login">giriş yapın</a>.</div>'; return; }
     const { data, error } = await sb.from('satinalma_talepleri')
       .select('id,baslik,kategori,il,miktar,tahmini_bedel,son_teklif_tarihi,durum,olusturan_firma,olusturulma')
       .eq('durum', 'acik').order('olusturulma', { ascending: false }).limit(50);

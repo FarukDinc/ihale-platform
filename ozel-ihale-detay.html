@@ -242,8 +242,7 @@
     try { const { data } = await sb.auth.getUser(); user = data.user; } catch {}
     const { data, error } = await sb.from('satinalma_talepleri').select('*').eq('id', id).maybeSingle();
     if (error || !data) {
-      body.innerHTML = user ? '<div class="giris-uyari">İhale bulunamadı.</div>'
-        : '<div class="giris-uyari">Bu ihaleyi görüntülemek için <a href="login">giriş yapın</a>.</div>';
+      body.innerHTML = '<div class="giris-uyari">İhale bulunamadı veya kaldırılmış.</div>';
       return;
     }
     talep = data;
