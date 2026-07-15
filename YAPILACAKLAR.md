@@ -24,6 +24,21 @@
 > **Not:** Aynı "tümünü client'a indir" kalıbı başka sayfalarda kaldıysa (firmalar/idareler/sektörler
 >   dizinleri zaten server-side sanıyorum) benzer şekilde taranmalı.
 
+> ## 🐞 15 TEMMUZ (devam) — ULUSLARARASI + FİRMA-ANALİZ HATA DÜZELTMELERİ + CANLI (commit `7d2c63a`)
+> Kullanıcı 3 hata bildirdi (uluslararası ihaleler ekran görüntüleri):
+> 1. **TED linki 404** — `orijinal_url` formatı `/en/notice/{pub}` YANLIŞ (404). Doğru: `/en/notice/-/detail/{pub}`.
+>    `ted_scraper.py:158` düzeltildi + 183 mevcut kayıt `backend/migration_ted_url_fix.sql` ile backfill edildi
+>    (publication_no'dan yeniden kur, idempotent). Tarayıcıda notice açıldığı doğrulandı.
+> 2. **Gürcistan'da "TED'de Aç" yazıyor** ama kendi sitesine (tenders.procurement.gov.ge) gidiyordu — etiket sabitti,
+>    select'te `kaynak` yoktu. `kaynakAc(kaynak)` eklendi: TED→"TED'de İncele", georgia→"Gürcistan Portalında İncele".
+> 3. **Buton belirgin değil** ("ben bile zor buldum") — küçük mavi metin yerine amber dolu belirgin `.ui-ac-btn`.
+> 4. **firma-analiz "Geri" çalışmıyor** — `href=javascript:history.back()` ama sayfa `pushState` kullanıyor →
+>    geri kendi state'ine dönüyordu. `geriGit()` (referrer aynı-origin/farklı-sayfaysa oraya, yoksa firmalar) +
+>    belirgin bordered buton. **YAN BULGU:** `csvIndir`/`linkPaylas`/`geriGit` IIFE içinde düz `function` idi →
+>    inline `onclick` global arıyor → CSV+Paylaş+Geri HEPSİ bozuktu; üçü de `window.X=` ile expose edildi.
+> Ders: IIFE'li sayfalarda inline `onclick="fn()"` çağrılan her fonksiyon `window.X=` ile expose EDİLMELİ
+>    (closure fonksiyonu onclick'ten erişilemez); bu sayfalarda başka bozuk onclick var mı taranmalı.
+
 > ## 🔐 15 TEMMUZ (devam) — e-SATINALMA v4: KURUMSAL GATE + VKN/ÜNVAN/ADRES ZORUNLU + CANLI (commit `e80d92a`)
 > Kullanıcı kararı: "her önüne gelen ihale açamamalı" + "adres de zorunlu (MaaS harita için hazır veri)".
 > **Önemli veri gerçeği (doğrulandı):** yüklenicilerin VKN'sini ALAMIYORUZ — `yukleniciler.vergi_no` (53.897)
