@@ -103,8 +103,8 @@
       color:var(--muted); font-size:12px; font-weight:500; font-family:var(--font);
       padding:4px 13px; border-radius:20px; cursor:pointer; transition:all .15s;
     }
-    .hizli-chip:hover { border-color:var(--blue); color:var(--white); }
-    .hizli-chip.active { background:var(--blue); border-color:var(--blue); color:#fff; }
+    .hizli-chip:hover { border-color:#3b82f6; color:var(--white); }
+    .hizli-chip.active { background:#3b82f6; border-color:#3b82f6; color:#fff; }
 
     /* GELİŞMİŞ FİLTRE PANELİ (Detaylı Ara) */
     .gelismis-panel {
@@ -189,6 +189,8 @@
 
     .badge { padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 700; white-space: nowrap; }
     .badge-open { background: rgba(34,197,94,0.12); color: #4ade80; }
+    .badge-gazete { background: rgba(59,130,246,0.14); color: #60a5fa; }
+    .badge-ekap { background: rgba(var(--overlay-rgb),0.07); color: var(--muted); }
     .badge-soon { background: rgba(245,158,11,0.12); color: var(--amber); }
     .badge-closed { background: rgba(239,68,68,0.1); color: #f87171; }
 
@@ -879,6 +881,12 @@
     return `<span class="badge badge-closed">● ${durum}</span>`;
   }
 
+  // İhale kaynağı rozeti — EKAP mi, ilan.gov.tr (Basın İlan Kurumu "Gazete") mi
+  function kaynakBadge(kaynak) {
+    if (kaynak === 'ilan_gov') return `<span class="badge badge-gazete" title="Basın İlan Kurumu — ilan.gov.tr">📰 Gazete</span>`;
+    return `<span class="badge badge-ekap" title="EKAP kaynaklı">EKAP</span>`;
+  }
+
   function usulEtiket(usul) {
     if (!usul) return '';
     // Kısa gösterim: "Pazarlık Usulü (21/b)" → "Pazarlık 21/b"
@@ -919,7 +927,10 @@
             <div class="kart-etiketler">${etiketler}</div>
           </div>
           <div class="kart-sag">
-            ${durumBadge(ilan.durum, ilan.son_teklif_tarihi)}
+            <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;justify-content:flex-end;">
+              ${kaynakBadge(ilan.kaynak)}
+              ${durumBadge(ilan.durum, ilan.son_teklif_tarihi)}
+            </div>
             <div>
               <div class="kart-maliyet-label">Yaklaşık Maliyet</div>
               <div class="kart-maliyet">${yaklasikMaliyet(ilan)}</div>
@@ -1002,7 +1013,7 @@
     // Diğer sekmelerde normal (opsiyonel) embed — varsa kartta "✓ Sonuçlandı" rozeti gösterilir.
     const sonucEmbed = aktifSekme === 'sonuc' ? 'ihale_sonuclari!inner' : 'ihale_sonuclari';
     let query = sb.from('ilanlar').select(
-      `id,ekap_id,baslik,idare,il,tur,usul,durum,ilan_tarihi,son_teklif_tarihi,tahmini_bedel,yaklasik_maliyet_min,yaklasik_maliyet_max,itiraz_bedeli,esik_katsayi,${sonucEmbed}(kazanan_firma,kazanan_teklif,kazanan_teklif_farki_yuzde,sonuc_tarihi)`,
+      `id,kaynak,ekap_id,baslik,idare,il,tur,usul,durum,ilan_tarihi,son_teklif_tarihi,tahmini_bedel,yaklasik_maliyet_min,yaklasik_maliyet_max,itiraz_bedeli,esik_katsayi,${sonucEmbed}(kazanan_firma,kazanan_teklif,kazanan_teklif_farki_yuzde,sonuc_tarihi)`,
       { count: 'exact' }
     );
 
@@ -1049,7 +1060,7 @@
     if (error && /esik_katsayi|arama_fold/.test(error.message || '')) {
       console.info('arama_fold/esik_katsayi kolonu henüz yok, legacy aramayla tekrar deneniyor:', error.message);
       let fallback = sb.from('ilanlar').select(
-        `id,ekap_id,baslik,idare,il,tur,usul,durum,ilan_tarihi,son_teklif_tarihi,tahmini_bedel,yaklasik_maliyet_min,yaklasik_maliyet_max,itiraz_bedeli,${sonucEmbed}(kazanan_firma,kazanan_teklif,kazanan_teklif_farki_yuzde,sonuc_tarihi)`,
+        `id,kaynak,ekap_id,baslik,idare,il,tur,usul,durum,ilan_tarihi,son_teklif_tarihi,tahmini_bedel,yaklasik_maliyet_min,yaklasik_maliyet_max,itiraz_bedeli,${sonucEmbed}(kazanan_firma,kazanan_teklif,kazanan_teklif_farki_yuzde,sonuc_tarihi)`,
         { count: 'exact' }
       );
       if      (aktifSekme === 'guncel') fallback = fallback.gte('son_teklif_tarihi', simdiISO);
