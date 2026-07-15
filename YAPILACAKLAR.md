@@ -135,9 +135,15 @@
 >   açık RFQ'lar HERKESE görünür (tedarikçi keşif hunisi+SEO, kamu ihaleleri gibi); teklifler gizli kalır.
 >   Liste kartları detaya linkli. **3 örnek RFQ eklendi** (info@dnclaser.com hesabıyla — o hesapla giriş
 >   yapınca ALICI akışını [gelen teklif+kazanan seç] test edebilirsin). Canlıda doğrulandı (liste 3 RFQ,
->   detay header+KPI+rozet, konsol temiz). **KALAN:** eşleşen ÜYE firmalara yayında BİLDİRİM (frontend
->   başkasına bildirimler yazamaz → DB trigger ya da backend script gerekir) + (izinli) davet e-postası
->   (temiz ayrı domain) + "teklifim/ihalelerim" kullanıcı paneli.
+>   detay header+KPI+rozet, konsol temiz).
+> - **✅ e-SATINALMA FAZ 3 YAPILDI + CANLI (commit `547d35a`):** `ihalelerim.html` (Firmam ▸ İhalelerim,
+>   22 sayfa nav) — giriş yapan kullanıcı 2 sekmede kendi aktivitesini görür: "Açtığım İhaleler" (teklif
+>   sayısı + durum + detay linki) ve "Verdiğim Teklifler" (RFQ + bedel + 🏆kazandım/değerlendirmede).
+>   Canlıda doğrulandı (giriş uyarısı + nav aktif + 2 sekme + konsol temiz; mevcut sayfalar sağlam).
+> - **KALAN (Faz 4):** RFQ yayınında BİLDİRİM — ama `profil.sektorler` ESKİ kısa anahtarlar ({insaat,
+>   enerji}) yeni ~40 kategoriyle UYUŞMUYOR + çoğu boş; `bildirimler.kullanici_id` FK kullanici_profiller'e,
+>   tur CHECK'inde 'ozel_ihale' yok ('eslestirme' kullanılabilir). Yani ÖNCE sektorler taksonomisini yeni
+>   kategorilere hizala, SONRA DB trigger. Ayrıca (izinli) davet e-postası (ayrı temiz domain + ret hakkı).
 > - **İNŞA SIRASI (kalan):** (1)✅ Eşleştirme motoru — YAPILDI, (2)✅ RFQ açma + eşleştirme — YAPILDI,
 >   (2) alıcı RFQ açma (kapalı-zarf, ÖNERİLEN model) + üye firmalara bildirim, (3) firma profil + büyüme
 >   döngüsü, (4) İYS-uyumlu izinli gönderim + ayrı subdomain. **Model kararı (kapalı-zarf/reverse-auction/
