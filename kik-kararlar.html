@@ -441,7 +441,9 @@
     ).order('karar_tarihi', { ascending: false }).limit(500);
 
     if (kelime) {
-      q = q.or(`baslik.ilike.%${kelime}%,idare.ilike.%${kelime}%,ihale_konusu.ilike.%${kelime}%,ozet.ilike.%${kelime}%`);
+      // or() gramerini bozan karakterleri temizle (virgül or-listesini, parantez grubu kapatır → 400)
+      const k = kelime.replace(/[,()*\\]/g, ' ').trim();
+      if (k) q = q.or(`baslik.ilike.%${k}%,idare.ilike.%${k}%,ihale_konusu.ilike.%${k}%,ozet.ilike.%${k}%`);
     }
     if (kararNo) q = q.ilike('karar_no', `%${kararNo}%`);
     if (tur) q = q.eq('karar_turu', tur);

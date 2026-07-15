@@ -594,7 +594,7 @@
             const href = b.storage_url
               || b.url
               || (b.id ? `https://ekapv2.kik.gov.tr/b_ihalearama/api/Dokuman/GetFile?id=${b.id}` : null)
-              || ekapLink(d.ikn);
+              || ekapLink(d.ikn, d.usul);
             const direkt = !!(b.storage_url || b.url || b.id);
             const icon = /pdf/i.test(tur||ad) ? '📕'
               : /excel|xlsx/i.test(tur||ad) ? '📗'
@@ -622,7 +622,7 @@
               </p>
               ${d.kaynak === 'ilan_gov'
                 ? (d.pdf_url ? `<a class="btn-ekap" href="${d.pdf_url}" target="_blank" rel="noopener" style="display:inline-flex;">↗ İlan.gov.tr'de Görüntüle</a>` : '')
-                : (d.ikn ? `<a class="btn-ekap" href="${ekapLink(d.ikn)}" target="_blank" rel="noopener" style="display:inline-flex;">↗ EKAP'ta Dokümanları Gör</a>` : '')}
+                : (d.ikn ? `<a class="btn-ekap" href="${ekapLink(d.ikn, d.usul)}" target="_blank" rel="noopener" style="display:inline-flex;">↗ EKAP'ta Dokümanları Gör</a>` : '')}
             </div>`}
         </div>
       </div>

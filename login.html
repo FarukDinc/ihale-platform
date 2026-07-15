@@ -303,6 +303,19 @@
     }
   })();
 
+  // Supabase'in İngilizce auth hatalarını Türkçe'ye çevir
+  function trHata(msg) {
+    const m = (msg || '').toLowerCase();
+    if (m.includes('invalid login credentials')) return 'E-posta veya şifre hatalı';
+    if (m.includes('email not confirmed')) return 'E-posta adresiniz henüz doğrulanmamış — gelen kutunuzu kontrol edin';
+    if (m.includes('already registered') || m.includes('already been registered')) return 'Bu e-posta adresi zaten kayıtlı';
+    if (m.includes('password should be at least')) return 'Şifre en az 6 karakter olmalı';
+    if (m.includes('invalid format') || m.includes('unable to validate email')) return 'Geçersiz e-posta adresi';
+    if (m.includes('for security purposes') || m.includes('rate limit') || m.includes('too many')) return 'Çok fazla deneme — lütfen biraz sonra tekrar deneyin';
+    if (m.includes('network') || m.includes('fetch')) return 'Bağlantı hatası — internet bağlantınızı kontrol edin';
+    return msg || 'İşlem başarısız';
+  }
+
   // Giriş
   async function girisYap(e) {
     e.preventDefault();
@@ -318,7 +331,7 @@
       toast('Başarıyla giriş yapıldı!', 'basari');
       setTimeout(() => window.location.href = donusHedefi(), 800);
     } catch (err) {
-      toast(err.message || 'Giriş başarısız', 'hata');
+      toast(trHata(err.message) || 'Giriş başarısız', 'hata');
       btn.textContent = 'Giriş Yap';
       btn.disabled = false;
     }
@@ -341,7 +354,7 @@
       document.getElementById('kayit-firma')?.closest('form')?.reset?.();
       setTimeout(() => panelGoster('giris'), 3500);
     } catch (err) {
-      toast(err.message || 'Kayıt başarısız', 'hata');
+      toast(trHata(err.message) || 'Kayıt başarısız', 'hata');
       btn.textContent = 'Ücretsiz Başla';
       btn.disabled = false;
     }
