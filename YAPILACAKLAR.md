@@ -96,7 +96,22 @@
 > **AÇIK (gelecek):** gerçek kimlik doğrulama = VKN↔ünvan'ı yetkili kaynağa (GİB VKN sorgu / MERSİS / KEP) bağlamak;
 >   o zamana kadar güven = Kurumsal-abonelik kapısı + tedarikçinin beyan VKN'yi bağımsız doğrulaması.
 
-> ## 🗺️ 15 TEMMUZ (devam) — e-SATINALMA HARİTA + MaaS KÖPRÜSÜ (kullanıcı fikri, PLANLAMA — karar bekliyor)
+> ## ✅ 16 TEMMUZ — HARİTA MVP TAMAM + CANLI (gece otonom, commit `31596a9`)
+> Kullanıcı "hepsini sırasıyla yap + gece boyu tam yetki" dedi. #2 Harita MVP yapıldı:
+> - **Coğrafya verisi:** alpers/Turkey-Maps-GeoJSON (MIT) tr-cities.json → Python projeksiyon (equirectangular,
+>   boylam cos düzeltmesi) → `js/tr-harita.js` (81 il inline SVG path + centroid, 73KB, self-contained,
+>   dış tile bağımlılığı YOK). key=fold(il ad) → Afyon→Afyonkarahisar. Projeksiyon doğrulandı (İstanbul KB,
+>   Van/Hakkari doğu, Sinop en kuzey).
+> - **harita.html:** Türkiye choropleth (firma yoğunluğu, `il_firma_dagilimi()` RPC, **QUANTILE** kova —
+>   veri 300-1000'de yığılıydı, sabit kova ayrım yapmıyordu; tek-hue sıcak sequential dark-surface) +
+>   açık RFQ pin katmanı (`il_rfq_dagilimi()`) + il tıklama paneli (KPI + top firma ilike il + açık RFQ) +
+>   hover tooltip + dinamik legend + stat tile'lar. Sidebar'a 23 sayfada eklendi (e-Satınalma altına).
+> - Canlıda doğrulandı: 81 il, 53.897 firma, Ankara en yoğun (6.241/₺1.9Tn), 3 RFQ pin, tıklama paneli çalışıyor.
+> - **Faz-2 (AÇIK):** coğrafya-ağırlıklı "En Uygun 3 Üretici" (ihaleye_uygun_firmalar'a mesafe boyutu) +
+>   MaaS canlı-kapasite yeşil pin + açık adres precise geocode (şu an il-centroid). Screenshot pane'de timeout
+>   veriyor (renderer limiti) → görsel değil DOM/etkileşim testiyle doğrulandı.
+
+> ## 🗺️ 15 TEMMUZ — e-SATINALMA HARİTA + MaaS KÖPRÜSÜ (orijinal planlama notu)
 > Kullanıcı: e-Satınalma ekranı Türkiye haritasında açılsın (kırmızı pin=talep/RFQ); ileride MaaS fasoncularıyla
 > (yeşil pin=boş kapasite) aynı ekranda; mesafe-bazlı lokal eşleştirme + "acil iş radarı" (spot piyasa push).
 > **Benim önerim (kullanıcıya sunuldu):**
