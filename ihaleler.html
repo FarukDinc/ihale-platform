@@ -618,6 +618,11 @@
             <option value="1.20-99">&gt; 1,20</option>
           </select>
         </div>
+        <div class="filter-group">
+          <label>OKAS / CPV Kodu</label>
+          <input type="text" class="filter-input" id="f-okas" placeholder="örn. 38651000 veya 3865" style="width:190px;"
+            onkeydown="if(event.key==='Enter') filtreUygula()" />
+        </div>
       </div>
 
       <!-- KAYITLI ARAMALAR PANELİ (görünür olunca gösterilir) -->
@@ -988,6 +993,7 @@
     const teklifBas= document.getElementById('f-teklif-bas').value;
     const teklifBit= document.getElementById('f-teklif-bit').value;
     const esikKatsayi = document.getElementById('f-esik-katsayi').value;
+    const okas     = document.getElementById('f-okas').value.trim();
 
     const uyumModu = sort === 'uyum_desc' || minUyum > 0;
     const simdiISO = new Date().toISOString();
@@ -1005,6 +1011,7 @@
     else if (aktifSekme === 'gecmis') query = query.lt('son_teklif_tarihi', simdiISO);
 
     if (arama)    query = query.ilike('arama_fold', `%${trFold(arama)}%`);
+    if (okas)     query = query.ilike('okas', `%${okas}%`);
     if (urlDurumFiltresi) query = query.eq('durum', urlDurumFiltresi);
     if (il)       query = query.eq('il', il);
     if (kategori) query = query.eq('kategori', kategori);
@@ -1048,6 +1055,7 @@
       if      (aktifSekme === 'guncel') fallback = fallback.gte('son_teklif_tarihi', simdiISO);
       else if (aktifSekme === 'gecmis') fallback = fallback.lt('son_teklif_tarihi', simdiISO);
       if (arama)    fallback = fallback.or(`baslik.ilike.%${arama}%,idare.ilike.%${arama}%,okas.ilike.%${arama}%,isin_yapilacagi_yer.ilike.%${arama}%,ilan_metni.ilike.%${arama}%`);
+      if (okas)     fallback = fallback.ilike('okas', `%${okas}%`);
       if (urlDurumFiltresi) fallback = fallback.eq('durum', urlDurumFiltresi);
       if (il)       fallback = fallback.eq('il', il);
       if (kategori) fallback = fallback.eq('kategori', kategori);
@@ -1177,7 +1185,7 @@
 
   function filtreleriSifirla() {
     ['f-arama','f-il','f-kategori','f-tur','f-usul','f-min-bedel','f-max-bedel',
-     'f-idare','f-yayin-bas','f-yayin-bit','f-teklif-bas','f-teklif-bit','f-esik-katsayi']
+     'f-idare','f-yayin-bas','f-yayin-bit','f-teklif-bas','f-teklif-bit','f-esik-katsayi','f-okas']
       .forEach(id => { document.getElementById(id).value = ''; });
     document.getElementById('f-min-uyum').value = '0';
     document.getElementById('sort-select').value = 'uyum_desc';
@@ -1264,6 +1272,8 @@
     if (usul) document.getElementById('f-usul').value = usul;
     const tur = p.get('tur');
     if (tur) document.getElementById('f-tur').value = tur;
+    const okas = p.get('okas');
+    if (okas) { document.getElementById('f-okas').value = okas; document.getElementById('gelismis-panel').classList.add('acik'); }
     const minBedel = p.get('minBedel');
     if (minBedel) document.getElementById('f-min-bedel').value = minBedel;
     const maxBedel = p.get('maxBedel');
@@ -1311,6 +1321,7 @@
       teklifBas: document.getElementById('f-teklif-bas').value,
       teklifBit: document.getElementById('f-teklif-bit').value,
       esikKatsayi: document.getElementById('f-esik-katsayi').value,
+      okas:     document.getElementById('f-okas').value.trim(),
       sekme:    aktifSekme,
     };
   }
@@ -1329,6 +1340,7 @@
     }
     if (params.minUyum && params.minUyum !== '0') parcalar.push(`Min Uyum: %${params.minUyum}`);
     if (params.idare)    parcalar.push(`İdare: ${params.idare}`);
+    if (params.okas)     parcalar.push(`OKAS: ${params.okas}`);
     return parcalar.length ? parcalar.join(' · ') : 'Tüm ihaleler (filtre yok)';
   }
 
@@ -1340,6 +1352,7 @@
     if (params.tur)      p.set('tur', params.tur);
     if (params.usul)     p.set('usul', params.usul);
     if (params.idare)    p.set('idare', params.idare);
+    if (params.okas)     p.set('okas', params.okas);
     const str = p.toString();
     return str ? `ihaleler?${str}` : 'ihaleler';
   }
@@ -1434,6 +1447,7 @@
     document.getElementById('f-teklif-bas').value=p.teklifBas|| '';
     document.getElementById('f-teklif-bit').value=p.teklifBit|| '';
     document.getElementById('f-esik-katsayi').value = p.esikKatsayi || '';
+    document.getElementById('f-okas').value = p.okas || '';
     if (p.sekme) sekmeDegistir(p.sekme);
     kayitliPanelKapat();
     ilanlariYukle(1);

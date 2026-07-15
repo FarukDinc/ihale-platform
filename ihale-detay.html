@@ -378,6 +378,19 @@
     return usul.length < 40 ? usul : 'Diğer';
   }
 
+  // OKAS/CPV kodunu tıklanabilir yap → o koda sahip diğer ihaleler (ihaleler?okas=kod).
+  // Format "38651000 - Kameralar" veya virgülle çoklu; her kod ayrı link olur.
+  function okasLinkle(okas) {
+    if (!okas) return '—';
+    return okas.split(',').map(o => {
+      const t = o.trim();
+      if (!t) return '';
+      const m = t.match(/\d{4,}/);
+      const kod = m ? m[0] : t;
+      return `<a href="ihaleler?okas=${encodeURIComponent(kod)}" style="color:var(--amber);text-decoration:none;" title="Bu OKAS koduna sahip diğer ihaleleri gör">${t}</a>`;
+    }).filter(Boolean).join('<br>');
+  }
+
   let mevcutIhale = null;
   let takipte = false;
   let kullaniciProfil = null;
@@ -522,7 +535,7 @@
             <div class="info-row"><span class="info-label">İhale Türü</span><span class="info-value">${d.tur || '—'}</span></div>
             <div class="info-row"><span class="info-label">İhale Usulü</span><span class="info-value">${usulLabel(d.usul)}</span></div>
             <div class="info-row"><span class="info-label">Kategori</span><span class="info-value">${d.kategori ? `<a href="ihaleler?kategori=${encodeURIComponent(d.kategori)}" style="color:var(--amber);text-decoration:none;">${d.kategori}</a>` : '—'}</span></div>
-            <div class="info-row"><span class="info-label">OKAS Kodu</span><span class="info-value">${d.okas || '—'}</span></div>
+            <div class="info-row"><span class="info-label">OKAS Kodu</span><span class="info-value">${okasLinkle(d.okas)}</span></div>
             <div class="info-row"><span class="info-label">Kaynak</span><span class="info-value">${d.kaynak ? d.kaynak.toUpperCase() : '—'}</span></div>
           </div>
 
