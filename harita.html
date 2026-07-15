@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Harita — İhaleGlobal</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <script src="js/theme.js?v=2"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    body { background: var(--navy); }
+    .app { display: flex; min-height: 100vh; }
+    .sidebar { background: var(--navy-mid); border-right: 1px solid var(--border); width: 240px; flex-shrink: 0; position: sticky; top: 0; height: 100vh; display: flex; flex-direction: column; overflow-y: auto; }
+    .sidebar-logo { padding: 20px 20px 16px; border-bottom: 1px solid var(--border); }
+    .sidebar-logo a { font-family: var(--font-display); font-size: 18px; font-weight: 800; color: var(--white); text-decoration: none; display: flex; align-items: center; gap: 8px; }
+    .sidebar-logo span { color: var(--amber); }
+    .sidebar-nav { flex: 1; padding: 16px 12px; overflow-y: auto; }
+    .nav-section-label { font-size: 10px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); padding: 12px 8px 6px; }
+    .nav-item { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 6px; color: var(--muted); text-decoration: none; font-size: 13px; font-weight: 500; transition: all .15s; margin-bottom: 2px; }
+    .nav-item:hover { background: var(--card-bg); color: var(--white); }
+    .nav-item.active { background: rgba(240,165,0,0.12); color: var(--amber); }
+    .nav-item .icon { font-size: 16px; width: 20px; text-align: center; }
+    .sidebar-footer { padding: 16px; border-top: 1px solid var(--border); }
+    .user-row { display: flex; align-items: center; gap: 10px; }
+    .user-avatar { width: 32px; height: 32px; border-radius: 50%; background: var(--amber); color: var(--navy); font-size: 12px; font-weight: 800; display: flex; align-items: center; justify-content: center; }
+    .user-name { font-size: 13px; font-weight: 600; color: var(--white); }
+    .user-plan { font-size: 11px; color: var(--muted); }
+    .main { display: flex; flex-direction: column; flex: 1; min-width: 0; height: 100vh; overflow-y: auto; }
+    .topbar { background: var(--navy-mid); border-bottom: 1px solid var(--border); padding: 0 24px; height: 56px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 10; }
+    .topbar h1 { font-family: var(--font-display); font-size: 16px; font-weight: 700; color: var(--white); display:flex; align-items:center; gap:8px; }
+    .page-body { padding: 24px; max-width: 1280px; width: 100%; }
+
+    .info-banner { background: rgba(240,165,0,.07); border: 1px solid rgba(240,165,0,.24); border-radius: 10px; padding: 12px 16px; margin-bottom: 18px; font-size: 12.5px; color: var(--off-white); line-height: 1.55; }
+    .info-banner b { color: var(--amber); }
+
+    .stat-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 18px; }
+    .stat { background: var(--navy-mid); border: 1px solid var(--border); border-radius: 12px; padding: 16px 18px; }
+    .stat .l { font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+    .stat .v { font-size: 24px; font-weight: 800; color: var(--white); font-family: var(--font-display); margin-top: 6px; }
+    .stat .s { font-size: 11.5px; color: var(--muted); margin-top: 2px; }
+
+    .harita-wrap { display: grid; grid-template-columns: 1fr 340px; gap: 16px; align-items: start; }
+    .harita-card { background: var(--navy-mid); border: 1px solid var(--border); border-radius: 14px; padding: 16px; }
+    .toolbar { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 10px; flex-wrap: wrap; }
+    .toolbar .baslik { font-size: 14px; font-weight: 700; color: var(--white); }
+    .katman-btns { display: flex; gap: 6px; }
+    .katman-btn { background: var(--navy); border: 1px solid var(--border); color: var(--muted); font-size: 12px; font-weight: 600; padding: 6px 12px; border-radius: 7px; cursor: pointer; font-family: var(--font-body); }
+    .katman-btn.active { border-color: var(--amber); color: var(--amber); background: rgba(240,165,0,.08); }
+
+    .harita-svg-wrap { position: relative; width: 100%; }
+    svg.tr-harita { width: 100%; height: auto; display: block; }
+    svg.tr-harita path.il { stroke: var(--navy); stroke-width: 0.6; cursor: pointer; transition: fill .15s, stroke .1s; }
+    svg.tr-harita path.il:hover { stroke: var(--amber); stroke-width: 1.4; }
+    svg.tr-harita path.il.secili { stroke: var(--amber); stroke-width: 1.8; }
+    .rfq-pin { fill: #4ade80; stroke: var(--navy); stroke-width: 1; cursor: pointer; }
+    .rfq-pin-halo { fill: rgba(74,222,128,.25); }
+
+    .lejant { display: flex; align-items: center; gap: 4px; margin-top: 10px; flex-wrap: wrap; font-size: 11px; color: var(--muted); }
+    .lejant .box { width: 22px; height: 12px; border-radius: 2px; display: inline-block; }
+
+    .tooltip { position: fixed; pointer-events: none; background: var(--navy); border: 1px solid var(--amber); border-radius: 8px; padding: 8px 11px; font-size: 12px; color: var(--white); z-index: 50; box-shadow: 0 6px 20px rgba(0,0,0,.4); display: none; max-width: 240px; }
+    .tooltip .t-ad { font-weight: 700; color: var(--amber); margin-bottom: 3px; }
+    .tooltip .t-satir { color: var(--off-white); }
+
+    .panel { background: var(--navy-mid); border: 1px solid var(--border); border-radius: 14px; padding: 18px; position: sticky; top: 80px; min-height: 300px; }
+    .panel-bos { color: var(--muted); font-size: 13px; text-align: center; padding: 60px 10px; line-height: 1.6; }
+    .panel-il { font-family: var(--font-display); font-size: 20px; font-weight: 800; color: var(--white); }
+    .panel-kpi { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 12px 0 14px; }
+    .panel-kpi .k { background: var(--navy); border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px; }
+    .panel-kpi .k .kl { font-size: 10px; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
+    .panel-kpi .k .kv { font-size: 16px; font-weight: 800; color: var(--white); margin-top: 2px; }
+    .panel-sec-baslik { font-size: 12px; font-weight: 700; color: var(--amber); text-transform: uppercase; letter-spacing: .05em; margin: 14px 0 8px; }
+    .panel-firma { display: flex; align-items: center; gap: 10px; padding: 8px 2px; border-bottom: 1px solid var(--border); }
+    .panel-firma .pf-ad { font-size: 12.5px; font-weight: 600; color: var(--white); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .panel-firma .pf-ad a { color: inherit; text-decoration: none; }
+    .panel-firma .pf-ad a:hover { color: var(--amber); }
+    .panel-firma .pf-meta { font-size: 11px; color: var(--muted); }
+    .panel-rfq { background: var(--navy); border: 1px solid var(--border); border-radius: 8px; padding: 9px 11px; margin-bottom: 7px; cursor: pointer; }
+    .panel-rfq:hover { border-color: var(--amber); }
+    .panel-rfq .pr-b { font-size: 12.5px; font-weight: 600; color: var(--white); }
+    .panel-rfq .pr-m { font-size: 11px; color: var(--muted); margin-top: 2px; }
+    .mini-spin { width: 22px; height: 22px; border: 3px solid var(--border); border-top-color: var(--amber); border-radius: 50%; animation: spin .8s linear infinite; margin: 20px auto; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    @media (max-width: 1050px) { .harita-wrap { grid-template-columns: 1fr; } .panel { position: static; } .stat-row { grid-template-columns: 1fr 1fr; } }
+    @media (max-width: 900px) { .sidebar { display: none; } }
+  </style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="sidebar-logo"><a href="/"><span style="width:6px;height:6px;background:var(--amber);border-radius:50%;display:inline-block;"></span> İhale<span>Global</span></a></div>
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">Genel</div>
+      <a href="dashboard" class="nav-item"><span class="icon">◉</span> Dashboard</a>
+      <div class="nav-section-label">Kamu İhaleleri</div>
+      <a href="ihaleler" class="nav-item"><span class="icon">⊞</span> İhaleler</a>
+      <a href="dogrudan-temin" class="nav-item"><span class="icon">⚡</span> Doğrudan Temin</a>
+      <a href="sonuclananlar" class="nav-item"><span class="icon">🏆</span> Sonuçlananlar</a>
+      <div class="nav-section-label" style="padding-left:16px;opacity:.85;">— Analiz —</div>
+      <a href="rekabet-analizi" class="nav-item"><span class="icon">📊</span> Rekabet Analizi</a>
+      <a href="idareler" class="nav-item"><span class="icon">🏛️</span> İdareler Dizini</a>
+      <a href="firmalar" class="nav-item"><span class="icon">🏢</span> Firmalar Dizini</a>
+      <a href="sektorler" class="nav-item"><span class="icon">🏭</span> Sektörler Dizini</a>
+      <a href="kurum-analiz" class="nav-item"><span class="icon">🔍</span> Kurum Analizi</a>
+      <a href="firma-analiz" class="nav-item"><span class="icon">🏢</span> Firma Analizi</a>
+      <a href="kik-kararlar" class="nav-item"><span class="icon">⚖️</span> KİK Kararlar</a>
+      <div class="nav-section-label">Uluslararası</div>
+      <a href="uluslararasi" class="nav-item"><span class="icon">🌍</span> Uluslararası İhaleler</a>
+      <div class="nav-section-label">Özel İhaleler</div>
+      <a href="ozel-ihaleler" class="nav-item"><span class="icon">🤝</span> e-Satınalma</a>
+      <a href="harita" class="nav-item active"><span class="icon">🗺️</span> Harita</a>
+      <div class="nav-section-label">Firmam</div>
+      <a href="ihalelerim" class="nav-item"><span class="icon">📑</span> İhalelerim</a>
+      <a href="takipte" class="nav-item"><span class="icon">☆</span> Takibim</a>
+      <a href="bildirimler" class="nav-item"><span class="icon">🔔</span> Bildirimler</a>
+      <a href="uyumluluk" class="nav-item"><span class="icon">✓</span> Uyumluluk</a>
+      <a href="dokumanlar" class="nav-item"><span class="icon">📁</span> Dökümanlar</a>
+      <a href="profil" class="nav-item"><span class="icon">⚙</span> Profil & Filtreler</a>
+      <a href="fiyatlandirma_odeme_bolumu" class="nav-item"><span class="icon">💳</span> Abonelik</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-row">
+        <div class="user-avatar" id="sb-avatar">?</div>
+        <div><div class="user-name" id="sb-name">Misafir</div><div class="user-plan" id="sb-plan">—</div></div>
+      </div>
+    </div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <h1>🗺️ Türkiye Haritası</h1>
+      <span style="font-size:12px;color:var(--muted);" id="ust-say"></span>
+    </div>
+    <div class="page-body">
+      <div class="info-banner">
+        🗺️ <b>Harita</b> — Türkiye'deki <b>firma yoğunluğu</b> (kamu ihalesi kazanan yükleniciler) ve
+        <b>açık e-Satınalma talepleri (RFQ)</b> il bazında. Bir ile tıklayarak o ildeki firmaları ve açık ihaleleri
+        görün. <b>(İleride MaaS üretici kapasitesiyle birleşecek — yeşil pinler.)</b>
+      </div>
+
+      <div class="stat-row">
+        <div class="stat"><div class="l">Toplam Firma</div><div class="v" id="st-firma">—</div><div class="s">kamu ihalesi kazanan</div></div>
+        <div class="stat"><div class="l">En Yoğun İl</div><div class="v" id="st-yogun">—</div><div class="s" id="st-yogun-s">—</div></div>
+        <div class="stat"><div class="l">Açık RFQ</div><div class="v" id="st-rfq">—</div><div class="s">e-Satınalma talebi</div></div>
+        <div class="stat"><div class="l">Kapsanan İl</div><div class="v" id="st-il">—</div><div class="s">81 ilden</div></div>
+      </div>
+
+      <div class="harita-wrap">
+        <div class="harita-card">
+          <div class="toolbar">
+            <div class="baslik" id="katman-baslik">Firma Yoğunluğu</div>
+            <div class="katman-btns">
+              <button class="katman-btn active" id="kb-firma" onclick="katmanSec('firma')">🏢 Firma Yoğunluğu</button>
+              <button class="katman-btn" id="kb-rfq" onclick="katmanSec('rfq')">🤝 Açık RFQ</button>
+            </div>
+          </div>
+          <div class="harita-svg-wrap" id="svg-wrap"><div class="mini-spin"></div></div>
+          <div class="lejant" id="lejant"></div>
+        </div>
+
+        <div class="panel" id="panel">
+          <div class="panel-bos">Bir ile tıklayın<br><span style="font-size:11px;">o ildeki firmaları ve açık ihaleleri görün</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="tooltip" id="tooltip"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="js/sidebar-user.js"></script>
+<script src="js/bildirim-sayaci.js"></script>
+<script src="js/tr-harita.js"></script>
+<script>
+(() => {
+  const SB_URL = "https://ihaleglobal.com";
+  const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzgzMzUwMDE1LCJleHAiOjE5NDEwMzAwMTV9.sRB61a8oNXwzSKL9No8gt7cmkmnkoQstT0ZtHIxl1Hs";
+  const sb = window.supabase.createClient(SB_URL, SB_KEY);
+
+  function esc(s){ return (s||'').replace(/[<>&"']/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&#39;'}[c])); }
+  // tr-harita.js key üretimiyle AYNI fold (önce Türkçe karakter map, sonra lower)
+  function fold(s){
+    const m={'İ':'i','I':'i','ı':'i','Ş':'s','ş':'s','Ğ':'g','ğ':'g','Ü':'u','ü':'u','Ö':'o','ö':'o','Ç':'c','ç':'c'};
+    return (s||'').split('').map(c=>m[c]||c).join('').toLowerCase().trim();
+  }
+  const ALIAS = { afyon: 'afyonkarahisar' };  // veri "AFYON" derse harita "afyonkarahisar" key'ine bağla
+  function keyOf(il){ const k = fold(il); return ALIAS[k] || k; }
+
+  function paraKisa(v){ v=Number(v)||0; if(v>=1e12)return '₺'+(v/1e12).toFixed(1)+' Tn'; if(v>=1e9)return '₺'+(v/1e9).toFixed(1)+' Mr'; if(v>=1e6)return '₺'+(v/1e6).toFixed(1)+' M'; if(v>=1e3)return '₺'+(v/1e3).toFixed(0)+' B'; return '₺'+v; }
+
+  // Choropleth kova + renk (tek-hue amber, koyu→parlak; dark surface sequential)
+  const KOVA = [
+    { esik: 0,    renk: '#1a2130', et: '0' },
+    { esik: 1,    renk: '#3a2f16', et: '1–25' },
+    { esik: 25,   renk: '#6b5015', et: '25–100' },
+    { esik: 100,  renk: '#9a7016', et: '100–300' },
+    { esik: 300,  renk: '#caa11f', et: '300–1000' },
+    { esik: 1000, renk: '#f0a500', et: '1000+' },
+  ];
+  function renkAl(adet){
+    let r = KOVA[0].renk;
+    for (const k of KOVA) if (adet >= k.esik) r = k.renk;
+    return r;
+  }
+
+  let firmaMap = {};   // key -> {adet, ciro}
+  let rfqMap = {};     // key -> adet
+  let aktifKatman = 'firma';
+  const ilAdMap = {};  // key -> görünen ad (harita verisinden)
+
+  function svgKur(){
+    const H = window.TR_HARITA;
+    if (!H) { document.getElementById('svg-wrap').innerHTML = '<div class="panel-bos">Harita verisi yüklenemedi.</div>'; return; }
+    let paths = '';
+    let pins = '';
+    H.iller.forEach(il => {
+      ilAdMap[il.key] = il.ad;
+      paths += `<path class="il" data-key="${il.key}" data-ad="${esc(il.ad)}" data-cx="${il.cx}" data-cy="${il.cy}" d="${il.d}" fill="#1a2130"></path>`;
+    });
+    const svg = `<svg class="tr-harita" viewBox="${H.viewBox}" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">
+      <g id="g-iller">${paths}</g><g id="g-pins">${pins}</g></svg>`;
+    document.getElementById('svg-wrap').innerHTML = svg;
+
+    const wrap = document.getElementById('svg-wrap');
+    wrap.querySelectorAll('path.il').forEach(p => {
+      p.addEventListener('mousemove', (e) => tooltipGoster(e, p));
+      p.addEventListener('mouseleave', tooltipGizle);
+      p.addEventListener('click', () => ilSec(p.dataset.key));
+    });
+  }
+
+  function boya(){
+    const wrap = document.getElementById('svg-wrap');
+    const g = document.getElementById('g-pins');
+    g.innerHTML = '';
+    wrap.querySelectorAll('path.il').forEach(p => {
+      const k = p.dataset.key;
+      if (aktifKatman === 'firma') {
+        p.setAttribute('fill', renkAl((firmaMap[k] || {}).adet || 0));
+      } else {
+        // RFQ katmanı: choropleth'i soluk göster, RFQ olan illeri vurgula + pin
+        const has = (rfqMap[k] || 0) > 0;
+        p.setAttribute('fill', has ? 'rgba(74,222,128,.28)' : '#161c28');
+      }
+    });
+    if (aktifKatman === 'rfq') {
+      // RFQ pinleri centroid'de
+      wrap.querySelectorAll('path.il').forEach(p => {
+        const k = p.dataset.key; const n = rfqMap[k] || 0;
+        if (n > 0) {
+          const cx = p.dataset.cx, cy = p.dataset.cy;
+          g.innerHTML += `<circle class="rfq-pin-halo" cx="${cx}" cy="${cy}" r="9"></circle><circle class="rfq-pin" cx="${cx}" cy="${cy}" r="4.5" data-key="${k}"></circle>`;
+        }
+      });
+      g.querySelectorAll('.rfq-pin').forEach(c => c.addEventListener('click', () => ilSec(c.dataset.key)));
+    }
+    lejantCiz();
+  }
+
+  function lejantCiz(){
+    const el = document.getElementById('lejant');
+    if (aktifKatman === 'firma') {
+      el.innerHTML = '<span style="margin-right:4px;">Firma sayısı:</span>' +
+        KOVA.map(k => `<span class="box" style="background:${k.renk}"></span><span style="margin-right:8px;">${k.et}</span>`).join('');
+    } else {
+      el.innerHTML = '<span class="box" style="background:#4ade80"></span><span style="margin-right:8px;">Açık RFQ olan il</span><span style="color:var(--muted)">Yeşil pin = talep sayısı</span>';
+    }
+  }
+
+  window.katmanSec = function(k){
+    aktifKatman = k;
+    document.getElementById('kb-firma').classList.toggle('active', k === 'firma');
+    document.getElementById('kb-rfq').classList.toggle('active', k === 'rfq');
+    document.getElementById('katman-baslik').textContent = k === 'firma' ? 'Firma Yoğunluğu' : 'Açık e-Satınalma Talepleri (RFQ)';
+    boya();
+  };
+
+  function tooltipGoster(e, p){
+    const k = p.dataset.key;
+    const f = firmaMap[k] || {};
+    const n = rfqMap[k] || 0;
+    const tt = document.getElementById('tooltip');
+    tt.innerHTML = `<div class="t-ad">${esc(p.dataset.ad)}</div>
+      <div class="t-satir">🏢 ${(f.adet||0).toLocaleString('tr')} firma${f.ciro? ' · ' + paraKisa(f.ciro) + ' ciro':''}</div>
+      ${n>0? `<div class="t-satir" style="color:#4ade80;">🤝 ${n} açık RFQ</div>`:''}`;
+    tt.style.display = 'block';
+    tt.style.left = Math.min(e.clientX + 14, window.innerWidth - 250) + 'px';
+    tt.style.top = (e.clientY + 14) + 'px';
+  }
+  function tooltipGizle(){ document.getElementById('tooltip').style.display = 'none'; }
+
+  async function ilSec(key){
+    document.querySelectorAll('path.il').forEach(p => p.classList.toggle('secili', p.dataset.key === key));
+    const ad = ilAdMap[key] || key;
+    const f = firmaMap[key] || {};
+    const nRfq = rfqMap[key] || 0;
+    const panel = document.getElementById('panel');
+    panel.innerHTML = `<div class="panel-il">📍 ${esc(ad)}</div>
+      <div class="panel-kpi">
+        <div class="k"><div class="kl">Firma</div><div class="kv">${(f.adet||0).toLocaleString('tr')}</div></div>
+        <div class="k"><div class="kl">Toplam Ciro</div><div class="kv">${paraKisa(f.ciro||0)}</div></div>
+        <div class="k"><div class="kl">Açık RFQ</div><div class="kv">${nRfq}</div></div>
+        <div class="k"><div class="kl">Türkiye Payı</div><div class="kv">${toplamFirma? ((f.adet||0)/toplamFirma*100).toFixed(1)+'%':'—'}</div></div>
+      </div>
+      <div class="panel-sec-baslik">Bu ilde öne çıkan firmalar</div>
+      <div id="panel-firmalar"><div class="mini-spin"></div></div>
+      <div class="panel-sec-baslik">Bu ildeki açık RFQ'lar</div>
+      <div id="panel-rfqlar"><div class="mini-spin"></div></div>`;
+
+    // Bu ilin gerçek il değeriyle sorgu (yukleniciler UPPERCASE olabilir; ilike ile fold-bağımsız)
+    const foldPattern = ad; // görünen ad; ilike ile eşleşsin diye il alanına ilike
+    try {
+      const { data } = await sb.from('yukleniciler')
+        .select('ad,toplam_sozlesme_sayisi,toplam_ciro,il')
+        .ilike('il', ad)
+        .order('toplam_ciro', { ascending: false, nullsFirst: false })
+        .limit(8);
+      const el = document.getElementById('panel-firmalar');
+      if (!data || !data.length) { el.innerHTML = '<div class="panel-bos" style="padding:16px;">Kayıt yok.</div>'; }
+      else el.innerHTML = data.map(y => `<div class="panel-firma">
+        <div style="flex:1;min-width:0;">
+          <div class="pf-ad"><a href="firma-analiz?firma=${encodeURIComponent(y.ad)}">${esc(y.ad)}</a></div>
+          <div class="pf-meta">${y.toplam_sozlesme_sayisi||0} sözleşme · ${paraKisa(y.toplam_ciro)}</div>
+        </div></div>`).join('');
+    } catch { document.getElementById('panel-firmalar').innerHTML = '<div class="panel-bos" style="padding:16px;">Yüklenemedi.</div>'; }
+
+    try {
+      const { data } = await sb.from('satinalma_talepleri')
+        .select('id,baslik,kategori,tahmini_bedel')
+        .eq('durum', 'acik').ilike('il', ad).order('olusturulma', { ascending: false }).limit(10);
+      const el = document.getElementById('panel-rfqlar');
+      if (!data || !data.length) { el.innerHTML = '<div class="panel-bos" style="padding:16px;">Bu ilde açık RFQ yok.</div>'; }
+      else el.innerHTML = data.map(t => `<div class="panel-rfq" onclick="location.href='ozel-ihale-detay?id=${t.id}'">
+        <div class="pr-b">${esc(t.baslik)}</div>
+        <div class="pr-m">${esc(t.kategori)||''}${t.tahmini_bedel? ' · '+paraKisa(t.tahmini_bedel):''}</div></div>`).join('');
+    } catch { document.getElementById('panel-rfqlar').innerHTML = '<div class="panel-bos" style="padding:16px;">Yüklenemedi.</div>'; }
+  }
+
+  let toplamFirma = 0;
+  async function veriYukle(){
+    svgKur();
+    // Firma dağılımı
+    try {
+      const { data } = await sb.rpc('il_firma_dagilimi');
+      (data || []).forEach(r => { firmaMap[keyOf(r.il)] = { adet: Number(r.adet)||0, ciro: Number(r.toplam_ciro)||0 }; });
+    } catch (e) { console.error('firma dagilimi', e); }
+    // RFQ dağılımı
+    try {
+      const { data } = await sb.rpc('il_rfq_dagilimi');
+      (data || []).forEach(r => { rfqMap[keyOf(r.il)] = Number(r.adet)||0; });
+    } catch (e) { console.error('rfq dagilimi', e); }
+
+    // İstatistikler
+    let enYogun = null, kapsanan = 0;
+    toplamFirma = 0;
+    let toplamRfq = 0;
+    Object.entries(firmaMap).forEach(([k, v]) => {
+      toplamFirma += v.adet;
+      if (v.adet > 0) kapsanan++;
+      if (!enYogun || v.adet > enYogun.adet) enYogun = { key: k, adet: v.adet };
+    });
+    Object.values(rfqMap).forEach(n => toplamRfq += n);
+    document.getElementById('st-firma').textContent = toplamFirma.toLocaleString('tr');
+    document.getElementById('st-yogun').textContent = enYogun ? (ilAdMap[enYogun.key] || enYogun.key) : '—';
+    document.getElementById('st-yogun-s').textContent = enYogun ? enYogun.adet.toLocaleString('tr') + ' firma' : '—';
+    document.getElementById('st-rfq').textContent = toplamRfq.toLocaleString('tr');
+    document.getElementById('st-il').textContent = kapsanan;
+    document.getElementById('ust-say').textContent = `${toplamFirma.toLocaleString('tr')} firma · ${kapsanan}/81 il`;
+    boya();
+  }
+
+  veriYukle();
+})();
+</script>
+</body>
+</html>
