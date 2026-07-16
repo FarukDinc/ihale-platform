@@ -31,7 +31,8 @@
 > şema+parser+UI+E10/E11 yakalama kurulabilir, asıl çözüm adımını kullanıcının `ekap_captcha_indir` hattı
 > çalıştırır. Maliyet: her sonuç=1 Gemini CAPTCHA; ~1M "15" kaydında cookie-reuse (kotayı ~100x düşürür)
 > MUTLAKA test edilmeli. Tam reçete + entegrasyon tasarımı hafıza `dt-kazanan-captcha`'da. **DURUM: kullanıcı
-> yönlendirmesi bekliyor** (scaffolding'i kurayım mı / kapsam).
+> yönlendirmesi bekliyor** → **ERTELENDİ:** kullanıcı "şimdilik duralım, sonra bana TEKRAR SOR ve işleme
+> alalım" dedi. İskele kurulmadı; sonraki uygun oturumda kullanıcıya tekrar açılacak.
 
 > ## ✅ 16 TEMMUZ (2. OTURUM) — VERİ AKIŞI DENETİMİ: 3 AKIŞ DA AKTİF + KUPON/SUNUCU NOTLARI
 > **1) Veri çekme denetimi (public REST, `olusturulma` yöntemi — bkz. hafıza `scraper-cron-silent-fail`):**
