@@ -34,7 +34,26 @@
 >   hover tooltip = Türkçe ülke adı (Intl.DisplayNames, fallback İng.) + ihracat/ithalat + YoY ▲▼ + seçili
 >   sektör satırı + "N açık ihale — tıkla" köprüsü. Lejantta yıl + kaynak atfı (UN Comtrade & WITS — atıf
 >   zorunlu). TIC yüklenmezse düğme gizlenir, ihale modu hiç etkilenmez. Yerel testte tüm akış doğrulandı.
->
+
+> ## 📦 16 TEMMUZ (devam) — KAMU KURUMU İHALELERİ: DMO + JANDARMA KAYNAKLARI EKLENDİ (CANLI)
+> Kullanıcı: EKAP dışı iki kamu kaynağını (DMO + Jandarma) "Kamu adı altında" ekleyelim. Fizibilite canlı
+> doğrulandı → ikisi de düz HTTP GET + HTML parse (CAPTCHA/auth/JS YOK, DT kazanan CAPTCHA'sından çok kolay).
+> - **Ayrı tablo `kamu_ihaleleri`** (uluslararasi_ihaleler deseni; ana ilanlar kirlenmesin): kaynak(dmo/jandarma),
+>   kaynak_id, baslik, idare, kategori, aciklama, talep_no, ekap_referans, tarihler, orijinal_url. UNIQUE(kaynak,kaynak_id).
+>   RLS public read. `backend/migration_kamu_ihaleleri.sql` (canlıya uygulandı).
+> - **DMO** (`dmo_scraper.py`): `dmo.gov.tr/Ihale/Liste?type=1` sunucu-render HTML tablo → 34 aktif ihale. UTF-8.
+> - **Jandarma** (`jandarma_scraper.py`): `vatandas.jandarma.gov.tr/ihalesorgu/FORM/FrmIhaleListe.aspx` WebForms,
+>   birlik-gruplu → 40 ihale. UTF-8 (charset header; İLK tahminim windows-1254 yanlıştı → mojibake, r.text ile düzeldi).
+>   Açıklamalardan EKAP DT no çıkarılıyor (8 kayıt) — dedup/izleme için.
+> - **Sayfa `kamu-ihaleleri.html`** (uluslararasi kalıbı): kaynak rozetli liste (📘 DMO / 🎖️ Jandarma) + mor EKAP
+>   rozeti + kaynak/arama filtresi + sunucu-sayfalı. Nav "Kamu İhaleleri" bölümüne "📦 Kamu Kurumu İhaleleri"
+>   (24 sayfa). Canlı doğrulandı: 74 kayıt (34+40, 8 EKAP), kaynak filtresi çalışıyor.
+> - **Cron:** `run_scraper.sh`'e iki scraper eklendi (gece 02:00 turu).
+> - **Bilinen küçük eksik:** arama Türkçe İ/ı katlamıyor (ILIKE `kırtasiye`≠`KIRTASİYE`) — doğrudan-temin ile aynı;
+>   74 satırlık tabloda ileride arama_fold generated kolonuyla giderilebilir.
+> **Karar notu:** kullanıcının önerdiği "İstihbarat" başlığı yerine dürüst kaynak rozeti + "Kamu Kurumu" başlığı
+> seçildi (istihbarat yanıltıcıydı; bunlar kamu satınalma kanalları).
+
 > ## 🛠️ 16 TEMMUZ (devam) — 8 SİSTEM SORUNU: 7 DÜZELTİLDİ + CANLI, #4 SIRADA
 > Kullanıcı 8 sorun bildirdi; 8 paralel ajanla teşhis edildi (workflow), sonra düzeltildi:
 > - **#7 teklif hazırla DONMASI (commit `4fd02af`) — EN KRİTİK:** `yazdir()` print şablonundaki template
