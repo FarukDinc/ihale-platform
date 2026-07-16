@@ -250,7 +250,10 @@
     const body = document.getElementById('page-body');
     if (!id) { body.innerHTML = '<div class="giris-uyari">Geçersiz ihale.</div>'; return; }
     try { const { data } = await sb.auth.getUser(); user = data.user; } catch {}
-    const { data, error } = await sb.from('satinalma_talepleri').select('*').eq('id', id).maybeSingle();
+    // Anon (giriş yok) hassas kolonları (VKN/açık adres/koordinat) GÖREMEZ — column-level grant (#18).
+    // Authenticated (tedarikçi/alıcı) tam erişir. Anon için güvenli kolon listesi seçilir ki 'permission denied' olmasın.
+    const guvenliKolonlar = 'id,olusturan_user_id,olusturan_firma,baslik,aciklama,kategori,il,ilce,miktar,tahmini_bedel,para_birimi,son_teklif_tarihi,durum,olusturulma,kazanan_teklif_id';
+    const { data, error } = await sb.from('satinalma_talepleri').select(user ? '*' : guvenliKolonlar).eq('id', id).maybeSingle();
     if (error || !data) {
       body.innerHTML = '<div class="giris-uyari">İhale bulunamadı veya kaldırılmış.</div>';
       return;
