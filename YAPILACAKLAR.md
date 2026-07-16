@@ -7,6 +7,21 @@
 > **KALICI TALİMAT (12 Tem, kullanıcı emri):** Bu blok + ilgili bölümler her oturumda otomatik
 > güncellenir, kullanıcı hatırlatmak zorunda değil. Bkz. hafıza `yapilacaklar-auto-update`.
 
+> ## 🤝 16 TEMMUZ (devam) — e-SATINALMA (RFQ) BÜYÜK REVİZYON (CANLI)
+> Kullanıcı: form ➕'ya tıklayınca açılsın; ünvan/VKN/adres profilden otomatik+kilitli gelsin (yoksa önce
+> profil doldurtsun); süresi geçen ihale teklif almasın; açık ihalelere il/sektör/tarih/durum/arama filtresi.
+> - **profil:** vergi_no/acik_adres/firma_il/firma_ilce kolonları (migration_profil_firma_kimlik.sql, canlıda).
+>   profil.html'de "📍 İş Yeri Adresi" bölümü + VKN artık DB'de (eskiden yalnız localStorage). profil RLS
+>   `auth.uid()=user_id` doğrulandı → tedarikçi başkasının VKN/adresini profilden OKUYAMAZ.
+> - **ozel-ihaleler.html:** form artık accordion (➕ ile açılır, kapalıyken yer kaplamaz). Firma ünvan/VKN/il/
+>   ilçe/adres profilden OTOMATİK + readonly (kilitli, "Profilden düzenle" linki). Profil eksikse form gizli +
+>   "⚠️ Önce firma profilinizi tamamlayın" gate (eksik alan listesi + Profili Tamamla). Son teklif tarihi zorunlu.
+>   RFQ liste: durum sekmesi (🟢Güncel/🕓Geçmiş/Tümü) + il + sektör + tarih-aralığı + arama (başlık/firma/açıklama);
+>   süresi geçen kart "⏹ Süresi doldu — teklif kapalı" + soluk. Canlı doğrulandı (accordion, filtreler, sekmeler).
+> - **ozel-ihale-detay.html:** sureDoldu()/teklifAcik() — durum='acik' olsa bile son_teklif geçmişse teklif
+>   formu kapanır ("⏹ son teklif tarihi geçti"), teklifVer() guard'lı, header rozeti "Süresi doldu".
+> - NOT: login-arkası akış (profil→otomatik kilit→yayınla) anon test edilemedi ama kod+deploy doğrulandı.
+
 > ## 📊 16 TEMMUZ — TRADE MAP (trademap.org) FİZİBİLİTE: TEKNİK EVET / HUKUKEN HAYIR (danışmanlık, KARAR KULLANICIDA)
 > Soru: ITC Trade Map'ten Türkiye dış ticaret verisi çekip İhaleGlobal'e eklemek.
 > **Teknik bulgu:** yeni trademap.org (beta) login'siz açık, temiz JSON API'si var
@@ -161,7 +176,24 @@
 > VDS'te `kupon_olustur.py --plan standart --ay 6 --adet 1` çalıştırıldı → **IHP-72DEF88A** (canlı DB'de,
 > tek kullanımlık). Ders: Pro'nun iç kodu `standart`; ⚠️ yerel `backend/.env` hâlâ ESKİ managed
 > Supabase'i gösteriyor — kupon/yazma işleri asla yerelden değil VDS'ten yapılmalı.
-> **3) Sunucu kararı (danışmanlık):** mevcut VDS (≈8GB/4çekirdek, disk %14) ŞİMDİLİK YETERLİ — geçiş
+> **3) Firma adı mükerrer denetimi (KARAR: DOKUNULMADI — kullanıcı onayıyla ertelendi):** kullanıcı
+> "bazı firma isimlerini multi gördüm" dedi → 71.384 firmanın tamamı public REST'ten çekilip tarandı
+> (scratchpad script). Bulgular: normalize_ad mükerreri 0 ✅, birebir aynı ad 0 ✅, **Türkçe harf
+> farkıyla (Ç/C, İ/I) 24 grup** ⚠️. Üç sınıf: (a) bariz EKAP typo'su ~10 grup (YİLDİRİM/YILDIRIM,
+> BALCİ/BALCI, DEMİR GLOBAL-AKSENTAŞ İO "İNSAAT" typo'su — aynı gerçek firma bölünmüş karne);
+> (b) gerçekten farklı kişiler olabilir (ACAR/AÇAR, AKCA/AKÇA) — OTOMATİK BİRLEŞTİRME YASAK
+> (bkz. hafıza vkn-yok-beyan-rozet dersi: iki kişinin karnesini birleştirmek dürüstlük sorunu);
+> (c) çöp kayıt: "İŞ ORTAKLIĞI"/"iş ortaklığı" firma diye girmiş (9 söz., ₺109M). Arama sayfasının
+> ikisini birden göstermesi arama_fold katlaması yüzünden — davranış doğru. **Etki ~%0,03 olduğu
+> için düzeltme ertelendi.** İleride yapılacaksa reçete: (1) normalize_firma'ya fold EKLEME;
+> (2) yuklenici_yenile'ye çöp-ad filtresi; (3) tr_fold GROUP BY HAVING>1 bekçi raporu;
+> (4) sınıf-(a) typo'ları elle birleştir.
+> **4) 🔴 BOT/SCRAPER KORUMASI DENETİMİ — KORUMA YOK (kanıtlı, aksiyon bekliyor):** kullanıcı "millet
+> bizden veri çekmesin" diye sordu. Ampirik test: anon key JS'te public (mimari gereği), curl/httpx ile
+> 71K firma ~75 istekte çekildi, rate limit YOK, python-requests UA'sı bile geçiyor (CF Bot Fight kapalı),
+> tek sınır PostgREST 1000 satır/istek (350K ilanlar ≈ 350 istek = dakikalar). robots.txt koruma değil +
+> sitemap-firmalar SEO için taramaya davet (bilinçli). RLS'li kullanıcı verisi SAĞLAM. **Plan:**
+> (1) CF panel ( mevcut VDS (≈8GB/4çekirdek, disk %14) ŞİMDİLİK YETERLİ — geçiş
 > tetikleyicileri: 2003+ tam backfill, RAM baskısı, CPU doygunluğu. Geçilecekse hedef: WeLAB BL460c
 > **Gen8 Pro $43.48/ay** (2x E5-2680, 128GB, 980GB NVMe, "Database Server") — NVMe+yüksek saat; SAS'lı
 > ₺2.000-15.500 planlara gerek yok.
