@@ -47,6 +47,19 @@
     .katman-btns { display: flex; gap: 6px; }
     .katman-btn { background: var(--navy); border: 1px solid var(--border); color: var(--muted); font-size: 12px; font-weight: 600; padding: 6px 12px; border-radius: 7px; cursor: pointer; font-family: var(--font-body); }
     .katman-btn.active { border-color: var(--amber); color: var(--amber); background: rgba(240,165,0,.08); }
+    .sektor-sec { background: var(--navy); border: 1px solid var(--border); color: var(--white); font-size: 12px; font-weight: 600; padding: 6px 10px; border-radius: 7px; cursor: pointer; font-family: var(--font-body); max-width: 250px; }
+    .sektor-sec:disabled { opacity: .5; cursor: wait; }
+    .sektor-sec option { background: var(--navy); color: var(--white); }
+
+    .il-sira { display: flex; align-items: center; gap: 8px; padding: 7px 2px; border-bottom: 1px solid var(--border); cursor: pointer; font-size: 12px; }
+    .il-sira:hover .is-ad { color: var(--amber); }
+    .il-sira .is-no { width: 18px; flex-shrink: 0; color: var(--muted); font-weight: 700; font-size: 11px; }
+    .il-sira .is-ad { width: 84px; flex-shrink: 0; font-weight: 600; color: var(--white); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .il-sira .is-bar { flex: 1; height: 7px; background: var(--navy); border-radius: 4px; overflow: hidden; }
+    .il-sira .is-bar span { display: block; height: 100%; background: linear-gradient(90deg,#b0891a,#f5b301); border-radius: 4px; }
+    .il-sira .is-say { color: var(--muted); font-size: 10.5px; white-space: nowrap; }
+    .panel-geri { display: inline-block; font-size: 11.5px; color: var(--muted); cursor: pointer; margin-bottom: 8px; }
+    .panel-geri:hover { color: var(--amber); }
 
     .harita-svg-wrap { position: relative; width: 100%; }
     svg.tr-harita { width: 100%; height: auto; display: block; }
@@ -136,12 +149,13 @@
     <div class="page-body">
       <div class="info-banner">
         🗺️ <b>Harita</b> — Türkiye'deki <b>firma yoğunluğu</b> (kamu ihalesi kazanan yükleniciler) ve
-        <b>açık e-Satınalma talepleri (RFQ)</b> il bazında. Bir ile tıklayarak o ildeki firmaları ve açık ihaleleri
-        görün. <b>(İleride MaaS üretici kapasitesiyle birleşecek — yeşil pinler.)</b>
+        <b>açık e-Satınalma talepleri (RFQ)</b> il bazında. <b>Sektör seçin:</b> harita o sektördeki yoğunluğa göre
+        boyanır, sağda il sıralaması çıkar; bir ile tıklayınca o ilde <b>o sektörde</b> en çok iş kazanan firmalar
+        sıralanır. <b>(İleride MaaS üretici kapasitesiyle birleşecek — yeşil pinler.)</b>
       </div>
 
       <div class="stat-row">
-        <div class="stat"><div class="l">Toplam Firma</div><div class="v" id="st-firma">—</div><div class="s">kamu ihalesi kazanan</div></div>
+        <div class="stat"><div class="l">Toplam Firma</div><div class="v" id="st-firma">—</div><div class="s" id="st-firma-s">kamu ihalesi kazanan</div></div>
         <div class="stat"><div class="l">En Yoğun İl</div><div class="v" id="st-yogun">—</div><div class="s" id="st-yogun-s">—</div></div>
         <div class="stat"><div class="l">Açık RFQ</div><div class="v" id="st-rfq">—</div><div class="s">e-Satınalma talebi</div></div>
         <div class="stat"><div class="l">Kapsanan İl</div><div class="v" id="st-il">—</div><div class="s">81 ilden</div></div>
@@ -151,9 +165,14 @@
         <div class="harita-card">
           <div class="toolbar">
             <div class="baslik" id="katman-baslik">Firma Yoğunluğu</div>
-            <div class="katman-btns">
-              <button class="katman-btn active" id="kb-firma" onclick="katmanSec('firma')">🏢 Firma Yoğunluğu</button>
-              <button class="katman-btn" id="kb-rfq" onclick="katmanSec('rfq')">🤝 Açık RFQ</button>
+            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+              <select id="sektor-sec" class="sektor-sec" onchange="sektorSec(this.value)" title="Sektöre göre filtrele">
+                <option value="">🏭 Tüm Sektörler</option>
+              </select>
+              <div class="katman-btns">
+                <button class="katman-btn active" id="kb-firma" onclick="katmanSec('firma')">🏢 Firma Yoğunluğu</button>
+                <button class="katman-btn" id="kb-rfq" onclick="katmanSec('rfq')">🤝 Açık RFQ</button>
+              </div>
             </div>
           </div>
           <div class="harita-svg-wrap" id="svg-wrap"><div class="mini-spin"></div></div>
@@ -173,6 +192,7 @@
 <script src="js/sidebar-user.js"></script>
 <script src="js/bildirim-sayaci.js"></script>
 <script src="js/tr-harita.js"></script>
+<script src="js/kategoriler.js"></script>
 <script src="js/svg-zoom.js?v=1"></script>
 <script>
 (() => {
@@ -188,6 +208,12 @@
   }
   const ALIAS = { afyon: 'afyonkarahisar' };  // veri "AFYON" derse harita "afyonkarahisar" key'ine bağla
   function keyOf(il){ const k = fold(il); return ALIAS[k] || k; }
+  // il_sektor_firmalar RPC'sine gönderilecek fold varyantları: key + o key'e işaret eden alias kaynakları
+  function foldVaryantlari(key){
+    const v = [key];
+    Object.entries(ALIAS).forEach(([kaynak, hedef]) => { if (hedef === key && !v.includes(kaynak)) v.push(kaynak); });
+    return v;
+  }
 
   function paraKisa(v){ v=Number(v)||0; if(v>=1e12)return '₺'+(v/1e12).toFixed(1)+' Tn'; if(v>=1e9)return '₺'+(v/1e9).toFixed(1)+' Mr'; if(v>=1e6)return '₺'+(v/1e6).toFixed(1)+' M'; if(v>=1e3)return '₺'+(v/1e3).toFixed(0)+' B'; return '₺'+v; }
 
@@ -196,7 +222,10 @@
   const RENKLER = ['#3d3a2e', '#5c4f22', '#856a1a', '#b0891a', '#d9a81e', '#f5b301'];
   let esikler = [];  // 5 kırılım (6 kova) — veriYukle dolduruyor
   function esikleriHesapla(){
-    const vals = Object.values(firmaMap).map(v => v.adet).filter(a => a > 0).sort((a, b) => a - b);
+    // Sektör seçiliyse kovalar o sektörün il dağılımından (quantile), yoksa genel firma dağılımından
+    const sm = sektorIlMap();
+    const vals = (sm ? Object.values(sm).map(v => v.firma) : Object.values(firmaMap).map(v => v.adet))
+      .filter(a => a > 0).sort((a, b) => a - b);
     esikler = [];
     if (!vals.length) return;
     for (let i = 1; i <= 5; i++) esikler.push(vals[Math.floor(vals.length * i / 6)]);
@@ -212,6 +241,24 @@
   let rfqMap = {};     // key -> adet
   let aktifKatman = 'firma';
   const ilAdMap = {};  // key -> görünen ad (harita verisinden)
+
+  // ---- Sektör katmanı ----
+  let sektorSecili = null;    // kanonik kategori adı (js/kategoriler.js) ya da null = tüm sektörler
+  let sektorVeri = null;      // kategori -> ilKey -> {firma, soz, bedel}  (il_sektor_ozet RPC, tek çağrı)
+  let sektorHata = false;     // RPC yok/başarısız (migration uygulanmamış olabilir)
+  let sektorTopF = 0, sektorTopSoz = 0;  // seçili sektörün TR toplamları (pay hesabı)
+  let seciliIlKey = null;
+  function sektorIlMap(){ return (sektorSecili && sektorVeri && sektorVeri[sektorSecili]) || null; }
+  function sektorEmoji(kod){ const k = (window.KATEGORILER || []).find(x => x.kod === kod); return k ? k.emoji : '🏭'; }
+
+  (function sektorSelectKur(){
+    const sel = document.getElementById('sektor-sec');
+    (window.KATEGORILER || []).forEach(k => {
+      const o = document.createElement('option');
+      o.value = k.kod; o.textContent = `${k.emoji} ${k.kod}`;
+      sel.appendChild(o);
+    });
+  })();
 
   function svgKur(){
     const H = window.TR_HARITA;
@@ -243,7 +290,8 @@
     wrap.querySelectorAll('path.il').forEach(p => {
       const k = p.dataset.key;
       if (aktifKatman === 'firma') {
-        p.setAttribute('fill', renkAl((firmaMap[k] || {}).adet || 0));
+        const sm = sektorIlMap();
+        p.setAttribute('fill', renkAl(sm ? ((sm[k] || {}).firma || 0) : ((firmaMap[k] || {}).adet || 0)));
       } else {
         // RFQ katmanı: choropleth'i soluk göster, RFQ olan illeri vurgula + pin
         const has = (rfqMap[k] || 0) > 0;
@@ -274,11 +322,17 @@
         const label = ust ? `${alt.toLocaleString('tr')}–${ust.toLocaleString('tr')}` : `${alt.toLocaleString('tr')}+`;
         return `<span class="box" style="background:${renk}"></span><span style="margin-right:8px;">${label}</span>`;
       }).join('');
-      el.innerHTML = '<span style="margin-right:4px;color:var(--white);font-weight:600;">Renkler ildeki kayıtlı firma yoğunluğunu gösterir:</span>' +
+      const kapsam = sektorSecili
+        ? `Renkler <b style="color:var(--amber);">${esc(sektorSecili)}</b> sektöründe ildeki kazanan firma yoğunluğunu gösterir:`
+        : 'Renkler ildeki kayıtlı firma yoğunluğunu gösterir:';
+      el.innerHTML = `<span style="margin-right:4px;color:var(--white);font-weight:600;">${kapsam}</span>` +
         '<span class="box" style="background:#1a2130"></span><span style="margin-right:8px;">Firma yok</span>' + et +
         `<span style="display:inline-flex;align-items:center;gap:5px;">Az <span style="width:56px;height:8px;border-radius:4px;display:inline-block;background:linear-gradient(90deg,${RENKLER.join(',')});"></span> Çok</span>`;
     } else {
-      el.innerHTML = '<span style="margin-right:4px;color:var(--white);font-weight:600;">Renkler ildeki açık satınalma talebi (RFQ) durumunu gösterir:</span>' +
+      const rfqKapsam = sektorSecili
+        ? `Renkler <b style="color:#4ade80;">${esc(sektorSecili)}</b> kategorisindeki açık satınalma talebi (RFQ) durumunu gösterir:`
+        : 'Renkler ildeki açık satınalma talebi (RFQ) durumunu gösterir:';
+      el.innerHTML = `<span style="margin-right:4px;color:var(--white);font-weight:600;">${rfqKapsam}</span>` +
         '<span class="box" style="background:#161c28"></span><span style="margin-right:8px;">Talep yok</span>' +
         '<span class="box" style="background:rgba(74,222,128,.28);border:1px solid #4ade80"></span><span style="margin-right:8px;">Açık RFQ olan il</span>' +
         '<span style="color:var(--muted)">Yeşil pin = talep noktası (tıklayınca detay)</span>';
@@ -297,9 +351,14 @@
     const k = p.dataset.key;
     const f = firmaMap[k] || {};
     const n = rfqMap[k] || 0;
+    const sm = sektorIlMap();
     const tt = document.getElementById('tooltip');
+    const anaSatir = sm
+      ? (d => `<div class="t-satir">${sektorEmoji(sektorSecili)} ${(d.firma||0).toLocaleString('tr')} firma · ${(d.soz||0).toLocaleString('tr')} sözleşme${d.bedel? ' · ' + paraKisa(d.bedel):''}</div>
+         <div class="t-satir" style="color:var(--muted);font-size:11px;">${esc(sektorSecili)}</div>`)(sm[k] || {})
+      : `<div class="t-satir">🏢 ${(f.adet||0).toLocaleString('tr')} firma${f.ciro? ' · ' + paraKisa(f.ciro) + ' ciro':''}</div>`;
     tt.innerHTML = `<div class="t-ad">${esc(p.dataset.ad)}</div>
-      <div class="t-satir">🏢 ${(f.adet||0).toLocaleString('tr')} firma${f.ciro? ' · ' + paraKisa(f.ciro) + ' ciro':''}</div>
+      ${anaSatir}
       ${n>0? `<div class="t-satir" style="color:#4ade80;">🤝 ${n} açık RFQ</div>`:''}`;
     tt.style.display = 'block';
     tt.style.left = Math.min(e.clientX + 14, window.innerWidth - 250) + 'px';
@@ -308,84 +367,250 @@
   function tooltipGizle(){ document.getElementById('tooltip').style.display = 'none'; }
 
   async function ilSec(key){
+    seciliIlKey = key;
     document.querySelectorAll('path.il').forEach(p => p.classList.toggle('secili', p.dataset.key === key));
     const ad = ilAdMap[key] || key;
-    const f = firmaMap[key] || {};
     const nRfq = rfqMap[key] || 0;
     const panel = document.getElementById('panel');
-    panel.innerHTML = `<div class="panel-il">📍 ${esc(ad)}</div>
-      <div class="panel-kpi">
-        <div class="k"><div class="kl">Firma</div><div class="kv">${(f.adet||0).toLocaleString('tr')}</div></div>
-        <div class="k"><div class="kl">Toplam Ciro</div><div class="kv">${paraKisa(f.ciro||0)}</div></div>
-        <div class="k"><div class="kl">Açık RFQ</div><div class="kv">${nRfq}</div></div>
-        <div class="k"><div class="kl">Türkiye Payı</div><div class="kv">${toplamFirma? ((f.adet||0)/toplamFirma*100).toFixed(1)+'%':'—'}</div></div>
-      </div>
-      <div class="panel-sec-baslik">Bu ilde öne çıkan firmalar</div>
-      <div id="panel-firmalar"><div class="mini-spin"></div></div>
-      <div class="panel-sec-baslik">Bu ildeki açık RFQ'lar</div>
-      <div id="panel-rfqlar"><div class="mini-spin"></div></div>`;
+    const sm = sektorIlMap();
 
-    // Bu ilin gerçek il değeriyle sorgu (yukleniciler UPPERCASE olabilir; ilike ile fold-bağımsız)
-    const foldPattern = ad; // görünen ad; ilike ile eşleşsin diye il alanına ilike
-    try {
-      const { data } = await sb.from('yukleniciler')
-        .select('ad,toplam_sozlesme_sayisi,toplam_ciro,il')
-        .ilike('il', ad)
-        .order('toplam_ciro', { ascending: false, nullsFirst: false })
-        .limit(8);
-      const el = document.getElementById('panel-firmalar');
-      if (!data || !data.length) { el.innerHTML = '<div class="panel-bos" style="padding:16px;">Kayıt yok.</div>'; }
-      else el.innerHTML = data.map(y => `<div class="panel-firma">
-        <div style="flex:1;min-width:0;">
-          <div class="pf-ad"><a href="firma-analiz?firma=${encodeURIComponent(y.ad)}">${esc(y.ad)}</a></div>
-          <div class="pf-meta">${y.toplam_sozlesme_sayisi||0} sözleşme · ${paraKisa(y.toplam_ciro)}</div>
-        </div></div>`).join('');
-    } catch { document.getElementById('panel-firmalar').innerHTML = '<div class="panel-bos" style="padding:16px;">Yüklenemedi.</div>'; }
+    if (sm) {
+      // ---- Sektör modu: KPI'lar ve firma sıralaması SEKTÖRE ÖZGÜ ----
+      const d = sm[key] || { firma: 0, soz: 0, bedel: 0 };
+      panel.innerHTML = `<span class="panel-geri" onclick="panelSifirla()">← ${esc(sektorSecili)} il sıralamasına dön</span>
+        <div class="panel-il">📍 ${esc(ad)}</div>
+        <div style="font-size:11.5px;color:var(--amber);font-weight:600;margin-top:2px;">${sektorEmoji(sektorSecili)} ${esc(sektorSecili)}</div>
+        <div class="panel-kpi">
+          <div class="k"><div class="kl">Firma</div><div class="kv">${(d.firma||0).toLocaleString('tr')}</div></div>
+          <div class="k"><div class="kl">Sözleşme</div><div class="kv">${(d.soz||0).toLocaleString('tr')}</div></div>
+          <div class="k"><div class="kl">Toplam Bedel</div><div class="kv">${paraKisa(d.bedel||0)}</div></div>
+          <div class="k"><div class="kl">Sektör Payı</div><div class="kv">${sektorTopSoz? ((d.soz||0)/sektorTopSoz*100).toFixed(1)+'%':'—'}</div></div>
+        </div>
+        <div class="panel-sec-baslik">Bu ilde bu sektörde öne çıkan firmalar</div>
+        <div id="panel-firmalar"><div class="mini-spin"></div></div>
+        <div class="panel-sec-baslik">Bu ildeki açık RFQ'lar (${esc(sektorSecili)})</div>
+        <div id="panel-rfqlar"><div class="mini-spin"></div></div>`;
 
+      try {
+        const { data, error } = await sb.rpc('il_sektor_firmalar',
+          { p_il_folds: foldVaryantlari(key), p_kategori: sektorSecili, p_limit: 8 });
+        if (error) throw error;
+        const el = document.getElementById('panel-firmalar');
+        if (!el) return;
+        if (!data || !data.length) { el.innerHTML = '<div class="panel-bos" style="padding:16px;">Bu sektörde kayıt yok.</div>'; }
+        else el.innerHTML = data.map((y, i) => `<div class="panel-firma">
+          <span style="width:16px;flex-shrink:0;font-size:11px;font-weight:700;color:var(--muted);">${i+1}</span>
+          <div style="flex:1;min-width:0;">
+            <div class="pf-ad"><a href="firma-analiz?firma=${encodeURIComponent(y.ad)}">${esc(y.ad)}</a></div>
+            <div class="pf-meta">${(y.sozlesme||0).toLocaleString('tr')} sözleşme · ${paraKisa(y.toplam_bedel)} <span style="opacity:.7;">(bu il + sektörde)</span></div>
+          </div></div>`).join('');
+      } catch (e) {
+        console.error('il_sektor_firmalar', e);
+        const el = document.getElementById('panel-firmalar');
+        if (el) el.innerHTML = '<div class="panel-bos" style="padding:16px;">Yüklenemedi.</div>';
+      }
+    } else {
+      // ---- Genel mod (mevcut davranış) ----
+      const f = firmaMap[key] || {};
+      panel.innerHTML = `<div class="panel-il">📍 ${esc(ad)}</div>
+        <div class="panel-kpi">
+          <div class="k"><div class="kl">Firma</div><div class="kv">${(f.adet||0).toLocaleString('tr')}</div></div>
+          <div class="k"><div class="kl">Toplam Ciro</div><div class="kv">${paraKisa(f.ciro||0)}</div></div>
+          <div class="k"><div class="kl">Açık RFQ</div><div class="kv">${nRfq}</div></div>
+          <div class="k"><div class="kl">Türkiye Payı</div><div class="kv">${toplamFirma? ((f.adet||0)/toplamFirma*100).toFixed(1)+'%':'—'}</div></div>
+        </div>
+        <div class="panel-sec-baslik">Bu ilde öne çıkan firmalar</div>
+        <div id="panel-firmalar"><div class="mini-spin"></div></div>
+        <div class="panel-sec-baslik">Bu ildeki açık RFQ'lar</div>
+        <div id="panel-rfqlar"><div class="mini-spin"></div></div>`;
+
+      // Bu ilin gerçek il değeriyle sorgu (yukleniciler UPPERCASE olabilir; ilike ile fold-bağımsız)
+      try {
+        const { data } = await sb.from('yukleniciler')
+          .select('ad,toplam_sozlesme_sayisi,toplam_ciro,il')
+          .ilike('il', ad)
+          .order('toplam_ciro', { ascending: false, nullsFirst: false })
+          .limit(8);
+        const el = document.getElementById('panel-firmalar');
+        if (!el) return;
+        if (!data || !data.length) { el.innerHTML = '<div class="panel-bos" style="padding:16px;">Kayıt yok.</div>'; }
+        else el.innerHTML = data.map(y => `<div class="panel-firma">
+          <div style="flex:1;min-width:0;">
+            <div class="pf-ad"><a href="firma-analiz?firma=${encodeURIComponent(y.ad)}">${esc(y.ad)}</a></div>
+            <div class="pf-meta">${y.toplam_sozlesme_sayisi||0} sözleşme · ${paraKisa(y.toplam_ciro)}</div>
+          </div></div>`).join('');
+      } catch { const el = document.getElementById('panel-firmalar'); if (el) el.innerHTML = '<div class="panel-bos" style="padding:16px;">Yüklenemedi.</div>'; }
+    }
+
+    // Açık RFQ listesi (sektör seçiliyse kategoriyle daraltılır)
     try {
-      const { data } = await sb.from('satinalma_talepleri')
+      let q = sb.from('satinalma_talepleri')
         .select('id,baslik,kategori,tahmini_bedel')
-        .eq('durum', 'acik').ilike('il', ad).order('olusturulma', { ascending: false }).limit(10);
+        .eq('durum', 'acik').ilike('il', ad);
+      if (sektorSecili) q = q.eq('kategori', sektorSecili);
+      const { data } = await q.order('olusturulma', { ascending: false }).limit(10);
       const el = document.getElementById('panel-rfqlar');
-      if (!data || !data.length) { el.innerHTML = '<div class="panel-bos" style="padding:16px;">Bu ilde açık RFQ yok.</div>'; }
+      if (!el) return;
+      if (!data || !data.length) { el.innerHTML = `<div class="panel-bos" style="padding:16px;">Bu ilde${sektorSecili? ' bu kategoride':''} açık RFQ yok.</div>`; }
       else el.innerHTML = data.map(t => `<div class="panel-rfq" onclick="location.href='ozel-ihale-detay?id=${t.id}'">
         <div class="pr-b">${esc(t.baslik)}</div>
         <div class="pr-m">${esc(t.kategori)||''}${t.tahmini_bedel? ' · '+paraKisa(t.tahmini_bedel):''}</div></div>`).join('');
-    } catch { document.getElementById('panel-rfqlar').innerHTML = '<div class="panel-bos" style="padding:16px;">Yüklenemedi.</div>'; }
+    } catch { const el = document.getElementById('panel-rfqlar'); if (el) el.innerHTML = '<div class="panel-bos" style="padding:16px;">Yüklenemedi.</div>'; }
   }
 
-  let toplamFirma = 0;
-  async function veriYukle(){
-    svgKur();
-    // Firma dağılımı
-    try {
-      const { data } = await sb.rpc('il_firma_dagilimi');
-      (data || []).forEach(r => { firmaMap[keyOf(r.il)] = { adet: Number(r.adet)||0, ciro: Number(r.toplam_ciro)||0 }; });
-    } catch (e) { console.error('firma dagilimi', e); }
-    // RFQ dağılımı
-    try {
-      const { data } = await sb.rpc('il_rfq_dagilimi');
-      (data || []).forEach(r => { rfqMap[keyOf(r.il)] = Number(r.adet)||0; });
-    } catch (e) { console.error('rfq dagilimi', e); }
+  // Sektör modunda il seçili değilken: seçili sektörün il sıralaması
+  function panelVarsayilan(){
+    const panel = document.getElementById('panel');
+    const sm = sektorIlMap();
+    if (!sm) {
+      panel.innerHTML = '<div class="panel-bos">Bir ile tıklayın<br><span style="font-size:11px;">o ildeki firmaları ve açık ihaleleri görün</span></div>';
+      return;
+    }
+    const sirali = Object.entries(sm).map(([k, v]) => ({ key: k, ...v }))
+      .sort((a, b) => (b.firma - a.firma) || (b.soz - a.soz)).slice(0, 15);
+    if (!sirali.length) {
+      panel.innerHTML = '<div class="panel-bos">Bu sektörde il verisi yok.</div>';
+      return;
+    }
+    const maxF = sirali[0].firma || 1;
+    panel.innerHTML = `<div class="panel-il" style="font-size:16px;">${sektorEmoji(sektorSecili)} ${esc(sektorSecili)}</div>
+      <div class="panel-sec-baslik">İl sıralaması — kazanan firma yoğunluğu</div>` +
+      sirali.map((r, i) => `<div class="il-sira" onclick="ilSecUI('${r.key}')">
+        <span class="is-no">${i+1}</span><span class="is-ad">${esc(ilAdMap[r.key] || r.key)}</span>
+        <span class="is-bar"><span style="width:${Math.max(3, Math.round(r.firma / maxF * 100))}%"></span></span>
+        <span class="is-say">${r.firma.toLocaleString('tr')} firma · ${r.soz.toLocaleString('tr')} söz.</span></div>`).join('') +
+      '<div style="font-size:11px;color:var(--muted);margin-top:10px;">Bir ile tıklayın — o ildeki firma sıralamasını görün.</div>';
+  }
 
-    // İstatistikler
-    let enYogun = null, kapsanan = 0;
-    toplamFirma = 0;
-    let toplamRfq = 0;
-    Object.entries(firmaMap).forEach(([k, v]) => {
-      toplamFirma += v.adet;
-      if (v.adet > 0) kapsanan++;
-      if (!enYogun || v.adet > enYogun.adet) enYogun = { key: k, adet: v.adet };
-    });
+  window.ilSecUI = (k) => { ilSec(k); };
+  window.panelSifirla = () => {
+    seciliIlKey = null;
+    document.querySelectorAll('path.il').forEach(p => p.classList.remove('secili'));
+    panelVarsayilan();
+  };
+
+  let toplamFirma = 0;
+  function istatistikGuncelle(){
+    const sm = sektorIlMap();
+    let enYogun = null, kapsanan = 0, toplamRfq = 0;
     Object.values(rfqMap).forEach(n => toplamRfq += n);
-    esikleriHesapla();
-    document.getElementById('st-firma').textContent = toplamFirma.toLocaleString('tr');
+    if (sm) {
+      sektorTopF = 0; sektorTopSoz = 0;
+      Object.entries(sm).forEach(([k, v]) => {
+        sektorTopF += v.firma; sektorTopSoz += v.soz;
+        if (v.firma > 0 || v.soz > 0) kapsanan++;
+        if (!enYogun || v.firma > enYogun.adet) enYogun = { key: k, adet: v.firma };
+      });
+      document.getElementById('st-firma').textContent = sektorTopF.toLocaleString('tr');
+      document.getElementById('st-firma-s').textContent = 'bu sektörde kazanan · il toplamı';
+      document.getElementById('ust-say').textContent =
+        `${sektorEmoji(sektorSecili)} ${sektorSecili} · ${sektorTopF.toLocaleString('tr')} firma · ${kapsanan}/81 il`;
+    } else {
+      toplamFirma = 0;
+      Object.entries(firmaMap).forEach(([k, v]) => {
+        toplamFirma += v.adet;
+        if (v.adet > 0) kapsanan++;
+        if (!enYogun || v.adet > enYogun.adet) enYogun = { key: k, adet: v.adet };
+      });
+      document.getElementById('st-firma').textContent = toplamFirma.toLocaleString('tr');
+      document.getElementById('st-firma-s').textContent = 'kamu ihalesi kazanan';
+      document.getElementById('ust-say').textContent = `${toplamFirma.toLocaleString('tr')} firma · ${kapsanan}/81 il`;
+    }
     document.getElementById('st-yogun').textContent = enYogun ? (ilAdMap[enYogun.key] || enYogun.key) : '—';
     document.getElementById('st-yogun-s').textContent = enYogun ? enYogun.adet.toLocaleString('tr') + ' firma' : '—';
     document.getElementById('st-rfq').textContent = toplamRfq.toLocaleString('tr');
     document.getElementById('st-il').textContent = kapsanan;
-    document.getElementById('ust-say').textContent = `${toplamFirma.toLocaleString('tr')} firma · ${kapsanan}/81 il`;
+  }
+
+  // RFQ il dağılımı (sektör seçiliyse kategori filtreli — RPC migration öncesi parametreyi
+  // tanımazsa catch'e düşer, mevcut rfqMap korunur)
+  async function rfqYukle(){
+    try {
+      const { data, error } = await sb.rpc('il_rfq_dagilimi', sektorSecili ? { p_kategori: sektorSecili } : {});
+      if (error) throw error;
+      rfqMap = {};
+      (data || []).forEach(r => { const k = keyOf(r.il); rfqMap[k] = (rfqMap[k] || 0) + (Number(r.adet) || 0); });
+    } catch (e) { console.error('rfq dagilimi', e); }
+  }
+
+  // il × sektör özeti — TEK RPC çağrısı, sessionStorage'da 6 saat önbellek
+  // (529K sonuç satırının aggregate'i; sektör değiştirmek yeni istek atmaz)
+  async function sektorVeriYukle(){
+    const CK = 'harita_sektor_v1';
+    try {
+      const c = JSON.parse(sessionStorage.getItem(CK) || 'null');
+      if (c && c.t && (Date.now() - c.t) < 6 * 3600e3 && c.v) { sektorVeri = c.v; return; }
+    } catch {}
+    const sel = document.getElementById('sektor-sec');
+    sel.disabled = true;
+    try {
+      const { data, error } = await sb.rpc('il_sektor_ozet');
+      if (error) throw error;
+      const v = {};
+      (data || []).forEach(r => {
+        const kat = r.kategori || 'Diğer', key = keyOf(r.il);
+        const o = (v[kat] = v[kat] || {});
+        const e = (o[key] = o[key] || { firma: 0, soz: 0, bedel: 0 });
+        e.firma += Number(r.firma_adet) || 0;
+        e.soz   += Number(r.sozlesme_adet) || 0;
+        e.bedel += Number(r.toplam_bedel) || 0;
+      });
+      sektorVeri = v;
+      sektorHata = false;
+      try { sessionStorage.setItem(CK, JSON.stringify({ t: Date.now(), v })); } catch {}
+    } catch (e) {
+      console.error('il_sektor_ozet', e);
+      sektorHata = true;
+    } finally { sel.disabled = false; }
+  }
+
+  let sektorIstek = 0;  // hızlı ardışık seçimlerde son seçim kazansın
+  window.sektorSec = async function(kod){
+    const istek = ++sektorIstek;
+    sektorSecili = kod || null;
+    const u = new URL(location);
+    if (sektorSecili) u.searchParams.set('sektor', sektorSecili); else u.searchParams.delete('sektor');
+    history.replaceState(null, '', u);
+
+    if (sektorSecili && !sektorVeri) {
+      document.getElementById('lejant').innerHTML = '<span class="mini-spin" style="margin:4px 8px;width:14px;height:14px;border-width:2px;display:inline-block;"></span> Sektör verisi hesaplanıyor…';
+      await sektorVeriYukle();
+      if (istek !== sektorIstek) return;
+      if (sektorHata || !sektorVeri) {
+        document.getElementById('sektor-sec').value = '';
+        sektorSecili = null;
+        u.searchParams.delete('sektor');
+        history.replaceState(null, '', u);
+        document.getElementById('lejant').innerHTML =
+          '⚠️ <b>Sektör verisi yüklenemedi</b> — <code>il_sektor_ozet</code> RPC yanıt vermedi (backend/migration_harita_sektor.sql uygulanmamış olabilir).';
+        return;
+      }
+    }
+    await rfqYukle();
+    if (istek !== sektorIstek) return;
+    esikleriHesapla();
     boya();
+    istatistikGuncelle();
+    if (seciliIlKey) ilSec(seciliIlKey); else panelVarsayilan();
+  };
+
+  async function veriYukle(){
+    svgKur();
+    // Firma dağılımı (genel katman)
+    try {
+      const { data } = await sb.rpc('il_firma_dagilimi');
+      (data || []).forEach(r => { firmaMap[keyOf(r.il)] = { adet: Number(r.adet)||0, ciro: Number(r.toplam_ciro)||0 }; });
+    } catch (e) { console.error('firma dagilimi', e); }
+    await rfqYukle();
+    esikleriHesapla();
+    istatistikGuncelle();
+    boya();
+    // Derin bağlantı: ?sektor=<kanonik kategori>
+    const pSektor = new URLSearchParams(location.search).get('sektor');
+    if (pSektor && (window.KATEGORILER || []).some(k => k.kod === pSektor)) {
+      document.getElementById('sektor-sec').value = pSektor;
+      sektorSec(pSektor);
+    }
   }
 
   veriYukle();

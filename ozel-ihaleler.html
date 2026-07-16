@@ -69,6 +69,7 @@
     .etiket { font-size: 11px; padding: 2px 8px; border-radius: 10px; font-weight: 600; background: rgba(var(--overlay-rgb),.06); color: var(--muted); }
     .etiket.kat { background: rgba(240,165,0,.1); color: var(--amber); }
     .etiket.ka { background: rgba(52,211,153,.14); color: #34d399; }
+    .etiket.rfq-rozet { background: rgba(139,92,246,.16); color: #a78bfa; }
     /* Kilitli (profilden gelen) inputlar */
     input[readonly] { background: rgba(var(--overlay-rgb),.05) !important; color: var(--muted) !important; cursor: not-allowed; border-style: dashed !important; }
     /* RFQ durum sekmeleri + filtre çubuğu */
@@ -197,10 +198,12 @@
         <div id="tedarikci-liste"></div>
       </div>
 
-      <!-- PLATFORM İHALELERİ + FİLTRE -->
+      <!-- PLATFORM İHALELERİ (RFQ + Kalkınma Ajansı birlikte) + FİLTRE -->
       <div class="card">
         <div class="card-title">📋 Platform Satınalma İhaleleri</div>
-        <div class="card-sub">Firmaların açtığı özel ihaleler (RFQ). Güncel = teklif süresi devam eden; geçmiş = süresi dolan.</div>
+        <div class="card-sub">Firmaların açtığı özel ihaleler (RFQ) <b>ve</b> Kalkınma Ajansı hibe ihaleleri (ka.gov.tr) tek listede.
+          Her ilanda kaynağı rozetle görünür. Güncel = teklif süresi devam eden; geçmiş = süresi dolan.
+          <span style="color:var(--muted)">Filtreler her iki kaynağa uygulanır; sektör filtresi yalnız platform RFQ'larını süzer (KA'da sektör verisi yok).</span></div>
 
         <div class="rfq-durum-sekme" id="rfq-durum-sekme">
           <button class="rfq-sekme aktif" data-durum="guncel" onclick="rfqDurumSec('guncel',this)">🟢 Güncel</button>
@@ -209,6 +212,7 @@
         </div>
         <div class="rfq-filtre">
           <input type="text" id="rfq-ara" placeholder="🔍 İhale içeriği veya açan firma ara…" oninput="rfqAramaDegisti()" />
+          <select id="rfq-kaynak" onchange="rfqFiltreDegisti()"><option value="">Tüm Kaynaklar</option><option value="rfq">🤝 Platform RFQ</option><option value="ka">🏛️ Kalkınma Ajansı</option></select>
           <select id="rfq-il" onchange="rfqFiltreDegisti()"><option value="">Tüm İller</option></select>
           <select id="rfq-kategori" onchange="rfqFiltreDegisti()"><option value="">Tüm Sektörler</option></select>
           <input type="date" id="rfq-tarih-bas" title="Son teklif tarihi — başlangıç" onchange="rfqFiltreDegisti()" />
@@ -216,14 +220,6 @@
           <span class="rfq-sayi" id="rfq-sayi"></span>
         </div>
         <div id="talepler-liste"><div class="loading-spinner"></div></div>
-      </div>
-
-      <!-- KALKINMA AJANSI İHALELERİ (ka.gov.tr — hibe alan özel firmaların ajans denetimli ihaleleri) -->
-      <div class="card">
-        <div class="card-title">🏛️ Kalkınma Ajansı İhaleleri</div>
-        <div class="card-sub">Kalkınma ajansı hibesi kullanan firmaların yayındaki alım ihaleleri (ka.gov.tr) —
-          teklifler ilgili ajans portalında verilir, platform dışıdır.</div>
-        <div id="ka-liste"><div class="loading-spinner"></div></div>
       </div>
     </div>
   </div>
@@ -361,60 +357,97 @@
   window.rfqFiltreDegisti = () => taleplerYukle();
   window.rfqAramaDegisti = function() { clearTimeout(rfqAramaTimer); rfqAramaTimer = setTimeout(taleplerYukle, 350); };
 
+  // TEK LİSTE: platform RFQ'ları (satinalma_talepleri) + Kalkınma Ajansı (kamu_ihaleleri kaynak='ka')
+  // client-side birleştirilir (düşük hacim: ~97 KA + az RFQ). Filtreler ikisine de uygulanır;
+  // sektör (kategori) filtresi yalnız RFQ'yu süzer (KA'da 41-kanonik sektör taksonomisi yok).
   async function taleplerYukle() {
     const liste = document.getElementById('talepler-liste');
-    const nowIso = new Date().toISOString();
-    let q = sb.from('satinalma_talepleri')
-      .select('id,baslik,kategori,il,miktar,tahmini_bedel,son_teklif_tarihi,durum,olusturan_firma,olusturulma', { count: 'exact' })
-      .neq('durum', 'iptal');
-    // Durum sekmesi: güncel = süre dolmamış; geçmiş = dolmuş
-    if (rfqDurum === 'guncel') q = q.or(`son_teklif_tarihi.gte.${nowIso},son_teklif_tarihi.is.null`);
-    else if (rfqDurum === 'gecmis') q = q.lt('son_teklif_tarihi', nowIso);
-    // Filtreler
+    const nowIso = new Date().toISOString(), nowMs = Date.now();
+    const kaynak = document.getElementById('rfq-kaynak').value;   // '' | 'rfq' | 'ka'
     const il = document.getElementById('rfq-il').value;
     const kat = document.getElementById('rfq-kategori').value;
     const tb = document.getElementById('rfq-tarih-bas').value;
     const ts = document.getElementById('rfq-tarih-son').value;
     const ara = (document.getElementById('rfq-ara').value || '').replace(/[,()*%\\]/g, ' ').trim();
-    if (il) q = q.eq('il', il);
-    if (kat) q = q.eq('kategori', kat);
-    if (tb) q = q.gte('son_teklif_tarihi', new Date(tb).toISOString());
-    if (ts) q = q.lte('son_teklif_tarihi', new Date(ts + 'T23:59:59').toISOString());
-    if (ara) q = q.or(`baslik.ilike.*${ara}*,olusturan_firma.ilike.*${ara}*,aciklama.ilike.*${ara}*`);
-    // Güncelde son-teklif yakın olan üstte; geçmişte en son biten üstte
-    q = q.order('son_teklif_tarihi', { ascending: rfqDurum !== 'gecmis', nullsFirst: false }).limit(60);
+    const tbIso = tb ? new Date(tb).toISOString() : null;
+    const tsIso = ts ? new Date(ts + 'T23:59:59').toISOString() : null;
 
-    const { data, count, error } = await q;
-    document.getElementById('rfq-sayi').textContent = error ? '' : `${(count || 0).toLocaleString('tr')} ihale`;
-    if (error) { liste.innerHTML = '<div class="bos">Yüklenemedi: ' + esc(error.message) + '</div>'; return; }
-    if (!data || !data.length) {
-      liste.innerHTML = `<div class="bos">${rfqDurum === 'gecmis' ? 'Süresi dolmuş ihale yok.' : 'Bu kriterlere uygun açık ihale yok — ilk ihaleyi siz açın!'}</div>`;
+    async function rfqCek() {
+      let q = sb.from('satinalma_talepleri')
+        .select('id,baslik,kategori,il,miktar,tahmini_bedel,son_teklif_tarihi,durum,olusturan_firma')
+        .neq('durum', 'iptal');
+      if (rfqDurum === 'guncel') q = q.or(`son_teklif_tarihi.gte.${nowIso},son_teklif_tarihi.is.null`);
+      else if (rfqDurum === 'gecmis') q = q.lt('son_teklif_tarihi', nowIso);
+      if (il) q = q.eq('il', il);
+      if (kat) q = q.eq('kategori', kat);
+      if (tbIso) q = q.gte('son_teklif_tarihi', tbIso);
+      if (tsIso) q = q.lte('son_teklif_tarihi', tsIso);
+      if (ara) q = q.or(`baslik.ilike.*${ara}*,olusturan_firma.ilike.*${ara}*,aciklama.ilike.*${ara}*`);
+      const { data } = await q.order('son_teklif_tarihi', { ascending: true, nullsFirst: false }).limit(200);
+      return (data || []).map(t => ({ tip:'rfq', url:'ozel-ihale-detay?id='+t.id, baslik:t.baslik, kategori:t.kategori, il:t.il, ek:t.miktar, bedel:t.tahmini_bedel, firma:t.olusturan_firma, son:t.son_teklif_tarihi }));
+    }
+    async function kaCek() {
+      if (kat) return [];   // KA'da sektör taksonomisi yok → sektör filtresi seçiliyse KA hariç
+      let q = sb.from('kamu_ihaleleri')
+        .select('baslik,idare,il,alt_kaynak,tur,son_teklif_tarihi,orijinal_url')
+        .eq('kaynak', 'ka');
+      if (rfqDurum === 'guncel') q = q.gte('son_teklif_tarihi', nowIso);
+      else if (rfqDurum === 'gecmis') q = q.lt('son_teklif_tarihi', nowIso);
+      if (il) q = q.eq('il', il);
+      if (tbIso) q = q.gte('son_teklif_tarihi', tbIso);
+      if (tsIso) q = q.lte('son_teklif_tarihi', tsIso);
+      if (ara) q = q.or(`baslik.ilike.*${ara}*,idare.ilike.*${ara}*`);
+      const { data } = await q.order('son_teklif_tarihi', { ascending: true }).limit(200);
+      return (data || []).map(k => ({ tip:'ka', url:k.orijinal_url, ajans:k.alt_kaynak, baslik:k.baslik, kategori:k.tur, il:k.il, ek:null, bedel:null, firma:k.idare, son:k.son_teklif_tarihi }));
+    }
+
+    const [rfqlar, kalar] = await Promise.all([
+      kaynak === 'ka' ? [] : rfqCek().catch(() => []),
+      kaynak === 'rfq' ? [] : kaCek().catch(() => []),
+    ]);
+    let hepsi = [...rfqlar, ...kalar];
+    hepsi.sort((a, b) => {
+      const av = a.son ? new Date(a.son).getTime() : (rfqDurum === 'gecmis' ? -Infinity : Infinity);
+      const bv = b.son ? new Date(b.son).getTime() : (rfqDurum === 'gecmis' ? -Infinity : Infinity);
+      return rfqDurum === 'gecmis' ? bv - av : av - bv;
+    });
+    hepsi = hepsi.slice(0, 100);
+
+    document.getElementById('rfq-sayi').textContent = `${hepsi.length.toLocaleString('tr')} ihale`;
+    if (!hepsi.length) {
+      liste.innerHTML = `<div class="bos">${rfqDurum === 'gecmis' ? 'Süresi dolmuş ihale yok.' : 'Bu kriterlere uygun ihale yok — ilk platform ihalesini siz açabilirsiniz!'}</div>`;
       return;
     }
-    const now = Date.now();
-    liste.innerHTML = data.map(t => {
-      const doldu = t.son_teklif_tarihi && new Date(t.son_teklif_tarihi).getTime() < now;
-      return `<div class="talep-kart${doldu ? ' doldu' : ''}" onclick="location.href='ozel-ihale-detay?id=${t.id}'" style="cursor:pointer;">
+    liste.innerHTML = hepsi.map(t => {
+      const doldu = t.son && new Date(t.son).getTime() < nowMs;
+      const tik = t.tip === 'ka'
+        ? (t.url ? `onclick="window.open('${esc(t.url)}','_blank','noopener')" style="cursor:pointer;"` : '')
+        : `onclick="location.href='${esc(t.url)}'" style="cursor:pointer;"`;
+      const kaynakRozet = t.tip === 'ka'
+        ? `<span class="etiket ka" title="${esc(AJANS_AD[t.ajans] || 'Kalkınma Ajansı')}">🏛️ Kalkınma Ajansı${t.ajans ? ' · ' + esc(String(t.ajans).toUpperCase()) : ''}</span>`
+        : `<span class="etiket rfq-rozet">🤝 Platform RFQ</span>`;
+      return `<div class="talep-kart${doldu ? ' doldu' : ''}" ${tik}>
         <div class="talep-ust">
-          <div class="talep-baslik">${esc(t.baslik)}</div>
-          ${t.tahmini_bedel ? `<div style="color:var(--amber);font-weight:700;font-size:13px;white-space:nowrap;">${paraKisa(t.tahmini_bedel)}</div>` : ''}
+          <div class="talep-baslik">${esc(t.baslik) || '—'}</div>
+          ${t.bedel ? `<div style="color:var(--amber);font-weight:700;font-size:13px;white-space:nowrap;">${paraKisa(t.bedel)}</div>` : ''}
         </div>
         <div class="talep-badges">
+          ${kaynakRozet}
           ${t.kategori ? `<span class="etiket kat">${esc(t.kategori)}</span>` : ''}
           ${t.il ? `<span class="etiket">📍 ${esc(t.il)}</span>` : ''}
-          ${t.miktar ? `<span class="etiket">${esc(t.miktar)}</span>` : ''}
+          ${t.ek ? `<span class="etiket">${esc(t.ek)}</span>` : ''}
         </div>
         <div class="talep-meta">
-          ${t.olusturan_firma ? `<span>🏢 ${esc(t.olusturan_firma)}</span>` : ''}
-          ${doldu ? '<span class="durum-doldu">⏹ Süresi doldu — teklif kapalı</span>' : '<span class="durum-acik">● Açık</span>'}
-          ${t.son_teklif_tarihi ? `<span>⏰ Son teklif: ${tarihFmt(t.son_teklif_tarihi)}</span>` : ''}
+          ${t.firma ? `<span>🏢 ${esc(t.firma)}</span>` : ''}
+          ${doldu ? '<span class="durum-doldu">⏹ Süresi doldu</span>' : (t.tip === 'ka' ? '<span class="durum-acik">● Yayında</span>' : '<span class="durum-acik">● Açık</span>')}
+          ${t.son ? `<span>⏰ Son teklif: ${tarihFmt(t.son)}</span>` : ''}
+          ${t.tip === 'ka' ? '<span style="color:var(--muted);">↗ ka.gov.tr</span>' : ''}
         </div>
       </div>`;
     }).join('');
   }
 
-  // Kalkınma Ajansı ihaleleri (kamu_ihaleleri, kaynak='ka') — yalnız yayında olanlar.
-  // 12 ajansın kodu → tam ad (rozet title'ında gösterilir).
+  // 12 ajans kodu → tam ad (rozet title). (Merged listede kaynak rozetinde kullanılır.)
   const AJANS_AD = {
     ahika:'Ahiler Kalkınma Ajansı', ankaraka:'Ankara Kalkınma Ajansı', baka:'Batı Akdeniz Kalkınma Ajansı',
     bakka:'Batı Karadeniz Kalkınma Ajansı', bebka:'Bursa Eskişehir Bilecik Kalkınma Ajansı', cka:'Çukurova Kalkınma Ajansı',
@@ -426,35 +459,6 @@
     oran:'Orta Anadolu Kalkınma Ajansı', trakyaka:'Trakya Kalkınma Ajansı', zafer:'Zafer Kalkınma Ajansı',
     dika:'Dicle Kalkınma Ajansı', doka:'Doğu Karadeniz Kalkınma Ajansı',
   };
-
-  async function kaYukle() {
-    const el = document.getElementById('ka-liste');
-    if (!el) return;
-    const { data, error } = await sb.from('kamu_ihaleleri')
-      .select('baslik,idare,il,alt_kaynak,tur,aciklama,son_teklif_tarihi,orijinal_url,talep_no')
-      .eq('kaynak', 'ka')
-      .gte('son_teklif_tarihi', new Date().toISOString())
-      .order('son_teklif_tarihi', { ascending: true })
-      .limit(30);
-    if (error) { el.innerHTML = '<div class="bos">Yüklenemedi: ' + esc(error.message) + '</div>'; return; }
-    if (!data || !data.length) { el.innerHTML = '<div class="bos">Şu anda yayında Kalkınma Ajansı ihalesi yok — veriler her gece güncellenir.</div>'; return; }
-    el.innerHTML = data.map(k => `
-      <div class="talep-kart" ${k.orijinal_url ? `onclick="window.open('${esc(k.orijinal_url)}','_blank','noopener')" style="cursor:pointer;"` : ''}>
-        <div class="talep-ust">
-          <div class="talep-baslik">${esc(k.baslik) || '—'}</div>
-        </div>
-        <div class="talep-badges">
-          <span class="etiket ka" title="${esc(AJANS_AD[k.alt_kaynak] || 'Kalkınma Ajansı')}">🏛️ Kalkınma Ajansı${k.alt_kaynak ? ' · ' + esc(k.alt_kaynak.toUpperCase()) : ''}</span>
-          ${k.tur ? `<span class="etiket kat">${esc(k.tur)}</span>` : ''}
-          ${k.il ? `<span class="etiket">📍 ${esc(k.il)}</span>` : ''}
-        </div>
-        <div class="talep-meta">
-          ${k.idare ? `<span>🏢 ${esc(k.idare)}</span>` : ''}
-          <span class="durum-acik">● Yayında</span>
-          ${k.son_teklif_tarihi ? `<span>⏰ Son: ${tarihFmt(k.son_teklif_tarihi)}</span>` : ''}
-        </div>
-      </div>`).join('');
-  }
 
   // ── Form aç/kapa (accordion) ────────────────────────────
   window.formToggle = function() {
@@ -494,8 +498,7 @@
 
   (async () => {
     try { const { data } = await sb.auth.getUser(); user = data.user; } catch {}
-    taleplerYukle();
-    kaYukle();
+    taleplerYukle();   // RFQ + Kalkınma Ajansı birleşik liste
     // Kurumsal değilse yayınla butonunu kilitli göster (tıklama yine upsell'e götürür; RLS asıl kapı).
     try {
       const canCheck = user && window.Plan && typeof Plan.isKurumsal === 'function';
