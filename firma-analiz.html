@@ -237,6 +237,53 @@
     .dz-pbtn:disabled { opacity:.4; cursor:default; }
     .dz-bos { padding:40px; text-align:center; color:var(--muted); font-size:13px; }
     @media (max-width:760px){ .dz-head, .dz-row { grid-template-columns:1fr 70px 90px; } .dz-il,.dz-tarih,.dz-analiz,.dz-head .c-il,.dz-head .c-tarih,.dz-head .c-analiz { display:none; } }
+
+    /* ── HARİTA GÖRÜNÜMÜ (fah-*) — harita.html bileşeninin RFQ'suz kopyası, çakışmasın diye prefixli ── */
+    .fah-gorunum-btns { display:flex; gap:6px; margin-bottom:14px; }
+    .fah-gbtn { background:var(--navy); border:1px solid var(--border); color:var(--muted); font-size:12px; font-weight:600; padding:7px 14px; border-radius:7px; cursor:pointer; font-family:var(--font-body); }
+    .fah-gbtn.active { border-color:var(--amber); color:var(--amber); background:rgba(240,165,0,.08); }
+    .fah-wrap { display:grid; grid-template-columns:1fr 340px; gap:16px; align-items:start; }
+    .fah-card { background:var(--navy-mid); border:1px solid var(--border); border-radius:14px; padding:16px; }
+    .fah-toolbar { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:10px; flex-wrap:wrap; }
+    .fah-baslik { font-size:14px; font-weight:700; color:var(--white); }
+    .fah-sektor-sec { background:var(--navy); border:1px solid var(--border); color:var(--white); font-size:12px; font-weight:600; padding:6px 10px; border-radius:7px; cursor:pointer; font-family:var(--font-body); max-width:250px; }
+    .fah-sektor-sec:disabled { opacity:.5; cursor:wait; }
+    .fah-sektor-sec option { background:var(--navy); color:var(--white); }
+    .fah-svg-wrap { position:relative; width:100%; }
+    svg.fah-harita { width:100%; height:auto; display:block; }
+    svg.fah-harita path.il { stroke:var(--navy); stroke-width:0.6; cursor:pointer; transition:fill .15s, stroke .1s; }
+    svg.fah-harita path.il:hover { stroke:var(--amber); stroke-width:1.4; }
+    svg.fah-harita path.il.secili { stroke:var(--amber); stroke-width:1.8; }
+    .fah-lejant { display:flex; align-items:center; gap:4px; margin-top:10px; flex-wrap:wrap; font-size:11px; color:var(--muted); }
+    .fah-lejant .box { width:22px; height:12px; border-radius:2px; display:inline-block; }
+    .fah-tooltip { position:fixed; pointer-events:none; background:var(--navy); border:1px solid var(--amber); border-radius:8px; padding:8px 11px; font-size:12px; color:var(--white); z-index:50; box-shadow:0 6px 20px rgba(0,0,0,.4); display:none; max-width:240px; }
+    .fah-tooltip .t-ad { font-weight:700; color:var(--amber); margin-bottom:3px; }
+    .fah-tooltip .t-satir { color:var(--off-white); }
+    .fah-panel { background:var(--navy-mid); border:1px solid var(--border); border-radius:14px; padding:18px; position:sticky; top:80px; min-height:300px; }
+    .fah-panel-bos { color:var(--muted); font-size:13px; text-align:center; padding:60px 10px; line-height:1.6; }
+    .fah-panel-il { font-family:var(--font-display); font-size:20px; font-weight:800; color:var(--white); }
+    .fah-panel-kpi { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin:12px 0 14px; }
+    .fah-panel-kpi .k { background:var(--navy); border:1px solid var(--border); border-radius:8px; padding:8px 10px; }
+    .fah-panel-kpi .k .kl { font-size:10px; text-transform:uppercase; letter-spacing:.05em; color:var(--muted); }
+    .fah-panel-kpi .k .kv { font-size:16px; font-weight:800; color:var(--white); margin-top:2px; }
+    .fah-panel-sec-baslik { font-size:12px; font-weight:700; color:var(--amber); text-transform:uppercase; letter-spacing:.05em; margin:14px 0 8px; }
+    .fah-panel-firma { display:flex; align-items:center; gap:10px; padding:8px 2px; border-bottom:1px solid var(--border); }
+    .fah-panel-firma .pf-ad { font-size:12.5px; font-weight:600; color:var(--white); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .fah-panel-firma .pf-ad a { color:inherit; text-decoration:none; }
+    .fah-panel-firma .pf-ad a:hover { color:var(--amber); }
+    .fah-panel-firma .pf-meta { font-size:11px; color:var(--muted); }
+    .fah-panel-geri { display:inline-block; font-size:11.5px; color:var(--muted); cursor:pointer; margin-bottom:8px; }
+    .fah-panel-geri:hover { color:var(--amber); }
+    .fah-il-sira { display:flex; align-items:center; gap:8px; padding:7px 2px; border-bottom:1px solid var(--border); cursor:pointer; font-size:12px; }
+    .fah-il-sira:hover .is-ad { color:var(--amber); }
+    .fah-il-sira .is-no { width:18px; flex-shrink:0; color:var(--muted); font-weight:700; font-size:11px; }
+    .fah-il-sira .is-ad { width:84px; flex-shrink:0; font-weight:600; color:var(--white); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .fah-il-sira .is-bar { flex:1; height:7px; background:var(--navy); border-radius:4px; overflow:hidden; }
+    .fah-il-sira .is-bar span { display:block; height:100%; background:linear-gradient(90deg,#b0891a,#f5b301); border-radius:4px; }
+    .fah-il-sira .is-say { color:var(--muted); font-size:10.5px; white-space:nowrap; }
+    .fah-mini-spin { width:22px; height:22px; border:3px solid var(--border); border-top-color:var(--amber); border-radius:50%; animation:fahspin .8s linear infinite; margin:20px auto; }
+    @keyframes fahspin { to { transform:rotate(360deg); } }
+    @media (max-width:1050px){ .fah-wrap { grid-template-columns:1fr; } .fah-panel { position:static; } }
   </style>
 </head>
 <body>
@@ -298,7 +345,6 @@
         <a href="firmalar" onclick="geriGit();return false;" class="back-btn">← Geri</a>
         <div class="breadcrumb">/ <span id="bc-firma">Firma Analizi</span></div>
       </div>
-      <button onclick="csvIndir()" style="background:var(--card-bg);border:1px solid var(--border);color:var(--muted);padding:7px 14px;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;font-family:var(--font-body);">↓ CSV</button>
       <button onclick="linkPaylas(this)"
         style="background:var(--card-bg);border:1px solid var(--border);color:var(--muted);padding:7px 14px;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;font-family:var(--font-body);">
         🔗 Paylaş
@@ -320,6 +366,32 @@
           <div class="kpi-card"><div class="kpi-label">Toplam Ciro</div><div class="kpi-value" id="dz-st-ciro">—</div></div>
           <div class="kpi-card"><div class="kpi-label">İş Ortaklığı</div><div class="kpi-value" id="dz-st-ortak">—</div></div>
         </div>
+        <!-- GÖRÜNÜM SEÇİMİ: Liste (dizin tablosu) / Harita (il yoğunluğu — RFQ katmanı BİLİNÇLİ yok,
+             o e-Satınalma'daki harita sayfasında; buradaki görünüm yalnız firma yoğunluğu + sektör) -->
+        <div class="fah-gorunum-btns">
+          <button id="fah-btn-liste" class="fah-gbtn active" onclick="fahGorunum('liste')">📋 Liste</button>
+          <button id="fah-btn-harita" class="fah-gbtn" onclick="fahGorunum('harita')">🗺️ Harita</button>
+        </div>
+
+        <!-- HARİTA GÖRÜNÜMÜ (varsayılan gizli; ilk açılışta tembel kurulur) -->
+        <div id="fah-alan" style="display:none;">
+          <div class="fah-wrap">
+            <div class="fah-card">
+              <div class="fah-toolbar">
+                <div class="fah-baslik" id="fah-baslik">Firma Yoğunluğu — il bazında</div>
+                <select id="fah-sektor" class="fah-sektor-sec" onchange="fahSektorSec(this.value)" title="Sektöre göre filtrele">
+                  <option value="">🏭 Tüm Sektörler</option>
+                </select>
+              </div>
+              <div class="fah-svg-wrap" id="fah-svg-wrap"><div class="fah-mini-spin"></div></div>
+              <div class="fah-lejant" id="fah-lejant"></div>
+            </div>
+            <div class="fah-panel" id="fah-panel">
+              <div class="fah-panel-bos">Bir ile tıklayın<br><span style="font-size:11px;">o ilde en çok iş kazanan firmaları görün</span></div>
+            </div>
+          </div>
+        </div>
+
         <div class="dz-toolbar">
           <div class="dz-ara"><span style="color:var(--muted);">🔍</span><input type="text" id="dz-arama" placeholder="Firma adı ara…" autocomplete="off" oninput="dzAramaDegisti()"></div>
           <select class="dz-sel" id="dz-il" onchange="dzYukle(true)"><option value="">Tüm İller</option></select>
@@ -527,27 +599,6 @@
     location.href = 'firmalar';
   }
 
-  window.csvIndir = function() {
-    if (!tumIhaleler.length) { alert('Önce bir firma analiz edin.'); return; }
-    const satirlar = [
-      ['EKAP No', 'Başlık', 'İdare', 'İl', 'Tür', 'Kategori', 'İlan Tarihi', 'Son Teklif'],
-      ...tumIhaleler.map(i => [
-        i.ekap_id || '',
-        `"${(i.baslik || '').replace(/"/g, '""')}"`,
-        `"${(i.idare || '').replace(/"/g, '""')}"`,
-        i.il || '', i.tur || '', i.kategori || '',
-        i.ilan_tarihi ? i.ilan_tarihi.split('T')[0] : '',
-        i.son_teklif_tarihi ? i.son_teklif_tarihi.split('T')[0] : '',
-      ]),
-    ];
-    const icerik = '﻿' + satirlar.map(r => r.join(',')).join('\r\n');
-    const blob = new Blob([icerik], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `firma_${(FIRMA||'analiz').slice(0,30).replace(/\s+/g,'_')}_${new Date().toISOString().split('T')[0]}.csv`;
-    a.click(); URL.revokeObjectURL(url);
-  }
 
   window.linkPaylas = function(btn) {
     navigator.clipboard.writeText(window.location.href).then(() => {
@@ -1315,6 +1366,324 @@
     if (qFirma) { const el = document.getElementById('firma-ara-input'); if (el) el.value = qFirma; firmaListesiYukle(qFirma, false); return; }
     goster('dizin'); dizinBaslat();   // varsayılan açılış: firma dizini
   })();
+})();
+</script>
+<div class="fah-tooltip" id="fah-tooltip"></div>
+<script>
+/* ── HARİTA GÖRÜNÜMÜ (fah-*) ─────────────────────────────────────────────
+   harita.html bileşeninin Firmalar hub'ına gömülü, RFQ'SUZ kopyası (kullanıcı
+   kararı 16 Tem: RFQ katmanı yalnız e-Satınalma haritasında kalır). Veri üçlüsü
+   tamamen MV'li olduğundan (il_firma_dagilimi_mv / il_sektor_ozet_mv /
+   il_sektor_firma_mv) tüm etkileşimler ~ms. tr-harita.js (74KB) + kategoriler +
+   svg-zoom yalnız Harita görünümü İLK açıldığında yüklenir — Liste görünümü
+   kullanan hub ziyaretçisi bedel ödemez. Ana sayfa scripti ayrı IIFE olduğundan
+   kendi supabase istemcimizi kurarız (sidebar-user.js emsali). */
+(() => {
+  const SB_URL = "https://ihaleglobal.com";
+  const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzgzMzUwMDE1LCJleHAiOjE5NDEwMzAwMTV9.sRB61a8oNXwzSKL9No8gt7cmkmnkoQstT0ZtHIxl1Hs";
+  let sbH = null;
+
+  const esc = s => (s || '').replace(/[<>&"']/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&#39;'}[c]));
+  // tr-harita.js key üretimiyle AYNI fold (bkz. harita.html)
+  function fold(s){
+    const m = {'İ':'i','I':'i','ı':'i','Ş':'s','ş':'s','Ğ':'g','ğ':'g','Ü':'u','ü':'u','Ö':'o','ö':'o','Ç':'c','ç':'c'};
+    return (s || '').split('').map(c => m[c] || c).join('').toLowerCase().trim();
+  }
+  const ALIAS = { afyon: 'afyonkarahisar' };
+  const keyOf = il => { const k = fold(il); return ALIAS[k] || k; };
+  function foldVaryantlari(key){
+    const v = [key];
+    Object.entries(ALIAS).forEach(([kaynak, hedef]) => { if (hedef === key && !v.includes(kaynak)) v.push(kaynak); });
+    return v;
+  }
+  function paraKisa(v){ v = Number(v) || 0; if (v >= 1e12) return '₺' + (v/1e12).toFixed(1) + ' Tn'; if (v >= 1e9) return '₺' + (v/1e9).toFixed(1) + ' Mr'; if (v >= 1e6) return '₺' + (v/1e6).toFixed(1) + ' M'; if (v >= 1e3) return '₺' + (v/1e3).toFixed(0) + ' B'; return '₺' + v; }
+
+  const RENKLER = ['#3d3a2e', '#5c4f22', '#856a1a', '#b0891a', '#d9a81e', '#f5b301'];
+  let esikler = [];
+  let firmaMap = {};        // key -> {adet, ciro}
+  let toplamFirma = 0;
+  const ilAdMap = {};
+  let sektorSecili = null;
+  let sektorVeri = null;    // kategori -> ilKey -> {firma, soz, bedel} (il_sektor_ozet, harita.html ile ORTAK 6h cache)
+  let sektorTopSoz = 0;
+  let seciliIlKey = null;
+  const sektorIlMap = () => (sektorSecili && sektorVeri && sektorVeri[sektorSecili]) || null;
+  const sektorEmoji = kod => { const k = (window.KATEGORILER || []).find(x => x.kod === kod); return k ? k.emoji : '🏭'; };
+
+  function esikleriHesapla(){
+    const sm = sektorIlMap();
+    const vals = (sm ? Object.values(sm).map(v => v.firma) : Object.values(firmaMap).map(v => v.adet))
+      .filter(a => a > 0).sort((a, b) => a - b);
+    esikler = [];
+    if (!vals.length) return;
+    for (let i = 1; i <= 5; i++) esikler.push(vals[Math.floor(vals.length * i / 6)]);
+  }
+  function renkAl(adet){
+    if (!adet) return '#1a2130';
+    let idx = 0;
+    for (let i = 0; i < esikler.length; i++) if (adet >= esikler[i]) idx = i + 1;
+    return RENKLER[Math.min(idx, RENKLER.length - 1)];
+  }
+
+  function svgKur(){
+    const H = window.TR_HARITA;
+    const wrap = document.getElementById('fah-svg-wrap');
+    if (!H) { wrap.innerHTML = '<div class="fah-panel-bos">Harita verisi yüklenemedi.</div>'; return; }
+    let paths = '';
+    H.iller.forEach(il => {
+      ilAdMap[il.key] = il.ad;
+      paths += `<path class="il" data-key="${il.key}" data-ad="${esc(il.ad)}" d="${il.d}" fill="#1a2130"></path>`;
+    });
+    wrap.innerHTML = `<svg class="fah-harita" viewBox="${H.viewBox}" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg"><g>${paths}</g></svg>`;
+    wrap.querySelectorAll('path.il').forEach(p => {
+      p.addEventListener('mousemove', e => tooltipGoster(e, p));
+      p.addEventListener('mouseleave', tooltipGizle);
+      p.addEventListener('click', () => ilSec(p.dataset.key));
+    });
+    if (window.svgZoomKur) svgZoomKur(wrap, { maxZoom: 6 });
+  }
+
+  function boya(){
+    const sm = sektorIlMap();
+    document.querySelectorAll('#fah-svg-wrap path.il').forEach(p => {
+      const k = p.dataset.key;
+      p.setAttribute('fill', renkAl(sm ? ((sm[k] || {}).firma || 0) : ((firmaMap[k] || {}).adet || 0)));
+    });
+    lejantCiz();
+  }
+
+  function lejantCiz(){
+    const el = document.getElementById('fah-lejant');
+    const sinir = [1, ...esikler];
+    const et = RENKLER.map((renk, i) => {
+      const alt = sinir[i];
+      const ust = i < RENKLER.length - 1 ? esikler[i] : null;
+      const label = ust ? `${alt.toLocaleString('tr')}–${ust.toLocaleString('tr')}` : `${alt.toLocaleString('tr')}+`;
+      return `<span class="box" style="background:${renk}"></span><span style="margin-right:8px;">${label}</span>`;
+    }).join('');
+    const kapsam = sektorSecili
+      ? `Renkler <b style="color:var(--amber);">${esc(sektorSecili)}</b> sektöründe ildeki kazanan firma yoğunluğu:`
+      : 'Renkler ildeki kayıtlı firma yoğunluğunu gösterir:';
+    el.innerHTML = `<span style="margin-right:4px;color:var(--white);font-weight:600;">${kapsam}</span>` +
+      '<span class="box" style="background:#1a2130"></span><span style="margin-right:8px;">Firma yok</span>' + et;
+  }
+
+  function tooltipGoster(e, p){
+    const k = p.dataset.key;
+    const sm = sektorIlMap();
+    const tt = document.getElementById('fah-tooltip');
+    const ana = sm
+      ? (d => `<div class="t-satir">${sektorEmoji(sektorSecili)} ${(d.firma || 0).toLocaleString('tr')} firma · ${(d.soz || 0).toLocaleString('tr')} sözleşme${d.bedel ? ' · ' + paraKisa(d.bedel) : ''}</div>`)(sm[k] || {})
+      : (f => `<div class="t-satir">🏢 ${(f.adet || 0).toLocaleString('tr')} firma${f.ciro ? ' · ' + paraKisa(f.ciro) + ' ciro' : ''}</div>`)(firmaMap[k] || {});
+    tt.innerHTML = `<div class="t-ad">${esc(p.dataset.ad)}</div>${ana}`;
+    tt.style.display = 'block';
+    tt.style.left = Math.min(e.clientX + 14, window.innerWidth - 250) + 'px';
+    tt.style.top = (e.clientY + 14) + 'px';
+  }
+  function tooltipGizle(){ document.getElementById('fah-tooltip').style.display = 'none'; }
+
+  // Panel tıklamaları delegasyonla: firma adlarındaki tırnaklar inline onclick'i kırar
+  document.getElementById('fah-panel').addEventListener('click', e => {
+    const f = e.target.closest('[data-fah-firma]');
+    if (f) {
+      e.preventDefault();
+      const ad = f.dataset.fahFirma;
+      // Ana sayfa scriptinin arama akışına bağlan (window.firmaSectiClick) — sayfa yenilenmez
+      if (window.firmaSectiClick) window.firmaSectiClick(ad);
+      else location.href = 'firma-analiz?ara=' + encodeURIComponent(ad);
+      return;
+    }
+    const il = e.target.closest('[data-fah-il]');
+    if (il) ilSec(il.dataset.fahIl);
+    const geri = e.target.closest('[data-fah-geri]');
+    if (geri) { seciliIlKey = null; document.querySelectorAll('#fah-svg-wrap path.il').forEach(p => p.classList.remove('secili')); panelVarsayilan(); }
+  });
+
+  async function ilSec(key){
+    seciliIlKey = key;
+    document.querySelectorAll('#fah-svg-wrap path.il').forEach(p => p.classList.toggle('secili', p.dataset.key === key));
+    const ad = ilAdMap[key] || key;
+    const panel = document.getElementById('fah-panel');
+    const sm = sektorIlMap();
+
+    let kpi;
+    if (sm) {
+      const d = sm[key] || { firma: 0, soz: 0, bedel: 0 };
+      kpi = `<span class="fah-panel-geri" data-fah-geri="1">← ${esc(sektorSecili)} il sıralamasına dön</span>
+        <div class="fah-panel-il">📍 ${esc(ad)}</div>
+        <div style="font-size:11.5px;color:var(--amber);font-weight:600;margin-top:2px;">${sektorEmoji(sektorSecili)} ${esc(sektorSecili)}</div>
+        <div class="fah-panel-kpi">
+          <div class="k"><div class="kl">Firma</div><div class="kv">${(d.firma || 0).toLocaleString('tr')}</div></div>
+          <div class="k"><div class="kl">Sözleşme</div><div class="kv">${(d.soz || 0).toLocaleString('tr')}</div></div>
+          <div class="k"><div class="kl">Toplam Bedel</div><div class="kv">${paraKisa(d.bedel || 0)}</div></div>
+          <div class="k"><div class="kl">Sektör Payı</div><div class="kv">${sektorTopSoz ? ((d.soz || 0) / sektorTopSoz * 100).toFixed(1) + '%' : '—'}</div></div>
+        </div>
+        <div class="fah-panel-sec-baslik">Bu ilde bu sektörde öne çıkan firmalar</div>`;
+    } else {
+      const f = firmaMap[key] || {};
+      kpi = `<div class="fah-panel-il">📍 ${esc(ad)}</div>
+        <div class="fah-panel-kpi">
+          <div class="k"><div class="kl">Firma</div><div class="kv">${(f.adet || 0).toLocaleString('tr')}</div></div>
+          <div class="k"><div class="kl">Toplam Ciro</div><div class="kv">${paraKisa(f.ciro || 0)}</div></div>
+          <div class="k"><div class="kl">Türkiye Payı</div><div class="kv">${toplamFirma ? ((f.adet || 0) / toplamFirma * 100).toFixed(1) + '%' : '—'}</div></div>
+          <div class="k"><div class="kl">Sıralama Ölçütü</div><div class="kv" style="font-size:12px;">Sözleşme bedeli</div></div>
+        </div>
+        <div class="fah-panel-sec-baslik">Bu ilde en çok iş kazanan firmalar</div>`;
+    }
+    panel.innerHTML = kpi + '<div id="fah-panel-firmalar"><div class="fah-mini-spin"></div></div>' +
+      '<div style="font-size:11px;color:var(--muted);margin-top:12px;">Firmaya tıklayın — analizi bu sayfada açılır.</div>';
+
+    try {
+      const { data, error } = await sbH.rpc('il_sektor_firmalar',
+        { p_il_folds: foldVaryantlari(key), p_kategori: sektorSecili, p_limit: 8 });
+      if (error) throw error;
+      const el = document.getElementById('fah-panel-firmalar');
+      if (!el || seciliIlKey !== key) return;
+      if (!data || !data.length) { el.innerHTML = '<div class="fah-panel-bos" style="padding:16px;">Kayıt yok.</div>'; return; }
+      el.innerHTML = data.map((y, i) => `<div class="fah-panel-firma">
+        <span style="width:16px;flex-shrink:0;font-size:11px;font-weight:700;color:var(--muted);">${i + 1}</span>
+        <div style="flex:1;min-width:0;">
+          <div class="pf-ad"><a href="firma-analiz?ara=${encodeURIComponent(y.ad)}" data-fah-firma="${esc(y.ad)}">${esc(y.ad)}</a></div>
+          <div class="pf-meta">${(y.sozlesme || 0).toLocaleString('tr')} sözleşme · ${paraKisa(y.toplam_bedel)}${sektorSecili ? ' <span style="opacity:.7;">(bu il + sektörde)</span>' : ' <span style="opacity:.7;">(bu ilde)</span>'}</div>
+        </div></div>`).join('');
+    } catch (err) {
+      console.error('fah il_sektor_firmalar', err);
+      const el = document.getElementById('fah-panel-firmalar');
+      if (el) el.innerHTML = '<div class="fah-panel-bos" style="padding:16px;">Yüklenemedi.</div>';
+    }
+  }
+
+  function panelVarsayilan(){
+    const panel = document.getElementById('fah-panel');
+    const sm = sektorIlMap();
+    if (!sm) {
+      panel.innerHTML = '<div class="fah-panel-bos">Bir ile tıklayın<br><span style="font-size:11px;">o ilde en çok iş kazanan firmaları görün</span></div>';
+      return;
+    }
+    const sirali = Object.entries(sm).map(([k, v]) => ({ key: k, ...v }))
+      .sort((a, b) => (b.firma - a.firma) || (b.soz - a.soz)).slice(0, 15);
+    if (!sirali.length) { panel.innerHTML = '<div class="fah-panel-bos">Bu sektörde il verisi yok.</div>'; return; }
+    const maxF = sirali[0].firma || 1;
+    panel.innerHTML = `<div class="fah-panel-il" style="font-size:16px;">${sektorEmoji(sektorSecili)} ${esc(sektorSecili)}</div>
+      <div class="fah-panel-sec-baslik">İl sıralaması — kazanan firma yoğunluğu</div>` +
+      sirali.map((r, i) => `<div class="fah-il-sira" data-fah-il="${r.key}">
+        <span class="is-no">${i + 1}</span><span class="is-ad">${esc(ilAdMap[r.key] || r.key)}</span>
+        <span class="is-bar"><span style="width:${Math.max(3, Math.round(r.firma / maxF * 100))}%"></span></span>
+        <span class="is-say">${r.firma.toLocaleString('tr')} firma · ${r.soz.toLocaleString('tr')} söz.</span></div>`).join('') +
+      '<div style="font-size:11px;color:var(--muted);margin-top:10px;">Bir ile tıklayın — o ildeki firma sıralamasını görün.</div>';
+  }
+
+  // il × sektör özeti — harita.html ile AYNI sessionStorage anahtarı (sayfalar arası ortak 6h önbellek)
+  async function sektorVeriYukle(){
+    const CK = 'harita_sektor_v1';
+    try {
+      const c = JSON.parse(sessionStorage.getItem(CK) || 'null');
+      if (c && c.t && (Date.now() - c.t) < 6 * 3600e3 && c.v) { sektorVeri = c.v; return; }
+    } catch {}
+    const sel = document.getElementById('fah-sektor');
+    sel.disabled = true;
+    try {
+      const { data, error } = await sbH.rpc('il_sektor_ozet');
+      if (error) throw error;
+      const v = {};
+      (data || []).forEach(r => {
+        const kat = r.kategori || 'Diğer', key = keyOf(r.il);
+        const o = (v[kat] = v[kat] || {});
+        const t = (o[key] = o[key] || { firma: 0, soz: 0, bedel: 0 });
+        t.firma += Number(r.firma_adet) || 0;
+        t.soz   += Number(r.sozlesme_adet) || 0;
+        t.bedel += Number(r.toplam_bedel) || 0;
+      });
+      sektorVeri = v;
+      try { sessionStorage.setItem(CK, JSON.stringify({ t: Date.now(), v })); } catch {}
+    } catch (err) {
+      console.error('fah il_sektor_ozet', err);
+    } finally { sel.disabled = false; }
+  }
+
+  let sektorIstek = 0;
+  window.fahSektorSec = async function(kod){
+    const istek = ++sektorIstek;
+    sektorSecili = kod || null;
+    if (sektorSecili && !sektorVeri) {
+      document.getElementById('fah-lejant').innerHTML = '<span class="fah-mini-spin" style="margin:4px 8px;width:14px;height:14px;border-width:2px;display:inline-block;"></span> Sektör verisi yükleniyor…';
+      await sektorVeriYukle();
+      if (istek !== sektorIstek) return;
+      if (!sektorVeri) {
+        document.getElementById('fah-sektor').value = '';
+        sektorSecili = null;
+        document.getElementById('fah-lejant').innerHTML = '⚠️ Sektör verisi yüklenemedi.';
+        return;
+      }
+    }
+    const sm = sektorIlMap();
+    sektorTopSoz = sm ? Object.values(sm).reduce((s, v) => s + v.soz, 0) : 0;
+    document.getElementById('fah-baslik').textContent = sektorSecili
+      ? `${sektorEmoji(sektorSecili)} ${sektorSecili} — il yoğunluğu` : 'Firma Yoğunluğu — il bazında';
+    esikleriHesapla();
+    boya();
+    if (seciliIlKey) ilSec(seciliIlKey); else panelVarsayilan();
+  };
+
+  async function veriYukle(){
+    try {
+      const { data, error } = await sbH.rpc('il_firma_dagilimi');
+      if (error) throw error;
+      firmaMap = {}; toplamFirma = 0;
+      (data || []).forEach(r => {
+        const k = keyOf(r.il);
+        firmaMap[k] = { adet: Number(r.adet) || 0, ciro: Number(r.toplam_ciro) || 0 };
+        toplamFirma += Number(r.adet) || 0;
+      });
+    } catch (err) { console.error('fah il_firma_dagilimi', err); }
+    esikleriHesapla();
+    boya();
+    panelVarsayilan();
+  }
+
+  function assetYukle(src){
+    return new Promise((res, rej) => {
+      const s = document.createElement('script');
+      s.src = src; s.onload = res; s.onerror = () => rej(new Error(src + ' yüklenemedi'));
+      document.head.appendChild(s);
+    });
+  }
+  let kurulum = null;   // tek sefer kur; sonraki geçişler sadece görünürlük değiştirir
+  function fahKur(){
+    if (kurulum) return kurulum;
+    kurulum = (async () => {
+      sbH = window.supabase.createClient(SB_URL, SB_KEY);
+      const gerek = [];
+      if (!window.TR_HARITA)   gerek.push('js/tr-harita.js');
+      if (!window.KATEGORILER) gerek.push('js/kategoriler.js');
+      if (!window.svgZoomKur)  gerek.push('js/svg-zoom.js?v=1');
+      await Promise.all(gerek.map(assetYukle));
+      const sel = document.getElementById('fah-sektor');
+      (window.KATEGORILER || []).forEach(k => {
+        const o = document.createElement('option');
+        o.value = k.kod; o.textContent = `${k.emoji} ${k.kod}`;
+        sel.appendChild(o);
+      });
+      svgKur();
+      await veriYukle();
+    })().catch(err => {
+      console.error('fah kurulum', err);
+      document.getElementById('fah-svg-wrap').innerHTML = '<div class="fah-panel-bos">Harita yüklenemedi. Sayfayı yenileyin.</div>';
+    });
+    return kurulum;
+  }
+
+  window.fahGorunum = function(g){
+    const harita = g === 'harita';
+    document.getElementById('fah-btn-liste').classList.toggle('active', !harita);
+    document.getElementById('fah-btn-harita').classList.toggle('active', harita);
+    document.getElementById('fah-alan').style.display = harita ? '' : 'none';
+    const dizin = document.getElementById('firma-dizin');
+    const tb = dizin.querySelector('.dz-toolbar'), tab = dizin.querySelector('.dz-tablo');
+    if (tb) tb.style.display = harita ? 'none' : '';
+    if (tab) tab.style.display = harita ? 'none' : '';
+    if (harita) fahKur();
+  };
 })();
 </script>
 <script src="js/main.js"></script>

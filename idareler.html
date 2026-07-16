@@ -240,7 +240,6 @@
       </div>
       <div class="topbar-right">
         <a href="ihaleler" class="btn-xs btn-xs-ghost" style="padding:6px 12px; font-size:12px;">Tüm İhaleler →</a>
-        <button onclick="csvIndir()" style="background:var(--card-bg);border:1px solid var(--border);color:var(--muted);padding:5px 12px;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;font-family:var(--font);">↓ CSV</button>
         <button id="paylasBtn" onclick="linkPaylas(this)" style="background:var(--card-bg);border:1px solid var(--border);color:var(--muted);padding:5px 12px;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;font-family:var(--font);">🔗 Paylaş</button>
       </div>
     </div>
@@ -503,21 +502,6 @@
     goster();
   });
 
-  function csvIndir() {
-    if (!filtrelenmis.length) { alert('Gösterilecek idare yok.'); return; }
-    const satirlar = [
-      ['İdare Adı', 'Başlıca İl', 'Toplam İhale', 'Aktif İhale'],
-      ...filtrelenmis.map(i => [
-        `"${i.ad.replace(/"/g, '""')}"`, i.il, i.toplam, i.aktif,
-      ]),
-    ];
-    const icerik = '﻿' + satirlar.map(r => r.join(',')).join('\r\n');
-    const blob = new Blob([icerik], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url; a.download = `idareler_${new Date().toISOString().split('T')[0]}.csv`;
-    a.click(); URL.revokeObjectURL(url);
-  }
 
   function linkPaylas(btn) {
     navigator.clipboard.writeText(window.location.href).then(() => {

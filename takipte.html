@@ -309,7 +309,6 @@
           <p>Takibe aldığınız ihaleler burada listelenir. Veriler tarayıcınızda saklanır.</p>
         </div>
         <div style="display:flex; gap:8px;">
-          <button class="btn btn-ghost" style="font-size:13px; padding:9px 16px;" onclick="csvIndir()" title="Takip listesini CSV olarak indir">↓ CSV</button>
           <button class="btn btn-ghost" style="font-size:13px; padding:9px 16px;" onclick="gecmisleriTemizle()" title="Teklif tarihi geçmiş ihaleleri kaldır">↩ Bittileri Kaldır</button>
           <button class="btn btn-ghost" style="font-size:13px; padding:9px 16px;" onclick="tumunuTemizle()">Listeyi Temizle</button>
           <a href="ihaleler" class="btn btn-primary" style="font-size:13px; padding:9px 16px;">+ İhale Ekle</a>
@@ -522,29 +521,6 @@
     }, 200);
   }
 
-  function csvIndir() {
-    if (!tumIlanlar.length) { alert('Takip listesi boş.'); return; }
-    const satirlar = [
-      ['ID', 'EKAP No', 'Başlık', 'İdare', 'İl', 'Tür', 'Durum', 'Son Teklif Tarihi', 'Yaklaşık Maliyet (Min)'],
-      ...tumIlanlar.map(i => [
-        i.id,
-        i.ekap_id || '',
-        `"${(i.baslik || '').replace(/"/g, '""')}"`,
-        `"${(i.idare || '').replace(/"/g, '""')}"`,
-        i.il || '',
-        i.tur || '',
-        i.durum || '',
-        i.son_teklif_tarihi ? i.son_teklif_tarihi.split('T')[0] : '',
-        i.yaklasik_maliyet_min || i.tahmini_bedel || '',
-      ]),
-    ];
-    const icerik = '﻿' + satirlar.map(r => r.join(',')).join('\r\n');
-    const blob = new Blob([icerik], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url; a.download = `takip_listesi_${new Date().toISOString().split('T')[0]}.csv`;
-    a.click(); URL.revokeObjectURL(url);
-  }
 
   function tumunuTemizle() {
     if (!confirm('Takip listenizdeki tüm ihaleler kaldırılacak. Emin misiniz?')) return;

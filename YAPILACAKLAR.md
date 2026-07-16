@@ -24,18 +24,20 @@
 > eşzamanlı oturumun commit'inde ezildi, yeniden eklendi — paralel oturumlarda YAPILACAKLAR yazınca HEMEN
 > commit'le; kod commit'i öncesi `git status` şart (başka oturumun stage'i karışabilir, bugün soft-reset gerekti).
 
-> ## 🗺️ PLANLANAN (nav toplu-düzenleme oturumu BİTTİKTEN SONRA) — HARİTAYI FİRMALAR HUB'INA DA EKLE
-> Kullanıcı kararı (16 Tem): Firmalar hub'ına (firma-analiz) Türkiye haritası "görünüm" olarak eklenecek —
-> AMA **RFQ katmanı KAPALI** (sadece firma yoğunluğu + sektör; il'e tıkla→firmalar→analiz). e-Satınalma'daki
-> harita iki katmanıyla (firma + açık RFQ, MaaS eşleştirme) OLDUĞU GİBİ kalır. Yani aynı harita bileşeni iki
-> yerde: e-Satınalma'da RFQ katmanlı, Firmalar'da RFQ'suz.
-> - Uygulama: firma-analiz'e "📋 Liste / 🗺️ Harita" görünüm geçişi. Harita = harita.html'in firma yoğunluğu +
->   sektör katmanı (RFQ katman düğmesi gizli). Aynı SVG (js/tr-harita.js) + aynı RPC'ler (il_firma_dagilimi,
->   il_sektor_ozet, il_sektor_firmalar) → veri/kod tekrarı yok. Firmaya tıkla → mevcut detay görünümü.
-> - NOT: harita.html SVG+JS'i hub'a gömme (iframe mi port mu) kararı uygulama anında verilecek; en temizi
->   ortak harita mantığını paylaşılan bir js modülüne çıkarıp iki sayfada layer-config ile kullanmak.
-> - ŞU AN BEKLİYOR: eşzamanlı oturum tüm nav'ları düzenliyordu (DMO/Jandarma→ana ilanlar); o iş bitince temiz
->   zeminde yapılacak (çakışma önlemi).
+> ## 🗺️ ✅ YAPILDI (16 Tem gece, commit `fbf8420`) — HARİTA FİRMALAR HUB'INDA (RFQ'SUZ), CANLI DOĞRULANDI
+> Kullanıcı kararı uygulandı: firma-analiz hub'ına "📋 Liste / 🗺️ Harita" görünüm geçişi eklendi — **RFQ
+> katmanı YOK** (yalnız firma yoğunluğu + sektör); e-Satınalma haritası (harita.html) iki katmanıyla aynen.
+> - Uygulama: `fah-*` prefixli gömülü kopya (iframe değil; portta stil/JS çakışmaması için prefix). Aynı SVG
+>   (js/tr-harita.js) + aynı MV'li RPC'ler (il_firma_dagilimi / il_sektor_ozet / il_sektor_firmalar) → tüm
+>   etkileşimler ~ms. tr-harita(74KB)+kategoriler+svg-zoom yalnız Harita görünümü İLK açılınca tembel yüklenir;
+>   il_sektor_ozet 6h sessionStorage önbelleği harita.html ile ORTAK anahtar (`harita_sektor_v1`).
+> - Akış: il tıkla → o ilde en çok iş kazanan 8 firma (genel modda kategori NULL) → firmaya tıkla →
+>   window.firmaSectiClick köprüsüyle AYNI SAYFADA analiz açılır (yenileme yok). Sektör modunda il sıralaması
+>   + sektör-içi firma listesi. Panel tıklamaları delegasyonla (firma adındaki tırnak inline onclick'i kırar).
+> - Canlı doğrulama: toggle→kurulum+boyama 3.0sn (ilk açılış), 81/81 il boyalı, İstanbul paneli 7.864 firma /
+>   ₺530.6 Mr / 8 firma listesi; file:// ön-testte sektör+il+firma+Liste-dönüş zinciri tamam, konsol temiz.
+> - Süreç notu: eşzamanlı oturum aktifken `git worktree` (claude/harita-firmalar) + ana ağaçta stash→merge→pop
+>   ile onların commit'siz nav değişikliği korunarak yayınlandı.
 
 > ## 🏢 16 TEMMUZ (devam) — FİRMALAR DİZİNİ + FİRMA ANALİZİ BİRLEŞTİ (CANLI, commit `6218d18`)
 > Kullanıcı: ikisi aynı ekranda birleşsin. **firma-analiz.html tek hub**: açılış = firma DİZİNİ
@@ -155,6 +157,29 @@
 > - **ozel-ihale-detay.html:** sureDoldu()/teklifAcik() — durum='acik' olsa bile son_teklif geçmişse teklif
 >   formu kapanır ("⏹ son teklif tarihi geçti"), teklifVer() guard'lı, header rozeti "Süresi doldu".
 > - NOT: login-arkası akış (profil→otomatik kilit→yayınla) anon test edilemedi ama kod+deploy doğrulandı.
+
+> ## 🤖 16 TEMMUZ (2. oturum devam) — AI KATEGORİ BACKFILL: Gemini son-katman sınıflandırıcı (KOD HAZIR, inceleme+deploy sürüyor)
+> Kullanıcı onayı ("tamam öyle yap") + maliyet endişesi ("düzenli maliyet ne olur?"). Tasarım maliyet-güvenli:
+> **her satır ömründe YALNIZCA BİR KEZ Gemini'ye gider**, sonucu `ilanlar.ai_kategori_denendi` damgalanır → tekrar
+> çalıştırma aynı satıra ikinci token HARCAMAZ (idempotent). AI serbest metin değil **1..41 NUMARA** döndürür →
+> KANONIK_KATEGORILER dizinine eşlenir (geçersiz/kararsız=0 → 'Diğer' kalır ama denendi işaretlenir).
+> - `migration_ai_kategori.sql` (YENİ): `ai_kategori_denendi timestamptz` + kısmi indeks (kategori='Diğer' AND denendi IS NULL).
+> - `ai_kategori_backfill.py` (YENİ): google.genai (embed_ortak deseni, eski SDK deprecated), response_mime_type=json+temp0,
+>   50'li paket, retry+backoff, --limit/--batch/--rpm/--dry-run, token+maliyet raporu, dry-run kuyruk projeksiyonu.
+>   Batch-by-batch işle→yaz→işaretle (crash-resumable); hard-fail'de (kota/anahtar/JSON) işaretlemeden durur.
+> - `kategori_siniflandir.py`: `KANONIK_KATEGORILER` (41, tek-kaynak, assertion'lı) + `JENERIK_KOVALAR`.
+> - `kategori_backfill.py`: **KRİTİK GUARD** — spesifik kategoriyi 'Diğer'e ASLA geri ezmez (yoksa her backfill
+>   turu AI emeğini geri alırdı) + dmo/jandarma satırlarını atlar (map-temelli kategorileri otoriter).
+> - `run_scraper.sh`: gece MV-refresh'ten ÖNCE `ai_kategori_backfill.py --limit 400 --rpm 15` (free tier'a sığar,
+>   harita/sektör MV'leri yeni kategorileri aynı gece yansıtır).
+> - **MALİYET (kullanıcıya):** tek-seferlik ~100K kuyruk ≈ birkaç $ (BİR KEZ, paid key önerilir); günlük cron
+>   ~birkaç istek ≈ ~$0 (free kotaya sığar). OKAS UYDURULMAZ — yalnız kategori seçilir, okas kolonu boş kalır.
+> - Yerelde doğrulandı: 41 kanonik + assertion'lar geçti, google.genai temiz import (deprecation yok), parse
+>   mantığı (geçersiz/sınır-dışı numara güvenle Diğer'de), --help/importlar OK. **Şu an: çok-ajanlı adversarial
+>   inceleme koşuyor** (idempotency/maliyet, veri-bütünlüğü, SDK, migration/cron boyutları + her bulgu doğrulanır).
+> - **DEPLOY (VDS, inceleme bitince):** `git pull` → `docker exec ... < backend/migration_ai_kategori.sql` →
+>   tek-seferlik `python ai_kategori_backfill.py --dry-run` (maliyet gör) → `--limit 100000` (paid key ile boşalt).
+>   AYRICA: kelime kuralları + DMO map güncellendiği için `kategori_backfill.py`'yi de tekrar koş (idempotent, guard'lı).
 
 > ## 🏷️ 16 TEMMUZ (2. oturum devam) — "DİĞER" TEŞHİSİ: TÜRKÇE ÇEKİM EKLERİ + DMO EŞLEME (kelime katmanı yapıldı, AI katmanı ÖNERİ)
 > Kullanıcı sorusu "kategorize etmek mi sorun?" üzerine 4K'lık Diğer örneklemi analiz edildi (scratchpad token frekansı):

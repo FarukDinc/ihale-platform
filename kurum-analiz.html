@@ -279,7 +279,6 @@
         <a href="javascript:history.back()" class="back-btn">← Geri</a>
         <div class="breadcrumb">/ <span id="bc-kurum">Kurum Analizi</span></div>
       </div>
-      <button onclick="csvIndir()" style="background:var(--card-bg);border:1px solid var(--border);color:var(--muted);padding:7px 14px;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;font-family:var(--font-body);">↓ CSV</button>
       <button id="paylasBtn" onclick="linkPaylasKurum(this)"
         style="background:var(--card-bg);border:1px solid var(--border);color:var(--muted);padding:7px 14px;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;font-family:var(--font-body);">
         🔗 Paylaş
@@ -422,43 +421,6 @@
   // CSV tüm satırları ister → sayfa açılışında değil, sadece tıklanınca sayfalı çek
   // (analitik/KPI'lar artık kurum_ozet RPC'sinden geliyor, client-load-all kaldırıldı).
   let csvYukleniyor = false;
-  window.csvIndir = async function() {
-    if (csvYukleniyor) return;
-    csvYukleniyor = true;
-    const rows = [];
-    try {
-      for (let off = 0; ; off += 1000) {
-        const { data, error } = await sb.from('ilanlar')
-          .select('ekap_id,baslik,il,tur,usul,kategori,durum,ilan_tarihi,son_teklif_tarihi,yaklasik_maliyet_min')
-          .ilike('idare', `%${KURUM}%`)
-          .order('ilan_tarihi', { ascending: false, nullsFirst: false })
-          .order('id', { ascending: true })
-          .range(off, off + 999);
-        if (error || !data || !data.length) break;
-        rows.push(...data);
-        if (data.length < 1000) break;
-      }
-    } finally { csvYukleniyor = false; }
-    if (!rows.length) { alert('Veri yüklenemedi.'); return; }
-    const satirlar = [
-      ['EKAP No', 'Başlık', 'İl', 'Tür', 'Usul', 'Kategori', 'Durum', 'İlan Tarihi', 'Son Teklif', 'Yaklaşık Maliyet (Min)'],
-      ...rows.map(i => [
-        i.ekap_id || '',
-        `"${(i.baslik || '').replace(/"/g, '""')}"`,
-        i.il || '', i.tur || '', i.usul || '', i.kategori || '', i.durum || '',
-        i.ilan_tarihi ? i.ilan_tarihi.split('T')[0] : '',
-        i.son_teklif_tarihi ? i.son_teklif_tarihi.split('T')[0] : '',
-        i.yaklasik_maliyet_min || '',
-      ]),
-    ];
-    const icerik = '﻿' + satirlar.map(r => r.join(',')).join('\r\n');
-    const blob = new Blob([icerik], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `kurum_${KURUM.slice(0,30).replace(/\s+/g,'_')}_${new Date().toISOString().split('T')[0]}.csv`;
-    a.click(); URL.revokeObjectURL(url);
-  }
 
   window.linkPaylasKurum = function(btn) {
     navigator.clipboard.writeText(window.location.href).then(() => {
