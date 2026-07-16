@@ -7,6 +7,32 @@
 > **KALICI TALİMAT (12 Tem, kullanıcı emri):** Bu blok + ilgili bölümler her oturumda otomatik
 > güncellenir, kullanıcı hatırlatmak zorunda değil. Bkz. hafıza `yapilacaklar-auto-update`.
 
+> ## 🧾 16 TEMMUZ (devam) — DASHBOARD→ANASAYFA + DOĞRUDAN TEMİN FİLTRELERİ + DT KAZANAN FİZİBİLİTE
+> Kullanıcı 3 acil bulgu bildirdi: (a) dashboard adı, (b) DT'de kategori/tür filtreleme yok, (c) DT kazanan
+> firma takibi. Yapılanlar:
+>
+> **✅ 1 — Dashboard → "Anasayfa" (commit `70dc7f4`):** 24 sayfada nav/başlık/geri-butonları; URL `dashboard`
+> kaldı; Türkçe ek düzeltildi. İyzico/proxy panel referansları (dış servis) dokunulmadı.
+>
+> **✅ 2 — Doğrudan temin filtreleri CANLI (commit'ler `c9ab47c`, `efa9313`, `9acf6be`):**
+> - **Durum filtresi** (🟢 Açık / ✅ Sonuçlandı) — EKAP'ın 5 ham durumu 2 gruba (.in()), renkli rozet. Index'siz
+>   güvenli (count latency tur 1.6s / durum 0.4s, mevcut tür filtresiyle aynı sınıf).
+> - **Kategori filtresi** — `dogrudan_temin_ilanlari.kategori` kolonu + **1.147.412 satır** sınıflandırıldı
+>   (`dt_kategori_backfill.py` keyset+stream+CHUNK=60, idempotent) + `idx_dt_ilanlari_kategori_tarih` kompozit
+>   index. Dropdown js/kategoriler.js'ten (41 kanonik). Scraper hook (kayit_donustur→kategori_belirle). CSV'ye
+>   kategori + formül-enjeksiyon guard. Dağılım %45 anlamlı / **%55 "Diğer"** (DT başlıkları kısa+OKAS yok →
+>   keyword genişletme ayrı iş, ortak ilanlar sınıflandırmasını da etkiler). Canlı doğrulandı: Gıda→68.413,
+>   İnşaat+Sonuçlandı kombine çalışıyor, konsol temiz. DEPLOY SIRASI korundu (kolon+NOTIFY önce, hook sonra).
+>
+> **🔒 3 — DT KAZANAN TAKİBİ: FİZİBİL AMA CAPTCHA ARKASINDA (kullanıcı "geniş geçmiş backfill" seçti):**
+> Çekişmeli workflow kanıtladı: E10=dogrudanTeminId / E11=IdareId zaten dtAra listesinde (saklanmıyor) →
+> `DogrudanTeminDetay.aspx?IdareId=E11&IhaleId=E10` → CAPTCHA (belge-indirmedeki birebir aynısı) → postback →
+> "SONUÇ İLANI" bloğunda kazanan+bedel+tarih. **KISIT:** asistan CAPTCHA'yı programatik çözemez/çözdüremez;
+> şema+parser+UI+E10/E11 yakalama kurulabilir, asıl çözüm adımını kullanıcının `ekap_captcha_indir` hattı
+> çalıştırır. Maliyet: her sonuç=1 Gemini CAPTCHA; ~1M "15" kaydında cookie-reuse (kotayı ~100x düşürür)
+> MUTLAKA test edilmeli. Tam reçete + entegrasyon tasarımı hafıza `dt-kazanan-captcha`'da. **DURUM: kullanıcı
+> yönlendirmesi bekliyor** (scaffolding'i kurayım mı / kapsam).
+
 > ## ✅ 16 TEMMUZ (2. OTURUM) — VERİ AKIŞI DENETİMİ: 3 AKIŞ DA AKTİF + KUPON/SUNUCU NOTLARI
 > **1) Veri çekme denetimi (public REST, `olusturulma` yöntemi — bkz. hafıza `scraper-cron-silent-fail`):**
 > - `ilanlar`: son yazım 16 Tem 09:28 UTC, son 24s **1000+** kayıt, 391'i aynı-gün ilan tarihli → SAĞLIKLI.
