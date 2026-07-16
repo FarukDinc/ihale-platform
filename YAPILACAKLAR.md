@@ -74,11 +74,18 @@
 > (js/kategoriler.js include edildi), efektifBedel() (yaklaşık maliyet yoksa sözleşme bedeli — Jandarma
 > sonuçlanmışlarında kritik), uygunFirmalar v3 çağrı + "Ölçek ✓" rozeti (eski "Kapasite ✓" bedel yokken
 > herkese sahte yanıyordu — artık yalnız bant uygulanınca), benzerIhaleler önce RPC sonra eski 3-kademe.
+> **v3.1–v3.3 (17 Tem devam, hepsi ✅ canlı):** EK KURAL sonrası 3 iş + 2 hata düzeltmesi:
+> - v3.1: tr_fold(baslik) trigram GIN indeksi; benzer_ihaleler'e AÇIK İHALE şartı (son_teklif geçmiş
+>   aday elenir — canlıda 4/4 benzerin tarihi geçmişti); ilan_durum_bayatlat() + run_scraper.sh adımı
+>   (TÜM scraperlardan SONRA: jandarma/dmo upsert durum:'aktif' ile kaydı yeniden açıyor).
+> - v3.2→v3.3 DERSLER: (a) baslik-kelime yolu 10.2sn sürüyordu (planner 537K sonuçtan ters girmiş,
+>   trigram indeksi kullanılmamış) → plpgsql 2-dal + MATERIALIZED ilgili CTE = 1.33sn (timeout altı);
+>   (b) plpgsql RETURN QUERY örtük cast YAPMAZ → max(bigint)::numeric şart; (c) ilanlar_durum_check
+>   = taslak/aktif/kapali/iptal/sonuclandi → bayatlama 'kapali' yazar ('kapandi' DEĞİL).
+> - İlk bayatlama koşusu: 11.627 süresi-geçmiş 'aktif' ilan kapatıldı.
 > KALAN: (1) "Mal Alımı"/jenerik kategorili ilanları kanonik kategoriye backfill (kalıcı çözüm),
 > (2) ozel-ihaleler `ihaleye_uygun_firmalar_geo` hâlâ v2 mantığında — bant kuralı istenirse oraya da,
-> (3) TESPİT (canlı doğrulamada): benzer çıkanların 4'ü de SON TEKLİFİ GEÇMİŞ ama durum='aktif'
->     (Jandarma kaynağı durum'u güncellemiyor olabilir) — benzer RPC'ye "son_teklif >= now()" şartı
->     VE/VEYA durum-bayatlama cron'u düşünülmeli; davet otomasyonu ancak AÇIK ihaleye anlam taşır.
+> (3) başlık dalı 1.33sn — istenirse ileride MV/önbellekle ms'e iner (şimdilik yeterli).
 
 > ## 🔎 17 TEMMUZ — TİCARET: HS/SEKTÖR ARAMA + TÜRKÇE HS ETİKETLERİ (canlı)
 > Kullanıcı: 'HS koduna göre de arama olmalı (sektör yanına), o kalem/sektörde Türkiye'nin ülke-ülke ihr/ith
