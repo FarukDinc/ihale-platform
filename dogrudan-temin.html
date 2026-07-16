@@ -94,8 +94,13 @@
     .dt-badges { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 6px; }
     .etiket { font-size: 11px; padding: 2px 8px; border-radius: 10px; font-weight: 600; background: rgba(var(--overlay-rgb),.06); color: var(--muted); }
     .etiket.tur { background: rgba(59,130,246,.12); color: #60a5fa; }
+    .etiket.kategori { background: rgba(240,165,0,.1); color: var(--amber); }
     .etiket.dokuman { background: rgba(34,197,94,.12); color: #4ade80; }
+    .etiket.durum-sonuc { background: rgba(34,197,94,.14); color: #4ade80; }
+    .etiket.durum-acik { background: rgba(240,165,0,.14); color: var(--amber); }
     .dt-meta { display: flex; gap: 14px; font-size: 12px; color: var(--muted); flex-wrap: wrap; align-items: center; }
+    .dt-meta a.dt-idare { color: var(--muted); text-decoration: none; transition: color .15s; }
+    .dt-meta a.dt-idare:hover { color: var(--amber); text-decoration: underline; }
 
     .loading-wrap { text-align: center; padding: 60px 20px; color: var(--muted); }
     .loading-spinner { width: 32px; height: 32px; border: 3px solid var(--border); border-top-color: var(--amber); border-radius: 50%; animation: spin .8s linear infinite; margin: 0 auto 16px; }
@@ -130,10 +135,11 @@
     </div>
     <nav class="sidebar-nav">
       <div class="nav-section-label">Kamu İhaleleri</div>
-      <a href="dashboard" class="nav-item"><span class="icon">◉</span> Dashboard</a>
+      <a href="dashboard" class="nav-item"><span class="icon">◉</span> Anasayfa</a>
       <a href="ihaleler" class="nav-item"><span class="icon">⊞</span> İhaleler</a>
       <a href="dogrudan-temin" class="nav-item active"><span class="icon">⚡</span> Doğrudan Temin</a>
       <a href="sonuclananlar" class="nav-item"><span class="icon">🏆</span> Sonuçlananlar</a>
+      <a href="kamu-ihaleleri" class="nav-item"><span class="icon">📦</span> Kamu Kurumu İhaleleri</a>
       <div class="nav-section-label" style="padding-left:16px;opacity:.85;">— Analiz —</div>
       <a href="rekabet-analizi" class="nav-item"><span class="icon">📊</span> Rekabet Analizi</a>
       <a href="idareler" class="nav-item"><span class="icon">🏛️</span> İdareler Dizini</a>
@@ -215,6 +221,14 @@
           <option value="Yapım">Yapım</option>
           <option value="Danışmanlık">Danışmanlık</option>
         </select>
+        <select id="f-kategori" onchange="filtreDegisti()">
+          <option value="">Tüm Kategoriler</option>
+        </select>
+        <select id="f-durum" onchange="filtreDegisti()">
+          <option value="">Tüm Durumlar</option>
+          <option value="acik">🟢 Açık / Teklif Bekleyen</option>
+          <option value="sonuc">✅ Sonuçlanmış</option>
+        </select>
         <select id="f-il" onchange="filtreDegisti()">
           <option value="">Tüm İller</option>
         </select>
@@ -252,6 +266,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/sidebar-user.js"></script>
 <script src="js/bildirim-sayaci.js"></script>
+<script src="js/kategoriler.js"></script>
 <script>
 (() => {
   const SB_URL = "https://ihaleglobal.com";
@@ -277,15 +292,33 @@
 
   function esc(s) { return (s || '').replace(/[<>&"]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c])); }
 
+  // Ham durumu renkli gruba çevir (filtre gruplarıyla tutarlı)
+  function durumRozet(durum) {
+    if (!durum) return '';
+    if (DURUM_GRUP.sonuc.includes(durum)) return `<span class="etiket durum-sonuc">✅ Sonuçlandı</span>`;
+    if (DURUM_GRUP.acik.includes(durum)) return `<span class="etiket durum-acik">🟢 Açık</span>`;
+    return `<span class="etiket">${esc(durum)}</span>`;
+  }
+
   // PostgREST or()/ilike sözdizimini bozmamak için arama terimini temizle
   function aramaTemizle(q) { return (q || '').replace(/[,()*%\\]/g, ' ').trim(); }
 
   // Aktif filtreleri (tür/il/arama) bir PostgREST sorgusuna uygula
+  // Durum grupları — EKAP'ın 5 ham durumu iki anlamlı gruba indirgenir
+  const DURUM_GRUP = {
+    acik:  ['Doğrudan Temin Duyurusu Yayımlanmış', 'Teklifler Değerlendiriliyor'],
+    sonuc: ['Sonuç Duyurusu Yayımlanmış', 'Doğrudan Temin Sonuçlandırıldı', 'Sonuç Bilgileri Gönderildi'],
+  };
+
   function filtreleriUygula(query) {
     const q = aramaTemizle(document.getElementById('f-ara').value);
     const tur = document.getElementById('f-tur').value;
+    const kat = document.getElementById('f-kategori').value;
+    const durum = document.getElementById('f-durum').value;
     const il = document.getElementById('f-il').value;
     if (tur) query = query.eq('tur', tur);
+    if (kat) query = query.eq('kategori', kat);
+    if (durum && DURUM_GRUP[durum]) query = query.in('durum', DURUM_GRUP[durum]);
     if (il) query = query.eq('il', il);
     if (q) query = query.or(`baslik.ilike.*${q}*,idare.ilike.*${q}*`);
     return query;
@@ -299,7 +332,7 @@
     // 616K satırda seq-scan → exact count statement-timeout eder (kod 57014, doğrulandı). Bu yüzden
     // arama modunda sayım yapmayıp bir FAZLA satır çekeriz; PER_PAGE+1 dönerse sonraki sayfa var.
     let query = sb.from('dogrudan_temin_ilanlari')
-      .select('dt_no,baslik,idare,tur,il,tarih,durum,dokuman_var,duyuru_var',
+      .select('dt_no,baslik,idare,tur,il,tarih,durum,kategori,dokuman_var,duyuru_var',
               aramaVar ? {} : { count: 'exact' });
     query = filtreleriUygula(query);
     query = query.order(siralamaAlan === 'idare' ? 'idare' : 'tarih', { ascending: siralamaAlan === 'idare' });
@@ -382,11 +415,13 @@
       </div>
       <div class="dt-badges">
         ${k.tur ? `<span class="etiket tur">${esc(k.tur)}</span>` : ''}
+        ${k.kategori && k.kategori !== 'Diğer' ? `<span class="etiket kategori">${esc(k.kategori)}</span>` : ''}
+        ${durumRozet(k.durum)}
         ${k.il ? `<span class="etiket">📍 ${esc(k.il)}</span>` : ''}
         ${k.dokuman_var ? `<span class="etiket dokuman">📄 Doküman var</span>` : ''}
       </div>
       <div class="dt-meta">
-        ${k.idare ? `<a href="kurum-analiz?kurum=${encodeURIComponent(k.idare)}" style="color:inherit;text-decoration:none;">🏛️ ${esc(k.idare)}</a>` : ''}
+        ${k.idare ? `<a class="dt-idare" href="dogrudan-temin?idare=${encodeURIComponent(k.idare)}" title="Bu idarenin tüm doğrudan teminleri">🏛️ ${esc(k.idare)}</a>` : ''}
         ${k.tarih ? `<span>📅 ${tarihFormat(k.tarih)}</span>` : ''}
         ${k.durum ? `<span>${esc(k.durum)}</span>` : ''}
       </div>
@@ -422,6 +457,17 @@
     el('results-count').textContent = `${toplam.toLocaleString('tr')} kayıt`;
   }
 
+  function kategorileriYukle() {
+    // Kategori dropdown'ı — tek kaynak js/kategoriler.js (kanonik ad = dogrudan_temin_ilanlari.kategori değeri)
+    const sel = document.getElementById('f-kategori');
+    if (!sel || !window.KATEGORILER) return;
+    window.KATEGORILER.forEach(k => {
+      const o = document.createElement('option');
+      o.value = k.kod; o.textContent = `${k.emoji} ${k.kod}`;
+      sel.appendChild(o);
+    });
+  }
+
   async function illeriYukle() {
     // İl dropdown'ı: en yeni ~5000 kaydın il değerlerinden (tüm iller pratikte kapsanır)
     const { data } = await sb.from('dogrudan_temin_ilanlari')
@@ -438,20 +484,22 @@
 
   const CSV_LIMIT = 5000;
   window.csvIndir = async function() {
-    let query = sb.from('dogrudan_temin_ilanlari').select('dt_no,baslik,idare,tur,il,tarih,durum');
+    let query = sb.from('dogrudan_temin_ilanlari').select('dt_no,baslik,idare,tur,kategori,il,tarih,durum');
     query = filtreleriUygula(query);
     query = query.order(siralamaAlan === 'idare' ? 'idare' : 'tarih', { ascending: siralamaAlan === 'idare' }).limit(CSV_LIMIT);
     const { data, error } = await query;
     if (error || !data || !data.length) { alert('Dışa aktarılacak veri bulunamadı.'); return; }
+    // CSV hücre kaçışı + formül-enjeksiyon koruması (=,+,-,@,tab,CR ile başlayanları tırnakla+önek)
+    const csvG = v => { let s = String(v == null ? '' : v); if (/^[=+\-@\t\r]/.test(s)) s = "'" + s; return `"${s.replace(/"/g,'""')}"`; };
     const satirlar = [
-      ['DT No', 'Başlık', 'İdare', 'Tür', 'İl', 'Tarih', 'Durum'],
+      ['DT No', 'Başlık', 'İdare', 'Tür', 'Kategori', 'İl', 'Tarih', 'Durum'],
       ...data.map(k => [
-        k.dt_no || '',
-        `"${(k.baslik || '').replace(/"/g,'""')}"`,
-        `"${(k.idare || '').replace(/"/g,'""')}"`,
-        k.tur || '', k.il || '',
+        csvG(k.dt_no),
+        csvG(k.baslik),
+        csvG(k.idare),
+        csvG(k.tur), csvG(k.kategori), csvG(k.il),
         k.tarih ? k.tarih.split('T')[0] : '',
-        `"${(k.durum || '').replace(/"/g,'""')}"`,
+        csvG(k.durum),
       ]),
     ];
     const icerik = '﻿' + satirlar.map(r => r.join(',')).join('\r\n');
@@ -467,6 +515,7 @@
 
   // Başlangıç
   (async () => {
+    kategorileriYukle();
     illeriYukle();
     istatistikYukle();
     const idareParam = new URLSearchParams(window.location.search).get('idare');

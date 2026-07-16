@@ -197,6 +197,15 @@
       .sidebar { display: none; }
       .kpi-grid { grid-template-columns: repeat(2, 1fr); }
     }
+    /* ⚖️ Karşılaştırma */
+    .kars-basliklar { display:grid; grid-template-columns:1fr auto 1fr; gap:10px; align-items:center; margin-bottom:14px; }
+    .kars-firma-ad { font-weight:800; font-size:15px; text-align:center; line-height:1.3; }
+    .kars-tablo { border:1px solid var(--border); border-radius:10px; overflow:hidden; }
+    .kars-row { display:grid; grid-template-columns:1fr auto 1fr; align-items:center; border-bottom:1px solid var(--border); }
+    .kars-row:last-child { border-bottom:none; }
+    .kars-cell { padding:12px 14px; font-size:15px; font-weight:800; color:var(--white); text-align:center; }
+    .kars-cell.kars-kazanan { color:#4ade80; }
+    .kars-label { padding:12px 10px; font-size:11.5px; color:var(--muted); text-align:center; text-transform:uppercase; letter-spacing:.04em; background:rgba(var(--overlay-rgb),.03); min-width:130px; }
   </style>
 </head>
 <body>
@@ -212,10 +221,11 @@
     </div>
     <nav class="sidebar-nav">
       <div class="nav-section-label">Kamu İhaleleri</div>
-      <a href="dashboard" class="nav-item"><span class="icon">◉</span> Dashboard</a>
+      <a href="dashboard" class="nav-item"><span class="icon">◉</span> Anasayfa</a>
       <a href="ihaleler" class="nav-item"><span class="icon">⊞</span> İhaleler</a>
       <a href="dogrudan-temin" class="nav-item"><span class="icon">⚡</span> Doğrudan Temin</a>
       <a href="sonuclananlar" class="nav-item"><span class="icon">🏆</span> Sonuçlananlar</a>
+      <a href="kamu-ihaleleri" class="nav-item"><span class="icon">📦</span> Kamu Kurumu İhaleleri</a>
       <div class="nav-section-label" style="padding-left:16px;opacity:.85;">— Analiz —</div>
       <a href="rekabet-analizi" class="nav-item"><span class="icon">📊</span> Rekabet Analizi</a>
       <a href="idareler" class="nav-item"><span class="icon">🏛️</span> İdareler Dizini</a>
@@ -303,6 +313,7 @@
           <div class="firma-meta" id="firma-meta">—</div>
           <div style="margin-top:16px;display:flex;gap:10px;flex-wrap:wrap;">
             <a id="firma-ihaleler-btn" href="#" class="btn-ara" style="text-decoration:none;padding:9px 18px;font-size:13px;">📋 İhalelerini Gör</a>
+            <button class="btn-ara" style="background:transparent;border:1px solid var(--border);color:var(--white);" onclick="karsilastirAc()">⚖️ Firmayla Karşılaştır</button>
             <button id="firma-takip-btn" class="btn-ara" style="background:transparent;border:1px solid var(--border);color:var(--white);" onclick="firmaTakipToggle()">⭐ Rakibi Takip Et</button>
             <button class="btn-ara" style="background:transparent;border:1px solid var(--border);color:var(--white);" onclick="yeniAramaGoster()">🔍 Yeni Arama</button>
           </div>
@@ -401,6 +412,18 @@
     </div><!-- /page-body -->
   </div><!-- /main -->
 </div><!-- /app -->
+
+<!-- ⚖️ FİRMA KARŞILAŞTIRMA OVERLAY (#4) -->
+<div id="kars-overlay" style="display:none;position:fixed;inset:0;z-index:200;background:rgba(6,10,18,.72);backdrop-filter:blur(3px);overflow-y:auto;">
+  <div style="max-width:1000px;margin:40px auto;background:var(--navy-mid);border:1px solid var(--border);border-radius:16px;padding:24px 26px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:6px;">
+      <div style="font-family:var(--font-display);font-size:19px;font-weight:800;color:var(--white);">⚖️ Firma Karşılaştırma</div>
+      <button onclick="karsilastirKapat()" style="background:var(--card-bg);border:1px solid var(--border);color:var(--muted);width:32px;height:32px;border-radius:8px;cursor:pointer;font-size:16px;">✕</button>
+    </div>
+    <div style="font-size:12.5px;color:var(--muted);margin-bottom:18px;">Eldeki EKAP sonuç verisiyle iki firmayı yan yana kıyaslar. Büyük firmalarda dağılımlar en güncel 500 kazanımdan hesaplanır.</div>
+    <div id="kars-icerik"></div>
+  </div>
+</div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
@@ -1014,6 +1037,126 @@
         }
       });
     }
+  }
+
+  // ── ⚖️ Firma Karşılaştırma (#4) ──────────────────────────
+  // A firması = detayı açık olan (AKTIF_YID). B firması overlay içinde aranıp seçilir.
+  // analiz_pivot büyük firmalarda timeout ettiği için kanıtlı ihale_sonuclari(yuklenici_id, ≤500)
+  // sorgusuna dayanır; headline KPI'lar yukleniciler resmi toplamlarından, dağılımlar örneklemden.
+  function _firmaKarsVeri(yid) {
+    return Promise.all([
+      sb.from('yukleniciler').select('id,ad,il,toplam_sozlesme_sayisi,toplam_ciro,ilk_sozlesme_tarihi,son_sozlesme_tarihi').eq('id', yid).limit(1),
+      sb.from('ihale_sonuclari').select('kazanan_teklif,sozlesme_bedeli,tenzilat_yuzde,kazanan_teklif_farki_yuzde,ilanlar(idare,il,kategori)').eq('yuklenici_id', yid).limit(500),
+    ]).then(([a, b]) => ({ y: (a.data && a.data[0]) || null, sonuc: b.data || [] }));
+  }
+  function _firmaKarsOzet(v) {
+    const kat = {}, il = {}, idare = new Set();
+    let tzTop = 0, tzAd = 0;
+    (v.sonuc || []).forEach(r => {
+      const ln = r.ilanlar || {};
+      if (ln.kategori) kat[ln.kategori] = (kat[ln.kategori] || 0) + 1;
+      if (ln.il) il[ln.il] = (il[ln.il] || 0) + 1;
+      if (ln.idare) idare.add(ln.idare);
+      const tz = (r.tenzilat_yuzde != null) ? r.tenzilat_yuzde : r.kazanan_teklif_farki_yuzde;
+      if (tz != null) { tzTop += Number(tz); tzAd++; }
+    });
+    return { kat, il, idare, ortTenz: tzAd ? tzTop / tzAd : null, ilSayi: Object.keys(il).length, katSayi: Object.keys(kat).length, ornek: (v.sonuc || []).length };
+  }
+
+  window.karsilastirAc = function() {
+    if (!AKTIF_YID) return;
+    document.getElementById('kars-overlay').style.display = 'block';
+    document.getElementById('kars-icerik').innerHTML = `
+      <div style="margin-bottom:6px;font-size:13px;color:var(--white);font-weight:600;">1. firma: <span style="color:var(--amber);">${escapeHtml(FIRMA || '—')}</span></div>
+      <div style="font-size:12.5px;color:var(--muted);margin-bottom:10px;">Karşılaştırmak istediğiniz 2. firmayı arayın:</div>
+      <div style="display:flex;gap:8px;margin-bottom:16px;">
+        <input id="kars-ara-input" class="firma-arama-input" style="flex:1;" placeholder="2. firma adı…" onkeydown="if(event.key==='Enter')karsilastirAra()" />
+        <button class="btn-ara" onclick="karsilastirAra()">Ara →</button>
+      </div>
+      <div id="kars-ara-sonuc"></div>`;
+    setTimeout(() => { const el = document.getElementById('kars-ara-input'); if (el) el.focus(); }, 60);
+  };
+  window.karsilastirKapat = function() { document.getElementById('kars-overlay').style.display = 'none'; };
+
+  window.karsilastirAra = async function() {
+    const term = (document.getElementById('kars-ara-input').value || '').trim();
+    if (!term) return;
+    const cont = document.getElementById('kars-ara-sonuc');
+    cont.innerHTML = `<div style="color:var(--muted);font-size:13px;padding:10px 0;">Aranıyor…</div>`;
+    let { data } = await sb.from('yukleniciler').select('id,ad,il,toplam_sozlesme_sayisi,toplam_ciro')
+      .ilike('arama_fold', `%${trFold(term)}%`).order('toplam_ciro', { ascending: false, nullsFirst: false }).limit(30);
+    const liste = (data || []).filter(f => f.id !== AKTIF_YID);
+    if (!liste.length) { cont.innerHTML = `<div style="color:var(--muted);font-size:13px;padding:10px 0;">Eşleşen başka firma bulunamadı.</div>`; return; }
+    cont.innerHTML = liste.map(f => `
+      <div class="firma-liste-item" style="margin-bottom:6px;" onclick="karsilastirSec('${escapeHtml(f.id)}')">
+        <div><div class="fli-ad">${escapeHtml(f.ad || '—')}</div>
+        <div class="fli-stats"><span>📋 <b>${(f.toplam_sozlesme_sayisi||0).toLocaleString('tr')}</b> sözleşme</span><span>💰 <b>${formatBedel(f.toplam_ciro)}</b></span>${f.il?`<span>📍 ${escapeHtml(f.il)}</span>`:''}</div></div>
+        <div class="fli-analiz">Seç →</div>
+      </div>`).join('');
+  };
+
+  window.karsilastirSec = async function(yidB) {
+    const cont = document.getElementById('kars-icerik');
+    cont.innerHTML = `<div class="veri-yok-card"><div class="loading-spinner"></div><div style="font-size:13px;color:var(--muted);">İki firma karşılaştırılıyor…</div></div>`;
+    try {
+      const [vA, vB] = await Promise.all([_firmaKarsVeri(AKTIF_YID), _firmaKarsVeri(yidB)]);
+      if (!vA.y || !vB.y) { cont.innerHTML = `<div style="color:var(--muted);font-size:13px;padding:20px;text-align:center;">Firma verisi alınamadı.</div>`; return; }
+      _karsRender(vA, vB);
+    } catch (e) {
+      cont.innerHTML = `<div style="color:var(--muted);font-size:13px;padding:20px;text-align:center;">Karşılaştırma yüklenemedi. Tekrar deneyin.</div>`;
+    }
+  };
+
+  function _karsRender(vA, vB) {
+    const oA = _firmaKarsOzet(vA), oB = _firmaKarsOzet(vB);
+    const num = n => (Number(n) || 0);
+    const kpiler = [
+      ['Toplam sözleşme', num(vA.y.toplam_sozlesme_sayisi), num(vB.y.toplam_sozlesme_sayisi), v => v.toLocaleString('tr'), true],
+      ['Toplam ciro',     num(vA.y.toplam_ciro),            num(vB.y.toplam_ciro),            v => formatBedel(v),       true],
+      ['Kapsanan il',     oA.ilSayi,  oB.ilSayi,  v => String(v), true],
+      ['Kapsanan sektör', oA.katSayi, oB.katSayi, v => String(v), true],
+      ['Ort. tenzilat',   oA.ortTenz, oB.ortTenz, v => (v == null ? '—' : '%' + v.toFixed(1)), null],
+    ];
+    const kpiSatir = kpiler.map(([et, a, b, fmt, yuksek]) => {
+      let aCls = '', bCls = '';
+      if (yuksek === true && a !== b) { if (a > b) aCls = 'kars-kazanan'; else bCls = 'kars-kazanan'; }
+      return `<div class="kars-row"><div class="kars-cell ${aCls}">${fmt(a)}</div><div class="kars-label">${et}</div><div class="kars-cell ${bCls}">${fmt(b)}</div></div>`;
+    }).join('');
+
+    const ortakIdare = [...oA.idare].filter(x => oB.idare.has(x));
+    const ortakKat = Object.keys(oA.kat).filter(k => oB.kat[k]);
+    const katList = o => Object.entries(o.kat).sort((x, y) => y[1] - x[1]).slice(0, 6);
+    const katMax = Math.max(1, ...Object.values(oA.kat), ...Object.values(oB.kat));
+    const katBar = (list, renk) => list.map(([k, n]) => `
+      <div style="font-size:12px;margin-bottom:7px;">
+        <div style="display:flex;justify-content:space-between;color:var(--white);"><span>${escapeHtml(k)}</span><span style="color:var(--muted);">${n}</span></div>
+        <div style="height:5px;background:rgba(var(--overlay-rgb),.06);border-radius:3px;margin-top:3px;"><div style="height:100%;width:${Math.round(n / katMax * 100)}%;background:${renk};border-radius:3px;"></div></div>
+      </div>`).join('') || '<div style="color:var(--muted);font-size:12px;">Veri yok</div>';
+    const orn = o => (o.ornek >= 500 ? ` <span style="color:var(--muted);font-weight:400;">· son 500</span>` : '');
+
+    document.getElementById('kars-icerik').innerHTML = `
+      <div class="kars-basliklar">
+        <div class="kars-firma-ad" style="color:var(--amber);">${escapeHtml(vA.y.ad)}</div>
+        <div style="color:var(--muted);font-size:12px;font-weight:700;">KARŞI</div>
+        <div class="kars-firma-ad" style="color:#60a5fa;">${escapeHtml(vB.y.ad)}</div>
+      </div>
+      <div class="kars-tablo">${kpiSatir}</div>
+      <div style="font-size:11px;color:var(--muted);text-align:center;margin-top:6px;">Yeşil = daha yüksek değer. Tenzilat "iyi/kötü" değil, teklif agresifliği göstergesidir.</div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:20px;">
+        <div class="kpi-card" style="text-align:left;"><div class="kpi-label" style="margin-bottom:10px;color:var(--amber);">🏭 Sektör dağılımı${orn(oA)}</div>${katBar(katList(oA), 'var(--amber)')}</div>
+        <div class="kpi-card" style="text-align:left;"><div class="kpi-label" style="margin-bottom:10px;color:#60a5fa;">🏭 Sektör dağılımı${orn(oB)}</div>${katBar(katList(oB), '#60a5fa')}</div>
+      </div>
+
+      <div class="kpi-card" style="text-align:left;margin-top:16px;">
+        <div class="kpi-label" style="margin-bottom:10px;">🤝 Ortak Zemin</div>
+        <div style="font-size:12.5px;color:var(--white);margin-bottom:8px;">Her ikisinin de iş yaptığı idareler: <b style="color:var(--amber);">${ortakIdare.length}</b>${ortakIdare.length ? ` — ${ortakIdare.slice(0, 5).map(escapeHtml).join(', ')}${ortakIdare.length > 5 ? '…' : ''}` : ''}</div>
+        <div style="font-size:12.5px;color:var(--white);">Ortak sektörler: <b style="color:var(--amber);">${ortakKat.length}</b>${ortakKat.length ? ` — ${ortakKat.slice(0, 6).map(escapeHtml).join(', ')}` : ''}</div>
+      </div>
+
+      <div style="margin-top:16px;text-align:center;">
+        <button class="btn-ara" style="background:transparent;border:1px solid var(--border);color:var(--white);" onclick="karsilastirAc()">↺ Başka firmayla karşılaştır</button>
+      </div>`;
   }
 
   // ── Başlangıç yönlendirmesi ──────────────────────────────

@@ -199,10 +199,11 @@
     </div>
     <nav class="sidebar-nav">
       <div class="nav-section-label">Kamu İhaleleri</div>
-      <a href="dashboard" class="nav-item"><span class="icon">◉</span> Dashboard</a>
+      <a href="dashboard" class="nav-item"><span class="icon">◉</span> Anasayfa</a>
       <a href="ihaleler" class="nav-item"><span class="icon">⊞</span> İhaleler</a>
       <a href="dogrudan-temin" class="nav-item"><span class="icon">⚡</span> Doğrudan Temin</a>
       <a href="sonuclananlar" class="nav-item"><span class="icon">🏆</span> Sonuçlananlar</a>
+      <a href="kamu-ihaleleri" class="nav-item"><span class="icon">📦</span> Kamu Kurumu İhaleleri</a>
       <div class="nav-section-label" style="padding-left:16px;opacity:.85;">— Analiz —</div>
       <a href="rekabet-analizi" class="nav-item"><span class="icon">📊</span> Rekabet Analizi</a>
       <a href="idareler" class="nav-item active"><span class="icon">🏛️</span> İdareler Dizini</a>
@@ -352,22 +353,38 @@
     // POST/.range() bu limiti aşamıyor, sadece GET + limit/offset query param'ları
     // sayfalamaya izin veriyor. 15.000+ farklı idare olduğu için birkaç sayfa gerekiyor
     // (yine de eski yöntemin ~90 sayfalık ham ilanlar taramasından çok daha az).
-    const sonuc = [];
-    let offset = 0;
-    const SAYFA = 1000;
-    while (true) {
-      document.getElementById('yukleniyor-mesaj').textContent =
-        `İdare verileri çekiliyor… (${offset.toLocaleString('tr-TR')})`;
-      document.getElementById('progress-fill').style.width =
-        Math.min(90, Math.round((offset / 16000) * 100)) + '%';
+    // Oturum önbelleği — aynı sekmede sayfaya her dönüşte ~15 ardışık RPC isteğini
+    // (sabit ~15K idare) tekrar çekmeyi önler. 30 dk TTL; kota aşılırsa sessizce fetch'e düşer.
+    const CACHE_KEY = 'idare_sayim_v1';
+    const TTL = 30 * 60 * 1000;
+    let sonuc = null;
+    try {
+      const ham = sessionStorage.getItem(CACHE_KEY);
+      if (ham) {
+        const paket = JSON.parse(ham);
+        if (paket && paket.t && (Date.now() - paket.t) < TTL && Array.isArray(paket.d)) sonuc = paket.d;
+      }
+    } catch (e) { /* önbellek okunamadı → normal fetch */ }
 
-      const { data, error } = await sb.rpc('idare_sayim', {}, { get: true })
-        .range(offset, offset + SAYFA - 1);
-      if (error) throw error;
-      if (!data || data.length === 0) break;
-      sonuc.push(...data);
-      if (data.length < SAYFA) break;
-      offset += SAYFA;
+    if (!sonuc) {
+      sonuc = [];
+      let offset = 0;
+      const SAYFA = 1000;
+      while (true) {
+        document.getElementById('yukleniyor-mesaj').textContent =
+          `İdare verileri çekiliyor… (${offset.toLocaleString('tr-TR')})`;
+        document.getElementById('progress-fill').style.width =
+          Math.min(90, Math.round((offset / 16000) * 100)) + '%';
+
+        const { data, error } = await sb.rpc('idare_sayim', {}, { get: true })
+          .range(offset, offset + SAYFA - 1);
+        if (error) throw error;
+        if (!data || data.length === 0) break;
+        sonuc.push(...data);
+        if (data.length < SAYFA) break;
+        offset += SAYFA;
+      }
+      try { sessionStorage.setItem(CACHE_KEY, JSON.stringify({ t: Date.now(), d: sonuc })); } catch (e) { /* kota aşıldı → önbelleksiz devam */ }
     }
 
     document.getElementById('progress-fill').style.width = '100%';

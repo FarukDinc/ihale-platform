@@ -51,6 +51,9 @@ from datetime import datetime, timezone
 import httpx
 from dotenv import load_dotenv
 
+sys.path.insert(0, os.path.dirname(__file__))
+from kategori_siniflandir import kategori_belirle
+
 load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), ".env"))
 
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "")
@@ -137,16 +140,19 @@ def sayfa_cek(client: httpx.Client, sayfa: int, deneme: int = 3) -> list:
 
 
 def kayit_donustur(item: dict, haritalar: dict) -> dict:
+    baslik = (item.get("E2") or "").strip() or None
+    tur = haritalar["tur"].get(item.get("E4"))
     return {
         "dt_no": item.get("E1"),
-        "baslik": (item.get("E2") or "").strip() or None,
+        "baslik": baslik,
         "idare": (item.get("E3") or "").strip() or None,
-        "tur": haritalar["tur"].get(item.get("E4")),
+        "tur": tur,
         "il": haritalar["il"].get(item.get("E12")),
         "tarih": tarih_parse(item.get("E7")),
         "durum": haritalar["durum"].get(item.get("E9")),
         "duyuru_var": bool(item.get("E13")),
         "dokuman_var": bool(item.get("E14")),
+        "kategori": kategori_belirle(None, tur, baslik),  # DT'de OKAS yok → keyword(baslik) + tür fallback
         "guncellenme": datetime.now(timezone.utc).isoformat(),
     }
 

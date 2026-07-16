@@ -24,6 +24,66 @@
 > ("TR'nin bu ülkeye ihracatı $X, trend") katmanı, TÜİK/Comtrade'den yıllık güncelleme. Tam istatistik
 > modülü core value-prop değil (payment atomiklik + launch işleri önde).
 >
+> ## 🛠️ 16 TEMMUZ (devam) — 8 SİSTEM SORUNU: 7 DÜZELTİLDİ + CANLI, #4 SIRADA
+> Kullanıcı 8 sorun bildirdi; 8 paralel ajanla teşhis edildi (workflow), sonra düzeltildi:
+> - **#7 teklif hazırla DONMASI (commit `4fd02af`) — EN KRİTİK:** `yazdir()` print şablonundaki template
+>   literal içinde gömülü `<script src="js/main.js"></script>` vardı → HTML ayrıştırıcı bu `</script>`'i
+>   görünce ANA script bloğunu satır 1787'de ERKEN KAPATIYORDU → tüm sayfa JS'i parse hatası → hiçbir şey
+>   çalışmıyordu (donuk skeleton). Satır kaldırıldı → canlıda ihale özeti anında yükleniyor. **Ders: inline
+>   `<script>` içindeki string/template'lerde `</script>` MUTLAKA `<\/script>` diye escape edilmeli.**
+>   (Teşhis ajanı "select(*) ağır kolon" demişti — o da dar-kolona çevrildi ama asıl neden buydu; ajan
+>   sadece okuyup çalıştırmadığı için gerçek nedeni kaçırmıştı — canlı doğrulama şart.)
+> - **#2 geçmiş kazanan (commit `4e4db15`):** kurum-analiz ihale listesine `ihale_sonuclari` embed'i
+>   (ilan_id FK, %100 dolu) → 🏆 kazanan firma+bedel+tenzilat+tarih; çok-kısımlıda "N kısım · toplam ₺X".
+> - **#6 ihale no kopyalama:** ihaleler kartında hover ⧉ + tek-tık kopya (uluslararasi noKopyala deseni).
+> - **#8 DT idare tıklama:** link görünür (hover amber), hedef `dogrudan-temin?idare=` (kurum-analiz uzun DT
+>   idare adında boş/timeout dönüyordu → garanti çalışan DT-içi filtreye çevrildi).
+> - **#3 idareler önbelleği:** idare_sayim sessionStorage (30dk TTL) → tekrar açılışta ~15 RPC yok.
+> - **#1 kurumlar her tuşta fetch:** ZATEN debounce+client-side, kod değişikliği gerekmedi.
+> - **#5 rekabet idare tıklama (commit `4e4db15` + `a8bdbee`):** idare satırları kurum-analiz linkine
+>   dönüştü. Doğrularken KEŞİF: `rekabet_ozet` RPC'si ~351K ilanlar'da ~20 alt-agregasyon = ~3s, PostgREST
+>   ~3s timeout eşiğinde → sayfa ARALIKLI hiç yüklenmiyordu. Fix: `ALTER FUNCTION rekabet_ozet SET
+>   statement_timeout='20s'` (kullanıcı onayıyla VDS'e uygulandı, 3/3 başarılı). Sayfa Pro-kilitli olduğu
+>   için anonimde görsel doğrulanamadı; link kodu çalışan desenin aynısı.
+> - **#4 firma analizi AI→2-firma karşılaştırma (commit `22bd051`) — YAPILDI + CANLI:** detay başlığına
+>   "⚖️ Firmayla Karşılaştır" → overlay'de 2. firma aranır; KPI kıyas tablosu (sözleşme/ciro/il/sektör/
+>   tenzilat, yüksek=yeşil) + yan yana sektör dağılımı + "🤝 Ortak Zemin" (birlikte çalışılan idareler/
+>   sektörler — canlı test: 2 ecza deposu 171 ortak idare). ÖNEMLİ: analiz_pivot BÜYÜK firmalarda timeout
+>   ediyor (detay sayfasının "En Çok Çalıştığı İdareler" kartı da bu yüzden büyük firmalarda sessizce
+>   kayboluyor — ayrı latent bug), o yüzden karşılaştırma kanıtlı ihale_sonuclari(yuklenici_id,≤500)
+>   sorgusuna dayandırıldı. AI kartı opsiyonel bırakıldı (Pro upsell korundu).
+>
+> **TÜM 8 SORUN TAMAM.** Kalan latent notlar: (a) analiz_pivot büyük firmalarda timeout — rekabet_ozet gibi
+> statement_timeout bump'ı gerekebilir (detay sayfası idare/sektör kartı için); (b) browser-pane screenshot
+> aracı bu oturumda genel çalışmadı — doğrulamalar javascript_tool DOM sorgularıyla yapıldı.
+
+> ## 🧾 16 TEMMUZ (devam) — DASHBOARD→ANASAYFA + DOĞRUDAN TEMİN FİLTRELERİ + DT KAZANAN FİZİBİLİTE
+> Kullanıcı 3 acil bulgu bildirdi: (a) dashboard adı, (b) DT'de kategori/tür filtreleme yok, (c) DT kazanan
+> firma takibi. Yapılanlar:
+>
+> **✅ 1 — Dashboard → "Anasayfa" (commit `70dc7f4`):** 24 sayfada nav/başlık/geri-butonları; URL `dashboard`
+> kaldı; Türkçe ek düzeltildi. İyzico/proxy panel referansları (dış servis) dokunulmadı.
+>
+> **✅ 2 — Doğrudan temin filtreleri CANLI (commit'ler `c9ab47c`, `efa9313`, `9acf6be`):**
+> - **Durum filtresi** (🟢 Açık / ✅ Sonuçlandı) — EKAP'ın 5 ham durumu 2 gruba (.in()), renkli rozet. Index'siz
+>   güvenli (count latency tur 1.6s / durum 0.4s, mevcut tür filtresiyle aynı sınıf).
+> - **Kategori filtresi** — `dogrudan_temin_ilanlari.kategori` kolonu + **1.147.412 satır** sınıflandırıldı
+>   (`dt_kategori_backfill.py` keyset+stream+CHUNK=60, idempotent) + `idx_dt_ilanlari_kategori_tarih` kompozit
+>   index. Dropdown js/kategoriler.js'ten (41 kanonik). Scraper hook (kayit_donustur→kategori_belirle). CSV'ye
+>   kategori + formül-enjeksiyon guard. Dağılım %45 anlamlı / **%55 "Diğer"** (DT başlıkları kısa+OKAS yok →
+>   keyword genişletme ayrı iş, ortak ilanlar sınıflandırmasını da etkiler). Canlı doğrulandı: Gıda→68.413,
+>   İnşaat+Sonuçlandı kombine çalışıyor, konsol temiz. DEPLOY SIRASI korundu (kolon+NOTIFY önce, hook sonra).
+>
+> **🔒 3 — DT KAZANAN TAKİBİ: FİZİBİL AMA CAPTCHA ARKASINDA (kullanıcı "geniş geçmiş backfill" seçti):**
+> Çekişmeli workflow kanıtladı: E10=dogrudanTeminId / E11=IdareId zaten dtAra listesinde (saklanmıyor) →
+> `DogrudanTeminDetay.aspx?IdareId=E11&IhaleId=E10` → CAPTCHA (belge-indirmedeki birebir aynısı) → postback →
+> "SONUÇ İLANI" bloğunda kazanan+bedel+tarih. **KISIT:** asistan CAPTCHA'yı programatik çözemez/çözdüremez;
+> şema+parser+UI+E10/E11 yakalama kurulabilir, asıl çözüm adımını kullanıcının `ekap_captcha_indir` hattı
+> çalıştırır. Maliyet: her sonuç=1 Gemini CAPTCHA; ~1M "15" kaydında cookie-reuse (kotayı ~100x düşürür)
+> MUTLAKA test edilmeli. Tam reçete + entegrasyon tasarımı hafıza `dt-kazanan-captcha`'da. **DURUM: kullanıcı
+> yönlendirmesi bekliyor** → **ERTELENDİ:** kullanıcı "şimdilik duralım, sonra bana TEKRAR SOR ve işleme
+> alalım" dedi. İskele kurulmadı; sonraki uygun oturumda kullanıcıya tekrar açılacak.
+
 > ## ✅ 16 TEMMUZ (2. OTURUM) — VERİ AKIŞI DENETİMİ: 3 AKIŞ DA AKTİF + KUPON/SUNUCU NOTLARI
 > **1) Veri çekme denetimi (public REST, `olusturulma` yöntemi — bkz. hafıza `scraper-cron-silent-fail`):**
 > - `ilanlar`: son yazım 16 Tem 09:28 UTC, son 24s **1000+** kayıt, 391'i aynı-gün ilan tarihli → SAĞLIKLI.
@@ -34,11 +94,10 @@
 >   304 (300 TED + 4 Georgia) → iki kaynak da yazıyor, SAĞLIKLI. ⚠️ TED tam 300 = muhtemel gece limiti;
 >   "TED'in tamamı gelsin" istenirse scraper limitine bakılmalı. Cron LOG'ları denetlenmedi (SSH engelli) —
 >   kısmi hata görünmez ama veri tazeliği/hacmi normal.
-> **2) Pro kupon (bekliyor):** kullanıcı kendine 1 aylık Pro istedi. Karar: `--plan standart` (Pro'nun iç
-> kodu), 1 ay, 1 adet. ⚠️ Yerel `backend/.env` hâlâ ESKİ managed Supabase'i gösteriyor — kupon yerelden
-> üretilirse ÖLÜ DB'ye yazılır. Komut VDS'te çalıştırılmalı:
-> `python kupon_olustur.py --plan standart --ay 1 --adet 1 --aciklama "Pro deneme"`. SSH auto-mode
-> engeline takıldı; kullanıcının ya komutu kendisi çalıştırması ya hedefi adlandırarak yetki vermesi gerek.
+> **2) ✅ Pro kupon ÜRETİLDİ:** kullanıcı kendine Pro istedi (önce 1 ay dendi, sonra 6 aya çevrildi).
+> VDS'te `kupon_olustur.py --plan standart --ay 6 --adet 1` çalıştırıldı → **IHP-72DEF88A** (canlı DB'de,
+> tek kullanımlık). Ders: Pro'nun iç kodu `standart`; ⚠️ yerel `backend/.env` hâlâ ESKİ managed
+> Supabase'i gösteriyor — kupon/yazma işleri asla yerelden değil VDS'ten yapılmalı.
 > **3) Sunucu kararı (danışmanlık):** mevcut VDS (≈8GB/4çekirdek, disk %14) ŞİMDİLİK YETERLİ — geçiş
 > tetikleyicileri: 2003+ tam backfill, RAM baskısı, CPU doygunluğu. Geçilecekse hedef: WeLAB BL460c
 > **Gen8 Pro $43.48/ay** (2x E5-2680, 128GB, 980GB NVMe, "Database Server") — NVMe+yüksek saat; SAS'lı

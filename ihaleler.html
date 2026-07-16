@@ -242,6 +242,12 @@
     .kart-ust { display: flex; justify-content: space-between; gap: 16px; align-items: flex-start; }
     .kart-sol { flex: 1; min-width: 0; }
     .kart-kayitno { font-size: 11px; color: var(--muted); font-weight: 600; letter-spacing: .04em; margin-bottom: 4px; }
+    .kart-no { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; border-radius: 5px; padding: 1px 6px; margin: -1px -6px; transition: background .12s; }
+    .kart-no:hover { background: rgba(240,165,0,.1); }
+    .kart-no b { color: var(--off-white); font-weight: 700; letter-spacing: .02em; }
+    .kart-no-kopya { font-size: 10px; color: var(--muted); opacity: 0; transition: opacity .12s, color .12s; font-weight: 600; }
+    .ihale-kart:hover .kart-no-kopya { opacity: 1; }
+    .kart-no:hover .kart-no-kopya { color: var(--amber); }
     .kart-baslik { font-size: 15px; font-weight: 700; color: var(--white); text-decoration: none; display: block; line-height: 1.4; }
     .kart-baslik:hover { color: var(--amber); }
     .kart-idare { font-size: 12.5px; color: var(--off-white); margin-top: 6px; }
@@ -400,10 +406,11 @@
     </div>
     <nav class="sidebar-nav">
       <div class="nav-section-label">Kamu İhaleleri</div>
-      <a href="dashboard" class="nav-item"><span class="icon">◉</span> Dashboard</a>
+      <a href="dashboard" class="nav-item"><span class="icon">◉</span> Anasayfa</a>
       <a href="ihaleler" class="nav-item active"><span class="icon">⊞</span> İhaleler</a>
       <a href="dogrudan-temin" class="nav-item"><span class="icon">⚡</span> Doğrudan Temin</a>
       <a href="sonuclananlar" class="nav-item"><span class="icon">🏆</span> Sonuçlananlar</a>
+      <a href="kamu-ihaleleri" class="nav-item"><span class="icon">📦</span> Kamu Kurumu İhaleleri</a>
       <div class="nav-section-label" style="padding-left:16px;opacity:.85;">— Analiz —</div>
       <a href="rekabet-analizi" class="nav-item"><span class="icon">📊</span> Rekabet Analizi</a>
       <a href="idareler" class="nav-item"><span class="icon">🏛️</span> İdareler Dizini</a>
@@ -939,7 +946,9 @@
         <div class="kart-ust">
           <div class="kart-sol">
             <div class="kart-kayitno">
-              Kayıt No: ${ilan.ekap_id || '—'}
+              ${ilan.ekap_id
+                ? `<span class="kart-no" title="İhale Kayıt No — kopyalamak için tıklayın" onclick="noKopyala(this, '${esc(ilan.ekap_id)}')">Kayıt No: <b>${esc(ilan.ekap_id)}</b><span class="kart-no-kopya">⧉ kopyala</span></span>`
+                : 'Kayıt No: —'}
               ${okundu ? '<span class="okundu-badge">Okundu</span>' : ''}
             </div>
             <a class="kart-baslik" href="ihale-detay?id=${ilan.id}" onclick="kartOku('${ilan.id}')">${esc(ilan.baslik) || '—'}</a>
@@ -987,6 +996,14 @@
       }
     }
     okunduSayiGuncelle();
+  }
+
+  // İhale Kayıt No'yu tek tıkla panoya kopyala (uluslararasi.html deseni).
+  function noKopyala(el, no) {
+    const bildir = () => { const e = el.querySelector('.kart-no-kopya'); if (e) { const t = e.textContent; e.textContent = '✓ kopyalandı'; e.style.opacity = '1'; setTimeout(() => { e.textContent = t; e.style.opacity = ''; }, 1500); } };
+    const fallback = () => { try { const ta = document.createElement('textarea'); ta.value = no; ta.style.cssText = 'position:fixed;opacity:0;'; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); bildir(); } catch (e) {} };
+    if (navigator.clipboard && navigator.clipboard.writeText) { navigator.clipboard.writeText(no).then(bildir).catch(fallback); }
+    else { fallback(); }
   }
 
   // Türkçe karakter katlama — SQL tr_fold() ile BİREBİR aynı (migration_ilanlar_arama_fold.sql).
