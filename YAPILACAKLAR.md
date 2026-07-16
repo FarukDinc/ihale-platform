@@ -164,8 +164,14 @@
 >   yerine ticaret-analiz linki; ticaret-tr-veri.js kaldırıldı; Türkiye yine beyaz.
 > - **Sektör dropdown beyaz-kutu fix:** Windows native `<select>` popup'ı option arka planını koyu yapmaz →
 >   beyaz-üstüne-beyaz görünmezdi; `#dunya-sektor option { background:#fff; color:#1b2942 }`.
-> - **⏳ Kalan polish:** "Ticaret Analizi" nav item'ı sadece uluslararasi + yeni sayfada; diğer ~22 sayfaya
->   nav sweep yapılabilir (düşük öncelik). Sektör granülaritesi hâlâ 16 grup/2023 (Comtrade HS-21 upgrade planı duruyor).
+> - **✅ Nav sweep TAMAM (canlı):** backend/scratchpad nav_sweep.py ile 24 sayfaya "📈 Ticaret Analizi" nav item'ı
+>   eklendi (toplam 26 sayfa; Uluslararası İhaleler'den sonra). Landing/legal 7 sayfa (nav'sız) atlandı.
+> - **⏳ Sektör upgrade ÇALIŞIYOR (arka plan):** backend/ticaret_sektor_yenile.py — WITS 16 grup/2023 yerine
+>   Comtrade HS fasıllarını çekip **21 standart HS bölümüne** toplulaştırır (2024, taze). Comtrade preview
+>   500-satır cap + 1s'de 429 → fasıl-fasıl döngü, 5s aralık + 429 backoff (~194 çağrı/~16 dk). Tek yıl
+>   (sektör YoY yok; ülke-toplam YoY korunur). Bitince js/ticaret-tr-veri.js güncellenip deploy edilecek.
+>   NOT: tam TradeMap-paritesi (2024+2023 YoY, 97 fasıl) için ücretsiz Comtrade API KEY gerekir (500-cap
+>   + rate-limit'i kaldırır; kullanıcı kaydı gerektirir) — keyless yol tek-yıl/21-bölümle sınırlı.
 >
 > ## 🏢 16 TEMMUZ — EKAP FİRMA VERİSİ KAPSAMLI KAZIMA (kullanıcı: "firmalara dair her veriyi çek, hepsini kazıyalım")
 > **Durum denetimi (bu oturum):** yakalanan firma verisi KAZANAN-merkezli/tek boyutlu. EKSİK ve EKAP'ın
