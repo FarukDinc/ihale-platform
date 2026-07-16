@@ -1362,7 +1362,8 @@
     const el = document.getElementById('top-kurumlar-list');
     try {
       // Server-side aggregate RPC (eskiden tüm aktif ilanlar client'a inip JS'te sayılıyordu — ~16 istek/açılış)
-      const { data } = await sb.rpc('idare_sayim');
+      const { data, error } = await sb.rpc('idare_sayim');
+      if (error) throw error;  // supabase-js hata firlatmaz — kilitli RPC'de catch'e dus (giris cagrisi)
       const sirali = (data || []).filter(r => (r.aktif || 0) > 0).sort((a, b) => (b.aktif || 0) - (a.aktif || 0)).slice(0, 7);
       const maks = sirali[0]?.aktif || 1;
       el.innerHTML = sirali.map(r => { const idare = r.idare, sayi = r.aktif; return `
