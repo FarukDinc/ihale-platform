@@ -54,3 +54,16 @@ docker exec -i supabase-db psql -U postgres -d postgres -c "REFRESH MATERIALIZED
 # il_sektor_ozet + il_sektor_firmalar bunu okur; normalize_firma maliyeti nedeniyle dakikalar sürebilir).
 echo "[$(date +'%Y-%m-%d %H:%M:%S')] === Harita sektor MV ===" >> /opt/ihale-platform/logs/scraper.log
 docker exec -i supabase-db psql -U postgres -d postgres -c "REFRESH MATERIALIZED VIEW CONCURRENTLY public.il_sektor_firma_mv;" >> /opt/ihale-platform/logs/scraper.log 2>&1
+# Sayfa-açılışı özet MV paketi (migration_ozet_mv_paketi.sql) — il_sektor_ozet_mv
+# il_sektor_firma_mv'den türediği için ondan SONRA; yukleniciler-kaynaklılar da
+# yuklenici_yenile'den sonra koşmuş olur. Hepsi küçük (~sn mertebesi).
+echo "[$(date +'%Y-%m-%d %H:%M:%S')] === Ozet MV paketi ===" >> /opt/ihale-platform/logs/scraper.log
+# NOT: her REFRESH ayrı -c'de — tek -c içinde noktalı virgülle birleştirilirse psql
+# hepsini TEK örtük transaction'da yollar ve CONCURRENTLY transaction içinde çalışmaz.
+docker exec -i supabase-db psql -U postgres -d postgres \
+  -c "REFRESH MATERIALIZED VIEW CONCURRENTLY public.il_sektor_ozet_mv;" \
+  -c "REFRESH MATERIALIZED VIEW CONCURRENTLY public.kategori_sayim_mv;" \
+  -c "REFRESH MATERIALIZED VIEW CONCURRENTLY public.il_sayim_mv;" \
+  -c "REFRESH MATERIALIZED VIEW CONCURRENTLY public.il_firma_dagilimi_mv;" \
+  -c "REFRESH MATERIALIZED VIEW CONCURRENTLY public.yuklenici_ozet_mv;" \
+  -c "REFRESH MATERIALIZED VIEW CONCURRENTLY public.sonuc_ozet_mv;" >> /opt/ihale-platform/logs/scraper.log 2>&1
