@@ -1708,7 +1708,7 @@
       const gerek = [];
       if (!window.TR_HARITA)   gerek.push('js/tr-harita.js');
       if (!window.KATEGORILER) gerek.push('js/kategoriler.js');
-      if (!window.svgZoomKur)  gerek.push('js/svg-zoom.js?v=1');
+      if (!window.svgZoomKur)  gerek.push('js/svg-zoom.js?v=2');
       await Promise.all(gerek.map(assetYukle));
       const sel = document.getElementById('fah-sektor');
       (window.KATEGORILER || []).forEach(k => {
