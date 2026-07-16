@@ -7,14 +7,19 @@
 > **KALICI TALİMAT (12 Tem, kullanıcı emri):** Bu blok + ilgili bölümler her oturumda otomatik
 > güncellenir, kullanıcı hatırlatmak zorunda değil. Bkz. hafıza `yapilacaklar-auto-update`.
 
-> ## 🏛️ PLANLANAN (16 Tem, kullanıcı onayı) — İDARELER DİZİNİ + KURUM ANALİZİ BİRLEŞTİR
-> Firmalar birleşmesinin (6218d18) aynısı idareler için. **kurum-analiz.html tek hub**: `?kurum=` yoksa
-> açılış = İDARE DİZİNİ (idareler.html'in MV-destekli dizini taşınır: idare_dizin_json + sessionStorage
-> cache + arama/sıralama/pager); idareye tıkla → aynı sayfada mevcut kurum analizi (deep-link `?kurum=`
-> zaten çalışıyor, 7 sayfa link veriyor — kırılmaz). **idareler.html → param koruyan redirect stub**
-> (firmalar.html deseni). Nav: "🏛️ İdareler" + "🔍 Kurum Analizi" → tek "🏛️ İdareler". Firmalardan ucuz:
-> dizin MV'si + detay routing hazır; goster(dizin|detay) + rota + redirect + dizin taşıma kalıyor.
-> Nav tekilleştirmeyle (Firmalar tek öğe) AYNI turda yapılmalı (tek bulk-nav dokunuşu).
+> ## 🏛️ ✅ YAPILDI (16 Tem) — İDARELER + KURUM ANALİZİ BİRLEŞTİ + NAV TEKİLLEŞTİ (Firmalar dahil)
+> Firmalar deseninin aynısı: **kurum-analiz.html tek hub** — `?kurum=` yoksa açılış = İDARE DİZİNİ
+> (idareler.html'den taşındı, `iz-*` prefix: idare_dizin_json + 30dk sessionStorage + arama(trFold)/il/
+> aktif/sıralama/pager + anon 🔒 giriş kapısı [bulk_rpc_kilit]); idareye tıkla → **pushState ile AYNI
+> SAYFADA analiz** (kurumAc/dizineDon/popstate; grafikler destroy-korumalı — 2. açılışta "Canvas in use"
+> yok; satır tıklama data-ad+delegasyon, inline onclick YOK [tırnak dersi]). Geri → dizin DOM'u aynen
+> (arama/filtre/sayfa korunur). **idareler.html → param koruyan redirect stub.**
+> **NAV TEKİLLEŞTİ (23 sayfa):** "İdareler Dizini"+"Kurum Analizi" → tek **"🏛️ İdareler"**(kurum-analiz);
+> "Firmalar Dizini"+"Firma Analizi" → tek **"🏢 Firmalar"**(firma-analiz). Tekil linkler de güncellendi
+> (sektorler "İdareler →", index harita-sekme, firma-analiz geri-btn). kamu-ihaleleri.html BİLİNÇLİ atlandı
+> (eşzamanlı oturum onu stub'a çeviriyor — pop çakışması önlendi; eski linkleri redirect'le çalışır).
+> Süreç: git worktree (claude/idareler-merge) + ana ağaçta stash→merge→push→pop. Lokal test (http.server):
+> dizin+kapı ✓, ?kurum=KARAYOLLARI→4.493 ihale ✓, dizineDon→kurumAc(ANKARA BŞB)→441 ✓, konsol 0 hata.
 
 > ## 🔒 16 TEMMUZ (gece) — CSV/VERİ DIŞA AKTARIMI TÜM SAYFALARDAN KALDIRILDI (✅ CANLI, commit `afb7b1b`)
 > Kullanıcı: "her sayfada csv indirme açık, başlı başına veri sorunu — teklifler hariç hiçbir indirme olmasın".
