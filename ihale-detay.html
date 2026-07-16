@@ -780,6 +780,9 @@
         ilanEl.innerHTML = doc2.body.innerHTML;
       } else if (metin) {
         ilanEl.textContent = metin;
+      } else if (!uyeMi) {
+        // ilan_metni/ilan_html anon'a kapalı (migration_anon_maske.sql) — "bulunamadı" yanıltmasın
+        ilanEl.innerHTML = '<div style="text-align:center;padding:24px;color:var(--muted);">🔒 İlan metninin tamamı üyelere özel — <a href="login" style="color:var(--amber);">giriş yapın</a> <span style="opacity:.8;">(ücretsiz)</span></div>';
       } else {
         ilanEl.textContent = 'İlan metni bulunamadı.';
       }
