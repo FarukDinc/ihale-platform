@@ -113,6 +113,19 @@
 >   HS 2-digit (AG2, ~97 fasıl → 21 HS bölümüne toplulaştır, 2024/2025 taze) planı. ticaret_verisi_cek.py
 >   genişletilecek. İZİN EKLENDİ (`Bash(python *)` settings.local.json'a, kullanıcı) → çalıştırılabilir.
 >
+> **✅ EK (kullanıcı geri bildirimi, canlıda doğrulandı) — İHALE/TİCARET AYRIMI + YENİ SAYFA:**
+> - **`ticaret-analiz.html` YENİ sayfa** ("Ticaret Analizi", Uluslararası nav'ında): Türkiye ile ticaret
+>   HARİTASI (uluslararasi'den taşındı) + sıralanabilir/aranabilir 170-ülke LİSTESİ (ihracat/ithalat/YoY,
+>   sektör-filtreli, başlık-tık sıralama) + KPI (dünya toplamları, dış ticaret dengesi) + KAYNAKLAR kartı
+>   (UN Comtrade + WITS + yöntem + atıf + TÜİK notu — kullanıcının "kaynak nedir?" sorusu dokümante edildi).
+>   Harita↔liste çift yön (hover→vurgu, tık→kaydır). Türkiye beyaz referans, tooltip yön-net.
+> - **`uluslararasi.html` sadeleşti:** ihale/ticaret ayrımı — mod toggle KALDIRILDI (harita ihale-only),
+>   yerine ticaret-analiz linki; ticaret-tr-veri.js kaldırıldı; Türkiye yine beyaz.
+> - **Sektör dropdown beyaz-kutu fix:** Windows native `<select>` popup'ı option arka planını koyu yapmaz →
+>   beyaz-üstüne-beyaz görünmezdi; `#dunya-sektor option { background:#fff; color:#1b2942 }`.
+> - **⏳ Kalan polish:** "Ticaret Analizi" nav item'ı sadece uluslararasi + yeni sayfada; diğer ~22 sayfaya
+>   nav sweep yapılabilir (düşük öncelik). Sektör granülaritesi hâlâ 16 grup/2023 (Comtrade HS-21 upgrade planı duruyor).
+>
 > ## 🏢 16 TEMMUZ — EKAP FİRMA VERİSİ KAPSAMLI KAZIMA (kullanıcı: "firmalara dair her veriyi çek, hepsini kazıyalım")
 > **Durum denetimi (bu oturum):** yakalanan firma verisi KAZANAN-merkezli/tek boyutlu. EKSİK ve EKAP'ın
 > firma adına ÜRETTİĞİ ama bizde OLMAYAN: (1) teklif veren TÜM istekliler = kaybeden roster (en büyük boşluk;
