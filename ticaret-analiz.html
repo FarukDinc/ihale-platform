@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Türkiye Dış Ticaret Analizi — İhaleGlobal</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <script src="js/theme.js?v=2"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    body { background: var(--navy); }
+    .app { display: flex; min-height: 100vh; }
+    .sidebar { background: var(--navy-mid); border-right: 1px solid var(--border); width: 240px; flex-shrink: 0; position: sticky; top: 0; height: 100vh; display: flex; flex-direction: column; overflow-y: auto; }
+    .sidebar-logo { padding: 20px 20px 16px; border-bottom: 1px solid var(--border); }
+    .sidebar-logo a { font-family: var(--font-display); font-size: 18px; font-weight: 800; color: var(--white); text-decoration: none; display: flex; align-items: center; gap: 8px; }
+    .sidebar-logo span { color: var(--amber); }
+    .sidebar-nav { flex: 1; padding: 16px 12px; overflow-y: auto; }
+    .nav-section-label { font-size: 10px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); padding: 12px 8px 6px; }
+    .nav-item { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 6px; color: var(--muted); text-decoration: none; font-size: 13px; font-weight: 500; transition: all .15s; margin-bottom: 2px; }
+    .nav-item:hover { background: var(--card-bg); color: var(--white); }
+    .nav-item.active { background: rgba(240,165,0,0.12); color: var(--amber); }
+    .nav-item .icon { font-size: 16px; width: 20px; text-align: center; }
+    .sidebar-footer { padding: 16px; border-top: 1px solid var(--border); }
+    .user-row { display: flex; align-items: center; gap: 10px; }
+    .user-avatar { width: 32px; height: 32px; border-radius: 50%; background: var(--amber); color: var(--navy); font-size: 12px; font-weight: 800; display: flex; align-items: center; justify-content: center; }
+    .user-name { font-size: 13px; font-weight: 600; color: var(--white); }
+    .user-plan { font-size: 11px; color: var(--muted); }
+    .main { display: flex; flex-direction: column; flex: 1; min-width: 0; height: 100vh; overflow-y: auto; }
+    .topbar { background: var(--navy-mid); border-bottom: 1px solid var(--border); padding: 0 24px; height: 56px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 10; }
+    .page-body { padding: 24px; max-width: 1180px; width: 100%; }
+
+    .info-banner { background: rgba(240,165,0,.07); border: 1px solid rgba(240,165,0,.24); border-radius: 10px; padding: 12px 16px; margin-bottom: 18px; font-size: 12.5px; color: var(--off-white); line-height: 1.55; }
+    .info-banner b { color: var(--amber); }
+
+    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 18px; }
+    .kpi-card { background: var(--navy-mid); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px; }
+    .kpi-card .l { font-size: 11px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); }
+    .kpi-card .v { font-size: 21px; font-weight: 800; color: var(--white); font-family: var(--font-display); margin-top: 5px; }
+    .kpi-card .v.amber { color: var(--amber); }
+    .kpi-card .s { font-size: 11.5px; color: var(--muted); margin-top: 3px; }
+
+    /* Dünya haritası */
+    .dunya-card { background: var(--navy-mid); border: 1px solid var(--border); border-radius: 14px; padding: 14px 16px 10px; margin-bottom: 16px; }
+    .dunya-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 10px; flex-wrap: wrap; }
+    .dunya-baslik { font-size: 14px; font-weight: 700; color: var(--white); }
+    .dunya-alt { font-size: 12px; color: var(--muted); }
+    .dunya-alt b { color: var(--amber); }
+    #dunya-sektor { padding: 5px 10px; border-radius: 7px; font-size: 12px; max-width: 260px; background: var(--navy); color: var(--white); border: 1px solid var(--border); font-family: var(--font-body); cursor: pointer; }
+    #dunya-sektor option { background: #fff; color: #1b2942; }
+    .dunya-svg-wrap { position: relative; width: 100%; overflow: hidden; border-radius: 8px; background: linear-gradient(180deg, #0c1524, #0a111d); }
+    .dunya-svg-wrap svg { width: 100%; height: auto; display: block; }
+    .dunya-svg-wrap path.ulke { fill: #1b2942; stroke: #0a111d; stroke-width: .4; transition: fill .12s; }
+    .dunya-svg-wrap path.ulke.tveri { cursor: pointer; }
+    .dunya-svg-wrap path.ulke.tveri:hover { fill: #ffd166 !important; }
+    .dunya-svg-wrap path.ulke.vurgu { stroke: var(--white); stroke-width: 1.2; }
+    .dunya-svg-wrap path.ulke.anavatan { stroke: var(--amber); stroke-width: 1; cursor: default; }
+    .dunya-lejant { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 8px; font-size: 11px; color: var(--muted); }
+    .dunya-lejant .lej-kutu { display: inline-flex; align-items: center; gap: 4px; }
+    .dunya-lejant .lej-renk { width: 13px; height: 13px; border-radius: 3px; display: inline-block; border: 1px solid rgba(255,255,255,.1); }
+    .dunya-lejant .lej-ibare { color: var(--white); font-weight: 600; }
+    .dunya-lejant .lej-yon { display: inline-flex; align-items: center; gap: 5px; }
+    .dunya-lejant .lej-grad { width: 56px; height: 8px; border-radius: 4px; display: inline-block; background: linear-gradient(90deg,#38311f,#5f4a24,#9a6f22,#d1901a,#f0a500); }
+    .dunya-tooltip { position: fixed; z-index: 999; pointer-events: none; background: #0b0e14; border: 1px solid var(--amber); border-radius: 7px; padding: 6px 10px; font-size: 12px; color: var(--white); box-shadow: 0 4px 18px rgba(0,0,0,.5); opacity: 0; transition: opacity .1s; max-width: 340px; }
+    .dunya-tooltip.gor { opacity: 1; }
+    .dunya-tooltip b { color: var(--amber); }
+    .mini-spin { width: 26px; height: 26px; border: 3px solid var(--border); border-top-color: var(--amber); border-radius: 50%; animation: spin .8s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Liste / tablo */
+    .liste-card { background: var(--navy-mid); border: 1px solid var(--border); border-radius: 14px; padding: 16px; margin-bottom: 16px; }
+    .liste-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; flex-wrap: wrap; }
+    .liste-head .baslik { font-size: 14px; font-weight: 700; color: var(--white); }
+    .liste-ara { background: var(--navy); border: 1px solid var(--border); color: var(--white); font-size: 12.5px; padding: 7px 11px; border-radius: 7px; font-family: var(--font-body); min-width: 200px; }
+    table.tic-tablo { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+    table.tic-tablo th { text-align: right; padding: 8px 10px; color: var(--muted); font-weight: 700; font-size: 11px; text-transform: uppercase; letter-spacing: .04em; border-bottom: 1px solid var(--border); cursor: pointer; white-space: nowrap; user-select: none; }
+    table.tic-tablo th.sol { text-align: left; }
+    table.tic-tablo th:hover { color: var(--amber); }
+    table.tic-tablo th .ok { opacity: .5; font-size: 9px; }
+    table.tic-tablo td { padding: 8px 10px; text-align: right; border-bottom: 1px solid rgba(var(--overlay-rgb),.05); color: var(--off-white); white-space: nowrap; }
+    table.tic-tablo td.sol { text-align: left; }
+    table.tic-tablo tr:hover td { background: rgba(240,165,0,.05); }
+    table.tic-tablo .ulke-ad { font-weight: 600; color: var(--white); }
+    table.tic-tablo .sira { color: var(--muted); font-size: 11px; }
+    table.tic-tablo .deger { color: var(--amber); font-weight: 700; }
+    .yoyup { color: #4ade80; font-weight: 700; }
+    .yoydown { color: #f87171; font-weight: 700; }
+    .yoyflat { color: var(--muted); }
+
+    /* Kaynaklar */
+    .kaynak-card { background: var(--navy-mid); border: 1px solid var(--border); border-radius: 14px; padding: 18px 20px; margin-bottom: 16px; }
+    .kaynak-card h3 { font-size: 14px; font-weight: 800; color: var(--white); margin: 0 0 10px; display: flex; align-items: center; gap: 8px; }
+    .kaynak-item { border-left: 2px solid var(--amber); padding: 4px 0 4px 14px; margin-bottom: 14px; }
+    .kaynak-item .ad { font-size: 13px; font-weight: 700; color: var(--amber); }
+    .kaynak-item .ac { font-size: 12.5px; color: var(--off-white); line-height: 1.6; margin-top: 3px; }
+    .kaynak-item .ac b { color: var(--white); }
+    .kaynak-not { font-size: 11.5px; color: var(--muted); line-height: 1.6; margin-top: 6px; }
+    .kaynak-not a { color: var(--amber); text-decoration: none; }
+    .kaynak-not a:hover { text-decoration: underline; }
+
+    @media (max-width: 900px) {
+      .sidebar { display: none; }
+      .kpi-row { grid-template-columns: 1fr 1fr; }
+      table.tic-tablo .gizle-mobil { display: none; }
+    }
+  </style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <a href="/"><span style="width:6px;height:6px;background:var(--amber);border-radius:50%;display:inline-block;"></span> İhale<span>Global</span></a>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">Kamu İhaleleri</div>
+      <a href="dashboard" class="nav-item"><span class="icon">◉</span> Anasayfa</a>
+      <a href="ihaleler" class="nav-item"><span class="icon">⊞</span> İhaleler</a>
+      <a href="dogrudan-temin" class="nav-item"><span class="icon">⚡</span> Doğrudan Temin</a>
+      <a href="sonuclananlar" class="nav-item"><span class="icon">🏆</span> Sonuçlananlar</a>
+      <a href="kamu-ihaleleri" class="nav-item"><span class="icon">📦</span> Kamu Kurumu İhaleleri</a>
+      <div class="nav-section-label" style="padding-left:16px;opacity:.85;">— Analiz —</div>
+      <a href="rekabet-analizi" class="nav-item"><span class="icon">📊</span> Rekabet Analizi</a>
+      <a href="idareler" class="nav-item"><span class="icon">🏛️</span> İdareler Dizini</a>
+      <a href="firmalar" class="nav-item"><span class="icon">🏢</span> Firmalar Dizini</a>
+      <a href="sektorler" class="nav-item"><span class="icon">🏭</span> Sektörler Dizini</a>
+      <a href="kurum-analiz" class="nav-item"><span class="icon">🔍</span> Kurum Analizi</a>
+      <a href="firma-analiz" class="nav-item"><span class="icon">🏢</span> Firma Analizi</a>
+      <a href="kik-kararlar" class="nav-item"><span class="icon">⚖️</span> KİK Kararlar</a>
+      <div class="nav-section-label">Uluslararası</div>
+      <a href="uluslararasi" class="nav-item"><span class="icon">🌍</span> Uluslararası İhaleler</a>
+      <a href="ticaret-analiz" class="nav-item active"><span class="icon">📈</span> Ticaret Analizi</a>
+      <div class="nav-section-label">Özel İhaleler</div>
+      <a href="ozel-ihaleler" class="nav-item"><span class="icon">🤝</span> e-Satınalma</a>
+      <a href="harita" class="nav-item"><span class="icon">🗺️</span> Harita</a>
+      <div class="nav-section-label">Firmam</div>
+      <a href="ihalelerim" class="nav-item"><span class="icon">📑</span> İhalelerim</a>
+      <a href="takipte" class="nav-item"><span class="icon">☆</span> Takibim</a>
+      <a href="bildirimler" class="nav-item"><span class="icon">🔔</span> Bildirimler</a>
+      <a href="uyumluluk" class="nav-item"><span class="icon">✓</span> Uyumluluk</a>
+      <a href="dokumanlar" class="nav-item"><span class="icon">📁</span> Dökümanlar</a>
+      <a href="profil" class="nav-item"><span class="icon">⚙</span> Profil & Filtreler</a>
+      <a href="fiyatlandirma_odeme_bolumu" class="nav-item"><span class="icon">💳</span> Abonelik</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-row" id="sb-user-row">
+        <div class="user-avatar" id="sb-avatar">?</div>
+        <div><div class="user-name" id="sb-name">Yükleniyor…</div><div class="user-plan" id="sb-plan">—</div></div>
+      </div>
+    </div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-left"><span style="font-size:14px;font-weight:700;color:var(--white);">📈 Türkiye Dış Ticaret Analizi</span></div>
+      <a href="uluslararasi" class="btn btn-ghost" style="padding:7px 14px;font-size:12.5px;border:1px solid var(--border);border-radius:7px;color:var(--muted);text-decoration:none;">🌍 Uluslararası İhaleler →</a>
+    </div>
+
+    <div class="page-body">
+      <div class="info-banner">
+        📈 <b>Türkiye Dış Ticaret Analizi</b> — Türkiye'nin dünya ülkeleriyle <b>ihracat/ithalat</b> hacmini
+        harita, liste ve sektör kırılımıyla gösterir. Bir ülkeye teklif/ihale değerlendirmesi yaparken
+        "Türkiye o pazara zaten satıyor mu?" sorusuna hızlı yanıt verir. Veriler <b>resmi/açık kaynaklardan</b>
+        derlenir (aşağıda kaynaklar). Bu sayfa ihale verisi değil, <b>makro ticaret</b> analizidir.
+      </div>
+
+      <div class="kpi-row" id="kpi-row">
+        <div class="kpi-card"><div class="l">Dünyaya İhracat</div><div class="v amber" id="kpi-ihr">—</div><div class="s" id="kpi-ihr-s">—</div></div>
+        <div class="kpi-card"><div class="l">Dünyadan İthalat</div><div class="v" id="kpi-ith">—</div><div class="s" id="kpi-ith-s">—</div></div>
+        <div class="kpi-card"><div class="l">Dış Ticaret Dengesi</div><div class="v" id="kpi-denge">—</div><div class="s">ihracat − ithalat</div></div>
+        <div class="kpi-card"><div class="l">Kapsanan Ülke</div><div class="v" id="kpi-ulke">—</div><div class="s">ticaret verisi olan</div></div>
+      </div>
+
+      <!-- HARİTA -->
+      <div class="dunya-card">
+        <div class="dunya-head">
+          <span class="dunya-baslik">🗺️ Ülkeye göre keşfet</span>
+          <select id="dunya-sektor" onchange="sektorDegisti()" aria-label="Sektör filtresi"></select>
+          <span class="dunya-alt" id="dunya-alt">Ülkenin üzerine gelin — Türkiye ile ihracat/ithalat hacmi ve yıllık değişim</span>
+        </div>
+        <div class="dunya-svg-wrap" id="dunya-svg-wrap"><div class="mini-spin" style="margin:40px auto;"></div></div>
+        <div class="dunya-lejant" id="dunya-lejant"></div>
+      </div>
+      <div class="dunya-tooltip" id="dunya-tooltip"></div>
+
+      <!-- LİSTE -->
+      <div class="liste-card">
+        <div class="liste-head">
+          <span class="baslik">📋 Ülke Listesi <span id="liste-sektor-et" style="font-weight:400;color:var(--muted);font-size:12px;"></span></span>
+          <input type="text" id="liste-ara" class="liste-ara" placeholder="🔍 Ülke ara…" oninput="listeCiz()" />
+        </div>
+        <div style="overflow-x:auto;">
+          <table class="tic-tablo" id="tic-tablo">
+            <thead>
+              <tr>
+                <th class="sol" data-sort="ad">Ülke <span class="ok"></span></th>
+                <th data-sort="ihr">Türkiye → Ülke (İhracat) <span class="ok">▼</span></th>
+                <th data-sort="ihryoy" class="gizle-mobil">Değişim <span class="ok"></span></th>
+                <th data-sort="ith">Ülke → Türkiye (İthalat) <span class="ok"></span></th>
+                <th data-sort="ithyoy" class="gizle-mobil">Değişim <span class="ok"></span></th>
+              </tr>
+            </thead>
+            <tbody id="tic-tbody"></tbody>
+          </table>
+        </div>
+        <div id="liste-bos" style="display:none;color:var(--muted);font-size:13px;text-align:center;padding:24px;">Eşleşen ülke yok.</div>
+      </div>
+
+      <!-- KAYNAKLAR -->
+      <div class="kaynak-card">
+        <h3>📚 Veri Kaynakları ve Yöntem</h3>
+        <div class="kaynak-item">
+          <div class="ad">UN Comtrade (Birleşmiş Milletler Ticaret İstatistikleri)</div>
+          <div class="ac">Ülke bazlı <b>toplam ihracat/ithalat</b> değerleri (en güncel iki yıl, yıllık değişim için).
+            Dünyanın en kapsamlı resmi dış ticaret veritabanı; ülkelerin gümrük idarelerinin BM'ye bildirdiği
+            verilere dayanır. Türkiye raportör alınır (reporter=Türkiye): <b>ihracat = Türkiye'den o ülkeye</b>,
+            <b>ithalat = o ülkeden Türkiye'ye</b>.</div>
+        </div>
+        <div class="kaynak-item">
+          <div class="ad">Dünya Bankası WITS (World Integrated Trade Solution)</div>
+          <div class="ac"><b>Sektör (HS ürün grubu) kırılımı</b> — 16 ana ürün grubu bazında ihracat/ithalat.
+            WITS, UN Comtrade ve UNCTAD-TRAINS verilerini birleştiren Dünya Bankası platformudur.
+            Değerler ISO-3 ülke koduyla haritayla eşleştirilir.</div>
+        </div>
+        <div class="kaynak-not" id="kaynak-not"></div>
+        <div class="kaynak-not">
+          Not: Bu veriler <b>ticari değil, kamuya açık resmi istatistiklerdir</b> ve kaynak atfıyla kullanılır.
+          Aynı rakamların Türkiye kaynağı <a href="https://data.tuik.gov.tr" target="_blank" rel="noopener">TÜİK Dış Ticaret İstatistikleri</a>'dir.
+          Ticari nitelikli üçüncü-taraf ticaret platformlarının kullanım şartları bu tür yeniden-yayını
+          kısıtladığından, doğrudan <b>açık/resmi kaynaklar</b> tercih edilmiştir.
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="js/sidebar-user.js"></script>
+<script src="js/bildirim-sayaci.js"></script>
+<script src="js/dunya-harita.js?v=1"></script>
+<script src="js/ticaret-tr-veri.js?v=1"></script>
+<script src="js/svg-zoom.js?v=1"></script>
+<script>
+(() => {
+  const esc = s => (s == null ? '' : String(s)).replace(/[<>&"']/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&#39;'}[c]));
+  const TIC = window.TICARET_TR || null;
+  const H = window.DUNYA_HARITA || null;
+  let dunyaSektor = '';
+  let sortAlan = 'ihr', sortYon = -1;   // varsayılan: ihracat azalan
+  const dunyaAd = {};                    // ISO3 → İngilizce ad (SVG'den, fallback)
+  const tip = document.getElementById('dunya-tooltip');
+
+  let _adTr = null;
+  try { _adTr = new Intl.DisplayNames(['tr'], { type: 'region' }); } catch(e){}
+  function ulkeAdTr(kod){
+    const t = TIC && TIC.ulkeler[kod];
+    if(t && t.a2 && _adTr){ try { const ad = _adTr.of(t.a2); if(ad && ad !== t.a2) return ad; } catch(e){} }
+    return dunyaAd[kod] || kod;
+  }
+  function paraUsd(n){
+    if(!n) return '—';
+    if(n >= 1e9) return '$' + (n/1e9).toLocaleString('tr',{maximumFractionDigits:1}) + ' Mr';
+    if(n >= 1e6) return '$' + (n/1e6).toLocaleString('tr',{maximumFractionDigits:1}) + ' M';
+    if(n >= 1e3) return '$' + (n/1e3).toLocaleString('tr',{maximumFractionDigits:0}) + ' B';
+    return '$' + n.toLocaleString('tr');
+  }
+  function yuzde(guncel, onceki, html){
+    if(!onceki || onceki <= 0 || guncel == null) return html ? '' : 0;
+    const p = (guncel - onceki) / onceki * 100;
+    if(!html) return p;
+    if(Math.abs(p) < 0.05) return `<span class="yoyflat">≈</span>`;
+    const up = p > 0;
+    return `<span class="${up?'yoyup':'yoydown'}">${up?'▲':'▼'} %${Math.abs(p).toLocaleString('tr',{maximumFractionDigits:1})}</span>`;
+  }
+  // Seçili sektöre/toplama göre [ihr_g, ihr_o, ith_g, ith_o]
+  function dortlu(kod){
+    const t = TIC && TIC.ulkeler[kod];
+    if(!t) return null;
+    if(!dunyaSektor) return [t.ihr[0]||0, t.ihr[1]||0, t.ith[0]||0, t.ith[1]||0];
+    const s = t.s && t.s[dunyaSektor];
+    return s ? [s[0]||0, s[1]||0, s[2]||0, s[3]||0] : [0,0,0,0];
+  }
+  function renk(n){
+    const b = dunyaSektor ? [5e8,1e8,2e7,2e6] : [5e9,1e9,1e8,1e7];
+    if(n >= b[0]) return '#f0a500';
+    if(n >= b[1]) return '#d1901a';
+    if(n >= b[2]) return '#9a6f22';
+    if(n >= b[3]) return '#5f4a24';
+    if(n > 0)     return '#38311f';
+    return '#1b2942';
+  }
+
+  function lejant(){
+    const lej = document.getElementById('dunya-lejant');
+    const b = dunyaSektor ? ['$2M+','$20M+','$100M+','$500M+'] : ['$10M+','$100M+','$1Mr+','$5Mr+'];
+    const kutular = [['#38311f','&gt;0'], ['#5f4a24',b[0]], ['#9a6f22',b[1]], ['#d1901a',b[2]], ['#f0a500',b[3]]];
+    const sEk = dunyaSektor ? ` — ${esc(TIC.sektorler[dunyaSektor]||'')} (${TIC.sektor_yil})` : ` (${TIC.yil})`;
+    lej.innerHTML = `<span class="lej-ibare">Türkiye'nin ihracatına göre${sEk}:</span>` +
+      kutular.map(([c,t]) => `<span class="lej-kutu"><span class="lej-renk" style="background:${c}"></span>${t}</span>`).join('') +
+      `<span class="lej-yon">Az <span class="lej-grad"></span> Çok</span>`;
+  }
+
+  function boya(){
+    const svg = document.querySelector('#dunya-svg-wrap svg');
+    if(!svg) return;
+    svg.querySelectorAll('path.ulke').forEach(p => {
+      const kod = p.getAttribute('data-kod');
+      if(kod === 'TUR'){ p.style.fill = '#eef2f8'; return; }
+      const d = dortlu(kod);
+      p.style.fill = d ? renk(d[0]) : '#1b2942';
+    });
+    lejant();
+  }
+
+  function tipHtml(e){
+    const p = e.target.closest && e.target.closest('path.ulke');
+    if(!p) return null;
+    const kod = p.getAttribute('data-kod');
+    if(kod === 'TUR'){
+      const w = TIC.dunya;
+      return `<b>🇹🇷 Türkiye</b> <span style="color:var(--muted)">— referans ülke (${TIC.yil})</span>` +
+        `<br>Dünyaya toplam ihracat: <b>${paraUsd(w.ihr[0])}</b> ${yuzde(w.ihr[0],w.ihr[1],1)}` +
+        `<br>Dünyadan toplam ithalat: <b style="color:#e2e8f0">${paraUsd(w.ith[0])}</b> ${yuzde(w.ith[0],w.ith[1],1)}`;
+    }
+    const t = TIC.ulkeler[kod];
+    if(!t) return null;
+    const ulke = esc(ulkeAdTr(kod));
+    const d = dortlu(kod);
+    const sat = [`<b>${ulke}</b> <span style="color:var(--muted)">— Türkiye ile dış ticaret</span>`];
+    sat.push(`↗ <b>Türkiye → ${ulke}</b> (ihracat, ${TIC.yil}): <b>${paraUsd(t.ihr[0])}</b> ${yuzde(t.ihr[0],t.ihr[1],1)}`);
+    sat.push(`↘ <b>${ulke} → Türkiye</b> (ithalat, ${TIC.yil}): <b style="color:#e2e8f0">${paraUsd(t.ith[0])}</b> ${yuzde(t.ith[0],t.ith[1],1)}`);
+    if(dunyaSektor){
+      const ad = esc(TIC.sektorler[dunyaSektor]||dunyaSektor);
+      sat.push(t.s && t.s[dunyaSektor]
+        ? `<span style="color:var(--muted)">${ad} (${TIC.sektor_yil}) — TR→${ulke}:</span> <b>${paraUsd(d[0])}</b> ${yuzde(d[0],d[1],1)} · <span style="color:var(--muted)">${ulke}→TR:</span> <b>${paraUsd(d[2])}</b> ${yuzde(d[2],d[3],1)}`
+        : `<span style="color:var(--muted)">${ad}: bu ülkeyle kayıtlı ticaret yok (${TIC.sektor_yil})</span>`);
+    }
+    return sat.join('<br>');
+  }
+
+  function haritaKur(){
+    const wrap = document.getElementById('dunya-svg-wrap');
+    if(!H || !H.ulkeler){ wrap.innerHTML = '<div style="color:var(--muted);padding:40px;text-align:center;">Harita verisi yüklenemedi.</div>'; return; }
+    const paths = H.ulkeler.map(u => {
+      if(u.kod && u.kod !== '-99') dunyaAd[u.kod] = u.ad || u.kod;
+      const tveri = TIC && TIC.ulkeler[u.kod];
+      const anavatan = u.kod === 'TUR';
+      return `<path class="ulke${tveri ? ' tveri' : ''}${anavatan ? ' anavatan' : ''}" data-kod="${u.kod}" d="${u.d}"></path>`;
+    }).join('');
+    wrap.innerHTML = `<svg viewBox="${H.viewBox}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Türkiye dış ticaret dünya haritası">${paths}</svg>`;
+    boya();
+    if(window.svgZoomKur) svgZoomKur(wrap, { maxZoom: 12 });
+
+    const svg = wrap.querySelector('svg');
+    svg.addEventListener('mousemove', e => {
+      const html = tipHtml(e);
+      if(!html){ tip.classList.remove('gor'); return; }
+      tip.innerHTML = html;
+      tip.style.left = (e.clientX + 14) + 'px';
+      tip.style.top  = (e.clientY + 14) + 'px';
+      tip.classList.add('gor');
+    });
+    svg.addEventListener('mouseleave', () => tip.classList.remove('gor'));
+    // Haritada bir ülkeye tıkla → listede o satırı vurgula + kaydır
+    svg.addEventListener('click', e => {
+      const p = e.target.closest && e.target.closest('path.tveri');
+      if(!p) return;
+      satirVurgula(p.getAttribute('data-kod'), true);
+    });
+  }
+
+  function sektorKur(){
+    const sel = document.getElementById('dunya-sektor');
+    sel.innerHTML = `<option value="">Tüm sektörler (toplam)</option>` +
+      Object.entries(TIC.sektorler).map(([k,ad]) => `<option value="${esc(k)}">${esc(ad)}</option>`).join('');
+  }
+
+  window.sektorDegisti = function(){
+    dunyaSektor = document.getElementById('dunya-sektor').value;
+    document.getElementById('liste-sektor-et').textContent =
+      dunyaSektor ? `— ${TIC.sektorler[dunyaSektor]} (${TIC.sektor_yil})` : `— tüm sektörler (${TIC.yil})`;
+    boya();
+    listeCiz();
+  };
+
+  // ── Liste ──
+  function satirlar(){
+    const ara = (document.getElementById('liste-ara').value || '').toLocaleLowerCase('tr').trim();
+    const out = [];
+    for(const kod in TIC.ulkeler){
+      const d = dortlu(kod);
+      if(!d) continue;
+      if(dunyaSektor && !d[0] && !d[2]) continue;   // sektör seçiliyse ticaret olmayanları atla
+      const ad = ulkeAdTr(kod);
+      if(ara && !ad.toLocaleLowerCase('tr').includes(ara)) continue;
+      out.push({ kod, ad, ihr: d[0], ihr_o: d[1], ith: d[2], ith_o: d[3],
+                 ihryoy: yuzde(d[0], d[1]), ithyoy: yuzde(d[2], d[3]) });
+    }
+    out.sort((a,b) => {
+      if(sortAlan === 'ad') return sortYon * a.ad.localeCompare(b.ad, 'tr');
+      return sortYon * ((a[sortAlan]||0) - (b[sortAlan]||0));
+    });
+    return out;
+  }
+
+  window.listeCiz = function(){
+    const rows = satirlar();
+    const tb = document.getElementById('tic-tbody');
+    document.getElementById('liste-bos').style.display = rows.length ? 'none' : 'block';
+    tb.innerHTML = rows.map((r,i) => `
+      <tr data-kod="${r.kod}" onmouseenter="haritaVurgula('${r.kod}')" onmouseleave="haritaVurgula('')">
+        <td class="sol"><span class="sira">${i+1}.</span> <span class="ulke-ad">${esc(r.ad)}</span></td>
+        <td class="deger">${paraUsd(r.ihr)}</td>
+        <td class="gizle-mobil">${yuzde(r.ihr, r.ihr_o, 1)}</td>
+        <td>${paraUsd(r.ith)}</td>
+        <td class="gizle-mobil">${yuzde(r.ith, r.ith_o, 1)}</td>
+      </tr>`).join('');
+    // başlık sıralama okları
+    document.querySelectorAll('#tic-tablo th').forEach(th => {
+      const ok = th.querySelector('.ok');
+      ok.textContent = (th.dataset.sort === sortAlan) ? (sortYon < 0 ? '▼' : '▲') : '';
+    });
+  };
+
+  window.haritaVurgula = function(kod){
+    const svg = document.querySelector('#dunya-svg-wrap svg');
+    if(!svg) return;
+    svg.querySelectorAll('path.vurgu').forEach(p => p.classList.remove('vurgu'));
+    if(kod){ const p = svg.querySelector(`path[data-kod="${kod}"]`); if(p) p.classList.add('vurgu'); }
+  };
+
+  function satirVurgula(kod, kaydir){
+    const tr = document.querySelector(`#tic-tbody tr[data-kod="${kod}"]`);
+    if(!tr) return;
+    document.querySelectorAll('#tic-tbody tr').forEach(x => x.style.background = '');
+    tr.style.background = 'rgba(240,165,0,.14)';
+    if(kaydir) tr.scrollIntoView({ behavior:'smooth', block:'center' });
+  }
+
+  // Başlık tıkla → sırala
+  document.querySelectorAll('#tic-tablo th').forEach(th => {
+    th.addEventListener('click', () => {
+      const alan = th.dataset.sort;
+      if(sortAlan === alan) sortYon = -sortYon;
+      else { sortAlan = alan; sortYon = (alan === 'ad') ? 1 : -1; }
+      listeCiz();
+    });
+  });
+
+  function kpiGoster(){
+    const w = TIC.dunya;
+    document.getElementById('kpi-ihr').textContent = paraUsd(w.ihr[0]);
+    document.getElementById('kpi-ihr-s').innerHTML = `${TIC.yil} · ${yuzde(w.ihr[0],w.ihr[1],1)}`;
+    document.getElementById('kpi-ith').textContent = paraUsd(w.ith[0]);
+    document.getElementById('kpi-ith-s').innerHTML = `${TIC.yil} · ${yuzde(w.ith[0],w.ith[1],1)}`;
+    const denge = (w.ihr[0]||0) - (w.ith[0]||0);
+    const dEl = document.getElementById('kpi-denge');
+    dEl.textContent = (denge < 0 ? '−' : '') + paraUsd(Math.abs(denge));
+    dEl.style.color = denge < 0 ? '#f87171' : '#4ade80';
+    document.getElementById('kpi-ulke').textContent = Object.keys(TIC.ulkeler).length.toLocaleString('tr');
+    document.getElementById('kaynak-not').innerHTML =
+      `Güncelleme: <b style="color:var(--white)">${esc(TIC.guncelleme)}</b> · Toplam yılı: <b style="color:var(--white)">${TIC.yil}</b> · Sektör kırılımı yılı: <b style="color:var(--white)">${TIC.sektor_yil}</b>. Kaynak: ${esc(TIC.kaynak)}.`;
+  }
+
+  function main(){
+    if(!TIC || !TIC.ulkeler || !Object.keys(TIC.ulkeler).length){
+      document.getElementById('dunya-svg-wrap').innerHTML =
+        '<div style="color:var(--muted);padding:40px;text-align:center;">Ticaret verisi henüz yüklenmedi.</div>';
+      return;
+    }
+    kpiGoster();
+    sektorKur();
+    haritaKur();
+    document.getElementById('liste-sektor-et').textContent = `— tüm sektörler (${TIC.yil})`;
+    listeCiz();
+  }
+  main();
+})();
+</script>
+<script src="js/main.js"></script>
+</body>
+</html>

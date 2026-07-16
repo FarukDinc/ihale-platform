@@ -144,6 +144,9 @@
       display: none; padding: 4px 8px; border-radius: 6px; font-size: 11px; max-width: 220px;
       background: var(--card-bg); color: var(--white); border: 1px solid var(--border); font-family: var(--font-body);
     }
+    /* Native <select> popup'ı (özellikle Windows) option arka planını koyu yapmaz → beyaz zeminde
+       beyaz metin görünmez oluyordu. Option'ları koyu-metin/beyaz-zemin ile okunur yap. */
+    #dunya-sektor option { background: #fff; color: #1b2942; }
     .dunya-svg-wrap path.ulke.secili { stroke: var(--white); stroke-width: 1; }
     .dunya-svg-wrap path.ulke.anavatan { stroke: var(--amber); stroke-width: 1; cursor: default; }
     .dunya-lejant { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 8px; font-size: 11px; color: var(--muted); }
@@ -194,6 +197,7 @@
       <a href="kik-kararlar" class="nav-item"><span class="icon">⚖️</span> KİK Kararlar</a>
       <div class="nav-section-label">Uluslararası</div>
       <a href="uluslararasi" class="nav-item active"><span class="icon">🌍</span> Uluslararası İhaleler</a>
+      <a href="ticaret-analiz" class="nav-item"><span class="icon">📈</span> Ticaret Analizi</a>
       <div class="nav-section-label">Özel İhaleler</div>
       <a href="ozel-ihaleler" class="nav-item"><span class="icon">🤝</span> e-Satınalma</a>
       <a href="harita" class="nav-item"><span class="icon">🗺️</span> Harita</a>
@@ -257,11 +261,7 @@
       <div class="dunya-card">
         <div class="dunya-head">
           <span class="dunya-baslik">🗺️ Ülkeye göre keşfet</span>
-          <span class="dunya-mod" id="dunya-mod">
-            <button class="mod-btn active" data-mod="ihale" onclick="dunyaModSec('ihale')">İhaleler</button>
-            <button class="mod-btn" data-mod="ticaret" onclick="dunyaModSec('ticaret')">🇹🇷 Türkiye ile Ticaret</button>
-            <select id="dunya-sektor" onchange="dunyaSektorDegisti()" aria-label="Sektör filtresi"></select>
-          </span>
+          <a href="ticaret-analiz" style="font-size:12px;font-weight:600;color:var(--amber);text-decoration:none;border:1px solid rgba(240,165,0,.3);padding:4px 11px;border-radius:14px;white-space:nowrap;">📈 Türkiye ile ticaret analizi →</a>
           <span class="dunya-alt" id="dunya-alt">İhale olan bir ülkeye tıklayarak filtreleyin</span>
         </div>
         <div class="dunya-svg-wrap" id="dunya-svg-wrap"><div class="mini-spin" style="margin:40px auto;"></div></div>
@@ -302,7 +302,6 @@
 <script src="js/sidebar-user.js"></script>
 <script src="js/bildirim-sayaci.js"></script>
 <script src="js/dunya-harita.js?v=1"></script>
-<script src="js/ticaret-tr-veri.js?v=1"></script>
 <script src="js/svg-zoom.js?v=1"></script>
 <script>
 (() => {
