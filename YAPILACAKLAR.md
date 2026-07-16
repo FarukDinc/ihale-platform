@@ -223,12 +223,17 @@
 >   beyaz-üstüne-beyaz görünmezdi; `#dunya-sektor option { background:#fff; color:#1b2942 }`.
 > - **✅ Nav sweep TAMAM (canlı):** backend/scratchpad nav_sweep.py ile 24 sayfaya "📈 Ticaret Analizi" nav item'ı
 >   eklendi (toplam 26 sayfa; Uluslararası İhaleler'den sonra). Landing/legal 7 sayfa (nav'sız) atlandı.
-> - **⏳ Sektör upgrade ÇALIŞIYOR (arka plan):** backend/ticaret_sektor_yenile.py — WITS 16 grup/2023 yerine
->   Comtrade HS fasıllarını çekip **21 standart HS bölümüne** toplulaştırır (2024, taze). Comtrade preview
->   500-satır cap + 1s'de 429 → fasıl-fasıl döngü, 5s aralık + 429 backoff (~194 çağrı/~16 dk). Tek yıl
->   (sektör YoY yok; ülke-toplam YoY korunur). Bitince js/ticaret-tr-veri.js güncellenip deploy edilecek.
->   NOT: tam TradeMap-paritesi (2024+2023 YoY, 97 fasıl) için ücretsiz Comtrade API KEY gerekir (500-cap
->   + rate-limit'i kaldırır; kullanıcı kaydı gerektirir) — keyless yol tek-yıl/21-bölümle sınırlı.
+> - **✅ Sektör upgrade TAMAM (canlı):** backend/ticaret_sektor_yenile.py çalıştı → js/ticaret-tr-veri.js artık
+>   **21 standart HS bölümü, 2024 taze** (16 WITS grubu/2023 yerine). Ham Deri/Yağ/Ağaç/Kağıt/Optik-Tıbbi/
+>   Kıymetli Taş/Silah/Sanat ayrı. Canlı doğrulandı (22 seçenek, sektor_yil 2024). Cache: ticaret-tr-veri.js?v=2.
+> - **⏳ HS6 KALEM-KALEM MODÜLÜ (kullanıcı: "6 haneye inelim, deri vs yağ ayrımı"):** Comtrade keyless HS6 =
+>   ülke-başı AG6 top-500 (küçük partner tam, büyük partner en büyük ~500 kalem; değerin %95+'i). Statik dosyaya
+>   sığmaz (~200K satır) → **DB tablosu `dis_ticaret_hs`** (backend/migration_dis_ticaret_hs.sql — UYGULANDI,
+>   public read + service_role write) + **ingestion `backend/ticaret_hs_cek.py`** (VDS'te nohup ÇALIŞIYOR,
+>   ~28dk, 176 ülke × AG6 X+M → upsert; pipeline 3-ülke testinde doğrulandı, 8022 satır). Flush eşiği 400.
+>   **KALAN:** ingestion bitince → ticaret-analiz'e **ülkeye tıkla → HS6 drill-down** UI (fasıl→başlık→6-hane,
+>   aranabilir; PostgREST .eq(ulke).order(deger desc)). Faz 2: ihale ürünü (CPV/OKAS→HS) ↔ TR ihracat gücü eşleşmesi.
+>   NOT: tam kuyruk (top-500 ötesi büyük partnerlerde) + YoY için ücretsiz Comtrade API KEY (kullanıcı kaydı).
 >
 > ## 🏢 16 TEMMUZ — EKAP FİRMA VERİSİ KAPSAMLI KAZIMA (kullanıcı: "firmalara dair her veriyi çek, hepsini kazıyalım")
 > **Durum denetimi (bu oturum):** yakalanan firma verisi KAZANAN-merkezli/tek boyutlu. EKSİK ve EKAP'ın
