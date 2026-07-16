@@ -58,7 +58,24 @@
 >   "X → Türkiye (ithalatımız)"; sektör satırı da TR→X / X→TR ayrımlı. Kaynak reporter=Türkiye (Comtrade).
 > - **⏳ Sektör granülaritesi (BEKLİYOR):** şu an 16 WITS grubu (2023). TradeMap-paritesi için Comtrade
 >   HS 2-digit (AG2, ~97 fasıl → 21 HS bölümüne toplulaştır, 2024/2025 taze) planı. ticaret_verisi_cek.py
->   genişletilecek; ÇALIŞTIRMA `Bash(python *)` iznine takılı (EKAP probe'uyla aynı izin).
+>   genişletilecek. İZİN EKLENDİ (`Bash(python *)` settings.local.json'a, kullanıcı) → çalıştırılabilir.
+>
+> ## 🏢 16 TEMMUZ — EKAP FİRMA VERİSİ KAPSAMLI KAZIMA (kullanıcı: "firmalara dair her veriyi çek, hepsini kazıyalım")
+> **Durum denetimi (bu oturum):** yakalanan firma verisi KAZANAN-merkezli/tek boyutlu. EKSİK ve EKAP'ın
+> firma adına ÜRETTİĞİ ama bizde OLMAYAN: (1) teklif veren TÜM istekliler = kaybeden roster (en büyük boşluk;
+> şu an sadece SAYISI biliniyor, kimlik yok), (2) VKN (%0), (3) ortak girişim üye firmaları (sadece boolean),
+> (4) fesih/tasfiye/sözleşme devri (ham tum_teklifler'de var, kolona çıkmıyor; ~%0.6-0.8 → ~7.5K olay),
+> (5) yasaklılar listesi (hiç çekilmiyor). Kaynak: workflow tasarımı (9 ajan) + payload analizi tamamlandı.
+> **Roster hipotezi:** GetByIhaleIdIhaleDetay yanıtındaki SONUÇ İLANI veriHtml'inde muhtemelen tüm istekli+teklif
+> tablosu var; şu an sadece SAYI regex'leniyor, isimler atılıyor. Kesinleştirmek için probe (backend/ekap_firma_probe.py) yazıldı.
+> **⛔ CANLI PROBE BLOKLU — EKAP BAKIMDA (16 Tem):** ekapv2/ekap.kik.gov.tr + ihale.gov.tr planlı bakımda →
+> `/b_ihalearama/...` her durum kodunda + tüm proxy'lerde 404 (VDS'ten de). GEÇİCİ; API taşınmadı, scraper sağlam.
+> Bakım bitince: (a) probe çalıştır → roster yerini doğrula, (b) tam firma kazıması.
+> **EKAP'sız YAPILABİLECEK (bakımdan bağımsız):** şema migration'ı (yeni tablolar: ihale_teklifleri/roster,
+> firma_yasaklilar, firma_olaylari; yeni kolonlar) + yeniden-kazıma GEREKTİRMEYEN backfill (fesih/tasfiye/devir/kısım
+> mevcut 537K tum_teklifler'den saf SQL ile → kolonlar).
+> **NOT (scraper sağlığı):** EKAP bakımı bu geceki 02:00 cron'una denk gelirse tur sessizce 0 yazabilir — bakım
+> uzarsa tazelik için elle tekrar gerekebilir (bkz. scraper-cron-silent-fail).
 >
 > **✅ EK (kullanıcı isteği): haritalara yakınlaştırma/kaydırma** — "ülkeler çok küçük görünüyor":
 > - `js/svg-zoom.js` (yeniden kullanılabilir modül): tekerlek=imleç-noktalı zoom, sürükle=pan (yalnızca
