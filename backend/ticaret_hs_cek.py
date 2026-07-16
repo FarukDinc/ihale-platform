@@ -103,10 +103,12 @@ def main():
     print(f"→ {len(iso2un)} ülke işlenecek (harita ∩ Comtrade partner).")
 
     yil = yil_bul(next(iter(iso2un.values())))
-    print(f"→ Yıl: {yil}. Ülke-başı AG6 (top-500) X+M çekiliyor…")
+    limit = int(os.environ.get("HS_LIMIT", "0"))   # test için: ilk N ülke
+    hedef = sorted(iso2un.items())[:limit] if limit else sorted(iso2un.items())
+    print(f"→ Yıl: {yil}. {len(hedef)} ülke × AG6 (top-500) X+M çekiliyor…")
 
     tampon, toplam_yaz, n = [], 0, 0
-    for iso, pc in sorted(iso2un.items()):
+    for iso, pc in hedef:
         for akis in ("X", "M"):
             n += 1
             d = indir(COMTRADE.format(yil=yil, akis=akis, pc=pc))
