@@ -31,7 +31,7 @@
 >    bütün, parçalı 0, iç içe link 0, meta "🔒 *** · 📍ANKARA · Son: ...". Ayrıca v3 RPC kilitleri probe
 >    edildi: ihaleye_uygun_firmalar anon→42501 ✓, benzer_ihaleler idare döndürmüyor ✓ (v3 tasarımı maskeye uymuş).
 
-> ## 👤 17 TEMMUZ — "ÜCRETSİZ ÜYE DE *** GÖRÜYOR" ŞİKAYETİ: SAHTE SIDEBAR + www/apex OTURUM BÖLÜNMESİ (kod hazır, deploy bekliyor)
+> ## 👤 17 TEMMUZ — "ÜCRETSİZ ÜYE DE *** GÖRÜYOR" ŞİKAYETİ: SAHTE SIDEBAR + www/apex OTURUM BÖLÜNMESİ (✅ CANLI — commit `389183e`+`deb41f2`, VDS pull edildi)
 > Kullanıcı: "ücretsiz planda da *** görünüyor; sadece giriş yapmayanlara *** görünsün." İNCELEME SONUCU:
 > maskeleme zaten yalnız oturumsuza çalışıyor (DB kolon-grant'ları sadece anon'dan REVOKE'lu, authenticated
 > tam görür; client `getSession()` yoksa maskeler). GERÇEK SORUN İKİ KATMANLI:
@@ -39,7 +39,11 @@
 >   Ücretsiz Plan"** hardcoded'dı → misafir veya OTURUMU DÜŞMÜŞ kullanıcı kendini "girişli ücretsiz üye"
 >   sanıp ***'ları plana bağlıyordu. FIX: 4 sayfa + profil.html nötr yer tutucuya çekildi ("Yükleniyor…/—");
 >   js/sidebar-user.js'e **misafir dalı** eklendi (oturum yoksa: 👤 Misafir / "Giriş yapın →", user-row
->   login'e gider; getUser ağ hatasında yerel getSession'a bakar). Tüm sayfalarda ?v=3 cache-bust.
+>   login'e gider; getUser ağ hatasında yerel getSession'a bakar). Cache-bust ?v=3→**?v=4**: CF, v=3
+>   URL'ini deploy ÖNCESİ eski içerikle önbelleklemişti (max-age 4h, purge yerine yeni query key seçildi —
+>   DERS: cache-bust versiyonunu deploy'dan önce canlıda kimse istememiş olmalı, yoksa eski içerik yeni
+>   anahtara yapışır). Canlı doğrulama: /js/sidebar-user.js?v=4 misafir dalını içeriyor, sayfalar v=4'ü
+>   referanslıyor, CF HIT yeni içerikle.
 > - **(2) www/apex origin bölünmesi:** www.ihaleglobal.com da apex de 200 dönüyor, redirect YOK →
 >   localStorage origin-bazlı olduğundan www'da açılan oturum apex'te görünmez (tam "girişliyim ama ***"
 >   senaryosu). FIX: sidebar-user.js + login.html + index.html'e `www.→apex location.replace` (hash
@@ -47,7 +51,10 @@
 >   panelinden "Redirect from WWW to root" şablonunu deploy etti** (wildcard https://www.* → https://${1},
 >   301, preserve query string; "www proxy'li olmayabilir" uyarısı yanlış alarmdı — CF-RAY ile doğrulandı).
 >   Canlı test: kök/yol/query üçü de 301→apex, zincir tek yönlendirmeyle 200. www/apex oturum bölünmesi
->   artık kökten kapalı; client-side redirect'ler köprü olarak kalabilir (zararsız).
+>   artık kökten kapalı; client-side redirect'ler köprü olarak kalabilir (zararsız). **EK (aynı gün):
+>   origin nginx'e de www→apex 301 eklendi** (sites-enabled/ihale: www ayrı server bloğu, ana bloktan
+>   server_name'den çıkarıldı; yedek /root/ihale.nginx.bak.*, nginx -t + reload OK) — CF bypass edilse
+>   bile origin aynı cevabı verir.
 > - Doğrulama: localhost misafir görünümü OK (Misafir rozeti + *** maskeleri + sayfa tam yükleniyor).
 >   Girişli görünüm kullanıcı gözüyle doğrulanmalı: giriş yap → ihale-detay'da idare/benzer meta açık mı?
 
