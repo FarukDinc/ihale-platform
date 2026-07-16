@@ -34,20 +34,29 @@ CREATE INDEX IF NOT EXISTS idx_ihale_sonuclari_ilan_id
 --    distinct — normalize_firma 529K satırda regex maliyeti nedeniyle burada YOK
 --    (yoğunluk haritası için ± birkaç varyant sapması kabul edilebilir; firma
 --    SIRALAMASI ise normalize_firma kullanan il_sektor_firmalar'dan gelir).
+-- jsonb DÖNER (TABLE değil): ~3.4K satır PostgREST'in varsayılan db-max-rows=1000 limitine
+-- takılıp KESİLİYORDU → harita eksik boyanıyordu. jsonb tek değer olduğundan satır limiti yok.
+-- harita.html data.forEach(...) aynen çalışır (data = dizi). Return tipi değiştiği için DROP+CREATE.
+DROP FUNCTION IF EXISTS public.il_sektor_ozet();
 CREATE OR REPLACE FUNCTION public.il_sektor_ozet()
-RETURNS TABLE(il text, kategori text, firma_adet bigint, sozlesme_adet bigint, toplam_bedel numeric)
+RETURNS jsonb
 LANGUAGE sql STABLE
 AS $$
-  SELECT i.il,
-         COALESCE(NULLIF(btrim(i.kategori), ''), 'Diğer') AS kategori,
-         count(DISTINCT COALESCE(s.yuklenici_id::text, upper(btrim(s.kazanan_firma))))::bigint AS firma_adet,
-         count(*)::bigint AS sozlesme_adet,
-         sum(COALESCE(s.kazanan_teklif, 0)) AS toplam_bedel
-  FROM public.ihale_sonuclari s
-  JOIN public.ilanlar i ON i.id = s.ilan_id
-  WHERE s.kazanan_firma IS NOT NULL
-    AND i.il IS NOT NULL AND btrim(i.il) <> ''
-  GROUP BY i.il, COALESCE(NULLIF(btrim(i.kategori), ''), 'Diğer');
+  SELECT COALESCE(jsonb_agg(jsonb_build_object(
+           'il', il, 'kategori', kategori, 'firma_adet', firma_adet,
+           'sozlesme_adet', sozlesme_adet, 'toplam_bedel', toplam_bedel)), '[]'::jsonb)
+  FROM (
+    SELECT i.il,
+           COALESCE(NULLIF(btrim(i.kategori), ''), 'Diğer') AS kategori,
+           count(DISTINCT COALESCE(s.yuklenici_id::text, upper(btrim(s.kazanan_firma))))::bigint AS firma_adet,
+           count(*)::bigint AS sozlesme_adet,
+           sum(COALESCE(s.kazanan_teklif, 0)) AS toplam_bedel
+    FROM public.ihale_sonuclari s
+    JOIN public.ilanlar i ON i.id = s.ilan_id
+    WHERE s.kazanan_firma IS NOT NULL
+      AND i.il IS NOT NULL AND btrim(i.il) <> ''
+    GROUP BY i.il, COALESCE(NULLIF(btrim(i.kategori), ''), 'Diğer')
+  ) t;
 $$;
 ALTER FUNCTION public.il_sektor_ozet() SET statement_timeout = '30s';
 GRANT EXECUTE ON FUNCTION public.il_sektor_ozet() TO anon, authenticated, service_role;
