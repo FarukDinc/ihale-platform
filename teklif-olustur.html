@@ -1370,8 +1370,12 @@
     // yapay_zeka_ozeti/belgeler gibi ağır kolonları da indirip özet skeleton'ını donduruyordu.
     let data = null, error = null;
     try {
+      let uye = false;
+      try { const { data: s } = await sb.auth.getSession(); uye = !!(s && s.session); } catch (_) {}
       ({ data, error } = await sb.from('ilanlar')
-        .select('id,baslik,idare,tur,usul,son_teklif_tarihi,yaklasik_maliyet_min,yaklasik_maliyet_max,tahmini_bedel')
+        .select(uye
+          ? 'id,baslik,idare,tur,usul,son_teklif_tarihi,yaklasik_maliyet_min,yaklasik_maliyet_max,tahmini_bedel'
+          : 'id,baslik,tur,usul,son_teklif_tarihi,yaklasik_maliyet_min,yaklasik_maliyet_max,tahmini_bedel')
         .eq('id', ihaleId)
         .maybeSingle());
     } catch (e) { error = e; }

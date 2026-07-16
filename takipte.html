@@ -613,9 +613,15 @@
 
     tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:32px; color:var(--muted);">Yükleniyor...</td></tr>`;
 
+    // Misafir localStorage takibiyle de gelebilir — idare/ekap_id anon'a kapalı
+    // (migration_anon_maske.sql), select'te olursa 42501; render zaten '—' fallback'li.
+    let uye = false;
+    try { const { data: s } = await sb.auth.getSession(); uye = !!(s && s.session); } catch (_) {}
     const { data, error } = await sb
       .from('ilanlar')
-      .select('id, ekap_id, baslik, idare, il, tur, durum, son_teklif_tarihi, tahmini_bedel, yaklasik_maliyet_min, yaklasik_maliyet_max, itiraz_bedeli')
+      .select(uye
+        ? 'id, ekap_id, baslik, idare, il, tur, durum, son_teklif_tarihi, tahmini_bedel, yaklasik_maliyet_min, yaklasik_maliyet_max, itiraz_bedeli'
+        : 'id, baslik, il, tur, durum, son_teklif_tarihi, tahmini_bedel, yaklasik_maliyet_min, yaklasik_maliyet_max, itiraz_bedeli')
       .in('id', ids);
 
     if (error) {

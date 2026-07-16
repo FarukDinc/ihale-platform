@@ -406,6 +406,13 @@
   let takipte = false;
   let kullaniciProfil = null;
 
+  // Misafir maskeleme (migration_anon_maske.sql): idare/ekap_id/ikn/ilan_metni/ilan_html/
+  // yapay_zeka_ozeti anon'a DB'de kapalı → misafirde select('*') 42501 verir; dar liste kullan,
+  // başlık/idare satırı '***' çizer. İlan metni bölümü misafirde aciklama'ya düşer (zaten fallback).
+  let uyeMi = false;
+  const MASKE_ROZET = '<a href="login" style="color:var(--amber);text-decoration:none;" title="Üyelere özel — giriş yapın">🔒 ***</a>';
+  const ANON_KOLONLAR = 'id,kaynak,baslik,aciklama,il,ulke,tur,usul,durum,ilan_tarihi,son_teklif_tarihi,ihale_tarihi,tahmini_bedel,para_birimi,hedef_sektorler,gizli_fiyat,goruntulenme,kategori,itiraz_bedeli,yaklasik_maliyet_min,yaklasik_maliyet_max,isin_yapilacagi_yer,ihale_yeri,okas,belgeler,ekler,pdf_url,esik_katsayi';
+
   async function ihaleYukle() {
     if (!ihaleId) {
       document.getElementById('page-content').innerHTML = `
@@ -413,9 +420,11 @@
       return;
     }
 
+    try { const { data: s } = await sb.auth.getSession(); uyeMi = !!(s && s.session); } catch (_) { uyeMi = false; }
+
     const { data, error } = await sb
       .from('ilanlar')
-      .select('*')
+      .select(uyeMi ? '*' : ANON_KOLONLAR)
       .eq('id', ihaleId)
       .single();
 
@@ -473,11 +482,15 @@
 
       <!-- HEADER KARTI -->
       <div class="detay-header">
-        <div class="detay-eyebrow">${disK
-          ? `${disK.eyebrow}${d.ikn ? ' · İKN ' + d.ikn : (d.kaynak === 'dmo' && d.ekap_id ? ' · İhale No ' + d.ekap_id.replace('DMO-', '') : '')}`
-          : `EKAP #${d.ekap_id || '—'} · ${d.ikn || '—'}`}</div>
+        <div class="detay-eyebrow">${!uyeMi
+          ? `Kayıt No: ${MASKE_ROZET}`
+          : disK
+            ? `${disK.eyebrow}${d.ikn ? ' · İKN ' + d.ikn : (d.kaynak === 'dmo' && d.ekap_id ? ' · İhale No ' + d.ekap_id.replace('DMO-', '') : '')}`
+            : `EKAP #${d.ekap_id || '—'} · ${d.ikn || '—'}`}</div>
         <div class="detay-baslik">${escHtml(d.baslik) || '—'}</div>
-        <div class="detay-idare">🏛️ ${d.idare ? `<a href="kurum-analiz?kurum=${encodeURIComponent(d.idare)}" style="color:inherit;text-decoration:none;" onmouseover="this.style.color='var(--amber)'" onmouseout="this.style.color=''">${escHtml(d.idare)}</a>` : '—'} · ${escHtml(d.il) || '—'}${d.ulke && d.ulke !== 'TR' ? ', ' + escHtml(d.ulke) : ''}</div>
+        <div class="detay-idare">🏛️ ${!uyeMi
+          ? `${MASKE_ROZET} <a href="login" style="color:var(--muted);font-size:11.5px;text-decoration:none;">— kurum adı üyelere özel</a>`
+          : d.idare ? `<a href="kurum-analiz?kurum=${encodeURIComponent(d.idare)}" style="color:inherit;text-decoration:none;" onmouseover="this.style.color='var(--amber)'" onmouseout="this.style.color=''">${escHtml(d.idare)}</a>` : '—'} · ${escHtml(d.il) || '—'}${d.ulke && d.ulke !== 'TR' ? ', ' + escHtml(d.ulke) : ''}</div>
         <div class="detay-badges">
           ${durumBadge(d.durum, d.son_teklif_tarihi)}
           ${d.tur ? `<span class="badge badge-tur">${escHtml(d.tur)}</span>` : ''}
@@ -557,7 +570,7 @@
         <div class="detay-grid">
           <div class="detay-card">
             <div class="card-title">İhale Bilgileri</div>
-            <div class="info-row"><span class="info-label">İdare</span><span class="info-value">${d.idare ? `<a href="kurum-analiz?kurum=${encodeURIComponent(d.idare)}" style="color:var(--amber);text-decoration:none;">${escHtml(d.idare)}</a>` : '—'}</span></div>
+            <div class="info-row"><span class="info-label">İdare</span><span class="info-value">${!uyeMi ? MASKE_ROZET : d.idare ? `<a href="kurum-analiz?kurum=${encodeURIComponent(d.idare)}" style="color:var(--amber);text-decoration:none;">${escHtml(d.idare)}</a>` : '—'}</span></div>
             <div class="info-row"><span class="info-label">İl</span><span class="info-value">${escHtml(d.il) || '—'}</span></div>
             <div class="info-row"><span class="info-label">İhale Türü</span><span class="info-value">${escHtml(d.tur) || '—'}</span></div>
             <div class="info-row"><span class="info-label">İhale Usulü</span><span class="info-value">${usulLabel(d.usul)}</span></div>
@@ -822,7 +835,7 @@
     const wrap = document.getElementById('sonuc-bilgi-wrap');
     if (!wrap) return;
     const { data } = await sb.from('ihale_sonuclari')
-      .select('kazanan_firma,kazanan_teklif,kazanan_teklif_farki_yuzde,en_dusuk_teklif,en_yuksek_teklif,toplam_teklif_sayisi,sonuc_tarihi')
+      .select(`${uyeMi ? 'kazanan_firma,' : ''}kazanan_teklif,kazanan_teklif_farki_yuzde,en_dusuk_teklif,en_yuksek_teklif,toplam_teklif_sayisi,sonuc_tarihi`)
       .eq('ilan_id', ilanId).limit(1);
     const s = data && data[0];
     if (!s) return;
@@ -830,7 +843,7 @@
       <div style="background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.25);border-radius:10px;padding:16px 20px;margin-bottom:20px;">
         <div style="color:#4ade80;font-weight:700;font-size:13px;margin-bottom:8px;">✓ İhale Sonuçlandı</div>
         <div style="display:flex;flex-wrap:wrap;gap:24px;font-size:13px;">
-          <div><span style="color:var(--muted);">Kazanan Firma:</span> <b style="color:var(--white);">${s.kazanan_firma || '—'}</b></div>
+          <div><span style="color:var(--muted);">Kazanan Firma:</span> <b style="color:var(--white);">${uyeMi ? (escHtml(s.kazanan_firma) || '—') : MASKE_ROZET}</b></div>
           ${s.kazanan_teklif ? `<div><span style="color:var(--muted);">Sözleşme Bedeli:</span> <b style="color:var(--white);">${butceFormatla(s.kazanan_teklif)}</b></div>` : ''}
           ${s.kazanan_teklif_farki_yuzde != null ? `<div><span style="color:var(--muted);">Tenzilat:</span> <b style="color:var(--amber);">%${s.kazanan_teklif_farki_yuzde}</b></div>` : ''}
           ${s.toplam_teklif_sayisi ? `<div><span style="color:var(--muted);">Toplam Teklif:</span> <b style="color:var(--white);">${s.toplam_teklif_sayisi}</b></div>` : ''}
@@ -918,7 +931,9 @@
 
   async function benzerIhaleler(d) {
     let data = null;
-    const sel = 'id,baslik,idare,il,yaklasik_maliyet_min,yaklasik_maliyet_max,son_teklif_tarihi';
+    const sel = uyeMi
+      ? 'id,baslik,idare,il,yaklasik_maliyet_min,yaklasik_maliyet_max,son_teklif_tarihi'
+      : 'id,baslik,il,yaklasik_maliyet_min,yaklasik_maliyet_max,son_teklif_tarihi';
 
     // 1. Aynı kategori + il
     if (d.kategori && d.il) {
@@ -953,7 +968,7 @@
         <a class="benzer-item" href="ihale-detay?id=${b.id}">
           <div>
             <div class="benzer-baslik">${escHtml(b.baslik)}</div>
-            <div class="benzer-meta">${b.idare || '—'}${b.il ? ' · 📍' + b.il : ''} · Son: ${tarih}</div>
+            <div class="benzer-meta">${uyeMi ? (escHtml(b.idare) || '—') : MASKE_ROZET}${b.il ? ' · 📍' + escHtml(b.il) : ''} · Son: ${tarih}</div>
           </div>
           <div class="benzer-bedel">${bedel}</div>
         </a>`;

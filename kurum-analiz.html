@@ -687,6 +687,25 @@
       return;
     }
 
+    // Misafir kapısı: sayfanın tamamı bir İDARENİN analizi (kurum_ozet + analiz_pivot +
+    // ilanlar.idare filtresi) — hepsi anon'a kapalı (migration_anon_maske.sql). RPC 401'i
+    // beklemeden kibar kapı çiz (idareler.html deseni).
+    let oturum = null;
+    try { const { data } = await sb.auth.getSession(); oturum = data && data.session; } catch (_) {}
+    if (!oturum) {
+      document.getElementById('root-loading').innerHTML = `
+        <div style="max-width:420px; margin:40px auto; text-align:center; background:var(--navy-mid); border:1px solid var(--border); border-radius:14px; padding:36px 28px;">
+          <div style="font-size:34px; margin-bottom:10px;">🔒</div>
+          <div style="font-size:16px; font-weight:800; color:var(--white); font-family:var(--font-display); margin-bottom:8px;">Kurum Analizi üyelere özel</div>
+          <div style="font-size:13px; color:var(--muted); line-height:1.6; margin-bottom:20px;">İdare bazlı ihale karnesi ve kırılımlar için ücretsiz hesabınızla giriş yapın.</div>
+          <div style="display:flex; gap:10px; justify-content:center;">
+            <a href="login" style="background:var(--amber); color:var(--navy); font-weight:700; font-size:13px; padding:9px 20px; border-radius:7px; text-decoration:none;">Giriş Yap</a>
+            <a href="login?panel=kayit" style="background:var(--card-bg); color:var(--white); border:1px solid var(--border); font-weight:600; font-size:13px; padding:9px 20px; border-radius:7px; text-decoration:none;">Ücretsiz Kayıt</a>
+          </div>
+        </div>`;
+      return;
+    }
+
     document.getElementById('kurum-ihaleler-btn').href = `ihaleler?idare=${encodeURIComponent(KURUM)}`;
     document.getElementById('kurum-dt-btn').href = `dogrudan-temin?idare=${encodeURIComponent(KURUM)}`;
     document.getElementById('bc-kurum').textContent = KURUM;
