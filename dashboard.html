@@ -1375,7 +1375,14 @@
             <div style="height:3px; background:var(--amber); border-radius:2px; width:${Math.round(sayi/maks*100)}%;"></div>
           </div>
         </a>`; }).join('');
-    } catch (e) { el.innerHTML = '<div style="padding:12px 18px; color:var(--muted); font-size:13px;">Yüklenemedi</div>'; }
+    } catch (e) {
+      // idare_sayim anon'a kapalı (migration_bulk_rpc_kilit.sql) — misafirde giriş çağrısı göster
+      let oturumsuz = false;
+      try { const { data: { session } } = await sb.auth.getSession(); oturumsuz = !session; } catch (_) {}
+      el.innerHTML = oturumsuz
+        ? '<div style="padding:12px 18px; color:var(--muted); font-size:13px;">🔒 Kurum sıralaması üyelere özel — <a href="login" style="color:var(--amber);">giriş yapın</a></div>'
+        : '<div style="padding:12px 18px; color:var(--muted); font-size:13px;">Yüklenemedi</div>';
+    }
   }
 
   // ── Son Eklenen İhaleler widget ──────────────────────
