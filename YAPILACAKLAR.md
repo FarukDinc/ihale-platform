@@ -26,10 +26,29 @@
 > şartnameler (platform verisi değil, teklif hazırlamak için gerekli). Yorum farklıysa kolayca kaldırılır.
 > Canlı doğrulandı: idareler/sonuclananlar'da buton yok + sayfalar çalışıyor + konsol temiz; teklif-olustur
 > Word İndir duruyor. Paralel oturum aktifken: 11 dosya stash→temiz-HEAD'de düzenle→commit(tam 11 dosya)→pop.
-> **⚠️ AÇIK RİSK (UI kaldırmak yetmez, bilinçli ertelendi):** anon key sayfa kaynağında + PostgREST REST API
-> açık — programatik toplu çekim hâlâ mümkün (örn. idare_dizin_json tek istekte tüm dizini döner; tablolar
-> 1000'er satır sayfalanabilir). Tam koruma için sonraki adımlar: toplu-dönen RPC'leri authenticated/Pro'ya
-> kilitle + Cloudflare rate-limit (/rest/v1/*). Kullanıcıyla konuşulup kararlaştırılacak.
+> **✅ PAKET 2/2 DE YAPILDI (aynı gece, kullanıcı onayı "bunu da yap" — commit `f78d3e7`+`2b96f5e`):**
+> - **RPC kilidi (migration_bulk_rpc_kilit.sql, canlıda):** idare_dizin_json + idare_sayim (23K tam dizin
+>   dökümleri) anon+PUBLIC'ten REVOKE → yalnız authenticated/service_role. DİKKAT: fonksiyonlar varsayılan
+>   PUBLIC EXECUTE ile doğar — yalnız "FROM anon" REVOKE YETMEZ, PUBLIC'ten de REVOKE şart. psql rol testi:
+>   anon→42501 red, authenticated→23067 idare ✓. Küçük aggregate/vitrin RPC'leri bilinçli açık (dosyada liste).
+> - **Frontend kapıları:** idareler.html misafire 🔒 "üyelere özel" kartı (login / login?panel=kayit; RPC hiç
+>   çağrılmaz — kapı oturum kontrolüyle önden çizilir); dashboard Top Kurumlar misafirde "🔒 giriş yapın".
+>   DERS: supabase-js hata FIRLATMAZ ({data,error}) — error kontrolsüzse kilitli RPC sessizce boş widget çizer
+>   (ilk deneme öyle oldu, `if (error) throw` hotfix'iyle düzeldi).
+> - **Hız limiti (nginx origin, CF yerine — CF panosuna erişimim yok, origin'de aynı etki):** `/rest/v1/*`
+>   2r/s + burst 60, anahtar CF-Connecting-IP (origin CF-only olduğundan güvenilir), 429. Dosyalar:
+>   backend/nginx_rest_ratelimit.conf → /etc/nginx/conf.d/ihale-ratelimit.conf; backend/nginx_rest_location.conf
+>   → /etc/nginx/snippets/ihale-rest-ratelimit.conf (ihale-locations.conf include eder; `^~` prefix regex'i
+>   ezer, auth/storage/realtime limitsiz). Scraper'lar localhost:8000 → ETKİLENMEZ (doğrulandı). Test: 150
+>   paralel istek → 73×200 + 77×429 ✓; normal gezinme (harita 81 il, dashboard) 429 görmedi ✓. NOT: ardışık
+>   curl döngüsü limiti TETİKLEMEZ (istek arası RTT > dolum hızı) — test paralel olmalı (xargs -P).
+> **⚠️ KALAN RİSK (en büyüğü, karar gerek):** ham tabloların anon SELECT'i açık (ilanlar 356K, ihale_sonuclari
+> 537K, yukleniciler 71K, DT 1.14M...) — 1000'er satır sayfalamayla kopyalanabilir; hız limiti bunu yavaşlatır/
+> loglar ama durdurmaz (2r/s ile 2.1M satır ≈ 17dk). Kesin çözüm = tablo okumalarını da login'e almak → TÜM
+> misafir sayfaları giriş duvarına döner (ürün kararı!). İstenirse reçete: anon'dan tablo SELECT REVOKE +
+> sayfalara idareler-tarzı kapı. **NOT (diğer oturuma):** idareler+kurum-analiz birleştirme planındaki dizin
+> görünümü artık login gerektirir (idare_dizin_json kilitli) — hub'a idareler.html'deki girisKapisiGoster
+> deseni taşınmalı.
 
 > ## 🗺️ ✅ YAPILDI (16 Tem gece, commit `fbf8420`) — HARİTA FİRMALAR HUB'INDA (RFQ'SUZ), CANLI DOĞRULANDI
 > Kullanıcı kararı uygulandı: firma-analiz hub'ına "📋 Liste / 🗺️ Harita" görünüm geçişi eklendi — **RFQ
