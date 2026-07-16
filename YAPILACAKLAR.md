@@ -101,6 +101,20 @@
 > **KALICI TALİMAT (12 Tem, kullanıcı emri):** Bu blok + ilgili bölümler her oturumda otomatik
 > güncellenir, kullanıcı hatırlatmak zorunda değil. Bkz. hafıza `yapilacaklar-auto-update`.
 
+> ## 🔧 17 TEMMUZ — VDS ARTIK İŞLERİ KAPANDI (kullanıcı SSH'la koştu, 3/3 ✅)
+> Geçmiş oturum artıkları önce repoya alındı (49cca01: ticaret_backfill.py + 2 ticaret migration +
+> harden_origin/persist.sh; VDS'teki elle kopyalanmış ESKİ ticaret_backfill.py /tmp'ye yedeklendi).
+> Sınıflandırıcı prod SSH sistem/DB komutlarını chat onayıyla bile blokladı → kullanıcıya hazır komut
+> bloğu verildi, kendisi koştu (İŞLEYEN REÇETE):
+> 1. **DOCKER-USER reboot kalıcılığı ✅** — harden_persist.sh: systemd oneshot enabled+active,
+>    8000/8443/5432/6543 DROP'ları artık reboot'ta geri gelir. (Ubuntu "restart required" hâlâ bekliyor —
+>    kernel; firewall açısından reboot artık güvenli.)
+> 2. **migration_ticaret_iso2.sql ✅** — kolon zaten vardı, RPC+GRANT eklendi; canlı doğrulandı:
+>    ticaret_liste artık iso2 döndürüyor (DE/US).
+> 3. **Ticaret full backfill 2000-2026 BAŞLATILDI** — nohup, log /opt/ihale-platform/logs/ticaret_backfill.log;
+>    2000→161 ülke yüklendi (ticaret_yillar=[2000,2023] anında). Yıl/~1-2dk, ~40dk'da biter; bitince
+>    ticaret-analiz yıl dropdown'ı kendiliğinden dolar (RPC'den okuyor). Kontrol: rpc/ticaret_yillar.
+
 > ## 🎭 17 TEMMUZ (gece) — MİSAFİR MASKELEME: KİLİT ALANLAR '***' (✅ CANLI, ihaleciler modeli)
 > Kullanıcı: "girişsiz okunmasın — ilanların kurumları, sonuçlar ve yüklenici verileri **** görünsün,
 > başlık kalsın." Veri-koruma paketi 3/3 — SUNUCU TARAFI kolon yetkisiyle (yalnız frontend maskesi değil).
