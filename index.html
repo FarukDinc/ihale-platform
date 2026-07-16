@@ -4,6 +4,13 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>İhaleGlobal — Akıllı İhale Takip Sistemi</title>
+  <script>
+    // www→apex kanonik yönlendirme (oturum localStorage'ı origin-bazlı; tek origin şart)
+    if (location.hostname.startsWith('www.')) {
+      location.replace(location.protocol + '//' + location.hostname.slice(4)
+        + location.pathname + location.search + location.hash);
+    }
+  </script>
   <meta name="description" content="Türkiye'nin tüm kamu ihalelerini tek ekranda takip edin. EKAP entegrasyonu, AI destekli uyumluluk analizi, otomatik bildirimler." />
   <script>
     // E-posta onay linki (GoTrue) allow-list boşken SITE_URL'e = anasayfaya döner.

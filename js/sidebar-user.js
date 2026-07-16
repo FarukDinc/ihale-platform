@@ -1,11 +1,21 @@
 /* Sidebar kullanıcı bilgilerini Supabase auth'tan doldurur.
    Supabase JS CDN'den yüklü olmalı (main script'ten önce). */
 (async () => {
+  // www→apex kanonik yönlendirme: localStorage origin-bazlı olduğundan www'da
+  // açılan oturum apex'te görünmez (kullanıcı "girişliyim ama *** görüyorum" sanır).
+  // Tek origin'e sabitle. (Kalıcı çözüm: CF/nginx 301 — YAPILACAKLAR.)
+  if (location.hostname.startsWith('www.')) {
+    location.replace(location.protocol + '//' + location.hostname.slice(4)
+      + location.pathname + location.search + location.hash);
+    return;
+  }
+
   const SUPABASE_URL = "https://ihaleglobal.com";
   const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzgzMzUwMDE1LCJleHAiOjE5NDEwMzAwMTV9.sRB61a8oNXwzSKL9No8gt7cmkmnkoQstT0ZtHIxl1Hs";
 
   // Sidebar alt-köşedeki kullanıcı bloğu tıklanınca profil sayfasına git
-  // (giriş durumundan bağımsız — Supabase yüklenmese bile çalışmalı).
+  // (giriş yoksa login'e — hedef auth sonucuna göre aşağıda güncellenir).
+  let tiklamaHedefi = 'profil';
   document.querySelectorAll('.sidebar-footer .user-row, .sidebar .user-row').forEach(el => {
     if (el.dataset.profilLink) return; // iki kez bağlama
     el.dataset.profilLink = '1';
@@ -13,19 +23,38 @@
     el.setAttribute('role', 'link');
     el.setAttribute('tabindex', '0');
     el.title = 'Profil ve ayarlar';
-    const git = () => { window.location.href = 'profil'; };
+    const git = () => { window.location.href = tiklamaHedefi; };
     el.addEventListener('click', git);
     el.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); git(); }
     });
   });
 
+  // Misafir görünümü: oturum yoksa/düşmüşse sidebar BUNU söylemeli — eski statik
+  // "Faruk D. / Ücretsiz Plan" yer tutucusu, oturumu düşen kullanıcıya "girişliyim
+  // ama veriler ***" yanılgısı yaşatıyordu (maskeleme anon'a doğru çalışırken).
+  const misafirGoster = () => {
+    tiklamaHedefi = 'login';
+    document.querySelectorAll('.sidebar .user-row, .sidebar-footer .user-row').forEach(el => {
+      el.title = 'Giriş yapın';
+    });
+    document.querySelectorAll('.sidebar .user-avatar, .sidebar-footer .user-avatar, #avatar-text').forEach(el => {
+      el.textContent = '👤';
+    });
+    document.querySelectorAll('.sidebar .user-name, .sidebar-footer .user-name, #sidebar-firma, #sidebar-isim').forEach(el => {
+      el.textContent = 'Misafir';
+    });
+    document.querySelectorAll('.sidebar .user-plan, .sidebar-footer .user-plan').forEach(el => {
+      el.textContent = 'Giriş yapın →';
+    });
+  };
+
   if (!window.supabase) return;
   const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
   try {
     const { data: { user } } = await sb.auth.getUser();
-    if (!user) return;
+    if (!user) { misafirGoster(); return; }
 
     // E-postadan baş harfler (fallback)
     const email = user.email || '';
@@ -67,6 +96,11 @@
       el.textContent = plan;
     });
   } catch (e) {
-    // Sessizce geç — giriş yapılmamış olabilir
+    // getUser ağ hatası vb. — yerelde oturum da yoksa misafir göster,
+    // varsa statik yer tutucuya dokunma (geçici ağ sorunu olabilir).
+    try {
+      const { data } = await sb.auth.getSession();
+      if (!data || !data.session) misafirGoster();
+    } catch (_) { misafirGoster(); }
   }
 })();

@@ -4,6 +4,15 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Giriş Yap — İhaleGlobal</title>
+  <script>
+    // www→apex kanonik yönlendirme: oturum localStorage'ı origin-bazlı — www'da
+    // yapılan giriş apex'te görünmez (kullanıcı "girişliyim ama *** görüyorum" sanır).
+    // Hash korunur (e-posta onay token'ı #access_token=... ile gelir).
+    if (location.hostname.startsWith('www.')) {
+      location.replace(location.protocol + '//' + location.hostname.slice(4)
+        + location.pathname + location.search + location.hash);
+    }
+  </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
