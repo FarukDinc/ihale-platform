@@ -105,7 +105,7 @@ def main():
         iso2un.setdefault(a3, pc)       # forward: fetch için güncel kod
     # Bazı ISO3'lerde birden çok GÜNCEL (parantezsiz) kod var ama biri boş listelenmiş.
     # Örn. USA: 840 "United States of America" (boş) + 842 "USA" (gerçek veri). Comtrade 842 kullanır.
-    OVERRIDE = {"USA": 842}
+    OVERRIDE = {"USA": 842, "NOR": 579, "CHE": 757, "FRA": 251}
     for iso, pc in OVERRIDE.items():
         if iso in gecerli:
             iso2un[iso] = pc
