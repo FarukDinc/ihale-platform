@@ -151,12 +151,6 @@
       animation: spin .8s linear infinite; margin: 0 auto 12px;
     }
     @keyframes spin { to { transform: rotate(360deg); } }
-    .progress-mini {
-      height: 4px; background: var(--border); border-radius: 2px; margin-top: 8px; overflow: hidden;
-    }
-    .progress-mini-fill {
-      height: 100%; background: var(--amber); border-radius: 2px; transition: width .3s;
-    }
 
     /* SAYFALAMA */
     .pager {
@@ -276,10 +270,7 @@
       <!-- YÜKLENİYOR DURUMU -->
       <div id="yukleniyor-blok" class="yukleniyor">
         <div class="spinner"></div>
-        <p id="yukleniyor-mesaj">İdare verileri çekiliyor…</p>
-        <div class="progress-mini" style="max-width:300px; margin:8px auto 0;">
-          <div class="progress-mini-fill" id="progress-fill" style="width:0%"></div>
-        </div>
+        <p id="yukleniyor-mesaj">İdare dizini yükleniyor…</p>
       </div>
 
       <!-- İÇERİK -->
@@ -347,16 +338,16 @@
   let siraKey = 'toplam_desc';
 
   // ── Veri çekme ──────────────────────────────────────────
-  // idare_sayim() RPC'si sunucuda GROUP BY yapar — 80K+ satırı tarayıcıya
-  // indirip JS'te gruplamak yerine tek istekte hazır özet döner.
+  // idare_dizin_json() RPC'si TÜM dizini TEK istekte döner: sunucuda önceden
+  // hesaplanmış idare_ozet_mv materialized view'ını okur (gece scraper turu
+  // sonunda tazelenir, bkz. backend/migration_idareler_dizin_mv.sql). Yanıt json
+  // skaler olduğu için PostgREST'in 1000 satırlık db-max-rows sınırına takılmaz —
+  // eski ~16 ardışık istek × ~4sn canlı GROUP BY turu (60-70sn bekleme) kalktı.
+  // Satır formatı (payload küçük kalsın diye dizi): [idare, toplam, aktif, il].
   async function veriCek() {
-    // PostgREST sunucusu tek istekte sabit 1000 satırla sınırlıyor (db-max-rows) —
-    // POST/.range() bu limiti aşamıyor, sadece GET + limit/offset query param'ları
-    // sayfalamaya izin veriyor. 15.000+ farklı idare olduğu için birkaç sayfa gerekiyor
-    // (yine de eski yöntemin ~90 sayfalık ham ilanlar taramasından çok daha az).
-    // Oturum önbelleği — aynı sekmede sayfaya her dönüşte ~15 ardışık RPC isteğini
-    // (sabit ~15K idare) tekrar çekmeyi önler. 30 dk TTL; kota aşılırsa sessizce fetch'e düşer.
-    const CACHE_KEY = 'idare_sayim_v1';
+    // Oturum önbelleği — aynı sekmede sayfaya dönüşte isteği tekrarlamaz.
+    // 30 dk TTL; kota aşılırsa sessizce fetch'e düşer.
+    const CACHE_KEY = 'idare_dizin_v1';
     const TTL = 30 * 60 * 1000;
     let sonuc = null;
     try {
@@ -368,30 +359,14 @@
     } catch (e) { /* önbellek okunamadı → normal fetch */ }
 
     if (!sonuc) {
-      sonuc = [];
-      let offset = 0;
-      const SAYFA = 1000;
-      while (true) {
-        document.getElementById('yukleniyor-mesaj').textContent =
-          `İdare verileri çekiliyor… (${offset.toLocaleString('tr-TR')})`;
-        document.getElementById('progress-fill').style.width =
-          Math.min(90, Math.round((offset / 16000) * 100)) + '%';
-
-        const { data, error } = await sb.rpc('idare_sayim', {}, { get: true })
-          .range(offset, offset + SAYFA - 1);
-        if (error) throw error;
-        if (!data || data.length === 0) break;
-        sonuc.push(...data);
-        if (data.length < SAYFA) break;
-        offset += SAYFA;
-      }
+      const { data, error } = await sb.rpc('idare_dizin_json', {}, { get: true });
+      if (error) throw error;
+      sonuc = Array.isArray(data) ? data : [];
       try { sessionStorage.setItem(CACHE_KEY, JSON.stringify({ t: Date.now(), d: sonuc })); } catch (e) { /* kota aşıldı → önbelleksiz devam */ }
     }
 
-    document.getElementById('progress-fill').style.width = '100%';
-
     tumIdare = sonuc.map(r => ({
-      ad: r.idare, il: r.en_yakin_il || '—', toplam: r.toplam, aktif: r.aktif,
+      ad: r[0], il: r[3] || '—', toplam: r[1], aktif: r[2],
     }));
 
     // İstatistik kartları
