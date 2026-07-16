@@ -69,6 +69,20 @@
     .etiket { font-size: 11px; padding: 2px 8px; border-radius: 10px; font-weight: 600; background: rgba(var(--overlay-rgb),.06); color: var(--muted); }
     .etiket.kat { background: rgba(240,165,0,.1); color: var(--amber); }
     .etiket.ka { background: rgba(52,211,153,.14); color: #34d399; }
+    /* Kilitli (profilden gelen) inputlar */
+    input[readonly] { background: rgba(var(--overlay-rgb),.05) !important; color: var(--muted) !important; cursor: not-allowed; border-style: dashed !important; }
+    /* RFQ durum sekmeleri + filtre çubuğu */
+    .rfq-durum-sekme { display: flex; gap: 8px; margin: 14px 0 12px; flex-wrap: wrap; }
+    .rfq-sekme { background: var(--navy); border: 1px solid var(--border); color: var(--muted); padding: 7px 14px; border-radius: 7px; font-size: 12.5px; font-weight: 600; cursor: pointer; font-family: var(--font-body); transition: all .15s; }
+    .rfq-sekme:hover { color: var(--white); }
+    .rfq-sekme.aktif { border-color: var(--amber); color: var(--amber); background: rgba(240,165,0,.08); }
+    .rfq-filtre { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
+    .rfq-filtre input, .rfq-filtre select { background: var(--navy); border: 1px solid var(--border); color: var(--white); padding: 8px 11px; border-radius: 7px; font-size: 12.5px; font-family: var(--font-body); }
+    .rfq-filtre input#rfq-ara { flex: 1; min-width: 200px; }
+    .rfq-filtre input:focus, .rfq-filtre select:focus { outline: none; border-color: var(--amber); }
+    .rfq-sayi { font-size: 12px; color: var(--muted); margin-left: auto; white-space: nowrap; }
+    .durum-doldu { color: #f87171; font-weight: 600; }
+    .talep-kart.doldu { opacity: .72; }
     .talep-meta { font-size: 12px; color: var(--muted); display: flex; gap: 14px; flex-wrap: wrap; }
     .durum-acik { color: #4ade80; }
 
@@ -134,27 +148,46 @@
         gizli teklif verir, siz değerlendirip seçersiniz. <b>(Bu ihaleler kamu/uluslararası listelerinden ayrıdır.)</b>
       </div>
 
-      <!-- YENİ İHALE FORMU -->
+      <!-- YENİ İHALE FORMU (accordion — ➕ ile açılır) -->
       <div class="card">
-        <div class="card-title">➕ Yeni Satınalma İhalesi Aç</div>
+        <div class="card-title" onclick="formToggle()" style="cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:12px;user-select:none;">
+          <span>➕ Yeni Satınalma İhalesi Aç</span>
+          <span id="form-chevron" style="font-size:12px;font-weight:600;color:var(--amber);white-space:nowrap;">Aç ▾</span>
+        </div>
+        <div id="form-govde" style="display:none;margin-top:14px;">
         <div class="card-sub">Kategori, il ve tahmini bedeli girdiğinizde en uygun tedarikçiler anında önerilir.</div>
-        <div class="form-grid">
+
+        <!-- PROFİL EKSİK UYARISI (firma ünvan/VKN/adres yoksa form kilitli) -->
+        <div id="profil-eksik" style="display:none;background:rgba(240,165,0,.08);border:1px solid rgba(240,165,0,.3);border-radius:10px;padding:16px 18px;margin-bottom:4px;">
+          <div style="font-weight:700;color:var(--amber);font-size:14px;margin-bottom:6px;">⚠️ Önce firma profilinizi tamamlayın</div>
+          <div style="font-size:13px;color:var(--off-white);line-height:1.6;">İhale açabilmek için firma <b>ünvanınız</b>, <b>VKN</b>'niz ve <b>iş yeri adresiniz</b> (il/ilçe/açık adres) profilinizde kayıtlı olmalı. Bu bilgiler ihalede otomatik ve <b>değiştirilemez</b> şekilde kullanılır — tedarikçiler kime/nereye teklif verdiğini bilir.</div>
+          <a href="profil" class="btn-primary" style="display:inline-block;margin-top:14px;text-decoration:none;">Profili Tamamla →</a>
+          <div id="profil-eksik-liste" style="font-size:12px;color:var(--muted);margin-top:10px;"></div>
+        </div>
+
+        <div class="form-grid" id="form-alan">
           <div class="form-group full"><label>İhale Başlığı *</label><input type="text" id="f-baslik" placeholder="Örn: 500 adet ofis sandalyesi alımı" /></div>
           <div class="form-group"><label>Kategori *</label><select id="f-kategori"><option value="">Seçiniz…</option></select></div>
-          <div class="form-group"><label>İl (İş Yeri) *</label><select id="f-il"><option value="">Seçiniz…</option></select></div>
-          <div class="form-group"><label>İlçe *</label><input type="text" id="f-ilce" placeholder="Örn: Çankaya" autocomplete="off" /></div>
           <div class="form-group"><label>Miktar</label><input type="text" id="f-miktar" placeholder="Örn: 500 adet" /></div>
           <div class="form-group"><label>Tahmini Bedel (₺)</label><input type="number" id="f-bedel" placeholder="0" min="0" /></div>
-          <div class="form-group"><label>Son Teklif Tarihi</label><input type="date" id="f-tarih" /></div>
-          <div class="form-group"><label>Firma Ünvanınız *</label><input type="text" id="f-firma" placeholder="Alıcı firma tam ünvanı" autocomplete="off" /><div id="f-firma-hint" style="font-size:11px;margin-top:4px;min-height:14px;"></div></div>
-          <div class="form-group"><label>Vergi Kimlik No (VKN) *</label><input type="text" id="f-vkn" placeholder="10 haneli VKN" maxlength="10" inputmode="numeric" autocomplete="off" /><div id="f-vkn-hint" style="font-size:11px;margin-top:4px;min-height:14px;">Tedarikçiler kime teklif verdiğini bu bilgiyle görür.</div></div>
-          <div class="form-group full"><label>Açık Adres (İş/Teslimat Yeri) *</label><input type="text" id="f-adres" placeholder="Mahalle, cadde, no — tedarikçiler mesafe/lojistik için görür" autocomplete="off" /><div style="font-size:11px;margin-top:4px;color:var(--muted);">📍 Konum, ileride harita üzerinde ve MaaS eşleştirmesinde kullanılacak.</div></div>
+          <div class="form-group"><label>Son Teklif Tarihi *</label><input type="date" id="f-tarih" /><div style="font-size:11px;margin-top:4px;color:var(--muted);">Bu tarihten sonra ihale otomatik kapanır, teklif alınmaz.</div></div>
           <div class="form-group full"><label>Açıklama</label><textarea id="f-aciklama" placeholder="İhtiyacın detayları, teknik özellikler, şartlar…"></textarea></div>
+
+          <!-- FİRMA KİMLİK & ADRES — profilden otomatik, kilitli (değiştirmek için Profil sayfası) -->
+          <div class="form-group full" style="border-top:1px solid var(--border);padding-top:12px;margin-top:2px;">
+            <div style="font-size:12px;font-weight:700;color:var(--off-white);display:flex;align-items:center;gap:8px;">🔒 Firma Kimliği & Adresi <span style="font-weight:400;color:var(--muted);">— profilinizden geldi, burada değiştirilemez (<a href="profil" style="color:var(--amber);text-decoration:none;">Profilden düzenle</a>)</span></div>
+          </div>
+          <div class="form-group"><label>Firma Ünvanı</label><input type="text" id="f-firma" readonly tabindex="-1" /></div>
+          <div class="form-group"><label>VKN</label><input type="text" id="f-vkn" readonly tabindex="-1" /></div>
+          <div class="form-group"><label>İl (İş Yeri)</label><input type="text" id="f-il" readonly tabindex="-1" /></div>
+          <div class="form-group"><label>İlçe</label><input type="text" id="f-ilce" readonly tabindex="-1" /></div>
+          <div class="form-group full"><label>Açık Adres</label><input type="text" id="f-adres" readonly tabindex="-1" /></div>
         </div>
-        <div style="display:flex;gap:10px;margin-top:16px;flex-wrap:wrap;">
+        <div style="display:flex;gap:10px;margin-top:16px;flex-wrap:wrap;" id="form-butonlar">
           <button class="btn-ghost" onclick="tedarikciBul()">🎯 Uygun Tedarikçileri Bul</button>
           <button class="btn-primary" onclick="ihaleYayinla()">İhaleyi Yayınla →</button>
         </div>
+        </div><!-- /form-govde -->
       </div>
 
       <!-- UYGUN TEDARİKÇİLER -->
@@ -164,10 +197,24 @@
         <div id="tedarikci-liste"></div>
       </div>
 
-      <!-- AÇIK İHALELER -->
+      <!-- PLATFORM İHALELERİ + FİLTRE -->
       <div class="card">
-        <div class="card-title">📋 Açık Satınalma İhaleleri</div>
-        <div class="card-sub">Platformda yayınlanan güncel özel ihaleler</div>
+        <div class="card-title">📋 Platform Satınalma İhaleleri</div>
+        <div class="card-sub">Firmaların açtığı özel ihaleler (RFQ). Güncel = teklif süresi devam eden; geçmiş = süresi dolan.</div>
+
+        <div class="rfq-durum-sekme" id="rfq-durum-sekme">
+          <button class="rfq-sekme aktif" data-durum="guncel" onclick="rfqDurumSec('guncel',this)">🟢 Güncel</button>
+          <button class="rfq-sekme" data-durum="gecmis" onclick="rfqDurumSec('gecmis',this)">🕓 Geçmiş</button>
+          <button class="rfq-sekme" data-durum="tumu" onclick="rfqDurumSec('tumu',this)">Tümü</button>
+        </div>
+        <div class="rfq-filtre">
+          <input type="text" id="rfq-ara" placeholder="🔍 İhale içeriği veya açan firma ara…" oninput="rfqAramaDegisti()" />
+          <select id="rfq-il" onchange="rfqFiltreDegisti()"><option value="">Tüm İller</option></select>
+          <select id="rfq-kategori" onchange="rfqFiltreDegisti()"><option value="">Tüm Sektörler</option></select>
+          <input type="date" id="rfq-tarih-bas" title="Son teklif tarihi — başlangıç" onchange="rfqFiltreDegisti()" />
+          <input type="date" id="rfq-tarih-son" title="Son teklif tarihi — bitiş" onchange="rfqFiltreDegisti()" />
+          <span class="rfq-sayi" id="rfq-sayi"></span>
+        </div>
         <div id="talepler-liste"><div class="loading-spinner"></div></div>
       </div>
 
@@ -201,10 +248,11 @@
   function paraKisa(v){ v=Number(v)||0; if(v>=1e9)return '₺'+(v/1e9).toFixed(1)+' Mr'; if(v>=1e6)return '₺'+(v/1e6).toFixed(1)+' M'; if(v>=1e3)return '₺'+(v/1e3).toFixed(0)+' B'; return '₺'+v; }
   function tarihFmt(s){ if(!s)return '—'; return new Date(s).toLocaleDateString('tr-TR',{day:'2-digit',month:'short',year:'numeric'}); }
 
-  // Dropdown'ları doldur
-  const kSel=document.getElementById('f-kategori'), iSel=document.getElementById('f-il');
-  KATEGORILER.forEach(k=>{const o=document.createElement('option');o.value=k;o.textContent=k;kSel.appendChild(o);});
-  ILLER.forEach(i=>{const o=document.createElement('option');o.value=i;o.textContent=i;iSel.appendChild(o);});
+  // Dropdown'ları doldur — form kategorisi + filtre (kategori/il). f-il artık profilden gelen kilitli input.
+  const kSel=document.getElementById('f-kategori');
+  const rfqKat=document.getElementById('rfq-kategori'), rfqIl=document.getElementById('rfq-il');
+  KATEGORILER.forEach(k=>{ [kSel,rfqKat].forEach(sel=>{const o=document.createElement('option');o.value=k;o.textContent=k;sel.appendChild(o);}); });
+  ILLER.forEach(i=>{ const o=document.createElement('option');o.value=i;o.textContent=i;rfqIl.appendChild(o); });
 
   // Türk VKN doğrulama (GİB algoritması) — checksum danışma amaçlı; zorunlu olan 10 hane formatı.
   function vknGecerli(vkn){
@@ -218,22 +266,8 @@
     }
     return ((10 - (sum % 10)) % 10) === v[9];
   }
-  // VKN girdisi: yalnız rakam, canlı format/checksum ipucu.
-  const vknEl = document.getElementById('f-vkn'), vknHint = document.getElementById('f-vkn-hint');
-  vknEl.addEventListener('input', () => {
-    vknEl.value = vknEl.value.replace(/\D/g,'').slice(0,10);
-    const v = vknEl.value;
-    if(!v){ vknHint.textContent = 'Tedarikçiler kime teklif verdiğini bu bilgiyle görür.'; vknHint.style.color='var(--muted)'; return; }
-    if(v.length < 10){ vknHint.textContent = `${v.length}/10 hane`; vknHint.style.color='var(--muted)'; return; }
-    if(vknGecerli(v)){ vknHint.textContent = '✓ VKN formatı geçerli'; vknHint.style.color='#3fb950'; }
-    else { vknHint.textContent = '⚠ Doğrulama hanesi tutmuyor — kontrol edin'; vknHint.style.color='var(--amber)'; }
-  });
-
-  // Ünvan: tam ticari ünvan (beyan). NOT: Ünvanı kamu karnesine eşleştirip "tanınan firma" rozeti
-  // göstermek KALDIRILDI — beyan bir isme dayandığı için ünlü bir firmanın karnesi taklit edilebiliyordu
-  // ve fuzzy substring dürüst kullanıcıyı bile yanlış eşleştiriyordu. Tedarikçi bu beyanı bağımsız doğrular.
-  const firmaHint = document.getElementById('f-firma-hint');
-  if (firmaHint) { firmaHint.textContent = 'Tam ticari ünvanınız — tedarikçiler kime teklif verdiğini görür.'; firmaHint.style.color = 'var(--muted)'; }
+  // Firma ünvanı/VKN/adres artık PROFİLDEN gelir ve kilitli (readonly) — canlı VKN girişi/ipucu yok.
+  // Profil bilgileri profilYukle() ile doldurulur; eksikse form kilitlenir (aşağıda).
 
   window.tedarikciBul = async function() {
     const kategori = document.getElementById('f-kategori').value;
@@ -262,6 +296,7 @@
 
   window.ihaleYayinla = async function() {
     if (!user) { alert('İhale yayınlamak için giriş yapmalısınız.'); location.href = 'login'; return; }
+    if (!_profilTam) { alert('İhale açmadan önce firma profilinizi (ünvan, VKN, adres) tamamlamalısınız.'); location.href = 'profil'; return; }
     // Kurumsal kapısı — asıl zorlama RLS'te (talep_kurumsal_ekler); bu erken/anlaşılır UX için.
     // Plan.isKurumsal yoksa (stale cache) JS kapısını atla; RLS yine engeller ve anlaşılır mesaj döner.
     const kurumsalMi = (window.Plan && typeof Plan.isKurumsal === 'function') ? await Plan.isKurumsal() : null;
@@ -283,7 +318,10 @@
     if (!/^[0-9]{10}$/.test(vkn)) { alert('Vergi Kimlik No 10 haneli rakam olmalıdır.'); document.getElementById('f-vkn').focus(); return; }
     if (!il) { alert('İl (iş yeri) zorunludur — harita ve tedarikçi eşleştirmesi için gerekli.'); document.getElementById('f-il').focus(); return; }
     if (!ilce) { alert('İlçe zorunludur.'); document.getElementById('f-ilce').focus(); return; }
-    if (!adres) { alert('Açık adres zorunludur — tedarikçiler lojistik/mesafe için görür.'); document.getElementById('f-adres').focus(); return; }
+    if (!adres) { alert('Firma adresiniz profilinizde eksik — Profil sayfasından açık adresinizi girin.'); location.href = 'profil'; return; }
+    const sonTarih = document.getElementById('f-tarih').value;
+    if (!sonTarih) { alert('Son teklif tarihi zorunludur — bu tarihten sonra ihale otomatik kapanır.'); document.getElementById('f-tarih').focus(); return; }
+    if (new Date(sonTarih) < new Date(new Date().toDateString())) { alert('Son teklif tarihi geçmiş bir tarih olamaz.'); document.getElementById('f-tarih').focus(); return; }
     const talep = {
       olusturan_user_id: user.id,
       olusturan_firma: unvan,
@@ -304,21 +342,59 @@
       alert(m); return;
     }
     alert('✓ İhaleniz yayınlandı! Uygun tedarikçilere önerilecek.');
-    ['f-baslik','f-miktar','f-bedel','f-tarih','f-firma','f-vkn','f-ilce','f-adres','f-aciklama'].forEach(id => document.getElementById(id).value = '');
-    firmaHint.textContent = 'Tam ticari ünvanınız — tedarikçiler kime teklif verdiğini görür.'; firmaHint.style.color = 'var(--muted)';
-    vknHint.textContent = 'Tedarikçiler kime teklif verdiğini bu bilgiyle görür.'; vknHint.style.color = 'var(--muted)';
+    // Yalnız düzenlenebilir alanları temizle — firma kimliği/adresi profilden gelir, kalır.
+    ['f-baslik','f-miktar','f-bedel','f-tarih','f-aciklama'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('form-govde').style.display = 'none';   // formu kapat
+    document.getElementById('form-chevron').textContent = 'Aç ▾';
     taleplerYukle();
   };
 
+  // ── RFQ liste + filtre + süre-doldu ────────────────────────
+  let rfqDurum = 'guncel';   // guncel | gecmis | tumu
+  let rfqAramaTimer = null;
+
+  window.rfqDurumSec = function(d, btn) {
+    rfqDurum = d;
+    document.querySelectorAll('.rfq-sekme').forEach(b => b.classList.toggle('aktif', b === btn));
+    taleplerYukle();
+  };
+  window.rfqFiltreDegisti = () => taleplerYukle();
+  window.rfqAramaDegisti = function() { clearTimeout(rfqAramaTimer); rfqAramaTimer = setTimeout(taleplerYukle, 350); };
+
   async function taleplerYukle() {
     const liste = document.getElementById('talepler-liste');
-    const { data, error } = await sb.from('satinalma_talepleri')
-      .select('id,baslik,kategori,il,miktar,tahmini_bedel,son_teklif_tarihi,durum,olusturan_firma,olusturulma')
-      .eq('durum', 'acik').order('olusturulma', { ascending: false }).limit(50);
+    const nowIso = new Date().toISOString();
+    let q = sb.from('satinalma_talepleri')
+      .select('id,baslik,kategori,il,miktar,tahmini_bedel,son_teklif_tarihi,durum,olusturan_firma,olusturulma', { count: 'exact' })
+      .neq('durum', 'iptal');
+    // Durum sekmesi: güncel = süre dolmamış; geçmiş = dolmuş
+    if (rfqDurum === 'guncel') q = q.or(`son_teklif_tarihi.gte.${nowIso},son_teklif_tarihi.is.null`);
+    else if (rfqDurum === 'gecmis') q = q.lt('son_teklif_tarihi', nowIso);
+    // Filtreler
+    const il = document.getElementById('rfq-il').value;
+    const kat = document.getElementById('rfq-kategori').value;
+    const tb = document.getElementById('rfq-tarih-bas').value;
+    const ts = document.getElementById('rfq-tarih-son').value;
+    const ara = (document.getElementById('rfq-ara').value || '').replace(/[,()*%\\]/g, ' ').trim();
+    if (il) q = q.eq('il', il);
+    if (kat) q = q.eq('kategori', kat);
+    if (tb) q = q.gte('son_teklif_tarihi', new Date(tb).toISOString());
+    if (ts) q = q.lte('son_teklif_tarihi', new Date(ts + 'T23:59:59').toISOString());
+    if (ara) q = q.or(`baslik.ilike.*${ara}*,olusturan_firma.ilike.*${ara}*,aciklama.ilike.*${ara}*`);
+    // Güncelde son-teklif yakın olan üstte; geçmişte en son biten üstte
+    q = q.order('son_teklif_tarihi', { ascending: rfqDurum !== 'gecmis', nullsFirst: false }).limit(60);
+
+    const { data, count, error } = await q;
+    document.getElementById('rfq-sayi').textContent = error ? '' : `${(count || 0).toLocaleString('tr')} ihale`;
     if (error) { liste.innerHTML = '<div class="bos">Yüklenemedi: ' + esc(error.message) + '</div>'; return; }
-    if (!data || !data.length) { liste.innerHTML = '<div class="bos">Henüz açık ihale yok — ilk ihaleyi siz açın!</div>'; return; }
-    liste.innerHTML = data.map(t => `
-      <div class="talep-kart" onclick="location.href='ozel-ihale-detay?id=${t.id}'" style="cursor:pointer;">
+    if (!data || !data.length) {
+      liste.innerHTML = `<div class="bos">${rfqDurum === 'gecmis' ? 'Süresi dolmuş ihale yok.' : 'Bu kriterlere uygun açık ihale yok — ilk ihaleyi siz açın!'}</div>`;
+      return;
+    }
+    const now = Date.now();
+    liste.innerHTML = data.map(t => {
+      const doldu = t.son_teklif_tarihi && new Date(t.son_teklif_tarihi).getTime() < now;
+      return `<div class="talep-kart${doldu ? ' doldu' : ''}" onclick="location.href='ozel-ihale-detay?id=${t.id}'" style="cursor:pointer;">
         <div class="talep-ust">
           <div class="talep-baslik">${esc(t.baslik)}</div>
           ${t.tahmini_bedel ? `<div style="color:var(--amber);font-weight:700;font-size:13px;white-space:nowrap;">${paraKisa(t.tahmini_bedel)}</div>` : ''}
@@ -330,10 +406,11 @@
         </div>
         <div class="talep-meta">
           ${t.olusturan_firma ? `<span>🏢 ${esc(t.olusturan_firma)}</span>` : ''}
-          <span class="durum-acik">● Açık</span>
+          ${doldu ? '<span class="durum-doldu">⏹ Süresi doldu — teklif kapalı</span>' : '<span class="durum-acik">● Açık</span>'}
           ${t.son_teklif_tarihi ? `<span>⏰ Son teklif: ${tarihFmt(t.son_teklif_tarihi)}</span>` : ''}
         </div>
-      </div>`).join('');
+      </div>`;
+    }).join('');
   }
 
   // Kalkınma Ajansı ihaleleri (kamu_ihaleleri, kaynak='ka') — yalnız yayında olanlar.
@@ -377,6 +454,42 @@
           ${k.son_teklif_tarihi ? `<span>⏰ Son: ${tarihFmt(k.son_teklif_tarihi)}</span>` : ''}
         </div>
       </div>`).join('');
+  }
+
+  // ── Form aç/kapa (accordion) ────────────────────────────
+  window.formToggle = function() {
+    const g = document.getElementById('form-govde');
+    const acik = g.style.display !== 'none';
+    g.style.display = acik ? 'none' : 'block';
+    document.getElementById('form-chevron').textContent = acik ? 'Aç ▾' : 'Kapat ▴';
+    if (!acik) profilYukle();   // her açılışta profili tazele
+  };
+
+  // ── Profilden firma kimliği/adresi çek + kilitle (eksikse gate) ──
+  let _profilTam = false;
+  async function profilYukle() {
+    if (!user) return;
+    const eksikBox = document.getElementById('profil-eksik');
+    const formAlan = document.getElementById('form-alan');
+    const butonlar = document.getElementById('form-butonlar');
+    let p = null;
+    try { const { data } = await sb.from('profil').select('firma_adi,vergi_no,firma_il,firma_ilce,acik_adres').eq('user_id', user.id).maybeSingle(); p = data; } catch {}
+    const set = (id, v) => { const el = document.getElementById(id); if (el) el.value = v || ''; };
+    set('f-firma', p && p.firma_adi); set('f-vkn', p && p.vergi_no);
+    set('f-il', p && p.firma_il); set('f-ilce', p && p.firma_ilce); set('f-adres', p && p.acik_adres);
+
+    // Eksik alanları tespit et
+    const eksik = [];
+    if (!(p && p.firma_adi)) eksik.push('Firma ünvanı');
+    if (!(p && /^[0-9]{10}$/.test(p.vergi_no || ''))) eksik.push('VKN (10 hane)');
+    if (!(p && p.firma_il)) eksik.push('İl');
+    if (!(p && p.acik_adres)) eksik.push('Açık adres');
+    _profilTam = eksik.length === 0;
+
+    eksikBox.style.display = _profilTam ? 'none' : 'block';
+    formAlan.style.display = _profilTam ? '' : 'none';
+    butonlar.style.display = _profilTam ? '' : 'none';
+    if (!_profilTam) document.getElementById('profil-eksik-liste').textContent = 'Eksik: ' + eksik.join(', ');
   }
 
   (async () => {

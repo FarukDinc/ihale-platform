@@ -161,7 +161,19 @@
 > VDS'te `kupon_olustur.py --plan standart --ay 6 --adet 1` çalıştırıldı → **IHP-72DEF88A** (canlı DB'de,
 > tek kullanımlık). Ders: Pro'nun iç kodu `standart`; ⚠️ yerel `backend/.env` hâlâ ESKİ managed
 > Supabase'i gösteriyor — kupon/yazma işleri asla yerelden değil VDS'ten yapılmalı.
-> **3) Sunucu kararı (danışmanlık):** mevcut VDS (≈8GB/4çekirdek, disk %14) ŞİMDİLİK YETERLİ — geçiş
+> **3) Firma adı mükerrer denetimi (KARAR: DOKUNULMADI — kullanıcı onayıyla ertelendi):** kullanıcı
+> "bazı firma isimlerini multi gördüm" dedi → 71.384 firmanın tamamı public REST'ten çekilip tarandı
+> (scratchpad script). Bulgular: normalize_ad mükerreri 0 ✅, birebir aynı ad 0 ✅, **Türkçe harf
+> farkıyla (Ç/C, İ/I) 24 grup** ⚠️. Üç sınıf: (a) bariz EKAP typo'su ~10 grup (YİLDİRİM/YILDIRIM,
+> BALCİ/BALCI, DEMİR GLOBAL-AKSENTAŞ İO "İNSAAT" typo'su — aynı gerçek firma bölünmüş karne);
+> (b) gerçekten farklı kişiler olabilir (ACAR/AÇAR, AKCA/AKÇA) — OTOMATİK BİRLEŞTİRME YASAK
+> (bkz. hafıza vkn-yok-beyan-rozet dersi: iki kişinin karnesini birleştirmek dürüstlük sorunu);
+> (c) çöp kayıt: "İŞ ORTAKLIĞI"/"iş ortaklığı" firma diye girmiş (9 söz., ₺109M). Arama sayfasının
+> ikisini birden göstermesi arama_fold katlaması yüzünden — davranış doğru. **Etki ~%0,03 olduğu
+> için düzeltme ertelendi.** İleride yapılacaksa reçete: (1) normalize_firma'ya fold EKLEME;
+> (2) yuklenici_yenile'ye çöp-ad filtresi; (3) tr_fold GROUP BY HAVING>1 bekçi raporu;
+> (4) sınıf-(a) typo'ları elle birleştir.
+> **4) Sunucu kararı (danışmanlık):** mevcut VDS (≈8GB/4çekirdek, disk %14) ŞİMDİLİK YETERLİ — geçiş
 > tetikleyicileri: 2003+ tam backfill, RAM baskısı, CPU doygunluğu. Geçilecekse hedef: WeLAB BL460c
 > **Gen8 Pro $43.48/ay** (2x E5-2680, 128GB, 980GB NVMe, "Database Server") — NVMe+yüksek saat; SAS'lı
 > ₺2.000-15.500 planlara gerek yok.

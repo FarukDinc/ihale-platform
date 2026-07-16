@@ -145,16 +145,23 @@
   // beyan edilen bir isme dayandığından ünlü bir firmanın kamu karnesi taklit edilebiliyordu.
   // Güven, Kurumsal-abonelik kapısından + beyan edilen VKN'yi tedarikçinin bağımsız doğrulamasından gelir.
 
+  // Süre doldu mu — durum='acik' olsa bile son_teklif_tarihi geçmişse yeni teklif alınmaz.
+  function sureDoldu() { return talep && talep.son_teklif_tarihi && new Date(talep.son_teklif_tarihi).getTime() < Date.now(); }
+  // Teklif ancak durum 'acik' VE süre dolmamışsa alınır.
+  function teklifAcik() { return talep && talep.durum === 'acik' && !sureDoldu(); }
+
   function rfqHeaderHTML() {
     const t = talep;
-    const durumCls = t.durum === 'acik' ? 'acik' : 'kapali';
+    const doldu = sureDoldu();
+    const durumCls = teklifAcik() ? 'acik' : 'kapali';
+    const durumMetin = t.durum !== 'acik' ? 'Kapandı' : (doldu ? 'Süresi doldu' : 'Açık');
     return `<div class="card">
       <div class="rfq-eyebrow">🤝 Özel Satınalma İhalesi</div>
       <div class="rfq-baslik">${esc(t.baslik)}</div>
       <div class="rfq-badges">
         ${t.kategori ? `<span class="etiket kat">${esc(t.kategori)}</span>` : ''}
         ${t.il ? `<span class="etiket">📍 ${esc(t.il)}${t.ilce ? ' / ' + esc(t.ilce) : ''}</span>` : ''}
-        <span class="etiket ${durumCls}">● ${t.durum === 'acik' ? 'Açık' : 'Kapandı'}</span>
+        <span class="etiket ${durumCls}">${doldu && t.durum === 'acik' ? '⏹' : '●'} ${durumMetin}</span>
       </div>
       <div class="rfq-grid">
         <div class="rfq-kpi"><div class="l">Tahmini Bedel</div><div class="v" style="color:var(--amber)">${para(t.tahmini_bedel)}</div></div>
@@ -213,7 +220,12 @@
           <div class="teklif-bedel">${para(kendi.teklif_bedeli)}</div>
         </div></div>`;
     }
-    if (talep.durum !== 'acik') return `<div class="card"><div class="bos">Bu ihale kapandı, teklif alınmıyor.</div></div>`;
+    if (!teklifAcik()) {
+      const mesaj = sureDoldu() && talep.durum === 'acik'
+        ? '⏹ Bu ihalenin son teklif tarihi geçti — teklif alınmıyor.'
+        : 'Bu ihale kapandı, teklif alınmıyor.';
+      return `<div class="card"><div class="bos">${mesaj}</div></div>`;
+    }
     return `<div class="card"><div class="card-title">💼 Teklif Ver</div>
       <div class="form-group"><label>Firma Adınız</label><input type="text" id="tk-firma" placeholder="Tedarikçi firma" /></div>
       <div class="form-group"><label>Teklif Bedeli (₺) *</label><input type="number" id="tk-bedel" placeholder="0" min="0" /></div>
@@ -232,6 +244,7 @@
   };
 
   window.teklifVer = async function() {
+    if (!teklifAcik()) { alert('Bu ihale kapandı veya son teklif tarihi geçti — teklif alınamıyor.'); location.reload(); return; }
     const bedel = parseFloat(document.getElementById('tk-bedel').value);
     if (!bedel || bedel <= 0) { alert('Geçerli bir teklif bedeli girin.'); return; }
     const teklif = {

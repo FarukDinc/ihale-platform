@@ -323,8 +323,26 @@
             </div>
           </div>
           <div>
-            <div class="bedel-label">Vergi No</div>
-            <input type="text" class="bedel-input" id="vergi-no" placeholder="ör: 1234567890" style="max-width:220px;" oninput="localStorage.setItem('ihale_vergi_no',this.value)" />
+            <div class="bedel-label">Vergi Kimlik No (VKN)</div>
+            <input type="text" class="bedel-input" id="vergi-no" placeholder="10 haneli VKN" maxlength="10" inputmode="numeric" style="max-width:220px;" />
+            <div style="font-size:11px;color:var(--muted);margin-top:4px;">e-Satınalma'da ihale açtığınızda buradan otomatik gelir; orada değiştirilemez.</div>
+          </div>
+          <div style="margin-top:4px;border-top:1px solid var(--border);padding-top:14px;">
+            <div class="bedel-label" style="font-weight:700;color:var(--off-white);">📍 İş Yeri Adresi <span style="color:var(--muted);font-weight:400;">— MaaS/harita eşleştirmesi ve e-Satınalma için</span></div>
+            <div style="display:flex; gap:12px; flex-wrap:wrap; margin-top:8px;">
+              <div style="flex:1; min-width:160px;">
+                <div class="bedel-label">İl</div>
+                <select class="bedel-input" id="firma-il"><option value="">Seçiniz…</option></select>
+              </div>
+              <div style="flex:1; min-width:160px;">
+                <div class="bedel-label">İlçe</div>
+                <input type="text" class="bedel-input" id="firma-ilce" placeholder="ör: Çankaya" autocomplete="off" />
+              </div>
+            </div>
+            <div style="margin-top:10px;">
+              <div class="bedel-label">Açık Adres</div>
+              <input type="text" class="bedel-input" id="firma-adres" placeholder="Mahalle, cadde, no…" autocomplete="off" style="max-width:100%;" />
+            </div>
           </div>
         </div>
       </div>
@@ -618,6 +636,9 @@
   function ilGridOlustur() {
     document.getElementById('il-grid').innerHTML = ILLER.map(il => `
       <div class="il-chip" id="il-${il}" role="button" tabindex="0" aria-pressed="false" onclick="ilToggle('${il}')">${il}</div>`).join('');
+    // Firma iş yeri il dropdown'ı (adres için) — aynı ILLER listesi
+    const fSel = document.getElementById('firma-il');
+    if (fSel && fSel.options.length <= 1) ILLER.forEach(il => { const o = document.createElement('option'); o.value = il; o.textContent = il; fSel.appendChild(o); });
   }
 
   function turGridOlustur() {
@@ -707,6 +728,11 @@
     if (data) {
       document.getElementById('sidebar-firma').textContent = data.firma_adi || email;
       if (data.firma_adi) document.getElementById('firma-adi').value = data.firma_adi;
+      // Firma kimlik & adres (e-Satınalma buradan otomatik+kilitli çeker)
+      if (data.vergi_no)   document.getElementById('vergi-no').value   = data.vergi_no;
+      if (data.firma_il)   document.getElementById('firma-il').value   = data.firma_il;
+      if (data.firma_ilce) document.getElementById('firma-ilce').value = data.firma_ilce;
+      if (data.acik_adres) document.getElementById('firma-adres').value = data.acik_adres;
       if (data.min_bedel) document.getElementById('min-bedel').value = data.min_bedel;
       if (data.max_bedel) document.getElementById('max-bedel').value = data.max_bedel;
       esikYukle(data.min_uyum_esigi ?? localStorage.getItem('ihale_min_uyum_esigi') ?? 50);
@@ -817,9 +843,14 @@
     const sertMetin = (document.getElementById('sertifikalar').value || '').trim();
     localStorage.setItem('ihale_sertifikalar', sertMetin);
 
+    const vknVal = document.getElementById('vergi-no').value.trim();
     const veri = {
       user_id: user.id,
       firma_adi: document.getElementById('firma-adi').value.trim() || null,
+      vergi_no: vknVal || null,
+      firma_il: document.getElementById('firma-il').value || null,
+      firma_ilce: document.getElementById('firma-ilce').value.trim() || null,
+      acik_adres: document.getElementById('firma-adres').value.trim() || null,
       sektorler: [...seciliSektorler],
       kategoriler: [...seciliSektorler],
       tercih_iller: [...seciliIller],
@@ -870,8 +901,9 @@
   if (kisiLS) document.getElementById('iletisim-kisi').value = kisiLS;
   const telLS = localStorage.getItem('ihale_iletisim_tel');
   if (telLS) document.getElementById('iletisim-tel').value = telLS;
+  // VKN artık DB'den (profil.vergi_no) yükleniyor; localStorage yalnız DB boşsa yedek.
   const vergiLS = localStorage.getItem('ihale_vergi_no');
-  if (vergiLS) document.getElementById('vergi-no').value = vergiLS;
+  if (vergiLS && !document.getElementById('vergi-no').value) document.getElementById('vergi-no').value = vergiLS;
   // Bedel ve diğer inputlarda doluluk skorunu güncelle
   ['min-bedel', 'max-bedel'].forEach(id => {
     document.getElementById(id)?.addEventListener('input', dolulukGuncelle);
