@@ -21,6 +21,34 @@
 > **KALICI TALİMAT (12 Tem, kullanıcı emri):** Bu blok + ilgili bölümler her oturumda otomatik
 > güncellenir, kullanıcı hatırlatmak zorunda değil. Bkz. hafıza `yapilacaklar-auto-update`.
 
+> ## 🎭 17 TEMMUZ (gece) — MİSAFİR MASKELEME: KİLİT ALANLAR '***' (✅ CANLI, ihaleciler modeli)
+> Kullanıcı: "girişsiz okunmasın — ilanların kurumları, sonuçlar ve yüklenici verileri **** görünsün,
+> başlık kalsın." Veri-koruma paketi 3/3 — SUNUCU TARAFI kolon yetkisiyle (yalnız frontend maskesi değil).
+> **backend/migration_anon_maske.sql (✅ canlı, rol testleri geçti):** anon'a kolon-listeli GRANT:
+> - ilanlar: idare/ekap_id/ikn/ilan_metni/ilan_html/yapay_zeka_ozeti/arama_fold/yayinlayan_id KAPALI
+>   (arama_fold içinde İDARE geçiyor; WHERE de yetki istediğinden idare-filtre oracle'ı otomatik kapalı)
+> - ihale_sonuclari: kazanan_firma(+fold)/yuklenici_*/tum_teklifler/ham_json/ekap_id/ikn/ihale_id KAPALI
+>   (tum_teklifler TÜM katılımcı firmaları içeriyordu!) — bedel/tenzilat/tarih/katılımcı sayısı AÇIK
+> - yukleniciler: ad/normalize_ad/arama_fold/vergi_no/ai_yorum KAPALI — il/ciro/sözleşme/tarih AÇIK
+> - DT: idare KAPALI; RPC kilitleri: il_sektor_firmalar/analiz_pivot/kurum_ozet/rekabet_ozet(top-20 idare
+>   döndürüyordu!)/ihaleye_uygun_firmalar(_geo); MV: idare_ozet_mv + il_sektor_firma_mv anon'dan REVOKE
+> **Frontend (12 sayfa):** misafirde dar select + '🔒 ***' + login linki: ihaleler (kart Kayıt No/İdare/
+> Kazanan ***, arama→baslik+aciklama ilike, idare filtresi disabled), ihale-detay (eyebrow/idare/kazanan ***,
+> ilan metni 'üyelere özel'), sonuclananlar, dogrudan-temin, firma-analiz (dizin adları ***, sayılar açık;
+> arama+detay+ad-sıralama kapılı; fah panel giriş notu), harita (panel firma listeleri giriş notu; boyama/
+> KPI/RFQ misafirde tam), kurum-analiz (tam kapı), dashboard (gereksiz idare/ekap_id select'ten atıldı);
+> takipte/bildirimler/teklif-olustur misafir-localStorage akışları çökmez (koşullu select, render '—').
+> rekabet-analizi + uyumluluk ZATEN Pro-kilitli (dokunulmadı). Girişli kullanıcıda SIFIR değişiklik.
+> **backend/migration_anon_maske_index.sql (✅ canlı):** DEPLOY SONRASI YAKALANAN BUG — sonuclananlar misafir
+> dalı (WHERE kazanan_teklif NOT NULL) eski partial indexlerle (WHERE kazanan_firma NOT NULL) eşleşmedi →
+> 537K full-sort → 57014 → 3 anon-predicate'li ikiz index (idx_is_tarih/bedel/tenzilat_anon), EXPLAIN ✓.
+> **Canlı misafir testleri:** API: idare/kazanan_firma/ad/tum_teklifler/select=*/idare-filtre → hepsi 401;
+> baslik/bedel/il → 200. Tarayıcı: ihaleler 25 kart ***, arama 'yol' çalışıyor, detay maskeli+belge akışı,
+> sonuclananlar ***+bedel açık, DT 1.17M kayıt ***, firma dizini 50 satır *** (ciro açık, arama kilitli,
+> satıra tıkla→kapı), harita 81 il boyalı+panel kilitli, kurum-analiz kapılı. Konsolda perm hatası yok.
+> NOT: <title> kurum adını URL param'dan gösterir (DB sızıntısı değil). kik-kararlar/uluslararasi/kamu-
+> ihaleleri kapsam dışı bırakıldı (kamu kararı/AB verisi/KA duyuruları — kullanıcı sayarsa eklenir).
+
 > ## 🏛️ ✅ YAPILDI (16 Tem) — İDARELER + KURUM ANALİZİ BİRLEŞTİ + NAV TEKİLLEŞTİ (Firmalar dahil)
 > Firmalar deseninin aynısı: **kurum-analiz.html tek hub** — `?kurum=` yoksa açılış = İDARE DİZİNİ
 > (idareler.html'den taşındı, `iz-*` prefix: idare_dizin_json + 30dk sessionStorage + arama(trFold)/il/
