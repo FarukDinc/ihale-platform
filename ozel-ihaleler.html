@@ -226,7 +226,7 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-<script src="js/sidebar-user.js"></script>
+<script src="js/sidebar-user.js?v=2"></script>
 <script src="js/bildirim-sayaci.js"></script>
 <script src="js/plan.js?v=v4"></script>
 <script>
@@ -292,8 +292,7 @@
 
   window.ihaleYayinla = async function() {
     if (!user) { alert('İhale yayınlamak için giriş yapmalısınız.'); location.href = 'login'; return; }
-    if (!_profilTam) { alert('İhale açmadan önce firma profilinizi (ünvan, VKN, adres) tamamlamalısınız.'); location.href = 'profil'; return; }
-    // Kurumsal kapısı — asıl zorlama RLS'te (talep_kurumsal_ekler); bu erken/anlaşılır UX için.
+    // 1) Kurumsal kapısı ÖNCE — asıl zorlama RLS'te (talep_kurumsal_ekler); bu erken/anlaşılır UX için.
     // Plan.isKurumsal yoksa (stale cache) JS kapısını atla; RLS yine engeller ve anlaşılır mesaj döner.
     const kurumsalMi = (window.Plan && typeof Plan.isKurumsal === 'function') ? await Plan.isKurumsal() : null;
     if (kurumsalMi === false) {
@@ -301,6 +300,8 @@
         location.href = 'fiyatlandirma_odeme_bolumu';
       return;
     }
+    // 2) Profil tamlık kapısı
+    if (!_profilTam) { alert('İhale açmadan önce firma profilinizi (ünvan, VKN, adres) tamamlamalısınız.'); location.href = 'profil'; return; }
     const baslik = document.getElementById('f-baslik').value.trim();
     const kategori = document.getElementById('f-kategori').value;
     const unvan = document.getElementById('f-firma').value.trim();
@@ -469,20 +470,33 @@
     if (!acik) profilYukle();   // her açılışta profili tazele
   };
 
-  // ── Profilden firma kimliği/adresi çek + kilitle (eksikse gate) ──
-  let _profilTam = false;
+  // ── Form kapıları: (1) Kurumsal plan (2) firma profili tam ──
+  let _profilTam = false, _kurumsalMi = null;
   async function profilYukle() {
     if (!user) return;
     const eksikBox = document.getElementById('profil-eksik');
     const formAlan = document.getElementById('form-alan');
     const butonlar = document.getElementById('form-butonlar');
+    const gateGoster = (html) => { eksikBox.innerHTML = html; eksikBox.style.display = 'block'; formAlan.style.display = 'none'; butonlar.style.display = 'none'; };
+    const formuAc = () => { eksikBox.style.display = 'none'; formAlan.style.display = ''; butonlar.style.display = ''; };
+
+    // 1) KURUMSAL PLAN KAPISI — ihale (RFQ) açmak yalnız Kurumsal plana özel (asıl zorlama RLS'te).
+    try { _kurumsalMi = (window.Plan && typeof Plan.isKurumsal === 'function') ? await Plan.isKurumsal() : null; } catch { _kurumsalMi = null; }
+    if (_kurumsalMi === false) {
+      _profilTam = false;
+      gateGoster(`<div style="font-weight:700;color:var(--amber);font-size:14px;margin-bottom:6px;">🔒 İhale açmak Kurumsal plana özeldir</div>
+        <div style="font-size:13px;color:var(--off-white);line-height:1.6;">e-Satınalma'da ihale (RFQ) <b>yayınlamak</b> Kurumsal plan gerektirir — bu, tedarikçilerin karşısına yalnızca ciddi/doğrulanmış alıcıların çıkmasını sağlar. <span style="color:var(--muted)">(Teklif vermek ücretsizdir; yalnızca ihale AÇMAK Kurumsaldır.)</span></div>
+        <a href="fiyatlandirma_odeme_bolumu" class="btn-primary" style="display:inline-block;margin-top:14px;text-decoration:none;">Kurumsal Planı İncele →</a>`);
+      return;
+    }
+
+    // 2) PROFİL TAMLIK KAPISI — firma kimliği/adresi çek + kilitle
     let p = null;
     try { const { data } = await sb.from('profil').select('firma_adi,vergi_no,firma_il,firma_ilce,acik_adres').eq('user_id', user.id).maybeSingle(); p = data; } catch {}
     const set = (id, v) => { const el = document.getElementById(id); if (el) el.value = v || ''; };
     set('f-firma', p && p.firma_adi); set('f-vkn', p && p.vergi_no);
     set('f-il', p && p.firma_il); set('f-ilce', p && p.firma_ilce); set('f-adres', p && p.acik_adres);
 
-    // Eksik alanları tespit et
     const eksik = [];
     if (!(p && p.firma_adi)) eksik.push('Firma ünvanı');
     if (!(p && /^[0-9]{10}$/.test(p.vergi_no || ''))) eksik.push('VKN (10 hane)');
@@ -490,10 +504,11 @@
     if (!(p && p.acik_adres)) eksik.push('Açık adres');
     _profilTam = eksik.length === 0;
 
-    eksikBox.style.display = _profilTam ? 'none' : 'block';
-    formAlan.style.display = _profilTam ? '' : 'none';
-    butonlar.style.display = _profilTam ? '' : 'none';
-    if (!_profilTam) document.getElementById('profil-eksik-liste').textContent = 'Eksik: ' + eksik.join(', ');
+    if (_profilTam) { formuAc(); return; }
+    gateGoster(`<div style="font-weight:700;color:var(--amber);font-size:14px;margin-bottom:6px;">⚠️ Önce firma profilinizi tamamlayın</div>
+      <div style="font-size:13px;color:var(--off-white);line-height:1.6;">İhale açabilmek için firma <b>ünvanınız</b>, <b>VKN</b>'niz ve <b>iş yeri adresiniz</b> (il/açık adres) profilinizde kayıtlı olmalı — ihalede otomatik ve <b>değiştirilemez</b> kullanılır.</div>
+      <a href="profil" class="btn-primary" style="display:inline-block;margin-top:14px;text-decoration:none;">Profili Tamamla →</a>
+      <div style="font-size:12px;color:var(--muted);margin-top:10px;">Eksik: ${eksik.join(', ')}</div>`);
   }
 
   (async () => {

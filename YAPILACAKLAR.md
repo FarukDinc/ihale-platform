@@ -7,6 +7,17 @@
 > **KALICI TALİMAT (12 Tem, kullanıcı emri):** Bu blok + ilgili bölümler her oturumda otomatik
 > güncellenir, kullanıcı hatırlatmak zorunda değil. Bkz. hafıza `yapilacaklar-auto-update`.
 
+> ## 🔐 16 TEMMUZ (devam) — PLAN KAPILARI: PRO CTA GİZLE + e-SATINALMA KURUMSAL KAPI (CANLI)
+> - **Topbar "Pro'ya Geç" gizleme:** sidebar-user.js ödeme yapmış (Pro/Kurumsal) kullanıcıda topbar CTA'sını
+>   GİZLER. Eski selektör `.topbar-actions` çoğu sayfada eşleşmiyordu → `.topbar` de eklendi; rozete çevirmek
+>   yerine display:none (kullanıcı "gözükmesin" dedi). **Cloudflare STALE JS servis ediyordu** (Cf-Cache HIT,
+>   max-age=14400) → 23 sayfada `sidebar-user.js?v=2` cache-bust ŞART oldu (yoksa fix görünmezdi). Canlı: yeni
+>   JS servis ediliyor, selektör topbar butonunu buluyor (anon'da görünür, proMu'da gizlenir).
+> - **e-Satınalma Kurumsal kapısı:** ozel-ihaleler form açılınca Kurumsal DEĞİLSE "🔒 İhale açmak Kurumsal plana
+>   özeldir" gate (form kilitli); ihaleYayinla'da kurumsal kontrolü profil kontrolünden ÖNCE. Server-side zorlama
+>   ZATEN vardı: RLS `talep_kurumsal_ekler` INSERT = `kullanici_kurumsal_mi()` + VKN/ünvan/il/ilçe/adres NOT NULL
+>   (canlı pg_policy ile doğrulandı) — yani "engelle" DB düzeyinde gerçek, frontend anlaşılır katman.
+
 > ## 🔗 16 TEMMUZ (devam) — KALKINMA AJANSI, RFQ LİSTESİNE BİRLEŞTİRİLDİ (CANLI)
 > Kullanıcı: "kalkınma ajansı ihalelerini niye ayrı sayfaya alıyorsun, hepsini platform satınalma ihaleleri
 > olarak açsana". Yapıldı: ozel-ihaleler.html'deki ayrı "🏛️ Kalkınma Ajansı İhaleleri" kartı KALDIRILDI →
@@ -31,6 +42,38 @@
 > - **ozel-ihale-detay.html:** sureDoldu()/teklifAcik() — durum='acik' olsa bile son_teklif geçmişse teklif
 >   formu kapanır ("⏹ son teklif tarihi geçti"), teklifVer() guard'lı, header rozeti "Süresi doldu".
 > - NOT: login-arkası akış (profil→otomatik kilit→yayınla) anon test edilemedi ama kod+deploy doğrulandı.
+
+> ## 🗺️ 16 TEMMUZ (2. oturum) — HARİTAYA SEKTÖR KATMANI: il×sektör yoğunluk + il/firma sıralaması
+> Kullanıcı isteği: "haritada sektör sektör ayırıp illerdeki yoğunlukları ve firmaları sıralamak".
+> **✅ KOD HAZIR (yerelde doğrulandı) / ⏳ MIGRATION VDS'TE ÇALIŞTIRILACAK:**
+> ```
+> docker exec -i supabase-db psql -U postgres -d postgres < backend/migration_harita_sektor.sql
+> ```
+> - `backend/migration_harita_sektor.sql` (YENİ): (1) `il_sektor_ozet()` — ihale_sonuclari(529K)⋈ilanlar(355K)
+>   il×kategori firma/sözleşme/bedel; tam-tablo aggregate 3s PostgREST timeout KENARINDA olduğundan
+>   `ALTER FUNCTION SET statement_timeout='30s'` (rekabet_ozet dersi) + client tek çağrı & sessionStorage 6h.
+>   (2) `il_sektor_firmalar(p_il_folds[],p_kategori,p_limit)` — il+sektörde SEKTÖRE ÖZGÜ sözleşme/bedelle firma
+>   sıralaması; `yuklenici_id` BİLİNÇLİ kullanılmadı (~92K satırda NULL → firmaları düşürürdü), gruplama
+>   `normalize_firma(kazanan_firma)`; il eşleşmesi `tr_fold` + yeni indeks `idx_ilanlar_il_fold_kategori`.
+>   (3) `il_rfq_dagilimi(p_kategori DEFAULT NULL)` — eski sıfır-arg sürüm DROP (PostgREST overload belirsizliği).
+> - `harita.html`: 41 kanonik kategori dropdown'ı (js/kategoriler.js), sektörel choropleth (kova eşikleri
+>   sektör dağılımından quantile), sektörel tooltip/lejant/istatistik, panel: sektör seçince TR il sıralaması
+>   (top 15, bar'lı, tıkla→il), il seçince o il+sektörün firma sıralaması + kategorili RFQ listesi, `?sektor=`
+>   deep-link. Migration uygulanmamışsa zarif düşüş: uyarı + Tüm Sektörler'e dönüş (test edildi ✓).
+> - **🐛 YOL ÜSTÜ BUG FIX (önceden vardı):** panel "öne çıkan firmalar" `ilike('il','İzmir')` İ/ı locale
+>   tuzağı → İ/ı'lı illerde (İstanbul/İzmir/Diyarbakır…) HEP 0 kayıt dönüyordu (REST'le kanıtlandı: ilike.İzmir=0,
+>   eq.İZMİR=3951). Fix: `.in('il', [ad.toLocaleUpperCase('tr'), ad, alias])`. Sektör RPC'leri zaten tr_fold'lu.
+> - Doğrulama: file:// önizleme + canlı VDS API — genel mod regresyonsuz (71.384 firma/81 il), sektör UI
+>   sahte önbellek tohumuyla uçtan uca (sıralama/KPI/pay/geri dönüş ✓), İzmir firma listesi fix sonrası dolu ✓.
+>   Gerçek sektör verisi migration sonrası akacak; `il_sektor_ozet` süresi ilk çağrıda İZLENMELİ (30s tavan).
+> - **🔴 BULGU (kullanıcı "OKAS'a göre mi?" sorusu üzerine, canlıda ölçüldü): `ilanlar.kategori`'nin ~%64'ü
+>   HÂLÂ ESKİ taksonomide** — Mal Alımı %24.3 (86.4K) + Diğer %19.1 (68.2K) + Hizmet Alımı %14.2 (50.7K) +
+>   İnşaat & Yapım %6.1 (21.7K); toplam 46 farklı etiket var (41 kanonik değil). 'Mal Alımı'lı en yeni ilan
+>   25 Haz 2026 → yeni akış o günden beri kanonik üretiyor ama `kategori_backfill.py` ana ilanlar tablosunda
+>   HİÇ/YARIM koşmuş (DT backfill'i tamamdı, ilanlar değil!). Etki: sektör haritası + sektorler/rekabet
+>   filtreleri eski etiketli kütleyi GÖREMEZ. **Aksiyon (VDS'te, kullanıcı):**
+>   `cd /opt/ihale/backend && python3 kategori_backfill.py --dry-run` → sayılar makulse `--dry-run`sız tekrar.
+>   (script REST+service_key ile çalışır, yerel .env ÖLÜ managed'ı gösterir — yerelden ÇALIŞTIRMA.)
 
 > ## 📊 16 TEMMUZ — TRADE MAP (trademap.org) FİZİBİLİTE: TEKNİK EVET / HUKUKEN HAYIR (danışmanlık, KARAR KULLANICIDA)
 > Soru: ITC Trade Map'ten Türkiye dış ticaret verisi çekip İhaleGlobal'e eklemek.
@@ -189,6 +232,17 @@
 > yönlendirmesi bekliyor** → **ERTELENDİ:** kullanıcı "şimdilik duralım, sonra bana TEKRAR SOR ve işleme
 > alalım" dedi. İskele kurulmadı; sonraki uygun oturumda kullanıcıya tekrar açılacak.
 
+> ## 🔴 16 TEMMUZ (2. OTURUM) — KRİTİK GÜVENLİK: SUPABASE STUDIO İNTERNETE AÇIKTI → KAPATILDI
+> Scraper koruması araştırılırken bulundu: `docker-compose.override.yml` Studio'yu `"3000:3000"` ile
+> `0.0.0.0`'a yayınlıyordu → `http://195.85.207.126:3000` dışarıdan **HTTP 200, AUTHSIZ** tam DB
+> yönetici paneli. Düzeltildi: override `"127.0.0.1:3000:3000"` + `docker compose up -d --no-deps studio`;
+> dışarıdan :3000 artık 000, site/REST 200 (bozulmadı), `.bak` yedeği var. Erişim artık SSH tüneliyle
+> (`ssh -L 3000:localhost:3000`). Detay: hafıza [[studio-3000-exposure]]. **AÇIK İŞLER (bu ifşa yüzünden):**
+> (1) service_role/JWT/DB parola rotasyonu (önerildi, YAPILMADI — JWT rotasyonu frontend anon anahtarını
+> da değiştirir); (2) UFW'de artık zararsız `3000/tcp ALLOW` kuralı temizlenebilir; (3) ASIL scraper
+> koruması (CF rate-limit + origin CF-allowlist) hâlâ bekliyor — stack: host nginx YOK, trafik doğrudan
+> Kong:8000/8443'e gidiyor (nginx grep boştu), CF-allowlist UFW+Docker katmanında düşünülmeli.
+>
 > ## ✅ 16 TEMMUZ (2. OTURUM) — VERİ AKIŞI DENETİMİ: 3 AKIŞ DA AKTİF + KUPON/SUNUCU NOTLARI
 > **1) Veri çekme denetimi (public REST, `olusturulma` yöntemi — bkz. hafıza `scraper-cron-silent-fail`):**
 > - `ilanlar`: son yazım 16 Tem 09:28 UTC, son 24s **1000+** kayıt, 391'i aynı-gün ilan tarihli → SAĞLIKLI.

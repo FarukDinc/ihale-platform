@@ -47,13 +47,12 @@
     const proMu = PRO.includes(planKodu);
     const plan = proMu ? 'Pro Plan' : 'Ücretsiz Plan';
 
-    // Pro kullanıcıda topbar "Pro'ya Geç" CTA'sını "Pro Plan" rozetine çevir (yükseltme değil, durum göster)
+    // Ödeme yapmış (Pro/Kurumsal) kullanıcıda sağ-üstteki "Pro'ya Geç" CTA'sını GİZLE — yükseltme
+    // teklifi göstermenin anlamı yok. Yalnız TOPBAR'daki CTA hedeflenir (içerik-içi upsell'lere,
+    // fiyatlandırma sayfasına dokunulmaz). Selektör hem doğrudan .topbar hem .topbar-actions'ı kapsar.
     if (proMu) {
-      document.querySelectorAll('.topbar-actions a[href="fiyatlandirma_odeme_bolumu"]').forEach(btn => {
-        btn.textContent = '⭐ Pro Plan';
-        btn.classList.remove('btn-primary');
-        btn.title = 'Pro plan aktif — abonelik detayları';
-        btn.style.cssText = 'padding:7px 14px!important;font-size:13px!important;font-weight:700!important;background:rgba(240,165,0,0.12)!important;border:1px solid var(--amber)!important;color:var(--amber)!important;border-radius:8px!important;text-decoration:none!important;transition:none!important;';
+      document.querySelectorAll('.topbar a[href="fiyatlandirma_odeme_bolumu"], .topbar-actions a[href="fiyatlandirma_odeme_bolumu"]').forEach(btn => {
+        btn.style.display = 'none';
       });
     }
 
