@@ -1,5 +1,30 @@
 # İhalePlatform — Yapılacaklar Listesi
 
+> ## 🎯 17 TEMMUZ — EŞLEŞTİRME v3: KONU + ÖLÇEK BANDI (±%500) (⏳ MİGRATİON PROD'A YÜKLENMEDİ)
+> Kullanıcı şikayeti (Jandarma 2026/792203, 809K gıda ihalesi): "Uygun Firmalar"da Petrol Ofisi/Otokar,
+> "Benzer İhaleler"de mobilya/bidon/medikal gaz çıkıyordu. KÖK NEDEN: ilanın kategorisi kanonik 41'den
+> değil, jenerik "Mal Alımı" kovası (Jandarma/DMO kaynağı tür adını kategoriye yazmış olabilir — AI
+> kategori backfill'in bu kovayı NEDEN atladığı ayrıca incelenecek). Kullanıcı kuralı: konusu eşleşen
+> (en az o konuda iş almış) + geçmiş kazanımları bedele ±%500 bandında (bedel/5..bedel*5) KALAN firmalar;
+> benzer ihalelerde de bant ŞART. EK KURAL: dayanak (konu çapası: kanonik kategori / başlık
+> konu-kelimesi / embedding) HİÇ yoksa ne benzer ihale ne uygun firma GÖSTERİLMEZ (boş döner,
+> benzer kartı gizlenir) — gerekçe: ileride otomatik firma-davet bu veriden beslenecek, alakasız
+> eşleşme = spam. Eski "aynı tür" ve jenerik-kategori doldurmaları frontend'den de KALDIRILDI.
+> **backend/migration_uygun_firmalar_v3.sql (⏳ prod'a yüklenecek — SSH onayı bekliyor):**
+> - `ihale_konu_kelimeleri(baslik)`: tr_fold + ihale-jargonu stopword ayıklama → konu kelimeleri ('gida').
+> - `ihaleye_uygun_firmalar` v3 (+p_baslik, +p_bant=5): kategori kanonik değilse konu=başlık kelimesi;
+>   bedel varsa YALNIZ bant-içi kazanımlar sayılır (istatistikler bant-içinden), skor=deneyim+aynı il+
+>   log-ölçek yakınlığı; GROUP BY ünvan (İstanbul Enerji çift satır fix). Anon kilidi KORUNDU (REVOKE).
+> - `benzer_ihaleler` (YENİ RPC): embedding cosine (varsa) / başlık trigram + kanonik kategori/il bonusu,
+>   aday bedeli bant dışıysa ELENİR (bedeli bilinmeyen −5 ceza); idare DÖNDÜRMEZ (anon maskesi), anon'a açık.
+> **ihale-detay.html (✅ hazır, RPC yoksa eski davranışa düşer — regresyon yok):** kanonikKategori()
+> (js/kategoriler.js include edildi), efektifBedel() (yaklaşık maliyet yoksa sözleşme bedeli — Jandarma
+> sonuçlanmışlarında kritik), uygunFirmalar v3 çağrı + "Ölçek ✓" rozeti (eski "Kapasite ✓" bedel yokken
+> herkese sahte yanıyordu — artık yalnız bant uygulanınca), benzerIhaleler önce RPC sonra eski 3-kademe.
+> KALAN: (1) migration'ı prod'a yükle + canlı doğrula (2026/792203'te Petrol Ofisi görünmemeli),
+> (2) "Mal Alımı"/jenerik kategorili ilanları kanonik kategoriye backfill (kalıcı çözüm),
+> (3) ozel-ihaleler `ihaleye_uygun_firmalar_geo` hâlâ v2 mantığında — bant kuralı istenirse oraya da.
+
 > ## 🔎 17 TEMMUZ — TİCARET: HS/SEKTÖR ARAMA + TÜRKÇE HS ETİKETLERİ (canlı)
 > Kullanıcı: 'HS koduna göre de arama olmalı (sektör yanına), o kalem/sektörde Türkiye'nin ülke-ülke ihr/ith
 > görünsün' + 'HS açıklamaları TÜRKÇE olmalı (İngilizce olmaz)'. İkisi de yapıldı:

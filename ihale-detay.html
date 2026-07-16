@@ -311,6 +311,7 @@
 <script src="js/sidebar-user.js?v=2"></script>
 <script src="js/bildirim-sayaci.js"></script>
 <script src="js/api.js"></script>
+<script src="js/kategoriler.js"></script>
 <script src="js/uyum.js"></script>
 <script src="js/takip.js"></script>
 <script>
@@ -346,6 +347,31 @@
     if (mn && mx == null) return `${butceFormatla(mn)} üzeri`;
     if (mn != null && mx != null) return `${butceFormatla(mn)} – ${butceFormatla(mx)}`;
     return '—';
+  }
+
+  // Kategori kanonik 41'den mi? "Mal Alımı"/"Diğer" gibi jenerik kovalar konu
+  // sinyali taşımaz — eşleştirme RPC'lerine NULL geçilir (başlık kelimeleri devreye girer).
+  function kanonikKategori(kat) {
+    if (!kat || !window.KATEGORILER) return null;
+    return window.KATEGORILER.some(k => k.kod === kat) ? kat : null;
+  }
+
+  // Ölçek bandı için efektif bedel: yaklaşık maliyet yoksa sonuçtaki sözleşme bedeli
+  // (sonuçlanmış ihalede — örn. Jandarma kaynağında yaklaşık maliyet hiç gelmez).
+  let _efektifBedel; // cache — iki widget da kullanıyor
+  async function efektifBedel(d) {
+    if (_efektifBedel !== undefined) return _efektifBedel;
+    let b = d.yaklasik_maliyet_max || d.yaklasik_maliyet_min || d.tahmini_bedel || null;
+    if (!b) {
+      try {
+        const { data } = await sb.from('ihale_sonuclari')
+          .select('kazanan_teklif,sozlesme_bedeli').eq('ilan_id', d.id).limit(1);
+        const s = data && data[0];
+        b = s ? (s.kazanan_teklif || s.sozlesme_bedeli || null) : null;
+      } catch (_) {}
+    }
+    _efektifBedel = b;
+    return b;
   }
 
   function itirazFormatla(b) {
@@ -532,9 +558,6 @@
         </div>
       </div>
 
-      <!-- 🎯 BU İHALEYE UYGUN FİRMALAR (eşleştirme motoru) -->
-      <div id="uygun-firmalar-wrap" style="margin-bottom:20px;"></div>
-
       <!-- UYUM SKORU -->
       <div class="uyum-bar-wrap" style="margin-bottom:20px;">
         <div class="uyum-header">
@@ -703,6 +726,9 @@
           <div style="color:var(--muted);font-size:13px;">Yükleniyor...</div>
         </div>
       </div>
+
+      <!-- 🎯 BU İHALEYE UYGUN FİRMALAR (eşleştirme motoru) — sayfanın en altında, ikincil bilgi -->
+      <div id="uygun-firmalar-wrap" style="margin-top:20px;"></div>
     `;
 
     // Uyum bar animasyonu
@@ -789,15 +815,25 @@
     }
   }
 
-  // 🎯 Eşleştirme motoru — bu ihaleye (kategori+il+bedel) geçmiş kazanımlarına göre en uygun firmalar
+  // 🎯 Eşleştirme motoru — KONU (kanonik kategori veya başlık kelimeleri) + ÖLÇEK BANDI
+  // (±%500: bedel/5..bedel*5, ŞART) + il geçmişine göre en uygun firmalar.
   async function uygunFirmalarYukle(d) {
     const wrap = document.getElementById('uygun-firmalar-wrap');
-    if (!wrap || !d.kategori) return;
-    const bedel = d.yaklasik_maliyet_min || d.yaklasik_maliyet_max || d.tahmini_bedel || null;
+    if (!wrap || (!d.kategori && !d.baslik)) return;
+    const bedel = await efektifBedel(d);
     try {
-      const { data, error } = await sb.rpc('ihaleye_uygun_firmalar', {
-        p_kategori: d.kategori, p_il: d.il || null, p_bedel: bedel, p_limit: 8
+      let { data, error } = await sb.rpc('ihaleye_uygun_firmalar', {
+        p_kategori: kanonikKategori(d.kategori), p_il: d.il || null,
+        p_bedel: bedel, p_limit: 8, p_baslik: d.baslik || null
       });
+      if (error && kanonikKategori(d.kategori)) {
+        // v3 migration henüz yüklenmemişse eski imzaya düş — ama SADECE kanonik
+        // kategoriyle (jenerik "Mal Alımı"/"Diğer" ile alakasız firma listelenmez;
+        // dayanak yoksa gösterme kuralı)
+        ({ data, error } = await sb.rpc('ihaleye_uygun_firmalar', {
+          p_kategori: kanonikKategori(d.kategori), p_il: d.il || null, p_bedel: bedel, p_limit: 8
+        }));
+      }
       if (error || !data || !data.length) { wrap.innerHTML = ''; return; }
       const esc = (s) => (s || '').replace(/[<>&"]/g, c => ({ '<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;' }[c]));
       const paraKisa = (v) => {
@@ -815,17 +851,17 @@
               <a href="firma-analiz?ara=${encodeURIComponent(f.kazanan_firma)}" style="color:inherit;text-decoration:none;" title="Firma analizini gör">${esc(f.kazanan_firma)}</a>
             </div>
             <div style="font-size:11.5px;color:var(--muted);margin-top:2px;">
-              ${f.firma_il ? '📍 ' + esc(f.firma_il) + ' · ' : ''}bu kategoride <b style="color:var(--off-white);">${f.kategori_kazanim}</b> kazanım · en büyük <b style="color:var(--off-white);">${paraKisa(f.max_kazanim)}</b>
+              ${f.firma_il ? '📍 ' + esc(f.firma_il) + ' · ' : ''}bu konuda <b style="color:var(--off-white);">${f.kategori_kazanim}</b> kazanım · en büyük <b style="color:var(--off-white);">${paraKisa(f.max_kazanim)}</b>${f.ort_kazanim ? ' · ort. <b style="color:var(--off-white);">' + paraKisa(f.ort_kazanim) + '</b>' : ''}
             </div>
           </div>
-          ${f.ayni_il ? '<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;background:rgba(59,130,246,.14);color:#60a5fa;white-space:nowrap;">Aynı il</span>' : ''}
-          ${f.kapasite_uygun ? '<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;background:rgba(34,197,94,.12);color:#4ade80;white-space:nowrap;">Kapasite ✓</span>' : ''}
+          ${f.ayni_il ? '<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;background:rgba(59,130,246,.14);color:#60a5fa;white-space:nowrap;" title="Bu ilde daha önce ihale kazanmış">Aynı il</span>' : ''}
+          ${f.kapasite_uygun ? '<span style="font-size:10px;font-weight:700;padding:2px 8px;border-radius:10px;background:rgba(34,197,94,.12);color:#4ade80;white-space:nowrap;" title="Geçmiş kazanımları bu ihalenin bedeline ±%500 bandında">Ölçek ✓</span>' : ''}
         </div>`).join('');
       wrap.innerHTML = `
         <div class="detay-header" style="padding:0;overflow:hidden;">
           <div style="padding:16px 20px 12px;border-bottom:1px solid var(--border);">
             <div style="font-size:14px;font-weight:700;color:var(--white);">🎯 Bu İhaleye Uygun Firmalar</div>
-            <div style="font-size:12px;color:var(--muted);margin-top:3px;">Geçmişte bu kategoride${d.il ? ' / ' + esc(d.il) + ' bölgesinde' : ''} iş almış, ölçek kapasitesi uygun firmalar — EKAP verisinden</div>
+            <div style="font-size:12px;color:var(--muted);margin-top:3px;">Geçmişte bu konuda${d.il ? ' / ' + esc(d.il) + ' bölgesinde' : ''} iş almış firmalar${bedel ? ' — kazanımları bu ihalenin ölçeğine ±%500 bandında' : ''} — EKAP verisinden</div>
           </div>
           ${satirlar}
         </div>`;
@@ -936,27 +972,54 @@
       ? 'id,baslik,idare,il,yaklasik_maliyet_min,yaklasik_maliyet_max,son_teklif_tarihi'
       : 'id,baslik,il,yaklasik_maliyet_min,yaklasik_maliyet_max,son_teklif_tarihi';
 
-    // 1. Aynı kategori + il
-    if (d.kategori && d.il) {
-      ({ data } = await sb.from('ilanlar').select(sel)
-        .eq('kategori', d.kategori).eq('il', d.il).neq('id', d.id).eq('durum', 'aktif').limit(4));
-    }
-    // 2. Aynı kategori
-    if ((!data || data.length < 2) && d.kategori) {
-      ({ data } = await sb.from('ilanlar').select(sel)
-        .eq('kategori', d.kategori).neq('id', d.id).eq('durum', 'aktif').limit(4));
-    }
-    // 3. Aynı tür (fallback)
-    if (!data || data.length === 0) {
-      ({ data } = await sb.from('ilanlar').select(sel)
-        .eq('tur', d.tur || 'Hizmet').neq('id', d.id).eq('durum', 'aktif').limit(4));
+    // 0. Benzerlik RPC'si: konu ÇAPASI ŞART (embedding/başlık kelimeleri/kanonik
+    //    kategori) + ÖLÇEK BANDI ŞART (±%500) + il bonusu. idare döndürmez (anon
+    //    maskesi) — üye için aşağıda ayrı sorguyla eklenir.
+    //    RPC canlıysa sonucu NİHAİDİR: boş dönerse kart gizlenir, doldurma yok.
+    let rpcCanli = false;
+    try {
+      const bedel = await efektifBedel(d);
+      const { data: rpcData, error } = await sb.rpc('benzer_ihaleler', {
+        p_id: d.id, p_kategori: kanonikKategori(d.kategori), p_bedel: bedel, p_limit: 4
+      });
+      if (!error) {
+        rpcCanli = true;
+        data = rpcData || [];
+        if (uyeMi && data.length) {
+          try {
+            const { data: idr } = await sb.from('ilanlar')
+              .select('id,idare').in('id', data.map(r => r.id));
+            const m = {}; (idr || []).forEach(r => { m[r.id] = r.idare; });
+            data.forEach(r => { r.idare = m[r.id]; });
+          } catch (_) {}
+        }
+      }
+    } catch (_) {}
+
+    // RPC henüz yüklü değilse (geçiş dönemi) SADECE KANONİK kategoriyle fallback.
+    // DAYANAK YOKSA GÖSTERME kuralı (17 Tem): jenerik kategori ("Mal Alımı"/"Diğer")
+    // ve "aynı tür" doldurması KALDIRILDI — ileride otomatik firma-davet bu veriden
+    // beslenecek, alakasız eşleşme boş listeden kötüdür.
+    if (!rpcCanli) {
+      const kanonik = kanonikKategori(d.kategori);
+      if (kanonik && d.il) {
+        ({ data } = await sb.from('ilanlar').select(sel)
+          .eq('kategori', kanonik).eq('il', d.il).neq('id', d.id).eq('durum', 'aktif').limit(4));
+      }
+      if ((!data || data.length < 2) && kanonik) {
+        ({ data } = await sb.from('ilanlar').select(sel)
+          .eq('kategori', kanonik).neq('id', d.id).eq('durum', 'aktif').limit(4));
+      }
     }
 
     const list = document.getElementById('benzer-list');
     if (!list) return;
 
+    // Dayanak yoksa kartı TAMAMEN gizle — "bulunamadı" bile gösterme,
+    // alakasız içerikle doldurma hiç yok (otomasyon/davet güvenilirliği).
     if (!data || data.length === 0) {
-      list.innerHTML = `<div style="color:var(--muted);font-size:13px;">Benzer ihale bulunamadı.</div>`;
+      const kart = document.getElementById('benzer-kart');
+      if (kart) kart.style.display = 'none';
       return;
     }
 
