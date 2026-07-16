@@ -193,7 +193,10 @@
   function filtreleriUygula(query) {
     const q = aramaTemizle(document.getElementById('f-ara').value);
     const kaynak = document.getElementById('f-kaynak').value;
+    // kaynak='ka' (Kalkınma Ajansı) bu sayfada GÖSTERİLMEZ — özel firmaların hibe ihaleleri
+    // e-Satınalma (ozel-ihaleler) sayfasında "Kalkınma Ajansı" rozetiyle listelenir.
     if (kaynak) query = query.eq('kaynak', kaynak);
+    else query = query.in('kaynak', ['dmo', 'jandarma']);
     if (q) query = query.or(`baslik.ilike.*${q}*,idare.ilike.*${q}*`);
     return query;
   }
@@ -267,11 +270,11 @@
   async function istatistikYukle() {
     const say = async (kaynak) => {
       let q = sb.from('kamu_ihaleleri').select('id', { count: 'exact', head: true });
-      if (kaynak) q = q.eq('kaynak', kaynak);
+      q = kaynak ? q.eq('kaynak', kaynak) : q.in('kaynak', ['dmo', 'jandarma']);   // 'ka' hariç (e-Satınalma'da)
       const { count } = await q; return count || 0;
     };
     const ekapSay = async () => {
-      const { count } = await sb.from('kamu_ihaleleri').select('id', { count: 'exact', head: true }).not('ekap_referans', 'is', null);
+      const { count } = await sb.from('kamu_ihaleleri').select('id', { count: 'exact', head: true }).in('kaynak', ['dmo', 'jandarma']).not('ekap_referans', 'is', null);
       return count || 0;
     };
     const [t, dmo, jan, ekap] = await Promise.all([say(null), say('dmo'), say('jandarma'), ekapSay()]);

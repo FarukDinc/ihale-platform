@@ -39,6 +39,8 @@ $VENV/python georgia_scraper.py >> /opt/ihale-platform/logs/scraper.log 2>&1
 echo "[$(date +'%Y-%m-%d %H:%M:%S')] === Kamu kurumu (DMO/Jandarma) ===" >> /opt/ihale-platform/logs/scraper.log
 $VENV/python dmo_scraper.py >> /opt/ihale-platform/logs/scraper.log 2>&1
 $VENV/python jandarma_scraper.py >> /opt/ihale-platform/logs/scraper.log 2>&1
+# Kalkınma Ajansları (ka.gov.tr, kaynak='ka') — e-Satınalma sayfasında "Kalkınma Ajansı" rozetiyle
+$VENV/python ka_scraper.py >> /opt/ihale-platform/logs/scraper.log 2>&1
 $VENV/python idare_bildirim.py >> /opt/ihale-platform/logs/scraper.log 2>&1
 # Sektör-bazlı bildirim: günün yeni ilan/RFQ'ları → sektörü eşleşen firmalara (taksonomi hizalı, dedup'lı).
 # p_gun=1 → yalnız bugünkü yeni kayıtlar (retroaktif spam yok); dedup tekrar üretmez.

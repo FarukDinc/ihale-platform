@@ -68,6 +68,7 @@
     .talep-badges { display: flex; gap: 6px; flex-wrap: wrap; margin: 4px 0; }
     .etiket { font-size: 11px; padding: 2px 8px; border-radius: 10px; font-weight: 600; background: rgba(var(--overlay-rgb),.06); color: var(--muted); }
     .etiket.kat { background: rgba(240,165,0,.1); color: var(--amber); }
+    .etiket.ka { background: rgba(52,211,153,.14); color: #34d399; }
     .talep-meta { font-size: 12px; color: var(--muted); display: flex; gap: 14px; flex-wrap: wrap; }
     .durum-acik { color: #4ade80; }
 
@@ -168,6 +169,14 @@
         <div class="card-title">📋 Açık Satınalma İhaleleri</div>
         <div class="card-sub">Platformda yayınlanan güncel özel ihaleler</div>
         <div id="talepler-liste"><div class="loading-spinner"></div></div>
+      </div>
+
+      <!-- KALKINMA AJANSI İHALELERİ (ka.gov.tr — hibe alan özel firmaların ajans denetimli ihaleleri) -->
+      <div class="card">
+        <div class="card-title">🏛️ Kalkınma Ajansı İhaleleri</div>
+        <div class="card-sub">Kalkınma ajansı hibesi kullanan firmaların yayındaki alım ihaleleri (ka.gov.tr) —
+          teklifler ilgili ajans portalında verilir, platform dışıdır.</div>
+        <div id="ka-liste"><div class="loading-spinner"></div></div>
       </div>
     </div>
   </div>
@@ -327,9 +336,53 @@
       </div>`).join('');
   }
 
+  // Kalkınma Ajansı ihaleleri (kamu_ihaleleri, kaynak='ka') — yalnız yayında olanlar.
+  // 12 ajansın kodu → tam ad (rozet title'ında gösterilir).
+  const AJANS_AD = {
+    ahika:'Ahiler Kalkınma Ajansı', ankaraka:'Ankara Kalkınma Ajansı', baka:'Batı Akdeniz Kalkınma Ajansı',
+    bakka:'Batı Karadeniz Kalkınma Ajansı', bebka:'Bursa Eskişehir Bilecik Kalkınma Ajansı', cka:'Çukurova Kalkınma Ajansı',
+    daka:'Doğu Anadolu Kalkınma Ajansı', dogaka:'Doğu Akdeniz Kalkınma Ajansı', fka:'Fırat Kalkınma Ajansı',
+    istka:'İstanbul Kalkınma Ajansı', marka:'Doğu Marmara Kalkınma Ajansı', serka:'Serhat Kalkınma Ajansı',
+    geka:'Güney Ege Kalkınma Ajansı', gmka:'Güney Marmara Kalkınma Ajansı', ika:'İpekyolu Kalkınma Ajansı',
+    izka:'İzmir Kalkınma Ajansı', karacadag:'Karacadağ Kalkınma Ajansı', kudaka:'Kuzeydoğu Anadolu Kalkınma Ajansı',
+    kuzka:'Kuzey Anadolu Kalkınma Ajansı', mevka:'Mevlana Kalkınma Ajansı', oka:'Orta Karadeniz Kalkınma Ajansı',
+    oran:'Orta Anadolu Kalkınma Ajansı', trakyaka:'Trakya Kalkınma Ajansı', zafer:'Zafer Kalkınma Ajansı',
+    dika:'Dicle Kalkınma Ajansı', doka:'Doğu Karadeniz Kalkınma Ajansı',
+  };
+
+  async function kaYukle() {
+    const el = document.getElementById('ka-liste');
+    if (!el) return;
+    const { data, error } = await sb.from('kamu_ihaleleri')
+      .select('baslik,idare,il,alt_kaynak,tur,aciklama,son_teklif_tarihi,orijinal_url,talep_no')
+      .eq('kaynak', 'ka')
+      .gte('son_teklif_tarihi', new Date().toISOString())
+      .order('son_teklif_tarihi', { ascending: true })
+      .limit(30);
+    if (error) { el.innerHTML = '<div class="bos">Yüklenemedi: ' + esc(error.message) + '</div>'; return; }
+    if (!data || !data.length) { el.innerHTML = '<div class="bos">Şu anda yayında Kalkınma Ajansı ihalesi yok — veriler her gece güncellenir.</div>'; return; }
+    el.innerHTML = data.map(k => `
+      <div class="talep-kart" ${k.orijinal_url ? `onclick="window.open('${esc(k.orijinal_url)}','_blank','noopener')" style="cursor:pointer;"` : ''}>
+        <div class="talep-ust">
+          <div class="talep-baslik">${esc(k.baslik) || '—'}</div>
+        </div>
+        <div class="talep-badges">
+          <span class="etiket ka" title="${esc(AJANS_AD[k.alt_kaynak] || 'Kalkınma Ajansı')}">🏛️ Kalkınma Ajansı${k.alt_kaynak ? ' · ' + esc(k.alt_kaynak.toUpperCase()) : ''}</span>
+          ${k.tur ? `<span class="etiket kat">${esc(k.tur)}</span>` : ''}
+          ${k.il ? `<span class="etiket">📍 ${esc(k.il)}</span>` : ''}
+        </div>
+        <div class="talep-meta">
+          ${k.idare ? `<span>🏢 ${esc(k.idare)}</span>` : ''}
+          <span class="durum-acik">● Yayında</span>
+          ${k.son_teklif_tarihi ? `<span>⏰ Son: ${tarihFmt(k.son_teklif_tarihi)}</span>` : ''}
+        </div>
+      </div>`).join('');
+  }
+
   (async () => {
     try { const { data } = await sb.auth.getUser(); user = data.user; } catch {}
     taleplerYukle();
+    kaYukle();
     // Kurumsal değilse yayınla butonunu kilitli göster (tıklama yine upsell'e götürür; RLS asıl kapı).
     try {
       const canCheck = user && window.Plan && typeof Plan.isKurumsal === 'function';
