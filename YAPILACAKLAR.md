@@ -7,22 +7,20 @@
 > **KALICI TALİMAT (12 Tem, kullanıcı emri):** Bu blok + ilgili bölümler her oturumda otomatik
 > güncellenir, kullanıcı hatırlatmak zorunda değil. Bkz. hafıza `yapilacaklar-auto-update`.
 
-> ## ⚡ 16 TEMMUZ (devam) — SAYFA-AÇILIŞI AGGREGATE'LERİ: ÖZET MV PAKETİ + analiz_pivot GERÇEK FIX (✅ CANLI)
-> Kullanıcı "yap ne gerekiyorsa yap, açık izin sorma" dedi → tüm sayfalar tarandı, aynı hastalık toplu kapatıldı.
-> **backend/migration_ozet_mv_paketi.sql (✅ canlıda):** 6 canlı aggregate minik MV'lere alındı, RPC'ler AYNI
-> İMZAYLA MV-okur (frontend değişikliği SIFIR): sonuc_ozet 4.0s→343ms (tarayıcı); kategori_sayim 2.1s→212ms;
-> il_sayim 1.7s→~0.3s (ANASAYFA); il_firma_dagilimi / yuklenici_ozet 1.6s→DB'de 2-3ms; il_sektor_ozet
-> 238K-satır gruplama→3.1K'lık il_sektor_ozet_mv. Timeout günlerindeki felaket fallback'leri (sektorler 256K
-> satır, index 13 istek) artık tetiklenmez. Gece REFRESH zinciri run_scraper.sh'ta; **DERS: REFRESH
-> CONCURRENTLY'ler AYRI `-c`'lerde** (tek -c içinde ';' → psql örtük TEK transaction → CONCURRENTLY çalışmaz).
-> Tek-satır MV'lerde sabit id=1 (CONCURRENTLY kolon-bazlı UNIQUE ister, expression sayılmaz).
-> **backend/migration_analiz_pivot_firma_index.sql (✅ canlıda):** analiz_pivot(p_firma) 20s'te BİLE ölüyordu
-> (21.5s ölçüldü) — normalize_firma (~15 regex, plpgsql) 537K satırda satır-başı çalışıyordu. Fix: IMMUTABLE →
-> `idx_sonuc_kazanan_firma_norm` ifade indeksi + predicate s-tarafına sadeleştirme (çapraz-tablo OR index
-> kullanamaz). EXPLAIN: Index Scan ✓. REC idare-pivot + KALYON kategori-pivot birlikte 1.57sn (eski: tek biri
-> 21.5sn'de 57014 → firma-analiz kırılım kartı büyük firmada sessizce kayboluyordu). NOT: bu kayıt bir kez
-> eşzamanlı oturumun commit'inde ezildi, yeniden eklendi — paralel oturumlarda YAPILACAKLAR yazınca HEMEN
-> commit'le; kod commit'i öncesi `git status` şart (başka oturumun stage'i karışabilir, bugün soft-reset gerekti).
+> ## 🔒 16 TEMMUZ (gece) — CSV/VERİ DIŞA AKTARIMI TÜM SAYFALARDAN KALDIRILDI (✅ CANLI, commit `afb7b1b`)
+> Kullanıcı: "her sayfada csv indirme açık, başlı başına veri sorunu — teklifler hariç hiçbir indirme olmasın".
+> **Kaldırılan (11 sayfa, 286 satır):** dashboard, dogrudan-temin, firma-analiz, idareler, ihaleler,
+> kik-kararlar, kurum-analiz, sektorler, sonuclananlar, takipte, uyumluluk — ↓CSV butonu + csvIndir() +
+> csv-btn referansları (script'le, brace-sayımlı blok silme; kalan referans taraması 0).
+> **BİLİNÇLİ KORUNAN:** (1) teklif-olustur "📝 Word İndir" — kullanıcının HAZIRLADIĞI teklif (açık istisna);
+> (2) dokumanlar — kullanıcının KENDİ yüklediği dosyalar; (3) ihale-detay EKAP belge linkleri — kaynak
+> şartnameler (platform verisi değil, teklif hazırlamak için gerekli). Yorum farklıysa kolayca kaldırılır.
+> Canlı doğrulandı: idareler/sonuclananlar'da buton yok + sayfalar çalışıyor + konsol temiz; teklif-olustur
+> Word İndir duruyor. Paralel oturum aktifken: 11 dosya stash→temiz-HEAD'de düzenle→commit(tam 11 dosya)→pop.
+> **⚠️ AÇIK RİSK (UI kaldırmak yetmez, bilinçli ertelendi):** anon key sayfa kaynağında + PostgREST REST API
+> açık — programatik toplu çekim hâlâ mümkün (örn. idare_dizin_json tek istekte tüm dizini döner; tablolar
+> 1000'er satır sayfalanabilir). Tam koruma için sonraki adımlar: toplu-dönen RPC'leri authenticated/Pro'ya
+> kilitle + Cloudflare rate-limit (/rest/v1/*). Kullanıcıyla konuşulup kararlaştırılacak.
 
 > ## 🗺️ ✅ YAPILDI (16 Tem gece, commit `fbf8420`) — HARİTA FİRMALAR HUB'INDA (RFQ'SUZ), CANLI DOĞRULANDI
 > Kullanıcı kararı uygulandı: firma-analiz hub'ına "📋 Liste / 🗺️ Harita" görünüm geçişi eklendi — **RFQ
