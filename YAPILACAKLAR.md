@@ -184,15 +184,15 @@
 >   formu kapanır ("⏹ son teklif tarihi geçti"), teklifVer() guard'lı, header rozeti "Süresi doldu".
 > - NOT: login-arkası akış (profil→otomatik kilit→yayınla) anon test edilemedi ama kod+deploy doğrulandı.
 
-> ## 🤖 16 TEMMUZ (2. oturum devam) — AI KATEGORİ BACKFILL: Gemini son-katman sınıflandırıcı (KOD HAZIR, inceleme+deploy sürüyor)
+> ## 🤖 16 TEMMUZ (2. oturum devam) — AI KATEGORİ BACKFILL: Gemini son-katman sınıflandırıcı (KOD HAZIR + İNCELENDİ, deploy bekliyor)
 > Kullanıcı onayı ("tamam öyle yap") + maliyet endişesi ("düzenli maliyet ne olur?"). Tasarım maliyet-güvenli:
 > **her satır ömründe YALNIZCA BİR KEZ Gemini'ye gider**, sonucu `ilanlar.ai_kategori_denendi` damgalanır → tekrar
 > çalıştırma aynı satıra ikinci token HARCAMAZ (idempotent). AI serbest metin değil **1..41 NUMARA** döndürür →
 > KANONIK_KATEGORILER dizinine eşlenir (geçersiz/kararsız=0 → 'Diğer' kalır ama denendi işaretlenir).
 > - `migration_ai_kategori.sql` (YENİ): `ai_kategori_denendi timestamptz` + kısmi indeks (kategori='Diğer' AND denendi IS NULL).
-> - `ai_kategori_backfill.py` (YENİ): google.genai (embed_ortak deseni, eski SDK deprecated), response_mime_type=json+temp0,
->   50'li paket, retry+backoff, --limit/--batch/--rpm/--dry-run, token+maliyet raporu, dry-run kuyruk projeksiyonu.
->   Batch-by-batch işle→yaz→işaretle (crash-resumable); hard-fail'de (kota/anahtar/JSON) işaretlemeden durur.
+> - `ai_kategori_backfill.py` (YENİ): google.genai (embed_ortak deseni, eski SDK deprecated), response_mime_type=json+temp0+
+>   thinking_budget=0, 50'li paket, retry+backoff, --limit/--batch/--rpm/--dry-run, token+maliyet raporu (thoughts dahil).
+>   Batch-by-batch işle→yaz→işaretle (crash-resumable).
 > - `kategori_siniflandir.py`: `KANONIK_KATEGORILER` (41, tek-kaynak, assertion'lı) + `JENERIK_KOVALAR`.
 > - `kategori_backfill.py`: **KRİTİK GUARD** — spesifik kategoriyi 'Diğer'e ASLA geri ezmez (yoksa her backfill
 >   turu AI emeğini geri alırdı) + dmo/jandarma satırlarını atlar (map-temelli kategorileri otoriter).
@@ -200,10 +200,34 @@
 >   harita/sektör MV'leri yeni kategorileri aynı gece yansıtır).
 > - **MALİYET (kullanıcıya):** tek-seferlik ~100K kuyruk ≈ birkaç $ (BİR KEZ, paid key önerilir); günlük cron
 >   ~birkaç istek ≈ ~$0 (free kotaya sığar). OKAS UYDURULMAZ — yalnız kategori seçilir, okas kolonu boş kalır.
-> - Yerelde doğrulandı: 41 kanonik + assertion'lar geçti, google.genai temiz import (deprecation yok), parse
->   mantığı (geçersiz/sınır-dışı numara güvenle Diğer'de), --help/importlar OK. **Şu an: çok-ajanlı adversarial
->   inceleme koşuyor** (idempotency/maliyet, veri-bütünlüğü, SDK, migration/cron boyutları + her bulgu doğrulanır).
-> - **DEPLOY (VDS, inceleme bitince):** `git pull` → `docker exec ... < backend/migration_ai_kategori.sql` →
+> - **✅ 18-ajanlı adversarial inceleme TAMAMLANDI (4 boyut + her bulgu bağımsız doğrulama): 14 bulgu → 8 GERÇEK,
+>   HEPSİ DÜZELTİLDİ:**
+>   1. **[Kritik]** JSON ayrıştırma hatasında (güvenlik filtresi/kesik yanıt) token harcanmış olmasına rağmen
+>      paket işaretlenmeden `break` ediliyordu → aynı "zehirli" paket her gece yeniden seçilip yeniden
+>      faturalanıyor, kuyruğun geri kalanı hiç işlenmiyordu (kalıcı tıkanma). Fix: yanıt ALINDIYSA (parse
+>      hatası olsa bile) `({}, usage)` dön → paket 'denendi' damgalanır, kuyruk ilerler. `(None,None)` artık
+>      SADECE gerçek hard-fail (kota/anahtar, token harcanmadı) için ayrıldı.
+>   2. **[Orta]** `thinking_budget=0` eksikti → gemini-2.5-flash varsayılan düşünmeyle koşuyordu, maliyet raporu
+>      `thoughts_token_count`'u saymadığı için gerçek harcamanın altında gösteriyordu. Fix: thinking kapatıldı +
+>      `_usage_tok()` çıktı tokenine thoughts'u da ekliyor (belt-and-suspenders).
+>   3. **[Orta]** AI kuyruk seçimi kaynak filtresi uygulamıyordu → kategori_backfill'in DMO/Jandarma guard'ıyla
+>      asimetrik (AI, DMO'nun bilerek haritalanmamış karışık kovalarını [ör. "Diğer İhale İlanları"] tek
+>      kanoniğe zorlayabilirdi). Fix: `secim_cek`+`kuyruk_say` ortak `_KUYRUK_FILTRE`'ye `kaynak=not.in.(dmo,jandarma)` eklendi.
+>   4. **[Düşük×3, aynı kök]** `kuyruk_say` ile `secim_cek` farklı predicate kullanıyordu (başlıksız 'Diğer'
+>      satırlar sayılıyor ama asla seçilmiyordu) → kuyruk hiç 0'a inmiyor, dry-run projeksiyonu şişiyordu.
+>      Fix: ikisi de aynı `_KUYRUK_FILTRE` sözlüğünü paylaşıyor.
+>   5. **[Düşük]** Negatif `--batch` yakalanmamış `HTTPStatusError` ile çöküyordu. Fix: `main()` başında
+>      `--limit`/`--batch` pozitiflik kontrolü.
+>   6. **[Düşük]** `KANONIK_KATEGORILER`'in js/kategoriler.js ile tam parite garantisi yoktu (yalnız DMO/CPV
+>      alt-küme assertion'ı vardı, rename drift'i yakalanmazdı). Fix: `assert len(...)==41` eklendi (ucuz kısmi
+>      önlem; tam çözüm — 41 adı tek paylaşılan kaynaktan okutmak — gelecek iş).
+>   **Kendi doğrulamamda EK bulgu:** yerel test sırasında (`.env` ölü managed DB'ye işaret ettiği için migration
+>   henüz uygulanmamış ortamda) `kuyruk_say` bir HTTP 400'ü sessizce "kuyruk=0" diye yorumluyor, ardından
+>   `secim_cek` çirkin ham traceback ile çöküyordu. Fix: `kuyruk_say` artık `status_code>=300`'de -1 döner,
+>   `main()` bunu görünce migration'ı işaret eden temiz bir mesajla `sys.exit(1)` yapar.
+>   Tüm düzeltmeler yerelde sahte-yanıt matrisiyle + argparse exit-kod testleriyle + gerçek 400 senaryosuyla
+>   doğrulandı (VDS ağı olmadan, kod-seviyesinde). **Henüz VDS'e gitmedi — commit/push bekliyor.**
+> - **DEPLOY (VDS, push sonrası):** `git pull` → `docker exec ... < backend/migration_ai_kategori.sql` →
 >   tek-seferlik `python ai_kategori_backfill.py --dry-run` (maliyet gör) → `--limit 100000` (paid key ile boşalt).
 >   AYRICA: kelime kuralları + DMO map güncellendiği için `kategori_backfill.py`'yi de tekrar koş (idempotent, guard'lı).
 
