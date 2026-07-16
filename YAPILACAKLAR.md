@@ -19,7 +19,7 @@
 >   6 saat cache + lazy (yalnız sektör seçince, spinner'lı) → kabul edilebilir. İleride matview (idare_ozet_mv
 >   deseni gibi, gece REFRESH) ile anlık yapılabilir — istenirse.
 
-> ## 🏛️ 16 TEMMUZ (devam) — İDARELER DİZİNİ 60-70sn BEKLEME FIX (KOD HAZIR / ⏳ VDS DEPLOY BEKLİYOR)
+> ## 🏛️ 16 TEMMUZ (devam) — İDARELER DİZİNİ 60-100sn BEKLEME FIX (✅ CANLI, DOĞRULANDI)
 > Kullanıcı: "idare verileri çekiliyor diye çok bekletiyor, bunu kaldırmamız lazım".
 > **Kök neden (ölçüldü):** idareler.html, idare_sayim() RPC'sini db-max-rows=1000 yüzünden ~16 kez ardışık
 > çağırıyordu ve HER çağrıda 355K+ ilanlar üzerinde GROUP BY+MODE() BAŞTAN çalışıyordu — canlıda sayfa başı
@@ -34,14 +34,12 @@
 >   turunda değişiyor → tazelik kaybı yok).
 > - idareler.html: while-döngüsü + progress bar KALDIRILDI → tek `sb.rpc('idare_dizin_json')`; sessionStorage
 >   anahtarı `idare_dizin_v1` (30dk TTL). Beklenen: ilk yük <1sn, cache'li dönüş anında.
-> **⏳ DEPLOY ADIMLARI (SSH onayı gerek — bkz. hafıza prod-ssh-auto-mode-limits):**
-> ```
-> ssh -i ~/.ssh/ihale_oracle root@195.85.207.126
-> cd /opt/ihale-platform && git pull origin main
-> chmod +x backend/run_scraper.sh   # git pull +x'i sıfırlayabilir (14 Tem dersi!)
-> docker exec -i supabase-db psql -U postgres -d postgres < backend/migration_idareler_dizin_mv.sql
-> ```
-> Sonra doğrula: `curl .../rest/v1/rpc/idare_dizin_json` süre+boyut, sayfada spinner <1sn.
+> **✅ DEPLOY EDİLDİ (kullanıcı onayıyla SSH):** VDS git pull + chmod +x run_scraper.sh (+x dersi) +
+> migration çalıştı. **Canlı doğrulama:** MV 23.067 idare (16K değil! eski sayfa ~24 istek × 4.2s ≈ 100sn'ydi);
+> json 2MB ham → gzip 323KB; tarayıcıda RPC 1.0sn, sayfa toplam <1.5sn'de tam render (23.067 idare /
+> 356.007 ihale kartları, 50 satır tablo). Arama "belediye"→6.776, il dropdown 83 seçenek, sessionStorage
+> cache yazıyor. Migration anında 3 geçici PGRST 404 görüldü (şema cache reload gecikmesi) — kendiliğinden
+> geçti, kalıcı değil. NOT: ekran görüntüsü aracı pane-seviyesinde timeout verdi, doğrulama DOM üzerinden.
 
 > ## 🔐 16 TEMMUZ (devam) — PLAN KAPILARI: PRO CTA GİZLE + e-SATINALMA KURUMSAL KAPI (CANLI)
 > - **Topbar "Pro'ya Geç" gizleme:** sidebar-user.js ödeme yapmış (Pro/Kurumsal) kullanıcıda topbar CTA'sını
@@ -299,9 +297,13 @@
 > dışarıdan :3000 artık 000, site/REST 200 (bozulmadı), `.bak` yedeği var. Erişim artık SSH tüneliyle
 > (`ssh -L 3000:localhost:3000`). Detay: hafıza [[studio-3000-exposure]]. **AÇIK İŞLER (bu ifşa yüzünden):**
 > (1) service_role/JWT/DB parola rotasyonu (önerildi, YAPILMADI — JWT rotasyonu frontend anon anahtarını
-> da değiştirir); (2) UFW'de artık zararsız `3000/tcp ALLOW` kuralı temizlenebilir; (3) ASIL scraper
-> koruması (CF rate-limit + origin CF-allowlist) hâlâ bekliyor — stack: host nginx YOK, trafik doğrudan
-> Kong:8000/8443'e gidiyor (nginx grep boştu), CF-allowlist UFW+Docker katmanında düşünülmeli.
+> da değiştirir); (2) ✅ UFW `3000/tcp` kuralı origin sıkılaştırmada silindi; (3) ✅ **ORIGIN SIKILAŞTIRILDI**
+> — `backend/harden_origin.sh` ile Kong :8000/:8443 + Postgres :5432/:6543 (docker-published) iptables
+> DOCKER-USER'da ens192'de DROP + nginx :80/:443 UFW'de yalnız Cloudflare IP aralıkları. nginx→127.0.0.1:8000
+> loopback yolu etkilenmedi; dışarıdan doğrulandı (hepsi 000, site+REST CF üzerinden 200). Detay:
+> [[origin-hardening-cf-only]]. **KALAN AÇIK:** (a) DOCKER-USER reboot'ta uçar (netfilter-persistent yok,
+> VDS restart bekliyor) → systemd oneshot/iptables-persistent gerek; (b) service_role/JWT/DB parola rotasyonu
+> (Studio+Postgres açıktı); (c) baypas kapandı → CF panelinde rate-limit artık anlamlı.
 >
 > ## ✅ 16 TEMMUZ (2. OTURUM) — VERİ AKIŞI DENETİMİ: 3 AKIŞ DA AKTİF + KUPON/SUNUCU NOTLARI
 > **1) Veri çekme denetimi (public REST, `olusturulma` yöntemi — bkz. hafıza `scraper-cron-silent-fail`):**
