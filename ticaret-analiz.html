@@ -731,14 +731,46 @@
     sorguSonucCiz(`HS <b style="color:var(--amber);font-family:ui-monospace,monospace">${hs6}</b> · ${esc(hsAd(hs6) || '')} (${yil})`, rows);
   };
 
+  // Sorgu sonucu — sıralanabilir başlıklar (ülke/ihr/değişim/ith/değişim)
+  let sorguRows = [], sorguBaslik = '', sorguSortAlan = 'ihr', sorguSortYon = -1;
+  const yoyNum = (g, o) => (o > 0 && g != null) ? (g - o) / o * 100 : -Infinity;   // veri yoksa en sona
+
   function sorguSonucCiz(baslik, rows){
-    rows.sort((a, b) => (b.ihrG || 0) - (a.ihrG || 0));
-    const tIhr = rows.reduce((s, r) => s + (r.ihrG || 0), 0);
-    const tIth = rows.reduce((s, r) => s + (r.ithG || 0), 0);
+    sorguRows = rows; sorguBaslik = baslik;
+    sorguSortAlan = 'ihr'; sorguSortYon = -1;   // her yeni sorgu: ihracata göre azalan
+    sorguTabloCiz();
+  }
+
+  window.sorguSirala = function(alan){
+    if(sorguSortAlan === alan) sorguSortYon = -sorguSortYon;   // aynı sütun → yön çevir
+    else { sorguSortAlan = alan; sorguSortYon = (alan === 'ad') ? 1 : -1; }
+    sorguTabloCiz();
+  };
+
+  function sorguTabloCiz(){
+    const A = sorguSortAlan, Y = sorguSortYon;
+    const rows = sorguRows.slice().sort((a, b) => {
+      if(A === 'ad') return Y * a.ad.localeCompare(b.ad, 'tr');
+      let av, bv;
+      if(A === 'ihr'){ av = a.ihrG || 0; bv = b.ihrG || 0; }
+      else if(A === 'ith'){ av = a.ithG || 0; bv = b.ithG || 0; }
+      else if(A === 'ihryoy'){ av = yoyNum(a.ihrG, a.ihrO); bv = yoyNum(b.ihrG, b.ihrO); }
+      else { av = yoyNum(a.ithG, a.ithO); bv = yoyNum(b.ithG, b.ithO); }
+      return Y * (av - bv);
+    });
+    const tIhr = sorguRows.reduce((s, r) => s + (r.ihrG || 0), 0);
+    const tIth = sorguRows.reduce((s, r) => s + (r.ithG || 0), 0);
+    const ok = a => A === a ? (Y < 0 ? '▼' : '▲') : '';
     const sonuc = document.getElementById('sorgu-sonuc');
-    sonuc.innerHTML = `<div style="font-size:12.5px;color:var(--off-white);margin-bottom:8px;">${baslik} — <b style="color:var(--amber)">Türkiye toplam ihracat ${paraUsd(tIhr)}</b> · ithalat ${paraUsd(tIth)} · ${rows.length} ülke</div>
+    sonuc.innerHTML = `<div style="font-size:12.5px;color:var(--off-white);margin-bottom:8px;">${sorguBaslik} — <b style="color:var(--amber)">Türkiye toplam ihracat ${paraUsd(tIhr)}</b> · ithalat ${paraUsd(tIth)} · ${sorguRows.length} ülke</div>
       <div style="overflow-x:auto;"><table class="tic-tablo">
-      <thead><tr><th class="sol">Ülke</th><th>Türkiye → Ülke (İhr.)</th><th class="gizle-mobil">Değişim</th><th>Ülke → Türkiye (İth.)</th><th class="gizle-mobil">Değişim</th></tr></thead>
+      <thead><tr>
+        <th class="sol" onclick="sorguSirala('ad')">Ülke <span class="ok">${ok('ad')}</span></th>
+        <th onclick="sorguSirala('ihr')">Türkiye → Ülke (İhr.) <span class="ok">${ok('ihr')}</span></th>
+        <th class="gizle-mobil" onclick="sorguSirala('ihryoy')">Değişim <span class="ok">${ok('ihryoy')}</span></th>
+        <th onclick="sorguSirala('ith')">Ülke → Türkiye (İth.) <span class="ok">${ok('ith')}</span></th>
+        <th class="gizle-mobil" onclick="sorguSirala('ithyoy')">Değişim <span class="ok">${ok('ithyoy')}</span></th>
+      </tr></thead>
       <tbody>` + rows.slice(0, 300).map((r, i) => `
         <tr><td class="sol"><span class="sira">${i+1}.</span> <span class="ulke-ad">${esc(r.ad)}</span></td>
         <td class="deger">${paraUsd(r.ihrG)}</td><td class="gizle-mobil">${yuzde(r.ihrG, r.ihrO, 1)}</td>
