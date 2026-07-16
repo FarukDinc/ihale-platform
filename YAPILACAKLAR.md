@@ -7,6 +7,15 @@
 > **KALICI TALİMAT (12 Tem, kullanıcı emri):** Bu blok + ilgili bölümler her oturumda otomatik
 > güncellenir, kullanıcı hatırlatmak zorunda değil. Bkz. hafıza `yapilacaklar-auto-update`.
 
+> ## 🏛️ PLANLANAN (16 Tem, kullanıcı onayı) — İDARELER DİZİNİ + KURUM ANALİZİ BİRLEŞTİR
+> Firmalar birleşmesinin (6218d18) aynısı idareler için. **kurum-analiz.html tek hub**: `?kurum=` yoksa
+> açılış = İDARE DİZİNİ (idareler.html'in MV-destekli dizini taşınır: idare_dizin_json + sessionStorage
+> cache + arama/sıralama/pager); idareye tıkla → aynı sayfada mevcut kurum analizi (deep-link `?kurum=`
+> zaten çalışıyor, 7 sayfa link veriyor — kırılmaz). **idareler.html → param koruyan redirect stub**
+> (firmalar.html deseni). Nav: "🏛️ İdareler" + "🔍 Kurum Analizi" → tek "🏛️ İdareler". Firmalardan ucuz:
+> dizin MV'si + detay routing hazır; goster(dizin|detay) + rota + redirect + dizin taşıma kalıyor.
+> Nav tekilleştirmeyle (Firmalar tek öğe) AYNI turda yapılmalı (tek bulk-nav dokunuşu).
+
 > ## 🔒 16 TEMMUZ (gece) — CSV/VERİ DIŞA AKTARIMI TÜM SAYFALARDAN KALDIRILDI (✅ CANLI, commit `afb7b1b`)
 > Kullanıcı: "her sayfada csv indirme açık, başlı başına veri sorunu — teklifler hariç hiçbir indirme olmasın".
 > **Kaldırılan (11 sayfa, 286 satır):** dashboard, dogrudan-temin, firma-analiz, idareler, ihaleler,
