@@ -135,6 +135,18 @@
 > **KALICI TALİMAT (12 Tem, kullanıcı emri):** Bu blok + ilgili bölümler her oturumda otomatik
 > güncellenir, kullanıcı hatırlatmak zorunda değil. Bkz. hafıza `yapilacaklar-auto-update`.
 
+> ## 🗺️🐛 17 TEMMUZ — HARİTA "İLE TIKLA" ÖLÜYDÜ: svg-zoom pointer-capture BUG'ı (✅ FİX CANLI, 4ae7ace)
+> Kullanıcı: iki haritada da ile tıklayınca panel "Bir ile tıklayın"da kalıyor. KÖK NEDEN: js/svg-zoom.js
+> `pointerdown`'da `setPointerCapture` alıyordu → capture aktifken tarayıcı click'i path yerine SVG'ye
+> hedefler → path'lerdeki click dinleyicileri GERÇEK fare tıklamasında hiç ateşlenmez. svg-zoom eklendiğinden
+> beri (16 Tem gece) tüm choropleth tıklamaları ölüydü. **KRİTİK TEST DERSİ: `el.dispatchEvent(new MouseEvent
+> ('click'))` ile doğrulama SAHTE-POZİTİF** — dispatch doğrudan path'e gider, capture retarget'ini atlar;
+> harita doğrulamaları bu yüzden "çalışıyor" görünmüştü. Gerçek-tıklama testi için tam pointer dizisi +
+> `svg.hasPointerCapture(id)` kontrolü kullan. FİX: capture yalnız GERÇEK pan (1px+ hareket) / pinch
+> başlayınca alınır; temiz tık path'e gider, sürükleme-sonrası tık yutma (surukledi) korunur.
+> svg-zoom.js?v=2 (4 sayfa: harita, firma-analiz, ticaret-analiz, uluslararasi). Canlı doğrulandı:
+> pointerdown→capture YOK + Ankara panel 8.428 firma.
+
 > ## 🔧 17 TEMMUZ — VDS ARTIK İŞLERİ KAPANDI (kullanıcı SSH'la koştu, 3/3 ✅)
 > Geçmiş oturum artıkları önce repoya alındı (49cca01: ticaret_backfill.py + 2 ticaret migration +
 > harden_origin/persist.sh; VDS'teki elle kopyalanmış ESKİ ticaret_backfill.py /tmp'ye yedeklendi).
