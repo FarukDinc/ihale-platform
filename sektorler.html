@@ -276,6 +276,7 @@
   const SUPABASE_URL = "https://ihaleglobal.com";
   const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzgzMzUwMDE1LCJleHAiOjE5NDEwMzAwMTV9.sRB61a8oNXwzSKL9No8gt7cmkmnkoQstT0ZtHIxl1Hs";
   const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  const esc = s => (s == null ? '' : String(s)).replace(/[<>&"']/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&#39;'}[c]));
 
   // Sektör ikonları
   const SEKTOR_IKON = {
@@ -449,7 +450,7 @@
           <div class="sk-ust">
             <div class="sk-icon">${ikon}</div>
             <div>
-              <div class="sk-ad">${s.ad}</div>
+              <div class="sk-ad">${esc(s.ad)}</div>
               <div class="sk-sub">%${s.oran} aktiflik oranı</div>
             </div>
           </div>
@@ -480,10 +481,11 @@
 
   function csvIndir() {
     if (!filtrelenmis.length) { alert('Gösterilecek sektör yok.'); return; }
+    const csvG = v => { v = (v == null ? '' : String(v)); if (/^[=+\-@\t\r]/.test(v)) v = "'" + v; return `"${v.replace(/"/g,'""')}"`; };
     const satirlar = [
       ['Sektör', 'Toplam İhale', 'Aktif İhale', 'Kapandı', 'Aktiflik Oranı %'],
       ...filtrelenmis.map(s => [
-        `"${s.ad.replace(/"/g, '""')}"`, s.toplam, s.aktif, s.toplam - s.aktif, s.oran,
+        csvG(s.ad), s.toplam, s.aktif, s.toplam - s.aktif, s.oran,
       ]),
     ];
     const icerik = '﻿' + satirlar.map(r => r.join(',')).join('\r\n');

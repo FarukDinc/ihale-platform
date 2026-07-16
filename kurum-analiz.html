@@ -412,6 +412,7 @@
   const SB_URL = "https://ihaleglobal.com";
   const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzgzMzUwMDE1LCJleHAiOjE5NDEwMzAwMTV9.sRB61a8oNXwzSKL9No8gt7cmkmnkoQstT0ZtHIxl1Hs";
   const sb = window.supabase.createClient(SB_URL, SB_KEY);
+  const esc = s => (s == null ? '' : String(s)).replace(/[<>&"']/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&#39;'}[c]));
 
   const params = new URLSearchParams(window.location.search);
   const KURUM = params.get('kurum') || '';
@@ -508,12 +509,12 @@
         : null;
       return `<div class="ihale-kart">
         <div class="ik-ust">
-          <a class="ik-baslik" href="ihale-detay?id=${i.id}">${i.baslik || '—'}</a>
+          <a class="ik-baslik" href="ihale-detay?id=${i.id}">${esc(i.baslik) || '—'}</a>
           <span class="ik-durum ${d.cls}">${d.etiket}</span>
         </div>
         <div class="ik-badges">
-          ${i.tur ? `<span class="etiket et-tur">${i.tur}</span>` : ''}
-          ${i.il ? `<span class="etiket et-il">📍 ${i.il}</span>` : ''}
+          ${i.tur ? `<span class="etiket et-tur">${esc(i.tur)}</span>` : ''}
+          ${i.il ? `<span class="etiket et-il">📍 ${esc(i.il)}</span>` : ''}
         </div>
         <div class="ik-meta">
           ${i.ilan_tarihi ? `<span>📅 Yayın: ${tarihFormat(i.ilan_tarihi)}</span>` : ''}
@@ -619,7 +620,7 @@
     const max = sirali[0]?.[1] || 1;
     document.getElementById('tur-list').innerHTML = sirali.map(([ad, cnt]) =>
       `<div class="tur-item">
-        <div class="tur-header"><span class="tur-ad">${ad}</span><span class="tur-sayi">${cnt}</span></div>
+        <div class="tur-header"><span class="tur-ad">${esc(ad)}</span><span class="tur-sayi">${cnt}</span></div>
         <div class="tur-bar"><div class="tur-fill" style="width:${(cnt/max*100).toFixed(0)}%"></div></div>
       </div>`
     ).join('');
@@ -630,7 +631,7 @@
     ihaleler.forEach(i => { if (i.il) ilSay[i.il] = (ilSay[i.il] || 0) + 1; });
     const sirali = Object.entries(ilSay).sort((a, b) => b[1] - a[1]);
     document.getElementById('il-list').innerHTML = sirali.map(([ad, cnt]) =>
-      `<div class="il-item"><span class="il-ad">${ad}</span><span class="il-cnt">${cnt}</span></div>`
+      `<div class="il-item"><span class="il-ad">${esc(ad)}</span><span class="il-cnt">${cnt}</span></div>`
     ).join('') || '<div style="color:var(--muted);font-size:13px;">İl bilgisi yok.</div>';
   }
 
@@ -655,7 +656,7 @@
     const max = sirali[0]?.[1] || 1;
     document.getElementById('kategori-list').innerHTML = sirali.map(([ad, cnt]) =>
       `<div class="tur-item">
-        <div class="tur-header"><span class="tur-ad">${ad}</span><span class="tur-sayi">${cnt}</span></div>
+        <div class="tur-header"><span class="tur-ad">${esc(ad)}</span><span class="tur-sayi">${cnt}</span></div>
         <div class="tur-bar"><div class="tur-fill" style="width:${(cnt/max*100).toFixed(0)}%"></div></div>
       </div>`
     ).join('') || '<div style="color:var(--muted);font-size:13px;padding:8px 0;">Kategori verisi yok.</div>';
@@ -668,7 +669,7 @@
     const max = sirali[0]?.[1] || 1;
     document.getElementById('usul-list').innerHTML = sirali.map(([ad, cnt]) =>
       `<div class="tur-item">
-        <div class="tur-header"><span class="tur-ad">${ad}</span><span class="tur-sayi">${cnt}</span></div>
+        <div class="tur-header"><span class="tur-ad">${esc(ad)}</span><span class="tur-sayi">${cnt}</span></div>
         <div class="tur-bar"><div class="tur-fill" style="width:${(cnt/max*100).toFixed(0)}%"></div></div>
       </div>`
     ).join('') || '<div style="color:var(--muted);font-size:13px;padding:8px 0;">Usul verisi yok.</div>';

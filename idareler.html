@@ -337,6 +337,7 @@
   const SUPABASE_URL = "https://ihaleglobal.com";
   const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzgzMzUwMDE1LCJleHAiOjE5NDEwMzAwMTV9.sRB61a8oNXwzSKL9No8gt7cmkmnkoQstT0ZtHIxl1Hs";
   const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  const esc = s => (s == null ? '' : String(s)).replace(/[<>&"']/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&#39;'}[c]));
 
   const SAYFA_BOYUTU = 50;
   let tumIdare = [];   // { ad, il, toplam, aktif }
@@ -462,9 +463,9 @@
     govde.innerHTML = dilim.map(i => `
       <div class="idare-row">
         <div class="idare-ad">
-          <a href="kurum-analiz?kurum=${encodeURIComponent(i.ad)}" title="${i.ad}">${i.ad}</a>
+          <a href="kurum-analiz?kurum=${encodeURIComponent(i.ad)}" title="${esc(i.ad)}">${esc(i.ad)}</a>
         </div>
-        <div class="idare-il">${i.il}</div>
+        <div class="idare-il">${esc(i.il)}</div>
         <div class="idare-toplam">${i.toplam.toLocaleString('tr-TR')}</div>
         <div class="idare-aktif">${i.aktif > 0 ? i.aktif.toLocaleString('tr-TR') : '<span style="color:var(--muted)">0</span>'}</div>
         <div class="idare-actions">

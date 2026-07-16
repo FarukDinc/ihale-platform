@@ -268,6 +268,7 @@
   const SB_URL = "https://ihaleglobal.com";
   const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzgzMzUwMDE1LCJleHAiOjE5NDEwMzAwMTV9.sRB61a8oNXwzSKL9No8gt7cmkmnkoQstT0ZtHIxl1Hs";
   const sb = window.supabase.createClient(SB_URL, SB_KEY);
+  const esc = s => (s == null ? '' : String(s)).replace(/[<>&"']/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&#39;'}[c]));
 
   // Server-side: 353K+ sonuç client'a indirilemez → sayfalı sorgu + embed ilanlar join + istatistik RPC.
   let sonSatirlar = [];
@@ -346,21 +347,21 @@
         : (ilan.idare || '');
       return `<div class="sonuc-kart">
         <div class="sk-ust">
-          <a class="sk-firma" href="firma-analiz?firma=${encodeURIComponent(s.kazanan_firma || '')}">${s.kazanan_firma || '—'}</a>
+          <a class="sk-firma" href="firma-analiz?firma=${encodeURIComponent(s.kazanan_firma || '')}">${esc(s.kazanan_firma) || '—'}</a>
           ${tenzBadge}
         </div>
         ${ilan.baslik
-          ? `<a class="sk-baslik" href="ihale-detay?id=${s.ilan_id}">${ilan.baslik}</a>`
+          ? `<a class="sk-baslik" href="ihale-detay?id=${s.ilan_id}">${esc(ilan.baslik)}</a>`
           : `<span class="sk-baslik" style="color:var(--muted);cursor:default;">İhale başlığı yükleniyor…</span>`}
         <div class="sk-badges">
-          ${ilan.il ? `<span class="etiket">📍 ${ilan.il}</span>` : ''}
-          ${ilan.tur ? `<span class="etiket">${ilan.tur}</span>` : ''}
+          ${ilan.il ? `<span class="etiket">📍 ${esc(ilan.il)}</span>` : ''}
+          ${ilan.tur ? `<span class="etiket">${esc(ilan.tur)}</span>` : ''}
           ${s.toplam_teklif_sayisi ? `<span class="etiket">👥 ${s.toplam_teklif_sayisi} teklif</span>` : ''}
         </div>
         <div class="sk-meta">
           ${s.kazanan_teklif ? `<span class="sk-bedel">₺ ${formatBedel(s.kazanan_teklif)}</span>` : ''}
           ${s.sonuc_tarihi ? `<span>📅 ${tarihFormat(s.sonuc_tarihi)}</span>` : ''}
-          ${idareKisa ? `<span>${idareKisa}</span>` : ''}
+          ${idareKisa ? `<span>${esc(idareKisa)}</span>` : ''}
         </div>
       </div>`;
     }).join('');

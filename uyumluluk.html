@@ -234,6 +234,7 @@
   const SB_URL = "https://ihaleglobal.com";
   const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzgzMzUwMDE1LCJleHAiOjE5NDEwMzAwMTV9.sRB61a8oNXwzSKL9No8gt7cmkmnkoQstT0ZtHIxl1Hs";
   const sb = window.supabase.createClient(SB_URL, SB_KEY);
+  const esc = s => (s == null ? '' : String(s)).replace(/[<>&"']/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&#39;'}[c]));
 
   const SAYFA = 25;
   let profil = null;
@@ -269,11 +270,11 @@
     const puan = Uyum.hesapla(ilan, profil);
     const sinif = uyumSinif(puan);
     const takipte = Takip.var(ilan.id);
-    const katChip = ilan.kategori ? ` · <span style="color:var(--muted)">${ilan.kategori}</span>` : '';
+    const katChip = ilan.kategori ? ` · <span style="color:var(--muted)">${esc(ilan.kategori)}</span>` : '';
     return `<tr id="uyum-satir-${ilan.id}">
       <td>
-        <a class="ihale-title" href="ihale-detay?id=${ilan.id}">${ilan.baslik||'—'}</a>
-        <div class="ihale-meta">${ilan.idare||'—'}${ilan.il ? ' — 📍'+ilan.il : ''}${katChip}</div>
+        <a class="ihale-title" href="ihale-detay?id=${ilan.id}">${esc(ilan.baslik)||'—'}</a>
+        <div class="ihale-meta">${esc(ilan.idare)||'—'}${ilan.il ? ' — 📍'+esc(ilan.il) : ''}${katChip}</div>
       </td>
       <td>${durumBadge(ilan.durum, ilan.son_teklif_tarihi)}</td>
       <td class="budget-cell">${butceFmt(ilan.yaklasik_maliyet_min, ilan.yaklasik_maliyet_max)}</td>
