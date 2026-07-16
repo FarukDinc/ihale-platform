@@ -116,16 +116,19 @@
 > **MOBİL (canlı, doğrulandı):** 18 app sayfasına js/main.js (hamburger — mobilde nav kayboluyordu) + ihaleler.html
 >   eksik responsive @media. Mobilde hamburger→menü açılıyor, test edildi.
 >
-> **⏸ ERTELENEN (kullanıcı incelemesi/büyük iş — YAPILMADI, gerekçesiyle):**
+> **✅ DEVAM TURU EK DÜZELTMELER (canlı+doğrulandı):**
+>  - **firmalar.html #26 client-load-all → server-side** (yuklenici_ozet RPC + arama_fold trgm + sort index + sayfalı). Test edildi.
+>  - **#18 RLS anon acik_adres/VKN ifşası** → column-level grant + ozel-ihale-detay anon dalı güvenli-kolon. Test: anon select=*→401, VKN/adres→42501, detayda gizli, public liste çalışıyor.
+>  - **kurum-analiz #7 KISMEN**: ilanlar.idare trgm GIN index (full seq scan gitti; client yükleme idare-boyutu kadar kaldı).
+>  - **#37 profil erişilebilirlik**: sektör/il/tür chip'leri klavye-erişilebilir (role=button/tabindex/keydown/aria/focus).
+>  - **Coğrafi eşleştirme**: il_merkez + ihaleye_uygun_firmalar_geo RPC + öneri akışlarına bağlandı (mesafe_km gösterimi). Test edildi.
+>
+> **⏸ HÂLÂ ERTELENEN (kullanıcı incelemesi/büyük iş — gerekçesiyle):**
 >  - **payment.py atomiklik/idempotency (#12/#19/#27/#28):** iyzico webhook mükerrer kredi + kredi_yukle/kupon
->    lost-update/TOCTOU. Para-işleme kodu; gece gözetimsiz değiştirmek RİSKLİ (bozulursa ödeme kırılır). Reçete:
->    kredi_hareketleri.siparis_id UNIQUE + ON CONFLICT DO NOTHING; kupon `UPDATE...WHERE kullanim<max RETURNING`;
->    kredi_yukle atomik `toplam_kredi=toplam_kredi+X`. KULLANICI ONAYIYLA uygulanmalı.
->  - **client-load-all: firmalar (35K satır #26) / kurum-analiz (%ilike full-scan #7) / rekabet-analizi (Pro-gate #4):**
->    sonuclananlar gibi server-side rewrite + aggregate RPC gerekir (büyük iş). Reçete: idare/firma bazlı GROUP BY RPC + sayfalı sorgu.
->  - **#18 RLS: satinalma_talepleri anon SELECT acik_adres/VKN ifşa ediyor.** Fix: hassas kolonları anon'dan
->    column-level REVOKE + ozel-ihale-detay anon yolunu açık-kolon select'e çevir (select('*') kırılmasın). Koordineli frontend+RLS, test gerek.
->  - **#14 ihaleler uyum sıralaması 200-satır cap** (server-side uyum gerekir); **#37 profil erişilebilirlik** (div→button, involved).
+>    lost-update/TOCTOU. Para-işleme kodu; gece gözetimsiz değiştirmek RİSKLİ. Reçete: kredi_hareketleri.siparis_id
+>    UNIQUE+ON CONFLICT DO NOTHING; kupon `UPDATE...WHERE kullanim<max RETURNING`; kredi_yukle atomik increment. **KULLANICI ONAYIYLA.**
+>  - **rekabet-analizi #4** (Pro-gate arkasında, çok-boyutlu aggregate RPC gerekir) + **kurum-analiz tam breakdown RPC** (index yardım etti, tam server-side hâlâ ideal).
+>  - **#14 ihaleler uyum sıralaması 200-satır cap** (server-side uyum/embedding gerekir).
 
 > ## 🔎 16 TEMMUZ — #3 KURUMSAL DOĞRULAMA: FİZİBİLİTE (araştırıldı, KARAR KULLANICIDA)
 > Soru: beyan VKN'yi yetkili kaynağa bağlayıp gerçek "Doğrulanmış Firma" yapabilir miyiz?
