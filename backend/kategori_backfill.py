@@ -20,7 +20,7 @@ import httpx
 from dotenv import load_dotenv
 
 sys.path.insert(0, os.path.dirname(__file__))
-from kategori_siniflandir import kategori_belirle
+from kategori_siniflandir import kategori_belirle, JENERIK_KOVALAR
 
 load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), ".env"))
 
@@ -35,11 +35,11 @@ def _headers():
 
 
 def satirlari_oku(client, sadece_aktif):
-    """Tüm ilanlar satırlarını (id, okas, tur, baslik, kategori) sayfalı çeker."""
+    """Tüm ilanlar satırlarını (id, okas, tur, baslik, kategori, kaynak) sayfalı çeker."""
     satirlar = []
     offset = 0
     while True:
-        params = {"select": "id,okas,tur,baslik,kategori", "order": "id", "limit": SAYFA, "offset": offset}
+        params = {"select": "id,okas,tur,baslik,kategori,kaynak", "order": "id", "limit": SAYFA, "offset": offset}
         if sadece_aktif:
             params["durum"] = "eq.aktif"
         r = client.get(f"{SUPABASE_URL}/rest/v1/ilanlar", params=params, headers=_headers())
@@ -71,16 +71,31 @@ def main():
         satirlar = satirlari_oku(client, args.sadece_aktif)
         print(f"  {len(satirlar)} satır okundu.\n")
 
-        # Yeni kategoriyi hesapla; sadece DEĞİŞENLERİ grupla
+        # Yeni kategoriyi hesapla; sadece DEĞİŞENLERİ grupla.
+        # İKİ GÜVENLİK KURALI (16 Tem):
+        #  1) Spesifik bir kategoriyi ASLA 'Diğer'e geri EZME — AI (ai_kategori_backfill) ya da daha önceki
+        #     kelime turu bir satırı gerçek kategoriye oturtmuşsa, başlıktan 'Diğer' hesaplansa bile korunur.
+        #     (Aksi halde her backfill turu AI'ın emeğini geri alırdı.) Sadece jenerik/boş kovadan yükseltiriz.
+        #  2) DMO/Jandarma satırlarına dokunma — kategorileri scrape anında DMO_KATEGORI_MAP ile otoriter atanır;
+        #     başlık-kelimesi tahmininin onları ezmesini istemeyiz.
         kategori_ids = defaultdict(list)
-        degisen = 0
+        degisen = atlanan_koruma = 0
         for s in satirlar:
+            if s.get("kaynak") in ("dmo", "jandarma"):
+                continue
             yeni = kategori_belirle(s.get("okas"), s.get("tur"), s.get("baslik"))
-            if yeni != s.get("kategori"):
-                kategori_ids[yeni].append(s["id"])
-                degisen += 1
+            mevcut = s.get("kategori")
+            if yeni == mevcut:
+                continue
+            if yeni == "Diğer" and mevcut not in JENERIK_KOVALAR:
+                atlanan_koruma += 1  # spesifik kategoriyi 'Diğer'e düşürmeyi reddet
+                continue
+            kategori_ids[yeni].append(s["id"])
+            degisen += 1
 
         print(f"→ {degisen} satırın kategorisi değişecek ({len(kategori_ids)} farklı hedef kategori).")
+        if atlanan_koruma:
+            print(f"→ {atlanan_koruma} satır KORUNDU (spesifik kategori 'Diğer'e ezilmiyordu — AI/kelime emeği).")
         print("→ Yeni dağılım (değişenler):")
         for kat, ids in sorted(kategori_ids.items(), key=lambda x: -len(x[1])):
             print(f"   {len(ids):6d}  {kat}")

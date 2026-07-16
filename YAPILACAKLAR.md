@@ -7,6 +7,20 @@
 > **KALICI TALİMAT (12 Tem, kullanıcı emri):** Bu blok + ilgili bölümler her oturumda otomatik
 > güncellenir, kullanıcı hatırlatmak zorunda değil. Bkz. hafıza `yapilacaklar-auto-update`.
 
+> ## 🏛️ ✅ YAPILDI (16 Tem) — İDARELER + KURUM ANALİZİ BİRLEŞTİ + NAV TEKİLLEŞTİ (Firmalar dahil)
+> Firmalar deseninin aynısı: **kurum-analiz.html tek hub** — `?kurum=` yoksa açılış = İDARE DİZİNİ
+> (idareler.html'den taşındı, `iz-*` prefix: idare_dizin_json + 30dk sessionStorage + arama(trFold)/il/
+> aktif/sıralama/pager + anon 🔒 giriş kapısı [bulk_rpc_kilit]); idareye tıkla → **pushState ile AYNI
+> SAYFADA analiz** (kurumAc/dizineDon/popstate; grafikler destroy-korumalı — 2. açılışta "Canvas in use"
+> yok; satır tıklama data-ad+delegasyon, inline onclick YOK [tırnak dersi]). Geri → dizin DOM'u aynen
+> (arama/filtre/sayfa korunur). **idareler.html → param koruyan redirect stub.**
+> **NAV TEKİLLEŞTİ (23 sayfa):** "İdareler Dizini"+"Kurum Analizi" → tek **"🏛️ İdareler"**(kurum-analiz);
+> "Firmalar Dizini"+"Firma Analizi" → tek **"🏢 Firmalar"**(firma-analiz). Tekil linkler de güncellendi
+> (sektorler "İdareler →", index harita-sekme, firma-analiz geri-btn). kamu-ihaleleri.html BİLİNÇLİ atlandı
+> (eşzamanlı oturum onu stub'a çeviriyor — pop çakışması önlendi; eski linkleri redirect'le çalışır).
+> Süreç: git worktree (claude/idareler-merge) + ana ağaçta stash→merge→push→pop. Lokal test (http.server):
+> dizin+kapı ✓, ?kurum=KARAYOLLARI→4.493 ihale ✓, dizineDon→kurumAc(ANKARA BŞB)→441 ✓, konsol 0 hata.
+
 > ## 🔒 16 TEMMUZ (gece) — CSV/VERİ DIŞA AKTARIMI TÜM SAYFALARDAN KALDIRILDI (✅ CANLI, commit `afb7b1b`)
 > Kullanıcı: "her sayfada csv indirme açık, başlı başına veri sorunu — teklifler hariç hiçbir indirme olmasın".
 > **Kaldırılan (11 sayfa, 286 satır):** dashboard, dogrudan-temin, firma-analiz, idareler, ihaleler,
@@ -17,10 +31,29 @@
 > şartnameler (platform verisi değil, teklif hazırlamak için gerekli). Yorum farklıysa kolayca kaldırılır.
 > Canlı doğrulandı: idareler/sonuclananlar'da buton yok + sayfalar çalışıyor + konsol temiz; teklif-olustur
 > Word İndir duruyor. Paralel oturum aktifken: 11 dosya stash→temiz-HEAD'de düzenle→commit(tam 11 dosya)→pop.
-> **⚠️ AÇIK RİSK (UI kaldırmak yetmez, bilinçli ertelendi):** anon key sayfa kaynağında + PostgREST REST API
-> açık — programatik toplu çekim hâlâ mümkün (örn. idare_dizin_json tek istekte tüm dizini döner; tablolar
-> 1000'er satır sayfalanabilir). Tam koruma için sonraki adımlar: toplu-dönen RPC'leri authenticated/Pro'ya
-> kilitle + Cloudflare rate-limit (/rest/v1/*). Kullanıcıyla konuşulup kararlaştırılacak.
+> **✅ PAKET 2/2 DE YAPILDI (aynı gece, kullanıcı onayı "bunu da yap" — commit `f78d3e7`+`2b96f5e`):**
+> - **RPC kilidi (migration_bulk_rpc_kilit.sql, canlıda):** idare_dizin_json + idare_sayim (23K tam dizin
+>   dökümleri) anon+PUBLIC'ten REVOKE → yalnız authenticated/service_role. DİKKAT: fonksiyonlar varsayılan
+>   PUBLIC EXECUTE ile doğar — yalnız "FROM anon" REVOKE YETMEZ, PUBLIC'ten de REVOKE şart. psql rol testi:
+>   anon→42501 red, authenticated→23067 idare ✓. Küçük aggregate/vitrin RPC'leri bilinçli açık (dosyada liste).
+> - **Frontend kapıları:** idareler.html misafire 🔒 "üyelere özel" kartı (login / login?panel=kayit; RPC hiç
+>   çağrılmaz — kapı oturum kontrolüyle önden çizilir); dashboard Top Kurumlar misafirde "🔒 giriş yapın".
+>   DERS: supabase-js hata FIRLATMAZ ({data,error}) — error kontrolsüzse kilitli RPC sessizce boş widget çizer
+>   (ilk deneme öyle oldu, `if (error) throw` hotfix'iyle düzeldi).
+> - **Hız limiti (nginx origin, CF yerine — CF panosuna erişimim yok, origin'de aynı etki):** `/rest/v1/*`
+>   2r/s + burst 60, anahtar CF-Connecting-IP (origin CF-only olduğundan güvenilir), 429. Dosyalar:
+>   backend/nginx_rest_ratelimit.conf → /etc/nginx/conf.d/ihale-ratelimit.conf; backend/nginx_rest_location.conf
+>   → /etc/nginx/snippets/ihale-rest-ratelimit.conf (ihale-locations.conf include eder; `^~` prefix regex'i
+>   ezer, auth/storage/realtime limitsiz). Scraper'lar localhost:8000 → ETKİLENMEZ (doğrulandı). Test: 150
+>   paralel istek → 73×200 + 77×429 ✓; normal gezinme (harita 81 il, dashboard) 429 görmedi ✓. NOT: ardışık
+>   curl döngüsü limiti TETİKLEMEZ (istek arası RTT > dolum hızı) — test paralel olmalı (xargs -P).
+> **⚠️ KALAN RİSK (en büyüğü, karar gerek):** ham tabloların anon SELECT'i açık (ilanlar 356K, ihale_sonuclari
+> 537K, yukleniciler 71K, DT 1.14M...) — 1000'er satır sayfalamayla kopyalanabilir; hız limiti bunu yavaşlatır/
+> loglar ama durdurmaz (2r/s ile 2.1M satır ≈ 17dk). Kesin çözüm = tablo okumalarını da login'e almak → TÜM
+> misafir sayfaları giriş duvarına döner (ürün kararı!). İstenirse reçete: anon'dan tablo SELECT REVOKE +
+> sayfalara idareler-tarzı kapı. **NOT (diğer oturuma):** idareler+kurum-analiz birleştirme planındaki dizin
+> görünümü artık login gerektirir (idare_dizin_json kilitli) — hub'a idareler.html'deki girisKapisiGoster
+> deseni taşınmalı.
 
 > ## 🗺️ ✅ YAPILDI (16 Tem gece, commit `fbf8420`) — HARİTA FİRMALAR HUB'INDA (RFQ'SUZ), CANLI DOĞRULANDI
 > Kullanıcı kararı uygulandı: firma-analiz hub'ına "📋 Liste / 🗺️ Harita" görünüm geçişi eklendi — **RFQ
@@ -156,15 +189,15 @@
 >   formu kapanır ("⏹ son teklif tarihi geçti"), teklifVer() guard'lı, header rozeti "Süresi doldu".
 > - NOT: login-arkası akış (profil→otomatik kilit→yayınla) anon test edilemedi ama kod+deploy doğrulandı.
 
-> ## 🤖 16 TEMMUZ (2. oturum devam) — AI KATEGORİ BACKFILL: Gemini son-katman sınıflandırıcı (KOD HAZIR, inceleme+deploy sürüyor)
+> ## 🤖 16 TEMMUZ (2. oturum devam) — AI KATEGORİ BACKFILL: Gemini son-katman sınıflandırıcı (KOD HAZIR + İNCELENDİ, deploy bekliyor)
 > Kullanıcı onayı ("tamam öyle yap") + maliyet endişesi ("düzenli maliyet ne olur?"). Tasarım maliyet-güvenli:
 > **her satır ömründe YALNIZCA BİR KEZ Gemini'ye gider**, sonucu `ilanlar.ai_kategori_denendi` damgalanır → tekrar
 > çalıştırma aynı satıra ikinci token HARCAMAZ (idempotent). AI serbest metin değil **1..41 NUMARA** döndürür →
 > KANONIK_KATEGORILER dizinine eşlenir (geçersiz/kararsız=0 → 'Diğer' kalır ama denendi işaretlenir).
 > - `migration_ai_kategori.sql` (YENİ): `ai_kategori_denendi timestamptz` + kısmi indeks (kategori='Diğer' AND denendi IS NULL).
-> - `ai_kategori_backfill.py` (YENİ): google.genai (embed_ortak deseni, eski SDK deprecated), response_mime_type=json+temp0,
->   50'li paket, retry+backoff, --limit/--batch/--rpm/--dry-run, token+maliyet raporu, dry-run kuyruk projeksiyonu.
->   Batch-by-batch işle→yaz→işaretle (crash-resumable); hard-fail'de (kota/anahtar/JSON) işaretlemeden durur.
+> - `ai_kategori_backfill.py` (YENİ): google.genai (embed_ortak deseni, eski SDK deprecated), response_mime_type=json+temp0+
+>   thinking_budget=0, 50'li paket, retry+backoff, --limit/--batch/--rpm/--dry-run, token+maliyet raporu (thoughts dahil).
+>   Batch-by-batch işle→yaz→işaretle (crash-resumable).
 > - `kategori_siniflandir.py`: `KANONIK_KATEGORILER` (41, tek-kaynak, assertion'lı) + `JENERIK_KOVALAR`.
 > - `kategori_backfill.py`: **KRİTİK GUARD** — spesifik kategoriyi 'Diğer'e ASLA geri ezmez (yoksa her backfill
 >   turu AI emeğini geri alırdı) + dmo/jandarma satırlarını atlar (map-temelli kategorileri otoriter).
@@ -172,10 +205,34 @@
 >   harita/sektör MV'leri yeni kategorileri aynı gece yansıtır).
 > - **MALİYET (kullanıcıya):** tek-seferlik ~100K kuyruk ≈ birkaç $ (BİR KEZ, paid key önerilir); günlük cron
 >   ~birkaç istek ≈ ~$0 (free kotaya sığar). OKAS UYDURULMAZ — yalnız kategori seçilir, okas kolonu boş kalır.
-> - Yerelde doğrulandı: 41 kanonik + assertion'lar geçti, google.genai temiz import (deprecation yok), parse
->   mantığı (geçersiz/sınır-dışı numara güvenle Diğer'de), --help/importlar OK. **Şu an: çok-ajanlı adversarial
->   inceleme koşuyor** (idempotency/maliyet, veri-bütünlüğü, SDK, migration/cron boyutları + her bulgu doğrulanır).
-> - **DEPLOY (VDS, inceleme bitince):** `git pull` → `docker exec ... < backend/migration_ai_kategori.sql` →
+> - **✅ 18-ajanlı adversarial inceleme TAMAMLANDI (4 boyut + her bulgu bağımsız doğrulama): 14 bulgu → 8 GERÇEK,
+>   HEPSİ DÜZELTİLDİ:**
+>   1. **[Kritik]** JSON ayrıştırma hatasında (güvenlik filtresi/kesik yanıt) token harcanmış olmasına rağmen
+>      paket işaretlenmeden `break` ediliyordu → aynı "zehirli" paket her gece yeniden seçilip yeniden
+>      faturalanıyor, kuyruğun geri kalanı hiç işlenmiyordu (kalıcı tıkanma). Fix: yanıt ALINDIYSA (parse
+>      hatası olsa bile) `({}, usage)` dön → paket 'denendi' damgalanır, kuyruk ilerler. `(None,None)` artık
+>      SADECE gerçek hard-fail (kota/anahtar, token harcanmadı) için ayrıldı.
+>   2. **[Orta]** `thinking_budget=0` eksikti → gemini-2.5-flash varsayılan düşünmeyle koşuyordu, maliyet raporu
+>      `thoughts_token_count`'u saymadığı için gerçek harcamanın altında gösteriyordu. Fix: thinking kapatıldı +
+>      `_usage_tok()` çıktı tokenine thoughts'u da ekliyor (belt-and-suspenders).
+>   3. **[Orta]** AI kuyruk seçimi kaynak filtresi uygulamıyordu → kategori_backfill'in DMO/Jandarma guard'ıyla
+>      asimetrik (AI, DMO'nun bilerek haritalanmamış karışık kovalarını [ör. "Diğer İhale İlanları"] tek
+>      kanoniğe zorlayabilirdi). Fix: `secim_cek`+`kuyruk_say` ortak `_KUYRUK_FILTRE`'ye `kaynak=not.in.(dmo,jandarma)` eklendi.
+>   4. **[Düşük×3, aynı kök]** `kuyruk_say` ile `secim_cek` farklı predicate kullanıyordu (başlıksız 'Diğer'
+>      satırlar sayılıyor ama asla seçilmiyordu) → kuyruk hiç 0'a inmiyor, dry-run projeksiyonu şişiyordu.
+>      Fix: ikisi de aynı `_KUYRUK_FILTRE` sözlüğünü paylaşıyor.
+>   5. **[Düşük]** Negatif `--batch` yakalanmamış `HTTPStatusError` ile çöküyordu. Fix: `main()` başında
+>      `--limit`/`--batch` pozitiflik kontrolü.
+>   6. **[Düşük]** `KANONIK_KATEGORILER`'in js/kategoriler.js ile tam parite garantisi yoktu (yalnız DMO/CPV
+>      alt-küme assertion'ı vardı, rename drift'i yakalanmazdı). Fix: `assert len(...)==41` eklendi (ucuz kısmi
+>      önlem; tam çözüm — 41 adı tek paylaşılan kaynaktan okutmak — gelecek iş).
+>   **Kendi doğrulamamda EK bulgu:** yerel test sırasında (`.env` ölü managed DB'ye işaret ettiği için migration
+>   henüz uygulanmamış ortamda) `kuyruk_say` bir HTTP 400'ü sessizce "kuyruk=0" diye yorumluyor, ardından
+>   `secim_cek` çirkin ham traceback ile çöküyordu. Fix: `kuyruk_say` artık `status_code>=300`'de -1 döner,
+>   `main()` bunu görünce migration'ı işaret eden temiz bir mesajla `sys.exit(1)` yapar.
+>   Tüm düzeltmeler yerelde sahte-yanıt matrisiyle + argparse exit-kod testleriyle + gerçek 400 senaryosuyla
+>   doğrulandı (VDS ağı olmadan, kod-seviyesinde). **Henüz VDS'e gitmedi — commit/push bekliyor.**
+> - **DEPLOY (VDS, push sonrası):** `git pull` → `docker exec ... < backend/migration_ai_kategori.sql` →
 >   tek-seferlik `python ai_kategori_backfill.py --dry-run` (maliyet gör) → `--limit 100000` (paid key ile boşalt).
 >   AYRICA: kelime kuralları + DMO map güncellendiği için `kategori_backfill.py`'yi de tekrar koş (idempotent, guard'lı).
 

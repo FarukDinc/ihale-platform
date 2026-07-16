@@ -1,5 +1,9 @@
 """
-Jandarma (J.Gn.K. Vatandaş İhale Sorgu) Scraper — kamu_ihaleleri (kaynak='jandarma').
+Jandarma (J.Gn.K. Vatandaş İhale Sorgu) Scraper — ilanlar (kaynak='jandarma').
+
+16 Tem 2026: kullanıcı kararıyla ayrı kamu_ihaleleri ekranı kaldırıldı; Jandarma ilanları
+ilan_gov deseniyle DOĞRUDAN ana `ilanlar` tablosuna yazılır (ana İhaleler ekranında
+"🪖 Jandarma" rozetiyle listelenir). kamu_ihaleleri tablosu KA (kaynak='ka') için kalır.
 
 Kaynak: https://vatandas.jandarma.gov.tr/ihalesorgu/FORM/FrmIhaleListe.aspx
   - ASP.NET WebForms, ama ihale listesi sunucu-render. Auth/CAPTCHA YOK.
@@ -7,7 +11,11 @@ Kaynak: https://vatandas.jandarma.gov.tr/ihalesorgu/FORM/FrmIhaleListe.aspx
   - Yapı: her BİRLİK bir <span id="...ctlN_etkIhlYer">BİRLİK ADI</span> başlığı; altında
     tblIhaleBilgi tablosunda satırlar: <a PSN>TANIMI(başlık)</a> | TARİH ZAMANI | AÇIKLAMA.
   - Detay: frmIhale.aspx?PSN=<token>
-  - Bazı açıklamalar "İLAN DETAYI EKAP ÜZERİNDEN 26DT1325..." der → ekap_referans çıkarılır (dedup/izleme).
+
+Dedup:
+  - ekap_id = 'JND-<PSN>' (EKAP IKN'leriyle çakışamaz), upsert on_conflict=ekap_id.
+  - Açıklamada "EKAP ÜZERİNDEN 26DT..." geçen kayıtlar ATLANIR — bunlar EKAP'ta da
+    yayımlanan ilanlardır; EKAP/DT akışları zaten listeler (mükerrer kart olmasın).
 
 Kullanım:
   python jandarma_scraper.py            # çek + upsert
@@ -24,6 +32,9 @@ from datetime import datetime, timezone
 
 import httpx
 from dotenv import load_dotenv
+
+sys.path.insert(0, os.path.dirname(__file__))
+from kategori_siniflandir import kategori_belirle
 
 load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), ".env"))
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "")
@@ -57,7 +68,8 @@ def tarih_parse(s: str):
     return f"{y}-{int(a):02d}-{int(g):02d}T{int(sa or 0):02d}:{dk or '00'}:{sn or '00'}"
 
 
-def kayitlari_cek(client: httpx.Client) -> list:
+def kayitlari_cek(client: httpx.Client) -> tuple:
+    """(ilanlar satırları, atlanan EKAP-mükerrer sayısı) döner."""
     r = client.get(LISTE_URL, headers={"User-Agent": UA}, timeout=30.0)
     r.raise_for_status()
     h = r.text  # sunucu charset=utf-8 gönderiyor; httpx doğru çözer
@@ -74,39 +86,44 @@ def kayitlari_cek(client: httpx.Client) -> list:
                 break
         return ad
 
-    kayitlar, gorulen = [], set()
+    kayitlar, gorulen, ekap_atlanan = [], set(), 0
     for m in SATIR_RE.finditer(h):
         psn, baslik, tarih, aciklama = m.group(1), temiz(m.group(2)), temiz(m.group(3)), temiz(m.group(4))
         if not psn or psn in gorulen:
             continue
         gorulen.add(psn)
-        ekap = re.search(r"\b(\d{2}DT\d+)\b", aciklama)
+        if re.search(r"\b\d{2}DT\d+\b", aciklama):
+            ekap_atlanan += 1  # EKAP'ta da yayımlanıyor → ana listede EKAP kopyası var, mükerrer ekleme
+            continue
+        birlik = birlik_bul(m.start())
         kayitlar.append({
-            "kaynak": "jandarma",
-            "kaynak_id": psn,
-            "baslik": baslik or None,
-            "idare": birlik_bul(m.start()),
-            "aciklama": aciklama or None,
-            "ekap_referans": ekap.group(1) if ekap else None,
+            "ekap_id":           f"JND-{psn}",
+            "kaynak":            "jandarma",
+            "baslik":            baslik or None,
+            "idare":             birlik,
+            "durum":             "aktif",
+            "kategori":          kategori_belirle(None, None, f"{baslik} {aciklama}".strip()),
             "son_teklif_tarihi": tarih_parse(tarih),
-            "orijinal_url": f"{BASE}/FORM/frmIhale.aspx?PSN={psn}",
-            "guncellenme": datetime.now(timezone.utc).isoformat(),
+            "ihale_tarihi":      tarih_parse(tarih),
+            "ilan_metni":        aciklama or None,
+            "pdf_url":           f"{BASE}/FORM/frmIhale.aspx?PSN={psn}",
+            "olusturulma":       datetime.now(timezone.utc).isoformat(),
         })
-    return kayitlar
+    return kayitlar, ekap_atlanan
 
 
 def upsert(client: httpx.Client, kayitlar: list):
     if not kayitlar:
         return False
     r = client.post(
-        f"{SUPABASE_URL}/rest/v1/kamu_ihaleleri",
+        f"{SUPABASE_URL}/rest/v1/ilanlar",
         headers={
             "apikey": SUPABASE_KEY,
             "Authorization": f"Bearer {SUPABASE_KEY}",
             "Content-Type": "application/json",
             "Prefer": "resolution=merge-duplicates,return=minimal",
         },
-        params={"on_conflict": "kaynak,kaynak_id"},
+        params={"on_conflict": "ekap_id"},
         json=kayitlar,
         timeout=30.0,
     )
@@ -126,17 +143,17 @@ def main():
         sys.exit(1)
 
     with httpx.Client() as client:
-        kayitlar = kayitlari_cek(client)
-        print(f"✓ Jandarma: {len(kayitlar)} ihale çekildi")
+        kayitlar, ekap_atlanan = kayitlari_cek(client)
+        print(f"✓ Jandarma: {len(kayitlar)} ihale çekildi ({ekap_atlanan} EKAP-mükerrer atlandı)")
         if not kayitlar:
             print("  ⚠ hiç kayıt yok — sayfa yapısı değişmiş olabilir.")
             sys.exit(1)
         if args.dry_run:
             for k in kayitlar[:4]:
-                print(f"  [DRY] {k['idare']} | {(k['baslik'] or '')[:45]} | son:{k['son_teklif_tarihi']} | ekap:{k['ekap_referans']}")
+                print(f"  [DRY] {k['idare']} | {(k['baslik'] or '')[:45]} | {k['kategori']} | son:{k['son_teklif_tarihi']}")
             return
         if upsert(client, kayitlar):
-            print(f"✓ {len(kayitlar)} kayıt upsert edildi (kamu_ihaleleri, kaynak=jandarma)")
+            print(f"✓ {len(kayitlar)} kayıt upsert edildi (ilanlar, kaynak=jandarma)")
 
 
 if __name__ == "__main__":

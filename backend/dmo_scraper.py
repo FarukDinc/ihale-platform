@@ -1,5 +1,10 @@
 """
-DMO (Devlet Malzeme Ofisi) İhale Scraper — kamu_ihaleleri (kaynak='dmo').
+DMO (Devlet Malzeme Ofisi) İhale Scraper — ilanlar (kaynak='dmo').
+
+16 Tem 2026: kullanıcı kararıyla ayrı kamu_ihaleleri ekranı kaldırıldı; DMO ilanları
+ilan_gov deseniyle DOĞRUDAN ana `ilanlar` tablosuna yazılır (ana İhaleler ekranında
+"📦 DMO" rozetiyle listelenir). kamu_ihaleleri tablosu Kalkınma Ajansı (kaynak='ka',
+e-Satınalma rozeti) için yaşamaya devam eder.
 
 Kaynak: https://www.dmo.gov.tr/Ihale/Liste?type=1  (Yayındaki İhale Listesi)
   - Sunucu-render HTML tablo (jQuery DataTables, client-side sayfalama). Auth/CAPTCHA/JS YOK.
@@ -8,9 +13,13 @@ Kaynak: https://www.dmo.gov.tr/Ihale/Liste?type=1  (Yayındaki İhale Listesi)
   - Detay: /Ihale/Detay/{ihale_no}
   - Kodlama: UTF-8.
 
+Dedup: ekap_id = 'DMO-<ihale_no>' (EKAP IKN/ilan_gov adNo ile çakışamaz), upsert
+on_conflict=ekap_id merge-duplicates → her turda tarih/başlık tazelenir.
+kategori: kategori_belirle(DMO kategori adı + başlık) → 41 kanonik.
+
 Kullanım:
   python dmo_scraper.py            # çek + upsert
-  python dmo_scraper.py --dry-run  # yaz, sadece parse örneği bas
+  python dmo_scraper.py --dry-run  # yazma, sadece parse örneği bas
 
 Env: SUPABASE_URL, SUPABASE_SERVICE_KEY (backend/.env)
 """
@@ -23,6 +32,9 @@ from datetime import datetime, timezone
 
 import httpx
 from dotenv import load_dotenv
+
+sys.path.insert(0, os.path.dirname(__file__))
+from kategori_siniflandir import kategori_belirle, DMO_KATEGORI_MAP
 
 load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), ".env"))
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "")
@@ -63,33 +75,48 @@ def kayitlari_cek(client: httpx.Client) -> list:
         if len(huc) < 7:
             continue
         no = detay.group(1)
+        baslik = huc[3] or None
+        dmo_kategori = huc[4] or None
+        konu = (huc[7] if len(huc) > 7 else None) or None
+        son_teklif = tarih_parse(huc[6])
+        # İlan metni: arama_fold'a girsin diye DMO'ya özgü alanlar (konu başlıktan farklıysa + talep no)
+        metin_parcalar = []
+        if konu and konu != baslik:
+            metin_parcalar.append(konu)
+        if dmo_kategori:
+            metin_parcalar.append(f"DMO Kategorisi: {dmo_kategori}")
+        if huc[2]:
+            metin_parcalar.append(f"Talep Takip No: {huc[2]}")
         kayitlar.append({
-            "kaynak": "dmo",
-            "kaynak_id": no,
-            "baslik": huc[3] or None,
-            "idare": (huc[7] if len(huc) > 7 else None) or None,
-            "kategori": huc[4] or None,
-            "talep_no": huc[2] or None,
-            "ilan_tarihi": tarih_parse(huc[5]),
-            "son_teklif_tarihi": tarih_parse(huc[6]),
-            "orijinal_url": f"{BASE}/Ihale/Detay/{no}",
-            "guncellenme": datetime.now(timezone.utc).isoformat(),
+            "ekap_id":           f"DMO-{no}",
+            "kaynak":            "dmo",
+            "baslik":            baslik,
+            "idare":             "Devlet Malzeme Ofisi",
+            "durum":             "aktif",
+            # DMO'nun kendi kategorisi sabit ve güvenilir → önce doğrudan eşleme; jenerikse başlıktan
+            "kategori":          DMO_KATEGORI_MAP.get(dmo_kategori) or kategori_belirle(dmo_kategori, None, baslik),
+            "ilan_tarihi":       tarih_parse(huc[5]),
+            "son_teklif_tarihi": son_teklif,
+            "ihale_tarihi":      son_teklif,
+            "ilan_metni":        " | ".join(metin_parcalar) or None,
+            "pdf_url":           f"{BASE}/Ihale/Detay/{no}",
+            "olusturulma":       datetime.now(timezone.utc).isoformat(),
         })
     return kayitlar
 
 
 def upsert(client: httpx.Client, kayitlar: list):
     if not kayitlar:
-        return
+        return False
     r = client.post(
-        f"{SUPABASE_URL}/rest/v1/kamu_ihaleleri",
+        f"{SUPABASE_URL}/rest/v1/ilanlar",
         headers={
             "apikey": SUPABASE_KEY,
             "Authorization": f"Bearer {SUPABASE_KEY}",
             "Content-Type": "application/json",
             "Prefer": "resolution=merge-duplicates,return=minimal",
         },
-        params={"on_conflict": "kaynak,kaynak_id"},
+        params={"on_conflict": "ekap_id"},
         json=kayitlar,
         timeout=30.0,
     )
@@ -116,10 +143,10 @@ def main():
             sys.exit(1)
         if args.dry_run:
             for k in kayitlar[:3]:
-                print(f"  [DRY] {k['kaynak_id']} | {k['idare']} | {(k['baslik'] or '')[:55]} | {k['kategori']} | son:{k['son_teklif_tarihi']}")
+                print(f"  [DRY] {k['ekap_id']} | {(k['baslik'] or '')[:55]} | {k['kategori']} | son:{k['son_teklif_tarihi']}")
             return
         if upsert(client, kayitlar):
-            print(f"✓ {len(kayitlar)} kayıt upsert edildi (kamu_ihaleleri, kaynak=dmo)")
+            print(f"✓ {len(kayitlar)} kayıt upsert edildi (ilanlar, kaynak=dmo)")
 
 
 if __name__ == "__main__":

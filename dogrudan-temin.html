@@ -139,14 +139,11 @@
       <a href="ihaleler" class="nav-item"><span class="icon">⊞</span> İhaleler</a>
       <a href="dogrudan-temin" class="nav-item active"><span class="icon">⚡</span> Doğrudan Temin</a>
       <a href="sonuclananlar" class="nav-item"><span class="icon">🏆</span> Sonuçlananlar</a>
-      <a href="kamu-ihaleleri" class="nav-item"><span class="icon">📦</span> Kamu Kurumu İhaleleri</a>
       <div class="nav-section-label" style="padding-left:16px;opacity:.85;">— Analiz —</div>
       <a href="rekabet-analizi" class="nav-item"><span class="icon">📊</span> Rekabet Analizi</a>
-      <a href="idareler" class="nav-item"><span class="icon">🏛️</span> İdareler Dizini</a>
-      <a href="firmalar" class="nav-item"><span class="icon">🏢</span> Firmalar Dizini</a>
+      <a href="kurum-analiz" class="nav-item"><span class="icon">🏛️</span> İdareler</a>
+      <a href="firma-analiz" class="nav-item"><span class="icon">🏢</span> Firmalar</a>
       <a href="sektorler" class="nav-item"><span class="icon">🏭</span> Sektörler Dizini</a>
-      <a href="kurum-analiz" class="nav-item"><span class="icon">🔍</span> Kurum Analizi</a>
-      <a href="firma-analiz" class="nav-item"><span class="icon">🏢</span> Firma Analizi</a>
       <a href="kik-kararlar" class="nav-item"><span class="icon">⚖️</span> KİK Kararlar</a>
       <div class="nav-section-label">Uluslararası</div>
       <a href="uluslararasi" class="nav-item"><span class="icon">🌍</span> Uluslararası İhaleler</a>
@@ -273,6 +270,11 @@
   const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzgzMzUwMDE1LCJleHAiOjE5NDEwMzAwMTV9.sRB61a8oNXwzSKL9No8gt7cmkmnkoQstT0ZtHIxl1Hs";
   const sb = window.supabase.createClient(SB_URL, SB_KEY);
 
+  // Misafir maskeleme: DT.idare anon'a DB'de kapalı (migration_anon_maske.sql) —
+  // misafir select'i idare'siz, kartta '***' + giriş linki; idare araması/sıralaması üyelik ister.
+  let uyeMi = false;
+  const MASKE_ROZET = '<a href="login" style="color:var(--amber);text-decoration:none;" title="Üyelere özel — giriş yapın">🔒 ***</a>';
+
   // Server-side sorgulama: 605K+ kayıt client'a indirilemez; arama/filtre/sayfalama
   // ve sayımlar doğrudan PostgREST'te yapılır (önceden yalnızca en yeni 5000 yükleniyordu).
   let sonSatirlar = [];       // yalnızca aktif sayfadaki satırlar
@@ -320,7 +322,9 @@
     if (kat) query = query.eq('kategori', kat);
     if (durum && DURUM_GRUP[durum]) query = query.in('durum', DURUM_GRUP[durum]);
     if (il) query = query.eq('il', il);
-    if (q) query = query.or(`baslik.ilike.*${q}*,idare.ilike.*${q}*`);
+    if (q) query = uyeMi
+      ? query.or(`baslik.ilike.*${q}*,idare.ilike.*${q}*`)
+      : query.ilike('baslik', `*${q}*`);   // idare kolonu anon'a kapalı (WHERE de yetki ister)
     return query;
   }
 
@@ -332,10 +336,11 @@
     // 616K satırda seq-scan → exact count statement-timeout eder (kod 57014, doğrulandı). Bu yüzden
     // arama modunda sayım yapmayıp bir FAZLA satır çekeriz; PER_PAGE+1 dönerse sonraki sayfa var.
     let query = sb.from('dogrudan_temin_ilanlari')
-      .select('dt_no,baslik,idare,tur,il,tarih,durum,kategori,dokuman_var,duyuru_var',
+      .select(`dt_no,baslik,${uyeMi ? 'idare,' : ''}tur,il,tarih,durum,kategori,dokuman_var,duyuru_var`,
               aramaVar ? {} : { count: 'exact' });
     query = filtreleriUygula(query);
-    query = query.order(siralamaAlan === 'idare' ? 'idare' : 'tarih', { ascending: siralamaAlan === 'idare' });
+    const idareSirala = siralamaAlan === 'idare' && uyeMi;   // idare sıralaması üyelik ister (kolon kapalı)
+    query = query.order(idareSirala ? 'idare' : 'tarih', { ascending: idareSirala });
     query = query.range(bas, aramaVar ? bas + PER_PAGE : bas + PER_PAGE - 1);
     const { data, count, error } = await query;
     if (error) {
@@ -421,7 +426,9 @@
         ${k.dokuman_var ? `<span class="etiket dokuman">📄 Doküman var</span>` : ''}
       </div>
       <div class="dt-meta">
-        ${k.idare ? `<a class="dt-idare" href="dogrudan-temin?idare=${encodeURIComponent(k.idare)}" title="Bu idarenin tüm doğrudan teminleri">🏛️ ${esc(k.idare)}</a>` : ''}
+        ${!uyeMi
+          ? `<span class="dt-idare" style="cursor:default;">🏛️ İdare: ${MASKE_ROZET}</span>`
+          : k.idare ? `<a class="dt-idare" href="dogrudan-temin?idare=${encodeURIComponent(k.idare)}" title="Bu idarenin tüm doğrudan teminleri">🏛️ ${esc(k.idare)}</a>` : ''}
         ${k.tarih ? `<span>📅 ${tarihFormat(k.tarih)}</span>` : ''}
         ${k.durum ? `<span>${esc(k.durum)}</span>` : ''}
       </div>
@@ -486,6 +493,8 @@
 
   // Başlangıç
   (async () => {
+    // uyeMi ilk sorgudan önce kesinleşmeli (misafir select'i idare'siz)
+    try { const { data } = await sb.auth.getSession(); uyeMi = !!(data && data.session); } catch (_) { uyeMi = false; }
     kategorileriYukle();
     illeriYukle();
     istatistikYukle();

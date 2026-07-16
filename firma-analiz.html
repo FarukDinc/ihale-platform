@@ -303,14 +303,11 @@
       <a href="ihaleler" class="nav-item"><span class="icon">⊞</span> İhaleler</a>
       <a href="dogrudan-temin" class="nav-item"><span class="icon">⚡</span> Doğrudan Temin</a>
       <a href="sonuclananlar" class="nav-item"><span class="icon">🏆</span> Sonuçlananlar</a>
-      <a href="kamu-ihaleleri" class="nav-item"><span class="icon">📦</span> Kamu Kurumu İhaleleri</a>
       <div class="nav-section-label" style="padding-left:16px;opacity:.85;">— Analiz —</div>
       <a href="rekabet-analizi" class="nav-item"><span class="icon">📊</span> Rekabet Analizi</a>
-      <a href="idareler" class="nav-item"><span class="icon">🏛️</span> İdareler Dizini</a>
-      <a href="firmalar" class="nav-item"><span class="icon">🏢</span> Firmalar Dizini</a>
+      <a href="kurum-analiz" class="nav-item"><span class="icon">🏛️</span> İdareler</a>
+      <a href="firma-analiz" class="nav-item active"><span class="icon">🏢</span> Firmalar</a>
       <a href="sektorler" class="nav-item"><span class="icon">🏭</span> Sektörler Dizini</a>
-      <a href="kurum-analiz" class="nav-item"><span class="icon">🔍</span> Kurum Analizi</a>
-      <a href="firma-analiz" class="nav-item active"><span class="icon">🏢</span> Firma Analizi</a>
       <a href="kik-kararlar" class="nav-item"><span class="icon">⚖️</span> KİK Kararlar</a>
       <div class="nav-section-label">Uluslararası</div>
       <a href="uluslararasi" class="nav-item"><span class="icon">🌍</span> Uluslararası İhaleler</a>
@@ -342,7 +339,7 @@
   <div class="main">
     <div class="topbar">
       <div class="topbar-left">
-        <a href="firmalar" onclick="geriGit();return false;" class="back-btn">← Geri</a>
+        <a href="firma-analiz" onclick="geriGit();return false;" class="back-btn">← Geri</a>
         <div class="breadcrumb">/ <span id="bc-firma">Firma Analizi</span></div>
       </div>
       <button onclick="linkPaylas(this)"
@@ -582,6 +579,24 @@
   const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzgzMzUwMDE1LCJleHAiOjE5NDEwMzAwMTV9.sRB61a8oNXwzSKL9No8gt7cmkmnkoQstT0ZtHIxl1Hs";
   const sb = window.supabase.createClient(SB_URL, SB_KEY);
   let sonucVeri = [];
+
+  // Misafir maskeleme (migration_anon_maske.sql): yukleniciler.ad/normalize_ad/arama_fold +
+  // ihale_sonuclari.kazanan_firma + analiz_pivot anon'a kapalı. Misafir: dizin satırları '***'
+  // (sayılar görünür — ihaleciler.com modeli), arama + firma DETAYI üyelere özel.
+  let uyeMi = false;
+  const MASKE_ROZET = '<a href="login" style="color:var(--amber);text-decoration:none;" title="Üyelere özel — giriş yapın">🔒 ***</a>';
+  function girisKapisi(kapsayici, baslikMetni) {
+    kapsayici.innerHTML = `
+      <div style="max-width:420px; margin:40px auto; text-align:center; background:var(--navy-mid); border:1px solid var(--border); border-radius:14px; padding:36px 28px;">
+        <div style="font-size:34px; margin-bottom:10px;">🔒</div>
+        <div style="font-size:16px; font-weight:800; color:var(--white); font-family:var(--font-display); margin-bottom:8px;">${baslikMetni}</div>
+        <div style="font-size:13px; color:var(--muted); line-height:1.6; margin-bottom:20px;">Firma adları ve detaylı analizler üyelere özeldir. Ücretsiz hesabınızla giriş yapın.</div>
+        <div style="display:flex; gap:10px; justify-content:center;">
+          <a href="login" style="background:var(--amber); color:var(--navy); font-weight:700; font-size:13px; padding:9px 20px; border-radius:7px; text-decoration:none;">Giriş Yap</a>
+          <a href="login?panel=kayit" style="background:var(--card-bg); color:var(--white); border:1px solid var(--border); font-weight:600; font-size:13px; padding:9px 20px; border-radius:7px; text-decoration:none;">Ücretsiz Kayıt</a>
+        </div>
+      </div>`;
+  }
 
   const params = new URLSearchParams(window.location.search);
   let FIRMA = '';  // aktif detaydaki firmanın adı (firmaDetayYukle doldurur)
@@ -961,11 +976,15 @@
     if (reset) dzSayfaNo = 0;
     const arama = trFold(document.getElementById('dz-arama').value.trim());
     const ilVal = document.getElementById('dz-il').value;
-    const [alan, asc] = DZ_ALAN[document.getElementById('dz-sirala').value] || DZ_ALAN.ciro_desc;
+    let [alan, asc] = DZ_ALAN[document.getElementById('dz-sirala').value] || DZ_ALAN.ciro_desc;
+    if (!uyeMi && alan === 'ad') [alan, asc] = DZ_ALAN.ciro_desc;   // ad kolonu anon'a kapalı (ORDER BY de yetki ister)
     const govde = document.getElementById('dz-govde');
     if (reset) govde.innerHTML = '<div class="dz-bos">Yükleniyor…</div>';
-    let q = sb.from('yukleniciler').select('id,ad,normalize_ad,il,toplam_sozlesme_sayisi,toplam_ciro,son_sozlesme_tarihi,ortak_girisim', { count:'exact' });
-    if (arama) q = q.ilike('arama_fold', '%'+arama+'%');
+    let q = sb.from('yukleniciler').select(
+      uyeMi ? 'id,ad,normalize_ad,il,toplam_sozlesme_sayisi,toplam_ciro,son_sozlesme_tarihi,ortak_girisim'
+            : 'id,il,toplam_sozlesme_sayisi,toplam_ciro,son_sozlesme_tarihi,ortak_girisim',
+      { count:'exact' });
+    if (arama && uyeMi) q = q.ilike('arama_fold', '%'+arama+'%');   // arama_fold anon'a kapalı
     if (ilVal) q = q.eq('il', ilVal);
     q = q.order(alan, { ascending: asc, nullsFirst: false }).range(dzSayfaNo*DZ_BOYUT, dzSayfaNo*DZ_BOYUT+DZ_BOYUT-1);
     const { data, count, error } = await q;
@@ -977,7 +996,7 @@
     govde.innerHTML = rows.map(f => {
       const ad = f.ad || f.normalize_ad || '—';
       return `<div class="dz-row" onclick="firmaSec('${escapeHtml(f.id)}')">
-        <div class="dz-ad" title="${escapeHtml(ad)}">${escapeHtml(ad)}${f.ortak_girisim?'<span class="dz-badge">İŞ ORT.</span>':''}</div>
+        <div class="dz-ad" title="${uyeMi ? escapeHtml(ad) : 'Üyelere özel'}">${uyeMi ? escapeHtml(ad) : MASKE_ROZET}${f.ortak_girisim?'<span class="dz-badge">İŞ ORT.</span>':''}</div>
         <div class="dz-il c-il">${escapeHtml(f.il||'—')}</div>
         <div class="dz-sayi">${(f.toplam_sozlesme_sayisi||0).toLocaleString('tr-TR')}</div>
         <div class="dz-ciro">${formatBedel(f.toplam_ciro||0)}</div>
@@ -993,7 +1012,18 @@
     document.getElementById('dz-next').disabled = dzSayfaNo>=toplamSayfa-1;
   }
   window.dzYukle = dzYukle;
-  function dizinBaslat() { if (!_dizinKuruldu) { _dizinKuruldu = true; dzIstatistik(); dzIlDoldur(); } dzYukle(true); }
+  function dizinBaslat() {
+    if (!_dizinKuruldu) {
+      _dizinKuruldu = true; dzIstatistik(); dzIlDoldur();
+      if (!uyeMi) {
+        const da = document.getElementById('dz-arama');
+        if (da) { da.disabled = true; da.placeholder = '🔒 Firma araması üyelere özel — giriş yapın'; }
+        const adOpt = document.querySelector('#dz-sirala option[value="ad_asc"]');
+        if (adOpt) adOpt.disabled = true;
+      }
+    }
+    dzYukle(true);
+  }
 
   // Arama kutusu / Enter → FİRMA LİSTESİ (ihaleciler.com modeli: önce firmalar)
   window.firmaAra = function() {
@@ -1014,6 +1044,13 @@
   // ── Firma LİSTESİ (yukleniciler tablosundan, arama_fold ile) ──────────────
   async function firmaListesiYukle(term, pushUrl) {
     if (!term) return;
+    if (!uyeMi) {   // firma araması ad/arama_fold ister — anon'a DB'de kapalı
+      goster('liste');
+      document.getElementById('liste-terim').textContent = term;
+      document.getElementById('liste-ozet').textContent = '';
+      girisKapisi(document.getElementById('firma-liste-container'), 'Firma araması üyelere özel');
+      return;
+    }
     sonAramaKaydet(term);
     if (pushUrl) {
       const url = new URL(window.location);
@@ -1075,6 +1112,11 @@
   // ── Firma DETAYI (yuklenici_id ile — zengin ihale_sonuclari + ilan başlık/idare) ──
   async function firmaDetayYukle(yid, pushUrl) {
     if (!yid) return;
+    if (!uyeMi) {   // detay = ad + sonuç geçmişi + pivot; hepsi anon'a kapalı
+      goster('detay');
+      girisKapisi(document.getElementById('firma-icerik'), 'Firma analizi üyelere özel');
+      return;
+    }
     AKTIF_YID = yid;
     _pivotYuklendi = false;
     document.getElementById('pivot-kirilim-container').innerHTML = '';
@@ -1357,7 +1399,10 @@
 
   // ── Başlangıç yönlendirmesi ──────────────────────────────
   sonAramalariGoster();
-  (function rota() {
+  (async function rota() {
+    // uyeMi rota kararından ÖNCE kesinleşmeli (misafir: dizin '***', arama/detay kapılı)
+    try { const { data } = await sb.auth.getSession(); uyeMi = !!(data && data.session); } catch (_) { uyeMi = false; }
+    window.__uyeMi = uyeMi;   // fah harita IIFE'si de okur (ayrı scope)
     const qYid   = params.get('yid');
     const qAra   = params.get('ara');
     const qFirma = params.get('firma');  // eski/dış linkler (firmalar.html "Analiz")
@@ -1532,6 +1577,13 @@
     }
     panel.innerHTML = kpi + '<div id="fah-panel-firmalar"><div class="fah-mini-spin"></div></div>' +
       '<div style="font-size:11px;color:var(--muted);margin-top:12px;">Firmaya tıklayın — analizi bu sayfada açılır.</div>';
+
+    // Misafir: il_sektor_firmalar (firma adları) anon'a kapalı — RPC'yi hiç çağırma, giriş çağrısı göster
+    if (!window.__uyeMi) {
+      const elA = document.getElementById('fah-panel-firmalar');
+      if (elA) elA.innerHTML = '<div class="fah-panel-bos" style="padding:16px;">🔒 Firma sıralaması üyelere özel — <a href="login" style="color:var(--amber);">giriş yapın</a></div>';
+      return;
+    }
 
     try {
       const { data, error } = await sbH.rpc('il_sektor_firmalar',

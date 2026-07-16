@@ -681,14 +681,11 @@
       <a href="ihaleler" class="nav-item"><span class="icon">⊞</span> İhaleler</a>
       <a href="dogrudan-temin" class="nav-item"><span class="icon">⚡</span> Doğrudan Temin</a>
       <a href="sonuclananlar" class="nav-item"><span class="icon">🏆</span> Sonuçlananlar</a>
-      <a href="kamu-ihaleleri" class="nav-item"><span class="icon">📦</span> Kamu Kurumu İhaleleri</a>
       <div class="nav-section-label" style="padding-left:16px;opacity:.85;">— Analiz —</div>
       <a href="rekabet-analizi" class="nav-item"><span class="icon">📊</span> Rekabet Analizi</a>
-      <a href="idareler" class="nav-item"><span class="icon">🏛️</span> İdareler Dizini</a>
-      <a href="firmalar" class="nav-item"><span class="icon">🏢</span> Firmalar Dizini</a>
+      <a href="kurum-analiz" class="nav-item"><span class="icon">🏛️</span> İdareler</a>
+      <a href="firma-analiz" class="nav-item"><span class="icon">🏢</span> Firmalar</a>
       <a href="sektorler" class="nav-item"><span class="icon">🏭</span> Sektörler Dizini</a>
-      <a href="kurum-analiz" class="nav-item"><span class="icon">🔍</span> Kurum Analizi</a>
-      <a href="firma-analiz" class="nav-item"><span class="icon">🏢</span> Firma Analizi</a>
       <a href="kik-kararlar" class="nav-item"><span class="icon">⚖️</span> KİK Kararlar</a>
       <div class="nav-section-label">Uluslararası</div>
       <a href="uluslararasi" class="nav-item"><span class="icon">🌍</span> Uluslararası İhaleler</a>
@@ -1362,7 +1359,8 @@
     const el = document.getElementById('top-kurumlar-list');
     try {
       // Server-side aggregate RPC (eskiden tüm aktif ilanlar client'a inip JS'te sayılıyordu — ~16 istek/açılış)
-      const { data } = await sb.rpc('idare_sayim');
+      const { data, error } = await sb.rpc('idare_sayim');
+      if (error) throw error;  // supabase-js hata firlatmaz — kilitli RPC'de catch'e dus (giris cagrisi)
       const sirali = (data || []).filter(r => (r.aktif || 0) > 0).sort((a, b) => (b.aktif || 0) - (a.aktif || 0)).slice(0, 7);
       const maks = sirali[0]?.aktif || 1;
       el.innerHTML = sirali.map(r => { const idare = r.idare, sayi = r.aktif; return `
@@ -1375,15 +1373,24 @@
             <div style="height:3px; background:var(--amber); border-radius:2px; width:${Math.round(sayi/maks*100)}%;"></div>
           </div>
         </a>`; }).join('');
-    } catch (e) { el.innerHTML = '<div style="padding:12px 18px; color:var(--muted); font-size:13px;">Yüklenemedi</div>'; }
+    } catch (e) {
+      // idare_sayim anon'a kapalı (migration_bulk_rpc_kilit.sql) — misafirde giriş çağrısı göster
+      let oturumsuz = false;
+      try { const { data: { session } } = await sb.auth.getSession(); oturumsuz = !session; } catch (_) {}
+      el.innerHTML = oturumsuz
+        ? '<div style="padding:12px 18px; color:var(--muted); font-size:13px;">🔒 Kurum sıralaması üyelere özel — <a href="login" style="color:var(--amber);">giriş yapın</a></div>'
+        : '<div style="padding:12px 18px; color:var(--muted); font-size:13px;">Yüklenemedi</div>';
+    }
   }
 
   // ── Son Eklenen İhaleler widget ──────────────────────
   async function sonIhalelerYukle() {
     const el = document.getElementById('son-ihaleler-list');
     try {
+      // ekap_id/idare seçiliyordu ama render hiç kullanmıyor — anon'a da kapalı kolonlar
+      // (migration_anon_maske.sql) olduğundan select'ten tamamen çıkarıldı.
       const { data } = await sb.from('ilanlar')
-        .select('id,ekap_id,baslik,idare,il,tur,son_teklif_tarihi,yaklasik_maliyet_min,ilan_tarihi')
+        .select('id,baslik,il,tur,son_teklif_tarihi,yaklasik_maliyet_min,ilan_tarihi')
         .eq('durum', 'aktif').order('ilan_tarihi', { ascending: false }).limit(6);
       if (!data || !data.length) { el.innerHTML = '<div style="padding:12px 18px; color:var(--muted); font-size:13px;">Veri yok</div>'; return; }
       el.innerHTML = data.map(d => {
