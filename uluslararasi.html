@@ -145,6 +145,7 @@
       background: var(--card-bg); color: var(--white); border: 1px solid var(--border); font-family: var(--font-body);
     }
     .dunya-svg-wrap path.ulke.secili { stroke: var(--white); stroke-width: 1; }
+    .dunya-svg-wrap path.ulke.anavatan { stroke: var(--amber); stroke-width: 1; cursor: default; }
     .dunya-lejant { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 8px; font-size: 11px; color: var(--muted); }
     .dunya-lejant .lej-kutu { display: inline-flex; align-items: center; gap: 4px; }
     .dunya-lejant .lej-renk { width: 13px; height: 13px; border-radius: 3px; display: inline-block; border: 1px solid rgba(255,255,255,.1); }
@@ -575,6 +576,7 @@
     wrap.classList.toggle('mod-ticaret', dunyaMod === 'ticaret');
     svg.querySelectorAll('path.ulke').forEach(p => {
       const kod = p.getAttribute('data-kod');
+      if(kod === 'TUR'){ p.style.fill = '#eef2f8'; return; }  // Türkiye referans ülke — her modda beyaz
       let fill = '#1b2942';
       if(dunyaMod === 'ticaret'){
         fill = ticaretRenk(ticaretDeger(kod));
@@ -597,20 +599,35 @@
     return `${esc(v.ulke)} · <b>${v.adet.toLocaleString('tr')}</b> ihale`;
   }
 
+  // Türkiye (referans ülke) tooltip'i — kendisiyle ticaret yok; dünya geneli toplamını göster
+  function anavatanTipHtml(e){
+    const p = e.target.closest && e.target.closest('path.anavatan');
+    if(!p) return null;
+    if(dunyaMod === 'ticaret' && TIC && TIC.dunya){
+      const d = TIC.dunya;
+      return `<b>🇹🇷 Türkiye</b> <span style="color:var(--muted)">— referans ülke (${TIC.yil})</span>` +
+        `<br>Dünyaya toplam ihracat: <b style="color:var(--amber)">${paraUsd(d.ihr[0])}</b>${yuzdeHtml(d.ihr[0], d.ihr[1])}` +
+        `<br>Dünyadan toplam ithalat: <b>${paraUsd(d.ith[0])}</b>${yuzdeHtml(d.ith[0], d.ith[1])}`;
+    }
+    return `<b>🇹🇷 Türkiye</b> <span style="color:var(--muted)">— referans ülke</span>`;
+  }
+
   function ticaretTipHtml(e){
     const p = e.target.closest && e.target.closest('path.tveri');
     if(!p || !TIC) return null;
     const kod = p.getAttribute('data-kod');
     const t = TIC.ulkeler[kod];
     if(!t) return null;
-    const satirlar = [`<b>${esc(ulkeAdTr(kod))}</b> — Türkiye ile ticaret (${TIC.yil})`];
-    satirlar.push(`↗ İhracat: <b style="color:var(--amber)">${paraUsd(t.ihr[0])}</b>${yuzdeHtml(t.ihr[0], t.ihr[1])}`);
-    satirlar.push(`↘ İthalat: <b>${paraUsd(t.ith[0])}</b>${yuzdeHtml(t.ith[0], t.ith[1])}`);
+    const ulke = esc(ulkeAdTr(kod));
+    // Yön açıkça yazılır: ihr = Türkiye'DEN o ülkeye, ith = o ülkeDEN Türkiye'ye (kaynak: Comtrade, reporter=Türkiye)
+    const satirlar = [`<b>${ulke}</b> <span style="color:var(--muted)">— Türkiye ile dış ticaret (${TIC.yil})</span>`];
+    satirlar.push(`↗ <b>Türkiye → ${ulke}</b> <span style="color:var(--muted)">(ihracatımız)</span>: <b style="color:var(--amber)">${paraUsd(t.ihr[0])}</b>${yuzdeHtml(t.ihr[0], t.ihr[1])}`);
+    satirlar.push(`↘ <b>${ulke} → Türkiye</b> <span style="color:var(--muted)">(ithalatımız)</span>: <b>${paraUsd(t.ith[0])}</b>${yuzdeHtml(t.ith[0], t.ith[1])}`);
     if(dunyaSektor){
       const s = t.s && t.s[dunyaSektor];  // [ihr_g, ihr_o, ith_g, ith_o]
       const ad = esc(TIC.sektorler[dunyaSektor] || dunyaSektor);
       satirlar.push(s
-        ? `<span style="color:var(--muted)">${ad} (${TIC.sektor_yil}):</span> ihr. <b>${paraUsd(s[0])}</b>${yuzdeHtml(s[0], s[1])} · ith. <b>${paraUsd(s[2])}</b>${yuzdeHtml(s[2], s[3])}`
+        ? `<span style="color:var(--muted)">${ad} (${TIC.sektor_yil}) — TR→${ulke}:</span> <b>${paraUsd(s[0])}</b>${yuzdeHtml(s[0], s[1])} · <span style="color:var(--muted)">${ulke}→TR:</span> <b>${paraUsd(s[2])}</b>${yuzdeHtml(s[2], s[3])}`
         : `<span style="color:var(--muted)">${ad}: bu ülkeyle kayıtlı ticaret yok (${TIC.sektor_yil})</span>`);
     }
     const v = dunyaVeri[kod];
@@ -669,7 +686,8 @@
       const v = dunyaVeri[u.kod];
       const veri = v && v.adet > 0;
       const tveri = TIC && TIC.ulkeler[u.kod];
-      return `<path class="ulke${veri ? ' veri' : ''}${tveri ? ' tveri' : ''}" data-kod="${u.kod}" d="${u.d}"></path>`;
+      const anavatan = u.kod === 'TUR';   // referans ülke — beyaz göster (koyu "veri yok" rengiyle karışmasın)
+      return `<path class="ulke${veri ? ' veri' : ''}${tveri ? ' tveri' : ''}${anavatan ? ' anavatan' : ''}" data-kod="${u.kod}" d="${u.d}"></path>`;
     }).join('');
     wrap.innerHTML = `<svg viewBox="${H.viewBox}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Dünya ihale dağılım haritası">${paths}</svg>`;
     dunyaBoya();
@@ -679,7 +697,7 @@
 
     const svg = wrap.querySelector('svg');
     svg.addEventListener('mousemove', e => {
-      const html = (dunyaMod === 'ticaret') ? ticaretTipHtml(e) : ihaleTipHtml(e);
+      const html = anavatanTipHtml(e) || ((dunyaMod === 'ticaret') ? ticaretTipHtml(e) : ihaleTipHtml(e));
       if(!html){ dunyaTip.classList.remove('gor'); return; }
       dunyaTip.innerHTML = html;
       dunyaTip.style.left = (e.clientX + 14) + 'px';
