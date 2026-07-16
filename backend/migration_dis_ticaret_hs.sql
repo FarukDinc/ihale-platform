@@ -36,6 +36,8 @@ DROP POLICY IF EXISTS dtc_public_read ON public.dis_ticaret_hs;
 CREATE POLICY dtc_public_read ON public.dis_ticaret_hs
   FOR SELECT TO anon, authenticated USING (true);
 GRANT SELECT ON public.dis_ticaret_hs TO anon, authenticated;
+-- Ingestion (ticaret_hs_cek.py) service_role ile yazar
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.dis_ticaret_hs TO service_role;
 
 COMMIT;
 
