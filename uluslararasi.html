@@ -129,6 +129,21 @@
     .dunya-svg-wrap path.ulke { fill: #1b2942; stroke: #0a111d; stroke-width: .4; transition: fill .12s, opacity .12s; }
     .dunya-svg-wrap path.ulke.veri { cursor: pointer; }
     .dunya-svg-wrap path.ulke.veri:hover { fill: #ffd166 !important; }
+    .dunya-svg-wrap.mod-ticaret path.ulke.tveri { cursor: pointer; }
+    .dunya-svg-wrap.mod-ticaret path.ulke.tveri:hover { fill: #ffd166 !important; }
+    /* Harita modu (İhaleler / Türkiye ile Ticaret) + sektör filtresi */
+    .dunya-mod { display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+    .mod-btn {
+      padding: 4px 11px; border-radius: 14px; font-size: 11px; font-weight: 700;
+      background: transparent; border: 1px solid var(--border); color: var(--muted);
+      cursor: pointer; font-family: var(--font-body); transition: all .15s;
+    }
+    .mod-btn:hover { color: var(--white); border-color: rgba(var(--overlay-rgb),.35); }
+    .mod-btn.active { background: rgba(240,165,0,.12); border-color: var(--amber); color: var(--amber); }
+    #dunya-sektor {
+      display: none; padding: 4px 8px; border-radius: 6px; font-size: 11px; max-width: 220px;
+      background: var(--card-bg); color: var(--white); border: 1px solid var(--border); font-family: var(--font-body);
+    }
     .dunya-svg-wrap path.ulke.secili { stroke: var(--white); stroke-width: 1; }
     .dunya-lejant { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 8px; font-size: 11px; color: var(--muted); }
     .dunya-lejant .lej-kutu { display: inline-flex; align-items: center; gap: 4px; }
@@ -241,6 +256,11 @@
       <div class="dunya-card">
         <div class="dunya-head">
           <span class="dunya-baslik">🗺️ Ülkeye göre keşfet</span>
+          <span class="dunya-mod" id="dunya-mod">
+            <button class="mod-btn active" data-mod="ihale" onclick="dunyaModSec('ihale')">İhaleler</button>
+            <button class="mod-btn" data-mod="ticaret" onclick="dunyaModSec('ticaret')">🇹🇷 Türkiye ile Ticaret</button>
+            <select id="dunya-sektor" onchange="dunyaSektorDegisti()" aria-label="Sektör filtresi"></select>
+          </span>
           <span class="dunya-alt" id="dunya-alt">İhale olan bir ülkeye tıklayarak filtreleyin</span>
         </div>
         <div class="dunya-svg-wrap" id="dunya-svg-wrap"><div class="mini-spin" style="margin:40px auto;"></div></div>
@@ -281,6 +301,7 @@
 <script src="js/sidebar-user.js"></script>
 <script src="js/bildirim-sayaci.js"></script>
 <script src="js/dunya-harita.js?v=1"></script>
+<script src="js/ticaret-tr-veri.js?v=1"></script>
 <script>
 (() => {
   const SB_URL = "https://ihaleglobal.com";
@@ -436,7 +457,47 @@
   // ---------------- Dünya haritası ----------------
   const dunyaVeri = {};    // ISO-A3 -> {ulke, adet}
   const dunyaAdKod = {};   // Türkçe ülke adı (lower) -> ISO-A3
+  const dunyaAd = {};      // ISO-A3 -> İngilizce ad (SVG verisinden, tooltip fallback)
   const dunyaTip = document.getElementById('dunya-tooltip');
+
+  // ── Türkiye ile Ticaret katmanı (js/ticaret-tr-veri.js — UN Comtrade + WITS) ──
+  const TIC = window.TICARET_TR || null;
+  let dunyaMod = 'ihale';      // 'ihale' | 'ticaret'
+  let dunyaSektor = '';        // '' = toplam, yoksa TIC.sektorler anahtarı
+
+  let _adTr = null;
+  try { _adTr = new Intl.DisplayNames(['tr'], { type: 'region' }); } catch(e){ /* eski tarayıcı */ }
+  function ulkeAdTr(kod){
+    const t = TIC && TIC.ulkeler[kod];
+    if(t && t.a2 && _adTr){ try { const ad = _adTr.of(t.a2); if(ad && ad !== t.a2) return ad; } catch(e){} }
+    return dunyaAd[kod] || kod;
+  }
+
+  function paraUsd(n){
+    if(!n) return '—';
+    if(n >= 1e9) return '$' + (n / 1e9).toLocaleString('tr', {maximumFractionDigits:1}) + ' Mr';
+    if(n >= 1e6) return '$' + (n / 1e6).toLocaleString('tr', {maximumFractionDigits:1}) + ' M';
+    if(n >= 1e3) return '$' + (n / 1e3).toLocaleString('tr', {maximumFractionDigits:0}) + ' B';
+    return '$' + n.toLocaleString('tr');
+  }
+
+  // Yüzdesel değişim rozeti: ▲ yeşil / ▼ kırmızı / — nötr (önceki yıl verisi yoksa boş)
+  function yuzdeHtml(guncel, onceki){
+    if(!onceki || onceki <= 0 || guncel == null) return '';
+    const p = (guncel - onceki) / onceki * 100;
+    if(Math.abs(p) < 0.05) return ` <span style="color:var(--muted)">(değişim yok)</span>`;
+    const yukari = p > 0;
+    return ` <span style="color:${yukari ? '#4ade80' : '#f87171'};font-weight:700">${yukari ? '▲' : '▼'} %${Math.abs(p).toLocaleString('tr',{maximumFractionDigits:1})}</span>`;
+  }
+
+  // Ülkenin seçili sektöre (veya toplamına) göre ihracat değeri — renklendirme bunu kullanır
+  function ticaretDeger(kod){
+    const t = TIC && TIC.ulkeler[kod];
+    if(!t) return 0;
+    if(!dunyaSektor) return t.ihr[0] || 0;
+    const s = t.s && t.s[dunyaSektor];
+    return s ? (s[0] || 0) : 0;   // [ihr_güncel, ihr_önceki, ith_güncel, ith_önceki]
+  }
 
   function dunyaRenk(n){
     if(n >= 50) return '#f0a500';
@@ -446,15 +507,36 @@
     return '#1b2942';
   }
 
+  // Ticaret modunda toplam ve sektör için ayrı eşikler (sektör hacimleri ~10x küçük)
+  function ticaretRenk(n){
+    const b = dunyaSektor ? [5e8, 1e8, 2e7, 2e6] : [5e9, 1e9, 1e8, 1e7];
+    if(n >= b[0]) return '#f0a500';
+    if(n >= b[1]) return '#d1901a';
+    if(n >= b[2]) return '#9a6f22';
+    if(n >= b[3]) return '#5f4a24';
+    if(n > 0)     return '#38311f';
+    return '#1b2942';
+  }
+
   function dunyaLejant(){
     const lej = document.getElementById('dunya-lejant');
     if(!lej) return;
-    const kutular = [['#5f4a24','1–4'], ['#9a6f22','5–19'], ['#d1901a','20–49'], ['#f0a500','50+']];
-    lej.innerHTML = `<span class="lej-ibare">Renkler ülkedeki ihale yoğunluğunu gösterir:</span>` +
-      `<span class="lej-kutu"><span class="lej-renk" style="background:#1b2942"></span>İhale yok</span>` +
-      kutular.map(([c,t]) => `<span class="lej-kutu"><span class="lej-renk" style="background:${c}"></span>${t} ihale</span>`).join('') +
-      `<span class="lej-yon">Az <span class="lej-grad"></span> Çok</span>` +
-      `<span class="lej-temizle" id="dunya-temizle" style="display:none" onclick="dunyaTemizle()">✕ ülke filtresini kaldır</span>`;
+    const temizle = `<span class="lej-temizle" id="dunya-temizle" style="display:none" onclick="dunyaTemizle()">✕ ülke filtresini kaldır</span>`;
+    if(dunyaMod === 'ticaret' && TIC){
+      const b = dunyaSektor ? ['$2M+','$20M+','$100M+','$500M+'] : ['$10M+','$100M+','$1Mr+','$5Mr+'];
+      const kutular = [['#38311f','&gt;0'], ['#5f4a24',b[0]], ['#9a6f22',b[1]], ['#d1901a',b[2]], ['#f0a500',b[3]]];
+      const sektorEk = dunyaSektor ? ` — ${esc(TIC.sektorler[dunyaSektor] || '')} (${TIC.sektor_yil})` : ` (${TIC.yil})`;
+      lej.innerHTML = `<span class="lej-ibare">Türkiye'nin ihracatına göre${sektorEk}:</span>` +
+        kutular.map(([c,t]) => `<span class="lej-kutu"><span class="lej-renk" style="background:${c}"></span>${t}</span>`).join('') +
+        `<span class="lej-yon">Az <span class="lej-grad"></span> Çok</span>` +
+        `<span class="lej-kutu" style="opacity:.8">Kaynak: ${esc(TIC.kaynak)}</span>` + temizle;
+    } else {
+      const kutular = [['#5f4a24','1–4'], ['#9a6f22','5–19'], ['#d1901a','20–49'], ['#f0a500','50+']];
+      lej.innerHTML = `<span class="lej-ibare">Renkler ülkedeki ihale yoğunluğunu gösterir:</span>` +
+        `<span class="lej-kutu"><span class="lej-renk" style="background:#1b2942"></span>İhale yok</span>` +
+        kutular.map(([c,t]) => `<span class="lej-kutu"><span class="lej-renk" style="background:${c}"></span>${t} ihale</span>`).join('') +
+        `<span class="lej-yon">Az <span class="lej-grad"></span> Çok</span>` + temizle;
+    }
   }
 
   window.dunyaTemizle = function(){
@@ -478,9 +560,94 @@
       if(alt) alt.innerHTML = `Seçili ülke: <b>${esc(val)}</b> — haritada tekrar tıklayarak kaldırın`;
       if(tmz) tmz.style.display = '';
     } else {
-      if(alt) alt.textContent = 'İhale olan bir ülkeye tıklayarak filtreleyin';
+      // ticaret modunun kendi alt yazısını ezme (dunyaModSec ayarlıyor)
+      if(alt && dunyaMod !== 'ticaret') alt.textContent = 'İhale olan bir ülkeye tıklayarak filtreleyin';
       if(tmz) tmz.style.display = 'none';
     }
+  }
+
+  // ── Boyama: aktif moda göre tüm ülkeleri renklendir ──
+  function dunyaBoya(){
+    const wrap = document.getElementById('dunya-svg-wrap');
+    const svg = wrap && wrap.querySelector('svg');
+    if(!svg) return;
+    wrap.classList.toggle('mod-ticaret', dunyaMod === 'ticaret');
+    svg.querySelectorAll('path.ulke').forEach(p => {
+      const kod = p.getAttribute('data-kod');
+      let fill = '#1b2942';
+      if(dunyaMod === 'ticaret'){
+        fill = ticaretRenk(ticaretDeger(kod));
+      } else {
+        const v = dunyaVeri[kod];
+        if(v && v.adet > 0) fill = dunyaRenk(v.adet);
+      }
+      p.style.fill = fill;
+    });
+    dunyaLejant();
+    haritaSecimYansit();
+  }
+
+  // ── Tooltip içerikleri ──
+  function ihaleTipHtml(e){
+    const p = e.target.closest && e.target.closest('path.veri');
+    if(!p) return null;
+    const v = dunyaVeri[p.getAttribute('data-kod')];
+    if(!v) return null;
+    return `${esc(v.ulke)} · <b>${v.adet.toLocaleString('tr')}</b> ihale`;
+  }
+
+  function ticaretTipHtml(e){
+    const p = e.target.closest && e.target.closest('path.tveri');
+    if(!p || !TIC) return null;
+    const kod = p.getAttribute('data-kod');
+    const t = TIC.ulkeler[kod];
+    if(!t) return null;
+    const satirlar = [`<b>${esc(ulkeAdTr(kod))}</b> — Türkiye ile ticaret (${TIC.yil})`];
+    satirlar.push(`↗ İhracat: <b style="color:var(--amber)">${paraUsd(t.ihr[0])}</b>${yuzdeHtml(t.ihr[0], t.ihr[1])}`);
+    satirlar.push(`↘ İthalat: <b>${paraUsd(t.ith[0])}</b>${yuzdeHtml(t.ith[0], t.ith[1])}`);
+    if(dunyaSektor){
+      const s = t.s && t.s[dunyaSektor];  // [ihr_g, ihr_o, ith_g, ith_o]
+      const ad = esc(TIC.sektorler[dunyaSektor] || dunyaSektor);
+      satirlar.push(s
+        ? `<span style="color:var(--muted)">${ad} (${TIC.sektor_yil}):</span> ihr. <b>${paraUsd(s[0])}</b>${yuzdeHtml(s[0], s[1])} · ith. <b>${paraUsd(s[2])}</b>${yuzdeHtml(s[2], s[3])}`
+        : `<span style="color:var(--muted)">${ad}: bu ülkeyle kayıtlı ticaret yok (${TIC.sektor_yil})</span>`);
+    }
+    const v = dunyaVeri[kod];
+    if(v && v.adet > 0) satirlar.push(`<span style="color:var(--muted)">📋 ${v.adet.toLocaleString('tr')} açık uluslararası ihale — tıkla, filtrele</span>`);
+    return satirlar.join('<br>');
+  }
+
+  // ── Mod & sektör kontrolleri ──
+  window.dunyaModSec = function(mod){
+    if(mod === 'ticaret' && !TIC) return;   // veri dosyası yüklenmemişse sessizce kal
+    dunyaMod = mod;
+    document.querySelectorAll('#dunya-mod .mod-btn').forEach(b =>
+      b.classList.toggle('active', b.dataset.mod === mod));
+    const sel = document.getElementById('dunya-sektor');
+    if(sel) sel.style.display = (mod === 'ticaret') ? 'inline-block' : 'none';
+    const alt = document.getElementById('dunya-alt');
+    if(alt && mod === 'ticaret') alt.innerHTML = `Ülkenin üzerine gelin — Türkiye'nin o ülkeyle <b>ihracat/ithalat</b> hacmi ve yıllık değişim`;
+    dunyaBoya();
+    if(mod !== 'ticaret') haritaSecimYansit();  // ihale modu alt yazısını geri yükler
+  };
+
+  window.dunyaSektorDegisti = function(){
+    const sel = document.getElementById('dunya-sektor');
+    dunyaSektor = sel ? sel.value : '';
+    dunyaBoya();
+  };
+
+  function dunyaSektorKur(){
+    const sel = document.getElementById('dunya-sektor');
+    if(!TIC || !Object.keys(TIC.ulkeler || {}).length){
+      // veri dosyası yok/boş → ticaret modu düğmesini tamamen gizle
+      const btn = document.querySelector('#dunya-mod .mod-btn[data-mod="ticaret"]');
+      if(btn) btn.style.display = 'none';
+      return;
+    }
+    if(!sel) return;
+    sel.innerHTML = `<option value="">Tüm sektörler (toplam)</option>` +
+      Object.entries(TIC.sektorler).map(([k, ad]) => `<option value="${esc(k)}">${esc(ad)}</option>`).join('');
   }
 
   async function dunyaKur(){
@@ -497,20 +664,21 @@
     } catch(e){ /* dağılım yüklenemese de harita çizilir */ }
 
     const paths = H.ulkeler.map(u => {
+      if(u.kod && u.kod !== '-99') dunyaAd[u.kod] = u.ad || u.kod;
       const v = dunyaVeri[u.kod];
       const veri = v && v.adet > 0;
-      const fill = veri ? dunyaRenk(v.adet) : '#1b2942';
-      return `<path class="ulke${veri ? ' veri' : ''}" data-kod="${u.kod}" d="${u.d}" style="fill:${fill}"></path>`;
+      const tveri = TIC && TIC.ulkeler[u.kod];
+      return `<path class="ulke${veri ? ' veri' : ''}${tveri ? ' tveri' : ''}" data-kod="${u.kod}" d="${u.d}"></path>`;
     }).join('');
     wrap.innerHTML = `<svg viewBox="${H.viewBox}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Dünya ihale dağılım haritası">${paths}</svg>`;
+    dunyaBoya();
+    dunyaSektorKur();
 
     const svg = wrap.querySelector('svg');
     svg.addEventListener('mousemove', e => {
-      const p = e.target.closest && e.target.closest('path.veri');
-      if(!p){ dunyaTip.classList.remove('gor'); return; }
-      const v = dunyaVeri[p.getAttribute('data-kod')];
-      if(!v){ dunyaTip.classList.remove('gor'); return; }
-      dunyaTip.innerHTML = `${esc(v.ulke)} · <b>${v.adet.toLocaleString('tr')}</b> ihale`;
+      const html = (dunyaMod === 'ticaret') ? ticaretTipHtml(e) : ihaleTipHtml(e);
+      if(!html){ dunyaTip.classList.remove('gor'); return; }
+      dunyaTip.innerHTML = html;
       dunyaTip.style.left = (e.clientX + 14) + 'px';
       dunyaTip.style.top  = (e.clientY + 14) + 'px';
       dunyaTip.classList.add('gor');

@@ -24,6 +24,17 @@
 > ("TR'nin bu ülkeye ihracatı $X, trend") katmanı, TÜİK/Comtrade'den yıllık güncelleme. Tam istatistik
 > modülü core value-prop değil (payment atomiklik + launch işleri önde).
 >
+> **✅ YAPILDI (aynı gün, kullanıcı onayladı — canlıda doğrulanacak):** "🇹🇷 Türkiye ile Ticaret" katmanı:
+> - `backend/ticaret_verisi_cek.py` → `js/ticaret-tr-veri.js` (134KB statik, DB YOK, cron YOK — yılda 1-2 kez elle):
+>   UN Comtrade public preview (anahtarsız; toplam ihracat/ithalat 2025+2024, motCode=0/partner2=0/C00 temiz satır)
+>   + WITS SDMX (anahtarsız; 16 HS-aralığı sektör grubu × ülke, 2023+2022, ISO-A3). Harita kod allowlist'i
+>   dunya-harita.js'ten regex'le → 170 ülke. Değerler doğrulandı (TR 2025 ihr $273.4Mr, DEU $22.2Mr ✓).
+> - uluslararasi.html: harita başlığına mod düğmeleri [İhaleler | 🇹🇷 Türkiye ile Ticaret] + sektör dropdown
+>   (ticaret modunda). Ticaret modunda: ihracat hacmine göre 5-kova renk (sektörde ~10x küçük eşik),
+>   hover tooltip = Türkçe ülke adı (Intl.DisplayNames, fallback İng.) + ihracat/ithalat + YoY ▲▼ + seçili
+>   sektör satırı + "N açık ihale — tıkla" köprüsü. Lejantta yıl + kaynak atfı (UN Comtrade & WITS — atıf
+>   zorunlu). TIC yüklenmezse düğme gizlenir, ihale modu hiç etkilenmez. Yerel testte tüm akış doğrulandı.
+>
 > ## 🛠️ 16 TEMMUZ (devam) — 8 SİSTEM SORUNU: 7 DÜZELTİLDİ + CANLI, #4 SIRADA
 > Kullanıcı 8 sorun bildirdi; 8 paralel ajanla teşhis edildi (workflow), sonra düzeltildi:
 > - **#7 teklif hazırla DONMASI (commit `4fd02af`) — EN KRİTİK:** `yazdir()` print şablonundaki template
