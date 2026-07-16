@@ -7,6 +7,23 @@
 > **KALICI TALİMAT (12 Tem, kullanıcı emri):** Bu blok + ilgili bölümler her oturumda otomatik
 > güncellenir, kullanıcı hatırlatmak zorunda değil. Bkz. hafıza `yapilacaklar-auto-update`.
 
+> ## ⚡ 16 TEMMUZ (devam) — SAYFA-AÇILIŞI AGGREGATE'LERİ: ÖZET MV PAKETİ + analiz_pivot GERÇEK FIX (✅ CANLI)
+> Kullanıcı "yap ne gerekiyorsa yap, açık izin sorma" dedi → tüm sayfalar tarandı, aynı hastalık toplu kapatıldı.
+> **backend/migration_ozet_mv_paketi.sql (✅ canlıda):** 6 canlı aggregate minik MV'lere alındı, RPC'ler AYNI
+> İMZAYLA MV-okur (frontend değişikliği SIFIR): sonuc_ozet 4.0s→343ms (tarayıcı); kategori_sayim 2.1s→212ms;
+> il_sayim 1.7s→~0.3s (ANASAYFA); il_firma_dagilimi / yuklenici_ozet 1.6s→DB'de 2-3ms; il_sektor_ozet
+> 238K-satır gruplama→3.1K'lık il_sektor_ozet_mv. Timeout günlerindeki felaket fallback'leri (sektorler 256K
+> satır, index 13 istek) artık tetiklenmez. Gece REFRESH zinciri run_scraper.sh'ta; **DERS: REFRESH
+> CONCURRENTLY'ler AYRI `-c`'lerde** (tek -c içinde ';' → psql örtük TEK transaction → CONCURRENTLY çalışmaz).
+> Tek-satır MV'lerde sabit id=1 (CONCURRENTLY kolon-bazlı UNIQUE ister, expression sayılmaz).
+> **backend/migration_analiz_pivot_firma_index.sql (✅ canlıda):** analiz_pivot(p_firma) 20s'te BİLE ölüyordu
+> (21.5s ölçüldü) — normalize_firma (~15 regex, plpgsql) 537K satırda satır-başı çalışıyordu. Fix: IMMUTABLE →
+> `idx_sonuc_kazanan_firma_norm` ifade indeksi + predicate s-tarafına sadeleştirme (çapraz-tablo OR index
+> kullanamaz). EXPLAIN: Index Scan ✓. REC idare-pivot + KALYON kategori-pivot birlikte 1.57sn (eski: tek biri
+> 21.5sn'de 57014 → firma-analiz kırılım kartı büyük firmada sessizce kayboluyordu). NOT: bu kayıt bir kez
+> eşzamanlı oturumun commit'inde ezildi, yeniden eklendi — paralel oturumlarda YAPILACAKLAR yazınca HEMEN
+> commit'le; kod commit'i öncesi `git status` şart (başka oturumun stage'i karışabilir, bugün soft-reset gerekti).
+
 > ## 🗺️ PLANLANAN (nav toplu-düzenleme oturumu BİTTİKTEN SONRA) — HARİTAYI FİRMALAR HUB'INA DA EKLE
 > Kullanıcı kararı (16 Tem): Firmalar hub'ına (firma-analiz) Türkiye haritası "görünüm" olarak eklenecek —
 > AMA **RFQ katmanı KAPALI** (sadece firma yoğunluğu + sektör; il'e tıkla→firmalar→analiz). e-Satınalma'daki
@@ -42,6 +59,25 @@
 > NOT: il_sektor_ozet ~9s hesaplama (529K⋈355K count DISTINCT, statement_timeout=30s). Client sessionStorage'da
 >   6 saat cache + lazy (yalnız sektör seçince, spinner'lı) → kabul edilebilir. İleride matview (idare_ozet_mv
 >   deseni gibi, gece REFRESH) ile anlık yapılabilir — istenirse.
+
+> ## ⚡ 16 TEMMUZ (devam) — SAYFA-AÇILIŞI AGGREGATE'LERİ: ÖZET MV PAKETİ + analiz_pivot GERÇEK FIX (✅ CANLI)
+> Kullanıcı "yap ne gerekiyorsa yap, açık izin sorma" dedi → tüm sayfalar tarandı, aynı hastalık toplu kapatıldı.
+> **backend/migration_ozet_mv_paketi.sql (✅ canlıda):** 6 canlı aggregate minik MV'lere alındı, RPC'ler AYNI
+> İMZAYLA MV-okur (frontend değişikliği SIFIR): sonuc_ozet 4.0s→343ms (tarayıcı ölçümü); kategori_sayim
+> 2.1s→212ms; il_sayim 1.7s→~0.3s (ANASAYFA); il_firma_dagilimi / yuklenici_ozet 1.6s→DB'de 2-3ms;
+> il_sektor_ozet 238K-satır gruplama→3.1K'lık il_sektor_ozet_mv. Timeout günlerinde devreye giren felaket
+> fallback'leri (sektorler 256K satır, index 13 istek) artık tetiklenmez (kod dursun — zararsız sigorta).
+> Gece REFRESH zinciri run_scraper.sh'ta; **DERS: REFRESH CONCURRENTLY'ler AYRI `-c`'lerde olmalı** (tek -c
+> içinde ';' ile birleşince psql örtük TEK transaction yapar → CONCURRENTLY transaction içinde ÇALIŞMAZ).
+> Tek-satırlık MV'lerde sabit id=1 kolonu (CONCURRENTLY kolon-bazlı UNIQUE index ister, expression sayılmaz).
+> **backend/migration_analiz_pivot_firma_index.sql (✅ canlıda):** analiz_pivot(p_firma) 20s timeout'ta BİLE
+> ölüyordu (21.5s ölçüldü) — sorun normalize_firma'nın (plpgsql, ~15 regex) 537K satırda satır-başı çalışması.
+> Fix: normalize_firma IMMUTABLE → `idx_sonuc_kazanan_firma_norm` ifade indeksi + predicate s-tarafına
+> sadeleştirildi (eski `y.normalize_ad=X OR normalize_firma(s.kazanan_firma)=X` çapraz-tablo OR'u index
+> kullanamıyordu; kanonik kimlik zaten normalize_firma). EXPLAIN: Index Scan ✓. Tarayıcıda REC idare-pivot +
+> KALYON kategori-pivot birlikte 1.57sn (eski: tek biri 21.5sn'de 57014 → firma-analiz kırılım kartı büyük
+> firmalarda sessizce kayboluyordu). NOT: eşzamanlı başka oturumun stage'i commit'e karışınca soft-reset ile
+> ayıklandı — bu repoda commit öncesi `git status` kontrolü şart (paralel oturumlar aynı working tree'de).
 
 > ## 🗺️ 16 TEMMUZ (devam) — HARİTA "BİR İLE TIKLAYIN" TAKILMASI: sektör katmanı MV'ye alındı (✅ CANLI)
 > **✅ DEPLOY + DOĞRULAMA:** migration VDS'te çalıştı (MV build 1dk30sn, 238.341 satır, 3.157 il×kategori
@@ -119,6 +155,23 @@
 > - **ozel-ihale-detay.html:** sureDoldu()/teklifAcik() — durum='acik' olsa bile son_teklif geçmişse teklif
 >   formu kapanır ("⏹ son teklif tarihi geçti"), teklifVer() guard'lı, header rozeti "Süresi doldu".
 > - NOT: login-arkası akış (profil→otomatik kilit→yayınla) anon test edilemedi ama kod+deploy doğrulandı.
+
+> ## 🏷️ 16 TEMMUZ (2. oturum devam) — "DİĞER" TEŞHİSİ: TÜRKÇE ÇEKİM EKLERİ + DMO EŞLEME (kelime katmanı yapıldı, AI katmanı ÖNERİ)
+> Kullanıcı sorusu "kategorize etmek mi sorun?" üzerine 4K'lık Diğer örneklemi analiz edildi (scratchpad token frekansı):
+> **Diğer'e düşenlerin %100'ü OKAS'SIZ**; en büyük küme taşımalı-eğitim/araç-kiralama ihaleleri. KÖK NEDEN:
+> \b tam-kelime regex Türkçe ÇEKİM EKLERİNİ kaçırıyor — "ogrenci tasima" ≠ "öğrencilerin taşınmaSI",
+> "arac kirala" ≠ "araç kiralaMA", "ilac" ≠ "İlaçLAR", "parke tas" ≠ "Parke TaşI". Yeni kelime eklerken her çekim AYRI yazılmalı.
+> - `kategori_siniflandir.py`: veri-türevli varyantlar (tasinmasi/tasimali/tasima merkezi/arac gunu/hat arac,
+>   arac-tasit kiralama, ogle yemegi, klorlama, buro malzemesi, ag anahtari/omurga ag, biyosidal, bugday,
+>   parke tasi, lisans yenileme/alimi) + **DMO_KATEGORI_MAP** (DMO'nun kendi 12 kategori adı → kanonik;
+>   dmo_scraper önce map'e bakar). Ölçüm: 4K Diğer örnekleminde **%16.1 kurtarma** (ekstrapolasyon ~131K→~21K azalır);
+>   modüldeki 9 örnek regresyonsuz; DMO/JND dry-run'da İlaçlar→Sağlık, Nakil Vasıtalar→Taşıt, KLORLAMA→Su ✓.
+> - **SONRAKİ KATMANLAR (öneri, onay bekliyor):** (1) kategori_belirle'ye `ilan_metni[:1200]` sinyali
+>   (başlık jenerik olsa da metinde ürünler yazar; backfill için left(ilan_metni,N) dönen küçük RPC gerek);
+>   (2) kalan kuyruğa **Gemini toplu sınıflandırma** — 50 başlık/istek JSON batch, gemini-2.5-flash,
+>   ~100K satır ≈ 2K istek (birkaç $; FREE tier kotaya takılır, paid key şart) → ai_kategori_backfill.py
+>   + cron'da günlük mini tur (yeni Diğer'ler). Gerçekçi hedef: Diğer %19 → kelime %16 → metin ~%10-12 → AI %3-5.
+>   NOT: kategori backfill'i bu kelime güncellemeleri VDS'e GİTTİKTEN sonra (tekrar) koşmak gerekir — idempotent.
 
 > ## 📦 16 TEMMUZ (2. oturum devam) — KAMU KURUMU İHALELERİ EKRANI KALDIRILDI → DMO+JANDARMA ANA LİSTEDE
 > Kullanıcı kararı: "ayrı sayfaya ihtiyaç yok, İhaleler ekranına al." ilan_gov deseni birebir uygulandı:
