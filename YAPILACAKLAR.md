@@ -43,7 +43,12 @@
 >   6 saat cache + lazy (yalnız sektör seçince, spinner'lı) → kabul edilebilir. İleride matview (idare_ozet_mv
 >   deseni gibi, gece REFRESH) ile anlık yapılabilir — istenirse.
 
-> ## 🗺️ 16 TEMMUZ (devam) — HARİTA "BİR İLE TIKLAYIN" TAKILMASI: sektör katmanı MV'ye alındı
+> ## 🗺️ 16 TEMMUZ (devam) — HARİTA "BİR İLE TIKLAYIN" TAKILMASI: sektör katmanı MV'ye alındı (✅ CANLI)
+> **✅ DEPLOY + DOĞRULAMA:** migration VDS'te çalıştı (MV build 1dk30sn, 238.341 satır, 3.157 il×kategori
+> grubu). Tarayıcıda soğuk oturum: sektör seçimi 9.2sn→**1.0sn**, il tıklaması→firma listesi **0.99sn**
+> (eski: soğukta 57014 timeout→takılma). curl ısınmış: ankara 0.5s, istanbul 0.44s, ozet ~1s. 6sn hata
+> izlemede konsol temiz. Gece REFRESH run_scraper.sh'ta (idare MV'nin yanında). İsteğe bağlı gelecek adım:
+> ozet için 3.1K satırlık ikinci mini-MV (~1s→~150ms; 6h client cache varken düşük öncelik).
 > Kullanıcı: "hala veriler gelmiyor, bir ile tıklayın da takılı kalıyor". **Kök neden (canlıda ölçüldü):**
 > harita sektör katmanı iki AĞIR canlı aggregate'e dayanıyordu (529K⋈355K): il_sektor_ozet sektör seçince
 > 9.2sn (sıcakken!); il_sektor_firmalar il tıklayınca sıcak 1.8sn, SOĞUKTA 57014 statement timeout →
