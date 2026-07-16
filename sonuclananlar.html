@@ -436,15 +436,17 @@
         .order(ALAN[siralamaAlan], { ascending: false, nullsFirst: false })
         .limit(5000);
       if (!data || !data.length) { alert('Dışa aktarılacak veri bulunamadı.'); return; }
+      // CSV formül enjeksiyonu koruması (=,+,-,@,tab,CR → ' ile kaçır)
+      const csvG = v => { v = (v == null ? '' : String(v)); if (/^[=+\-@\t\r]/.test(v)) v = "'" + v; return `"${v.replace(/"/g,'""')}"`; };
       const satirlar = [
         ['Firma', 'İhale Başlığı', 'İdare', 'İl', 'Sözleşme Bedeli (TL)', 'Tenzilat %', 'Teklif Sayısı', 'Sonuç Tarihi'],
         ...data.map(s => {
           const ilan = (Array.isArray(s.ilanlar) ? s.ilanlar[0] : s.ilanlar) || {};
           return [
-            `"${(s.kazanan_firma || '').replace(/"/g,'""')}"`,
-            `"${(ilan.baslik || '').replace(/"/g,'""')}"`,
-            `"${(ilan.idare || '').replace(/"/g,'""')}"`,
-            ilan.il || '',
+            csvG(s.kazanan_firma),
+            csvG(ilan.baslik),
+            csvG(ilan.idare),
+            csvG(ilan.il),
             s.kazanan_teklif || '',
             s.kazanan_teklif_farki_yuzde != null ? Number(s.kazanan_teklif_farki_yuzde).toFixed(3) : '',
             s.toplam_teklif_sayisi || '',

@@ -1194,13 +1194,15 @@
       return;
     }
     if (!yukluIlanlar.length) return;
+    // CSV formül enjeksiyonu koruması: =,+,-,@,tab,CR ile başlayan hücreyi ' ile kaçır (Excel formül çalıştırmasın)
+    const csvGuvenli = v => { v = (v == null ? '' : String(v)); if (/^[=+\-@\t\r]/.test(v)) v = "'" + v; return `"${v.replace(/"/g,'""')}"`; };
     const basliklar = ['EKAP ID','İhale Adı','İdare','İl','Tür','Durum','Son Teklif Tarihi','Yak. Maliyet Min (₺)','Yak. Maliyet Max (₺)','Uyum %'];
     const satirlar = yukluIlanlar.map(i => [
-      i.ekap_id || '',
-      `"${(i.baslik || '').replace(/"/g,'""')}"`,
-      `"${(i.idare  || '').replace(/"/g,'""')}"`,
-      i.il   || '',
-      i.tur  || '',
+      csvGuvenli(i.ekap_id),
+      csvGuvenli(i.baslik),
+      csvGuvenli(i.idare),
+      csvGuvenli(i.il),
+      csvGuvenli(i.tur),
       i.durum || '',
       i.son_teklif_tarihi ? i.son_teklif_tarihi.split('T')[0] : '',
       i.yaklasik_maliyet_min || '',
