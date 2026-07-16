@@ -118,6 +118,28 @@
     .pager-btn:disabled { opacity: .4; cursor: default; }
     .pager-info { display: flex; align-items: center; font-size: 13px; color: var(--muted); padding: 0 6px; }
 
+    /* Dünya haritası */
+    .dunya-card { background: var(--navy-mid); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px 10px; margin-bottom: 16px; }
+    .dunya-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 10px; flex-wrap: wrap; }
+    .dunya-baslik { font-size: 14px; font-weight: 700; color: var(--white); }
+    .dunya-alt { font-size: 12px; color: var(--muted); }
+    .dunya-alt b { color: var(--amber); }
+    .dunya-svg-wrap { width: 100%; overflow: hidden; border-radius: 8px; background: linear-gradient(180deg, #0c1524, #0a111d); }
+    .dunya-svg-wrap svg { width: 100%; height: auto; display: block; }
+    .dunya-svg-wrap path.ulke { fill: #1b2942; stroke: #0a111d; stroke-width: .4; transition: fill .12s, opacity .12s; }
+    .dunya-svg-wrap path.ulke.veri { cursor: pointer; }
+    .dunya-svg-wrap path.ulke.veri:hover { fill: #ffd166 !important; }
+    .dunya-svg-wrap path.ulke.secili { stroke: var(--white); stroke-width: 1; }
+    .dunya-lejant { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 8px; font-size: 11px; color: var(--muted); }
+    .dunya-lejant .lej-kutu { display: inline-flex; align-items: center; gap: 4px; }
+    .dunya-lejant .lej-renk { width: 13px; height: 13px; border-radius: 3px; display: inline-block; border: 1px solid rgba(255,255,255,.1); }
+    .dunya-lejant .lej-temizle { margin-left: auto; color: var(--amber); cursor: pointer; font-weight: 600; }
+    .dunya-lejant .lej-temizle:hover { text-decoration: underline; }
+    .dunya-tooltip { position: fixed; z-index: 999; pointer-events: none; background: #0b0e14; border: 1px solid var(--amber); border-radius: 7px; padding: 6px 10px; font-size: 12px; color: var(--white); box-shadow: 0 4px 18px rgba(0,0,0,.5); opacity: 0; transform: translateY(4px); transition: opacity .1s; white-space: nowrap; }
+    .dunya-tooltip.gor { opacity: 1; transform: translateY(0); }
+    .dunya-tooltip b { color: var(--amber); }
+    .mini-spin { width: 26px; height: 26px; border: 3px solid var(--border); border-top-color: var(--amber); border-radius: 50%; animation: spin .8s linear infinite; }
+
     @media (max-width: 900px) {
       .sidebar { display: none; }
       .stats-bar { grid-template-columns: repeat(2,1fr); }
@@ -211,6 +233,17 @@
         </div>
       </div>
 
+      <!-- DÜNYA HARİTASI -->
+      <div class="dunya-card">
+        <div class="dunya-head">
+          <span class="dunya-baslik">🗺️ Ülkeye göre keşfet</span>
+          <span class="dunya-alt" id="dunya-alt">İhale olan bir ülkeye tıklayarak filtreleyin</span>
+        </div>
+        <div class="dunya-svg-wrap" id="dunya-svg-wrap"><div class="mini-spin" style="margin:40px auto;"></div></div>
+        <div class="dunya-lejant" id="dunya-lejant"></div>
+      </div>
+      <div class="dunya-tooltip" id="dunya-tooltip"></div>
+
       <div class="toolbar">
         <input type="text" id="f-ara" placeholder="🔍 Başlık ara (Türkçe)…" oninput="aramaDegisti()" />
         <select id="f-ulke" onchange="filtreDegisti()"><option value="">Tüm Ülkeler</option></select>
@@ -243,6 +276,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/sidebar-user.js"></script>
 <script src="js/bildirim-sayaci.js"></script>
+<script src="js/dunya-harita.js?v=1"></script>
 <script>
 (() => {
   const SB_URL = "https://ihaleglobal.com";
@@ -360,7 +394,7 @@
     document.getElementById('pg-son').disabled = sayfa >= topSayfa;
   }
 
-  window.filtreDegisti = () => veriYukle(true);
+  window.filtreDegisti = () => { haritaSecimYansit(); veriYukle(true); };
   window.aramaDegisti = function() { clearTimeout(aramaTimer); aramaTimer = setTimeout(() => veriYukle(true), 350); };
   window.sayfaGit = function(yon) {
     let h = sayfa;
@@ -395,8 +429,105 @@
     kats.forEach(k => { const o = document.createElement('option'); o.value = k; o.textContent = k; kSel.appendChild(o); });
   }
 
+  // ---------------- Dünya haritası ----------------
+  const dunyaVeri = {};    // ISO-A3 -> {ulke, adet}
+  const dunyaAdKod = {};   // Türkçe ülke adı (lower) -> ISO-A3
+  const dunyaTip = document.getElementById('dunya-tooltip');
+
+  function dunyaRenk(n){
+    if(n >= 50) return '#f0a500';
+    if(n >= 20) return '#d1901a';
+    if(n >= 5)  return '#9a6f22';
+    if(n >= 1)  return '#5f4a24';
+    return '#1b2942';
+  }
+
+  function dunyaLejant(){
+    const lej = document.getElementById('dunya-lejant');
+    if(!lej) return;
+    const kutular = [['#5f4a24','1–4'], ['#9a6f22','5–19'], ['#d1901a','20–49'], ['#f0a500','50+']];
+    lej.innerHTML = `<span>İhale sayısı:</span>` +
+      kutular.map(([c,t]) => `<span class="lej-kutu"><span class="lej-renk" style="background:${c}"></span>${t}</span>`).join('') +
+      `<span class="lej-temizle" id="dunya-temizle" style="display:none" onclick="dunyaTemizle()">✕ ülke filtresini kaldır</span>`;
+  }
+
+  window.dunyaTemizle = function(){
+    document.getElementById('f-ulke').value = '';
+    window.filtreDegisti();
+  };
+
+  function haritaSecimYansit(){
+    const val = (document.getElementById('f-ulke') || {}).value || '';
+    const svg = document.querySelector('#dunya-svg-wrap svg');
+    if(svg){
+      svg.querySelectorAll('path.secili').forEach(p => p.classList.remove('secili'));
+      if(val){
+        const kod = dunyaAdKod[val.toLocaleLowerCase('tr')];
+        if(kod){ const p = svg.querySelector(`path[data-kod="${kod}"]`); if(p) p.classList.add('secili'); }
+      }
+    }
+    const alt = document.getElementById('dunya-alt');
+    const tmz = document.getElementById('dunya-temizle');
+    if(val){
+      if(alt) alt.innerHTML = `Seçili ülke: <b>${esc(val)}</b> — haritada tekrar tıklayarak kaldırın`;
+      if(tmz) tmz.style.display = '';
+    } else {
+      if(alt) alt.textContent = 'İhale olan bir ülkeye tıklayarak filtreleyin';
+      if(tmz) tmz.style.display = 'none';
+    }
+  }
+
+  async function dunyaKur(){
+    const wrap = document.getElementById('dunya-svg-wrap');
+    const H = window.DUNYA_HARITA;
+    if(!wrap) return;
+    if(!H || !H.ulkeler){ const c = wrap.closest('.dunya-card'); if(c) c.style.display = 'none'; return; }
+    try {
+      const { data } = await sb.rpc('ulke_ihale_dagilimi');
+      (data || []).forEach(r => {
+        if(r.ulke_kodu) dunyaVeri[r.ulke_kodu] = { ulke: r.ulke, adet: Number(r.adet) || 0 };
+        if(r.ulke && r.ulke_kodu) dunyaAdKod[String(r.ulke).toLocaleLowerCase('tr')] = r.ulke_kodu;
+      });
+    } catch(e){ /* dağılım yüklenemese de harita çizilir */ }
+
+    const paths = H.ulkeler.map(u => {
+      const v = dunyaVeri[u.kod];
+      const veri = v && v.adet > 0;
+      const fill = veri ? dunyaRenk(v.adet) : '#1b2942';
+      return `<path class="ulke${veri ? ' veri' : ''}" data-kod="${u.kod}" d="${u.d}" style="fill:${fill}"></path>`;
+    }).join('');
+    wrap.innerHTML = `<svg viewBox="${H.viewBox}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Dünya ihale dağılım haritası">${paths}</svg>`;
+
+    const svg = wrap.querySelector('svg');
+    svg.addEventListener('mousemove', e => {
+      const p = e.target.closest && e.target.closest('path.veri');
+      if(!p){ dunyaTip.classList.remove('gor'); return; }
+      const v = dunyaVeri[p.getAttribute('data-kod')];
+      if(!v){ dunyaTip.classList.remove('gor'); return; }
+      dunyaTip.innerHTML = `${esc(v.ulke)} · <b>${v.adet.toLocaleString('tr')}</b> ihale`;
+      dunyaTip.style.left = (e.clientX + 14) + 'px';
+      dunyaTip.style.top  = (e.clientY + 14) + 'px';
+      dunyaTip.classList.add('gor');
+    });
+    svg.addEventListener('mouseleave', () => dunyaTip.classList.remove('gor'));
+    svg.addEventListener('click', e => {
+      const p = e.target.closest && e.target.closest('path.veri');
+      if(!p) return;
+      const v = dunyaVeri[p.getAttribute('data-kod')];
+      if(!v || !v.ulke) return;
+      const sel = document.getElementById('f-ulke');
+      sel.value = (sel.value === v.ulke) ? '' : v.ulke;   // aynı ülkeye tekrar tık → filtreyi kaldır
+      window.filtreDegisti();
+      const tb = document.querySelector('.toolbar'); if(tb) tb.scrollIntoView({ behavior:'smooth', block:'nearest' });
+    });
+
+    dunyaLejant();
+    haritaSecimYansit();
+  }
+
   istatistikYukle();
   veriYukle(true);
+  dunyaKur();
 })();
 </script>
 <script src="js/main.js"></script>
