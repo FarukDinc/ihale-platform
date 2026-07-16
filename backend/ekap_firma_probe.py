@@ -136,16 +136,34 @@ async def detay_incele(client, item, idx):
                 print("   ", text[bas:bas + 1400].replace("\n", "\n    "))
 
 
+async def liste_cek(durum, denemeler=6):
+    """404'te farklı proxy ile tekrar dene (havuzda bloklu IP olabilir)."""
+    for i in range(denemeler):
+        proxy = rastgele_proxy_url()
+        async with httpx.AsyncClient(verify=ssl_ctx(), http2=False, timeout=30.0, proxy=proxy) as client:
+            d, veri = await post(client, "/b_ihalearama/api/Ihale/GetListByParameters", {
+                "searchText": "", "paginationSkip": 0, "paginationTake": 100,
+                "ihaleDurumIdList": durum, "searchType": "GirdigimGibi"})
+            pxy = proxy.split('@')[-1] if proxy else 'direkt'
+            print(f"  durum={durum} proxy={pxy} → {d}" + (f" toplam={veri.get('totalCount')}" if veri else ""))
+            if veri and veri.get("list"):
+                return veri
+        await asyncio.sleep(0.5)
+    return None
+
+
 async def main():
+    print("=== durum kodu testi (hangisi sonuç listesini veriyor?) ===")
+    for durum in ([2], [5], [3], [4]):
+        veri = await liste_cek(durum, denemeler=3)
+        if durum == [2] and veri:
+            print("  ↳ durum=[2] ÇALIŞIYOR → API/proxy sağlıklı")
+    print("\n=== durum=[5] sonuç detayı inceleniyor ===")
+    veri = await liste_cek([5], denemeler=8)
+    if not veri:
+        print("durum=[5] hiçbir proxy ile alınamadı."); return
     proxy = rastgele_proxy_url()
-    print(f"proxy: {proxy.split('@')[-1] if proxy else 'YOK (direkt)'}")
     async with httpx.AsyncClient(verify=ssl_ctx(), http2=False, timeout=30.0, proxy=proxy) as client:
-        d, veri = await post(client, "/b_ihalearama/api/Ihale/GetListByParameters", {
-            "searchText": "", "paginationSkip": 0, "paginationTake": 25,
-            "ihaleDurumIdList": [5], "searchType": "GirdigimGibi"})
-        print(f"GetListByParameters(durum=5) → {d}; toplam={veri.get('totalCount') if veri else '?'}")
-        if not veri or not veri.get("list"):
-            print("liste boş/erişilemedi"); return
         for idx, item in enumerate(veri["list"][:3], 1):
             await detay_incele(client, item, idx)
             await asyncio.sleep(0.4)
