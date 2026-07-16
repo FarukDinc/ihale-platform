@@ -206,6 +206,37 @@
     .kars-cell { padding:12px 14px; font-size:15px; font-weight:800; color:var(--white); text-align:center; }
     .kars-cell.kars-kazanan { color:#4ade80; }
     .kars-label { padding:12px 10px; font-size:11.5px; color:var(--muted); text-align:center; text-transform:uppercase; letter-spacing:.04em; background:rgba(var(--overlay-rgb),.03); min-width:130px; }
+    /* ── DİZİN (Firmalar Dizini birleşik) ── */
+    .dz-toolbar { display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:16px; }
+    .dz-ara { flex:1; min-width:220px; display:flex; align-items:center; gap:8px; background:var(--navy-mid); border:1px solid var(--border); border-radius:7px; padding:8px 12px; }
+    .dz-ara input { background:none; border:none; outline:none; color:var(--white); font-size:13px; font-family:var(--font-body); width:100%; }
+    .dz-ara input::placeholder { color:var(--muted); }
+    .dz-sel { background:var(--navy-mid); border:1px solid var(--border); color:var(--white); font-size:13px; font-family:var(--font-body); padding:8px 12px; border-radius:7px; outline:none; cursor:pointer; }
+    .dz-sel:focus, .dz-ara:focus-within { border-color:var(--amber); }
+    .dz-say { font-size:12px; color:var(--muted); margin-left:auto; white-space:nowrap; }
+    .dz-tablo { background:var(--navy-mid); border:1px solid var(--border); border-radius:10px; overflow:hidden; }
+    .dz-head, .dz-row { display:grid; grid-template-columns:1fr 110px 100px 130px 110px 90px; align-items:center; }
+    .dz-head { padding:10px 18px; border-bottom:1px solid var(--border); font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); }
+    .dz-head .srt { cursor:pointer; user-select:none; }
+    .dz-head .srt:hover { color:var(--white); }
+    .dz-head .srt.on::after { content:' ↓'; color:var(--amber); }
+    .dz-row { padding:12px 18px; border-bottom:1px solid rgba(var(--overlay-rgb),.04); transition:background .12s; cursor:pointer; }
+    .dz-row:last-child { border-bottom:none; }
+    .dz-row:hover { background:rgba(var(--overlay-rgb),.03); }
+    .dz-ad { font-size:13px; font-weight:600; color:var(--white); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; padding-right:10px; }
+    .dz-ad:hover { color:var(--amber); }
+    .dz-il { font-size:12px; color:var(--muted); }
+    .dz-sayi { font-weight:700; color:var(--white); }
+    .dz-ciro { font-weight:700; color:var(--amber); font-size:13px; }
+    .dz-tarih { font-size:12px; color:var(--muted); }
+    .dz-analiz { font-size:11px; font-weight:700; color:var(--amber); background:rgba(240,165,0,.12); padding:4px 10px; border-radius:5px; text-align:center; }
+    .dz-row:hover .dz-analiz { background:var(--amber); color:var(--navy); }
+    .dz-badge { display:inline-block; font-size:9px; font-weight:700; color:var(--amber); background:rgba(240,165,0,.12); padding:1px 5px; border-radius:4px; margin-left:6px; vertical-align:middle; }
+    .dz-pager { display:flex; justify-content:center; align-items:center; gap:8px; padding:14px; border-top:1px solid var(--border); }
+    .dz-pbtn { padding:6px 14px; border-radius:6px; font-size:12px; font-weight:600; background:var(--navy); border:1px solid var(--border); color:var(--white); cursor:pointer; }
+    .dz-pbtn:disabled { opacity:.4; cursor:default; }
+    .dz-bos { padding:40px; text-align:center; color:var(--muted); font-size:13px; }
+    @media (max-width:760px){ .dz-head, .dz-row { grid-template-columns:1fr 70px 90px; } .dz-il,.dz-tarih,.dz-analiz,.dz-head .c-il,.dz-head .c-tarih,.dz-head .c-analiz { display:none; } }
   </style>
 </head>
 <body>
@@ -276,10 +307,51 @@
 
     <div class="page-body">
 
-      <!-- ARAMA KUTUSU (firma adı yokken gösterilir) -->
-      <div class="firma-arama-wrap" id="arama-wrap">
+      <!-- DİZİN (açılış: firma dizini + arama + sıralama; firmaya tıkla → analiz) -->
+      <div id="firma-dizin">
+        <div style="margin-bottom:16px;">
+          <div class="firma-eyebrow">🏢 Firmalar</div>
+          <div class="firma-liste-baslik" style="font-size:22px;">Firma Dizini & Analizi</div>
+          <div class="firma-liste-alt">İhale kazanmış firmaları sırala/ara, birine tıklayınca aynı ekranda derin analiz + karşılaştırma açılır.</div>
+        </div>
+        <div class="kpi-grid" style="margin-bottom:16px;">
+          <div class="kpi-card"><div class="kpi-label">Toplam Firma</div><div class="kpi-value amber" id="dz-st-firma">—</div></div>
+          <div class="kpi-card"><div class="kpi-label">Toplam Sözleşme</div><div class="kpi-value" id="dz-st-soz">—</div></div>
+          <div class="kpi-card"><div class="kpi-label">Toplam Ciro</div><div class="kpi-value" id="dz-st-ciro">—</div></div>
+          <div class="kpi-card"><div class="kpi-label">İş Ortaklığı</div><div class="kpi-value" id="dz-st-ortak">—</div></div>
+        </div>
+        <div class="dz-toolbar">
+          <div class="dz-ara"><span style="color:var(--muted);">🔍</span><input type="text" id="dz-arama" placeholder="Firma adı ara…" autocomplete="off" oninput="dzAramaDegisti()"></div>
+          <select class="dz-sel" id="dz-il" onchange="dzYukle(true)"><option value="">Tüm İller</option></select>
+          <select class="dz-sel" id="dz-sirala" onchange="dzYukle(true)">
+            <option value="ciro_desc">En Çok Ciro</option>
+            <option value="sayi_desc">En Çok Sözleşme</option>
+            <option value="tarih_desc">Son İş (En Yeni)</option>
+            <option value="ad_asc">İsme Göre (A→Z)</option>
+          </select>
+          <span class="dz-say" id="dz-say">— firma</span>
+        </div>
+        <div class="dz-tablo">
+          <div class="dz-head">
+            <div>FİRMA ADI</div>
+            <div class="c-il">İL</div>
+            <div class="srt" id="dz-srt-sayi" onclick="dzSirala('sayi_desc')">SÖZLEŞME</div>
+            <div class="srt on" id="dz-srt-ciro" onclick="dzSirala('ciro_desc')">TOPLAM CİRO</div>
+            <div class="c-tarih">SON İŞ</div>
+            <div class="c-analiz"></div>
+          </div>
+          <div id="dz-govde"><div class="dz-bos">Yükleniyor…</div></div>
+          <div class="dz-pager" id="dz-pager" style="display:none;">
+            <button class="dz-pbtn" id="dz-prev" onclick="dzSayfa(-1)" disabled>← Önceki</button>
+            <span style="font-size:12px;color:var(--muted);" id="dz-pinfo"></span>
+            <button class="dz-pbtn" id="dz-next" onclick="dzSayfa(1)">Sonraki →</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ESKİ ARAMA KUTUSU (geriye uyum: ?ara= deep-link firma-liste'yi kullanır; dizin varsayılan) -->
+      <div class="firma-arama-wrap" id="arama-wrap" style="display:none;">
         <div class="firma-arama-baslik">🏢 Firma Analizi</div>
-        <div class="firma-arama-alt">İhaleye katılmış bir firmanın geçmişini, sektör dağılımını ve istatistiklerini görüntüleyin.</div>
         <div class="firma-arama-input-wrap">
           <input type="text" class="firma-arama-input" id="firma-ara-input"
             placeholder="Firma / yüklenici adı ara…"
@@ -786,9 +858,10 @@
 
   let AKTIF_YID = '';  // detayı açık firmanın yuklenici_id'si
 
-  // ── 3 görünüm arası geçiş ───────────────────────────────
-  function goster(hangi) { // 'arama' | 'liste' | 'detay'
-    document.getElementById('arama-wrap').style.display   = hangi === 'arama' ? '' : 'none';
+  // ── Görünüm geçişi: 'dizin' (açılış) | 'liste' (?ara= deep-link) | 'detay' ──
+  function goster(hangi) {
+    document.getElementById('firma-dizin').style.display  = hangi === 'dizin' ? 'block' : 'none';
+    document.getElementById('arama-wrap').style.display   = 'none';
     document.getElementById('firma-liste').style.display  = hangi === 'liste' ? 'block' : 'none';
     document.getElementById('firma-icerik').style.display = hangi === 'detay' ? 'block' : 'none';
   }
@@ -796,9 +869,80 @@
     const url = new URL(window.location);
     url.searchParams.delete('firma'); url.searchParams.delete('yid'); url.searchParams.delete('ara');
     window.history.pushState({}, '', url);
-    sonAramalariGoster();
-    goster('arama');
+    goster('dizin');
+    dizinBaslat();
   };
+
+  // ── DİZİN (Firmalar Dizini birleşik) — server-side yukleniciler + arama_fold + sort + pager ──
+  const DZ_ALAN = { ciro_desc:['toplam_ciro',false], sayi_desc:['toplam_sozlesme_sayisi',false], tarih_desc:['son_sozlesme_tarihi',false], ad_asc:['ad',true] };
+  const DZ_BOYUT = 50;
+  let dzSayfaNo = 0, dzToplam = 0, dzAramaTimer = null, _dizinKuruldu = false;
+
+  async function dzIstatistik() {
+    try {
+      const { data } = await sb.rpc('yuklenici_ozet');
+      const r = (data && data[0]) || {};
+      document.getElementById('dz-st-firma').textContent = Number(r.toplam||0).toLocaleString('tr-TR');
+      document.getElementById('dz-st-soz').textContent   = Number(r.toplam_sozlesme||0).toLocaleString('tr-TR');
+      document.getElementById('dz-st-ciro').textContent  = formatBedel(Number(r.toplam_ciro)||0);
+      document.getElementById('dz-st-ortak').textContent = Number(r.ortak_sayisi||0).toLocaleString('tr-TR');
+    } catch(e) {}
+  }
+  async function dzIlDoldur() {
+    try {
+      const { data } = await sb.rpc('il_firma_dagilimi');
+      const iller = (data||[]).map(r=>r.il).filter(Boolean).sort((a,b)=>a.localeCompare(b,'tr'));
+      const sel = document.getElementById('dz-il');
+      iller.forEach(il=>{ const o=document.createElement('option'); o.value=il; o.textContent=il; sel.appendChild(o); });
+    } catch(e) {}
+  }
+  window.dzAramaDegisti = function(){ clearTimeout(dzAramaTimer); dzAramaTimer = setTimeout(()=>dzYukle(true), 300); };
+  window.dzSirala = function(v){
+    document.getElementById('dz-sirala').value = v;
+    document.querySelectorAll('.dz-head .srt').forEach(s=>s.classList.remove('on'));
+    const el = v==='sayi_desc' ? document.getElementById('dz-srt-sayi') : (v==='ciro_desc' ? document.getElementById('dz-srt-ciro') : null);
+    if (el) el.classList.add('on');
+    dzYukle(true);
+  };
+  window.dzSayfa = function(d){ const y = dzSayfaNo + d; if (y < 0) return; dzSayfaNo = y; dzYukle(false); window.scrollTo({top:0,behavior:'smooth'}); };
+
+  async function dzYukle(reset) {
+    if (reset) dzSayfaNo = 0;
+    const arama = trFold(document.getElementById('dz-arama').value.trim());
+    const ilVal = document.getElementById('dz-il').value;
+    const [alan, asc] = DZ_ALAN[document.getElementById('dz-sirala').value] || DZ_ALAN.ciro_desc;
+    const govde = document.getElementById('dz-govde');
+    if (reset) govde.innerHTML = '<div class="dz-bos">Yükleniyor…</div>';
+    let q = sb.from('yukleniciler').select('id,ad,normalize_ad,il,toplam_sozlesme_sayisi,toplam_ciro,son_sozlesme_tarihi,ortak_girisim', { count:'exact' });
+    if (arama) q = q.ilike('arama_fold', '%'+arama+'%');
+    if (ilVal) q = q.eq('il', ilVal);
+    q = q.order(alan, { ascending: asc, nullsFirst: false }).range(dzSayfaNo*DZ_BOYUT, dzSayfaNo*DZ_BOYUT+DZ_BOYUT-1);
+    const { data, count, error } = await q;
+    if (error) { govde.innerHTML = '<div class="dz-bos">Yüklenemedi: '+escapeHtml(error.message)+'</div>'; document.getElementById('dz-pager').style.display='none'; return; }
+    dzToplam = count || 0;
+    document.getElementById('dz-say').textContent = dzToplam.toLocaleString('tr-TR')+' firma';
+    const rows = data || [];
+    if (!rows.length) { govde.innerHTML = '<div class="dz-bos">Eşleşen firma bulunamadı.</div>'; document.getElementById('dz-pager').style.display='none'; return; }
+    govde.innerHTML = rows.map(f => {
+      const ad = f.ad || f.normalize_ad || '—';
+      return `<div class="dz-row" onclick="firmaSec('${escapeHtml(f.id)}')">
+        <div class="dz-ad" title="${escapeHtml(ad)}">${escapeHtml(ad)}${f.ortak_girisim?'<span class="dz-badge">İŞ ORT.</span>':''}</div>
+        <div class="dz-il c-il">${escapeHtml(f.il||'—')}</div>
+        <div class="dz-sayi">${(f.toplam_sozlesme_sayisi||0).toLocaleString('tr-TR')}</div>
+        <div class="dz-ciro">${formatBedel(f.toplam_ciro||0)}</div>
+        <div class="dz-tarih c-tarih">${f.son_sozlesme_tarihi?new Date(f.son_sozlesme_tarihi).toLocaleDateString('tr-TR'):'—'}</div>
+        <div class="c-analiz"><span class="dz-analiz">Analiz →</span></div>
+      </div>`;
+    }).join('');
+    const toplamSayfa = Math.max(1, Math.ceil(dzToplam/DZ_BOYUT));
+    const pager = document.getElementById('dz-pager');
+    pager.style.display = toplamSayfa>1 ? 'flex':'none';
+    document.getElementById('dz-pinfo').textContent = `Sayfa ${dzSayfaNo+1} / ${toplamSayfa}`;
+    document.getElementById('dz-prev').disabled = dzSayfaNo<=0;
+    document.getElementById('dz-next').disabled = dzSayfaNo>=toplamSayfa-1;
+  }
+  window.dzYukle = dzYukle;
+  function dizinBaslat() { if (!_dizinKuruldu) { _dizinKuruldu = true; dzIstatistik(); dzIlDoldur(); } dzYukle(true); }
 
   // Arama kutusu / Enter → FİRMA LİSTESİ (ihaleciler.com modeli: önce firmalar)
   window.firmaAra = function() {
@@ -1169,7 +1313,7 @@
     if (qYid) { firmaDetayYukle(qYid, false); return; }
     if (qAra) { const el = document.getElementById('firma-ara-input'); if (el) el.value = qAra; firmaListesiYukle(qAra, false); return; }
     if (qFirma) { const el = document.getElementById('firma-ara-input'); if (el) el.value = qFirma; firmaListesiYukle(qFirma, false); return; }
-    goster('arama');
+    goster('dizin'); dizinBaslat();   // varsayılan açılış: firma dizini
   })();
 })();
 </script>
