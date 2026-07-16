@@ -44,11 +44,10 @@
 >   304 (300 TED + 4 Georgia) → iki kaynak da yazıyor, SAĞLIKLI. ⚠️ TED tam 300 = muhtemel gece limiti;
 >   "TED'in tamamı gelsin" istenirse scraper limitine bakılmalı. Cron LOG'ları denetlenmedi (SSH engelli) —
 >   kısmi hata görünmez ama veri tazeliği/hacmi normal.
-> **2) Pro kupon (bekliyor):** kullanıcı kendine 1 aylık Pro istedi. Karar: `--plan standart` (Pro'nun iç
-> kodu), 1 ay, 1 adet. ⚠️ Yerel `backend/.env` hâlâ ESKİ managed Supabase'i gösteriyor — kupon yerelden
-> üretilirse ÖLÜ DB'ye yazılır. Komut VDS'te çalıştırılmalı:
-> `python kupon_olustur.py --plan standart --ay 1 --adet 1 --aciklama "Pro deneme"`. SSH auto-mode
-> engeline takıldı; kullanıcının ya komutu kendisi çalıştırması ya hedefi adlandırarak yetki vermesi gerek.
+> **2) ✅ Pro kupon ÜRETİLDİ:** kullanıcı kendine Pro istedi (önce 1 ay dendi, sonra 6 aya çevrildi).
+> VDS'te `kupon_olustur.py --plan standart --ay 6 --adet 1` çalıştırıldı → **IHP-72DEF88A** (canlı DB'de,
+> tek kullanımlık). Ders: Pro'nun iç kodu `standart`; ⚠️ yerel `backend/.env` hâlâ ESKİ managed
+> Supabase'i gösteriyor — kupon/yazma işleri asla yerelden değil VDS'ten yapılmalı.
 > **3) Sunucu kararı (danışmanlık):** mevcut VDS (≈8GB/4çekirdek, disk %14) ŞİMDİLİK YETERLİ — geçiş
 > tetikleyicileri: 2003+ tam backfill, RAM baskısı, CPU doygunluğu. Geçilecekse hedef: WeLAB BL460c
 > **Gen8 Pro $43.48/ay** (2x E5-2680, 128GB, 980GB NVMe, "Database Server") — NVMe+yüksek saat; SAS'lı

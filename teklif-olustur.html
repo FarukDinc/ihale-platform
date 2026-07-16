@@ -1365,8 +1365,20 @@
       return;
     }
 
-    const { data, error } = await sb.from('ilanlar').select('*').eq('id', ihaleId).single();
-    if (error || !data) { toast('İhale bulunamadı.', 'hata'); return; }
+    // Sadece bu sayfanın kullandığı hafif kolonlar — select('*') ilan_html/ilan_metni/
+    // yapay_zeka_ozeti/belgeler gibi ağır kolonları da indirip özet skeleton'ını donduruyordu.
+    let data = null, error = null;
+    try {
+      ({ data, error } = await sb.from('ilanlar')
+        .select('id,baslik,idare,tur,usul,son_teklif_tarihi,yaklasik_maliyet_min,yaklasik_maliyet_max,tahmini_bedel')
+        .eq('id', ihaleId)
+        .maybeSingle());
+    } catch (e) { error = e; }
+    if (error || !data) {
+      ozetGrid([['İhale', 'Bilgi yüklenemedi — bağlantıyı kontrol edip sayfayı yenileyin.']]);
+      toast('İhale bilgileri yüklenemedi.', 'hata');
+      return;
+    }
 
     ihaleData = data;
     const gun = gunKaldi(data.son_teklif_tarihi);

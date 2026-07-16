@@ -196,6 +196,7 @@
     .durum-kapandi { background: rgba(239,68,68,.1); color: #f87171; }
     .ik-meta { display: flex; gap: 14px; margin-top: 8px; font-size: 12px; color: var(--muted); flex-wrap: wrap; }
     .ik-bedel { font-size: 13px; font-weight: 700; color: var(--amber); margin-top: 6px; }
+    .ik-kazanan { font-size: 13px; font-weight: 700; color: #4ade80; margin-top: 4px; }
     .ik-badges { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
     .etiket { font-size: 11px; padding: 2px 8px; border-radius: 10px; font-weight: 600; }
     .et-tur { background: rgba(99,102,241,.12); color: #a5b4fc; }
@@ -514,7 +515,7 @@
     const cont = document.getElementById('liste-container');
 
     const { data: dilim, error } = await sb.from('ilanlar')
-      .select('id,ekap_id,baslik,il,tur,ilan_tarihi,son_teklif_tarihi,yaklasik_maliyet_min,yaklasik_maliyet_max')
+      .select('id,ekap_id,baslik,il,tur,ilan_tarihi,son_teklif_tarihi,yaklasik_maliyet_min,yaklasik_maliyet_max,ihale_sonuclari(kazanan_firma,kazanan_teklif,kazanan_teklif_farki_yuzde,sonuc_tarihi,kisim_no)')
       .ilike('idare', `%${KURUM}%`)
       .order('ilan_tarihi', { ascending: false, nullsFirst: false })
       .order('id', { ascending: true })
@@ -536,6 +537,22 @@
             ? `${paraFormat(i.yaklasik_maliyet_min)} – ${paraFormat(i.yaklasik_maliyet_max)}`
             : paraFormat(i.yaklasik_maliyet_min))
         : null;
+      // Kazanan firma(lar) — ihale_sonuclari embed'i (çok kısımlı ihalede dizi döner)
+      const sonuclar = Array.isArray(i.ihale_sonuclari) ? i.ihale_sonuclari : [];
+      let kazananBlok = '';
+      if (sonuclar.length === 1) {
+        const s = sonuclar[0];
+        const parca = [
+          `🏆 ${esc(s.kazanan_firma) || '—'}`,
+          s.kazanan_teklif ? paraFormat(s.kazanan_teklif) : null,
+          s.kazanan_teklif_farki_yuzde != null ? `tenzilat %${Number(s.kazanan_teklif_farki_yuzde).toFixed(1)}` : null,
+          s.sonuc_tarihi ? tarihFormat(s.sonuc_tarihi) : null,
+        ].filter(Boolean).join(' · ');
+        kazananBlok = `<div class="ik-kazanan">${parca}</div>`;
+      } else if (sonuclar.length > 1) {
+        const toplam = sonuclar.reduce((t, s) => t + (Number(s.kazanan_teklif) || 0), 0);
+        kazananBlok = `<div class="ik-kazanan">🏆 ${sonuclar.length} kısım sonuçlandı${toplam ? ` · toplam ${paraFormat(toplam)}` : ''}</div>`;
+      }
       return `<div class="ihale-kart">
         <div class="ik-ust">
           <a class="ik-baslik" href="ihale-detay?id=${i.id}">${esc(i.baslik) || '—'}</a>
@@ -551,6 +568,7 @@
           ${i.ekap_id ? `<span>EKAP: ${i.ekap_id}</span>` : ''}
         </div>
         ${bedel ? `<div class="ik-bedel">${bedel}</div>` : ''}
+        ${kazananBlok}
       </div>`;
     }).join('');
 
