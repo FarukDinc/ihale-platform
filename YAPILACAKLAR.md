@@ -1,5 +1,19 @@
 # İhalePlatform — Yapılacaklar Listesi
 
+> ## 🔎 17 TEMMUZ — TİCARET: HS/SEKTÖR ARAMA + TÜRKÇE HS ETİKETLERİ (canlı)
+> Kullanıcı: 'HS koduna göre de arama olmalı (sektör yanına), o kalem/sektörde Türkiye'nin ülke-ülke ihr/ith
+> görünsün' + 'HS açıklamaları TÜRKÇE olmalı (İngilizce olmaz)'. İkisi de yapıldı:
+> - **HS/Sektör Sorgusu kartı** (ticaret-analiz.html): 'Sektöre göre' (rpc ticaret_harita → ülke ülke) VEYA
+>   'HS koduna göre' (kod/Türkçe-açıklama autocomplete → dis_ticaret_hs → ülke ülke). Drill-down'un TERSİ yönü.
+> - **Türkçe HS etiketleri**: kullanıcı PDF'i (Adsız 1.pdf, 400 kod Türkçe) + Workflow ile 5213 kod İngilizce→Türkçe
+>   çeviri (24 ajan) + Comtrade H6 taban → js/hs-kodlar.js Türkçe (5613/5613 6-hane). ?v=2. Türkçe arama çalışıyor
+>   ('fındık','deri','bilgisayar'). Drill-down + öneri + sonuç hep Türkçe.
+> - **⚠️ EŞZAMANLI OTURUM ÇAKIŞMASI:** origin/main'de başka oturum ticaret-analiz.html'i statik→RPC (yıl seçici)
+>   yeniden yazmıştı. Onu EZMEDEN: origin'in RPC versiyonunu taban alıp aramamı RPC'ye uyarlayarak geri ekledim
+>   (git checkout origin -- + additive). Drill-down + RPC yıl-seçici + arama + Türkçe hepsi bir arada, canlı doğrulandı.
+> - Kalan: 2/4-hane HS İngilizce (UI'da gösterilmiyor); HS-search yılı 2024 (dis_ticaret_hs) vs sektör RPC yılı
+>   (2023, full backfill bekliyor); Faz 2 = ihale ürünü↔HS eşleşme.
+
 ## 🟢 ŞU AN NE DURUMDAYIZ (16 Temmuz 2026, en son güncelleme) — HERKES ÖNCE BUNU OKUSUN
 
 > Bu blok her oturumun sonunda güncellenir ve dosyanın en güncel/otoriter özetidir. Altındaki
