@@ -50,3 +50,7 @@ docker exec -i supabase-db psql -U postgres -d postgres -c "SELECT public.yeni_i
 # idare_dizin_json() ile bunu okur; CONCURRENTLY = okumalar bloklanmaz).
 echo "[$(date +'%Y-%m-%d %H:%M:%S')] === Idare ozet MV ===" >> /opt/ihale-platform/logs/scraper.log
 docker exec -i supabase-db psql -U postgres -d postgres -c "REFRESH MATERIALIZED VIEW CONCURRENTLY public.idare_ozet_mv;" >> /opt/ihale-platform/logs/scraper.log 2>&1
+# Harita il×sektör×firma MV'si — sonuç backfill'inden sonra tazele (harita.html
+# il_sektor_ozet + il_sektor_firmalar bunu okur; normalize_firma maliyeti nedeniyle dakikalar sürebilir).
+echo "[$(date +'%Y-%m-%d %H:%M:%S')] === Harita sektor MV ===" >> /opt/ihale-platform/logs/scraper.log
+docker exec -i supabase-db psql -U postgres -d postgres -c "REFRESH MATERIALIZED VIEW CONCURRENTLY public.il_sektor_firma_mv;" >> /opt/ihale-platform/logs/scraper.log 2>&1

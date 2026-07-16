@@ -43,6 +43,25 @@
 >   6 saat cache + lazy (yalnız sektör seçince, spinner'lı) → kabul edilebilir. İleride matview (idare_ozet_mv
 >   deseni gibi, gece REFRESH) ile anlık yapılabilir — istenirse.
 
+> ## 🗺️ 16 TEMMUZ (devam) — HARİTA "BİR İLE TIKLAYIN" TAKILMASI: sektör katmanı MV'ye alındı (✅ CANLI)
+> **✅ DEPLOY + DOĞRULAMA:** migration VDS'te çalıştı (MV build 1dk30sn, 238.341 satır, 3.157 il×kategori
+> grubu). Tarayıcıda soğuk oturum: sektör seçimi 9.2sn→**1.0sn**, il tıklaması→firma listesi **0.99sn**
+> (eski: soğukta 57014 timeout→takılma). curl ısınmış: ankara 0.5s, istanbul 0.44s, ozet ~1s. 6sn hata
+> izlemede konsol temiz. Gece REFRESH run_scraper.sh'ta (idare MV'nin yanında). İsteğe bağlı gelecek adım:
+> ozet için 3.1K satırlık ikinci mini-MV (~1s→~150ms; 6h client cache varken düşük öncelik).
+> Kullanıcı: "hala veriler gelmiyor, bir ile tıklayın da takılı kalıyor". **Kök neden (canlıda ölçüldü):**
+> harita sektör katmanı iki AĞIR canlı aggregate'e dayanıyordu (529K⋈355K): il_sektor_ozet sektör seçince
+> 9.2sn (sıcakken!); il_sektor_firmalar il tıklayınca sıcak 1.8sn, SOĞUKTA 57014 statement timeout →
+> panel "Yüklenemedi"/takılı. (Not: migration_harita_sektor.sql prod'da UYGULANMIŞ çıktı — YAPILACAKLAR'daki
+> ⏳ bayat; fonksiyonlar vardı, sorun yavaşlık/timeout'tu.)
+> **Çözüm (backend/migration_harita_firma_mv.sql — YENİ, idare_ozet_mv deseninin devamı):**
+> - `il_sektor_firma_mv`: il×kategori×normalize_firma kırılımı ÖNCEDEN hesaplı; unique idx (il,kategori,
+>   firma_norm) + erişim idx (il_fold,kategori); gece run_scraper.sh REFRESH CONCURRENTLY (idare MV yanına).
+> - `il_sektor_ozet()` + `il_sektor_firmalar()` AYNI İMZAYLA MV'den okur → frontend değişikliği YOK.
+> - Semantik düzeltme (bilinçli): ozet.firma_adet artık normalize_firma bazlı (varyantlar birleşir, firmalar
+>   listesiyle tutarlı); 'Diğer' tıklaması NULL kategorileri de kapsar (eskiden kaçırıyordu).
+> - CREATE OR REPLACE proconfig'i sıfırladığından ALTER SET statement_timeout'lar migration'da YENİDEN konur.
+
 > ## 🏛️ 16 TEMMUZ (devam) — İDARELER DİZİNİ 60-100sn BEKLEME FIX (✅ CANLI, DOĞRULANDI)
 > Kullanıcı: "idare verileri çekiliyor diye çok bekletiyor, bunu kaldırmamız lazım".
 > **Kök neden (ölçüldü):** idareler.html, idare_sayim() RPC'sini db-max-rows=1000 yüzünden ~16 kez ardışık
@@ -100,6 +119,27 @@
 > - **ozel-ihale-detay.html:** sureDoldu()/teklifAcik() — durum='acik' olsa bile son_teklif geçmişse teklif
 >   formu kapanır ("⏹ son teklif tarihi geçti"), teklifVer() guard'lı, header rozeti "Süresi doldu".
 > - NOT: login-arkası akış (profil→otomatik kilit→yayınla) anon test edilemedi ama kod+deploy doğrulandı.
+
+> ## 📦 16 TEMMUZ (2. oturum devam) — KAMU KURUMU İHALELERİ EKRANI KALDIRILDI → DMO+JANDARMA ANA LİSTEDE
+> Kullanıcı kararı: "ayrı sayfaya ihtiyaç yok, İhaleler ekranına al." ilan_gov deseni birebir uygulandı:
+> - `dmo_scraper.py` + `jandarma_scraper.py` artık `kamu_ihaleleri` yerine **doğrudan `ilanlar`'a** yazar:
+>   ekap_id='DMO-<no>'/'JND-<psn>' (EKAP IKN'iyle çakışamaz), kaynak='dmo'/'jandarma', upsert on_conflict=ekap_id,
+>   kategori=kategori_belirle(...), pdf_url=kaynak detay URL'i, DMO ek alanları ilan_metni'nde (arama_fold'a girer).
+>   **Jandarma'da açıklaması "EKAP ÜZERİNDEN ..DT.." diyen kayıtlar ATLANIR** (mükerrer kart önlenir).
+>   Dry-run yerelde doğrulandı: DMO 34, Jandarma 33 + 8 EKAP-mükerrer atlandı, kanonik kategoriler atanıyor ✓.
+> - `ihaleler.html`: kaynakBadge'e 📦 DMO + 🪖 Jandarma; sabit "EKAP" sol etiketi kaynak-farkındalıklı oldu
+>   (ilan_gov kartlarında da yanlış EKAP yazıyordu); **Kaynak filtresi** (f-kaynak: EKAP/Gazete/DMO/Jandarma,
+>   ana+fallback sorgu, sıfırla/kayıtlı arama/?kaynak= URL paramı); jandarma kartında PSN token Kayıt No gizli.
+> - `ihale-detay.html`: ilan_gov'a özel ternary'ler `DIS_KAYNAK` haritasıyla genelleştirildi (eyebrow,
+>   "kaynağında aç" butonu ×2, Kaynak info-row, belge sekmesi metni) — DMO/Jandarma detayı kaynağına köprüler.
+> - **25 sayfanın** sidebar'ından "Kamu Kurumu İhaleleri" nav satırı kaldırıldı; `kamu-ihaleleri.html` →
+>   `ihaleler?kaynak=dmo`'ya redirect stub'ı (eski yer imleri kırılmaz).
+> - `kamu_ihaleleri` TABLOSU YAŞIYOR: KA (Kalkınma Ajansı, kaynak='ka', 26 kayıt) e-Satınalma rozetinde onu
+>   kullanıyor — dokunulmadı. Eski dmo/jandarma satırları tabloda bayat kalacak (zararsız; istenirse DELETE).
+> - Deploy: commit+push → VDS `git pull` → cron (02:00 UTC, run_scraper.sh zaten ikisini çağırıyor) ilk turda
+>   `ilanlar`'ı doldurur; istenirse pull sonrası elle `python dmo_scraper.py && python jandarma_scraper.py`.
+> - Not: dış kaynak satırları bildirim RPC'lerine de girer (sektör bildirimi artık DMO/Jandarma da kapsar).
+>   İYİLEŞTİRME ADAYI: jandarma birlik adından il çıkarımı (birçoğu il adıyla başlıyor) — harita/il analizine girer.
 
 > ## 🗺️ 16 TEMMUZ (2. oturum) — HARİTAYA SEKTÖR KATMANI: il×sektör yoğunluk + il/firma sıralaması
 > Kullanıcı isteği: "haritada sektör sektör ayırıp illerdeki yoğunlukları ve firmaları sıralamak".
