@@ -123,11 +123,15 @@
 >  - **#37 profil erişilebilirlik**: sektör/il/tür chip'leri klavye-erişilebilir (role=button/tabindex/keydown/aria/focus).
 >  - **Coğrafi eşleştirme**: il_merkez + ihaleye_uygun_firmalar_geo RPC + öneri akışlarına bağlandı (mesafe_km gösterimi). Test edildi.
 >
-> **⏸ HÂLÂ ERTELENEN (kullanıcı incelemesi/büyük iş — gerekçesiyle):**
+> **✅ DEVAM TURU-2 EK (canlı+doğrulandı):** rekabet-analizi #4 → rekabet_ozet RPC (8 breakdown+trend jsonb, render
+>   fonksiyonları RPC tüketiyor, doğrulandı); XSS hardening sweep (sonuclananlar/idareler/kurum-analiz/sektorler/uyumluluk
+>   esc'lendi → XSS sınıfı TÜM sayfalarda kapalı).
+>
+> **⏸ HÂLÂ ERTELENEN:**
 >  - **payment.py atomiklik/idempotency (#12/#19/#27/#28):** iyzico webhook mükerrer kredi + kredi_yukle/kupon
->    lost-update/TOCTOU. Para-işleme kodu; gece gözetimsiz değiştirmek RİSKLİ. Reçete: kredi_hareketleri.siparis_id
+>    lost-update/TOCTOU. Para-işleme kodu; gözetimsiz değiştirmek RİSKLİ. Reçete: kredi_hareketleri.siparis_id
 >    UNIQUE+ON CONFLICT DO NOTHING; kupon `UPDATE...WHERE kullanim<max RETURNING`; kredi_yukle atomik increment. **KULLANICI ONAYIYLA.**
->  - **rekabet-analizi #4** (Pro-gate arkasında, çok-boyutlu aggregate RPC gerekir) + **kurum-analiz tam breakdown RPC** (index yardım etti, tam server-side hâlâ ideal).
+>  - **kurum-analiz tam breakdown RPC** (idare trgm index eklendi/hızlandı; tam server-side rekabet gibi kurum_ozet(p_idare) ile yapılabilir — düşük öncelik).
 >  - **#14 ihaleler uyum sıralaması 200-satır cap** (server-side uyum/embedding gerekir).
 
 > ## 🔎 16 TEMMUZ — #3 KURUMSAL DOĞRULAMA: FİZİBİLİTE (araştırıldı, KARAR KULLANICIDA)
