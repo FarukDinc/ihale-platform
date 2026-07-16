@@ -36,9 +36,9 @@
     btn.title = 'Gündüz / Gece modu değiştir';
     btn.setAttribute('aria-label', 'Gündüz / Gece modu değiştir');
     btn.style.cssText = [
-      'position:fixed', 'bottom:20px', 'right:20px', 'z-index:9999',
+      'position:fixed', 'top:11px', 'right:20px', 'z-index:9999',
       'display:flex', 'align-items:center', 'gap:8px',
-      'padding:9px 16px', 'border-radius:24px',
+      'padding:7px 14px', 'border-radius:24px',
       'border:1px solid var(--amber, #F0A500)',
       'background:var(--navy-mid, #152340)', 'color:var(--amber, #F0A500)',
       'font-family:var(--font-body, sans-serif)', 'font-size:13px', 'font-weight:700',
