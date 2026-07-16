@@ -42,6 +42,12 @@ $VENV/python jandarma_scraper.py >> /opt/ihale-platform/logs/scraper.log 2>&1
 # Kalkınma Ajansları (ka.gov.tr, kaynak='ka') — e-Satınalma sayfasında "Kalkınma Ajansı" rozetiyle
 $VENV/python ka_scraper.py >> /opt/ihale-platform/logs/scraper.log 2>&1
 $VENV/python idare_bildirim.py >> /opt/ihale-platform/logs/scraper.log 2>&1
+# AI kategori backfill — kelime kurallarının çözemediği 'Diğer' ilanları Gemini ile kanonik kategoriye
+# oturtur. Her satır YALNIZCA BİR KEZ (ai_kategori_denendi damgası) → idempotent, token israfı yok.
+# --limit 400 + --rpm 15: günlük yeni Diğer'leri + birikmiş kuyruktan biraz karşılar, free tier'a sığar.
+# MV tazelemeden ÖNCE koşar ki harita/sektör/kategori MV'leri yeni kategorileri aynı gece yansıtsın.
+echo "[$(date +'%Y-%m-%d %H:%M:%S')] === AI kategori backfill ===" >> /opt/ihale-platform/logs/scraper.log
+$VENV/python ai_kategori_backfill.py --limit 400 --rpm 15 >> /opt/ihale-platform/logs/scraper.log 2>&1
 # Sektör-bazlı bildirim: günün yeni ilan/RFQ'ları → sektörü eşleşen firmalara (taksonomi hizalı, dedup'lı).
 # p_gun=1 → yalnız bugünkü yeni kayıtlar (retroaktif spam yok); dedup tekrar üretmez.
 echo "[$(date +'%Y-%m-%d %H:%M:%S')] === Sektor bildirim ===" >> /opt/ihale-platform/logs/scraper.log
