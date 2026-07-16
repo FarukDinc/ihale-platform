@@ -7,6 +7,17 @@
 > **KALICI TALİMAT (12 Tem, kullanıcı emri):** Bu blok + ilgili bölümler her oturumda otomatik
 > güncellenir, kullanıcı hatırlatmak zorunda değil. Bkz. hafıza `yapilacaklar-auto-update`.
 
+> ## 🔐 16 TEMMUZ (devam) — PLAN KAPILARI: PRO CTA GİZLE + e-SATINALMA KURUMSAL KAPI (CANLI)
+> - **Topbar "Pro'ya Geç" gizleme:** sidebar-user.js ödeme yapmış (Pro/Kurumsal) kullanıcıda topbar CTA'sını
+>   GİZLER. Eski selektör `.topbar-actions` çoğu sayfada eşleşmiyordu → `.topbar` de eklendi; rozete çevirmek
+>   yerine display:none (kullanıcı "gözükmesin" dedi). **Cloudflare STALE JS servis ediyordu** (Cf-Cache HIT,
+>   max-age=14400) → 23 sayfada `sidebar-user.js?v=2` cache-bust ŞART oldu (yoksa fix görünmezdi). Canlı: yeni
+>   JS servis ediliyor, selektör topbar butonunu buluyor (anon'da görünür, proMu'da gizlenir).
+> - **e-Satınalma Kurumsal kapısı:** ozel-ihaleler form açılınca Kurumsal DEĞİLSE "🔒 İhale açmak Kurumsal plana
+>   özeldir" gate (form kilitli); ihaleYayinla'da kurumsal kontrolü profil kontrolünden ÖNCE. Server-side zorlama
+>   ZATEN vardı: RLS `talep_kurumsal_ekler` INSERT = `kullanici_kurumsal_mi()` + VKN/ünvan/il/ilçe/adres NOT NULL
+>   (canlı pg_policy ile doğrulandı) — yani "engelle" DB düzeyinde gerçek, frontend anlaşılır katman.
+
 > ## 🔗 16 TEMMUZ (devam) — KALKINMA AJANSI, RFQ LİSTESİNE BİRLEŞTİRİLDİ (CANLI)
 > Kullanıcı: "kalkınma ajansı ihalelerini niye ayrı sayfaya alıyorsun, hepsini platform satınalma ihaleleri
 > olarak açsana". Yapıldı: ozel-ihaleler.html'deki ayrı "🏛️ Kalkınma Ajansı İhaleleri" kartı KALDIRILDI →
@@ -55,6 +66,14 @@
 > - Doğrulama: file:// önizleme + canlı VDS API — genel mod regresyonsuz (71.384 firma/81 il), sektör UI
 >   sahte önbellek tohumuyla uçtan uca (sıralama/KPI/pay/geri dönüş ✓), İzmir firma listesi fix sonrası dolu ✓.
 >   Gerçek sektör verisi migration sonrası akacak; `il_sektor_ozet` süresi ilk çağrıda İZLENMELİ (30s tavan).
+> - **🔴 BULGU (kullanıcı "OKAS'a göre mi?" sorusu üzerine, canlıda ölçüldü): `ilanlar.kategori`'nin ~%64'ü
+>   HÂLÂ ESKİ taksonomide** — Mal Alımı %24.3 (86.4K) + Diğer %19.1 (68.2K) + Hizmet Alımı %14.2 (50.7K) +
+>   İnşaat & Yapım %6.1 (21.7K); toplam 46 farklı etiket var (41 kanonik değil). 'Mal Alımı'lı en yeni ilan
+>   25 Haz 2026 → yeni akış o günden beri kanonik üretiyor ama `kategori_backfill.py` ana ilanlar tablosunda
+>   HİÇ/YARIM koşmuş (DT backfill'i tamamdı, ilanlar değil!). Etki: sektör haritası + sektorler/rekabet
+>   filtreleri eski etiketli kütleyi GÖREMEZ. **Aksiyon (VDS'te, kullanıcı):**
+>   `cd /opt/ihale/backend && python3 kategori_backfill.py --dry-run` → sayılar makulse `--dry-run`sız tekrar.
+>   (script REST+service_key ile çalışır, yerel .env ÖLÜ managed'ı gösterir — yerelden ÇALIŞTIRMA.)
 
 > ## 📊 16 TEMMUZ — TRADE MAP (trademap.org) FİZİBİLİTE: TEKNİK EVET / HUKUKEN HAYIR (danışmanlık, KARAR KULLANICIDA)
 > Soru: ITC Trade Map'ten Türkiye dış ticaret verisi çekip İhaleGlobal'e eklemek.
