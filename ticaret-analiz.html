@@ -48,6 +48,17 @@
     .dunya-alt b { color: var(--amber); }
     #dunya-sektor { padding: 5px 10px; border-radius: 7px; font-size: 12px; max-width: 260px; background: var(--navy); color: var(--white); border: 1px solid var(--border); font-family: var(--font-body); cursor: pointer; }
     #dunya-sektor option { background: #fff; color: #1b2942; }
+    /* HS/sektör sorgu */
+    .sorgu-mod { display: inline-flex; gap: 6px; }
+    .smod-btn { padding: 5px 12px; border-radius: 14px; font-size: 12px; font-weight: 700; background: transparent; border: 1px solid var(--border); color: var(--muted); cursor: pointer; font-family: var(--font-body); }
+    .smod-btn.active { background: rgba(240,165,0,.12); border-color: var(--amber); color: var(--amber); }
+    #sorgu-sektor { padding: 7px 11px; border-radius: 7px; font-size: 12.5px; background: var(--navy); color: var(--white); border: 1px solid var(--border); font-family: var(--font-body); cursor: pointer; min-width: 280px; max-width: 100%; }
+    #sorgu-sektor option { background: #fff; color: #1b2942; }
+    .oner-kutu { position: absolute; top: 100%; left: 0; right: 0; max-width: 540px; background: #0c1524; border: 1px solid var(--border); border-radius: 8px; margin-top: 2px; max-height: 300px; overflow-y: auto; z-index: 30; display: none; box-shadow: 0 6px 20px rgba(0,0,0,.5); }
+    .oner-kutu.gor { display: block; }
+    .oner-sat { padding: 7px 11px; font-size: 12px; cursor: pointer; border-bottom: 1px solid rgba(255,255,255,.04); color: var(--off-white); }
+    .oner-sat:hover { background: rgba(240,165,0,.1); }
+    .oner-sat b { color: var(--amber); font-family: ui-monospace, monospace; margin-right: 4px; }
     .dunya-svg-wrap { position: relative; width: 100%; overflow: hidden; border-radius: 8px; background: linear-gradient(180deg, #0c1524, #0a111d); }
     .dunya-svg-wrap svg { width: 100%; height: auto; display: block; }
     .dunya-svg-wrap path.ulke { fill: #1b2942; stroke: #0a111d; stroke-width: .4; transition: fill .12s; }
@@ -181,6 +192,26 @@
         <div class="dunya-lejant" id="dunya-lejant"></div>
       </div>
       <div class="dunya-tooltip" id="dunya-tooltip"></div>
+
+      <!-- HS / SEKTÖR SORGUSU -->
+      <div class="liste-card" id="sorgu-card">
+        <div class="liste-head">
+          <span class="baslik">🔎 HS Kodu / Sektör Sorgusu <span style="font-weight:400;color:var(--muted);font-size:12px;">— seçtiğin kalem/sektörde Türkiye'nin dünyayla ticareti (ülke ülke)</span></span>
+          <span class="sorgu-mod">
+            <button class="smod-btn active" data-sm="sektor" onclick="sorguMod('sektor')">Sektöre göre</button>
+            <button class="smod-btn" data-sm="hs" onclick="sorguMod('hs')">HS koduna göre</button>
+          </span>
+        </div>
+        <div id="sorgu-sektor-alan">
+          <select id="sorgu-sektor" onchange="sorguSektor()" aria-label="Sektör seç"></select>
+        </div>
+        <div id="sorgu-hs-alan" style="display:none;position:relative;">
+          <input type="text" id="sorgu-hs-ara" class="liste-ara" style="width:100%;max-width:540px;" autocomplete="off"
+                 placeholder="HS kodu (ör. 8471) veya kalem adı yaz — 'bilgisayar', 'deri', 'fındık'…" oninput="sorguHsOner()" />
+          <div id="sorgu-hs-oner" class="oner-kutu"></div>
+        </div>
+        <div id="sorgu-sonuc" style="margin-top:12px;"><div style="color:var(--muted);font-size:13px;padding:8px 2px;">Yukarıdan bir sektör seçin ya da "HS koduna göre" sekmesinden kalem arayın.</div></div>
+      </div>
 
       <!-- LİSTE -->
       <div class="liste-card">
@@ -523,6 +554,102 @@
     });
   });
 
+  // ── HS Kodu / Sektör Sorgusu: seçilen kalem/sektörde Türkiye'nin ülke-ülke ticareti ──
+  function sorguSektorKur(){
+    const sel = document.getElementById('sorgu-sektor');
+    sel.innerHTML = `<option value="">— sektör seç —</option>` +
+      Object.entries(TIC.sektorler).map(([k, ad]) => `<option value="${esc(k)}">${esc(ad)}</option>`).join('');
+  }
+
+  window.sorguMod = function(m){
+    document.querySelectorAll('#sorgu-card .smod-btn').forEach(b => b.classList.toggle('active', b.dataset.sm === m));
+    document.getElementById('sorgu-sektor-alan').style.display = (m === 'sektor') ? 'block' : 'none';
+    document.getElementById('sorgu-hs-alan').style.display = (m === 'hs') ? 'block' : 'none';
+    document.getElementById('sorgu-hs-oner').classList.remove('gor');
+    if(m === 'sektor') sorguSektor();
+    else document.getElementById('sorgu-sonuc').innerHTML = '<div style="color:var(--muted);font-size:13px;padding:8px 2px;">HS kodu veya kalem adı yazıp öneriden seçin.</div>';
+  };
+
+  // Sektör → ülke ülke (statik TIC verisinden — hızlı)
+  window.sorguSektor = function(){
+    const sk = document.getElementById('sorgu-sektor').value;
+    if(!sk){ document.getElementById('sorgu-sonuc').innerHTML = '<div style="color:var(--muted);font-size:13px;padding:8px 2px;">Bir sektör seçin.</div>'; return; }
+    const rows = [];
+    for(const kod in TIC.ulkeler){
+      const s = TIC.ulkeler[kod].s && TIC.ulkeler[kod].s[sk];
+      if(!s || (!s[0] && !s[2])) continue;
+      rows.push({ ad: ulkeAdTr(kod), ihrG: s[0], ihrO: s[1], ithG: s[2], ithO: s[3] });
+    }
+    sorguSonucCiz(`<b style="color:var(--amber)">${esc(TIC.sektorler[sk])}</b> sektörü (${TIC.sektor_yil})`, rows);
+  };
+
+  // HS kodu öneri (HS_KODLAR lazy — kod veya açıklama eşleşmesi)
+  let _sorguOnerZaman = null;
+  window.sorguHsOner = function(){
+    clearTimeout(_sorguOnerZaman);
+    _sorguOnerZaman = setTimeout(async () => {
+      const q = (document.getElementById('sorgu-hs-ara').value || '').toLocaleLowerCase('tr').trim();
+      const kutu = document.getElementById('sorgu-hs-oner');
+      if(q.length < 2){ kutu.classList.remove('gor'); return; }
+      await hsKodlarYukle();
+      const H = window.HS_KODLAR || {};
+      const eslesme = [];
+      for(const kod in H){
+        if(kod.length !== 6) continue;
+        if(kod.startsWith(q) || (H[kod] || '').toLocaleLowerCase('tr').includes(q)){
+          eslesme.push([kod, H[kod]]);
+          if(eslesme.length >= 50) break;
+        }
+      }
+      kutu.innerHTML = eslesme.length
+        ? eslesme.map(([k, ad]) => `<div class="oner-sat" onclick="sorguHs('${k}')"><b>${k}</b>${esc((ad || '').slice(0, 82))}</div>`).join('')
+        : '<div class="oner-sat" style="color:var(--muted)">Eşleşen kalem yok.</div>';
+      kutu.classList.add('gor');
+    }, 180);
+  };
+
+  // HS kodu → ülke ülke (dis_ticaret_hs)
+  window.sorguHs = async function(hs6){
+    document.getElementById('sorgu-hs-oner').classList.remove('gor');
+    await hsKodlarYukle();
+    document.getElementById('sorgu-hs-ara').value = hs6 + ' — ' + (hsAd(hs6) || '');
+    const sonuc = document.getElementById('sorgu-sonuc');
+    sonuc.innerHTML = '<div class="mini-spin" style="margin:24px auto;"></div>';
+    const { data, error } = await sb.from('dis_ticaret_hs')
+      .select('ulke_iso3,yon,yil,deger_usd').eq('hs6', hs6)
+      .order('deger_usd', { ascending: false }).limit(2000);
+    if(error || !data || !data.length){ sonuc.innerHTML = '<div style="color:var(--muted);font-size:13px;padding:16px;">Bu HS kodu için ticaret verisi bulunamadı.</div>'; return; }
+    const yil = Math.max(...data.map(r => r.yil));
+    const m = {};
+    for(const r of data){
+      const o = m[r.ulke_iso3] || (m[r.ulke_iso3] = { ihrG:0, ihrO:0, ithG:0, ithO:0 });
+      const cur = (r.yil === yil);
+      if(r.yon === 'X') o[cur ? 'ihrG' : 'ihrO'] = r.deger_usd;
+      else o[cur ? 'ithG' : 'ithO'] = r.deger_usd;
+    }
+    const rows = Object.entries(m).map(([kod, v]) => ({ ad: ulkeAdTr(kod), ...v }));
+    sorguSonucCiz(`HS <b style="color:var(--amber);font-family:ui-monospace,monospace">${hs6}</b> · ${esc(hsAd(hs6) || '')} (${yil})`, rows);
+  };
+
+  function sorguSonucCiz(baslik, rows){
+    rows.sort((a, b) => (b.ihrG || 0) - (a.ihrG || 0));
+    const tIhr = rows.reduce((s, r) => s + (r.ihrG || 0), 0);
+    const tIth = rows.reduce((s, r) => s + (r.ithG || 0), 0);
+    const sonuc = document.getElementById('sorgu-sonuc');
+    sonuc.innerHTML = `<div style="font-size:12.5px;color:var(--off-white);margin-bottom:8px;">${baslik} — <b style="color:var(--amber)">Türkiye toplam ihracat ${paraUsd(tIhr)}</b> · ithalat ${paraUsd(tIth)} · ${rows.length} ülke</div>
+      <div style="overflow-x:auto;"><table class="tic-tablo">
+      <thead><tr><th class="sol">Ülke</th><th>Türkiye → Ülke (İhr.)</th><th class="gizle-mobil">Değişim</th><th>Ülke → Türkiye (İth.)</th><th class="gizle-mobil">Değişim</th></tr></thead>
+      <tbody>` + rows.slice(0, 300).map((r, i) => `
+        <tr><td class="sol"><span class="sira">${i+1}.</span> <span class="ulke-ad">${esc(r.ad)}</span></td>
+        <td class="deger">${paraUsd(r.ihrG)}</td><td class="gizle-mobil">${yuzde(r.ihrG, r.ihrO, 1)}</td>
+        <td>${paraUsd(r.ithG)}</td><td class="gizle-mobil">${yuzde(r.ithG, r.ithO, 1)}</td></tr>`).join('') + `</tbody></table></div>`;
+  }
+
+  // Öneri kutusunu dışarı tıklayınca kapat
+  document.addEventListener('click', e => {
+    if(!e.target.closest('#sorgu-hs-alan')) document.getElementById('sorgu-hs-oner')?.classList.remove('gor');
+  });
+
   function kpiGoster(){
     const w = TIC.dunya;
     document.getElementById('kpi-ihr').textContent = paraUsd(w.ihr[0]);
@@ -546,6 +673,7 @@
     }
     kpiGoster();
     sektorKur();
+    sorguSektorKur();
     haritaKur();
     document.getElementById('liste-sektor-et').textContent = `— tüm sektörler (${TIC.yil})`;
     listeCiz();
