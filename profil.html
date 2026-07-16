@@ -148,6 +148,8 @@
       color: var(--amber);
     }
     .tur-icon { font-size: 16px; }
+    /* Klavye odağı görünür (erişilebilirlik) */
+    .sektor-kart:focus-visible, .il-chip:focus-visible, .tur-chip:focus-visible { outline: 2px solid var(--amber); outline-offset: 2px; }
 
     /* BÜTÇE RANGE */
     .bedel-row { display: flex; gap: 16px; align-items: center; }
@@ -603,7 +605,7 @@
   // ── Grid'leri oluştur ───────────────────────────────────────────────────
   function sektorGridOlustur() {
     document.getElementById('sektor-grid').innerHTML = SEKTORLER.map(s => `
-      <div class="sektor-kart" id="sektor-${s.i}" onclick="sektorToggle(${s.i})">
+      <div class="sektor-kart" id="sektor-${s.i}" role="button" tabindex="0" aria-pressed="false" onclick="sektorToggle(${s.i})">
         <div class="sektor-emoji">${s.emoji}</div>
         <div>
           <div class="sektor-adi">${s.kod}</div>
@@ -615,16 +617,29 @@
 
   function ilGridOlustur() {
     document.getElementById('il-grid').innerHTML = ILLER.map(il => `
-      <div class="il-chip" id="il-${il}" onclick="ilToggle('${il}')">${il}</div>`).join('');
+      <div class="il-chip" id="il-${il}" role="button" tabindex="0" aria-pressed="false" onclick="ilToggle('${il}')">${il}</div>`).join('');
   }
 
   function turGridOlustur() {
     document.getElementById('tur-grid').innerHTML = TURLER.map(t => `
-      <div class="tur-chip" id="tur-${t.id}" onclick="turToggle('${t.id}')">
+      <div class="tur-chip" id="tur-${t.id}" role="button" tabindex="0" aria-pressed="false" onclick="turToggle('${t.id}')">
         <span class="tur-icon">${t.emoji}</span> ${t.id}
         <span style="font-size:11px;color:var(--muted);font-weight:400;">— ${t.aciklama}</span>
       </div>`).join('');
   }
+
+  // Erişilebilirlik (#37): role="button" chip'leri klavyeyle (Enter/Space) tetiklenebilir + aria-pressed senkronu.
+  document.addEventListener('keydown', (e) => {
+    if (e.key !== 'Enter' && e.key !== ' ') return;
+    const el = e.target;
+    if (el && el.getAttribute && el.getAttribute('role') === 'button' && el.hasAttribute('onclick')) {
+      e.preventDefault(); el.click();
+    }
+  });
+  document.addEventListener('click', (e) => {
+    const el = e.target.closest && e.target.closest('[role="button"][aria-pressed]');
+    if (el) setTimeout(() => el.setAttribute('aria-pressed', el.classList.contains('secili') ? 'true' : 'false'), 0);
+  });
 
   // ── Profil doluluk skoru ────────────────────────────────────────────────
   function dolulukGuncelle() {
