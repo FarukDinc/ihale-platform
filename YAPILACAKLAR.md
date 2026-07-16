@@ -7,6 +7,37 @@
 > **KALICI TALİMAT (12 Tem, kullanıcı emri):** Bu blok + ilgili bölümler her oturumda otomatik
 > güncellenir, kullanıcı hatırlatmak zorunda değil. Bkz. hafıza `yapilacaklar-auto-update`.
 
+> ## ✅ 16 TEMMUZ (2. OTURUM) — VERİ AKIŞI DENETİMİ: 3 AKIŞ DA AKTİF + KUPON/SUNUCU NOTLARI
+> **1) Veri çekme denetimi (public REST, `olusturulma` yöntemi — bkz. hafıza `scraper-cron-silent-fail`):**
+> - `ilanlar`: son yazım 16 Tem 09:28 UTC, son 24s **1000+** kayıt, 391'i aynı-gün ilan tarihli → SAĞLIKLI.
+> - `dogrudan_temin_ilanlari`: son yazım 09:29 UTC, 24s'te 1000+; yazımların ~%99'u güncel (tarih≥10 Tem),
+>   en ileri son-teklif 2027 → açık DT akışı + backfill paralel, SAĞLIKLI. (Not: DT'de tarih kolonu
+>   `tarih`, `ilan_tarihi` DEĞİL.)
+> - `uluslararasi_ihaleler`: tablo 15 Tem 12:57'de doğdu (özellik yeni); 15 Tem 187 + 16 Tem 02:37'de
+>   304 (300 TED + 4 Georgia) → iki kaynak da yazıyor, SAĞLIKLI. ⚠️ TED tam 300 = muhtemel gece limiti;
+>   "TED'in tamamı gelsin" istenirse scraper limitine bakılmalı. Cron LOG'ları denetlenmedi (SSH engelli) —
+>   kısmi hata görünmez ama veri tazeliği/hacmi normal.
+> **2) Pro kupon (bekliyor):** kullanıcı kendine 1 aylık Pro istedi. Karar: `--plan standart` (Pro'nun iç
+> kodu), 1 ay, 1 adet. ⚠️ Yerel `backend/.env` hâlâ ESKİ managed Supabase'i gösteriyor — kupon yerelden
+> üretilirse ÖLÜ DB'ye yazılır. Komut VDS'te çalıştırılmalı:
+> `python kupon_olustur.py --plan standart --ay 1 --adet 1 --aciklama "Pro deneme"`. SSH auto-mode
+> engeline takıldı; kullanıcının ya komutu kendisi çalıştırması ya hedefi adlandırarak yetki vermesi gerek.
+> **3) Sunucu kararı (danışmanlık):** mevcut VDS (≈8GB/4çekirdek, disk %14) ŞİMDİLİK YETERLİ — geçiş
+> tetikleyicileri: 2003+ tam backfill, RAM baskısı, CPU doygunluğu. Geçilecekse hedef: WeLAB BL460c
+> **Gen8 Pro $43.48/ay** (2x E5-2680, 128GB, 980GB NVMe, "Database Server") — NVMe+yüksek saat; SAS'lı
+> ₺2.000-15.500 planlara gerek yok.
+>
+> ## 🎨 16 TEMMUZ (devam) — HARİTA LEJANTLARINA "RENK = YOĞUNLUK" İBARESİ + LEJANT KAYMASI DÜZELTİLDİ (commit `b2b4794`)
+> Kullanıcı: "haritalardaki renkler ihale durumunun yoğunluk pozisyonunu gösterir şekilde ibare olması lazım".
+> 4 harita örneğinin hepsine açık ibare + "veri yok" çipi + Az→Çok gradyan şeridi eklendi:
+> - **uluslararasi (dünya):** "Renkler ülkedeki ihale yoğunluğunu gösterir" — canlıda doğrulandı.
+> - **js/harita.js (dashboard) + index.html (satır-içi kopya):** "Renkler ildeki ihale yoğunluğunu gösterir".
+>   **BONUS BUG:** eski lejant renk↔aralık eşlemesi 1 kova KAYMIŞTI (0 rengi #16233d lejantta yoktu, son kova
+>   eksikti) — canlı il_sayim verisiyle test: eski 85/88 uyuşmazlık, yeni 0/88. Dashboard'a `?v=2` cache-bust.
+> - **harita.html:** firma katmanı "kayıtlı firma yoğunluğu" + RFQ katmanı "açık talep durumu" ibareleri — canlıda doğrulandı.
+> - Not: browser-pane bu oturumda throttle'lıydı (screenshot/scroll/IO donuk) → index/dashboard lazy-harita
+>   render'ı pane'de görülemedi; doğrulama canlı veriyle birebir mantık testiyle yapıldı (init koduna dokunulmadı).
+
 > ## 🌍 16 TEMMUZ — ULUSLARARASI: İNTERAKTİF DÜNYA HARİTASI + DASHBOARD MENÜ TAŞINDI (CANLI)
 > **1) Dünya haritası (commit `71c537a`)** — kullanıcı: "uluslararası ihaleler ekranına bir dünya haritası
 > koysak da insanlar tıklasa o ülkeyi seçse… excel formatının dışına çıksak". Yapıldı:
