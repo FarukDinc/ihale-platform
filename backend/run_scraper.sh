@@ -35,6 +35,10 @@ $VENV/python ilan_gov_scraper.py --max-pages 40 >> /opt/ihale-platform/logs/scra
 echo "[$(date +'%Y-%m-%d %H:%M:%S')] === TED uluslararasi ===" >> /opt/ihale-platform/logs/scraper.log
 $VENV/python ted_scraper.py --max-pages 6 --limit 50 >> /opt/ihale-platform/logs/scraper.log 2>&1
 $VENV/python georgia_scraper.py >> /opt/ihale-platform/logs/scraper.log 2>&1
+# Kamu kurumu kaynakları (EKAP dışı, ayrı kamu_ihaleleri tablosu): DMO + Jandarma
+echo "[$(date +'%Y-%m-%d %H:%M:%S')] === Kamu kurumu (DMO/Jandarma) ===" >> /opt/ihale-platform/logs/scraper.log
+$VENV/python dmo_scraper.py >> /opt/ihale-platform/logs/scraper.log 2>&1
+$VENV/python jandarma_scraper.py >> /opt/ihale-platform/logs/scraper.log 2>&1
 $VENV/python idare_bildirim.py >> /opt/ihale-platform/logs/scraper.log 2>&1
 # Sektör-bazlı bildirim: günün yeni ilan/RFQ'ları → sektörü eşleşen firmalara (taksonomi hizalı, dedup'lı).
 # p_gun=1 → yalnız bugünkü yeni kayıtlar (retroaktif spam yok); dedup tekrar üretmez.
