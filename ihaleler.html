@@ -410,7 +410,6 @@
       <a href="ihaleler" class="nav-item active"><span class="icon">⊞</span> İhaleler</a>
       <a href="dogrudan-temin" class="nav-item"><span class="icon">⚡</span> Doğrudan Temin</a>
       <a href="sonuclananlar" class="nav-item"><span class="icon">🏆</span> Sonuçlananlar</a>
-      <a href="kamu-ihaleleri" class="nav-item"><span class="icon">📦</span> Kamu Kurumu İhaleleri</a>
       <div class="nav-section-label" style="padding-left:16px;opacity:.85;">— Analiz —</div>
       <a href="rekabet-analizi" class="nav-item"><span class="icon">📊</span> Rekabet Analizi</a>
       <a href="idareler" class="nav-item"><span class="icon">🏛️</span> İdareler Dizini</a>
@@ -588,6 +587,16 @@
             <option value="Doğrudan Temin">Doğrudan Temin</option>
             <option value="Tasarım Yarışması">Tasarım Yarışması</option>
             <option value="Diğer">Diğer / İstisna</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label>Kaynak</label>
+          <select class="filter-select" id="f-kaynak">
+            <option value="">Tümü</option>
+            <option value="ekap">EKAP</option>
+            <option value="ilan_gov">📰 Gazete (ilan.gov.tr)</option>
+            <option value="dmo">📦 DMO</option>
+            <option value="jandarma">🪖 Jandarma</option>
           </select>
         </div>
         <div class="filter-group">
@@ -908,10 +917,16 @@
     return `<span class="badge badge-closed">● ${durum}</span>`;
   }
 
-  // İhale kaynağı rozeti — EKAP mi, ilan.gov.tr (Basın İlan Kurumu "Gazete") mi
+  // İhale kaynağı rozeti — EKAP / ilan.gov.tr (Gazete) / DMO / Jandarma
   function kaynakBadge(kaynak) {
     if (kaynak === 'ilan_gov') return `<span class="badge badge-gazete" title="Basın İlan Kurumu — ilan.gov.tr">📰 Gazete</span>`;
+    if (kaynak === 'dmo')      return `<span class="badge badge-gazete" title="Devlet Malzeme Ofisi — dmo.gov.tr">📦 DMO</span>`;
+    if (kaynak === 'jandarma') return `<span class="badge badge-gazete" title="J.Gn.K. Vatandaş İhale Sorgu — vatandas.jandarma.gov.tr">🪖 Jandarma</span>`;
     return `<span class="badge badge-ekap" title="EKAP kaynaklı">EKAP</span>`;
+  }
+  // Sol etiket şeridindeki kaynak adı (eskiden sabit "EKAP" yazıyordu)
+  function kaynakEtiketAd(kaynak) {
+    return { ilan_gov: 'Gazete', dmo: 'DMO', jandarma: 'Jandarma' }[kaynak] || 'EKAP';
   }
 
   function usulEtiket(usul) {
@@ -927,7 +942,7 @@
     const okundu  = Okundu.var(ilan.id);
     const okunduStyle = okunduGizle && okundu ? 'display:none;' : '';
     const etiketler = [
-      `<span class="etiket etiket-ekap">EKAP</span>`,
+      `<span class="etiket etiket-ekap">${kaynakEtiketAd(ilan.kaynak)}</span>`,
       ilan.tur  ? `<span class="etiket">${esc(ilan.tur)}</span>` : '',
       usulEtiket(ilan.usul),
       ilan.il   ? `<span class="etiket">📍 ${esc(ilan.il)}</span>` : '',
@@ -946,7 +961,7 @@
         <div class="kart-ust">
           <div class="kart-sol">
             <div class="kart-kayitno">
-              ${ilan.ekap_id
+              ${ilan.ekap_id && ilan.kaynak !== 'jandarma'
                 ? `<span class="kart-no" title="İhale Kayıt No — kopyalamak için tıklayın" onclick="noKopyala(this, '${esc(ilan.ekap_id)}')">Kayıt No: <b>${esc(ilan.ekap_id)}</b><span class="kart-no-kopya">⧉ kopyala</span></span>`
                 : 'Kayıt No: —'}
               ${okundu ? '<span class="okundu-badge">Okundu</span>' : ''}
@@ -1032,6 +1047,7 @@
     const minBedel = parseInt(document.getElementById('f-min-bedel').value) || 0;
     const maxBedel = parseInt(document.getElementById('f-max-bedel').value) || 0;
     const kategori = document.getElementById('f-kategori').value;
+    const kaynak   = document.getElementById('f-kaynak').value;
     const minUyum  = parseInt(document.getElementById('f-min-uyum').value) || 0;
     const sort     = document.getElementById('sort-select').value;
     // Detaylı Ara alanları
@@ -1063,6 +1079,7 @@
     if (urlDurumFiltresi) query = query.eq('durum', urlDurumFiltresi);
     if (il)       query = query.eq('il', il);
     if (kategori) query = query.eq('kategori', kategori);
+    if (kaynak)   query = query.eq('kaynak', kaynak);
     if (tur)      query = query.eq('tur', tur);
     if (usul)     query = query.ilike('usul', `%${usul}%`);
     if (minBedel) query = query.gte('yaklasik_maliyet_min', minBedel);
@@ -1107,6 +1124,7 @@
       if (urlDurumFiltresi) fallback = fallback.eq('durum', urlDurumFiltresi);
       if (il)       fallback = fallback.eq('il', il);
       if (kategori) fallback = fallback.eq('kategori', kategori);
+      if (kaynak)   fallback = fallback.eq('kaynak', kaynak);
       if (tur)      fallback = fallback.eq('tur', tur);
       if (usul)     fallback = fallback.ilike('usul', `%${usul}%`);
       if (minBedel) fallback = fallback.gte('yaklasik_maliyet_min', minBedel);
@@ -1205,7 +1223,7 @@
 
 
   function filtreleriSifirla() {
-    ['f-arama','f-il','f-kategori','f-tur','f-usul','f-min-bedel','f-max-bedel',
+    ['f-arama','f-il','f-kategori','f-tur','f-usul','f-kaynak','f-min-bedel','f-max-bedel',
      'f-idare','f-yayin-bas','f-yayin-bit','f-teklif-bas','f-teklif-bit','f-esik-katsayi','f-okas']
       .forEach(id => { document.getElementById(id).value = ''; });
     document.getElementById('f-min-uyum').value = '0';
@@ -1293,6 +1311,8 @@
     if (usul) document.getElementById('f-usul').value = usul;
     const tur = p.get('tur');
     if (tur) document.getElementById('f-tur').value = tur;
+    const kaynak = p.get('kaynak');
+    if (kaynak) document.getElementById('f-kaynak').value = kaynak;
     const okas = p.get('okas');
     if (okas) { document.getElementById('f-okas').value = okas; document.getElementById('gelismis-panel').classList.add('acik'); }
     const minBedel = p.get('minBedel');
@@ -1333,6 +1353,7 @@
       kategori: document.getElementById('f-kategori').value,
       tur:      document.getElementById('f-tur').value,
       usul:     document.getElementById('f-usul').value,
+      kaynak:   document.getElementById('f-kaynak').value,
       minBedel: document.getElementById('f-min-bedel').value,
       maxBedel: document.getElementById('f-max-bedel').value,
       minUyum:  document.getElementById('f-min-uyum').value,
@@ -1459,6 +1480,7 @@
     document.getElementById('f-kategori').value = p.kategori || '';
     document.getElementById('f-tur').value      = p.tur      || '';
     document.getElementById('f-usul').value     = p.usul     || '';
+    document.getElementById('f-kaynak').value   = p.kaynak   || '';
     document.getElementById('f-min-bedel').value= p.minBedel || '';
     document.getElementById('f-max-bedel').value= p.maxBedel || '';
     document.getElementById('f-min-uyum').value = p.minUyum  || '0';

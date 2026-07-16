@@ -248,7 +248,6 @@
       <a href="ihaleler" class="nav-item active"><span class="icon">⊞</span> İhaleler</a>
       <a href="dogrudan-temin" class="nav-item"><span class="icon">⚡</span> Doğrudan Temin</a>
       <a href="sonuclananlar" class="nav-item"><span class="icon">🏆</span> Sonuçlananlar</a>
-      <a href="kamu-ihaleleri" class="nav-item"><span class="icon">📦</span> Kamu Kurumu İhaleleri</a>
       <div class="nav-section-label" style="padding-left:16px;opacity:.85;">— Analiz —</div>
       <a href="rekabet-analizi" class="nav-item"><span class="icon">📊</span> Rekabet Analizi</a>
       <a href="idareler" class="nav-item"><span class="icon">🏛️</span> İdareler Dizini</a>
@@ -453,10 +452,19 @@
     document.getElementById(panelId).classList.add('active');
   }
 
+  // EKAP dışı kaynaklar (ilan.gov.tr / DMO / Jandarma): etiket + dış bağlantı metinleri.
+  // Detay içeriği bizde sınırlı olduğundan kullanıcı kaynağın kendi sayfasına yönlendirilir (pdf_url).
+  const DIS_KAYNAK = {
+    ilan_gov: { ad: 'İlan.gov.tr (Resmi İlan)',           eyebrow: '📰 Resmi İlan · ilan.gov.tr',              ac: "↗ İlan.gov.tr'de Aç" },
+    dmo:      { ad: 'Devlet Malzeme Ofisi (dmo.gov.tr)',  eyebrow: '📦 DMO · dmo.gov.tr',                      ac: "↗ DMO'da Aç" },
+    jandarma: { ad: 'Jandarma Vatandaş İhale Sorgu',      eyebrow: '🪖 Jandarma · vatandas.jandarma.gov.tr',   ac: "↗ Jandarma'da Aç" },
+  };
+
   function sayfaOlustur(d) {
     const uyum = Uyum.hesapla(d, kullaniciProfil);
     const gun = gunHesapla(d.son_teklif_tarihi);
     const belgeler = Array.isArray(d.belgeler) ? d.belgeler : [];
+    const disK = DIS_KAYNAK[d.kaynak] || null;
 
     document.title = `${d.baslik} — İhaleGlobal`;
     document.getElementById('bc-baslik').textContent = d.baslik ? d.baslik.substring(0, 40) + (d.baslik.length > 40 ? '…' : '') : 'Detay';
@@ -465,8 +473,8 @@
 
       <!-- HEADER KARTI -->
       <div class="detay-header">
-        <div class="detay-eyebrow">${d.kaynak === 'ilan_gov'
-          ? `📰 Resmi İlan · ilan.gov.tr${d.ikn ? ' · İKN ' + d.ikn : ''}`
+        <div class="detay-eyebrow">${disK
+          ? `${disK.eyebrow}${d.ikn ? ' · İKN ' + d.ikn : (d.kaynak === 'dmo' && d.ekap_id ? ' · İhale No ' + d.ekap_id.replace('DMO-', '') : '')}`
           : `EKAP #${d.ekap_id || '—'} · ${d.ikn || '—'}`}</div>
         <div class="detay-baslik">${escHtml(d.baslik) || '—'}</div>
         <div class="detay-idare">🏛️ ${d.idare ? `<a href="kurum-analiz?kurum=${encodeURIComponent(d.idare)}" style="color:inherit;text-decoration:none;" onmouseover="this.style.color='var(--amber)'" onmouseout="this.style.color=''">${escHtml(d.idare)}</a>` : '—'} · ${escHtml(d.il) || '—'}${d.ulke && d.ulke !== 'TR' ? ', ' + escHtml(d.ulke) : ''}</div>
@@ -479,8 +487,8 @@
         <div class="detay-actions">
           <button class="btn-takip" id="main-takip" onclick="takibeAl()">☆ Takibe Al</button>
           <a class="btn-takip" href="teklif-olustur?ihale_id=${d.id}" style="background:linear-gradient(135deg,#F0A500,#C98A00);display:inline-flex;align-items:center;gap:6px;text-decoration:none;">✏ Teklif Hazırla</a>
-          ${d.kaynak === 'ilan_gov'
-            ? (d.pdf_url ? `<a class="btn-ekap" href="${d.pdf_url}" target="_blank" rel="noopener" title="ilan.gov.tr'de görüntüle">↗ İlan.gov.tr'de Aç</a>` : '')
+          ${disK
+            ? (d.pdf_url ? `<a class="btn-ekap" href="${d.pdf_url}" target="_blank" rel="noopener" title="Kaynağında görüntüle">${disK.ac}</a>` : '')
             : (d.ikn ? `<a class="btn-ekap" href="${ekapLink(d.ikn, d.usul)}" target="_blank" rel="noopener" title="EKAP İhale Arama — İKN: ${d.ikn}">↗ EKAP'ta Ara</a>` : '')}
           <button class="btn-ekap" id="link-kopyala-btn" onclick="linkKopyala(this)" title="Sayfa linkini panoya kopyala">🔗 Paylaş</button>
         </div>
@@ -555,7 +563,7 @@
             <div class="info-row"><span class="info-label">İhale Usulü</span><span class="info-value">${usulLabel(d.usul)}</span></div>
             <div class="info-row"><span class="info-label">Kategori</span><span class="info-value">${d.kategori ? `<a href="ihaleler?kategori=${encodeURIComponent(d.kategori)}" style="color:var(--amber);text-decoration:none;">${d.kategori}</a>` : '—'}</span></div>
             <div class="info-row"><span class="info-label">OKAS Kodu</span><span class="info-value">${okasLinkle(d.okas)}</span></div>
-            <div class="info-row"><span class="info-label">Kaynak</span><span class="info-value">${d.kaynak === 'ilan_gov' ? 'İlan.gov.tr (Resmi İlan)' : (d.kaynak ? d.kaynak.toUpperCase() : '—')}</span></div>
+            <div class="info-row"><span class="info-label">Kaynak</span><span class="info-value">${disK ? disK.ad : (d.kaynak ? d.kaynak.toUpperCase() : '—')}</span></div>
           </div>
 
           <div class="detay-card">
@@ -617,12 +625,12 @@
           }).join('') : `
             <div style="padding:16px 0;">
               <p style="color:var(--muted);font-size:14px;margin-bottom:12px;">
-                ${d.kaynak === 'ilan_gov'
-                  ? 'Bu ilan Basın İlan Kurumu (ilan.gov.tr) kaynaklıdır. İlanın tamamını kaynağında görüntüleyebilirsiniz.'
+                ${disK
+                  ? `Bu ilan ${disK.ad} kaynaklıdır. İlanın tamamını ve dokümanlarını kaynağında görüntüleyebilirsiniz.`
                   : 'Belge listesi henüz sisteme yüklenmedi. Dokümanları EKAP üzerinden görüntüleyebilirsiniz.'}
               </p>
-              ${d.kaynak === 'ilan_gov'
-                ? (d.pdf_url ? `<a class="btn-ekap" href="${d.pdf_url}" target="_blank" rel="noopener" style="display:inline-flex;">↗ İlan.gov.tr'de Görüntüle</a>` : '')
+              ${disK
+                ? (d.pdf_url ? `<a class="btn-ekap" href="${d.pdf_url}" target="_blank" rel="noopener" style="display:inline-flex;">${disK.ac}</a>` : '')
                 : (d.ikn ? `<a class="btn-ekap" href="${ekapLink(d.ikn, d.usul)}" target="_blank" rel="noopener" style="display:inline-flex;">↗ EKAP'ta Dokümanları Gör</a>` : '')}
             </div>`}
         </div>

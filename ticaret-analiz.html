@@ -48,6 +48,10 @@
     .dunya-alt b { color: var(--amber); }
     #dunya-sektor { padding: 5px 10px; border-radius: 7px; font-size: 12px; max-width: 260px; background: var(--navy); color: var(--white); border: 1px solid var(--border); font-family: var(--font-body); cursor: pointer; }
     #dunya-sektor option { background: #fff; color: #1b2942; }
+    #tic-yil, #tic-kiyas { padding: 5px 9px; border-radius: 7px; font-size: 12px; background: var(--navy); color: var(--white); border: 1px solid var(--border); font-family: var(--font-body); cursor: pointer; }
+    #tic-yil option, #tic-kiyas option { background: #fff; color: #1b2942; }
+    .tic-yil-grup { display: inline-flex; align-items: center; gap: 5px; }
+    .tic-yil-grup .lbl { font-size: 11px; color: var(--muted); font-weight: 600; }
     .dunya-svg-wrap { position: relative; width: 100%; overflow: hidden; border-radius: 8px; background: linear-gradient(180deg, #0c1524, #0a111d); }
     .dunya-svg-wrap svg { width: 100%; height: auto; display: block; }
     .dunya-svg-wrap path.ulke { fill: #1b2942; stroke: #0a111d; stroke-width: .4; transition: fill .12s; }
@@ -117,7 +121,6 @@
       <a href="ihaleler" class="nav-item"><span class="icon">⊞</span> İhaleler</a>
       <a href="dogrudan-temin" class="nav-item"><span class="icon">⚡</span> Doğrudan Temin</a>
       <a href="sonuclananlar" class="nav-item"><span class="icon">🏆</span> Sonuçlananlar</a>
-      <a href="kamu-ihaleleri" class="nav-item"><span class="icon">📦</span> Kamu Kurumu İhaleleri</a>
       <div class="nav-section-label" style="padding-left:16px;opacity:.85;">— Analiz —</div>
       <a href="rekabet-analizi" class="nav-item"><span class="icon">📊</span> Rekabet Analizi</a>
       <a href="idareler" class="nav-item"><span class="icon">🏛️</span> İdareler Dizini</a>
@@ -174,8 +177,9 @@
       <div class="dunya-card">
         <div class="dunya-head">
           <span class="dunya-baslik">🗺️ Ülkeye göre keşfet</span>
+          <span class="tic-yil-grup"><span class="lbl">Yıl</span><select id="tic-yil" onchange="yilDegisti()" aria-label="Yıl"></select><span class="lbl">Kıyas</span><select id="tic-kiyas" onchange="kiyasDegisti()" aria-label="Kıyas yılı"></select></span>
           <select id="dunya-sektor" onchange="sektorDegisti()" aria-label="Sektör filtresi"></select>
-          <span class="dunya-alt" id="dunya-alt">Ülkenin üzerine gelin — Türkiye ile ihracat/ithalat hacmi ve yıllık değişim</span>
+          <span class="dunya-alt" id="dunya-alt">Ülkenin üzerine gelin — Türkiye ile ihracat/ithalat hacmi ve yıl kıyaslaması</span>
         </div>
         <div class="dunya-svg-wrap" id="dunya-svg-wrap"><div class="mini-spin" style="margin:40px auto;"></div></div>
         <div class="dunya-lejant" id="dunya-lejant"></div>
@@ -254,19 +258,39 @@
   const SB_URL = "https://ihaleglobal.com";
   const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzgzMzUwMDE1LCJleHAiOjE5NDEwMzAwMTV9.sRB61a8oNXwzSKL9No8gt7cmkmnkoQstT0ZtHIxl1Hs";
   const sb = window.supabase.createClient(SB_URL, SB_KEY);   // HS6 drill-down (dis_ticaret_hs) için
+  const rpc = async (fn, args) => { const { data, error } = await sb.rpc(fn, args || {}); if(error) throw error; return data; };
   const esc = s => (s == null ? '' : String(s)).replace(/[<>&"']/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&#39;'}[c]));
-  const TIC = window.TICARET_TR || null;
+  const num = v => (v == null ? 0 : +v);
   const H = window.DUNYA_HARITA || null;
-  let dunyaSektor = '';
-  let sortAlan = 'ihr', sortYon = -1;   // varsayılan: ihracat azalan
-  const dunyaAd = {};                    // ISO3 → İngilizce ad (SVG'den, fallback)
+  const TIC = window.TICARET_TR || null;   // yalnız iso2/ad fallback (geçiş dönemi); sayısal veri RPC'den
+
+  // 16 sektör grubu — anahtarlar backend SEKTORLER (ticaret_verisi_cek.py) ile BİREBİR; RPC p_sektor bunu bekler.
+  const SEKTORLER = {
+    "01-05_Animal":"Hayvansal Ürünler","06-15_Vegetable":"Bitkisel Ürünler","16-24_FoodProd":"Gıda Ürünleri",
+    "25-26_Minerals":"Mineraller","27-27_Fuels":"Yakıtlar","28-38_Chemicals":"Kimyasallar",
+    "39-40_PlastiRub":"Plastik & Kauçuk","41-43_HidesSkin":"Deri & Post","44-49_Wood":"Ahşap & Kağıt",
+    "50-63_TextCloth":"Tekstil & Konfeksiyon","64-67_Footwear":"Ayakkabı","68-71_StoneGlas":"Taş, Cam & Seramik",
+    "72-83_Metals":"Metaller","84-85_MachElec":"Makine & Elektrik-Elektronik","86-89_Transport":"Ulaşım Araçları",
+    "90-99_Miscellan":"Diğer İmalat"
+  };
+
+  // ── durum ──
+  let YILLAR = [], YIL = null, KIYAS = null, dunyaSektor = '';
+  let sortAlan = 'ihr', sortYon = -1;     // varsayılan: ihracat azalan
+  const dunyaAd = {};                     // iso3 → İngilizce ad (SVG'den, fallback)
+  let toplam = {};                        // iso3 → [ihr_g, ihr_o, ith_g, ith_o] (seçili↔kıyas yıl, TOPLAM)
+  let iso2Map = {};                       // iso3 → iso2 (RPC; iso2 migration deploy'ından sonra dolu)
+  let wldSeri = [];                       // ticaret_ulke('WLD').toplam → [{yil,ihr,ith,kaynak}]
+  const sektorCache = {};                 // `${sektor}|${yil}|${kiyas}` → {iso3:[ihr_g,ihr_o,ith_g,ith_o]}
   const tip = document.getElementById('dunya-tooltip');
+  const ALT_VARSAYILAN = 'Ülkenin üzerine gelin — Türkiye ile ihracat/ithalat hacmi ve yıl kıyaslaması';
 
   let _adTr = null;
   try { _adTr = new Intl.DisplayNames(['tr'], { type: 'region' }); } catch(e){}
+  function iso2(kod){ return iso2Map[kod] || (TIC && TIC.ulkeler && TIC.ulkeler[kod] && TIC.ulkeler[kod].a2) || null; }
   function ulkeAdTr(kod){
-    const t = TIC && TIC.ulkeler[kod];
-    if(t && t.a2 && _adTr){ try { const ad = _adTr.of(t.a2); if(ad && ad !== t.a2) return ad; } catch(e){} }
+    const a2 = iso2(kod);
+    if(a2 && _adTr){ try { const ad = _adTr.of(a2); if(ad && ad !== a2) return ad; } catch(e){} }
     return dunyaAd[kod] || kod;
   }
   function paraUsd(n){
@@ -277,21 +301,27 @@
     return '$' + n.toLocaleString('tr');
   }
   function yuzde(guncel, onceki, html){
-    if(!onceki || onceki <= 0 || guncel == null) return html ? '' : 0;
+    if(!onceki || onceki <= 0 || guncel == null || YIL === KIYAS) return html ? '' : 0;
     const p = (guncel - onceki) / onceki * 100;
     if(!html) return p;
     if(Math.abs(p) < 0.05) return `<span class="yoyflat">≈</span>`;
     const up = p > 0;
     return `<span class="${up?'yoyup':'yoydown'}">${up?'▲':'▼'} %${Math.abs(p).toLocaleString('tr',{maximumFractionDigits:1})}</span>`;
   }
-  // Seçili sektöre/toplama göre [ihr_g, ihr_o, ith_g, ith_o]
+  // Seçili görünüme (toplam ya da sektör) göre [ihr_g, ihr_o, ith_g, ith_o]
   function dortlu(kod){
-    const t = TIC && TIC.ulkeler[kod];
-    if(!t) return null;
-    if(!dunyaSektor) return [t.ihr[0]||0, t.ihr[1]||0, t.ith[0]||0, t.ith[1]||0];
-    const s = t.s && t.s[dunyaSektor];
-    return s ? [s[0]||0, s[1]||0, s[2]||0, s[3]||0] : [0,0,0,0];
+    if(dunyaSektor){
+      const m = sektorCache[`${dunyaSektor}|${YIL}|${KIYAS}`];
+      return (m && m[kod]) || null;
+    }
+    return toplam[kod] || null;
   }
+  // Görünümde listelenecek iso3'ler
+  function tumKodlar(){
+    if(dunyaSektor){ const m = sektorCache[`${dunyaSektor}|${YIL}|${KIYAS}`]; return m ? Object.keys(m) : []; }
+    return Object.keys(toplam);
+  }
+  function wldYil(y){ return wldSeri.find(r => r.yil === y) || null; }
   function renk(n){
     const b = dunyaSektor ? [5e8,1e8,2e7,2e6] : [5e9,1e9,1e8,1e7];
     if(n >= b[0]) return '#f0a500';
@@ -306,7 +336,7 @@
     const lej = document.getElementById('dunya-lejant');
     const b = dunyaSektor ? ['$2M+','$20M+','$100M+','$500M+'] : ['$10M+','$100M+','$1Mr+','$5Mr+'];
     const kutular = [['#38311f','&gt;0'], ['#5f4a24',b[0]], ['#9a6f22',b[1]], ['#d1901a',b[2]], ['#f0a500',b[3]]];
-    const sEk = dunyaSektor ? ` — ${esc(TIC.sektorler[dunyaSektor]||'')} (${TIC.sektor_yil})` : ` (${TIC.yil})`;
+    const sEk = dunyaSektor ? ` — ${esc(SEKTORLER[dunyaSektor]||'')} (${YIL})` : ` (${YIL})`;
     lej.innerHTML = `<span class="lej-ibare">Türkiye'nin ihracatına göre${sEk}:</span>` +
       kutular.map(([c,t]) => `<span class="lej-kutu"><span class="lej-renk" style="background:${c}"></span>${t}</span>`).join('') +
       `<span class="lej-yon">Az <span class="lej-grad"></span> Çok</span>`;
@@ -317,9 +347,10 @@
     if(!svg) return;
     svg.querySelectorAll('path.ulke').forEach(p => {
       const kod = p.getAttribute('data-kod');
-      if(kod === 'TUR'){ p.style.fill = '#eef2f8'; return; }
+      if(kod === 'TUR'){ p.style.fill = '#eef2f8'; p.classList.remove('tveri'); return; }
       const d = dortlu(kod);
       p.style.fill = d ? renk(d[0]) : '#1b2942';
+      p.classList.toggle('tveri', !!d);
     });
     lejant();
   }
@@ -329,23 +360,26 @@
     if(!p) return null;
     const kod = p.getAttribute('data-kod');
     if(kod === 'TUR'){
-      const w = TIC.dunya;
-      return `<b>🇹🇷 Türkiye</b> <span style="color:var(--muted)">— referans ülke (${TIC.yil})</span>` +
-        `<br>Dünyaya toplam ihracat: <b>${paraUsd(w.ihr[0])}</b> ${yuzde(w.ihr[0],w.ihr[1],1)}` +
-        `<br>Dünyadan toplam ithalat: <b style="color:#e2e8f0">${paraUsd(w.ith[0])}</b> ${yuzde(w.ith[0],w.ith[1],1)}`;
+      const g = wldYil(YIL), o = wldYil(KIYAS);
+      const ihrG = g?num(g.ihr):0, ihrO = o?num(o.ihr):0, ithG = g?num(g.ith):0, ithO = o?num(o.ith):0;
+      return `<b>🇹🇷 Türkiye</b> <span style="color:var(--muted)">— referans ülke (${YIL})</span>` +
+        `<br>Dünyaya toplam ihracat: <b>${paraUsd(ihrG)}</b> ${yuzde(ihrG,ihrO,1)}` +
+        `<br>Dünyadan toplam ithalat: <b style="color:#e2e8f0">${paraUsd(ithG)}</b> ${yuzde(ithG,ithO,1)}`;
     }
-    const t = TIC.ulkeler[kod];
+    const t = toplam[kod];
     if(!t) return null;
     const ulke = esc(ulkeAdTr(kod));
-    const d = dortlu(kod);
-    const sat = [`<b>${ulke}</b> <span style="color:var(--muted)">— Türkiye ile dış ticaret</span>`];
-    sat.push(`↗ <b>Türkiye → ${ulke}</b> (ihracat, ${TIC.yil}): <b>${paraUsd(t.ihr[0])}</b> ${yuzde(t.ihr[0],t.ihr[1],1)}`);
-    sat.push(`↘ <b>${ulke} → Türkiye</b> (ithalat, ${TIC.yil}): <b style="color:#e2e8f0">${paraUsd(t.ith[0])}</b> ${yuzde(t.ith[0],t.ith[1],1)}`);
+    const sat = [`<b>${ulke}</b> <span style="color:var(--muted)">— Türkiye ile dış ticaret (${YIL})</span>`];
     if(dunyaSektor){
-      const ad = esc(TIC.sektorler[dunyaSektor]||dunyaSektor);
-      sat.push(t.s && t.s[dunyaSektor]
-        ? `<span style="color:var(--muted)">${ad} (${TIC.sektor_yil}) — TR→${ulke}:</span> <b>${paraUsd(d[0])}</b> ${yuzde(d[0],d[1],1)} · <span style="color:var(--muted)">${ulke}→TR:</span> <b>${paraUsd(d[2])}</b> ${yuzde(d[2],d[3],1)}`
-        : `<span style="color:var(--muted)">${ad}: bu ülkeyle kayıtlı ticaret yok (${TIC.sektor_yil})</span>`);
+      const ad = esc(SEKTORLER[dunyaSektor]||dunyaSektor);
+      const d = dortlu(kod);
+      sat.push(d
+        ? `<span style="color:var(--muted)">${ad} — TR→${ulke}:</span> <b>${paraUsd(d[0])}</b> ${yuzde(d[0],d[1],1)} · <span style="color:var(--muted)">${ulke}→TR:</span> <b>${paraUsd(d[2])}</b> ${yuzde(d[2],d[3],1)}`
+        : `<span style="color:var(--muted)">${ad}: bu ülkeyle kayıtlı ticaret yok (${YIL})</span>`);
+      sat.push(`<span style="color:var(--muted)">Toplam — TR→${ulke}:</span> <b>${paraUsd(t[0])}</b> · <span style="color:var(--muted)">${ulke}→TR:</span> <b>${paraUsd(t[2])}</b>`);
+    } else {
+      sat.push(`↗ <b>Türkiye → ${ulke}</b> (ihracat): <b>${paraUsd(t[0])}</b> ${yuzde(t[0],t[1],1)}`);
+      sat.push(`↘ <b>${ulke} → Türkiye</b> (ithalat): <b style="color:#e2e8f0">${paraUsd(t[2])}</b> ${yuzde(t[2],t[3],1)}`);
     }
     return sat.join('<br>');
   }
@@ -355,12 +389,10 @@
     if(!H || !H.ulkeler){ wrap.innerHTML = '<div style="color:var(--muted);padding:40px;text-align:center;">Harita verisi yüklenemedi.</div>'; return; }
     const paths = H.ulkeler.map(u => {
       if(u.kod && u.kod !== '-99') dunyaAd[u.kod] = u.ad || u.kod;
-      const tveri = TIC && TIC.ulkeler[u.kod];
       const anavatan = u.kod === 'TUR';
-      return `<path class="ulke${tveri ? ' tveri' : ''}${anavatan ? ' anavatan' : ''}" data-kod="${u.kod}" d="${u.d}"></path>`;
+      return `<path class="ulke${anavatan ? ' anavatan' : ''}" data-kod="${u.kod}" d="${u.d}"></path>`;
     }).join('');
     wrap.innerHTML = `<svg viewBox="${H.viewBox}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Türkiye dış ticaret dünya haritası">${paths}</svg>`;
-    boya();
     if(window.svgZoomKur) svgZoomKur(wrap, { maxZoom: 12 });
 
     const svg = wrap.querySelector('svg');
@@ -386,22 +418,81 @@
   function sektorKur(){
     const sel = document.getElementById('dunya-sektor');
     sel.innerHTML = `<option value="">Tüm sektörler (toplam)</option>` +
-      Object.entries(TIC.sektorler).map(([k,ad]) => `<option value="${esc(k)}">${esc(ad)}</option>`).join('');
+      Object.entries(SEKTORLER).map(([k,ad]) => `<option value="${esc(k)}">${esc(ad)}</option>`).join('');
   }
 
-  window.sektorDegisti = function(){
-    dunyaSektor = document.getElementById('dunya-sektor').value;
+  function yilKur(){
+    const opts = YILLAR.slice().sort((a,b) => b - a);   // yeni → eski
+    const html = opts.map(y => `<option value="${y}">${y}</option>`).join('');
+    const yilSel = document.getElementById('tic-yil'), kiyasSel = document.getElementById('tic-kiyas');
+    yilSel.innerHTML = html; kiyasSel.innerHTML = html;
+    yilSel.value = String(YIL); kiyasSel.value = String(KIYAS);
+  }
+
+  function altYaz(t){ const el = document.getElementById('dunya-alt'); if(el) el.textContent = t; }
+  function sektorEt(){
     document.getElementById('liste-sektor-et').textContent =
-      dunyaSektor ? `— ${TIC.sektorler[dunyaSektor]} (${TIC.sektor_yil})` : `— tüm sektörler (${TIC.yil})`;
-    boya();
-    listeCiz();
+      dunyaSektor ? `— ${SEKTORLER[dunyaSektor]} (${YIL})` : `— tüm sektörler (${YIL})`;
+  }
+
+  // Seçili yıl+kıyas için TOPLAM veriyi (+iso2 +WLD serisi) yükle; sektör açıksa onu da tazele
+  async function veriYukle(){
+    altYaz('Yükleniyor…');
+    try {
+      const [liste, wld] = await Promise.all([
+        rpc('ticaret_liste', { p_yil: YIL, p_kiyas_yil: KIYAS }),
+        rpc('ticaret_ulke',  { p_iso3: 'WLD' })
+      ]);
+      toplam = {}; iso2Map = {};
+      for(const r of (liste || [])){
+        toplam[r.iso3] = [num(r.yil_ihr), num(r.kiyas_ihr), num(r.yil_ith), num(r.kiyas_ith)];
+        if(r.iso2) iso2Map[r.iso3] = r.iso2;
+      }
+      wldSeri = (wld && wld.toplam) || [];
+      if(dunyaSektor) await sektorYukle();
+    } catch(err){
+      console.error('ticaret veri yükleme hatası', err);
+      altYaz('Veri yüklenemedi — sayfayı yenileyin.');
+      return;
+    }
+    altYaz(ALT_VARSAYILAN);
+    kpiGoster(); boya(); sektorEt(); listeCiz();
+  }
+
+  // Seçili sektörün seçili+kıyas yılı için harita verisini çek (cache'li)
+  async function sektorYukle(){
+    const key = `${dunyaSektor}|${YIL}|${KIYAS}`;
+    if(sektorCache[key]) return;
+    const [a, b] = await Promise.all([
+      rpc('ticaret_harita', { p_yil: YIL,   p_sektor: dunyaSektor }),
+      rpc('ticaret_harita', { p_yil: KIYAS, p_sektor: dunyaSektor })
+    ]);
+    const m = {}, kodlar = new Set([...Object.keys(a || {}), ...Object.keys(b || {})]);
+    kodlar.forEach(k => {
+      const av = a && a[k], bv = b && b[k];
+      m[k] = [num(av && av.ihr), num(bv && bv.ihr), num(av && av.ith), num(bv && bv.ith)];
+    });
+    sektorCache[key] = m;
+  }
+
+  window.yilDegisti = async function(){ YIL = +document.getElementById('tic-yil').value; await veriYukle(); };
+  window.kiyasDegisti = async function(){ KIYAS = +document.getElementById('tic-kiyas').value; await veriYukle(); };
+  window.sektorDegisti = async function(){
+    dunyaSektor = document.getElementById('dunya-sektor').value;
+    if(dunyaSektor){
+      altYaz('Yükleniyor…');
+      try { await sektorYukle(); }
+      catch(err){ console.error(err); altYaz('Sektör verisi yüklenemedi.'); return; }
+      altYaz(ALT_VARSAYILAN);
+    }
+    sektorEt(); boya(); listeCiz();
   };
 
   // ── Liste ──
   function satirlar(){
     const ara = (document.getElementById('liste-ara').value || '').toLocaleLowerCase('tr').trim();
     const out = [];
-    for(const kod in TIC.ulkeler){
+    for(const kod of tumKodlar()){
       const d = dortlu(kod);
       if(!d) continue;
       if(dunyaSektor && !d[0] && !d[2]) continue;   // sektör seçiliyse ticaret olmayanları atla
@@ -524,31 +615,44 @@
   });
 
   function kpiGoster(){
-    const w = TIC.dunya;
-    document.getElementById('kpi-ihr').textContent = paraUsd(w.ihr[0]);
-    document.getElementById('kpi-ihr-s').innerHTML = `${TIC.yil} · ${yuzde(w.ihr[0],w.ihr[1],1)}`;
-    document.getElementById('kpi-ith').textContent = paraUsd(w.ith[0]);
-    document.getElementById('kpi-ith-s').innerHTML = `${TIC.yil} · ${yuzde(w.ith[0],w.ith[1],1)}`;
-    const denge = (w.ihr[0]||0) - (w.ith[0]||0);
+    const g = wldYil(YIL), o = wldYil(KIYAS);
+    const ihrG = g?num(g.ihr):0, ihrO = o?num(o.ihr):0, ithG = g?num(g.ith):0, ithO = o?num(o.ith):0;
+    document.getElementById('kpi-ihr').textContent = paraUsd(ihrG);
+    document.getElementById('kpi-ihr-s').innerHTML = `${YIL} · ${yuzde(ihrG,ihrO,1) || '—'}`;
+    document.getElementById('kpi-ith').textContent = paraUsd(ithG);
+    document.getElementById('kpi-ith-s').innerHTML = `${YIL} · ${yuzde(ithG,ithO,1) || '—'}`;
+    const denge = ihrG - ithG;
     const dEl = document.getElementById('kpi-denge');
     dEl.textContent = (denge < 0 ? '−' : '') + paraUsd(Math.abs(denge));
     dEl.style.color = denge < 0 ? '#f87171' : '#4ade80';
-    document.getElementById('kpi-ulke').textContent = Object.keys(TIC.ulkeler).length.toLocaleString('tr');
+    document.getElementById('kpi-ulke').textContent = Object.keys(toplam).length.toLocaleString('tr');
     document.getElementById('kaynak-not').innerHTML =
-      `Güncelleme: <b style="color:var(--white)">${esc(TIC.guncelleme)}</b> · Toplam yılı: <b style="color:var(--white)">${TIC.yil}</b> · Sektör kırılımı yılı: <b style="color:var(--white)">${TIC.sektor_yil}</b>. Kaynak: ${esc(TIC.kaynak)}.`;
+      `Seçili yıl: <b style="color:var(--white)">${YIL}</b>` +
+      (YIL === KIYAS ? '' : ` · Kıyas yılı: <b style="color:var(--white)">${KIYAS}</b>`) +
+      ` · Kaynak: <b style="color:var(--white)">UN Comtrade</b> (reporter = Türkiye, HS AG2 → 16 grup).`;
   }
 
-  function main(){
-    if(!TIC || !TIC.ulkeler || !Object.keys(TIC.ulkeler).length){
-      document.getElementById('dunya-svg-wrap').innerHTML =
-        '<div style="color:var(--muted);padding:40px;text-align:center;">Ticaret verisi henüz yüklenmedi.</div>';
+  async function main(){
+    const wrap = document.getElementById('dunya-svg-wrap');
+    let y;
+    try { y = await rpc('ticaret_yillar'); }
+    catch(err){
+      console.error(err);
+      wrap.innerHTML = '<div style="color:var(--muted);padding:40px;text-align:center;">Ticaret verisi yüklenemedi.</div>';
       return;
     }
-    kpiGoster();
+    YILLAR = (y && y.yillar) || [];
+    YIL = (y && y.guncel_yil) || (YILLAR.length ? Math.max(...YILLAR) : null);
+    if(!YIL){
+      wrap.innerHTML = '<div style="color:var(--muted);padding:40px;text-align:center;">Ticaret verisi henüz yüklenmedi.</div>';
+      return;
+    }
+    const kucuk = YILLAR.filter(x => x < YIL);
+    KIYAS = kucuk.length ? Math.max(...kucuk) : YIL;   // varsayılan kıyas: bir önceki yıl (yoksa aynı yıl)
     sektorKur();
+    yilKur();
     haritaKur();
-    document.getElementById('liste-sektor-et').textContent = `— tüm sektörler (${TIC.yil})`;
-    listeCiz();
+    await veriYukle();
   }
   main();
 })();
