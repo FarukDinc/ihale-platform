@@ -1,5 +1,27 @@
 # İhalePlatform — Yapılacaklar Listesi
 
+> ## 🗂️ 17 TEMMUZ — FİRMA ANALİZİ: SEKMELER BİRLEŞTİ + TAM PARA FORMATI (✅ CANLI, commit `850bebc`)
+> Kullanıcı: "Sonuçlar ve İhaleler aynı noktaya varıyor — tek sayfada katıldığı ihaleler olarak göster;
+> ₺ 3.9 M TL gibi rakamları net göster (809.558,00 ₺ / 3.900.752,52 ₺ gibi)."
+> - **Sekme birleşimi:** "Sonuçlar"+"İhaleler" → tek **"Katıldığı İhaleler"** (ikisi de aynı veriden
+>   besleniyordu: tumIhaleler=sonucVeri.map(s=>s.ilan), EKAP kaybedeni yayınlamaz). Birleşik kart =
+>   sonuç kartı + tür rozeti; 20/sayfa pager (yön-string deseni — inline onclick closure tuzağı);
+>   eski tab-ihaleler/listeSayfa/durumSec silindi; "İhalelerini Gör" butonu yeni sekmeye bağlandı;
+>   birleşik kartta idare/kazanan_firma/başlık escapeHtml'e alındı (eskiden ESCAPESIZdi — XSS dersi).
+> - **paraTam(v):** tr-TR + 2 kuruş + ' ₺'. Uygulanan: detay KPI/kart/meta/kpi-sub, dizin ciro kolonu
+>   (masaüstü 165px, mobil 130px+11.5px+ellipsis), arama listesi, karşılaştırma (min-width:0+wrap).
+>   BİLİNÇLİ kompakt kalanlar: dizin toplam-ciro KPI'sı (71K firmanın toplamı, formatBedel) + harita
+>   paraKisa'ları (yer-kısıtlı görselleştirme).
+> - **Süreç (ultracode):** 14-hakem çekişmeli inceleme (3 lens → bulgu başına çürütme hakemi; 830K token).
+>   5 doğrulanmış bulgunun 5'i de kapatıldı: mobil ciro kesilmesi (90px'te tam format YANILTICI tutar
+>   gösteriyordu — en kritik), sekme geçişinde sayfa sıfırlanması, firma değişiminde bayat pager,
+>   kars-cell mobil taşması, yorum düzeltmesi. Fixture testi (gerçek fonksiyonlar + 45 sahte kayıt,
+>   VDS'te geçici sayfa → test edilip SİLİNDİ): format birebir, 3-sayfa pager akışı, XSS düz metin.
+> - **Canlı doğrulama:** dizin ilk 3 ciro "106.336.802.938,00 ₺ / 91.531.222.819,00 ₺ / ..." tam formatlı;
+>   mobil 375px'te en büyük tutar taşmadan sığıyor (scrollWidth ölçümü); "Katıldığı İhaleler" HTML'de,
+>   eski sekme kalıntısı 0. Detay sekmesi login-gated olduğundan üye görünümü fixture+statik incelemeyle
+>   doğrulandı — kullanıcı girişli gözle de bakmalı.
+
 > ## 🎯 17 TEMMUZ — EŞLEŞTİRME v3: KONU + ÖLÇEK BANDI (±%500) (⏳ MİGRATİON PROD'A YÜKLENMEDİ)
 > Kullanıcı şikayeti (Jandarma 2026/792203, 809K gıda ihalesi): "Uygun Firmalar"da Petrol Ofisi/Otokar,
 > "Benzer İhaleler"de mobilya/bidon/medikal gaz çıkıyordu. KÖK NEDEN: ilanın kategorisi kanonik 41'den
