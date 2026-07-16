@@ -34,6 +34,7 @@ _KURALLAR = [
     ("Hazır Yemek - Lokantacılık", [
         "hazir yemek", "malzemeli yemek", "malzemesiz yemek", "yemek pisirme", "tabldot",
         "yemek hizmet", "catering", "lokanta", "mutfak hizmet", "yemek dagitim", "kumanya",
+        "ogle yemegi", "sicak yemek", "yemek verilmesi",
     ]),
     ("Tıbbi Cihaz - Laboratuvar - Hastane Ekipmanları", [
         "tibbi cihaz", "tibbi demirbas", "laboratuvar", "hastane ekipman", "tomografi", "rontgen",
@@ -64,6 +65,7 @@ _KURALLAR = [
     ]),
     ("Yazılım - Bilişim - Bilgi Yönetim", [
         "yazilim", "bilisim", "bilgi yonetim", "yazilim gelistirme", "yazilim lisans", "veritabani",
+        "lisans yenileme", "lisans alimi",
         "web sitesi", "web tabanli", "uygulama gelistirme", "otomasyon yazilim", "mobil uygulama",
         "bulut", "siber guvenlik", "e-belediye", "bilgi sistem",
     ]),
@@ -71,6 +73,7 @@ _KURALLAR = [
         "bilgisayar", "dizustu", "masaustu", "yazici", "tarayici", "sunucu", "server", "monitor",
         "tablet", "projeksiyon", "olcu alet", "elektronik kart", "network cihaz", "switch", "router",
         "ups", "kesintisiz guc", "barkod", "elektronik malzeme", "anakart", "harddisk",
+        "ag anahtari", "omurga ag",
     ]),
     ("Enerji - Aydınlatma - Sinyalizasyon - Elektrik Tesisatı", [
         "elektrik tesisat", "aydinlatma", "sinyalizasyon", "trafo", "enerji nakil", "elektrik malzeme",
@@ -80,7 +83,7 @@ _KURALLAR = [
     ("Kanalizasyon - Boru - Su - Doğalgaz - Sıhhi Tesisat", [
         "kanalizasyon", "icme suyu", "atiksu", "sihhi tesisat", "dogalgaz", "su tesisat", "boru dose",
         "boru hatti", "icmesuyu", "kanal insaat", "foseptik", "aritma tesis", "su deposu",
-        "terfi merkez", "isale hatti", "kanal aci", "pissu", "sulama borusu",
+        "terfi merkez", "isale hatti", "kanal aci", "pissu", "sulama borusu", "klorlama",
     ]),
     ("Ormancılık - Bahçıvanlık - Peyzaj", [
         "peyzaj", "agaclandirma", "fidan", "bahcivan", "ormancilik", "budama", "cim", "park bahce",
@@ -93,7 +96,7 @@ _KURALLAR = [
     ("İnşaat - Altyapı - Üstyapı - Yapım", [
         "insaat", "yapim isi", "yapim ihale", "onarim", "tadilat", "bina yap", "yol yap", "asfalt",
         "beton", "kaldirim", "altyapi", "ustyapi", "yikim", "restorasyon", "kaba yapi", "ince yapi",
-        "cati onarim", "duvar", "bordur", "parke tas", "menfez", "kopru", "istinat", "sicak asfalt",
+        "cati onarim", "duvar", "bordur", "parke tas", "parke tasi", "menfez", "kopru", "istinat", "sicak asfalt",
         "yol yapim", "sanat yapi", "spor salon insa", "derslik", "kilitli parke",
     ]),
     ("İnşaat Malzemeleri", [
@@ -111,13 +114,13 @@ _KURALLAR = [
         "madencilik", "sondaj", "maden ocak", "kuyu acma", "jeolojik", "jeotermal", "kaya delme",
     ]),
     ("Kimyasal Maddeler - Dezenfektan - Gübre", [
-        "kimyasal", "dezenfektan", "gubre", "asit", "kimyevi", "cozelti", "klor", "polielektrolit",
+        "kimyasal", "dezenfektan", "gubre", "asit", "kimyevi", "cozelti", "klor", "polielektrolit", "biyosidal",
         "arac yikama kimyasal", "havuz kimyasal", "cinko", "kukurt", "oksit", "granul",
         "kaustik", "sulfat", "sodyum",
     ]),
     ("Gıda - Tarım Ürünleri - Yiyecek - İçecek", [
         "gida", "yiyecek", "icecek", "et alim", "sut ", "ekmek", "sebze", "meyve", "tavuk", "pilic",
-        "un alim", "seker", "bakliyat", "kuru gida", "yumurta", "zeytin", "cay ", "peynir", "yogurt",
+        "un alim", "seker", "bakliyat", "kuru gida", "yumurta", "zeytin", "cay ", "peynir", "yogurt", "bugday",
         "makarna", "pirinc", "bulgur", "salca", "dondurulmus gida", "balik alim", "yufka", "boreklik", "kuru uzum",
     ]),
     ("Tekstil - Giyim - Spor Ekipmanları", [
@@ -131,15 +134,22 @@ _KURALLAR = [
     ("Matbaa - Kırtasiye - Toner - Kartuş - Ambalaj", [
         "matbaa", "kirtasiye", "toner", "kartus", "ambalaj", "fotokopi kagit", "baski hizmet",
         "kagit alim", "defter", "afis baski", "brosur", "form baski", "zarf",
+        "buro malzemesi", "buro malzeme",
     ]),
     ("Taşıt - İş Makinesi - Yedek Parça", [
         "tasit kirala", "arac kirala", "is makinesi", "yedek parca", "kamyon", "otobus alim",
         "ekskavator", "arac lastik", "kepce", "greyder", "silindir", "binek arac", "arac alim",
         "traktor", "damper", "vinc", "forklift", "arac bakim onarim", "arac muayene", "lastik", "aku",
+        "arac kiralama", "tasit kiralama", "arac kiralanmasi", "soforlu arac", "suruculu arac",
     ]),
     ("Nakliye - Servis - Taşımacılık", [
         "nakliye", "tasimacilik", "personel tasima", "ogrenci tasima", "kargo", "tasima hizmet",
         "servis hizmet", "yolcu tasima", "yuk tasima",
+        # 16 Tem: 67K "Diğer" başlık frekans analizi — taşımalı eğitim ihaleleri çekim ekleri
+        # yüzünden kaçıyordu ("öğrencilerin taşınmaSI", "taşımaLI eğitim"); \b tam-kelime
+        # eşleşmesinde her çekim ayrı kelime olarak listelenmeli.
+        "tasinmasi", "tasimali", "tasima merkezi", "tasima isi", "arac gunu", "hat arac",
+        "servis araci", "tasinma",
     ]),
     ("Özel Güvenlik - Koruma - Bekçilik", [
         "ozel guvenlik", "guvenlik hizmet", "koruma hizmet", "bekcilik", "guvenlik gorevli",
@@ -208,6 +218,25 @@ _KURALLAR = [
     ]),
 ]
 
+# DMO'nun KENDİ kategori adları → kanonik (dmo_scraper kullanır; başlık-kelime tahmininden
+# daha güvenilir olduğundan ÖNCE denenir). Jenerik olanlar ("Diğer İhale İlanları",
+# "Aydınlatma ve Temizlik Malzemeleri" gibi karışık kovalar) BİLEREK yok — başlığa düşer.
+DMO_KATEGORI_MAP = {
+    "Bilgisayar ve Yan Ürünleri":              "Elektronik - Bilgisayar - İletişim - Ölçü Aletleri",
+    "Büro Makine ve Aletleri":                 "Elektronik - Bilgisayar - İletişim - Ölçü Aletleri",
+    "Diğer Büro Makina ve Teçhizatı":          "Elektronik - Bilgisayar - İletişim - Ölçü Aletleri",
+    "Bilgisayar Paket Programları":            "Yazılım - Bilişim - Bilgi Yönetim",
+    "Tıbbi Cihaz ve Laboratuvar Malzemeleri":  "Tıbbi Cihaz - Laboratuvar - Hastane Ekipmanları",
+    "İlaçlar":                                 "Sağlık - Medikal - İlaç - Kozmetik",
+    "Nakil Vasıtalar":                         "Taşıt - İş Makinesi - Yedek Parça",
+    "Büro Mefruşatı":                          "Mobilya - Beyaz Eşya - Mutfak - Züccaciye",
+    "Kırtasiye Malzemeleri":                   "Matbaa - Kırtasiye - Toner - Kartuş - Ambalaj",
+    "Temizlik Malzemeleri":                    "Temizlik - İlaçlama - Geri Dönüşüm",
+    "Giyim ve Tekstil Ürünleri":               "Tekstil - Giyim - Spor Ekipmanları",
+    "Mobilya":                                 "Mobilya - Beyaz Eşya - Mutfak - Züccaciye",
+}
+
+
 # OKAS yoksa/eşleşmezse CPV ilk-2-hane fallback (eski _CPV_KATEGORI'nin yeni isimlere haritası).
 _CPV2_FALLBACK = {
     "03": "Hayvancılık - Veterinerlik - Hayvan Yemi", "09": "Akaryakıt - Gazyakıt - Madeni Yağ",
@@ -239,6 +268,29 @@ _DERLENMIS = [
     (kategori, re.compile(r"\b(?:" + "|".join(re.escape(kw.strip()) for kw in kelimeler) + r")\b"))
     for kategori, kelimeler in _KURALLAR
 ]
+
+
+# ── Kanonik kategori kümesi (js/kategoriler.js ile BİREBİR — site filtresi/harita/bildirim bunu kullanır).
+# AI sınıflandırıcı (ai_kategori_backfill.py) buradan numaralı liste üretir; AI'ın döndürdüğü NUMARA
+# bu tuple'daki dizinle eşlenir → yazılan değer daima geçerli bir filtre seçeneği olur (serbest metin DEĞİL).
+KANONIK_KATEGORILER = tuple(sorted({k for k, _ in _KURALLAR}))
+# Güvenlik: her kural hedefi (ve DMO/CPV eşleme değerleri) kanonik kümede olmalı — sessiz drift yakalanır.
+assert set(DMO_KATEGORI_MAP.values()) <= set(KANONIK_KATEGORILER), "DMO_KATEGORI_MAP kanonik dışı değer içeriyor"
+assert set(_CPV2_FALLBACK.values()) <= set(KANONIK_KATEGORILER), "_CPV2_FALLBACK kanonik dışı değer içeriyor"
+# js/kategoriler.js'teki 41 kanonik adla SAYICA eşleşmeli (bu dosya o listeyi ÜRETMİYOR, elle senkron
+# tutulur — bkz. kategori_siniflandir.py başlığı). Bu assertion yalnız EKLEME/SİLME driftini yakalar;
+# bir kategori js'te BAŞKA adla yeniden adlandırılırsa (rename) bu sessiz kalır — o durumda AI'ın/
+# ekap_scraper'ın yazdığı yeni ad site filtresinde seçenek olarak görünmez (16 Tem incelemesinde bulundu;
+# tam çözüm: 41 adı iki dile de tek bir paylaşılan kaynaktan okutmak — şimdilik ucuz kısmi önlem).
+assert len(KANONIK_KATEGORILER) == 41, f"KANONIK_KATEGORILER {len(KANONIK_KATEGORILER)} — js/kategoriler.js ile senkron mu kontrol et"
+
+# Jenerik/boş kovalar: kategori_belirle bir satırı yalnızca bunlardan biriyse 'Diğer'e çekebilir; ZATEN
+# spesifik (AI ya da kelime ile atanmış) bir kategoriyi 'Diğer'e geri EZMEZ (backfill idempotent + AI-korur).
+JENERIK_KOVALAR = frozenset({
+    None, "", "Diğer",
+    "Mal Alımı", "Hizmet Alımı", "Mal", "Hizmet",         # eski jenerik EKAP etiketleri
+    "İnşaat & Yapım",                                       # eski kısa ad (kanonik "İnşaat - Altyapı..." değil)
+})
 
 
 def kategori_belirle(okas, tur=None, baslik=None):
