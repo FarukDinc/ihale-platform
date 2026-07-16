@@ -7,7 +7,8 @@ RETURNS jsonb
 LANGUAGE sql STABLE
 AS $$
   WITH f AS (
-    SELECT tur, il, idare, usul, yaklasik_maliyet_min AS m, kategori
+    SELECT tur, il, idare, usul, yaklasik_maliyet_min AS m, kategori,
+           COALESCE(ilan_tarihi, son_teklif_tarihi) AS tarih
     FROM public.ilanlar
     WHERE (p_durum    IS NULL OR durum    = p_durum)
       AND (p_il       IS NULL OR il       = p_il)
@@ -30,6 +31,10 @@ AS $$
     'tur_maliyet', (SELECT COALESCE(jsonb_agg(jsonb_build_object('k',k,'sayi',sayi,'ort',ort) ORDER BY ort DESC NULLS LAST),'[]'::jsonb)
                  FROM (SELECT tur k, count(*) sayi, round(avg(m) FILTER (WHERE m > 0)) ort
                        FROM f WHERE tur IS NOT NULL GROUP BY tur) x),
+    'trend', (SELECT COALESCE(jsonb_object_agg(ay, n),'{}'::jsonb)
+                 FROM (SELECT to_char(tarih, 'YYYY-MM') ay, count(*) n
+                       FROM f WHERE tarih IS NOT NULL AND tarih >= (now() - interval '24 months')
+                       GROUP BY 1) x),
     'butce', jsonb_build_object(
       'b0',   (SELECT count(*) FROM f WHERE m > 0 AND m <  500000),
       'b1',   (SELECT count(*) FROM f WHERE m >= 500000    AND m < 2000000),
