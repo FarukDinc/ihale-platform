@@ -46,3 +46,7 @@ $VENV/python idare_bildirim.py >> /opt/ihale-platform/logs/scraper.log 2>&1
 # p_gun=1 → yalnız bugünkü yeni kayıtlar (retroaktif spam yok); dedup tekrar üretmez.
 echo "[$(date +'%Y-%m-%d %H:%M:%S')] === Sektor bildirim ===" >> /opt/ihale-platform/logs/scraper.log
 docker exec -i supabase-db psql -U postgres -d postgres -c "SELECT public.yeni_ilan_bildirim_uret(1) AS ilan, public.yeni_rfq_bildirim_uret(1) AS rfq;" >> /opt/ihale-platform/logs/scraper.log 2>&1
+# İdareler Dizini özeti — gece verisi değiştikten sonra MV tazele (idareler.html
+# idare_dizin_json() ile bunu okur; CONCURRENTLY = okumalar bloklanmaz).
+echo "[$(date +'%Y-%m-%d %H:%M:%S')] === Idare ozet MV ===" >> /opt/ihale-platform/logs/scraper.log
+docker exec -i supabase-db psql -U postgres -d postgres -c "REFRESH MATERIALIZED VIEW CONCURRENTLY public.idare_ozet_mv;" >> /opt/ihale-platform/logs/scraper.log 2>&1
