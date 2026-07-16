@@ -303,8 +303,11 @@
   const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
   const SAYFA_BOYUTU = 50;
-  let tumFirma = [];   // { normalize_ad, ad, il, sayi, ciro, sonTarih, ortakGirisim }
-  let filtrelenmis = [];
+  // Server-side: 35K firma artık client'a inmiyor → istatistik RPC + sayfalı sorgu (arama_fold trgm + sort index).
+  const esc = s => (s == null ? '' : String(s)).replace(/[<>&"']/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&#39;'}[c]));
+  const ALAN = { ciro_desc: ['toplam_ciro', false], sayi_desc: ['toplam_sozlesme_sayisi', false], tarih_desc: ['son_sozlesme_tarihi', false], ad_asc: ['ad', true] };
+  let sonSatirlar = [];
+  let toplam = 0;
   let sayfa = 0;
 
   function paraCevir(v) {
@@ -321,58 +324,54 @@
   // (14 Tem'de yuklenici_yenile ilk kez tam çalıştı) olduğu için sayfalı çekim şart,
   // yoksa Firmalar Dizini sadece cirosu en yüksek 1000 firmayı gösterir ve arama geri
   // kalan ~34.000 firmayı sessizce bulamaz. (idareler.html ile aynı desen.)
-  async function veriCek() {
-    const hepsi = [];
-    let offset = 0;
-    const SAYFA = 1000;
-    while (true) {
-      const { data, error } = await sb.from('yukleniciler')
-        .select('normalize_ad, ad, il, toplam_sozlesme_sayisi, toplam_ciro, son_sozlesme_tarihi, ortak_girisim')
-        .order('toplam_ciro', { ascending: false })
-        .range(offset, offset + SAYFA - 1);
-      if (error) throw error;
-      if (!data || data.length === 0) break;
-      hepsi.push(...data);
-      if (data.length < SAYFA) break;
-      offset += SAYFA;
-    }
+  // Global istatistik (tüm firmalar — filtreye bağlı değil) tek RPC'de
+  async function istatistikYukle() {
+    try {
+      const { data } = await sb.rpc('yuklenici_ozet');
+      const r = (data && data[0]) || {};
+      if (!Number(r.toplam)) {  // tablo boş → bilgilendirici boş-durum
+        document.getElementById('yukleniyor-blok').style.display = 'none';
+        document.getElementById('veri-yok-blok').style.display = 'block';
+        return false;
+      }
+      document.getElementById('st-toplam-firma').textContent = Number(r.toplam).toLocaleString('tr-TR');
+      document.getElementById('st-toplam-sozlesme').textContent = Number(r.toplam_sozlesme || 0).toLocaleString('tr-TR');
+      document.getElementById('st-toplam-ciro').textContent = paraCevir(Number(r.toplam_ciro) || 0);
+      document.getElementById('st-ortak-girisim').textContent = Number(r.ortak_sayisi || 0).toLocaleString('tr-TR');
+      return true;
+    } catch (e) { console.error(e); return false; }
+  }
 
-    if (hepsi.length === 0) {
-      document.getElementById('yukleniyor-blok').style.display = 'none';
-      document.getElementById('veri-yok-blok').style.display = 'block';
-      return;
-    }
+  async function ilDropdownDoldur() {
+    try {
+      const { data } = await sb.rpc('il_firma_dagilimi');
+      const iller = (data || []).map(r => r.il).filter(Boolean).sort((a, b) => a.localeCompare(b, 'tr'));
+      const sel = document.getElementById('il-filtre');
+      iller.forEach(il => { const o = document.createElement('option'); o.value = il; o.textContent = il; sel.appendChild(o); });
+    } catch (e) {}
+  }
 
-    tumFirma = hepsi.map(r => ({
-      normalizeAd: r.normalize_ad,
-      ad: r.ad || r.normalize_ad,
-      il: r.il || '—',
-      sayi: r.toplam_sozlesme_sayisi || 0,
-      ciro: r.toplam_ciro || 0,
-      sonTarih: r.son_sozlesme_tarihi,
-      ortakGirisim: !!r.ortak_girisim,
+  // Görüntülenen sayfayı sunucudan çeker (arama_fold ilike + il eq + sort + count)
+  async function veriYukle(reset = true) {
+    if (reset) sayfa = 0;
+    const arama = trFold(document.getElementById('arama').value.trim());
+    const ilVal = document.getElementById('il-filtre').value;
+    const [alan, asc] = ALAN[document.getElementById('sirala').value] || ALAN.ciro_desc;
+    const govde = document.getElementById('liste-govde');
+    if (reset) govde.innerHTML = '<div class="bos-durum">Yükleniyor…</div>';
+    let q = sb.from('yukleniciler')
+      .select('normalize_ad,ad,il,toplam_sozlesme_sayisi,toplam_ciro,son_sozlesme_tarihi,ortak_girisim', { count: 'exact' });
+    if (arama) q = q.ilike('arama_fold', '%' + arama + '%');
+    if (ilVal) q = q.eq('il', ilVal);
+    q = q.order(alan, { ascending: asc, nullsFirst: false }).range(sayfa * SAYFA_BOYUTU, sayfa * SAYFA_BOYUTU + SAYFA_BOYUTU - 1);
+    const { data, count, error } = await q;
+    if (error) { govde.innerHTML = '<div class="bos-durum">Yüklenemedi: ' + esc(error.message) + '</div>'; document.getElementById('pager').style.display = 'none'; return; }
+    toplam = count || 0;
+    sonSatirlar = (data || []).map(r => ({
+      ad: r.ad || r.normalize_ad, il: r.il || '—', sayi: r.toplam_sozlesme_sayisi || 0,
+      ciro: r.toplam_ciro || 0, sonTarih: r.son_sozlesme_tarihi, ortakGirisim: !!r.ortak_girisim,
     }));
-
-    const toplamCiro = tumFirma.reduce((s, f) => s + f.ciro, 0);
-    const toplamSozlesme = tumFirma.reduce((s, f) => s + f.sayi, 0);
-    const ortakSayisi = tumFirma.filter(f => f.ortakGirisim).length;
-    document.getElementById('st-toplam-firma').textContent = tumFirma.length.toLocaleString('tr-TR');
-    document.getElementById('st-toplam-sozlesme').textContent = toplamSozlesme.toLocaleString('tr-TR');
-    document.getElementById('st-toplam-ciro').textContent = paraCevir(toplamCiro);
-    document.getElementById('st-ortak-girisim').textContent = ortakSayisi.toLocaleString('tr-TR');
-
-    const tumIller = [...new Set(tumFirma.map(f => f.il).filter(il => il && il !== '—'))].sort();
-    const ilSelect = document.getElementById('il-filtre');
-    tumIller.forEach(il => {
-      const opt = document.createElement('option');
-      opt.value = il; opt.textContent = il;
-      ilSelect.appendChild(opt);
-    });
-
-    document.getElementById('yukleniyor-blok').style.display = 'none';
-    document.getElementById('icerik').style.display = 'block';
-
-    goster();
+    sayfaGoster();
   }
 
   // Türkçe karakter-duyarsız arama: JS toLowerCase() Türkçe-duyarsız olduğu için
@@ -390,37 +389,14 @@
       .toLowerCase();
   }
 
-  function goster() {
-    const aramaVal = trFold(document.getElementById('arama').value.trim());
-    const ilVal = document.getElementById('il-filtre').value;
-    const siraKey = document.getElementById('sirala').value;
-
-    filtrelenmis = tumFirma.filter(f => {
-      if (aramaVal && !trFold(f.ad).includes(aramaVal)) return false;
-      if (ilVal && f.il !== ilVal) return false;
-      return true;
-    });
-
-    filtrelenmis.sort((a, b) => {
-      switch (siraKey) {
-        case 'ciro_desc':  return b.ciro - a.ciro;
-        case 'sayi_desc':  return b.sayi - a.sayi;
-        case 'tarih_desc': return new Date(b.sonTarih || 0) - new Date(a.sonTarih || 0);
-        case 'ad_asc':     return a.ad.localeCompare(b.ad, 'tr');
-        default:           return b.ciro - a.ciro;
-      }
-    });
-
-    sayfa = 0;
-    sayfaGoster();
-  }
+  // Filtre/sıralama değişince sunucudan yeniden çek (sayfa 1'e döner)
+  function goster() { veriYukle(true); }
 
   function sayfaGoster() {
-    const baslangic = sayfa * SAYFA_BOYUTU;
-    const dilim = filtrelenmis.slice(baslangic, baslangic + SAYFA_BOYUTU);
-    const toplamSayfa = Math.ceil(filtrelenmis.length / SAYFA_BOYUTU);
+    const dilim = sonSatirlar;
+    const toplamSayfa = Math.max(1, Math.ceil(toplam / SAYFA_BOYUTU));
 
-    document.getElementById('sayac-label').textContent = filtrelenmis.length.toLocaleString('tr-TR') + ' firma';
+    document.getElementById('sayac-label').textContent = toplam.toLocaleString('tr-TR') + ' firma';
 
     const govde = document.getElementById('liste-govde');
     if (!dilim.length) {
@@ -432,10 +408,10 @@
     govde.innerHTML = dilim.map(f => `
       <div class="firma-row">
         <div class="firma-ad">
-          <a href="firma-analiz?firma=${encodeURIComponent(f.ad)}" title="${f.ad}">${f.ad}</a>
+          <a href="firma-analiz?firma=${encodeURIComponent(f.ad)}" title="${esc(f.ad)}">${esc(f.ad)}</a>
           ${f.ortakGirisim ? '<span class="firma-badge">İŞ ORT.</span>' : ''}
         </div>
-        <div class="firma-il">${f.il}</div>
+        <div class="firma-il">${esc(f.il)}</div>
         <div class="firma-sayi">${f.sayi.toLocaleString('tr-TR')}</div>
         <div class="firma-ciro">${paraCevir(f.ciro)}</div>
         <div class="firma-tarih">${f.sonTarih ? new Date(f.sonTarih).toLocaleDateString('tr-TR') : '—'}</div>
@@ -451,7 +427,7 @@
     } else {
       pager.style.display = 'flex';
       document.getElementById('p-info').textContent =
-        `Sayfa ${sayfa + 1} / ${toplamSayfa}  (${filtrelenmis.length.toLocaleString('tr-TR')} firma)`;
+        `Sayfa ${sayfa + 1} / ${toplamSayfa}  (${toplam.toLocaleString('tr-TR')} firma)`;
       document.getElementById('p-prev').disabled = sayfa === 0;
       document.getElementById('p-next').disabled = sayfa >= toplamSayfa - 1;
     }
@@ -465,8 +441,8 @@
   document.getElementById('il-filtre').addEventListener('change', goster);
   document.getElementById('sirala').addEventListener('change', goster);
 
-  document.getElementById('p-prev').addEventListener('click', () => { sayfa--; sayfaGoster(); window.scrollTo(0,0); });
-  document.getElementById('p-next').addEventListener('click', () => { sayfa++; sayfaGoster(); window.scrollTo(0,0); });
+  document.getElementById('p-prev').addEventListener('click', () => { if (sayfa > 0) { sayfa--; veriYukle(false); window.scrollTo(0,0); } });
+  document.getElementById('p-next').addEventListener('click', () => { sayfa++; veriYukle(false); window.scrollTo(0,0); });
 
   document.getElementById('sort-sayi').addEventListener('click', () => {
     document.getElementById('sirala').value = 'sayi_desc';
@@ -477,19 +453,27 @@
     goster();
   });
 
-  function csvIndir() {
-    if (!filtrelenmis.length) { alert('Gösterilecek firma yok.'); return; }
+  async function csvIndir() {
+    // Mevcut filtreye uyan ilk 5000 firmayı sunucudan çek (tüm tabloyu client'a indirme)
+    const arama = trFold(document.getElementById('arama').value.trim());
+    const ilVal = document.getElementById('il-filtre').value;
+    const [alan, asc] = ALAN[document.getElementById('sirala').value] || ALAN.ciro_desc;
+    let q = sb.from('yukleniciler').select('ad,il,toplam_sozlesme_sayisi,toplam_ciro,son_sozlesme_tarihi');
+    if (arama) q = q.ilike('arama_fold', '%' + arama + '%');
+    if (ilVal) q = q.eq('il', ilVal);
+    q = q.order(alan, { ascending: asc, nullsFirst: false }).limit(5000);
+    const { data } = await q;
+    if (!data || !data.length) { alert('Gösterilecek firma yok.'); return; }
+    const csvG = v => { v = (v == null ? '' : String(v)); if (/^[=+\-@\t\r]/.test(v)) v = "'" + v; return `"${v.replace(/"/g,'""')}"`; };
     const satirlar = [
       ['Firma Adı', 'İl', 'Sözleşme Sayısı', 'Toplam Ciro', 'Son İş Tarihi'],
-      ...filtrelenmis.map(f => [
-        `"${f.ad.replace(/"/g, '""')}"`, f.il, f.sayi, f.ciro, f.sonTarih || '',
-      ]),
+      ...data.map(f => [csvG(f.ad), csvG(f.il), f.toplam_sozlesme_sayisi || 0, f.toplam_ciro || 0, f.son_sozlesme_tarihi || '']),
     ];
     const icerik = '﻿' + satirlar.map(r => r.join(',')).join('\r\n');
     const blob = new Blob([icerik], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
-    a.href = url; a.download = `firmalar_${new Date().toISOString().split('T')[0]}.csv`;
+    a.href = url; a.download = `firmalar_${data.length}.csv`;
     a.click(); URL.revokeObjectURL(url);
   }
 
@@ -510,14 +494,20 @@
     }
   });
 
-  veriCek().catch(e => {
-    console.error(e);
-    // yukleniciler tablosu henüz bu ortamda kurulmamış olabilir (migration_sonuc_B_kurulum.sql +
-    // migration_yuklenici_agg.sql bekliyor, bkz. YAPILACAKLAR.md ÖNCELİK 10 Faz B) — kullanıcıya
-    // korkutucu kırmızı hata yerine bilgilendirici boş-durum göster.
-    document.getElementById('yukleniyor-blok').style.display = 'none';
-    document.getElementById('veri-yok-blok').style.display = 'block';
-  });
+  (async () => {
+    try {
+      const varMi = await istatistikYukle();
+      if (varMi === false) return;   // tablo boş → istatistikYukle veri-yok-blok'u gösterdi
+      await ilDropdownDoldur();
+      document.getElementById('yukleniyor-blok').style.display = 'none';
+      document.getElementById('icerik').style.display = 'block';
+      veriYukle(true);
+    } catch (e) {
+      console.error(e);
+      document.getElementById('yukleniyor-blok').style.display = 'none';
+      document.getElementById('veri-yok-blok').style.display = 'block';
+    }
+  })();
 </script>
 <script src="js/main.js"></script>
 </body>
