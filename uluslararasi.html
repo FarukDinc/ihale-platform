@@ -133,6 +133,9 @@
     .dunya-lejant { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 8px; font-size: 11px; color: var(--muted); }
     .dunya-lejant .lej-kutu { display: inline-flex; align-items: center; gap: 4px; }
     .dunya-lejant .lej-renk { width: 13px; height: 13px; border-radius: 3px; display: inline-block; border: 1px solid rgba(255,255,255,.1); }
+    .dunya-lejant .lej-ibare { color: var(--white); font-weight: 600; }
+    .dunya-lejant .lej-yon { display: inline-flex; align-items: center; gap: 5px; }
+    .dunya-lejant .lej-grad { width: 56px; height: 8px; border-radius: 4px; display: inline-block; background: linear-gradient(90deg,#5f4a24,#9a6f22,#d1901a,#f0a500); }
     .dunya-lejant .lej-temizle { margin-left: auto; color: var(--amber); cursor: pointer; font-weight: 600; }
     .dunya-lejant .lej-temizle:hover { text-decoration: underline; }
     .dunya-tooltip { position: fixed; z-index: 999; pointer-events: none; background: #0b0e14; border: 1px solid var(--amber); border-radius: 7px; padding: 6px 10px; font-size: 12px; color: var(--white); box-shadow: 0 4px 18px rgba(0,0,0,.5); opacity: 0; transform: translateY(4px); transition: opacity .1s; white-space: nowrap; }
@@ -446,8 +449,10 @@
     const lej = document.getElementById('dunya-lejant');
     if(!lej) return;
     const kutular = [['#5f4a24','1–4'], ['#9a6f22','5–19'], ['#d1901a','20–49'], ['#f0a500','50+']];
-    lej.innerHTML = `<span>İhale sayısı:</span>` +
-      kutular.map(([c,t]) => `<span class="lej-kutu"><span class="lej-renk" style="background:${c}"></span>${t}</span>`).join('') +
+    lej.innerHTML = `<span class="lej-ibare">Renkler ülkedeki ihale yoğunluğunu gösterir:</span>` +
+      `<span class="lej-kutu"><span class="lej-renk" style="background:#1b2942"></span>İhale yok</span>` +
+      kutular.map(([c,t]) => `<span class="lej-kutu"><span class="lej-renk" style="background:${c}"></span>${t} ihale</span>`).join('') +
+      `<span class="lej-yon">Az <span class="lej-grad"></span> Çok</span>` +
       `<span class="lej-temizle" id="dunya-temizle" style="display:none" onclick="dunyaTemizle()">✕ ülke filtresini kaldır</span>`;
   }
 

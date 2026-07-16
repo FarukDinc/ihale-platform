@@ -65,18 +65,16 @@
     const lg = document.getElementById('harita-legend');
     if (!lg) return;
     const fmt = n => n >= 1000 ? (n / 1000).toFixed(1).replace('.0', '') + 'b' : String(n);
-    const araliklar = [
-      '0',
-      `1–${fmt(esik[0])}`,
-      `${fmt(esik[0] + 1)}–${fmt(esik[1])}`,
-      `${fmt(esik[1] + 1)}–${fmt(esik[2])}`,
-      `${fmt(esik[2] + 1)}–${fmt(esik[3])}`,
-      `${fmt(esik[3] + 1)}+`,
-    ];
-    lg.innerHTML = '<span style="margin-right:8px;font-size:11px;">İhale yoğunluğu:</span>' +
-      RENKLER.map((c, i) =>
-        `<span class="lg-item"><span class="lg-box" style="background:${c}"></span>${araliklar[i]}</span>`
-      ).join('');
+    // renkSec ile birebir eşleşir: 0 → #16233d, [1,e0] → RENKLER[0], (e0,e1] → RENKLER[1], … , e4+ → RENKLER[5]
+    const kutular = [['#16233d', 'İhale yok']];
+    for (let i = 0; i < RENKLER.length; i++) {
+      const alt = i === 0 ? 1 : esik[i - 1] + 1;
+      kutular.push([RENKLER[i], i < esik.length ? `${fmt(alt)}–${fmt(esik[i])}` : `${fmt(esik[esik.length - 1] + 1)}+`]);
+    }
+    lg.innerHTML =
+      '<span style="margin-right:6px;font-size:11px;font-weight:600;color:var(--white,#e2e8f0);">Renkler ildeki ihale yoğunluğunu gösterir:</span>' +
+      kutular.map(([c, t]) => `<span class="lg-item"><span class="lg-box" style="background:${c}"></span>${t}</span>`).join('') +
+      `<span class="lg-item" style="gap:5px;">Az <span style="width:56px;height:8px;border-radius:4px;display:inline-block;background:linear-gradient(90deg,${RENKLER.join(',')});"></span> Çok</span>`;
   }
 
   async function ciz(haritaEl) {

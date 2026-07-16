@@ -270,9 +270,14 @@
         const label = ust ? `${alt.toLocaleString('tr')}–${ust.toLocaleString('tr')}` : `${alt.toLocaleString('tr')}+`;
         return `<span class="box" style="background:${renk}"></span><span style="margin-right:8px;">${label}</span>`;
       }).join('');
-      el.innerHTML = '<span style="margin-right:4px;">Firma sayısı:</span>' + et;
+      el.innerHTML = '<span style="margin-right:4px;color:var(--white);font-weight:600;">Renkler ildeki kayıtlı firma yoğunluğunu gösterir:</span>' +
+        '<span class="box" style="background:#1a2130"></span><span style="margin-right:8px;">Firma yok</span>' + et +
+        `<span style="display:inline-flex;align-items:center;gap:5px;">Az <span style="width:56px;height:8px;border-radius:4px;display:inline-block;background:linear-gradient(90deg,${RENKLER.join(',')});"></span> Çok</span>`;
     } else {
-      el.innerHTML = '<span class="box" style="background:#4ade80"></span><span style="margin-right:8px;">Açık RFQ olan il</span><span style="color:var(--muted)">Yeşil pin = talep sayısı</span>';
+      el.innerHTML = '<span style="margin-right:4px;color:var(--white);font-weight:600;">Renkler ildeki açık satınalma talebi (RFQ) durumunu gösterir:</span>' +
+        '<span class="box" style="background:#161c28"></span><span style="margin-right:8px;">Talep yok</span>' +
+        '<span class="box" style="background:rgba(74,222,128,.28);border:1px solid #4ade80"></span><span style="margin-right:8px;">Açık RFQ olan il</span>' +
+        '<span style="color:var(--muted)">Yeşil pin = talep noktası (tıklayınca detay)</span>';
     }
   }
 
