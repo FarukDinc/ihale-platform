@@ -173,6 +173,7 @@
 <script src="js/sidebar-user.js"></script>
 <script src="js/bildirim-sayaci.js"></script>
 <script src="js/tr-harita.js"></script>
+<script src="js/svg-zoom.js?v=1"></script>
 <script>
 (() => {
   const SB_URL = "https://ihaleglobal.com";
@@ -231,6 +232,8 @@
       p.addEventListener('mouseleave', tooltipGizle);
       p.addEventListener('click', () => ilSec(p.dataset.key));
     });
+    // Yakınlaştırma/kaydırma (js/svg-zoom.js) — boya() sadece fill/g-pins'e dokunduğu için butonlar kalıcı
+    if (window.svgZoomKur) svgZoomKur(wrap, { maxZoom: 6 });
   }
 
   function boya(){

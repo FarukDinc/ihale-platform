@@ -302,6 +302,7 @@
 <script src="js/bildirim-sayaci.js"></script>
 <script src="js/dunya-harita.js?v=1"></script>
 <script src="js/ticaret-tr-veri.js?v=1"></script>
+<script src="js/svg-zoom.js?v=1"></script>
 <script>
 (() => {
   const SB_URL = "https://ihaleglobal.com";
@@ -673,6 +674,8 @@
     wrap.innerHTML = `<svg viewBox="${H.viewBox}" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Dünya ihale dağılım haritası">${paths}</svg>`;
     dunyaBoya();
     dunyaSektorKur();
+    // Yakınlaştırma/kaydırma — küçük ülkeler (Benelüks, Körfez…) ancak zoom'la seçilebiliyor
+    if (window.svgZoomKur) svgZoomKur(wrap, { maxZoom: 12 });
 
     const svg = wrap.querySelector('svg');
     svg.addEventListener('mousemove', e => {

@@ -954,7 +954,7 @@
         ]);
         const esik = esikler(sayim);
 
-        const map = L.map(haritaEl, { zoomControl: true, scrollWheelZoom: false, attributionControl: false });
+        const map = L.map(haritaEl, { zoomControl: true, scrollWheelZoom: true, attributionControl: false });
         const katman = L.geoJSON(geo, {
           style: f => {
             const k = ilAnahtar(f.properties.name, sayim);

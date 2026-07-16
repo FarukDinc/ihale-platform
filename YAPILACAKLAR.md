@@ -34,6 +34,17 @@
 >   hover tooltip = Türkçe ülke adı (Intl.DisplayNames, fallback İng.) + ihracat/ithalat + YoY ▲▼ + seçili
 >   sektör satırı + "N açık ihale — tıkla" köprüsü. Lejantta yıl + kaynak atfı (UN Comtrade & WITS — atıf
 >   zorunlu). TIC yüklenmezse düğme gizlenir, ihale modu hiç etkilenmez. Yerel testte tüm akış doğrulandı.
+>
+> **✅ EK (kullanıcı isteği): haritalara yakınlaştırma/kaydırma** — "ülkeler çok küçük görünüyor":
+> - `js/svg-zoom.js` (yeniden kullanılabilir modül): tekerlek=imleç-noktalı zoom, sürükle=pan (yalnızca
+>   zoom'dayken), iki-parmak pinch, +/−/⟲ butonları (wrapper sağ üst). Sürükleme sonrası tıklama
+>   capture-phase'de YUTULUR → ülke/il tıkla-filtrele yanlışlıkla tetiklenmez. Çift-tık zoom BİLEREK yok
+>   (tek-tık filtreyle çakışıyor). viewBox mutasyonu; tooltip'ler clientX/Y'li olduğundan etkilenmez.
+> - Bağlanan haritalar: uluslararasi dünya (maxZoom 12 — Benelüks/Körfez seçilebilir oldu), harita.html
+>   TR ili (maxZoom 6; boya() fill/g-pins'e dokunduğu için butonlar kalıcı). Leaflet TR haritaları
+>   (dashboard js/harita.js + index inline) zaten +/− butonluydu → scrollWheelZoom da açıldı.
+> - Yerel doğrulama: zoom/pan/pinch viewBox matematiği, tıklama-yutma (filtre değişmedi), ⟲ reset,
+>   zoom'dayken tooltip — hepsi test edildi, konsol temiz.
 
 > ## 📦 16 TEMMUZ (devam) — KAMU KURUMU İHALELERİ: DMO + JANDARMA KAYNAKLARI EKLENDİ (CANLI)
 > Kullanıcı: EKAP dışı iki kamu kaynağını (DMO + Jandarma) "Kamu adı altında" ekleyelim. Fizibilite canlı
