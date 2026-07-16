@@ -272,6 +272,7 @@
   const SB_URL = "https://ihaleglobal.com";
   const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzgzMzUwMDE1LCJleHAiOjE5NDEwMzAwMTV9.sRB61a8oNXwzSKL9No8gt7cmkmnkoQstT0ZtHIxl1Hs";
   const sb = window.supabase.createClient(SB_URL, SB_KEY);
+  const esc = s => (s == null ? '' : String(s)).replace(/[<>&"']/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&#39;'}[c]));
 
   Chart.defaults.color = '#8A96A8';
   Chart.defaults.font.family = 'Inter, sans-serif';
@@ -281,22 +282,16 @@
   let kategoriChart = null;
   let trendChart = null;
 
-  function trendChartGoster(data) {
+  function trendChartGoster(ozet) {
     const ayMap = {};
     const simdi = new Date();
-    // Son 24 ay penceresi oluştur
+    // Son 24 ay penceresi oluştur, RPC'nin trend objesinden (YYYY-MM→sayı) doldur
+    const trend = ozet.trend || {};
     for (let i = 23; i >= 0; i--) {
       const d = new Date(simdi.getFullYear(), simdi.getMonth() - i, 1);
       const key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
-      ayMap[key] = 0;
+      ayMap[key] = trend[key] || 0;
     }
-    data.forEach(d => {
-      const t = d.ilan_tarihi || d.son_teklif_tarihi;
-      if (!t) return;
-      const dt = new Date(t);
-      const key = `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}`;
-      if (key in ayMap) ayMap[key]++;
-    });
     const labels = Object.keys(ayMap).map(k => {
       const [y, m] = k.split('-');
       return new Date(+y, +m-1, 1).toLocaleDateString('tr-TR', { month: 'short', year: '2-digit' });
@@ -349,42 +344,24 @@
     return Array.from({length: n}, (_, i) => base[i % base.length]);
   }
 
+  // Server-side aggregate: eskiden tüm ilanlar client'a inip 8 breakdown JS'te hesaplanıyordu → tek RPC.
   async function yukleData() {
-    const durum    = document.getElementById('f-durum').value;
-    const il       = document.getElementById('f-il').value;
-    const kategori = document.getElementById('f-kategori').value;
-    const all = [];
-    let offset = 0;
-    const PAGE = 1000;
-    while (true) {
-      let q = sb.from('ilanlar')
-        .select('tur,il,idare,usul,yaklasik_maliyet_min,durum,kategori,ilan_tarihi,son_teklif_tarihi')
-        .range(offset, offset + PAGE - 1);
-      if (durum)    q = q.eq('durum', durum);
-      if (il)       q = q.eq('il', il);
-      if (kategori) q = q.eq('kategori', kategori);
-      const { data, error } = await q;
-      if (error || !data || data.length === 0) break;
-      all.push(...data);
-      if (data.length < PAGE) break;
-      offset += PAGE;
-    }
-    return all.length ? all : null;
+    const durum    = document.getElementById('f-durum').value || null;
+    const il       = document.getElementById('f-il').value || null;
+    const kategori = document.getElementById('f-kategori').value || null;
+    try {
+      const { data, error } = await sb.rpc('rekabet_ozet', { p_durum: durum, p_il: il, p_kategori: kategori });
+      if (error || !data || !data.toplam) return null;
+      return data;   // { toplam, ort_maliyet, tur:[{k,n}], il, usul, kategori, idare, tur_maliyet, butce, trend }
+    } catch (e) { console.error(e); return null; }
   }
 
-  function kpiGoster(data) {
-    const toplam = data.length;
-
-    const maliyetler = data.map(d => d.yaklasik_maliyet_min).filter(v => v != null && v > 0);
-    const ortMaliyet = maliyetler.length ? maliyetler.reduce((a,b) => a+b, 0) / maliyetler.length : 0;
-
-    const turSayac = {};
-    data.forEach(d => { if (d.tur) turSayac[d.tur] = (turSayac[d.tur]||0)+1; });
-    const enYogunTur = Object.entries(turSayac).sort((a,b)=>b[1]-a[1])[0];
-
-    const ilSayac = {};
-    data.forEach(d => { if (d.il) ilSayac[d.il] = (ilSayac[d.il]||0)+1; });
-    const enAktifIl = Object.entries(ilSayac).sort((a,b)=>b[1]-a[1])[0];
+  function kpiGoster(ozet) {
+    const toplam = ozet.toplam || 0;
+    const ortMaliyet = ozet.ort_maliyet || 0;
+    const maliyetler = { length: ozet.maliyet_adet || 0 };
+    const enYogunTur = (ozet.tur && ozet.tur[0]) ? [ozet.tur[0].k, ozet.tur[0].n] : null;
+    const enAktifIl  = (ozet.il && ozet.il[0]) ? [ozet.il[0].k, ozet.il[0].n] : null;
 
     document.getElementById('kpi-grid').innerHTML = `
       <div class="kpi-card">
@@ -399,24 +376,21 @@
       </div>
       <div class="kpi-card">
         <div class="kpi-label">En Yoğun Sektör</div>
-        <div class="kpi-value" style="font-size:15px;line-height:1.3;">${enYogunTur ? enYogunTur[0] : '—'}</div>
+        <div class="kpi-value" style="font-size:15px;line-height:1.3;">${enYogunTur ? esc(enYogunTur[0]) : '—'}</div>
         <div class="kpi-sub">${enYogunTur ? `<span class="hi">${enYogunTur[1]}</span> ihale` : '—'}</div>
       </div>
       <div class="kpi-card">
         <div class="kpi-label">En Aktif İl</div>
-        <div class="kpi-value" style="font-size:22px;">${enAktifIl ? enAktifIl[0] : '—'}</div>
+        <div class="kpi-value" style="font-size:22px;">${enAktifIl ? esc(enAktifIl[0]) : '—'}</div>
         <div class="kpi-sub">${enAktifIl ? `<span class="hi">${enAktifIl[1]}</span> ihale` : '—'}</div>
       </div>
     `;
   }
 
-  function turChartGoster(data) {
-    const sayac = {};
-    data.forEach(d => { if (d.tur) sayac[d.tur] = (sayac[d.tur]||0)+1; });
-    const sirali = Object.entries(sayac).sort((a,b)=>b[1]-a[1]).slice(0,10);
-
-    const labels = sirali.map(([k])=>k);
-    const values = sirali.map(([,v])=>v);
+  function turChartGoster(ozet) {
+    const sirali = (ozet.tur || []).slice(0, 10);   // RPC zaten n DESC sıralı
+    const labels = sirali.map(x => x.k);
+    const values = sirali.map(x => x.n);
 
     if (turChart) turChart.destroy();
     turChart = new Chart(document.getElementById('chart-tur'), {
@@ -443,13 +417,10 @@
     });
   }
 
-  function ilChartGoster(data) {
-    const sayac = {};
-    data.forEach(d => { if (d.il) sayac[d.il] = (sayac[d.il]||0)+1; });
-    const sirali = Object.entries(sayac).sort((a,b)=>b[1]-a[1]).slice(0,10);
-
-    const labels = sirali.map(([k])=>k);
-    const values = sirali.map(([,v])=>v);
+  function ilChartGoster(ozet) {
+    const sirali = (ozet.il || []).slice(0, 10);
+    const labels = sirali.map(x => x.k);
+    const values = sirali.map(x => x.n);
 
     if (ilChart) ilChart.destroy();
     ilChart = new Chart(document.getElementById('chart-il'), {
@@ -476,12 +447,10 @@
     });
   }
 
-  function kategoriChartGoster(data) {
-    const sayac = {};
-    data.forEach(d => { if (d.kategori) sayac[d.kategori] = (sayac[d.kategori]||0)+1; });
-    const sirali = Object.entries(sayac).sort((a,b)=>b[1]-a[1]).slice(0,15);
-    const labels = sirali.map(([k])=>k);
-    const values = sirali.map(([,v])=>v);
+  function kategoriChartGoster(ozet) {
+    const sirali = (ozet.kategori || []).slice(0, 15);
+    const labels = sirali.map(x => x.k);
+    const values = sirali.map(x => x.n);
 
     if (kategoriChart) kategoriChart.destroy();
     kategoriChart = new Chart(document.getElementById('chart-kategori'), {
@@ -503,25 +472,17 @@
     });
   }
 
-  function butceDagilimiGoster(data) {
-    const araliklar = [
-      { label: '< ₺500K',         min: 0,       max: 500000 },
-      { label: '₺500K – ₺2M',     min: 500000,  max: 2000000 },
-      { label: '₺2M – ₺10M',      min: 2000000, max: 10000000 },
-      { label: '₺10M – ₺50M',     min: 10000000,max: 50000000 },
-      { label: '₺50M – ₺200M',    min: 50000000,max: 200000000 },
-      { label: '> ₺200M',         min: 200000000,max: Infinity },
-      { label: 'Belirtilmemiş',   min: -1,       max: -1 },
+  function butceDagilimiGoster(ozet) {
+    const b = ozet.butce || {};
+    const sayimlar = [
+      { label: '< ₺500K',       sayi: b.b0 || 0 },
+      { label: '₺500K – ₺2M',   sayi: b.b1 || 0 },
+      { label: '₺2M – ₺10M',    sayi: b.b2 || 0 },
+      { label: '₺10M – ₺50M',   sayi: b.b3 || 0 },
+      { label: '₺50M – ₺200M',  sayi: b.b4 || 0 },
+      { label: '> ₺200M',       sayi: b.b5 || 0 },
+      { label: 'Belirtilmemiş', sayi: b.byok || 0 },
     ];
-
-    const sayimlar = araliklar.map(a => ({
-      ...a,
-      sayi: data.filter(d => {
-        const v = d.yaklasik_maliyet_min;
-        if (a.min === -1) return v == null || v <= 0;
-        return v != null && v > 0 && v >= a.min && v < a.max;
-      }).length
-    }));
 
     const max = Math.max(...sayimlar.map(s => s.sayi), 1);
     const wrap = document.getElementById('budget-bars');
@@ -549,13 +510,12 @@
     return usul;
   }
 
-  function usulBarsRender(data) {
+  function usulBarsRender(ozet) {
     const sayac = {};
-    data.forEach(d => {
-      if (!d.usul) return;
-      const temiz = usulTemizle(d.usul);
+    (ozet.usul || []).forEach(x => {
+      const temiz = usulTemizle(x.k);
       const k = temiz.length > 40 ? temiz.slice(0,40)+'…' : temiz;
-      sayac[k] = (sayac[k] || 0) + 1;
+      sayac[k] = (sayac[k] || 0) + x.n;   // temizlenmiş etiketleri birleştir
     });
     const sirali = Object.entries(sayac).sort((a,b) => b[1]-a[1]).slice(0,8);
     const wrap = document.getElementById('usul-bars');
@@ -564,7 +524,7 @@
     wrap.innerHTML = sirali.map(([usul, sayi]) => {
       const pct = Math.round((sayi / max) * 100);
       return `<div class="budget-row">
-        <div class="budget-label">${usul}</div>
+        <div class="budget-label">${esc(usul)}</div>
         <div class="budget-track">
           <div class="budget-fill" style="width:${pct}%; background:#3b82f6;">
             ${pct > 12 ? `<span class="budget-fill-text">${sayi.toLocaleString('tr')}</span>` : ''}
@@ -575,10 +535,8 @@
     }).join('');
   }
 
-  function idareTbGoster(data) {
-    const sayac = {};
-    data.forEach(d => { if (d.idare) sayac[d.idare] = (sayac[d.idare]||0)+1; });
-    const sirali = Object.entries(sayac).sort((a,b)=>b[1]-a[1]).slice(0,10);
+  function idareTbGoster(ozet) {
+    const sirali = (ozet.idare || []).slice(0, 10).map(x => [x.k, x.n]);
 
     if (!sirali.length) {
       document.getElementById('tbody-idare').innerHTML = '<tr><td colspan="3" style="padding:20px;color:var(--muted);text-align:center;">Veri yok</td></tr>';
@@ -589,28 +547,16 @@
       const kisa = idare.length > 42 ? idare.slice(0,42)+'…' : idare;
       return `<tr>
         <td class="rank-num">${i+1}</td>
-        <td class="idare-name">${kisa}</td>
+        <td class="idare-name">${esc(kisa)}</td>
         <td class="count-cell">${sayi}</td>
       </tr>`;
     }).join('');
   }
 
-  function turMaliyetTbGoster(data) {
-    const turMap = {};
-    data.forEach(d => {
-      if (!d.tur) return;
-      if (!turMap[d.tur]) turMap[d.tur] = { toplam: 0, sayi: 0, maliyetSayi: 0 };
-      turMap[d.tur].sayi++;
-      if (d.yaklasik_maliyet_min != null && d.yaklasik_maliyet_min > 0) {
-        turMap[d.tur].toplam += d.yaklasik_maliyet_min;
-        turMap[d.tur].maliyetSayi++;
-      }
-    });
-
-    const sirali = Object.entries(turMap)
-      .map(([tur, v]) => ({ tur, sayi: v.sayi, ort: v.maliyetSayi ? v.toplam / v.maliyetSayi : 0 }))
-      .filter(r => r.ort > 0)
-      .sort((a,b) => b.ort - a.ort)
+  function turMaliyetTbGoster(ozet) {
+    const sirali = (ozet.tur_maliyet || [])
+      .filter(r => r.ort > 0)               // RPC zaten ort DESC sıralı
+      .map(r => ({ tur: r.k, sayi: r.sayi, ort: r.ort }))
       .slice(0, 10);
 
     if (!sirali.length) {
@@ -621,7 +567,7 @@
     document.getElementById('tbody-tur-maliyet').innerHTML = sirali.map(r => {
       const kisa = r.tur.length > 30 ? r.tur.slice(0,30)+'…' : r.tur;
       return `<tr>
-        <td style="font-size:12px;">${kisa}</td>
+        <td style="font-size:12px;">${esc(kisa)}</td>
         <td class="count-cell" style="font-size:13px;">${r.sayi}</td>
         <td class="amount-cell">${paraCevir(Math.round(r.ort))}</td>
       </tr>`;
