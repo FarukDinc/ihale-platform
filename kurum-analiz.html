@@ -416,11 +416,30 @@
   const params = new URLSearchParams(window.location.search);
   const KURUM = params.get('kurum') || '';
 
-  window.csvIndir = function() {
-    if (!tumIhaleler.length) { alert('Veri yüklenmedi.'); return; }
+  // CSV tüm satırları ister → sayfa açılışında değil, sadece tıklanınca sayfalı çek
+  // (analitik/KPI'lar artık kurum_ozet RPC'sinden geliyor, client-load-all kaldırıldı).
+  let csvYukleniyor = false;
+  window.csvIndir = async function() {
+    if (csvYukleniyor) return;
+    csvYukleniyor = true;
+    const rows = [];
+    try {
+      for (let off = 0; ; off += 1000) {
+        const { data, error } = await sb.from('ilanlar')
+          .select('ekap_id,baslik,il,tur,usul,kategori,durum,ilan_tarihi,son_teklif_tarihi,yaklasik_maliyet_min')
+          .ilike('idare', `%${KURUM}%`)
+          .order('ilan_tarihi', { ascending: false, nullsFirst: false })
+          .order('id', { ascending: true })
+          .range(off, off + 999);
+        if (error || !data || !data.length) break;
+        rows.push(...data);
+        if (data.length < 1000) break;
+      }
+    } finally { csvYukleniyor = false; }
+    if (!rows.length) { alert('Veri yüklenemedi.'); return; }
     const satirlar = [
       ['EKAP No', 'Başlık', 'İl', 'Tür', 'Usul', 'Kategori', 'Durum', 'İlan Tarihi', 'Son Teklif', 'Yaklaşık Maliyet (Min)'],
-      ...tumIhaleler.map(i => [
+      ...rows.map(i => [
         i.ekap_id || '',
         `"${(i.baslik || '').replace(/"/g, '""')}"`,
         i.il || '', i.tur || '', i.usul || '', i.kategori || '', i.durum || '',
@@ -449,8 +468,8 @@
 
   const PER_PAGE = 20;
   let sayfa = 1;
-  let topSayfa = 1;
-  let tumIhaleler = [];
+  let topSayfa = 1;     // kurum_ozet RPC'sindeki kpi.toplam'dan hesaplanır (count=exact yok)
+  let listeIstek = 0;   // hızlı sayfa geçişlerinde eski cevabın yenisini ezmemesi için
 
   function paraFormat(n) {
     if (!n) return '—';
@@ -488,13 +507,24 @@
     document.getElementById('tab-liste').scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
-  function listeSayfa(s) {
+  // Server-side sayfalama: sadece görünen 20 satır iner; toplam sayfa kurum_ozet'ten.
+  async function listeSayfa(s) {
+    const istek = ++listeIstek;
     const bas = (s - 1) * PER_PAGE;
-    const dilim = tumIhaleler.slice(bas, bas + PER_PAGE);
     const cont = document.getElementById('liste-container');
 
-    if (!dilim.length) {
-      cont.innerHTML = '<div class="no-data">Bu kuruma ait ihale bulunamadı.</div>';
+    const { data: dilim, error } = await sb.from('ilanlar')
+      .select('id,ekap_id,baslik,il,tur,ilan_tarihi,son_teklif_tarihi,yaklasik_maliyet_min,yaklasik_maliyet_max')
+      .ilike('idare', `%${KURUM}%`)
+      .order('ilan_tarihi', { ascending: false, nullsFirst: false })
+      .order('id', { ascending: true })
+      .range(bas, bas + PER_PAGE - 1);
+    if (istek !== listeIstek) return; // araya yeni istek girdi
+
+    if (error || !dilim || !dilim.length) {
+      cont.innerHTML = error
+        ? '<div class="no-data">Liste yüklenemedi, lütfen tekrar deneyin.</div>'
+        : '<div class="no-data">Bu kuruma ait ihale bulunamadı.</div>';
       document.getElementById('pager').style.display = 'none';
       return;
     }
@@ -524,7 +554,6 @@
       </div>`;
     }).join('');
 
-    topSayfa = Math.ceil(tumIhaleler.length / PER_PAGE);
     document.getElementById('pager').style.display = topSayfa > 1 ? 'flex' : 'none';
     document.getElementById('pager-info').textContent = `${s} / ${topSayfa}`;
     document.getElementById('pager-ilk').disabled = s <= 1;
@@ -534,19 +563,16 @@
   }
 
   let _aylikChart = null;
-  function aylikTrendChart(ihaleler) {
+  // trend: kurum_ozet.aylik_trend — {'YYYY-MM': n} (son 24 ay, ilan_tarihi ?? son_teklif_tarihi)
+  function aylikTrendChart(trend) {
     const simdi = new Date();
     const ayMap = {};
     for (let i = 23; i >= 0; i--) {
       const d = new Date(simdi.getFullYear(), simdi.getMonth() - i, 1);
       ayMap[`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`] = 0;
     }
-    ihaleler.forEach(ilan => {
-      const t = ilan.ilan_tarihi || ilan.son_teklif_tarihi;
-      if (!t) return;
-      const dt = new Date(t);
-      const key = `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}`;
-      if (key in ayMap) ayMap[key]++;
+    Object.keys(trend || {}).forEach(key => {
+      if (key in ayMap) ayMap[key] = Number(trend[key]) || 0;
     });
     const labels = Object.keys(ayMap).map(k => {
       const [y, m] = k.split('-');
@@ -579,23 +605,16 @@
     });
   }
 
-  function yillikChart(ihaleler) {
-    const yilSay = {};
-    ihaleler.forEach(i => {
-      const tarih = i.ilan_tarihi || i.son_teklif_tarihi;
-      if (!tarih) return;
-      const y = new Date(tarih).getFullYear();
-      yilSay[y] = (yilSay[y] || 0) + 1;
-    });
-    const yillar = Object.keys(yilSay).sort();
+  // yillik: kurum_ozet.yillik — [{k:'2024', n:123}] yıla göre artan sıralı
+  function yillikChart(yillik) {
     const ctx = document.getElementById('yillik-chart');
     new Chart(ctx, {
       type: 'bar',
       data: {
-        labels: yillar,
+        labels: (yillik || []).map(r => r.k),
         datasets: [{
           label: 'İhale Sayısı',
-          data: yillar.map(y => yilSay[y]),
+          data: (yillik || []).map(r => Number(r.n) || 0),
           backgroundColor: 'rgba(240,165,0,0.7)',
           borderColor: 'rgba(240,165,0,1)',
           borderWidth: 1, borderRadius: 4,
@@ -612,10 +631,9 @@
     });
   }
 
-  function turBreakdown(ihaleler) {
-    const turSay = {};
-    ihaleler.forEach(i => { const t = i.tur || 'Diğer'; turSay[t] = (turSay[t] || 0) + 1; });
-    const sirali = Object.entries(turSay).sort((a, b) => b[1] - a[1]);
+  // turlar: kurum_ozet.tur — [{k,n}] desc ('Diğer' fallback server'da)
+  function turBreakdown(turlar) {
+    const sirali = (turlar || []).map(r => [r.k, Number(r.n) || 0]);
     const max = sirali[0]?.[1] || 1;
     document.getElementById('tur-list').innerHTML = sirali.map(([ad, cnt]) =>
       `<div class="tur-item">
@@ -625,33 +643,16 @@
     ).join('');
   }
 
-  function ilBreakdown(ihaleler) {
-    const ilSay = {};
-    ihaleler.forEach(i => { if (i.il) ilSay[i.il] = (ilSay[i.il] || 0) + 1; });
-    const sirali = Object.entries(ilSay).sort((a, b) => b[1] - a[1]);
-    document.getElementById('il-list').innerHTML = sirali.map(([ad, cnt]) =>
-      `<div class="il-item"><span class="il-ad">${esc(ad)}</span><span class="il-cnt">${cnt}</span></div>`
+  // iller: kurum_ozet.il — [{k,n}] desc (yalnızca il dolu satırlar)
+  function ilBreakdown(iller) {
+    document.getElementById('il-list').innerHTML = (iller || []).map(r =>
+      `<div class="il-item"><span class="il-ad">${esc(r.k)}</span><span class="il-cnt">${Number(r.n) || 0}</span></div>`
     ).join('') || '<div style="color:var(--muted);font-size:13px;">İl bilgisi yok.</div>';
   }
 
-  async function topluCek() {
-    const rows = [];
-    for (let off = 0; ; off += 1000) {
-      const { data, error } = await sb.from('ilanlar')
-        .select('id,ekap_id,baslik,il,tur,usul,kategori,durum,ilan_tarihi,son_teklif_tarihi,yaklasik_maliyet_min,yaklasik_maliyet_max')
-        .ilike('idare', `%${KURUM}%`)
-        .range(off, off + 999);
-      if (error || !data || !data.length) break;
-      rows.push(...data);
-      if (data.length < 1000) break;
-    }
-    return rows;
-  }
-
-  function kategoriBreakdown(ihaleler) {
-    const say = {};
-    ihaleler.forEach(i => { const k = i.kategori || 'Kategorisiz'; say[k] = (say[k] || 0) + 1; });
-    const sirali = Object.entries(say).sort((a, b) => b[1] - a[1]).slice(0, 12);
+  // kategoriler: kurum_ozet.kategori — [{k,n}] desc, top 12 server'da kesildi
+  function kategoriBreakdown(kategoriler) {
+    const sirali = (kategoriler || []).map(r => [r.k, Number(r.n) || 0]);
     const max = sirali[0]?.[1] || 1;
     document.getElementById('kategori-list').innerHTML = sirali.map(([ad, cnt]) =>
       `<div class="tur-item">
@@ -661,10 +662,9 @@
     ).join('') || '<div style="color:var(--muted);font-size:13px;padding:8px 0;">Kategori verisi yok.</div>';
   }
 
-  function usulBreakdown(ihaleler) {
-    const say = {};
-    ihaleler.forEach(i => { const u = i.usul || 'Belirtilmemiş'; say[u] = (say[u] || 0) + 1; });
-    const sirali = Object.entries(say).sort((a, b) => b[1] - a[1]);
+  // usuller: kurum_ozet.usul — [{k,n}] desc ('Belirtilmemiş' fallback server'da)
+  function usulBreakdown(usuller) {
+    const sirali = (usuller || []).map(r => [r.k, Number(r.n) || 0]);
     const max = sirali[0]?.[1] || 1;
     document.getElementById('usul-list').innerHTML = sirali.map(([ad, cnt]) =>
       `<div class="tur-item">
@@ -674,9 +674,10 @@
     ).join('') || '<div style="color:var(--muted);font-size:13px;padding:8px 0;">Usul verisi yok.</div>';
   }
 
-  function durumChart(ihaleler) {
-    const aktif   = ihaleler.filter(i => i.durum === 'aktif').length;
-    const kapandi = ihaleler.length - aktif;
+  // durum: kurum_ozet.durum — {aktif: durum='aktif', kapandi: geri kalan}
+  function durumChart(durum) {
+    const aktif   = Number(durum?.aktif) || 0;
+    const kapandi = Number(durum?.kapandi) || 0;
     const ctx = document.getElementById('durum-chart');
     if (!ctx) return;
     new Chart(ctx, {
@@ -710,7 +711,10 @@
     document.getElementById('bc-kurum').textContent = KURUM;
     kurumTakipDurumuGuncelle();
 
-    tumIhaleler = await topluCek();
+    // Server-side aggregate: eskiden tüm ilanlar 1000'erli döngüyle client'a inip
+    // 8 breakdown JS'te hesaplanıyordu (en büyük idare 7.072 ilan) → tek RPC.
+    const { data: ozet, error } = await sb.rpc('kurum_ozet', { p_idare: KURUM });
+    if (error) throw error;
 
     document.getElementById('root-loading').style.display = 'none';
     document.getElementById('root-content').style.display = 'block';
@@ -718,25 +722,27 @@
     const adEl = document.getElementById('kurum-ad');
     adEl.textContent = KURUM;
 
-    const simdi = new Date();
-    const aktifSay = tumIhaleler.filter(i => i.son_teklif_tarihi && new Date(i.son_teklif_tarihi) > simdi).length;
-    const toplamButce = tumIhaleler.reduce((s, i) => s + (i.yaklasik_maliyet_min || 0), 0);
-    const iller = new Set(tumIhaleler.filter(i => i.il).map(i => i.il));
+    const kpi = ozet?.kpi || {};
+    const toplam      = Number(kpi.toplam) || 0;
+    const aktifSay    = Number(kpi.aktif) || 0;
+    const toplamButce = Number(kpi.toplam_butce) || 0;
+    const ilSayisi    = Number(kpi.il_sayisi) || 0;
+    topSayfa = Math.max(1, Math.ceil(toplam / PER_PAGE));
 
     document.getElementById('kurum-meta').textContent =
-      `${tumIhaleler.length} ihale kaydı · ${iller.size} il · toplam bütçe: ${paraFormat(toplamButce)}`;
-    document.getElementById('kpi-toplam').textContent = tumIhaleler.length.toLocaleString('tr');
+      `${toplam} ihale kaydı · ${ilSayisi} il · toplam bütçe: ${paraFormat(toplamButce)}`;
+    document.getElementById('kpi-toplam').textContent = toplam.toLocaleString('tr');
     document.getElementById('kpi-aktif').textContent = aktifSay.toLocaleString('tr');
     document.getElementById('kpi-butce').textContent = paraFormat(toplamButce);
-    document.getElementById('kpi-il').textContent = iller.size;
+    document.getElementById('kpi-il').textContent = ilSayisi;
 
-    aylikTrendChart(tumIhaleler);
-    yillikChart(tumIhaleler);
-    turBreakdown(tumIhaleler);
-    ilBreakdown(tumIhaleler);
-    kategoriBreakdown(tumIhaleler);
-    usulBreakdown(tumIhaleler);
-    durumChart(tumIhaleler);
+    aylikTrendChart(ozet?.aylik_trend || {});
+    yillikChart(ozet?.yillik || []);
+    turBreakdown(ozet?.tur || []);
+    ilBreakdown(ozet?.il || []);
+    kategoriBreakdown(ozet?.kategori || []);
+    usulBreakdown(ozet?.usul || []);
+    durumChart(ozet?.durum || {});
     kazananFirmalarGoster();
   }
 
