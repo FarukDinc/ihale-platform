@@ -14,6 +14,23 @@
 >    bütün, parçalı 0, iç içe link 0, meta "🔒 *** · 📍ANKARA · Son: ...". Ayrıca v3 RPC kilitleri probe
 >    edildi: ihaleye_uygun_firmalar anon→42501 ✓, benzer_ihaleler idare döndürmüyor ✓ (v3 tasarımı maskeye uymuş).
 
+> ## 👤 17 TEMMUZ — "ÜCRETSİZ ÜYE DE *** GÖRÜYOR" ŞİKAYETİ: SAHTE SIDEBAR + www/apex OTURUM BÖLÜNMESİ (kod hazır, deploy bekliyor)
+> Kullanıcı: "ücretsiz planda da *** görünüyor; sadece giriş yapmayanlara *** görünsün." İNCELEME SONUCU:
+> maskeleme zaten yalnız oturumsuza çalışıyor (DB kolon-grant'ları sadece anon'dan REVOKE'lu, authenticated
+> tam görür; client `getSession()` yoksa maskeler). GERÇEK SORUN İKİ KATMANLI:
+> - **(1) Sahte sidebar:** dashboard/ihaleler/ihale-detay/takipte statik HTML'de **"FD / Faruk D. /
+>   Ücretsiz Plan"** hardcoded'dı → misafir veya OTURUMU DÜŞMÜŞ kullanıcı kendini "girişli ücretsiz üye"
+>   sanıp ***'ları plana bağlıyordu. FIX: 4 sayfa + profil.html nötr yer tutucuya çekildi ("Yükleniyor…/—");
+>   js/sidebar-user.js'e **misafir dalı** eklendi (oturum yoksa: 👤 Misafir / "Giriş yapın →", user-row
+>   login'e gider; getUser ağ hatasında yerel getSession'a bakar). Tüm sayfalarda ?v=3 cache-bust.
+> - **(2) www/apex origin bölünmesi:** www.ihaleglobal.com da apex de 200 dönüyor, redirect YOK →
+>   localStorage origin-bazlı olduğundan www'da açılan oturum apex'te görünmez (tam "girişliyim ama ***"
+>   senaryosu). FIX: sidebar-user.js + login.html + index.html'e `www.→apex location.replace` (hash
+>   korunur — e-posta onay token'ı). KALICI İŞ: CF Redirect Rule veya nginx'te 301 www→apex (dashboard
+>   erişimi gerek — kullanıcı yapmalı).
+> - Doğrulama: localhost misafir görünümü OK (Misafir rozeti + *** maskeleri + sayfa tam yükleniyor).
+>   Girişli görünüm kullanıcı gözüyle doğrulanmalı: giriş yap → ihale-detay'da idare/benzer meta açık mı?
+
 > ## 🗂️ 17 TEMMUZ — FİRMA ANALİZİ: SEKMELER BİRLEŞTİ + TAM PARA FORMATI (✅ CANLI, commit `850bebc`)
 > Kullanıcı: "Sonuçlar ve İhaleler aynı noktaya varıyor — tek sayfada katıldığı ihaleler olarak göster;
 > ₺ 3.9 M TL gibi rakamları net göster (809.558,00 ₺ / 3.900.752,52 ₺ gibi)."
