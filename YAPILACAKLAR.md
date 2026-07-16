@@ -135,6 +135,17 @@
 > **KALICI TALİMAT (12 Tem, kullanıcı emri):** Bu blok + ilgili bölümler her oturumda otomatik
 > güncellenir, kullanıcı hatırlatmak zorunda değil. Bkz. hafıza `yapilacaklar-auto-update`.
 
+> ## 📈 PLANLANAN (17 Tem, kullanıcı istedi) — TİCARET-ANALİZ İKİ İŞ
+> 1. **HS6 kalem tablosu sütun sıralama:** ülke drill-down'unda ("<Ülke> — kalem-kalem (HS6) ticaret")
+>    "TÜRKİYE → ÜLKE (İHR.)" ve "ÜLKE → TÜRKİYE (İTH.)" başlıklarına TIKLANINCA büyükten küçüğe sıralansın
+>    (toggle asc/desc; HS/sektör sorgu tablosundaki sıralanabilir-başlık deseni zaten var — f128b75 — aynısı
+>    uygulanır). Dosya: ticaret-analiz.html HS6 drill-down render'ı.
+> 2. **Yıl kıyaslama (Değişim) algoritması ŞÜPHELİ:** kullanıcı "yıllara göre kıyaslamada algoritma hatası
+>    var sanıyorum" dedi. İncele: ticaret_liste(p_yil,p_kiyas_yil) kiyas join'i + frontend yüzde hesabı
+>    (yil_ihr/kiyas_ihr), HS6 detayYil ≠ seçili yıl uyumsuzluğu (detayYil VERİDEN hesaplanıyor — kıyas
+>    yılıyla karışıyor olabilir), NULL kiyas → değişim gösterimi. Full backfill bitti (2000-2025) →
+>    artık her yıl çifti test edilebilir; hatayı repro edip düzelt.
+
 > ## 🗺️🐛 17 TEMMUZ — HARİTA "İLE TIKLA" ÖLÜYDÜ: svg-zoom pointer-capture BUG'ı (✅ FİX CANLI, 4ae7ace)
 > Kullanıcı: iki haritada da ile tıklayınca panel "Bir ile tıklayın"da kalıyor. KÖK NEDEN: js/svg-zoom.js
 > `pointerdown`'da `setPointerCapture` alıyordu → capture aktifken tarayıcı click'i path yerine SVG'ye
@@ -157,9 +168,8 @@
 >    kernel; firewall açısından reboot artık güvenli.)
 > 2. **migration_ticaret_iso2.sql ✅** — kolon zaten vardı, RPC+GRANT eklendi; canlı doğrulandı:
 >    ticaret_liste artık iso2 döndürüyor (DE/US).
-> 3. **Ticaret full backfill 2000-2026 BAŞLATILDI** — nohup, log /opt/ihale-platform/logs/ticaret_backfill.log;
->    2000→161 ülke yüklendi (ticaret_yillar=[2000,2023] anında). Yıl/~1-2dk, ~40dk'da biter; bitince
->    ticaret-analiz yıl dropdown'ı kendiliğinden dolar (RPC'den okuyor). Kontrol: rpc/ticaret_yillar.
+> 3. **Ticaret full backfill ✅ TAMAMLANDI** — ticaret_yillar artık [2000..2025], guncel_yil=2025
+>    (REST'ten doğrulandı). Yıl dropdown'ı kendiliğinden doldu; cron tazelemesi --sadece-guncel ile.
 
 > ## 🎭 17 TEMMUZ (gece) — MİSAFİR MASKELEME: KİLİT ALANLAR '***' (✅ CANLI, ihaleciler modeli)
 > Kullanıcı: "girişsiz okunmasın — ilanların kurumları, sonuçlar ve yüklenici verileri **** görünsün,
