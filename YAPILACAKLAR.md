@@ -35,6 +35,16 @@
 >   sektör satırı + "N açık ihale — tıkla" köprüsü. Lejantta yıl + kaynak atfı (UN Comtrade & WITS — atıf
 >   zorunlu). TIC yüklenmezse düğme gizlenir, ihale modu hiç etkilenmez. Yerel testte tüm akış doğrulandı.
 >
+> **✅ EK (kullanıcı geri bildirimi, canlıda doğrulandı):**
+> - **Türkiye artık beyaz "referans ülke":** TUR veri dosyasında partner olmadığı için "veri yok" koyusuyla
+>   (siyah gibi) boyanıyordu → milli değerlere aykırı bulundu. Artık her modda beyaz (#eef2f8) + amber
+>   kenarlıklı `anavatan`; hover'da "🇹🇷 Türkiye — referans ülke · Dünyaya toplam ihr/ith" (TIC.dunya).
+> - **Tooltip yön netliği:** "İhracat/İthalat" belirsizdi (kim kime?) → artık "Türkiye → X (ihracatımız)" ve
+>   "X → Türkiye (ithalatımız)"; sektör satırı da TR→X / X→TR ayrımlı. Kaynak reporter=Türkiye (Comtrade).
+> - **⏳ Sektör granülaritesi (BEKLİYOR):** şu an 16 WITS grubu (2023). TradeMap-paritesi için Comtrade
+>   HS 2-digit (AG2, ~97 fasıl → 21 HS bölümüne toplulaştır, 2024/2025 taze) planı. ticaret_verisi_cek.py
+>   genişletilecek; ÇALIŞTIRMA `Bash(python *)` iznine takılı (EKAP probe'uyla aynı izin).
+>
 > **✅ EK (kullanıcı isteği): haritalara yakınlaştırma/kaydırma** — "ülkeler çok küçük görünüyor":
 > - `js/svg-zoom.js` (yeniden kullanılabilir modül): tekerlek=imleç-noktalı zoom, sürükle=pan (yalnızca
 >   zoom'dayken), iki-parmak pinch, +/−/⟲ butonları (wrapper sağ üst). Sürükleme sonrası tıklama
