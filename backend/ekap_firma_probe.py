@@ -11,11 +11,21 @@ veriHtml'inin roster kısmını stdout'a döker.
 Çalıştırma (VDS'te — EKAP API'si yalnızca oradan erişilebilir):
   cd /opt/ihale-platform && python3 backend/ekap_firma_probe.py
 """
-import asyncio, base64, json, re, ssl, sys, time, uuid
+import asyncio, base64, json, os, re, ssl, sys, time, uuid
 import httpx
 from Crypto.Cipher import AES
 from Crypto.Random import get_random_bytes
 from Crypto.Util.Padding import pad
+try:
+    from dotenv import load_dotenv
+    load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), ".env"))
+except Exception:
+    pass
+try:
+    from proxy_config import rastgele_proxy_url  # EKAP artık direkt 404; Webshare proxy şart
+except Exception:
+    def rastgele_proxy_url():
+        return None
 
 try:
     sys.stdout.reconfigure(encoding="utf-8")
@@ -127,7 +137,9 @@ async def detay_incele(client, item, idx):
 
 
 async def main():
-    async with httpx.AsyncClient(verify=ssl_ctx(), http2=False, timeout=30.0) as client:
+    proxy = rastgele_proxy_url()
+    print(f"proxy: {proxy.split('@')[-1] if proxy else 'YOK (direkt)'}")
+    async with httpx.AsyncClient(verify=ssl_ctx(), http2=False, timeout=30.0, proxy=proxy) as client:
         d, veri = await post(client, "/b_ihalearama/api/Ihale/GetListByParameters", {
             "searchText": "", "paginationSkip": 0, "paginationTake": 25,
             "ihaleDurumIdList": [5], "searchType": "GirdigimGibi"})
