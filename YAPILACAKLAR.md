@@ -19,6 +19,30 @@
 >   6 saat cache + lazy (yalnız sektör seçince, spinner'lı) → kabul edilebilir. İleride matview (idare_ozet_mv
 >   deseni gibi, gece REFRESH) ile anlık yapılabilir — istenirse.
 
+> ## 🏛️ 16 TEMMUZ (devam) — İDARELER DİZİNİ 60-70sn BEKLEME FIX (KOD HAZIR / ⏳ VDS DEPLOY BEKLİYOR)
+> Kullanıcı: "idare verileri çekiliyor diye çok bekletiyor, bunu kaldırmamız lazım".
+> **Kök neden (ölçüldü):** idareler.html, idare_sayim() RPC'sini db-max-rows=1000 yüzünden ~16 kez ardışık
+> çağırıyordu ve HER çağrıda 355K+ ilanlar üzerinde GROUP BY+MODE() BAŞTAN çalışıyordu — canlıda sayfa başı
+> ölçüm ~4.2sn → toplam 60-70sn spinner. (Not: "client-load-all kapandı" derken bu sayfa RPC'liydi ama
+> RPC-sayfalama × canlı-aggregate kombinasyonu gözden kaçmış.)
+> **Çözüm (backend/migration_idareler_dizin_mv.sql — YENİ):**
+> - `idare_ozet_mv` materialized view = aynı aggregate ÖNCEDEN hesaplanmış; unique index (CONCURRENTLY şartı).
+> - `idare_dizin_json()` RPC: TÜM dizin TEK istekte jsonb (json skaler → 1000 satır sınırı işlemez); satır
+>   formatı dizi `[idare, toplam, aktif, il]` (payload küçük); statement_timeout 20s (rekabet_ozet dersi).
+> - Eski `idare_sayim()` da MV'den okur oldu (cache'li eski HTML de hızlanır, canlı GROUP BY tamamen kalktı).
+> - `run_scraper.sh` sonuna gece REFRESH MATERIALIZED VIEW CONCURRENTLY eklendi (veri zaten yalnız scraper
+>   turunda değişiyor → tazelik kaybı yok).
+> - idareler.html: while-döngüsü + progress bar KALDIRILDI → tek `sb.rpc('idare_dizin_json')`; sessionStorage
+>   anahtarı `idare_dizin_v1` (30dk TTL). Beklenen: ilk yük <1sn, cache'li dönüş anında.
+> **⏳ DEPLOY ADIMLARI (SSH onayı gerek — bkz. hafıza prod-ssh-auto-mode-limits):**
+> ```
+> ssh -i ~/.ssh/ihale_oracle root@195.85.207.126
+> cd /opt/ihale-platform && git pull origin main
+> chmod +x backend/run_scraper.sh   # git pull +x'i sıfırlayabilir (14 Tem dersi!)
+> docker exec -i supabase-db psql -U postgres -d postgres < backend/migration_idareler_dizin_mv.sql
+> ```
+> Sonra doğrula: `curl .../rest/v1/rpc/idare_dizin_json` süre+boyut, sayfada spinner <1sn.
+
 > ## 🔐 16 TEMMUZ (devam) — PLAN KAPILARI: PRO CTA GİZLE + e-SATINALMA KURUMSAL KAPI (CANLI)
 > - **Topbar "Pro'ya Geç" gizleme:** sidebar-user.js ödeme yapmış (Pro/Kurumsal) kullanıcıda topbar CTA'sını
 >   GİZLER. Eski selektör `.topbar-actions` çoğu sayfada eşleşmiyordu → `.topbar` de eklendi; rozete çevirmek
