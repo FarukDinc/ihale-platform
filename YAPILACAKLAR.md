@@ -28,9 +28,17 @@
 >   ~3s timeout eşiğinde → sayfa ARALIKLI hiç yüklenmiyordu. Fix: `ALTER FUNCTION rekabet_ozet SET
 >   statement_timeout='20s'` (kullanıcı onayıyla VDS'e uygulandı, 3/3 başarılı). Sayfa Pro-kilitli olduğu
 >   için anonimde görsel doğrulanamadı; link kodu çalışan desenin aynısı.
-> - **#4 firma analizi AI→2-firma karşılaştırma: SIRADA (henüz yapılmadı).** analiz_pivot RPC ile 2 firmayı
->   yan yana kıyasla (yeni backend gerekmez); AI opsiyonel kalacak. Teşhis: firma-analiz.html:553-602 (AI),
->   958-1017 (bar render). Bkz. teşhis workflow çıktısı.
+> - **#4 firma analizi AI→2-firma karşılaştırma (commit `22bd051`) — YAPILDI + CANLI:** detay başlığına
+>   "⚖️ Firmayla Karşılaştır" → overlay'de 2. firma aranır; KPI kıyas tablosu (sözleşme/ciro/il/sektör/
+>   tenzilat, yüksek=yeşil) + yan yana sektör dağılımı + "🤝 Ortak Zemin" (birlikte çalışılan idareler/
+>   sektörler — canlı test: 2 ecza deposu 171 ortak idare). ÖNEMLİ: analiz_pivot BÜYÜK firmalarda timeout
+>   ediyor (detay sayfasının "En Çok Çalıştığı İdareler" kartı da bu yüzden büyük firmalarda sessizce
+>   kayboluyor — ayrı latent bug), o yüzden karşılaştırma kanıtlı ihale_sonuclari(yuklenici_id,≤500)
+>   sorgusuna dayandırıldı. AI kartı opsiyonel bırakıldı (Pro upsell korundu).
+>
+> **TÜM 8 SORUN TAMAM.** Kalan latent notlar: (a) analiz_pivot büyük firmalarda timeout — rekabet_ozet gibi
+> statement_timeout bump'ı gerekebilir (detay sayfası idare/sektör kartı için); (b) browser-pane screenshot
+> aracı bu oturumda genel çalışmadı — doğrulamalar javascript_tool DOM sorgularıyla yapıldı.
 
 > ## 🧾 16 TEMMUZ (devam) — DASHBOARD→ANASAYFA + DOĞRUDAN TEMİN FİLTRELERİ + DT KAZANAN FİZİBİLİTE
 > Kullanıcı 3 acil bulgu bildirdi: (a) dashboard adı, (b) DT'de kategori/tür filtreleme yok, (c) DT kazanan
