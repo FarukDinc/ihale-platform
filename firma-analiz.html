@@ -203,7 +203,7 @@
     .kars-tablo { border:1px solid var(--border); border-radius:10px; overflow:hidden; }
     .kars-row { display:grid; grid-template-columns:1fr auto 1fr; align-items:center; border-bottom:1px solid var(--border); }
     .kars-row:last-child { border-bottom:none; }
-    .kars-cell { padding:12px 14px; font-size:15px; font-weight:800; color:var(--white); text-align:center; }
+    .kars-cell { padding:12px 14px; font-size:15px; font-weight:800; color:var(--white); text-align:center; min-width:0; overflow-wrap:anywhere; }  /* min-width:0+wrap: paraTam tam tutarı dar ekranda kesilmek yerine sarsın (inceleme bulgusu) */
     .kars-cell.kars-kazanan { color:#4ade80; }
     .kars-label { padding:12px 10px; font-size:11.5px; color:var(--muted); text-align:center; text-transform:uppercase; letter-spacing:.04em; background:rgba(var(--overlay-rgb),.03); min-width:130px; }
     /* ── DİZİN (Firmalar Dizini birleşik) ── */
@@ -215,7 +215,7 @@
     .dz-sel:focus, .dz-ara:focus-within { border-color:var(--amber); }
     .dz-say { font-size:12px; color:var(--muted); margin-left:auto; white-space:nowrap; }
     .dz-tablo { background:var(--navy-mid); border:1px solid var(--border); border-radius:10px; overflow:hidden; }
-    .dz-head, .dz-row { display:grid; grid-template-columns:1fr 110px 100px 130px 110px 90px; align-items:center; }
+    .dz-head, .dz-row { display:grid; grid-template-columns:1fr 110px 100px 165px 110px 90px; align-items:center; }  /* ciro kolonu 130→165: tam para formatı (paraTam) sığsın */
     .dz-head { padding:10px 18px; border-bottom:1px solid var(--border); font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); }
     .dz-head .srt { cursor:pointer; user-select:none; }
     .dz-head .srt:hover { color:var(--white); }
@@ -236,7 +236,9 @@
     .dz-pbtn { padding:6px 14px; border-radius:6px; font-size:12px; font-weight:600; background:var(--navy); border:1px solid var(--border); color:var(--white); cursor:pointer; }
     .dz-pbtn:disabled { opacity:.4; cursor:default; }
     .dz-bos { padding:40px; text-align:center; color:var(--muted); font-size:13px; }
-    @media (max-width:760px){ .dz-head, .dz-row { grid-template-columns:1fr 70px 90px; } .dz-il,.dz-tarih,.dz-analiz,.dz-head .c-il,.dz-head .c-tarih,.dz-head .c-analiz { display:none; } }
+    /* Mobil: ciro kolonu 90→130px + küçük font + ellipsis — paraTam tam formatı kesik/yanıltıcı
+       tutar göstermesin (inceleme bulgusu: 90px'te "12.345.678.901,00 ₺" son haneleri kırpılıyordu) */
+    @media (max-width:760px){ .dz-head, .dz-row { grid-template-columns:1fr 60px 130px; } .dz-il,.dz-tarih,.dz-analiz,.dz-head .c-il,.dz-head .c-tarih,.dz-head .c-analiz { display:none; } .dz-ciro { font-size:11.5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; } }
 
     /* ── HARİTA GÖRÜNÜMÜ (fah-*) — harita.html bileşeninin RFQ'suz kopyası, çakışmasın diye prefixli ── */
     .fah-gorunum-btns { display:flex; gap:6px; margin-bottom:14px; }
@@ -484,10 +486,12 @@
           </div>
         </div>
 
+        <!-- "Sonuçlar" + "İhaleler" sekmeleri birleşti (17 Tem, kullanıcı kararı): ikisi de aynı
+             veriden geliyordu (tumIhaleler = sonucVeri.map(s=>s.ilan) — EKAP kaybedeni yayınlamaz,
+             katıldığı = kazandığı). Tek liste: sonuç kartı + tür rozeti + sayfalama. -->
         <div class="tabs">
           <button class="tab-btn active" onclick="sekmeAc('genel',this)">Genel Bakış</button>
-          <button class="tab-btn" onclick="sekmeAc('sonuclar',this)">Sonuçlar</button>
-          <button class="tab-btn" onclick="sekmeAc('ihaleler',this)">İhaleler</button>
+          <button class="tab-btn" onclick="sekmeAc('sonuclar',this)">Katıldığı İhaleler</button>
         </div>
 
         <!-- GENEL BAKIŞ -->
@@ -525,7 +529,7 @@
           </div>
         </div>
 
-        <!-- SONUÇLAR -->
+        <!-- KATILDIĞI İHALELER (eski Sonuçlar + İhaleler birleşik) -->
         <div id="tab-sonuclar" class="tab-panel">
           <div id="sonuclar-container">
             <div class="veri-yok-card">
@@ -533,20 +537,15 @@
               <div style="font-size:13px;color:var(--muted);">Sonuç verisi yükleniyor…</div>
             </div>
           </div>
+          <div class="pager" id="pager" style="display:none;">
+            <button class="pager-btn" id="pager-ilk" onclick="sayfaGit('ilk')">« İlk</button>
+            <button class="pager-btn" id="pager-prev" onclick="sayfaGit('prev')">‹ Önceki</button>
+            <span class="pager-info" id="pager-info"></span>
+            <button class="pager-btn" id="pager-next" onclick="sayfaGit('next')">Sonraki ›</button>
+            <button class="pager-btn" id="pager-son" onclick="sayfaGit('son')">Son »</button>
+          </div>
           <div id="pivot-kirilim-container"></div>
           <div id="ai-yorum-container"></div>
-        </div>
-
-        <!-- İHALELER (katıldığı/takip edilen) -->
-        <div id="tab-ihaleler" class="tab-panel">
-          <div id="liste-container"></div>
-          <div class="pager" id="pager" style="display:none;">
-            <button class="pager-btn" id="pager-ilk" onclick="sayfaGit(1)">« İlk</button>
-            <button class="pager-btn" id="pager-prev" onclick="sayfaGit(sayfa-1)">‹ Önceki</button>
-            <span class="pager-info" id="pager-info"></span>
-            <button class="pager-btn" id="pager-next" onclick="sayfaGit(sayfa+1)">Sonraki ›</button>
-            <button class="pager-btn" id="pager-son" onclick="sayfaGit(topSayfa)">Son »</button>
-          </div>
         </div>
 
       </div><!-- /firma-icerik -->
@@ -653,20 +652,22 @@
     return new Date(s).toLocaleDateString('tr-TR', { day:'2-digit', month:'2-digit', year:'numeric' });
   }
 
-  function durumSec(sonTeklif) {
-    if (!sonTeklif) return { cls:'durum-kapandi', etiket:'Geçmiş' };
-    const gun = Math.ceil((new Date(sonTeklif) - Date.now()) / 86400000);
-    if (gun < 0) return { cls:'durum-kapandi', etiket:'Kapandı' };
-    if (gun <= 7) return { cls:'durum-son', etiket:`Son ${gun} Gün` };
-    return { cls:'durum-acik', etiket:'Açık' };
-  }
-
   function formatBedel(b) {
     if (!b) return '—';
     if (b >= 1_000_000_000) return (b / 1_000_000_000).toFixed(1) + ' Mrd TL';
     if (b >= 1_000_000) return (b / 1_000_000).toFixed(1) + ' M TL';
     if (b >= 1000) return (b / 1000).toFixed(0) + ' K TL';
     return b.toLocaleString('tr') + ' TL';
+  }
+
+  // Kullanıcı kararı (17 Tem): sözleşme/ciro tutarları kısaltmasız, net gösterilir —
+  // "809.558,00 ₺" gibi (tr-TR, 2 hane kuruş). formatBedel yalnız dizin toplam-ciro
+  // KPI'sında kaldı (tüm firmaların toplamı, yüz milyarlar); harita katmanı kendi
+  // paraKisa'sını kullanır (yer-kısıtlı görselleştirme).
+  function paraTam(v) {
+    v = Number(v) || 0;
+    if (!v) return '—';
+    return v.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' ₺';
   }
 
   // ÖNCELİK 10 Faz C2 — analiz_pivot RPC'sinden idare/sektör kırılımı (RPC henüz DB'ye
@@ -763,6 +764,8 @@
     });
   }
 
+  // Birleşik "Katıldığı İhaleler" (eski Sonuçlar + İhaleler): KPI üçlüsü + sayfalı kart listesi.
+  // Kaynak tek: sonucVeri (EKAP kaybedeni yayınlamadığından katıldığı = kazandığı).
   function sonuclariGoster() {
     const cont = document.getElementById('sonuclar-container');
     if (!cont) return;
@@ -775,6 +778,8 @@
         <div class="veri-yok-alt">EKAP sonuç ilanlarından bu firma ismiyle eşleşen kazanım henüz toplanmamış.
           Sistem her gece otomatik tarama yapmaktadır — yeni sonuçlar biriktiğinde burada görünür.</div>
       </div>`;
+      const pg = document.getElementById('pager');
+      if (pg) pg.style.display = 'none';
       return;
     }
     const toplamBedel = sonucVeri.reduce((a, s) => a + (s.kazanan_teklif || 0), 0);
@@ -785,13 +790,13 @@
     cont.innerHTML = `
       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px;">
         <div class="kpi-card">
-          <div class="kpi-label">Kazanılan İhale</div>
+          <div class="kpi-label">Katıldığı / Kazandığı İhale</div>
           <div class="kpi-value amber">${sonucVeri.length}</div>
           <div class="kpi-sub">EKAP sonuç kaydı</div>
         </div>
         <div class="kpi-card">
           <div class="kpi-label">Toplam Sözleşme</div>
-          <div class="kpi-value">${toplamBedel ? formatBedel(toplamBedel) : '—'}</div>
+          <div class="kpi-value" style="font-size:17px;">${paraTam(toplamBedel)}</div>
           <div class="kpi-sub">toplam</div>
         </div>
         <div class="kpi-card">
@@ -800,42 +805,62 @@
           <div class="kpi-sub">sözleşme indirimi</div>
         </div>
       </div>
-      <div>
-        ${sonucVeri.map(s => {
-          const ilan = s.ilan || {};
-          const tenzVal = s.tenzilat_yuzde != null ? s.tenzilat_yuzde : s.kazanan_teklif_farki_yuzde;
-          const tenz = tenzVal != null
-            ? `<span class="ik-durum durum-acik">%${Number(tenzVal).toFixed(1)} tenz.</span>`
-            : '';
-          const bedel = s.sozlesme_bedeli || s.kazanan_teklif;
-          const teklifSay = s.katilimci_sayisi || s.toplam_teklif_sayisi;
-          const baslik = ilan.baslik || (s.ikn ? `İhale ${s.ikn}${s.kisim_no ? ' · Kısım ' + s.kisim_no : ''}` : 'İhale kaydı');
-          // İhaleyi YAPAN kurum (idare) — Kurum Analizi'ne link
-          const idareHtml = ilan.idare
-            ? `<a href="kurum-analiz?kurum=${encodeURIComponent(ilan.idare)}" style="color:var(--muted);text-decoration:none;" onclick="event.stopPropagation()">🏛️ ${ilan.idare}</a>`
-            : '';
-          // İhaleyi ALAN firmanın tam adı (isim varyasyonları için faydalı)
-          const firmaHtml = s.kazanan_firma
-            ? `<span style="color:var(--muted);">🏢 ${s.kazanan_firma}</span>` : '';
-          const detayLink = ilan.id ? `ihale-detay?id=${ilan.id}` : null;
-          return `<div class="ihale-kart">
-            <div class="ik-ust">
-              ${detayLink ? `<a class="ik-baslik" href="${detayLink}">${baslik}</a>` : `<span class="ik-baslik">${baslik}</span>`}
-              ${tenz}
-            </div>
-            <div class="ik-badges" style="flex-direction:column;align-items:flex-start;gap:4px;">
-              ${idareHtml}
-              ${firmaHtml}
-            </div>
-            <div class="ik-meta">
-              ${ilan.il ? `<span>📍 ${ilan.il}</span>` : ''}
-              ${bedel ? `<span style="color:var(--amber);font-weight:700;">₺ ${formatBedel(bedel)}</span>` : ''}
-              ${s.sonuc_tarihi ? `<span>📅 ${tarihFormat(s.sonuc_tarihi)}</span>` : ''}
-              ${teklifSay ? `<span>👥 ${teklifSay} teklif</span>` : ''}
-            </div>
-          </div>`;
-        }).join('')}
-      </div>`;
+      <div id="sonuc-liste"></div>`;
+    // Mevcut sayfayı koru (sekme gidiş-dönüşünde 1'e sıfırlanmasın — inceleme bulgusu);
+    // clamp sonucSayfaGoster içinde. Firma DEĞİŞİMİNDE firmaDetayYukle sayfa=1 yapar.
+    sonucSayfaGoster(sayfa);
+  }
+
+  function sonucKartHtml(s) {
+    const ilan = s.ilan || {};
+    const tenzVal = s.tenzilat_yuzde != null ? s.tenzilat_yuzde : s.kazanan_teklif_farki_yuzde;
+    const tenz = tenzVal != null
+      ? `<span class="ik-durum durum-acik">%${Number(tenzVal).toFixed(1)} tenz.</span>`
+      : '';
+    const bedel = s.sozlesme_bedeli || s.kazanan_teklif;
+    const teklifSay = s.katilimci_sayisi || s.toplam_teklif_sayisi;
+    const baslik = ilan.baslik || (s.ikn ? `İhale ${s.ikn}${s.kisim_no ? ' · Kısım ' + s.kisim_no : ''}` : 'İhale kaydı');
+    // İhaleyi YAPAN kurum (idare) — Kurum Analizi'ne link. DB metinleri escapeHtml'den geçer (stored XSS dersi).
+    const idareHtml = ilan.idare
+      ? `<a href="kurum-analiz?kurum=${encodeURIComponent(ilan.idare)}" style="color:var(--muted);text-decoration:none;" onclick="event.stopPropagation()">🏛️ ${escapeHtml(ilan.idare)}</a>`
+      : '';
+    // İhaleyi ALAN firmanın tam adı (isim varyasyonları için faydalı)
+    const firmaHtml = s.kazanan_firma
+      ? `<span style="color:var(--muted);">🏢 ${escapeHtml(s.kazanan_firma)}</span>` : '';
+    const detayLink = ilan.id ? `ihale-detay?id=${ilan.id}` : null;
+    return `<div class="ihale-kart">
+      <div class="ik-ust">
+        ${detayLink ? `<a class="ik-baslik" href="${detayLink}">${escapeHtml(baslik)}</a>` : `<span class="ik-baslik">${escapeHtml(baslik)}</span>`}
+        ${tenz}
+      </div>
+      <div class="ik-badges" style="flex-direction:column;align-items:flex-start;gap:4px;">
+        ${idareHtml}
+        ${firmaHtml}
+      </div>
+      <div class="ik-meta">
+        ${ilan.tur ? `<span class="etiket et-tur">${escapeHtml(ilan.tur)}</span>` : ''}
+        ${ilan.il ? `<span>📍 ${escapeHtml(ilan.il)}</span>` : ''}
+        ${bedel ? `<span style="color:var(--amber);font-weight:700;">${paraTam(bedel)}</span>` : ''}
+        ${s.sonuc_tarihi ? `<span>📅 ${tarihFormat(s.sonuc_tarihi)}</span>` : ''}
+        ${teklifSay ? `<span>👥 ${teklifSay} teklif</span>` : ''}
+      </div>
+    </div>`;
+  }
+
+  function sonucSayfaGoster(s) {
+    const el = document.getElementById('sonuc-liste');
+    if (!el) return;
+    topSayfa = Math.max(1, Math.ceil(sonucVeri.length / PER_PAGE));
+    sayfa = Math.max(1, Math.min(Number(s) || 1, topSayfa));
+    el.innerHTML = sonucVeri.slice((sayfa - 1) * PER_PAGE, sayfa * PER_PAGE).map(sonucKartHtml).join('');
+    const pg = document.getElementById('pager');
+    if (!pg) return;
+    pg.style.display = topSayfa > 1 ? 'flex' : 'none';
+    document.getElementById('pager-info').textContent = `${sayfa} / ${topSayfa}`;
+    document.getElementById('pager-ilk').disabled = sayfa <= 1;
+    document.getElementById('pager-prev').disabled = sayfa <= 1;
+    document.getElementById('pager-next').disabled = sayfa >= topSayfa;
+    document.getElementById('pager-son').disabled = sayfa >= topSayfa;
   }
 
   window.sekmeAc = function(id, btn) {
@@ -843,49 +868,21 @@
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
     document.getElementById('tab-' + id).classList.add('active');
     btn.classList.add('active');
-    if (id === 'ihaleler') listeSayfa(sayfa);
     if (id === 'sonuclar') sonuclariGoster();
   };
 
-  window.sayfaGit = function(s) {
-    sayfa = Math.max(1, Math.min(s, topSayfa));
-    listeSayfa(sayfa);
+  // Yön string'leri (inline onclick closure'daki sayfa/topSayfa'yı GÖREMEZ — bilinen tuzak)
+  window.sayfaGit = function(yon) {
+    let hedef = sayfa;
+    if (yon === 'ilk') hedef = 1;
+    else if (yon === 'prev') hedef = sayfa - 1;
+    else if (yon === 'next') hedef = sayfa + 1;
+    else if (yon === 'son') hedef = topSayfa;
+    else hedef = Number(yon) || 1;
+    sonucSayfaGoster(hedef);
+    const el = document.getElementById('sonuc-liste');
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
-
-  function listeSayfa(s) {
-    const bas = (s - 1) * PER_PAGE;
-    const dilim = tumIhaleler.slice(bas, bas + PER_PAGE);
-    const cont = document.getElementById('liste-container');
-    if (!dilim.length) {
-      cont.innerHTML = '<div class="no-data">Bu arama için ihale bulunamadı.</div>';
-      document.getElementById('pager').style.display = 'none';
-      return;
-    }
-    cont.innerHTML = dilim.map(i => {
-      const d = durumSec(i.son_teklif_tarihi);
-      return `<div class="ihale-kart">
-        <div class="ik-ust">
-          <a class="ik-baslik" href="ihale-detay?id=${encodeURIComponent(i.id)}">${escapeHtml(i.baslik || '—')}</a>
-          <span class="ik-durum ${d.cls}">${d.etiket}</span>
-        </div>
-        <div class="ik-badges">
-          ${i.tur ? `<span class="etiket et-tur">${escapeHtml(i.tur)}</span>` : ''}
-          ${i.il ? `<span class="etiket">📍 ${escapeHtml(i.il)}</span>` : ''}
-        </div>
-        <div class="ik-meta">
-          ${i.idare ? `<span><a href="kurum-analiz?kurum=${encodeURIComponent(i.idare)}" style="color:var(--muted);text-decoration:none;">${escapeHtml(i.idare)}</a></span>` : ''}
-          ${i.son_teklif_tarihi ? `<span>⏰ ${tarihFormat(i.son_teklif_tarihi)}</span>` : ''}
-        </div>
-      </div>`;
-    }).join('');
-    topSayfa = Math.ceil(tumIhaleler.length / PER_PAGE);
-    document.getElementById('pager').style.display = topSayfa > 1 ? 'flex' : 'none';
-    document.getElementById('pager-info').textContent = `${s} / ${topSayfa}`;
-    document.getElementById('pager-ilk').disabled = s <= 1;
-    document.getElementById('pager-prev').disabled = s <= 1;
-    document.getElementById('pager-next').disabled = s >= topSayfa;
-    document.getElementById('pager-son').disabled = s >= topSayfa;
-  }
 
   const SON_ARAMA_KEY = 'ihale_son_aramalar_firma_v1';
 
@@ -999,7 +996,7 @@
         <div class="dz-ad" title="${uyeMi ? escapeHtml(ad) : 'Üyelere özel'}">${uyeMi ? escapeHtml(ad) : MASKE_ROZET}${f.ortak_girisim?'<span class="dz-badge">İŞ ORT.</span>':''}</div>
         <div class="dz-il c-il">${escapeHtml(f.il||'—')}</div>
         <div class="dz-sayi">${(f.toplam_sozlesme_sayisi||0).toLocaleString('tr-TR')}</div>
-        <div class="dz-ciro">${formatBedel(f.toplam_ciro||0)}</div>
+        <div class="dz-ciro">${paraTam(f.toplam_ciro)}</div>
         <div class="dz-tarih c-tarih">${f.son_sozlesme_tarihi?new Date(f.son_sozlesme_tarihi).toLocaleDateString('tr-TR'):'—'}</div>
         <div class="c-analiz"><span class="dz-analiz">Analiz →</span></div>
       </div>`;
@@ -1100,7 +1097,7 @@
           <div class="fli-ad">${escapeHtml(f.ad || '—')}</div>
           <div class="fli-stats">
             <span>📋 <b>${(f.toplam_sozlesme_sayisi || 0).toLocaleString('tr')}</b> sözleşme</span>
-            <span>💰 <b>${formatBedel(f.toplam_ciro)}</b></span>
+            <span>💰 <b>${paraTam(f.toplam_ciro)}</b></span>
             ${f.il ? `<span>📍 ${escapeHtml(f.il)}</span>` : ''}
             ${f.son_sozlesme_tarihi ? `<span>🕐 son: ${tarihFormat(f.son_sozlesme_tarihi)}</span>` : ''}
           </div>
@@ -1130,6 +1127,9 @@
     document.getElementById('kpi-tenzilat').textContent = '—';
     document.getElementById('sonuclar-container').innerHTML =
       `<div class="veri-yok-card"><div class="loading-spinner"></div><div style="font-size:13px;color:var(--muted);">Sonuç verisi yükleniyor…</div></div>`;
+    // Yeni firma = liste başa döner + önceki firmanın pager'ı spinner altında kalmasın (inceleme bulguları)
+    sayfa = 1;
+    { const pg = document.getElementById('pager'); if (pg) pg.style.display = 'none'; }
 
     // Firma başlığı + resmi istatistikler (yukleniciler)
     const { data: yRows } = await sb.from('yukleniciler')
@@ -1140,8 +1140,8 @@
     document.getElementById('bc-firma').textContent = FIRMA || 'Firma';
     document.getElementById('firma-ad').textContent = FIRMA || 'Firma';
     const iBtn = document.getElementById('firma-ihaleler-btn');
-    // Bu sayfanın kendi "İhaleler" sekmesini aç (ihaleler?ara= ilan metnini arar, kazanan firmayı DEĞİL → alakasız sonuç).
-    if (iBtn) { iBtn.href = '#'; iBtn.onclick = (e) => { e.preventDefault(); const tb=[...document.querySelectorAll('.tab-btn')].find(b=>/ihaleler/.test(b.getAttribute('onclick')||'')); if(tb) tb.click(); const el=document.querySelector('.tabs,.tab-bar,.tab-btn'); if(el) el.scrollIntoView({behavior:'smooth',block:'center'}); }; }
+    // Bu sayfanın "Katıldığı İhaleler" sekmesini aç (ihaleler?ara= ilan metnini arar, kazanan firmayı DEĞİL → alakasız sonuç).
+    if (iBtn) { iBtn.href = '#'; iBtn.onclick = (e) => { e.preventDefault(); const tb=[...document.querySelectorAll('.tab-btn')].find(b=>/sonuclar/.test(b.getAttribute('onclick')||'')); if(tb) tb.click(); const el=document.querySelector('.tabs,.tab-bar,.tab-btn'); if(el) el.scrollIntoView({behavior:'smooth',block:'center'}); }; }
     if (pushUrl) {
       const url = new URL(window.location);
       url.searchParams.set('yid', yid);
@@ -1170,10 +1170,10 @@
     document.getElementById('kpi-sozlesme').textContent  = iller.size;
     document.getElementById('kpi-tenzilat').textContent  = katlar.size;
     const sub = document.getElementById('kpi-kazanilan-sub');
-    if (sub) sub.textContent = toplamBedel ? formatBedel(toplamBedel) + ' toplam' : 'EKAP sonuç kaydı';
+    if (sub) sub.textContent = toplamBedel ? paraTam(toplamBedel) + ' toplam' : 'EKAP sonuç kaydı';
 
     document.getElementById('firma-meta').textContent = sonucVeri.length
-      ? `${sonucVeri.length} kazanılan ihale · ${formatBedel(toplamBedel)} · ${iller.size} il${y && y.son_sozlesme_tarihi ? ' · son: ' + tarihFormat(y.son_sozlesme_tarihi) : ''}`
+      ? `${sonucVeri.length} kazanılan ihale · ${paraTam(toplamBedel)} · ${iller.size} il${y && y.son_sozlesme_tarihi ? ' · son: ' + tarihFormat(y.son_sozlesme_tarihi) : ''}`
       : 'Bu firma için henüz kazanım kaydı toplanmadı (geçmiş veri arka planda çekiliyor).';
     if (tumIhaleler.length) firmaIstatistikGoster(tumIhaleler);
 
@@ -1328,7 +1328,7 @@
     cont.innerHTML = liste.map(f => `
       <div class="firma-liste-item" style="margin-bottom:6px;" onclick="karsilastirSec('${escapeHtml(f.id)}')">
         <div><div class="fli-ad">${escapeHtml(f.ad || '—')}</div>
-        <div class="fli-stats"><span>📋 <b>${(f.toplam_sozlesme_sayisi||0).toLocaleString('tr')}</b> sözleşme</span><span>💰 <b>${formatBedel(f.toplam_ciro)}</b></span>${f.il?`<span>📍 ${escapeHtml(f.il)}</span>`:''}</div></div>
+        <div class="fli-stats"><span>📋 <b>${(f.toplam_sozlesme_sayisi||0).toLocaleString('tr')}</b> sözleşme</span><span>💰 <b>${paraTam(f.toplam_ciro)}</b></span>${f.il?`<span>📍 ${escapeHtml(f.il)}</span>`:''}</div></div>
         <div class="fli-analiz">Seç →</div>
       </div>`).join('');
   };
@@ -1350,7 +1350,7 @@
     const num = n => (Number(n) || 0);
     const kpiler = [
       ['Toplam sözleşme', num(vA.y.toplam_sozlesme_sayisi), num(vB.y.toplam_sozlesme_sayisi), v => v.toLocaleString('tr'), true],
-      ['Toplam ciro',     num(vA.y.toplam_ciro),            num(vB.y.toplam_ciro),            v => formatBedel(v),       true],
+      ['Toplam ciro',     num(vA.y.toplam_ciro),            num(vB.y.toplam_ciro),            v => paraTam(v),           true],
       ['Kapsanan il',     oA.ilSayi,  oB.ilSayi,  v => String(v), true],
       ['Kapsanan sektör', oA.katSayi, oB.katSayi, v => String(v), true],
       ['Ort. tenzilat',   oA.ortTenz, oB.ortTenz, v => (v == null ? '—' : '%' + v.toFixed(1)), null],
