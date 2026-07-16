@@ -317,10 +317,11 @@
     return 'kaynak portal';
   }
   window.noKopyala = function(el, no){
-    navigator.clipboard.writeText(no).then(() => {
-      const eski = el.querySelector('.ui-no-kopya');
-      if(eski){ const t = eski.textContent; eski.textContent = '✓ kopyalandı'; setTimeout(()=>{ eski.textContent = t; }, 1500); }
-    }).catch(() => {});
+    const bildir = () => { const e = el.querySelector('.ui-no-kopya'); if(e){ const t = e.textContent; e.textContent = '✓ kopyalandı'; setTimeout(()=>{ e.textContent = t; }, 1500); } };
+    const fallback = () => { try { const ta = document.createElement('textarea'); ta.value = no; ta.style.cssText='position:fixed;opacity:0;'; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta); bildir(); } catch(e){} };
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(no).then(bildir).catch(fallback);
+    } else { fallback(); }
   };
 
   function render() {
