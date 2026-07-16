@@ -344,6 +344,14 @@
   // eski ~16 ardışık istek × ~4sn canlı GROUP BY turu (60-70sn bekleme) kalktı.
   // Satır formatı (payload küçük kalsın diye dizi): [idare, toplam, aktif, il].
   async function veriCek() {
+    // Veri-koruma: idare_dizin_json artık anon'a KAPALI (migration_bulk_rpc_kilit.sql —
+    // toplu dizin dökümü login gerektirir). Misafire RPC 401'ini göstermek yerine
+    // baştan kibar bir giriş kapısı çiz; girişli kullanıcıda akış aynen devam eder.
+    try {
+      const { data: { session } } = await sb.auth.getSession();
+      if (!session) { girisKapisiGoster(); return; }
+    } catch (e) { /* oturum okunamadı → RPC denenir, hata olursa catch halleder */ }
+
     // Oturum önbelleği — aynı sekmede sayfaya dönüşte isteği tekrarlamaz.
     // 30 dk TTL; kota aşılırsa sessizce fetch'e düşer.
     const CACHE_KEY = 'idare_dizin_v1';
@@ -521,8 +529,25 @@
   });
 
   // ── Başlat ───────────────────────────────────────────────
-  veriCek().catch(e => {
+  function girisKapisiGoster() {
+    document.getElementById('yukleniyor-blok').innerHTML = `
+      <div style="max-width:420px; margin:40px auto; text-align:center; background:var(--navy-mid); border:1px solid var(--border); border-radius:14px; padding:36px 28px;">
+        <div style="font-size:34px; margin-bottom:10px;">🔒</div>
+        <div style="font-size:16px; font-weight:800; color:var(--white); font-family:var(--font-display); margin-bottom:8px;">İdareler Dizini üyelere özel</div>
+        <div style="font-size:13px; color:var(--muted); line-height:1.6; margin-bottom:20px;">23.000+ idarenin ihale karnesini görmek için ücretsiz hesabınızla giriş yapın.</div>
+        <div style="display:flex; gap:10px; justify-content:center;">
+          <a href="login" style="background:var(--amber); color:var(--navy); font-weight:700; font-size:13px; padding:9px 20px; border-radius:7px; text-decoration:none;">Giriş Yap</a>
+          <a href="login?panel=kayit" style="background:var(--card-bg); color:var(--white); border:1px solid var(--border); font-weight:600; font-size:13px; padding:9px 20px; border-radius:7px; text-decoration:none;">Ücretsiz Kayıt</a>
+        </div>
+      </div>`;
+  }
+
+  veriCek().catch(async e => {
     console.error(e);
+    // 42501 = permission denied (anon'a kapalı RPC) — oturum düşmüş/yoksa giriş kapısı
+    let oturumsuz = false;
+    try { const { data: { session } } = await sb.auth.getSession(); oturumsuz = !session; } catch (_) {}
+    if (oturumsuz || (e && (e.code === '42501' || e.code === 'PGRST301'))) { girisKapisiGoster(); return; }
     document.getElementById('yukleniyor-blok').innerHTML =
       '<div style="color:#f87171; padding:40px; text-align:center;">Veri yüklenemedi. Lütfen sayfayı yenileyin.</div>';
   });
