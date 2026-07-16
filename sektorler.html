@@ -202,7 +202,6 @@
       <div class="topbar-right" style="display:flex;gap:10px;align-items:center;">
         <a href="idareler" style="font-size:12px;color:var(--muted);text-decoration:none;">İdareler →</a>
         <a href="ihaleler" style="font-size:12px;color:var(--muted);text-decoration:none;">Tüm İhaleler →</a>
-        <button onclick="csvIndir()" style="background:var(--card-bg);border:1px solid var(--border);color:var(--muted);padding:5px 12px;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;font-family:var(--font);">↓ CSV</button>
         <button id="paylasBtn" onclick="linkPaylas(this)" style="background:var(--card-bg);border:1px solid var(--border);color:var(--muted);padding:5px 12px;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;font-family:var(--font);">🔗 Paylaş</button>
       </div>
     </div>
@@ -480,22 +479,6 @@
     }).join('');
   }
 
-  function csvIndir() {
-    if (!filtrelenmis.length) { alert('Gösterilecek sektör yok.'); return; }
-    const csvG = v => { v = (v == null ? '' : String(v)); if (/^[=+\-@\t\r]/.test(v)) v = "'" + v; return `"${v.replace(/"/g,'""')}"`; };
-    const satirlar = [
-      ['Sektör', 'Toplam İhale', 'Aktif İhale', 'Kapandı', 'Aktiflik Oranı %'],
-      ...filtrelenmis.map(s => [
-        csvG(s.ad), s.toplam, s.aktif, s.toplam - s.aktif, s.oran,
-      ]),
-    ];
-    const icerik = '﻿' + satirlar.map(r => r.join(',')).join('\r\n');
-    const blob = new Blob([icerik], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url; a.download = `sektorler_${new Date().toISOString().split('T')[0]}.csv`;
-    a.click(); URL.revokeObjectURL(url);
-  }
 
   function linkPaylas(btn) {
     navigator.clipboard.writeText(window.location.href).then(() => {

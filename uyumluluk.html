@@ -162,7 +162,6 @@
     <div class="topbar">
       <span style="font-size:15px;font-weight:600;">Uyumluluk Analizi</span>
       <div class="topbar-actions">
-        <button onclick="csvIndir()" class="action-btn" title="Eşleşme listesini CSV olarak indir">↓ CSV</button>
         <a href="profil" class="action-btn">Profili Düzenle</a>
         <a href="fiyatlandirma_odeme_bolumu" class="btn btn-primary" style="padding:7px 16px;font-size:13px;">Pro'ya Geç ↑</a>
       </div>
@@ -301,28 +300,6 @@
     renderSayfa(1);
   }
 
-  function csvIndir() {
-    if (!tumScoredIlanlar.length) { alert('Henüz veri yüklenmedi.'); return; }
-    const satirlar = [
-      ['Uyum %', 'Başlık', 'İdare', 'İl', 'Kategori', 'Tür', 'Son Teklif', 'Yaklaşık Maliyet'],
-      ...tumScoredIlanlar.map(i => [
-        i._uyum,
-        `"${(i.baslik || '').replace(/"/g, '""')}"`,
-        `"${(i.idare || '').replace(/"/g, '""')}"`,
-        i.il || '',
-        i.kategori || '',
-        i.tur || '',
-        i.son_teklif_tarihi ? i.son_teklif_tarihi.split('T')[0] : '',
-        i.yaklasik_maliyet_min || i.tahmini_bedel || '',
-      ]),
-    ];
-    const icerik = '﻿' + satirlar.map(r => r.join(',')).join('\r\n');
-    const blob = new Blob([icerik], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url; a.download = `uyumluluk_${new Date().toISOString().split('T')[0]}.csv`;
-    a.click(); URL.revokeObjectURL(url);
-  }
 
   function uyumTakip(id) {
     const takipte = Takip.toggle(id);

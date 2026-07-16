@@ -181,7 +181,6 @@
         <span style="font-size:14px;font-weight:700;color:var(--white);">⚡ Doğrudan Temin</span>
         <span style="font-size:12px;color:var(--muted);" id="results-count"></span>
       </div>
-      <button onclick="csvIndir()" style="background:var(--card-bg);border:1px solid var(--border);color:var(--muted);padding:7px 14px;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;font-family:var(--font-body);">↓ CSV</button>
     </div>
 
     <div class="page-body">
@@ -484,35 +483,6 @@
   }
 
   const CSV_LIMIT = 5000;
-  window.csvIndir = async function() {
-    let query = sb.from('dogrudan_temin_ilanlari').select('dt_no,baslik,idare,tur,kategori,il,tarih,durum');
-    query = filtreleriUygula(query);
-    query = query.order(siralamaAlan === 'idare' ? 'idare' : 'tarih', { ascending: siralamaAlan === 'idare' }).limit(CSV_LIMIT);
-    const { data, error } = await query;
-    if (error || !data || !data.length) { alert('Dışa aktarılacak veri bulunamadı.'); return; }
-    // CSV hücre kaçışı + formül-enjeksiyon koruması (=,+,-,@,tab,CR ile başlayanları tırnakla+önek)
-    const csvG = v => { let s = String(v == null ? '' : v); if (/^[=+\-@\t\r]/.test(s)) s = "'" + s; return `"${s.replace(/"/g,'""')}"`; };
-    const satirlar = [
-      ['DT No', 'Başlık', 'İdare', 'Tür', 'Kategori', 'İl', 'Tarih', 'Durum'],
-      ...data.map(k => [
-        csvG(k.dt_no),
-        csvG(k.baslik),
-        csvG(k.idare),
-        csvG(k.tur), csvG(k.kategori), csvG(k.il),
-        k.tarih ? k.tarih.split('T')[0] : '',
-        csvG(k.durum),
-      ]),
-    ];
-    const icerik = '﻿' + satirlar.map(r => r.join(',')).join('\r\n');
-    const blob = new Blob([icerik], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url; a.download = `dogrudan_temin_${new Date().toISOString().split('T')[0]}.csv`;
-    a.click(); URL.revokeObjectURL(url);
-    if (toplamFiltreli > data.length) {
-      alert(`Not: ${toplamFiltreli.toLocaleString('tr')} kayıttan ilk ${data.length.toLocaleString('tr')} tanesi dışa aktarıldı (CSV sınırı).`);
-    }
-  };
 
   // Başlangıç
   (async () => {

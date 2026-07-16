@@ -345,7 +345,6 @@
         <a href="firmalar" onclick="geriGit();return false;" class="back-btn">← Geri</a>
         <div class="breadcrumb">/ <span id="bc-firma">Firma Analizi</span></div>
       </div>
-      <button onclick="csvIndir()" style="background:var(--card-bg);border:1px solid var(--border);color:var(--muted);padding:7px 14px;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;font-family:var(--font-body);">↓ CSV</button>
       <button onclick="linkPaylas(this)"
         style="background:var(--card-bg);border:1px solid var(--border);color:var(--muted);padding:7px 14px;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;font-family:var(--font-body);">
         🔗 Paylaş
@@ -600,27 +599,6 @@
     location.href = 'firmalar';
   }
 
-  window.csvIndir = function() {
-    if (!tumIhaleler.length) { alert('Önce bir firma analiz edin.'); return; }
-    const satirlar = [
-      ['EKAP No', 'Başlık', 'İdare', 'İl', 'Tür', 'Kategori', 'İlan Tarihi', 'Son Teklif'],
-      ...tumIhaleler.map(i => [
-        i.ekap_id || '',
-        `"${(i.baslik || '').replace(/"/g, '""')}"`,
-        `"${(i.idare || '').replace(/"/g, '""')}"`,
-        i.il || '', i.tur || '', i.kategori || '',
-        i.ilan_tarihi ? i.ilan_tarihi.split('T')[0] : '',
-        i.son_teklif_tarihi ? i.son_teklif_tarihi.split('T')[0] : '',
-      ]),
-    ];
-    const icerik = '﻿' + satirlar.map(r => r.join(',')).join('\r\n');
-    const blob = new Blob([icerik], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `firma_${(FIRMA||'analiz').slice(0,30).replace(/\s+/g,'_')}_${new Date().toISOString().split('T')[0]}.csv`;
-    a.click(); URL.revokeObjectURL(url);
-  }
 
   window.linkPaylas = function(btn) {
     navigator.clipboard.writeText(window.location.href).then(() => {

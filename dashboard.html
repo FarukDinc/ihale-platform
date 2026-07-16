@@ -755,7 +755,6 @@
         </div>
         <div style="display:flex; gap:8px;">
           <a href="ihaleler" class="btn btn-ghost" style="font-size:13px; padding:9px 16px;">Tüm İhaleler →</a>
-          <button class="btn btn-primary" style="font-size:13px; padding:9px 16px;" onclick="csvIndir()">↓ CSV İndir</button>
         </div>
       </div>
 
@@ -1240,31 +1239,6 @@
       iller.map(il => `<option value="${il}">${il}</option>`).join('');
   }
 
-  async function csvIndir() {
-    if (!yukluIlanlar.length) return;
-    if ((await Plan.getPlan()) !== 'pro') {
-      alert('CSV export Pro plan özelliğidir. Lütfen planınızı yükseltin.');
-      return;
-    }
-    const basliklar = ['EKAP ID','İhale Adı','İdare','İl','Tür','Durum','Son Teklif Tarihi','Yak. Maliyet Min (₺)','Yak. Maliyet Max (₺)'];
-    const satirlar = yukluIlanlar.map(i => [
-      i.ekap_id || '',
-      `"${(i.baslik || '').replace(/"/g,'""')}"`,
-      `"${(i.idare  || '').replace(/"/g,'""')}"`,
-      i.il   || '',
-      i.tur  || '',
-      i.durum || '',
-      i.son_teklif_tarihi ? i.son_teklif_tarihi.split('T')[0] : '',
-      i.yaklasik_maliyet_min || '',
-      i.yaklasik_maliyet_max || '',
-    ].join(','));
-    const icerik = '﻿' + basliklar.join(',') + '\n' + satirlar.join('\n');
-    const blob = new Blob([icerik], { type: 'text/csv;charset=utf-8;' });
-    const url  = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url; a.download = `ihaleler_${new Date().toISOString().split('T')[0]}.csv`;
-    a.click(); URL.revokeObjectURL(url);
-  }
 
   // Takibe al fonksiyonu (localStorage tabanlı kalıcı takip)
   function takibeAl(btn, id) {

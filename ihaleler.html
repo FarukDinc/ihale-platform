@@ -456,7 +456,6 @@
         <input type="text" placeholder="İhale ara... (Ctrl + K)" id="topbar-search" />
       </div>
       <div class="topbar-actions">
-        <button onclick="csvIndir()" style="background:var(--card-bg);border:1px solid var(--border);color:var(--white);padding:7px 14px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer;">↓ CSV</button>
         <a href="fiyatlandirma_odeme_bolumu" class="btn-primary">Pro'ya Geç ↑</a>
       </div>
     </div>
@@ -1204,35 +1203,6 @@
 
   function filtreUygula() { ilanlariYukle(1); }
 
-  async function csvIndir() {
-    const plan = await Plan.getPlan();
-    if (plan !== 'pro' && plan !== 'kurumsal' && plan !== 'PRO') {
-      window.location.href = 'fiyatlandirma_odeme_bolumu';
-      return;
-    }
-    if (!yukluIlanlar.length) return;
-    // CSV formül enjeksiyonu koruması: =,+,-,@,tab,CR ile başlayan hücreyi ' ile kaçır (Excel formül çalıştırmasın)
-    const csvGuvenli = v => { v = (v == null ? '' : String(v)); if (/^[=+\-@\t\r]/.test(v)) v = "'" + v; return `"${v.replace(/"/g,'""')}"`; };
-    const basliklar = ['EKAP ID','İhale Adı','İdare','İl','Tür','Durum','Son Teklif Tarihi','Yak. Maliyet Min (₺)','Yak. Maliyet Max (₺)','Uyum %'];
-    const satirlar = yukluIlanlar.map(i => [
-      csvGuvenli(i.ekap_id),
-      csvGuvenli(i.baslik),
-      csvGuvenli(i.idare),
-      csvGuvenli(i.il),
-      csvGuvenli(i.tur),
-      i.durum || '',
-      i.son_teklif_tarihi ? i.son_teklif_tarihi.split('T')[0] : '',
-      i.yaklasik_maliyet_min || '',
-      i.yaklasik_maliyet_max || '',
-      i._uyum || '',
-    ].join(','));
-    const icerik = '﻿' + basliklar.join(',') + '\n' + satirlar.join('\n');
-    const blob = new Blob([icerik], { type: 'text/csv;charset=utf-8;' });
-    const url  = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url; a.download = `ihaleler_${new Date().toISOString().split('T')[0]}.csv`;
-    a.click(); URL.revokeObjectURL(url);
-  }
 
   function filtreleriSifirla() {
     ['f-arama','f-il','f-kategori','f-tur','f-usul','f-min-bedel','f-max-bedel',

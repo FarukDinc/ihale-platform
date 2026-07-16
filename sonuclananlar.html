@@ -205,7 +205,6 @@
         <span style="font-size:14px;font-weight:700;color:var(--white);">🏆 Sonuçlananlar</span>
         <span style="font-size:12px;color:var(--muted);" id="results-count"></span>
       </div>
-      <button id="csv-btn" onclick="csvIndir()" style="background:var(--card-bg);border:1px solid var(--border);color:var(--muted);padding:7px 14px;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;font-family:var(--font-body);">↓ CSV</button>
     </div>
 
     <div class="page-body">
@@ -426,50 +425,6 @@
     renderSayfa();
   }
 
-  window.csvIndir = async function() {
-    const btn = document.getElementById('csv-btn');
-    const eski = btn ? btn.textContent : '';
-    if (btn) { btn.disabled = true; btn.textContent = 'Hazırlanıyor…'; }
-    try {
-      const { data } = await sb.from('ihale_sonuclari')
-        .select('kazanan_firma,kazanan_teklif,kazanan_teklif_farki_yuzde,toplam_teklif_sayisi,sonuc_tarihi,ilanlar(baslik,idare,il)')
-        .not('kazanan_firma', 'is', null)
-        .neq('kazanan_firma', '')
-        .order(ALAN[siralamaAlan], { ascending: false, nullsFirst: false })
-        .limit(5000);
-      if (!data || !data.length) { alert('Dışa aktarılacak veri bulunamadı.'); return; }
-      // CSV formül enjeksiyonu koruması (=,+,-,@,tab,CR → ' ile kaçır)
-      const csvG = v => { v = (v == null ? '' : String(v)); if (/^[=+\-@\t\r]/.test(v)) v = "'" + v; return `"${v.replace(/"/g,'""')}"`; };
-      const satirlar = [
-        ['Firma', 'İhale Başlığı', 'İdare', 'İl', 'Sözleşme Bedeli (TL)', 'Tenzilat %', 'Teklif Sayısı', 'Sonuç Tarihi'],
-        ...data.map(s => {
-          const ilan = (Array.isArray(s.ilanlar) ? s.ilanlar[0] : s.ilanlar) || {};
-          return [
-            csvG(s.kazanan_firma),
-            csvG(ilan.baslik),
-            csvG(ilan.idare),
-            csvG(ilan.il),
-            s.kazanan_teklif || '',
-            s.kazanan_teklif_farki_yuzde != null ? Number(s.kazanan_teklif_farki_yuzde).toFixed(3) : '',
-            s.toplam_teklif_sayisi || '',
-            s.sonuc_tarihi ? s.sonuc_tarihi.split('T')[0] : '',
-          ];
-        }),
-      ];
-      const icerik = '﻿' + satirlar.map(r => r.join(',')).join('\r\n');
-      const blob = new Blob([icerik], { type: 'text/csv;charset=utf-8;' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `sonuclananlar_en_yeni_${data.length}.csv`;
-      a.click();
-      URL.revokeObjectURL(url);
-    } catch (e) {
-      alert('Dışa aktarma hatası: ' + e.message);
-    } finally {
-      if (btn) { btn.disabled = false; btn.textContent = eski; }
-    }
-  };
 
   istatistikYukle();
   veriYukle(true);

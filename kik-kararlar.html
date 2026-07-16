@@ -315,7 +315,6 @@
             <button class="btn-outline" onclick="temizle()">✕ Temizle</button>
           </div>
           <div style="margin-top:auto;margin-left:auto;">
-            <button class="btn-outline" onclick="csvIndir()" id="csv-btn" style="display:none;">↓ CSV</button>
           </div>
         </div>
       </div>
@@ -501,7 +500,6 @@
     document.getElementById('st-red').textContent   = redSay.toLocaleString('tr');
     document.getElementById('stats-bar').style.display = tumVeri.length ? 'grid' : 'none';
     document.getElementById('toolbar').style.display   = tumVeri.length ? 'flex' : 'none';
-    document.getElementById('csv-btn').style.display   = tumVeri.length ? '' : 'none';
 
     if (!filtreliVeri.length) {
       document.getElementById('liste-container').innerHTML = `
@@ -600,19 +598,6 @@
     document.getElementById('f-sonuc').value = '';
   };
 
-  window.csvIndir = function() {
-    if (!filtreliVeri.length) return;
-    const cols = ['karar_no','karar_tarihi','karar_turu','sonuc','baslik','idare','ihale_konusu'];
-    const satir = [cols.join(',')];
-    filtreliVeri.forEach(k => {
-      satir.push(cols.map(c => `"${(k[c]||'').toString().replace(/"/g,'""')}"`).join(','));
-    });
-    const blob = new Blob(['﻿'+satir.join('\n')], { type: 'text/csv;charset=utf-8;' });
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = `kik-kararlar-${new Date().toISOString().slice(0,10)}.csv`;
-    a.click();
-  };
 
   // Enter ile ara
   ['f-kelime','f-karar-no'].forEach(id => {
