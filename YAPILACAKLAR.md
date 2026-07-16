@@ -43,8 +43,11 @@
 > - **(2) www/apex origin bölünmesi:** www.ihaleglobal.com da apex de 200 dönüyor, redirect YOK →
 >   localStorage origin-bazlı olduğundan www'da açılan oturum apex'te görünmez (tam "girişliyim ama ***"
 >   senaryosu). FIX: sidebar-user.js + login.html + index.html'e `www.→apex location.replace` (hash
->   korunur — e-posta onay token'ı). KALICI İŞ: CF Redirect Rule veya nginx'te 301 www→apex (dashboard
->   erişimi gerek — kullanıcı yapmalı).
+>   korunur — e-posta onay token'ı). ~~KALICI İŞ: CF Redirect Rule~~ **✅ YAPILDI (17 Tem): kullanıcı CF
+>   panelinden "Redirect from WWW to root" şablonunu deploy etti** (wildcard https://www.* → https://${1},
+>   301, preserve query string; "www proxy'li olmayabilir" uyarısı yanlış alarmdı — CF-RAY ile doğrulandı).
+>   Canlı test: kök/yol/query üçü de 301→apex, zincir tek yönlendirmeyle 200. www/apex oturum bölünmesi
+>   artık kökten kapalı; client-side redirect'ler köprü olarak kalabilir (zararsız).
 > - Doğrulama: localhost misafir görünümü OK (Misafir rozeti + *** maskeleri + sayfa tam yükleniyor).
 >   Girişli görünüm kullanıcı gözüyle doğrulanmalı: giriş yap → ihale-detay'da idare/benzer meta açık mı?
 
