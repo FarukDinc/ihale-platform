@@ -59,7 +59,9 @@ def kayit_donustur(t: dict) -> dict:
 
 
 def kayitlari_cek(client: httpx.Client) -> list:
-    kayitlar, sayfa, top_sayfa = [], 1, 1
+    # API aynı id'yi birden çok sayfada döndürebiliyor → dict ile dedup (PostgREST
+    # "ON CONFLICT cannot affect row a second time" 21000 hatası verir yoksa).
+    kayitlar, sayfa, top_sayfa = {}, 1, 1
     while sayfa <= top_sayfa:
         r = client.get(API, params={"page": sayfa}, headers={"User-Agent": UA, "Accept": "application/json"}, timeout=30.0)
         r.raise_for_status()
@@ -68,9 +70,10 @@ def kayitlari_cek(client: httpx.Client) -> list:
         for t in d.get("data", []):
             if t.get("is_cancelled"):
                 continue
-            kayitlar.append(kayit_donustur(t))
+            k = kayit_donustur(t)
+            kayitlar[k["kaynak_id"]] = k
         sayfa += 1
-    return kayitlar
+    return list(kayitlar.values())
 
 
 def upsert(client: httpx.Client, kayitlar: list) -> bool:
