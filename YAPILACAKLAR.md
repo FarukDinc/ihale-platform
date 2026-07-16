@@ -1,11 +1,33 @@
 # İhalePlatform — Yapılacaklar Listesi
 
-## 🟢 ŞU AN NE DURUMDAYIZ (14 Temmuz 2026, en son güncelleme) — HERKES ÖNCE BUNU OKUSUN
+## 🟢 ŞU AN NE DURUMDAYIZ (16 Temmuz 2026, en son güncelleme) — HERKES ÖNCE BUNU OKUSUN
 
 > Bu blok her oturumun sonunda güncellenir ve dosyanın en güncel/otoriter özetidir. Altındaki
 > binlerce satır tarihsel kayıt/detay — çelişki olursa BU BLOK geçerlidir.
 > **KALICI TALİMAT (12 Tem, kullanıcı emri):** Bu blok + ilgili bölümler her oturumda otomatik
 > güncellenir, kullanıcı hatırlatmak zorunda değil. Bkz. hafıza `yapilacaklar-auto-update`.
+
+> ## 🌍 16 TEMMUZ — ULUSLARARASI: İNTERAKTİF DÜNYA HARİTASI + DASHBOARD MENÜ TAŞINDI (CANLI)
+> **1) Dünya haritası (commit `71c537a`)** — kullanıcı: "uluslararası ihaleler ekranına bir dünya haritası
+> koysak da insanlar tıklasa o ülkeyi seçse… excel formatının dışına çıksak". Yapıldı:
+> - `js/dunya-harita.js` — johan/world.geo.json → equirectangular SVG (179 ülke, key=ISO-A3, Antarktika hariç,
+>   viewBox 1000×388.9, ~82KB). `ulke_ihale_dagilimi()` RPC (ulke_kodu, ulke=Türkçe ad, adet).
+> - `uluslararasi.html`: stats↔toolbar arasına choropleth harita kartı. İhale sayısına göre 4-bucket renk
+>   (1–4 / 5–19 / 20–49 / 50+), hover tooltip (ülke + adet), **tıkla→f-ulke filtre** (aynı ülkeye tekrar
+>   tık = filtre kaldır/toggle). Filtre dropdown ↔ harita seçimi çift-yönlü senkron; "✕ ülke filtresini
+>   kaldır" kısayolu. Kritik kablo: harita ISO-A3 keyed ama f-ulke **Türkçe ad** ile filtreliyor
+>   (`query.eq('ulke', ulke)`) → RPC'nin ulke_kodu↔ulke eşlemesi köprü.
+> - Canlıda doğrulandı: 179 path (31 verili renkli), Almanya tık→"121 ihale" (RPC DEU=121 birebir), tüm
+>   kartlar 🌍 Almanya, highlight+temizle butonu; toggle→491'e döndü. Konsol temiz. (Not: browser-pane
+>   screenshot aracı 179-path SVG'yi rasterize ederken timeout veriyor — sayfa gerçek kullanıcıda sorunsuz,
+>   işlevsel JS doğrulaması eksiksiz.)
+>
+> **2) Dashboard "Kamu İhaleleri"ne taşındı (commit `685bd56`)** — kullanıcı: "insanlar oradaki Türkiye
+> haritasını ve ihale verilerini GENEL sanar, yanılgıya düşeriz". 24 HTML sayfada nav: Dashboard artık
+> "Genel" yerine "Kamu İhaleleri" bölümünün ilk maddesi; "Genel" etiketi kaldırıldı.
+>
+> **3) Gürcistan duyuru no görünür (önceki, commit dahil)** — Georgia/TED ilanlarında `publication_no`
+> (örn. NAT260014727) başlık altında kopyalanabilir rozet olarak gösteriliyor; lang=en link zaten kullanımda.
 
 > ## 🐞 15 TEMMUZ (devam) — SONUÇLANANLAR SAYFASI DÜZELTİLDİ + CANLI (commit `cb307f7`)
 > **Sorun:** `sonuclananlar.html` tüm `ihale_sonuclari`'yı (355K+ satır) client'a `for(off+=1000)`
