@@ -94,6 +94,12 @@
     .etiket.kategori { background: rgba(240,165,0,.1); color: var(--amber); }
     .ui-meta { display: flex; gap: 14px; font-size: 12px; color: var(--muted); flex-wrap: wrap; align-items: center; }
     .ui-orijinal { font-size: 11px; color: var(--muted); font-style: italic; margin-top: 4px; }
+    .ui-no { display: inline-flex; align-items: center; gap: 8px; margin-top: 6px; font-size: 12px;
+      color: var(--off-white); background: rgba(240,165,0,.08); border: 1px solid rgba(240,165,0,.25);
+      padding: 4px 10px; border-radius: 6px; cursor: pointer; font-family: var(--font-mono, ui-monospace, monospace); }
+    .ui-no:hover { background: rgba(240,165,0,.14); }
+    .ui-no b { color: var(--amber); font-weight: 700; letter-spacing: .02em; }
+    .ui-no-kopya { font-size: 10px; color: var(--muted); font-family: var(--font-body); }
     .ui-ac-btn { display: inline-flex; align-items: center; gap: 6px; margin-top: 12px;
       background: var(--amber, #f0a500); color: #0b0e14; font-weight: 700; font-size: 12.5px;
       padding: 8px 16px; border-radius: 7px; text-decoration: none; transition: filter .15s, transform .15s; }
@@ -299,6 +305,23 @@
     if(kaynak === 'georgia') return "Gürcistan Portalında İncele";
     return "Kaynağında İncele";
   }
+  // Duyuru/ilan numarası etiketi — insanlar bu numarayla ihaleyi kaynak portalda arayabilir (link app_id opak).
+  function duyuruEtiket(kaynak){
+    if(kaynak === 'georgia') return 'Duyuru No';   // NAT260014727 — tenders.procurement.gov.ge'de aranır
+    if(kaynak === 'ted') return 'İlan No';          // 488405-2026 — ted.europa.eu'da aranır
+    return 'İlan No';
+  }
+  function kaynakPortal(kaynak){
+    if(kaynak === 'georgia') return 'tenders.procurement.gov.ge';
+    if(kaynak === 'ted') return 'ted.europa.eu';
+    return 'kaynak portal';
+  }
+  window.noKopyala = function(el, no){
+    navigator.clipboard.writeText(no).then(() => {
+      const eski = el.querySelector('.ui-no-kopya');
+      if(eski){ const t = eski.textContent; eski.textContent = '✓ kopyalandı'; setTimeout(()=>{ eski.textContent = t; }, 1500); }
+    }).catch(() => {});
+  };
 
   function render() {
     const say = `${toplam.toLocaleString('tr')} ihale`;
@@ -315,6 +338,7 @@
         <div class="ui-baslik"><a href="${esc(k.orijinal_url)}" target="_blank" rel="noopener">${esc(k.baslik) || '(başlık yok)'}</a></div>
         ${k.tahmini_bedel ? `<div class="ui-bedel">${bedelFormat(k.tahmini_bedel, k.para_birimi)}</div>` : ''}
       </div>
+      ${k.publication_no ? `<div class="ui-no" title="Bu numarayı ${esc(kaynakPortal(k.kaynak))} üzerinde aratabilirsiniz — kopyalamak için tıklayın" onclick="noKopyala(this, '${esc(k.publication_no)}')">📋 ${esc(duyuruEtiket(k.kaynak))}: <b>${esc(k.publication_no)}</b><span class="ui-no-kopya">⧉ kopyala</span></div>` : ''}
       <div class="ui-badges">
         ${k.ulke ? `<span class="etiket ulke">🌍 ${esc(k.ulke)}</span>` : ''}
         ${k.kategori ? `<span class="etiket kategori">${esc(k.kategori)}</span>` : ''}
