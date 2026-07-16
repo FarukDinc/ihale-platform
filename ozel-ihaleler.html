@@ -236,14 +236,14 @@
     liste.innerHTML = '<div class="loading-spinner"></div>';
     document.getElementById('tedarikci-sub').textContent = `"${kategori}"${il ? ' · ' + il : ''}${bedel ? ' · ~' + paraKisa(bedel) : ''} için önerilen firmalar`;
     try {
-      const { data, error } = await sb.rpc('ihaleye_uygun_firmalar', { p_kategori: kategori, p_il: il, p_bedel: bedel, p_limit: 10 });
+      const { data, error } = await sb.rpc('ihaleye_uygun_firmalar_geo', { p_kategori: kategori, p_il: il, p_bedel: bedel, p_limit: 10 });
       if (error || !data || !data.length) { liste.innerHTML = '<div class="bos">Bu kriterlere uygun geçmiş kazanımı olan firma bulunamadı.</div>'; return; }
       liste.innerHTML = data.map((f, i) => `
         <div class="firma-satir">
           <div class="firma-no">${i + 1}</div>
           <div style="flex:1;min-width:0;">
-            <div class="firma-ad"><a href="firma-analiz?ara=${encodeURIComponent(f.kazanan_firma)}" target="_blank">${esc(f.kazanan_firma)}</a></div>
-            <div class="firma-meta">${f.firma_il ? '📍 ' + esc(f.firma_il) + ' · ' : ''}bu kategoride <b style="color:var(--off-white)">${f.kategori_kazanim}</b> kazanım · en büyük <b style="color:var(--off-white)">${paraKisa(f.max_kazanim)}</b></div>
+            <div class="firma-ad"><a href="firma-analiz?firma=${encodeURIComponent(f.kazanan_firma)}" target="_blank">${esc(f.kazanan_firma)}</a></div>
+            <div class="firma-meta">${f.firma_il ? '📍 ' + esc(f.firma_il) + ' · ' : ''}${f.mesafe_km != null ? '~' + f.mesafe_km + ' km · ' : ''}bu kategoride <b style="color:var(--off-white)">${f.kategori_kazanim}</b> kazanım · en büyük <b style="color:var(--off-white)">${paraKisa(f.max_kazanim)}</b></div>
           </div>
           ${f.ayni_il ? '<span class="rozet rozet-il">Aynı il</span>' : ''}
           ${f.kapasite_uygun ? '<span class="rozet rozet-kap">Kapasite ✓</span>' : ''}
