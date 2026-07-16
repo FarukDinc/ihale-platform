@@ -1387,8 +1387,10 @@
   async function sonIhalelerYukle() {
     const el = document.getElementById('son-ihaleler-list');
     try {
+      // ekap_id/idare seçiliyordu ama render hiç kullanmıyor — anon'a da kapalı kolonlar
+      // (migration_anon_maske.sql) olduğundan select'ten tamamen çıkarıldı.
       const { data } = await sb.from('ilanlar')
-        .select('id,ekap_id,baslik,idare,il,tur,son_teklif_tarihi,yaklasik_maliyet_min,ilan_tarihi')
+        .select('id,baslik,il,tur,son_teklif_tarihi,yaklasik_maliyet_min,ilan_tarihi')
         .eq('durum', 'aktif').order('ilan_tarihi', { ascending: false }).limit(6);
       if (!data || !data.length) { el.innerHTML = '<div style="padding:12px 18px; color:var(--muted); font-size:13px;">Veri yok</div>'; return; }
       el.innerHTML = data.map(d => {

@@ -733,6 +733,13 @@
   // XSS: innerHTML'e giren scrape edilen DB metni (baslik/idare/il/tur/firma) bundan geçmeli.
   const esc = s => (s == null ? '' : String(s)).replace(/[<>&"']/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&#39;'}[c]));
 
+  // ── Misafir maskeleme (ihaleciler.com modeli, bkz. backend/migration_anon_maske.sql) ──
+  // Kilit kolonlar (idare, ekap_id, kazanan_firma, arama_fold...) anon'a DB'de KAPALI;
+  // misafirde select listeleri daraltılır, kart '***' + giriş linki çizer. uyeMi ilk
+  // yüklemeden ÖNCE set edilir (boot bölümü) — sorgu kurucular buna göre dallanır.
+  let uyeMi = false;
+  const MASKE_ROZET = '<a href="login" style="color:var(--amber);text-decoration:none;" title="Üyelere özel — giriş yapın">🔒 ***</a>';
+
   // ── Kullanıcı profili (sayfa yüklenince çekilir) ─────
   let kullaniciProfil = null;
 
@@ -950,7 +957,7 @@
     const sonucBlok = sonuc ? `
       <div style="background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.25);border-radius:8px;padding:8px 12px;margin-top:10px;font-size:12px;color:var(--off-white);">
         <span style="color:#4ade80;font-weight:700;">✓ Sonuçlandı</span> —
-        Kazanan: <b style="color:var(--white);">${esc(sonuc.kazanan_firma) || '—'}</b>
+        Kazanan: <b style="color:var(--white);">${uyeMi ? (esc(sonuc.kazanan_firma) || '—') : MASKE_ROZET}</b>
         ${sonuc.kazanan_teklif ? ` · ${butceFormatla(sonuc.kazanan_teklif)}` : ''}
         ${sonuc.kazanan_teklif_farki_yuzde != null ? ` · Tenzilat %${sonuc.kazanan_teklif_farki_yuzde}` : ''}
       </div>` : '';
@@ -959,13 +966,17 @@
         <div class="kart-ust">
           <div class="kart-sol">
             <div class="kart-kayitno">
-              ${ilan.ekap_id && ilan.kaynak !== 'jandarma'
-                ? `<span class="kart-no" title="İhale Kayıt No — kopyalamak için tıklayın" onclick="noKopyala(this, '${esc(ilan.ekap_id)}')">Kayıt No: <b>${esc(ilan.ekap_id)}</b><span class="kart-no-kopya">⧉ kopyala</span></span>`
-                : 'Kayıt No: —'}
+              ${!uyeMi
+                ? `Kayıt No: ${MASKE_ROZET}`
+                : ilan.ekap_id && ilan.kaynak !== 'jandarma'
+                  ? `<span class="kart-no" title="İhale Kayıt No — kopyalamak için tıklayın" onclick="noKopyala(this, '${esc(ilan.ekap_id)}')">Kayıt No: <b>${esc(ilan.ekap_id)}</b><span class="kart-no-kopya">⧉ kopyala</span></span>`
+                  : 'Kayıt No: —'}
               ${okundu ? '<span class="okundu-badge">Okundu</span>' : ''}
             </div>
             <a class="kart-baslik" href="ihale-detay?id=${ilan.id}" onclick="kartOku('${ilan.id}')">${esc(ilan.baslik) || '—'}</a>
-            <div class="kart-idare">${ilan.idare ? `<a href="kurum-analiz?kurum=${encodeURIComponent(ilan.idare)}" style="color:inherit;text-decoration:none;" onmouseover="this.style.color='var(--amber)'" onmouseout="this.style.color=''">${esc(ilan.idare)}</a>` : '—'}</div>
+            <div class="kart-idare">${!uyeMi
+              ? `İdare: ${MASKE_ROZET} <a href="login" style="color:var(--muted);font-size:11px;text-decoration:none;">— kurum adları üyelere özel, giriş yapın</a>`
+              : ilan.idare ? `<a href="kurum-analiz?kurum=${encodeURIComponent(ilan.idare)}" style="color:inherit;text-decoration:none;" onmouseover="this.style.color='var(--amber)'" onmouseout="this.style.color=''">${esc(ilan.idare)}</a>` : '—'}</div>
             <div class="kart-etiketler">${etiketler}</div>
           </div>
           <div class="kart-sag">
@@ -1063,8 +1074,12 @@
     // Sonuç sekmesinde ihale_sonuclari ile !inner join → sadece sonucu olan ilanlar döner.
     // Diğer sekmelerde normal (opsiyonel) embed — varsa kartta "✓ Sonuçlandı" rozeti gösterilir.
     const sonucEmbed = aktifSekme === 'sonuc' ? 'ihale_sonuclari!inner' : 'ihale_sonuclari';
+    // Misafirde kilit kolonlar (idare/ekap_id, embed'de kazanan_firma) SELECT'e giremez —
+    // DB kolon-yetkisi 42501 verir (migration_anon_maske.sql); kart bunları '***' çizer.
+    const uyeKolon  = uyeMi ? 'ekap_id,idare,' : '';
+    const uyeSonucK = uyeMi ? 'kazanan_firma,' : '';
     let query = sb.from('ilanlar').select(
-      `id,kaynak,ekap_id,baslik,idare,il,tur,usul,durum,ilan_tarihi,son_teklif_tarihi,tahmini_bedel,yaklasik_maliyet_min,yaklasik_maliyet_max,itiraz_bedeli,esik_katsayi,${sonucEmbed}(kazanan_firma,kazanan_teklif,kazanan_teklif_farki_yuzde,sonuc_tarihi)`,
+      `id,kaynak,${uyeKolon}baslik,il,tur,usul,durum,ilan_tarihi,son_teklif_tarihi,tahmini_bedel,yaklasik_maliyet_min,yaklasik_maliyet_max,itiraz_bedeli,esik_katsayi,${sonucEmbed}(${uyeSonucK}kazanan_teklif,kazanan_teklif_farki_yuzde,sonuc_tarihi)`,
       { count: 'exact' }
     );
 
@@ -1072,7 +1087,13 @@
     if      (aktifSekme === 'guncel') query = query.gte('son_teklif_tarihi', simdiISO);
     else if (aktifSekme === 'gecmis') query = query.lt('son_teklif_tarihi', simdiISO);
 
-    if (arama)    query = query.ilike('arama_fold', `%${trFold(arama)}%`);
+    // Misafir: arama_fold ve idare kolonları anon'a kapalı (WHERE için de SELECT yetkisi
+    // gerekir) → arama başlık/açıklama ILIKE'a düşer (TR katlama yok ama çalışır),
+    // idare filtresi atlanır (kartta zaten *** — filtre oracle'ı da böylece kapalı).
+    if (arama) {
+      if (uyeMi) query = query.ilike('arama_fold', `%${trFold(arama)}%`);
+      else       query = query.or(`baslik.ilike.%${arama}%,aciklama.ilike.%${arama}%`);
+    }
     if (okas)     query = query.ilike('okas', `%${okas}%`);
     if (urlDurumFiltresi) query = query.eq('durum', urlDurumFiltresi);
     if (il)       query = query.eq('il', il);
@@ -1082,7 +1103,7 @@
     if (usul)     query = query.ilike('usul', `%${usul}%`);
     if (minBedel) query = query.gte('yaklasik_maliyet_min', minBedel);
     if (maxBedel) query = query.lte('yaklasik_maliyet_max', maxBedel);
-    if (idare)    query = query.ilike('idare', `%${idare}%`);
+    if (idare && uyeMi) query = query.ilike('idare', `%${idare}%`);
     if (yayinBas) query = query.gte('ilan_tarihi', yayinBas);
     if (yayinBit) query = query.lte('ilan_tarihi', `${yayinBit}T23:59:59`);
     if (teklifBas)query = query.gte('son_teklif_tarihi', teklifBas);
@@ -1112,12 +1133,14 @@
     if (error && /esik_katsayi|arama_fold/.test(error.message || '')) {
       console.info('arama_fold/esik_katsayi kolonu henüz yok, legacy aramayla tekrar deneniyor:', error.message);
       let fallback = sb.from('ilanlar').select(
-        `id,kaynak,ekap_id,baslik,idare,il,tur,usul,durum,ilan_tarihi,son_teklif_tarihi,tahmini_bedel,yaklasik_maliyet_min,yaklasik_maliyet_max,itiraz_bedeli,${sonucEmbed}(kazanan_firma,kazanan_teklif,kazanan_teklif_farki_yuzde,sonuc_tarihi)`,
+        `id,kaynak,${uyeKolon}baslik,il,tur,usul,durum,ilan_tarihi,son_teklif_tarihi,tahmini_bedel,yaklasik_maliyet_min,yaklasik_maliyet_max,itiraz_bedeli,${sonucEmbed}(${uyeSonucK}kazanan_teklif,kazanan_teklif_farki_yuzde,sonuc_tarihi)`,
         { count: 'exact' }
       );
       if      (aktifSekme === 'guncel') fallback = fallback.gte('son_teklif_tarihi', simdiISO);
       else if (aktifSekme === 'gecmis') fallback = fallback.lt('son_teklif_tarihi', simdiISO);
-      if (arama)    fallback = fallback.or(`baslik.ilike.%${arama}%,idare.ilike.%${arama}%,okas.ilike.%${arama}%,isin_yapilacagi_yer.ilike.%${arama}%,ilan_metni.ilike.%${arama}%`);
+      if (arama)    fallback = uyeMi
+        ? fallback.or(`baslik.ilike.%${arama}%,idare.ilike.%${arama}%,okas.ilike.%${arama}%,isin_yapilacagi_yer.ilike.%${arama}%,ilan_metni.ilike.%${arama}%`)
+        : fallback.or(`baslik.ilike.%${arama}%,aciklama.ilike.%${arama}%`);
       if (okas)     fallback = fallback.ilike('okas', `%${okas}%`);
       if (urlDurumFiltresi) fallback = fallback.eq('durum', urlDurumFiltresi);
       if (il)       fallback = fallback.eq('il', il);
@@ -1127,7 +1150,7 @@
       if (usul)     fallback = fallback.ilike('usul', `%${usul}%`);
       if (minBedel) fallback = fallback.gte('yaklasik_maliyet_min', minBedel);
       if (maxBedel) fallback = fallback.lte('yaklasik_maliyet_max', maxBedel);
-      if (idare)    fallback = fallback.ilike('idare', `%${idare}%`);
+      if (idare && uyeMi) fallback = fallback.ilike('idare', `%${idare}%`);
       if (yayinBas) fallback = fallback.gte('ilan_tarihi', yayinBas);
       if (yayinBit) fallback = fallback.lte('ilan_tarihi', `${yayinBit}T23:59:59`);
       if (teklifBas)fallback = fallback.gte('son_teklif_tarihi', teklifBas);
@@ -1514,7 +1537,18 @@
     }
   }
   kayitliBadgeGuncelle();
-  profilCek().then(() => ilanlariYukle());
+  // uyeMi İLK sorgudan önce kesinleşmeli — misafir select'i dar kolon listesi kullanır
+  sb.auth.getSession()
+    .then(({ data }) => { uyeMi = !!(data && data.session); })
+    .catch(() => { uyeMi = false; })
+    .then(() => {
+      if (!uyeMi) {
+        const fi = document.getElementById('f-idare');
+        if (fi) { fi.disabled = true; fi.placeholder = '🔒 İdare filtresi üyelere özel — giriş yapın'; }
+      }
+      return profilCek();
+    })
+    .then(() => ilanlariYukle());
 
   // ── Klavye kısayolları ────────────────────────────────────
   document.addEventListener('keydown', e => {

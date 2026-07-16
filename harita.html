@@ -244,6 +244,12 @@
   let aktifKatman = 'firma';
   const ilAdMap = {};  // key -> görünen ad (harita verisinden)
 
+  // Misafir maskeleme (migration_anon_maske.sql): yukleniciler.ad + il_sektor_firmalar
+  // anon'a kapalı — panel firma LİSTELERİ üyelere özel; yoğunluk boyama/istatistik (adsız
+  // aggregate RPC'ler) misafirde aynen çalışır.
+  let uyeMi = false;
+  const GIRIS_NOTU = '<div class="panel-bos" style="padding:16px;">🔒 Firma sıralaması üyelere özel — <a href="login" style="color:var(--amber);">giriş yapın</a></div>';
+
   // ---- Sektör katmanı ----
   let sektorSecili = null;    // kanonik kategori adı (js/kategoriler.js) ya da null = tüm sektörler
   let sektorVeri = null;      // kategori -> ilKey -> {firma, soz, bedel}  (il_sektor_ozet RPC, tek çağrı)
@@ -393,7 +399,10 @@
         <div class="panel-sec-baslik">Bu ildeki açık RFQ'lar (${esc(sektorSecili)})</div>
         <div id="panel-rfqlar"><div class="mini-spin"></div></div>`;
 
-      try {
+      if (!uyeMi) {   // il_sektor_firmalar (firma adları) anon'a kapalı — çağırma, giriş notu
+        const elG = document.getElementById('panel-firmalar');
+        if (elG) elG.innerHTML = GIRIS_NOTU;
+      } else try {
         const { data, error } = await sb.rpc('il_sektor_firmalar',
           { p_il_folds: foldVaryantlari(key), p_kategori: sektorSecili, p_limit: 8 });
         if (error) throw error;
@@ -426,7 +435,10 @@
         <div class="panel-sec-baslik">Bu ildeki açık RFQ'lar</div>
         <div id="panel-rfqlar"><div class="mini-spin"></div></div>`;
 
-      try {
+      if (!uyeMi) {   // yukleniciler.ad anon'a kapalı — sorgu atma, giriş notu
+        const elG = document.getElementById('panel-firmalar');
+        if (elG) elG.innerHTML = GIRIS_NOTU;
+      } else try {
         const { data } = await sb.from('yukleniciler')
           .select('ad,toplam_sozlesme_sayisi,toplam_ciro,il')
           .in('il', ilVeriAdlari(key, ad))
@@ -596,6 +608,8 @@
   };
 
   async function veriYukle(){
+    // uyeMi panel tıklamalarından önce kesinleşsin (misafirde firma listeleri kapılı)
+    try { const { data } = await sb.auth.getSession(); uyeMi = !!(data && data.session); } catch (_) { uyeMi = false; }
     svgKur();
     // Firma dağılımı (genel katman)
     try {

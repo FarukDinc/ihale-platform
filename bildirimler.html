@@ -758,8 +758,10 @@
       return;
     }
 
+    let uye1 = false;
+    try { const { data: s1 } = await sb.auth.getSession(); uye1 = !!(s1 && s1.session); } catch (_) {}
     const { data } = await sb.from('ilanlar')
-      .select('id,baslik,idare,il,tur,son_teklif_tarihi,durum')
+      .select(uye1 ? 'id,baslik,idare,il,tur,son_teklif_tarihi,durum' : 'id,baslik,il,tur,son_teklif_tarihi,durum')
       .in('id', ids.slice(-50));
 
     const ilanMap = {};
@@ -818,8 +820,10 @@
       return;
     }
 
+    let uye2 = false;
+    try { const { data: s2 } = await sb.auth.getSession(); uye2 = !!(s2 && s2.session); } catch (_) {}
     const { data } = await sb.from('ilanlar')
-      .select('id,baslik,idare,il,tur,durum,son_teklif_tarihi,yaklasik_maliyet_min,tahmini_bedel')
+      .select(uye2 ? 'id,baslik,idare,il,tur,durum,son_teklif_tarihi,yaklasik_maliyet_min,tahmini_bedel' : 'id,baslik,il,tur,durum,son_teklif_tarihi,yaklasik_maliyet_min,tahmini_bedel')
       .in('id', ids);
 
     if (!data || !data.length) {

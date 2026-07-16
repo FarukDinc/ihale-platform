@@ -268,6 +268,10 @@
   const esc = s => (s == null ? '' : String(s)).replace(/[<>&"']/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&#39;'}[c]));
 
   // Server-side: 353K+ sonuç client'a indirilemez → sayfalı sorgu + embed ilanlar join + istatistik RPC.
+  // Misafir maskeleme: kazanan_firma + ilanlar.idare anon'a DB'de kapalı (migration_anon_maske.sql)
+  // → misafir select'i dar, kartta '***' + giriş linki (ihaleciler.com modeli).
+  let uyeMi = false;
+  const MASKE_ROZET = '<a href="login" style="color:var(--amber);text-decoration:none;" title="Üyelere özel — giriş yapın">🔒 ***</a>';
   let sonSatirlar = [];
   let toplam = 0;
   let siralamaAlan = 'tarih';   // 'tarih' | 'bedel' | 'tenzilat'
@@ -344,7 +348,9 @@
         : (ilan.idare || '');
       return `<div class="sonuc-kart">
         <div class="sk-ust">
-          <a class="sk-firma" href="firma-analiz?firma=${encodeURIComponent(s.kazanan_firma || '')}">${esc(s.kazanan_firma) || '—'}</a>
+          ${uyeMi
+            ? `<a class="sk-firma" href="firma-analiz?firma=${encodeURIComponent(s.kazanan_firma || '')}">${esc(s.kazanan_firma) || '—'}</a>`
+            : `<span class="sk-firma" style="cursor:default;">Kazanan: ${MASKE_ROZET} <a href="login" style="color:var(--muted);font-size:11px;text-decoration:none;">— firma adları üyelere özel</a></span>`}
           ${tenzBadge}
         </div>
         ${ilan.baslik
@@ -358,7 +364,7 @@
         <div class="sk-meta">
           ${s.kazanan_teklif ? `<span class="sk-bedel">₺ ${formatBedel(s.kazanan_teklif)}</span>` : ''}
           ${s.sonuc_tarihi ? `<span>📅 ${tarihFormat(s.sonuc_tarihi)}</span>` : ''}
-          ${idareKisa ? `<span>${esc(idareKisa)}</span>` : ''}
+          ${uyeMi ? (idareKisa ? `<span>${esc(idareKisa)}</span>` : '') : `<span>İdare: ${MASKE_ROZET}</span>`}
         </div>
       </div>`;
     }).join('');
@@ -402,10 +408,18 @@
     const cont = document.getElementById('liste-container');
     if (reset) cont.innerHTML = '<div class="loading-wrap"><div class="loading-spinner"></div><div>Yükleniyor…</div></div>';
     const bas = (sayfa - 1) * PER_PAGE;
-    const { data, error } = await sb.from('ihale_sonuclari')
-      .select('ilan_id,kazanan_firma,kazanan_teklif,kazanan_teklif_farki_yuzde,toplam_teklif_sayisi,sonuc_tarihi,ilanlar(baslik,idare,il,tur)')
-      .not('kazanan_firma', 'is', null)
-      .neq('kazanan_firma', '')
+    // Misafir: kazanan_firma SELECT'te de WHERE'de de kullanılamaz (kolon yetkisi) —
+    // dar select + kazanan_teklif not-null proxy filtresi (boş kayıtları benzer şekilde eler).
+    let q = sb.from('ihale_sonuclari');
+    if (uyeMi) {
+      q = q.select('ilan_id,kazanan_firma,kazanan_teklif,kazanan_teklif_farki_yuzde,toplam_teklif_sayisi,sonuc_tarihi,ilanlar(baslik,idare,il,tur)')
+           .not('kazanan_firma', 'is', null)
+           .neq('kazanan_firma', '');
+    } else {
+      q = q.select('ilan_id,kazanan_teklif,kazanan_teklif_farki_yuzde,toplam_teklif_sayisi,sonuc_tarihi,ilanlar(baslik,il,tur)')
+           .not('kazanan_teklif', 'is', null);
+    }
+    const { data, error } = await q
       .order(ALAN[siralamaAlan], { ascending: false, nullsFirst: false })
       .range(bas, bas + PER_PAGE - 1);
     if (error) {
@@ -423,8 +437,11 @@
   }
 
 
-  istatistikYukle();
-  veriYukle(true);
+  // uyeMi ilk sorgudan önce kesinleşmeli (misafir dar select kullanır)
+  sb.auth.getSession()
+    .then(({ data }) => { uyeMi = !!(data && data.session); })
+    .catch(() => { uyeMi = false; })
+    .then(() => { istatistikYukle(); veriYukle(true); });
 })();
 </script>
 <script src="js/main.js"></script>
