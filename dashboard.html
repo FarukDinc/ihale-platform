@@ -1373,6 +1373,14 @@
     const q = e.target.value.trim();
     if (q) window.location.href = 'ihaleler?ara=' + encodeURIComponent(q);
   });
+  // Ctrl/Cmd + K → arama kutusuna odaklan (placeholder'da vaat ediliyordu ama handler yoktu)
+  document.addEventListener('keydown', (e) => {
+    if ((e.ctrlKey || e.metaKey) && (e.key === 'k' || e.key === 'K')) {
+      e.preventDefault();
+      const el = document.getElementById('main-search');
+      if (el) { el.focus(); el.select(); }
+    }
+  });
 
   // ── Top Kurumlar widget ──────────────────────────────
   async function topKurumlarYukle() {
@@ -1522,11 +1530,11 @@
       const urlYap = params => {
         if (!params) return 'ihaleler';
         const q = new URLSearchParams();
-        if (params.arama) q.set('ara', params.arama);
-        if (params.il) q.set('il', params.il);
-        if (params.kategori) q.set('kategori', params.kategori);
-        if (params.tur) q.set('tur', params.tur);
-        if (params.idare) q.set('idare', params.idare);
+        // TÜM kayıtlı filtreleri taşı (eskiden yalnız 5'i taşınıp usul/bedel/uyum/tarih düşüyordu → daha geniş sonuç)
+        Object.entries(params).forEach(([k, v]) => {
+          if (v == null || v === '') return;
+          q.set(k === 'arama' ? 'ara' : k, v);   // ihaleler.html 'ara' bekliyor
+        });
         const s = q.toString();
         return s ? `ihaleler?${s}` : 'ihaleler';
       };
