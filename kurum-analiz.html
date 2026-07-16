@@ -3,7 +3,11 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Kurum Analizi — İhaleGlobal</title>
+  <title>İdareler — İhaleGlobal</title>
+  <!-- 16 Tem 2026: İdareler Dizini + Kurum Analizi TEK ekranda birleşti (Firmalar hub deseni).
+       ?kurum= yoksa açılış = İdare Dizini (iz-*); idareye tıkla → aynı sayfada analiz (pushState).
+       idareler.html artık buraya redirect. -->
+
   <link rel="stylesheet" href="css/style.css" />
   <script src="js/theme.js?v=5"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -218,6 +222,77 @@
       .kpi-grid { grid-template-columns: repeat(2, 1fr); }
       .iki-sutun { grid-template-columns: 1fr; }
     }
+
+    /* ── İDARE DİZİNİ (iz-*) — idareler.html'den taşındı (birleşik hub açılışı) ── */
+    .iz-bar {
+      background: var(--navy-mid); border: 1px solid var(--border);
+      border-radius: 10px; padding: 14px 18px; margin-bottom: 18px;
+      display: flex; gap: 12px; align-items: center; flex-wrap: wrap;
+    }
+    .iz-ara {
+      display: flex; align-items: center; gap: 8px;
+      background: var(--navy); border: 1px solid var(--border);
+      border-radius: 7px; padding: 8px 12px; flex: 1; min-width: 200px;
+    }
+    .iz-ara input {
+      background: none; border: none; outline: none;
+      color: var(--white); font-size: 13px; font-family: var(--font-body); width: 100%;
+    }
+    .iz-ara input::placeholder { color: var(--muted); }
+    .iz-sel {
+      background: var(--navy); border: 1px solid var(--border);
+      color: var(--white); font-size: 13px; font-family: var(--font-body);
+      padding: 8px 12px; border-radius: 7px; outline: none; cursor: pointer;
+    }
+    .iz-sel option { background: var(--navy-mid); }
+    .iz-say { font-size: 13px; color: var(--muted); white-space: nowrap; margin-left: auto; }
+    .iz-tablo {
+      background: var(--navy-mid); border: 1px solid var(--border);
+      border-radius: 10px; overflow: hidden;
+    }
+    .iz-head {
+      display: grid; grid-template-columns: 2fr 100px 90px 90px 120px;
+      padding: 10px 18px; border-bottom: 1px solid var(--border);
+      font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: .06em;
+    }
+    .iz-srt { cursor: pointer; user-select: none; }
+    .iz-srt:hover { color: var(--white); }
+    .iz-row {
+      display: grid; grid-template-columns: 2fr 100px 90px 90px 120px;
+      padding: 13px 18px; border-bottom: 1px solid rgba(var(--overlay-rgb),.04);
+      align-items: center; transition: background .12s; cursor: pointer;
+    }
+    .iz-row:last-child { border-bottom: none; }
+    .iz-row:hover { background: rgba(var(--overlay-rgb),.03); }
+    .iz-ad {
+      font-size: 13px; font-weight: 600; color: var(--white);
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding-right: 12px;
+    }
+    .iz-row:hover .iz-ad { color: var(--amber); }
+    .iz-il { font-size: 12px; color: var(--muted); }
+    .iz-toplam { font-size: 14px; font-weight: 700; color: var(--white); }
+    .iz-aktif { font-size: 13px; font-weight: 600; color: #4ade80; }
+    .iz-actions { display: flex; gap: 6px; }
+    .iz-btn {
+      font-size: 11px; font-weight: 600; padding: 4px 9px; border-radius: 5px;
+      text-decoration: none; border: none; cursor: pointer; transition: all .15s;
+      font-family: var(--font-body);
+    }
+    .iz-btn-amber { background: rgba(240,165,0,.12); color: var(--amber); }
+    .iz-btn-amber:hover { background: rgba(240,165,0,.25); }
+    .iz-btn-ghost { background: rgba(var(--overlay-rgb),.06); color: var(--muted); }
+    .iz-btn-ghost:hover { background: rgba(var(--overlay-rgb),.12); color: var(--white); }
+    .iz-bos { text-align: center; padding: 60px; color: var(--muted); font-size: 14px; }
+    .iz-pager {
+      display: flex; justify-content: center; align-items: center;
+      gap: 6px; padding: 16px; border-top: 1px solid var(--border);
+    }
+    @media (max-width: 900px) {
+      .iz-head { grid-template-columns: 1fr 80px 60px; }
+      .iz-col-il, .iz-col-act { display: none; }
+      .iz-row { grid-template-columns: 1fr 80px 60px; }
+      .iz-il, .iz-actions { display: none; }
+    }
   </style>
 </head>
 <body>
@@ -239,11 +314,9 @@
       <a href="sonuclananlar" class="nav-item"><span class="icon">🏆</span> Sonuçlananlar</a>
       <div class="nav-section-label" style="padding-left:16px;opacity:.85;">— Analiz —</div>
       <a href="rekabet-analizi" class="nav-item"><span class="icon">📊</span> Rekabet Analizi</a>
-      <a href="idareler" class="nav-item"><span class="icon">🏛️</span> İdareler Dizini</a>
-      <a href="firmalar" class="nav-item"><span class="icon">🏢</span> Firmalar Dizini</a>
+      <a href="kurum-analiz" class="nav-item active"><span class="icon">🏛️</span> İdareler</a>
+      <a href="firma-analiz" class="nav-item"><span class="icon">🏢</span> Firmalar</a>
       <a href="sektorler" class="nav-item"><span class="icon">🏭</span> Sektörler Dizini</a>
-      <a href="kurum-analiz" class="nav-item active"><span class="icon">🔍</span> Kurum Analizi</a>
-      <a href="firma-analiz" class="nav-item"><span class="icon">🏢</span> Firma Analizi</a>
       <a href="kik-kararlar" class="nav-item"><span class="icon">⚖️</span> KİK Kararlar</a>
       <div class="nav-section-label">Uluslararası</div>
       <a href="uluslararasi" class="nav-item"><span class="icon">🌍</span> Uluslararası İhaleler</a>
@@ -275,8 +348,8 @@
   <div class="main">
     <div class="topbar">
       <div class="topbar-left">
-        <a href="javascript:history.back()" class="back-btn">← Geri</a>
-        <div class="breadcrumb">/ <span id="bc-kurum">Kurum Analizi</span></div>
+        <a href="kurum-analiz" id="geri-btn" class="back-btn" style="display:none;" onclick="dizineDon();return false;">← Dizin</a>
+        <div class="breadcrumb">🏛️ <span id="bc-kurum">İdareler</span></div>
       </div>
       <button id="paylasBtn" onclick="linkPaylasKurum(this)"
         style="background:var(--card-bg);border:1px solid var(--border);color:var(--muted);padding:7px 14px;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;font-family:var(--font-body);">
@@ -285,7 +358,57 @@
     </div>
 
     <div class="page-body">
-      <div id="root-loading" class="loading-state">
+
+      <!-- İDARE DİZİNİ (birleşik hub açılışı — idareler.html'den taşındı) -->
+      <div id="dizin-view" style="display:none;">
+        <div class="kurum-header" style="padding:22px 28px;">
+          <div class="kurum-eyebrow">🏛️ İdareler</div>
+          <div class="kurum-ad" style="font-size:20px;">İdare Dizini</div>
+          <div class="kurum-meta">İhale açan kamu idarelerinin karnesi — idareye tıklayın, analizi aynı ekranda açılsın.</div>
+        </div>
+        <div class="kpi-grid">
+          <div class="kpi-card"><div class="kpi-label">Toplam İdare</div><div class="kpi-value amber" id="iz-st-idare">—</div></div>
+          <div class="kpi-card"><div class="kpi-label">Aktif İdareler</div><div class="kpi-value" id="iz-st-aktif-idare">—</div></div>
+          <div class="kpi-card"><div class="kpi-label">Toplam İhale</div><div class="kpi-value" id="iz-st-ihale">—</div></div>
+          <div class="kpi-card"><div class="kpi-label">Aktif İhale</div><div class="kpi-value" id="iz-st-aktif-ihale">—</div></div>
+        </div>
+        <div id="iz-yukleniyor" class="loading-state">
+          <div class="loading-spinner"></div>
+          <p>İdare dizini yükleniyor…</p>
+        </div>
+        <div id="iz-icerik" style="display:none;">
+          <div class="iz-bar">
+            <div class="iz-ara"><span style="color:var(--muted);">🔍</span><input type="text" id="iz-arama" placeholder="İdare adı veya il ara…" autocomplete="off"></div>
+            <select class="iz-sel" id="iz-il-filtre"><option value="">Tüm İller</option></select>
+            <select class="iz-sel" id="iz-aktif-filtre"><option value="">Tüm İdareler</option><option value="aktif">Sadece Aktif</option></select>
+            <select class="iz-sel" id="iz-sirala">
+              <option value="toplam_desc">En Çok İhale</option>
+              <option value="aktif_desc">En Çok Aktif</option>
+              <option value="ad_asc">İsme Göre (A→Z)</option>
+              <option value="ad_desc">İsme Göre (Z→A)</option>
+              <option value="il_asc">İle Göre (A→Z)</option>
+            </select>
+            <span class="iz-say" id="iz-sayac">— idare</span>
+          </div>
+          <div class="iz-tablo">
+            <div class="iz-head">
+              <div>İDARE ADI</div>
+              <div class="iz-col-il">BAŞLICA İL</div>
+              <div class="iz-srt" id="iz-sort-toplam">TOPLAM</div>
+              <div class="iz-srt" id="iz-sort-aktif">AKTİF</div>
+              <div class="iz-col-act">İŞLEMLER</div>
+            </div>
+            <div id="iz-govde"><div class="iz-bos">Veri bekleniyor…</div></div>
+            <div class="iz-pager" id="iz-pager" style="display:none;">
+              <button class="pager-btn" id="iz-prev" disabled>← Önceki</button>
+              <span class="pager-info" id="iz-info"></span>
+              <button class="pager-btn" id="iz-next">Sonraki →</button>
+            </div>
+          </div>
+        </div>
+      </div><!-- /dizin-view -->
+
+      <div id="root-loading" class="loading-state" style="display:none;">
         <div class="loading-spinner"></div>
         <p>Kurum verileri yükleniyor…</p>
       </div>
@@ -415,7 +538,7 @@
   const esc = s => (s == null ? '' : String(s)).replace(/[<>&"']/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&#39;'}[c]));
 
   const params = new URLSearchParams(window.location.search);
-  const KURUM = params.get('kurum') || '';
+  let KURUM = params.get('kurum') || '';   // birleşik hub: pushState ile sayfa içinde değişir
 
   // CSV tüm satırları ister → sayfa açılışında değil, sadece tıklanınca sayfalı çek
   // (analitik/KPI'lar artık kurum_ozet RPC'sinden geliyor, client-load-all kaldırıldı).
@@ -587,9 +710,11 @@
   }
 
   // yillik: kurum_ozet.yillik — [{k:'2024', n:123}] yıla göre artan sıralı
+  let _yillikChart = null;
   function yillikChart(yillik) {
     const ctx = document.getElementById('yillik-chart');
-    new Chart(ctx, {
+    if (_yillikChart) { _yillikChart.destroy(); _yillikChart = null; }
+    _yillikChart = new Chart(ctx, {
       type: 'bar',
       data: {
         labels: (yillik || []).map(r => r.k),
@@ -656,12 +781,14 @@
   }
 
   // durum: kurum_ozet.durum — {aktif: durum='aktif', kapandi: geri kalan}
+  let _durumChart = null;
   function durumChart(durum) {
     const aktif   = Number(durum?.aktif) || 0;
     const kapandi = Number(durum?.kapandi) || 0;
     const ctx = document.getElementById('durum-chart');
     if (!ctx) return;
-    new Chart(ctx, {
+    if (_durumChart) { _durumChart.destroy(); _durumChart = null; }
+    _durumChart = new Chart(ctx, {
       type: 'doughnut',
       data: {
         labels: ['Aktif', 'Kapandı / Geçmiş'],
@@ -680,12 +807,26 @@
     });
   }
 
-  async function main() {
-    if (!KURUM) {
-      // Belirli bir kurum seçilmeden gelindiyse (örn. sidebar linki) → İdareler Dizini'ne yönlendir
-      window.location.replace('idareler');
-      return;
-    }
+  // Birleşik hub: seçilen idarenin analizini AYNI SAYFADA açar (eski main()).
+  // Dizinden ikinci kez girişte grafikler destroy-korumalı, liste/sekme durumu sıfırlanır.
+  async function analizYukle(kurum) {
+    KURUM = kurum;
+
+    // görünüm geçişi: dizin → analiz
+    document.getElementById('dizin-view').style.display = 'none';
+    document.getElementById('root-content').style.display = 'none';
+    document.getElementById('root-loading').style.display = 'block';
+    document.getElementById('geri-btn').style.display = '';
+    document.title = KURUM + ' — İhaleGlobal';
+
+    // hub içi ikinci açılış: sekme + liste durumu sıfırla
+    sayfa = 1; listeIstek++;
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('tab-genel').classList.add('active');
+    document.querySelector('.tab-btn').classList.add('active');
+    document.getElementById('liste-container').innerHTML = '';
+    document.getElementById('kazanan-firma-card').style.display = 'none';
 
     document.getElementById('kurum-ihaleler-btn').href = `ihaleler?idare=${encodeURIComponent(KURUM)}`;
     document.getElementById('kurum-dt-btn').href = `dogrudan-temin?idare=${encodeURIComponent(KURUM)}`;
@@ -805,10 +946,218 @@
     }
   };
 
-  main().catch(e => {
+  // ══════════════ İDARE DİZİNİ (idareler.html'den taşındı — birleşik hub) ══════════════
+  const IZ_BOYUT = 50;
+  let izTum = [], izFiltre = [], izSayfaNo = 0, izKuruldu = false;
+
+  // Türkçe karakter-duyarsız arama: İ/I/ı→i vb. + toLowerCase
+  function trFold(s) {
+    return (s || '')
+      .replace(/İ/g, 'i').replace(/I/g, 'i').replace(/ı/g, 'i')
+      .replace(/Ş/g, 's').replace(/ş/g, 's')
+      .replace(/Ğ/g, 'g').replace(/ğ/g, 'g')
+      .replace(/Ü/g, 'u').replace(/ü/g, 'u')
+      .replace(/Ö/g, 'o').replace(/ö/g, 'o')
+      .replace(/Ç/g, 'c').replace(/ç/g, 'c')
+      .toLowerCase();
+  }
+
+  function dizinGoster() {
+    KURUM = '';
+    document.getElementById('root-loading').style.display = 'none';
+    document.getElementById('root-content').style.display = 'none';
+    document.getElementById('dizin-view').style.display = 'block';
+    document.getElementById('geri-btn').style.display = 'none';
+    document.getElementById('bc-kurum').textContent = 'İdareler';
+    document.title = 'İdareler — İhaleGlobal';
+    if (!izKuruldu) { izKuruldu = true; izBaslat(); }
+  }
+
+  // Veri-koruma: idare_dizin_json anon'a KAPALI (migration_bulk_rpc_kilit.sql) —
+  // misafire RPC 401'i yerine kibar giriş kapısı.
+  function izGirisKapisi() {
+    document.getElementById('iz-yukleniyor').innerHTML = `
+      <div style="max-width:420px; margin:20px auto; text-align:center; background:var(--navy-mid); border:1px solid var(--border); border-radius:14px; padding:36px 28px;">
+        <div style="font-size:34px; margin-bottom:10px;">🔒</div>
+        <div style="font-size:16px; font-weight:800; color:var(--white); font-family:var(--font-display); margin-bottom:8px;">İdare Dizini üyelere özel</div>
+        <div style="font-size:13px; color:var(--muted); line-height:1.6; margin-bottom:20px;">23.000+ idarenin ihale karnesini görmek için ücretsiz hesabınızla giriş yapın.</div>
+        <div style="display:flex; gap:10px; justify-content:center;">
+          <a href="login" style="background:var(--amber); color:var(--navy); font-weight:700; font-size:13px; padding:9px 20px; border-radius:7px; text-decoration:none;">Giriş Yap</a>
+          <a href="login?panel=kayit" style="background:var(--card-bg); color:var(--white); border:1px solid var(--border); font-weight:600; font-size:13px; padding:9px 20px; border-radius:7px; text-decoration:none;">Ücretsiz Kayıt</a>
+        </div>
+      </div>`;
+  }
+
+  // idare_dizin_json() TÜM dizini tek istekte döner (idare_ozet_mv okur, gece tazelenir).
+  // Satır formatı: [idare, toplam, aktif, il]. 30 dk sessionStorage önbelleği (idareler.html ile aynı anahtar).
+  async function izVeriCek() {
+    try {
+      const { data: { session } } = await sb.auth.getSession();
+      if (!session) { izGirisKapisi(); return; }
+    } catch (e) { /* oturum okunamadı → RPC denenir, hata izHata'da */ }
+
+    const CACHE_KEY = 'idare_dizin_v1';
+    const TTL = 30 * 60 * 1000;
+    let sonuc = null;
+    try {
+      const ham = sessionStorage.getItem(CACHE_KEY);
+      if (ham) {
+        const paket = JSON.parse(ham);
+        if (paket && paket.t && (Date.now() - paket.t) < TTL && Array.isArray(paket.d)) sonuc = paket.d;
+      }
+    } catch (e) { /* önbellek okunamadı → normal fetch */ }
+
+    if (!sonuc) {
+      const { data, error } = await sb.rpc('idare_dizin_json', {}, { get: true });
+      if (error) throw error;
+      sonuc = Array.isArray(data) ? data : [];
+      try { sessionStorage.setItem(CACHE_KEY, JSON.stringify({ t: Date.now(), d: sonuc })); } catch (e) { /* kota → önbelleksiz */ }
+    }
+
+    izTum = sonuc.map(r => ({ ad: r[0], il: r[3] || '—', toplam: r[1], aktif: r[2] }));
+
+    const toplamIhale = izTum.reduce((s, i) => s + i.toplam, 0);
+    const aktifIhale  = izTum.reduce((s, i) => s + i.aktif, 0);
+    const aktifIdare  = izTum.filter(i => i.aktif > 0).length;
+    document.getElementById('iz-st-idare').textContent       = izTum.length.toLocaleString('tr-TR');
+    document.getElementById('iz-st-aktif-idare').textContent = aktifIdare.toLocaleString('tr-TR');
+    document.getElementById('iz-st-ihale').textContent       = toplamIhale.toLocaleString('tr-TR');
+    document.getElementById('iz-st-aktif-ihale').textContent = aktifIhale.toLocaleString('tr-TR');
+
+    const iller = [...new Set(izTum.map(i => i.il).filter(il => il && il !== '—'))].sort((a, b) => a.localeCompare(b, 'tr'));
+    const ilSel = document.getElementById('iz-il-filtre');
+    iller.forEach(il => { const o = document.createElement('option'); o.value = il; o.textContent = il; ilSel.appendChild(o); });
+
+    document.getElementById('iz-yukleniyor').style.display = 'none';
+    document.getElementById('iz-icerik').style.display = 'block';
+    izGosterF();
+  }
+
+  function izGosterF() {
+    const q      = trFold(document.getElementById('iz-arama').value.trim());
+    const ilVal  = document.getElementById('iz-il-filtre').value;
+    const aktifV = document.getElementById('iz-aktif-filtre').value;
+    const sira   = document.getElementById('iz-sirala').value;
+
+    izFiltre = izTum.filter(i => {
+      if (q && !trFold(i.ad).includes(q) && !trFold(i.il).includes(q)) return false;
+      if (ilVal && i.il !== ilVal) return false;
+      if (aktifV === 'aktif' && i.aktif < 1) return false;
+      return true;
+    });
+    izFiltre.sort((a, b) => {
+      switch (sira) {
+        case 'aktif_desc': return b.aktif - a.aktif;
+        case 'ad_asc':     return a.ad.localeCompare(b.ad, 'tr');
+        case 'ad_desc':    return b.ad.localeCompare(a.ad, 'tr');
+        case 'il_asc':     return a.il.localeCompare(b.il, 'tr');
+        default:           return b.toplam - a.toplam;
+      }
+    });
+    izSayfaNo = 0;
+    izSayfaGoster();
+  }
+
+  function izSayfaGoster() {
+    const bas = izSayfaNo * IZ_BOYUT;
+    const dilim = izFiltre.slice(bas, bas + IZ_BOYUT);
+    const topS = Math.ceil(izFiltre.length / IZ_BOYUT);
+
+    document.getElementById('iz-sayac').textContent = izFiltre.length.toLocaleString('tr-TR') + ' idare';
+
+    const govde = document.getElementById('iz-govde');
+    if (!dilim.length) {
+      govde.innerHTML = '<div class="iz-bos">Arama kriterleriyle eşleşen idare bulunamadı.</div>';
+      document.getElementById('iz-pager').style.display = 'none';
+      return;
+    }
+    // İnline onclick YOK — idare adındaki tırnak kırardı; data-ad + delegasyon (izBaslat).
+    govde.innerHTML = dilim.map(i => `
+      <div class="iz-row" data-ad="${esc(i.ad)}">
+        <div class="iz-ad" title="${esc(i.ad)}">${esc(i.ad)}</div>
+        <div class="iz-il">${esc(i.il)}</div>
+        <div class="iz-toplam">${i.toplam.toLocaleString('tr-TR')}</div>
+        <div class="iz-aktif">${i.aktif > 0 ? i.aktif.toLocaleString('tr-TR') : '<span style="color:var(--muted)">0</span>'}</div>
+        <div class="iz-actions">
+          <button class="iz-btn iz-btn-amber" data-ad="${esc(i.ad)}">Analiz</button>
+          <a href="ihaleler?idare=${encodeURIComponent(i.ad)}" class="iz-btn iz-btn-ghost">İhaleler</a>
+        </div>
+      </div>`).join('');
+
+    const pager = document.getElementById('iz-pager');
+    if (topS <= 1) { pager.style.display = 'none'; }
+    else {
+      pager.style.display = 'flex';
+      document.getElementById('iz-info').textContent =
+        `Sayfa ${izSayfaNo + 1} / ${topS}  (${izFiltre.length.toLocaleString('tr-TR')} idare)`;
+      document.getElementById('iz-prev').disabled = izSayfaNo === 0;
+      document.getElementById('iz-next').disabled = izSayfaNo >= topS - 1;
+    }
+  }
+
+  function izBaslat() {
+    let t;
+    document.getElementById('iz-arama').addEventListener('input', () => { clearTimeout(t); t = setTimeout(izGosterF, 300); });
+    ['iz-il-filtre', 'iz-aktif-filtre', 'iz-sirala'].forEach(id =>
+      document.getElementById(id).addEventListener('change', izGosterF));
+    document.getElementById('iz-prev').addEventListener('click', () => { izSayfaNo--; izSayfaGoster(); window.scrollTo(0, 0); });
+    document.getElementById('iz-next').addEventListener('click', () => { izSayfaNo++; izSayfaGoster(); window.scrollTo(0, 0); });
+    document.getElementById('iz-sort-toplam').addEventListener('click', () => {
+      const s = document.getElementById('iz-sirala');
+      s.value = s.value === 'toplam_desc' ? 'aktif_desc' : 'toplam_desc';
+      izGosterF();
+    });
+    document.getElementById('iz-sort-aktif').addEventListener('click', () => {
+      document.getElementById('iz-sirala').value = 'aktif_desc'; izGosterF();
+    });
+    document.getElementById('iz-govde').addEventListener('click', e => {
+      if (e.target.closest('a')) return;               // "İhaleler" linki listeye gider
+      const el = e.target.closest('[data-ad]');
+      if (el) kurumAc(el.dataset.ad);
+    });
+    document.addEventListener('keydown', e => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'k' && !KURUM) {
+        e.preventDefault();
+        const el = document.getElementById('iz-arama');
+        if (el) { el.focus(); el.select(); }
+      }
+    });
+    izVeriCek().catch(izHata);
+  }
+
+  async function izHata(e) {
     console.error(e);
-    document.getElementById('root-loading').innerHTML = '<p style="color:#f87171;">Veri yüklenemedi. Lütfen sayfayı yenileyin.</p>';
+    let oturumsuz = false;
+    try { const { data: { session } } = await sb.auth.getSession(); oturumsuz = !session; } catch (_) {}
+    if (oturumsuz || (e && (e.code === '42501' || e.code === 'PGRST301'))) { izGirisKapisi(); return; }
+    document.getElementById('iz-yukleniyor').innerHTML =
+      '<div style="color:#f87171; padding:40px; text-align:center;">Dizin yüklenemedi. Lütfen sayfayı yenileyin.</div>';
+  }
+
+  // ── Rota / tarayıcı geçmişi ─────────────────────────────
+  function analizAc(kurum) {
+    document.getElementById('root-loading').innerHTML =
+      '<div class="loading-spinner"></div><p>Kurum verileri yükleniyor…</p>';
+    analizYukle(kurum).catch(e => {
+      console.error(e);
+      document.getElementById('root-loading').innerHTML = '<p style="color:#f87171;">Veri yüklenemedi. Lütfen sayfayı yenileyin.</p>';
+    });
+  }
+  window.kurumAc = function(ad) {
+    try { history.pushState({ kurum: ad }, '', 'kurum-analiz?kurum=' + encodeURIComponent(ad)); } catch (e) { /* file:// test */ }
+    analizAc(ad);
+  };
+  window.dizineDon = function() {
+    try { history.pushState({}, '', 'kurum-analiz'); } catch (e) { /* file:// test */ }
+    dizinGoster();     // dizin DOM'u korunur: arama/filtre/sayfa aynen kalır
+  };
+  window.addEventListener('popstate', () => {
+    const k = new URLSearchParams(window.location.search).get('kurum') || '';
+    if (k) analizAc(k); else dizinGoster();
   });
+
+  // Açılış rotası: ?kurum= → analiz (deep-link, 7 sayfadan gelir), yoksa dizin
+  if (KURUM) analizAc(KURUM); else dizinGoster();
 })();
 </script>
 <script src="js/main.js"></script>
