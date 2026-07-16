@@ -7,6 +7,23 @@
 > **KALICI TALİMAT (12 Tem, kullanıcı emri):** Bu blok + ilgili bölümler her oturumda otomatik
 > güncellenir, kullanıcı hatırlatmak zorunda değil. Bkz. hafıza `yapilacaklar-auto-update`.
 
+> ## 📊 16 TEMMUZ — TRADE MAP (trademap.org) FİZİBİLİTE: TEKNİK EVET / HUKUKEN HAYIR (danışmanlık, KARAR KULLANICIDA)
+> Soru: ITC Trade Map'ten Türkiye dış ticaret verisi çekip İhaleGlobal'e eklemek.
+> **Teknik bulgu:** yeni trademap.org (beta) login'siz açık, temiz JSON API'si var
+> (`/api/services/timeSeries/yearly/byCountry?...`, UN ülke kodları — TR=792) → çekmesi trivial.
+> **Hukuki bulgu (ITC MAT Terms, canlıda okundu):** tam olarak bu kullanım AÇIKÇA YASAK —
+> (1) bot/script/scraping ile toplu veri çekme yasak, (2) MAT içeriğini standalone/bulk dataset olarak
+> yeniden dağıtma yasak, (3) MAT içeriğiyle "başka bir database/platform/dashboard'u besleme (ticari servis)"
+> yasak. Bot-detection/rate-limit/ban uyguluyorlar; beta bitince paralı (MAT Pro). Resmî yol: "MAT data
+> products"/"embedded versions" — ayrı sözleşme+ücret. Kamu-hassas projede ihaleciler-tarzı yasak-kaynak
+> bağımlılığı kurulmaz (bkz. render-still-live dersi).
+> **Aynı verinin SERBEST kaynakları:** TÜİK dış ticaret (açık veri, aylık, ülke×HS), UN Comtrade API
+> (ücretsiz key, atıfla kullanım), WTO Stats API + UNCTADstat (hizmet ticareti — Trade Map servis verisi
+> zaten UNCTAD/WTO tahmini). Trade Map bu kaynaklardan DERLİYOR; ham kaynağa gitmek hem yasal hem bedava.
+> **Ürün önerisi (yapılırsa):** dar MVP — uluslararası ihaleler dünya haritasına ülke başına tek metrik
+> ("TR'nin bu ülkeye ihracatı $X, trend") katmanı, TÜİK/Comtrade'den yıllık güncelleme. Tam istatistik
+> modülü core value-prop değil (payment atomiklik + launch işleri önde).
+>
 > ## ✅ 16 TEMMUZ (2. OTURUM) — VERİ AKIŞI DENETİMİ: 3 AKIŞ DA AKTİF + KUPON/SUNUCU NOTLARI
 > **1) Veri çekme denetimi (public REST, `olusturulma` yöntemi — bkz. hafıza `scraper-cron-silent-fail`):**
 > - `ilanlar`: son yazım 16 Tem 09:28 UTC, son 24s **1000+** kayıt, 391'i aynı-gün ilan tarihli → SAĞLIKLI.
