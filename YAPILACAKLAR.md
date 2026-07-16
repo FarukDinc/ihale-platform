@@ -7,6 +7,19 @@
 > **KALICI TALİMAT (12 Tem, kullanıcı emri):** Bu blok + ilgili bölümler her oturumda otomatik
 > güncellenir, kullanıcı hatırlatmak zorunda değil. Bkz. hafıza `yapilacaklar-auto-update`.
 
+> ## 🗺️ PLANLANAN (nav toplu-düzenleme oturumu BİTTİKTEN SONRA) — HARİTAYI FİRMALAR HUB'INA DA EKLE
+> Kullanıcı kararı (16 Tem): Firmalar hub'ına (firma-analiz) Türkiye haritası "görünüm" olarak eklenecek —
+> AMA **RFQ katmanı KAPALI** (sadece firma yoğunluğu + sektör; il'e tıkla→firmalar→analiz). e-Satınalma'daki
+> harita iki katmanıyla (firma + açık RFQ, MaaS eşleştirme) OLDUĞU GİBİ kalır. Yani aynı harita bileşeni iki
+> yerde: e-Satınalma'da RFQ katmanlı, Firmalar'da RFQ'suz.
+> - Uygulama: firma-analiz'e "📋 Liste / 🗺️ Harita" görünüm geçişi. Harita = harita.html'in firma yoğunluğu +
+>   sektör katmanı (RFQ katman düğmesi gizli). Aynı SVG (js/tr-harita.js) + aynı RPC'ler (il_firma_dagilimi,
+>   il_sektor_ozet, il_sektor_firmalar) → veri/kod tekrarı yok. Firmaya tıkla → mevcut detay görünümü.
+> - NOT: harita.html SVG+JS'i hub'a gömme (iframe mi port mu) kararı uygulama anında verilecek; en temizi
+>   ortak harita mantığını paylaşılan bir js modülüne çıkarıp iki sayfada layer-config ile kullanmak.
+> - ŞU AN BEKLİYOR: eşzamanlı oturum tüm nav'ları düzenliyordu (DMO/Jandarma→ana ilanlar); o iş bitince temiz
+>   zeminde yapılacak (çakışma önlemi).
+
 > ## 🏢 16 TEMMUZ (devam) — FİRMALAR DİZİNİ + FİRMA ANALİZİ BİRLEŞTİ (CANLI, commit `6218d18`)
 > Kullanıcı: ikisi aynı ekranda birleşsin. **firma-analiz.html tek hub**: açılış = firma DİZİNİ
 > (yuklenici_ozet stats + sıralanabilir yukleniciler tablosu + arama_fold + il filtre + pager, `dz-*` prefix);
