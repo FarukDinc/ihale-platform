@@ -117,7 +117,7 @@ def main():
                 v = row.get("primaryValue")
                 if len(hs) == 6 and hs.isdigit() and v:
                     tampon.append({"ulke_iso3": iso, "hs6": hs, "yon": akis, "yil": yil, "deger_usd": round(float(v))})
-            if len(tampon) >= 1000:
+            if len(tampon) >= 400:
                 toplam_yaz += sb_yaz(tampon); tampon = []
             if n % 20 == 0:
                 print(f"  … {n}/{len(iso2un)*2} çağrı ({iso}/{akis}), {toplam_yaz} satır yazıldı")
