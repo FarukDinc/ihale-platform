@@ -205,6 +205,15 @@
         <div id="liste-bos" style="display:none;color:var(--muted);font-size:13px;text-align:center;padding:24px;">Eşleşen ülke yok.</div>
       </div>
 
+      <!-- HS6 KALEM-KALEM DETAY -->
+      <div class="liste-card" id="detay-card" style="display:none;">
+        <div class="liste-head">
+          <span class="baslik" id="detay-baslik">📦 Kalem-kalem</span>
+          <input type="text" id="detay-ara" class="liste-ara" placeholder="🔍 HS kod veya açıklama ara…" oninput="detayCiz()" />
+        </div>
+        <div id="detay-govde"></div>
+      </div>
+
       <!-- KAYNAKLAR -->
       <div class="kaynak-card">
         <h3>📚 Veri Kaynakları ve Yöntem</h3>
@@ -242,6 +251,9 @@
 <script src="js/svg-zoom.js?v=1"></script>
 <script>
 (() => {
+  const SB_URL = "https://ihaleglobal.com";
+  const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzgzMzUwMDE1LCJleHAiOjE5NDEwMzAwMTV9.sRB61a8oNXwzSKL9No8gt7cmkmnkoQstT0ZtHIxl1Hs";
+  const sb = window.supabase.createClient(SB_URL, SB_KEY);   // HS6 drill-down (dis_ticaret_hs) için
   const esc = s => (s == null ? '' : String(s)).replace(/[<>&"']/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&#39;'}[c]));
   const TIC = window.TICARET_TR || null;
   const H = window.DUNYA_HARITA || null;
@@ -361,11 +373,13 @@
       tip.classList.add('gor');
     });
     svg.addEventListener('mouseleave', () => tip.classList.remove('gor'));
-    // Haritada bir ülkeye tıkla → listede o satırı vurgula + kaydır
+    // Haritada bir ülkeye tıkla → listede vurgula + HS6 kalem-kalem detayını aç
     svg.addEventListener('click', e => {
       const p = e.target.closest && e.target.closest('path.tveri');
       if(!p) return;
-      satirVurgula(p.getAttribute('data-kod'), true);
+      const kod = p.getAttribute('data-kod');
+      satirVurgula(kod, true);
+      ulkeDetay(kod);
     });
   }
 
@@ -408,8 +422,8 @@
     const tb = document.getElementById('tic-tbody');
     document.getElementById('liste-bos').style.display = rows.length ? 'none' : 'block';
     tb.innerHTML = rows.map((r,i) => `
-      <tr data-kod="${r.kod}" onmouseenter="haritaVurgula('${r.kod}')" onmouseleave="haritaVurgula('')">
-        <td class="sol"><span class="sira">${i+1}.</span> <span class="ulke-ad">${esc(r.ad)}</span></td>
+      <tr data-kod="${r.kod}" style="cursor:pointer" onclick="ulkeDetay('${r.kod}')" onmouseenter="haritaVurgula('${r.kod}')" onmouseleave="haritaVurgula('')">
+        <td class="sol"><span class="sira">${i+1}.</span> <span class="ulke-ad">${esc(r.ad)}</span> <span style="color:var(--muted);font-size:10px">▸ kalemler</span></td>
         <td class="deger">${paraUsd(r.ihr)}</td>
         <td class="gizle-mobil">${yuzde(r.ihr, r.ihr_o, 1)}</td>
         <td>${paraUsd(r.ith)}</td>
@@ -427,6 +441,68 @@
     if(!svg) return;
     svg.querySelectorAll('path.vurgu').forEach(p => p.classList.remove('vurgu'));
     if(kod){ const p = svg.querySelector(`path[data-kod="${kod}"]`); if(p) p.classList.add('vurgu'); }
+  };
+
+  // ── HS6 kalem-kalem detay (drill-down) — dis_ticaret_hs + hs-kodlar.js (lazy) ──
+  let detayVeri = [], detayKod = '', detayYil = 0, _hsYuklu = false;
+  function hsKodlarYukle(){
+    return new Promise(res => {
+      if(_hsYuklu || window.HS_KODLAR){ _hsYuklu = true; return res(); }
+      const s = document.createElement('script');
+      s.src = 'js/hs-kodlar.js?v=1';
+      s.onload = () => { _hsYuklu = true; res(); };
+      s.onerror = () => res();   // etiket yüklenmese de kodlarla göster
+      document.head.appendChild(s);
+    });
+  }
+  const hsAd = kod => (window.HS_KODLAR && window.HS_KODLAR[kod]) || '';
+
+  window.ulkeDetay = async function(kod){
+    if(!kod || kod === 'TUR') return;
+    detayKod = kod;
+    const kart = document.getElementById('detay-card');
+    const gov = document.getElementById('detay-govde');
+    kart.style.display = 'block';
+    document.getElementById('detay-baslik').innerHTML = `📦 <b style="color:var(--amber)">${esc(ulkeAdTr(kod))}</b> — kalem-kalem (HS6) ticaret`;
+    document.getElementById('detay-ara').value = '';
+    gov.innerHTML = '<div class="mini-spin" style="margin:30px auto;"></div>';
+    kart.scrollIntoView({ behavior:'smooth', block:'start' });
+    await hsKodlarYukle();
+    const { data, error } = await sb.from('dis_ticaret_hs')
+      .select('hs6,yon,yil,deger_usd').eq('ulke_iso3', kod)
+      .order('deger_usd', { ascending:false }).limit(4000);
+    if(detayKod !== kod) return;   // araya başka ülke tıklandıysa bu cevabı yok say
+    if(error || !data || !data.length){
+      gov.innerHTML = '<div style="color:var(--muted);font-size:13px;text-align:center;padding:24px;">Bu ülke için HS6 kalem verisi bulunamadı.</div>';
+      return;
+    }
+    detayYil = Math.max(...data.map(r => r.yil));   // HS6 verisinin güncel yılı (2024) — TIC.yil (2025 toplam) ile karışmasın
+    const m = {};
+    for(const r of data){
+      const o = m[r.hs6] || (m[r.hs6] = { ihrG:0, ihrO:0, ithG:0, ithO:0 });
+      const cur = (r.yil === detayYil);
+      if(r.yon === 'X') o[cur ? 'ihrG' : 'ihrO'] = r.deger_usd;
+      else o[cur ? 'ithG' : 'ithO'] = r.deger_usd;
+    }
+    detayVeri = Object.entries(m).map(([hs6, v]) => ({ hs6, ...v, ad: hsAd(hs6) }));
+    detayCiz();
+  };
+
+  window.detayCiz = function(){
+    if(!detayVeri.length) return;
+    const ara = (document.getElementById('detay-ara').value || '').toLocaleLowerCase('tr').trim();
+    let rows = detayVeri;
+    if(ara) rows = rows.filter(r => r.hs6.includes(ara) || (r.ad || '').toLocaleLowerCase('tr').includes(ara));
+    rows = rows.slice().sort((a, b) => (b.ihrG || 0) - (a.ihrG || 0));
+    const gov = document.getElementById('detay-govde');
+    if(!rows.length){ gov.innerHTML = '<div style="color:var(--muted);font-size:13px;text-align:center;padding:20px;">Eşleşen kalem yok.</div>'; return; }
+    gov.innerHTML = `<div style="overflow-x:auto;"><table class="tic-tablo">
+      <thead><tr><th class="sol">HS6 · Kalem</th><th>Türkiye → Ülke (İhr.)</th><th class="gizle-mobil">Değişim</th><th>Ülke → Türkiye (İth.)</th><th class="gizle-mobil">Değişim</th></tr></thead>
+      <tbody>` + rows.slice(0, 400).map(r => `
+        <tr><td class="sol"><b style="color:var(--amber);font-family:ui-monospace,monospace">${r.hs6}</b> <span>${esc((r.ad || '—').slice(0, 95))}</span></td>
+        <td class="deger">${paraUsd(r.ihrG)}</td><td class="gizle-mobil">${yuzde(r.ihrG, r.ihrO, 1)}</td>
+        <td>${paraUsd(r.ithG)}</td><td class="gizle-mobil">${yuzde(r.ithG, r.ithO, 1)}</td></tr>`).join('') + `</tbody></table></div>
+      <div style="font-size:11px;color:var(--muted);margin-top:8px;">${rows.length} kalem${rows.length > 400 ? ' — ihracata göre ilk 400 gösteriliyor' : ''} · Kaynak: UN Comtrade (${detayYil || TIC.yil}) · HS6 = 6-haneli Armonize Sistem (GTİP'in uluslararası tabanı)</div>`;
   };
 
   function satirVurgula(kod, kaydir){

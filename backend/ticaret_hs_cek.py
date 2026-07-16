@@ -103,6 +103,17 @@ def main():
         if "(" in desc:
             continue
         iso2un.setdefault(a3, pc)       # forward: fetch için güncel kod
+    # Bazı ISO3'lerde birden çok GÜNCEL (parantezsiz) kod var ama biri boş listelenmiş.
+    # Örn. USA: 840 "United States of America" (boş) + 842 "USA" (gerçek veri). Comtrade 842 kullanır.
+    OVERRIDE = {"USA": 842, "NOR": 579, "CHE": 757, "FRA": 251}
+    for iso, pc in OVERRIDE.items():
+        if iso in gecerli:
+            iso2un[iso] = pc
+            un2iso[pc] = iso
+    # Tek/az ülkeyi düzeltmek için: HS_ONLY=USA,CAN (virgüllü) → sadece onları çek
+    only = {x.strip() for x in os.environ.get("HS_ONLY", "").split(",") if x.strip()}
+    if only:
+        iso2un = {k: v for k, v in iso2un.items() if k in only}
     kodlar = sorted(iso2un.values())
     gruplar = [kodlar[i:i + BATCH] for i in range(0, len(kodlar), BATCH)]
     print(f"→ {len(iso2un)} ülke, {len(gruplar)} grup × {len(YILLAR)} yıl × 2 akış = "
