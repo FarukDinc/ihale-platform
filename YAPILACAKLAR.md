@@ -7,6 +7,18 @@
 > **KALICI TALİMAT (12 Tem, kullanıcı emri):** Bu blok + ilgili bölümler her oturumda otomatik
 > güncellenir, kullanıcı hatırlatmak zorunda değil. Bkz. hafıza `yapilacaklar-auto-update`.
 
+> ## 🗺️ 16 TEMMUZ (devam) — HARİTA SEKTÖR VERİSİ DÜZELTİLDİ (CANLI)
+> Kullanıcı ekran görüntüsü: harita "⚠️ Sektör verisi yüklenemedi — il_sektor_ozet RPC yanıt vermedi". İki kök neden:
+> 1. `migration_harita_sektor.sql` (başka oturumda repoya eklenmiş) prod DB'ye UYGULANMAMIŞTI → il_sektor_ozet
+>    + il_sektor_firmalar RPC'leri yoktu. Uygulandı (2 index + 3 fonksiyon; tr_fold/normalize_firma bağımlılıkları
+>    mevcuttu, il_rfq_dagilimi p_kategori sürümü geriye uyumlu).
+> 2. il_sektor_ozet TABLE dönüyordu → ~3.4K satır PostgREST db-max-rows=1000'de KESİLİYORDU (yalnız 26 il).
+>    **jsonb'ye çevrildi** (jsonb_agg, DROP+CREATE) → satır limiti yok. Canlı: 3157 kayıt, **81 il tamamı**,
+>    haritada Gıda sektörü seçilince 81 il boyanıyor, uyarı yok.
+> NOT: il_sektor_ozet ~9s hesaplama (529K⋈355K count DISTINCT, statement_timeout=30s). Client sessionStorage'da
+>   6 saat cache + lazy (yalnız sektör seçince, spinner'lı) → kabul edilebilir. İleride matview (idare_ozet_mv
+>   deseni gibi, gece REFRESH) ile anlık yapılabilir — istenirse.
+
 > ## 🔐 16 TEMMUZ (devam) — PLAN KAPILARI: PRO CTA GİZLE + e-SATINALMA KURUMSAL KAPI (CANLI)
 > - **Topbar "Pro'ya Geç" gizleme:** sidebar-user.js ödeme yapmış (Pro/Kurumsal) kullanıcıda topbar CTA'sını
 >   GİZLER. Eski selektör `.topbar-actions` çoğu sayfada eşleşmiyordu → `.topbar` de eklendi; rozete çevirmek
@@ -72,7 +84,12 @@
 >   25 Haz 2026 → yeni akış o günden beri kanonik üretiyor ama `kategori_backfill.py` ana ilanlar tablosunda
 >   HİÇ/YARIM koşmuş (DT backfill'i tamamdı, ilanlar değil!). Etki: sektör haritası + sektorler/rekabet
 >   filtreleri eski etiketli kütleyi GÖREMEZ. **Aksiyon (VDS'te, kullanıcı):**
->   `cd /opt/ihale/backend && python3 kategori_backfill.py --dry-run` → sayılar makulse `--dry-run`sız tekrar.
+>   SSH sonrası `cd /opt/ihale-platform/backend && source venv/bin/activate && python kategori_backfill.py --dry-run`
+>   → sayılar makulse `--dry-run`sız tekrar (356K satır — uzun sürer, nohup+log ile).
+>   **Dry-run yapıldı (16 Tem, kullanıcı):** 356.008 okundu, 163.587 değişecek (41 hedef kategori) —
+>   96.6K gerçek sektöre, 67K OKAS'sız/kelimesiz → Diğer (eski Mal/Hizmet Alımı jeneriğinden, kayıp yok).
+>   Dağılım makul bulundu, gerçek koşum başlatılıyor. Sonrası: kategori_sayim ile doğrula; gece
+>   yuklenici_yenile firma kategori dizilerini hizalar. GELECEK İŞ: 67K'lık Diğer için ek kelime/AI turu.
 >   (script REST+service_key ile çalışır, yerel .env ÖLÜ managed'ı gösterir — yerelden ÇALIŞTIRMA.)
 
 > ## 📊 16 TEMMUZ — TRADE MAP (trademap.org) FİZİBİLİTE: TEKNİK EVET / HUKUKEN HAYIR (danışmanlık, KARAR KULLANICIDA)
