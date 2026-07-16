@@ -41,6 +41,12 @@ $VENV/python dmo_scraper.py >> /opt/ihale-platform/logs/scraper.log 2>&1
 $VENV/python jandarma_scraper.py >> /opt/ihale-platform/logs/scraper.log 2>&1
 # Kalkınma Ajansları (ka.gov.tr, kaynak='ka') — e-Satınalma sayfasında "Kalkınma Ajansı" rozetiyle
 $VENV/python ka_scraper.py >> /opt/ihale-platform/logs/scraper.log 2>&1
+# Durum bayatlama — son teklif tarihi geçmiş 'aktif' ilanları 'kapandi' yapar.
+# TÜM scraperlardan SONRA olmalı: jandarma/dmo/ilan_gov upsert'leri durum:'aktif' ile
+# eski kaydı yeniden açabiliyor; bu adım cron sonunda net durumu düzeltir. Bildirim/MV
+# adımlarından ÖNCE ki bayat ilanlara bildirim gitmesin, sayaçlar doğru tazelensin.
+echo "[$(date +'%Y-%m-%d %H:%M:%S')] === Durum bayatlama ===" >> /opt/ihale-platform/logs/scraper.log
+docker exec -i supabase-db psql -U postgres -d postgres -c "SELECT public.ilan_durum_bayatlat() AS kapatilan;" >> /opt/ihale-platform/logs/scraper.log 2>&1
 $VENV/python idare_bildirim.py >> /opt/ihale-platform/logs/scraper.log 2>&1
 # AI kategori backfill — kelime kurallarının çözemediği 'Diğer' ilanları Gemini ile kanonik kategoriye
 # oturtur. Her satır YALNIZCA BİR KEZ (ai_kategori_denendi damgası) → idempotent, token israfı yok.

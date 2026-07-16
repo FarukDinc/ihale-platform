@@ -271,10 +271,10 @@
     </nav>
     <div class="sidebar-footer">
       <div class="user-row">
-        <div class="user-avatar">FD</div>
+        <div class="user-avatar">—</div>
         <div class="user-info">
-          <div class="user-name">Faruk D.</div>
-          <div class="user-plan">Ücretsiz Plan</div>
+          <div class="user-name">Yükleniyor...</div>
+          <div class="user-plan">—</div>
         </div>
         <span style="color:var(--muted);font-size:12px;">⋮</span>
       </div>
@@ -308,7 +308,7 @@
 </div><!-- /app -->
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-<script src="js/sidebar-user.js?v=2"></script>
+<script src="js/sidebar-user.js?v=3"></script>
 <script src="js/bildirim-sayaci.js"></script>
 <script src="js/api.js"></script>
 <script src="js/kategoriler.js"></script>
@@ -834,6 +834,7 @@
           p_kategori: kanonikKategori(d.kategori), p_il: d.il || null, p_bedel: bedel, p_limit: 8
         }));
       }
+      if (error) console.warn('uygun-firmalar RPC hatası:', error); // teşhis: timeout(57014)/yetki(42501)/404
       if (error || !data || !data.length) { wrap.innerHTML = ''; return; }
       const esc = (s) => (s || '').replace(/[<>&"]/g, c => ({ '<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;' }[c]));
       const paraKisa = (v) => {
@@ -1032,7 +1033,7 @@
         <a class="benzer-item" href="ihale-detay?id=${b.id}">
           <div>
             <div class="benzer-baslik">${escHtml(b.baslik)}</div>
-            <div class="benzer-meta">${uyeMi ? (escHtml(b.idare) || '—') : MASKE_ROZET}${b.il ? ' · 📍' + escHtml(b.il) : ''} · Son: ${tarih}</div>
+            <div class="benzer-meta">${uyeMi ? (escHtml(b.idare) || '—') : '<span title="Kurum adları üyelere özel — giriş yapın" style="color:var(--amber);">🔒 ***</span>'}${b.il ? ' · 📍' + escHtml(b.il) : ''} · Son: ${tarih}</div>
           </div>
           <div class="benzer-bedel">${bedel}</div>
         </a>`;
