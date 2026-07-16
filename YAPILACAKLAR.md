@@ -22,7 +22,7 @@
 >   eski sekme kalıntısı 0. Detay sekmesi login-gated olduğundan üye görünümü fixture+statik incelemeyle
 >   doğrulandı — kullanıcı girişli gözle de bakmalı.
 
-> ## 🎯 17 TEMMUZ — EŞLEŞTİRME v3: KONU + ÖLÇEK BANDI (±%500) (⏳ MİGRATİON PROD'A YÜKLENMEDİ)
+> ## 🎯 17 TEMMUZ — EŞLEŞTİRME v3: KONU + ÖLÇEK BANDI (±%500) (✅ CANLI — migration+frontend deploy edildi, 2026/792203'te doğrulandı: uygun firmalar gıda+bant-içi, kazanan BAŞHAN AGRO listede 4., benzerler 4/4 gıda)
 > Kullanıcı şikayeti (Jandarma 2026/792203, 809K gıda ihalesi): "Uygun Firmalar"da Petrol Ofisi/Otokar,
 > "Benzer İhaleler"de mobilya/bidon/medikal gaz çıkıyordu. KÖK NEDEN: ilanın kategorisi kanonik 41'den
 > değil, jenerik "Mal Alımı" kovası (Jandarma/DMO kaynağı tür adını kategoriye yazmış olabilir — AI
@@ -32,7 +32,7 @@
 > konu-kelimesi / embedding) HİÇ yoksa ne benzer ihale ne uygun firma GÖSTERİLMEZ (boş döner,
 > benzer kartı gizlenir) — gerekçe: ileride otomatik firma-davet bu veriden beslenecek, alakasız
 > eşleşme = spam. Eski "aynı tür" ve jenerik-kategori doldurmaları frontend'den de KALDIRILDI.
-> **backend/migration_uygun_firmalar_v3.sql (⏳ prod'a yüklenecek — SSH onayı bekliyor):**
+> **backend/migration_uygun_firmalar_v3.sql (✅ canlı — kullanıcı SSH ile yükledi, 17 Tem):**
 > - `ihale_konu_kelimeleri(baslik)`: tr_fold + ihale-jargonu stopword ayıklama → konu kelimeleri ('gida').
 > - `ihaleye_uygun_firmalar` v3 (+p_baslik, +p_bant=5): kategori kanonik değilse konu=başlık kelimesi;
 >   bedel varsa YALNIZ bant-içi kazanımlar sayılır (istatistikler bant-içinden), skor=deneyim+aynı il+
@@ -43,9 +43,11 @@
 > (js/kategoriler.js include edildi), efektifBedel() (yaklaşık maliyet yoksa sözleşme bedeli — Jandarma
 > sonuçlanmışlarında kritik), uygunFirmalar v3 çağrı + "Ölçek ✓" rozeti (eski "Kapasite ✓" bedel yokken
 > herkese sahte yanıyordu — artık yalnız bant uygulanınca), benzerIhaleler önce RPC sonra eski 3-kademe.
-> KALAN: (1) migration'ı prod'a yükle + canlı doğrula (2026/792203'te Petrol Ofisi görünmemeli),
-> (2) "Mal Alımı"/jenerik kategorili ilanları kanonik kategoriye backfill (kalıcı çözüm),
-> (3) ozel-ihaleler `ihaleye_uygun_firmalar_geo` hâlâ v2 mantığında — bant kuralı istenirse oraya da.
+> KALAN: (1) "Mal Alımı"/jenerik kategorili ilanları kanonik kategoriye backfill (kalıcı çözüm),
+> (2) ozel-ihaleler `ihaleye_uygun_firmalar_geo` hâlâ v2 mantığında — bant kuralı istenirse oraya da,
+> (3) TESPİT (canlı doğrulamada): benzer çıkanların 4'ü de SON TEKLİFİ GEÇMİŞ ama durum='aktif'
+>     (Jandarma kaynağı durum'u güncellemiyor olabilir) — benzer RPC'ye "son_teklif >= now()" şartı
+>     VE/VEYA durum-bayatlama cron'u düşünülmeli; davet otomasyonu ancak AÇIK ihaleye anlam taşır.
 
 > ## 🔎 17 TEMMUZ — TİCARET: HS/SEKTÖR ARAMA + TÜRKÇE HS ETİKETLERİ (canlı)
 > Kullanıcı: 'HS koduna göre de arama olmalı (sektör yanına), o kalem/sektörde Türkiye'nin ülke-ülke ihr/ith
