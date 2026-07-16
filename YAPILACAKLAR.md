@@ -7,6 +7,16 @@
 > **KALICI TALİMAT (12 Tem, kullanıcı emri):** Bu blok + ilgili bölümler her oturumda otomatik
 > güncellenir, kullanıcı hatırlatmak zorunda değil. Bkz. hafıza `yapilacaklar-auto-update`.
 
+> ## 🔗 16 TEMMUZ (devam) — KALKINMA AJANSI, RFQ LİSTESİNE BİRLEŞTİRİLDİ (CANLI)
+> Kullanıcı: "kalkınma ajansı ihalelerini niye ayrı sayfaya alıyorsun, hepsini platform satınalma ihaleleri
+> olarak açsana". Yapıldı: ozel-ihaleler.html'deki ayrı "🏛️ Kalkınma Ajansı İhaleleri" kartı KALDIRILDI →
+> platform RFQ'larıyla (satinalma_talepleri) + KA (kamu_ihaleleri kaynak='ka') TEK "Platform Satınalma
+> İhaleleri" listesinde CLIENT-SIDE birleşti (taleplerYukle: iki tablo Promise.all → normalize → merge-sort,
+> düşük hacim ~15 kayıt). Kaynak rozeti (🤝 Platform RFQ mor / 🏛️ Kalkınma Ajansı·KOD yeşil) + yeni "Kaynak"
+> filtresi (rfq/ka). Sektör filtresi yalnız RFQ'yu süzer (KA'da 41-kanonik taksonomi yok → seçiliyken KA
+> hariç). RFQ→ozel-ihale-detay, KA→ka.gov.tr yeni sekme. Süre-doldu rozeti ikisinde de. Canlı doğrulandı:
+> tümü 15 (3 RFQ+12 KA), kaynak='ka'→12, kaynak='rfq'→3, sektör seçili→KA=0, konsol temiz.
+
 > ## 🤝 16 TEMMUZ (devam) — e-SATINALMA (RFQ) BÜYÜK REVİZYON (CANLI)
 > Kullanıcı: form ➕'ya tıklayınca açılsın; ünvan/VKN/adres profilden otomatik+kilitli gelsin (yoksa önce
 > profil doldurtsun); süresi geçen ihale teklif almasın; açık ihalelere il/sektör/tarih/durum/arama filtresi.
