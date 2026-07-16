@@ -1,5 +1,19 @@
 # İhalePlatform — Yapılacaklar Listesi
 
+> ## 🧩 17 TEMMUZ — "ÜYE DE *** GÖRÜYOR + BOŞ KUTULAR" EKRAN GÖRÜNTÜSÜ TEŞHİSİ (✅ İKİ PARÇA DA KAPANDI)
+> Kullanıcı benzer ihalelerde 🔒*** + parçalanmış boş kartlar gösterdi ("yine olmadı sanırım").
+> İKİ AYRI kök neden çıktı:
+> 1. **🔒*** girişliyken DEĞİL, oturumsuzken görünüyormuş** — sidebar'daki "Faruk D./Ücretsiz Plan" statik
+>    YER TUTUCU oturum düşünce de duruyordu → kullanıcı kendini girişli sandı (+ www/apex localStorage ayrımı).
+>    Maskeleme mekanizması DOĞRU çalışıyordu. Bunu paralel oturum düzeltti (sidebar-user.js?v=3 misafir dalı
+>    + www→apex redirect); ders veri-disa-aktarim-yasagi hafızasında.
+> 2. **Boş/parçalı kartlar benim hatamdı (bu oturum düzeltti):** MASKE_ROZET bir <a>; benzer-item kartı da
+>    <a> — İÇ İÇE ANCHOR geçersiz, tarayıcı dış kartı parse'ta bölüyordu (ekrandaki boş kutular). Benzer
+>    meta'daki kilit artık linksiz <span>. **KURAL: MASKE_ROZET'i (a href=login) asla <a> içine koyma —
+>    kart-linkli şablonlarda span sürümünü kullan.** Canlı doğrulama (misafir, gıda detayı): 4 benzer kart
+>    bütün, parçalı 0, iç içe link 0, meta "🔒 *** · 📍ANKARA · Son: ...". Ayrıca v3 RPC kilitleri probe
+>    edildi: ihaleye_uygun_firmalar anon→42501 ✓, benzer_ihaleler idare döndürmüyor ✓ (v3 tasarımı maskeye uymuş).
+
 > ## 🗂️ 17 TEMMUZ — FİRMA ANALİZİ: SEKMELER BİRLEŞTİ + TAM PARA FORMATI (✅ CANLI, commit `850bebc`)
 > Kullanıcı: "Sonuçlar ve İhaleler aynı noktaya varıyor — tek sayfada katıldığı ihaleler olarak göster;
 > ₺ 3.9 M TL gibi rakamları net göster (809.558,00 ₺ / 3.900.752,52 ₺ gibi)."
