@@ -149,12 +149,16 @@
 >   fonksiyonları RPC tüketiyor, doğrulandı); XSS hardening sweep (sonuclananlar/idareler/kurum-analiz/sektorler/uyumluluk
 >   esc'lendi → XSS sınıfı TÜM sayfalarda kapalı).
 >
-> **✅ DEVAM TURU-3 (16 Tem):** kurum-analiz #7 TAM ÇÖZÜM → `kurum_ozet(p_idare)` RPC (backend/migration_kurum_ozet.sql,
+> **✅ DEVAM TURU-3 (16 Tem, canlı+doğrulandı):** kurum-analiz #7 TAM ÇÖZÜM → `kurum_ozet(p_idare)` RPC (backend/migration_kurum_ozet.sql,
 >   rekabet_ozet reçetesinin aynısı): topluCek() 1000'erli client-load-all döngüsü kaldırıldı (en büyük idare 7.072 ilan →
 >   8 ardışık fetch idi). KPI+8 breakdown (aylık trend 24 ay/yıllık/tür/il/kategori top12/usul/durum) tek jsonb RPC'den;
 >   ihale listesi server-side `.range()` sayfalı (topSayfa=kpi.toplam'dan, count=exact YOK); CSV export lazy —
 >   sadece tıklanınca sayfalı çeker. Şekiller eski client hesabıyla birebir (aktif=son_teklif>now, 'Diğer'/'Kategorisiz'/
->   'Belirtilmemiş' fallback'leri server'da). Dokunulan: kurum-analiz.html, backend/migration_kurum_ozet.sql.
+>   'Belirtilmemiş' fallback'leri server'da). **Doğrulama:** migration VDS'te uygulandı; en büyük idare (İl Sağlık Müd.
+>   SAĞLIK BAKANLIĞI..., ilike→8.177 kayıt) canlıda test — RPC warm ~55ms, konsol temiz, tür toplamı=KPI toplamı,
+>   pager 409 sayfa/sayfa-2 geçişi OK; TÜRASAŞ (371/40 aktif/₺21.6M) KPI'ları psql ile birebir. Not: büyük idarenin
+>   bütçesi '—' çünkü backfill verisinde yaklasik_maliyet_min hep 0/NULL (RPC değil veri durumu).
+>   Dokunulan: kurum-analiz.html, backend/migration_kurum_ozet.sql.
 >
 > **⏸ HÂLÂ ERTELENEN:**
 >  - **payment.py atomiklik/idempotency (#12/#19/#27/#28):** iyzico webhook mükerrer kredi + kredi_yukle/kupon
