@@ -46,6 +46,18 @@
 > - Yerel doğrulama: zoom/pan/pinch viewBox matematiği, tıklama-yutma (filtre değişmedi), ⟲ reset,
 >   zoom'dayken tooltip — hepsi test edildi, konsol temiz.
 
+> ## 🏛️ 16 TEMMUZ (devam) — KALKINMA AJANSI İHALELERİ (ka.gov.tr) → e-SATINALMA'DA (CANLI)
+> Kullanıcı: "kalkınma ajansı rozetiyle özel e-satınalmada göstersek" — doğru karar: KA ihaleleri kamu
+> alıcısı DEĞİL, ajans hibesi kullanan ÖZEL firmaların denetimli ihaleleri → e-Satınalma'ya oturuyor.
+> - `backend/ka_scraper.py`: **ka.gov.tr/api/tenders** (Nuxt SPA'nın temiz JSON API'si, sayfalı, CAPTCHA/auth
+>   yok — üç kaynağın en kolayı). 97 kayıt (iptal hariç). DİKKAT: API aynı id'yi birden çok sayfada döndürüyor
+>   → dict-dedup şart (yoksa PostgREST 21000 "cannot affect row a second time").
+> - Migration: kamu_ihaleleri'ne `il` + `alt_kaynak` (ajans kodu: baka/istka/fka... ) kolonları.
+> - `ozel-ihaleler.html`: "🏛️ Kalkınma Ajansı İhaleleri" kartı — yalnız yayında olanlar (son_teklif>=now,
+>   canlıda 12), rozet "🏛️ Kalkınma Ajansı · KOD" (title=ajans tam adı), tıkla→ka.gov.tr redirect.
+> - `kamu-ihaleleri.html`: kaynak='ka' HARİÇ tutuldu (sorgular in.(dmo,jandarma)) — kamu sayfası 74'te kaldı,
+>   sızıntı yok (canlı doğrulandı). Cron'a ka_scraper eklendi.
+
 > ## 📦 16 TEMMUZ (devam) — KAMU KURUMU İHALELERİ: DMO + JANDARMA KAYNAKLARI EKLENDİ (CANLI)
 > Kullanıcı: EKAP dışı iki kamu kaynağını (DMO + Jandarma) "Kamu adı altında" ekleyelim. Fizibilite canlı
 > doğrulandı → ikisi de düz HTTP GET + HTML parse (CAPTCHA/auth/JS YOK, DT kazanan CAPTCHA'sından çok kolay).
