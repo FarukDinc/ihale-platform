@@ -7,6 +7,31 @@
 > **KALICI TALİMAT (12 Tem, kullanıcı emri):** Bu blok + ilgili bölümler her oturumda otomatik
 > güncellenir, kullanıcı hatırlatmak zorunda değil. Bkz. hafıza `yapilacaklar-auto-update`.
 
+> ## 🛠️ 16 TEMMUZ (devam) — 8 SİSTEM SORUNU: 7 DÜZELTİLDİ + CANLI, #4 SIRADA
+> Kullanıcı 8 sorun bildirdi; 8 paralel ajanla teşhis edildi (workflow), sonra düzeltildi:
+> - **#7 teklif hazırla DONMASI (commit `4fd02af`) — EN KRİTİK:** `yazdir()` print şablonundaki template
+>   literal içinde gömülü `<script src="js/main.js"></script>` vardı → HTML ayrıştırıcı bu `</script>`'i
+>   görünce ANA script bloğunu satır 1787'de ERKEN KAPATIYORDU → tüm sayfa JS'i parse hatası → hiçbir şey
+>   çalışmıyordu (donuk skeleton). Satır kaldırıldı → canlıda ihale özeti anında yükleniyor. **Ders: inline
+>   `<script>` içindeki string/template'lerde `</script>` MUTLAKA `<\/script>` diye escape edilmeli.**
+>   (Teşhis ajanı "select(*) ağır kolon" demişti — o da dar-kolona çevrildi ama asıl neden buydu; ajan
+>   sadece okuyup çalıştırmadığı için gerçek nedeni kaçırmıştı — canlı doğrulama şart.)
+> - **#2 geçmiş kazanan (commit `4e4db15`):** kurum-analiz ihale listesine `ihale_sonuclari` embed'i
+>   (ilan_id FK, %100 dolu) → 🏆 kazanan firma+bedel+tenzilat+tarih; çok-kısımlıda "N kısım · toplam ₺X".
+> - **#6 ihale no kopyalama:** ihaleler kartında hover ⧉ + tek-tık kopya (uluslararasi noKopyala deseni).
+> - **#8 DT idare tıklama:** link görünür (hover amber), hedef `dogrudan-temin?idare=` (kurum-analiz uzun DT
+>   idare adında boş/timeout dönüyordu → garanti çalışan DT-içi filtreye çevrildi).
+> - **#3 idareler önbelleği:** idare_sayim sessionStorage (30dk TTL) → tekrar açılışta ~15 RPC yok.
+> - **#1 kurumlar her tuşta fetch:** ZATEN debounce+client-side, kod değişikliği gerekmedi.
+> - **#5 rekabet idare tıklama (commit `4e4db15` + `a8bdbee`):** idare satırları kurum-analiz linkine
+>   dönüştü. Doğrularken KEŞİF: `rekabet_ozet` RPC'si ~351K ilanlar'da ~20 alt-agregasyon = ~3s, PostgREST
+>   ~3s timeout eşiğinde → sayfa ARALIKLI hiç yüklenmiyordu. Fix: `ALTER FUNCTION rekabet_ozet SET
+>   statement_timeout='20s'` (kullanıcı onayıyla VDS'e uygulandı, 3/3 başarılı). Sayfa Pro-kilitli olduğu
+>   için anonimde görsel doğrulanamadı; link kodu çalışan desenin aynısı.
+> - **#4 firma analizi AI→2-firma karşılaştırma: SIRADA (henüz yapılmadı).** analiz_pivot RPC ile 2 firmayı
+>   yan yana kıyasla (yeni backend gerekmez); AI opsiyonel kalacak. Teşhis: firma-analiz.html:553-602 (AI),
+>   958-1017 (bar render). Bkz. teşhis workflow çıktısı.
+
 > ## 🧾 16 TEMMUZ (devam) — DASHBOARD→ANASAYFA + DOĞRUDAN TEMİN FİLTRELERİ + DT KAZANAN FİZİBİLİTE
 > Kullanıcı 3 acil bulgu bildirdi: (a) dashboard adı, (b) DT'de kategori/tür filtreleme yok, (c) DT kazanan
 > firma takibi. Yapılanlar:
