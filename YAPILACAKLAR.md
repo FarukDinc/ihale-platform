@@ -1,5 +1,22 @@
 # İhalePlatform — Yapılacaklar Listesi
 
+> ## 🌍 17 TEMMUZ — TİCARET: YIL+KIYAS FRONTEND CANLI + iso2 + FULL BACKFILL 2000-2026 (✅ backfill koşuyor)
+> Kullanıcı: "yıl kıyaslamasını çalışır kıl; commit/push/deploy ne gerekiyorsa yap."
+> - **Frontend statik→RPC:** ticaret-analiz.html artık TICARET_TR yerine ticaret_yillar/liste/harita/ulke
+>   RPC'lerinden besleniyor; Yıl+Kıyas dropdown eklendi (varsayılan: güncel vs bir önceki). KPI = ticaret_ulke('WLD').
+>   HS6 drill-down EZİLMEDEN korundu. Sektör dropdown 16 grup backend SEKTORLER ile birebir HARDCODE —
+>   DİKKAT: eski statik dosyanın sektör anahtarları FARKLI ("01-05" vs "01-05_Animal"); karışırsa harita boş döner.
+> - **Türkçe ad / iso2:** ticaret_liste artık iso2 döner (migration_ticaret_iso2.sql, canlıda). Frontend önceliği
+>   RPC iso2, fallback statik TICARET_TR.a2 → iso2 gelmeden de regresyon yoktu. Canlı doğrulandı: DEU→"DE".
+> - **Deploy:** iso2 migration + 2023 re-backfill (171 ülke/2672 sektör satırı, iso2'li) VDS'te koştu; full backfill
+>   2000-2026 arka planda (izle: `tail /opt/ihale-platform/logs/ticaret_backfill.log`). Yıllar DB'ye düştükçe
+>   dropdown kendiliğinden dolar (kod hazır). ÇİFT KOŞU YAKALANDI: iki oturum aynı backfill'i başlatmıştı
+>   (systemd + nohup) — Comtrade 500 çağrı/gün kotası için systemd olan durduruldu, nohup devam ediyor.
+> - **Canlı doğrulama (ihaleglobal.com, gerçek veri):** yıl dropdown [2000-2005, 2023]; 2023 vs 2005 kıyası —
+>   dünya ihracat ▲%247,9; Almanya $21,1Mr ▲%123; ABD $14,9Mr ▲%203; Türkçe adlar; HS6 drill-down DEU 400 kalem.
+> - ⚠️ SÜREÇ NOTU: eşzamanlı oturumlar aynı ağaçta commit süpürmesi yaptı (ticaret frontend + backend dosyaları
+>   alakasız mesajlı commit'lere girdi — iş kaybolmadı ama geçmiş kirlendi). Çoklu oturumda git'i tek oturuma bırakın.
+
 > ## 🧩 17 TEMMUZ — "ÜYE DE *** GÖRÜYOR + BOŞ KUTULAR" EKRAN GÖRÜNTÜSÜ TEŞHİSİ (✅ İKİ PARÇA DA KAPANDI)
 > Kullanıcı benzer ihalelerde 🔒*** + parçalanmış boş kartlar gösterdi ("yine olmadı sanırım").
 > İKİ AYRI kök neden çıktı:
