@@ -94,9 +94,15 @@ def main():
     for r in ref.get("results", []):
         a3 = r.get("PartnerCodeIsoAlpha3")
         pc = r.get("PartnerCode")
-        if a3 and a3 in gecerli and not r.get("isGroup") and pc not in (0,):
-            iso2un.setdefault(a3, pc)
-            un2iso[pc] = a3
+        desc = r.get("PartnerDesc") or ""
+        if not (a3 and a3 in gecerli and not r.get("isGroup") and pc not in (0,)):
+            continue
+        un2iso[pc] = a3                 # reverse: her kod → ISO3 (defunct dahil, zararsız)
+        # Aynı ISO3'e birden çok kod olabilir (örn. DEU: 276 Germany + 280 "Fed.Rep...(1990)" defunct).
+        # Tarihsel/parantezli girdileri fetch listesine ALMA → güncel kanonik kodu seç.
+        if "(" in desc:
+            continue
+        iso2un.setdefault(a3, pc)       # forward: fetch için güncel kod
     kodlar = sorted(iso2un.values())
     gruplar = [kodlar[i:i + BATCH] for i in range(0, len(kodlar), BATCH)]
     print(f"→ {len(iso2un)} ülke, {len(gruplar)} grup × {len(YILLAR)} yıl × 2 akış = "
