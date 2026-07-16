@@ -96,6 +96,37 @@
 > **AÇIK (gelecek):** gerçek kimlik doğrulama = VKN↔ünvan'ı yetkili kaynağa (GİB VKN sorgu / MERSİS / KEP) bağlamak;
 >   o zamana kadar güven = Kurumsal-abonelik kapısı + tedarikçinin beyan VKN'yi bağımsız doğrulaması.
 
+> ## 🛡️ 16 TEMMUZ — PROJE GENELİ DENETİM (#4): 42 BULGU, ~30 DÜZELTİLDİ + CANLI (gece otonom)
+> 6-açılı çok-ajan çekişmeli denetim (güvenlik/RLS/XSS, bug, kopuk-link, performans, backend, UX) → 45 bulgu,
+> 42 doğrulandı. Önceliğe göre uygulandı (commit'ler ea4d1be…9026e17):
+> **KRİTİK (canlı):** bildirimler.html stored XSS (RFQ başlığı→cron→tedarikçi bildirimi→JWT çalma; benim
+>   bildirim özelliğim tetikliyordu) esc'lendi; teklif-olustur para parse bug (₺1.234.567,89→DB'ye 1 TL)
+>   hesaplanan sayısal değere çevrildi.
+> **XSS (canlı):** ihaleler + ihale-detay + dashboard scrape-veri sink'leri esc'lendi; ihale-detay ilan_html
+>   sanitizer'ına on*/javascript:/data: temizliği (kara-liste bypass); CSV formül-enjeksiyonu koruması (ihaleler+sonuclananlar).
+> **PERF (canlı):** ilanlar 3 index (durum/son_teklif/ilan_tarihi — 256K'da seq scan); dashboard 2 widget
+>   RPC'ye (idare_sayim/kategori_sayim, ~32 istek→2); sektorler gereksiz count:exact kaldırıldı.
+> **BACKEND (canlı, api restart):** api.py kredi_dus hatası artık yükseltiliyor (sessiz bedava AI); bozuk
+>   /admin/scraper-cron→503; notify.py deadline dedup (her gece spam); ekap_scraper boş veride exit(1)+cron uyarı;
+>   worker.py cache belge-indirmeden önce (#17). RLS: teklif_talep_sahibi_gunceller kaldırıldı (alıcı tedarikçi teklifini değiştirebiliyordu).
+> **POLISH (canlı):** yanlış domain ihaleplatform→ihaleglobal; index footer ölü linkler+©2026; fiyatlandırma
+>   404 link; bülten il toLocaleUpperCase(tr); ihaleler uydurma Math.random uyum skoru→'profil ekle'; firma-analiz
+>   'İhalelerini Gör' kendi sekmesi; kik-kararlar or() sanitize; login Supabase hataları Türkçe; ekapLink usul argümanı;
+>   dashboard Ctrl+K + kayıtlı-arama tüm filtreleri taşıyor.
+> **MOBİL (canlı, doğrulandı):** 18 app sayfasına js/main.js (hamburger — mobilde nav kayboluyordu) + ihaleler.html
+>   eksik responsive @media. Mobilde hamburger→menü açılıyor, test edildi.
+>
+> **⏸ ERTELENEN (kullanıcı incelemesi/büyük iş — YAPILMADI, gerekçesiyle):**
+>  - **payment.py atomiklik/idempotency (#12/#19/#27/#28):** iyzico webhook mükerrer kredi + kredi_yukle/kupon
+>    lost-update/TOCTOU. Para-işleme kodu; gece gözetimsiz değiştirmek RİSKLİ (bozulursa ödeme kırılır). Reçete:
+>    kredi_hareketleri.siparis_id UNIQUE + ON CONFLICT DO NOTHING; kupon `UPDATE...WHERE kullanim<max RETURNING`;
+>    kredi_yukle atomik `toplam_kredi=toplam_kredi+X`. KULLANICI ONAYIYLA uygulanmalı.
+>  - **client-load-all: firmalar (35K satır #26) / kurum-analiz (%ilike full-scan #7) / rekabet-analizi (Pro-gate #4):**
+>    sonuclananlar gibi server-side rewrite + aggregate RPC gerekir (büyük iş). Reçete: idare/firma bazlı GROUP BY RPC + sayfalı sorgu.
+>  - **#18 RLS: satinalma_talepleri anon SELECT acik_adres/VKN ifşa ediyor.** Fix: hassas kolonları anon'dan
+>    column-level REVOKE + ozel-ihale-detay anon yolunu açık-kolon select'e çevir (select('*') kırılmasın). Koordineli frontend+RLS, test gerek.
+>  - **#14 ihaleler uyum sıralaması 200-satır cap** (server-side uyum gerekir); **#37 profil erişilebilirlik** (div→button, involved).
+
 > ## 🔎 16 TEMMUZ — #3 KURUMSAL DOĞRULAMA: FİZİBİLİTE (araştırıldı, KARAR KULLANICIDA)
 > Soru: beyan VKN'yi yetkili kaynağa bağlayıp gerçek "Doğrulanmış Firma" yapabilir miyiz?
 > **Bulgu (araştırıldı):** GİB'in ÜCRETSİZ açık VKN→ünvan API'si YOK. Seçenekler:
