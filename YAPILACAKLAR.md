@@ -7,6 +7,30 @@
 > **KALICI TALİMAT (12 Tem, kullanıcı emri):** Bu blok + ilgili bölümler her oturumda otomatik
 > güncellenir, kullanıcı hatırlatmak zorunda değil. Bkz. hafıza `yapilacaklar-auto-update`.
 
+> ## 🗺️ PLANLANAN (nav toplu-düzenleme oturumu BİTTİKTEN SONRA) — HARİTAYI FİRMALAR HUB'INA DA EKLE
+> Kullanıcı kararı (16 Tem): Firmalar hub'ına (firma-analiz) Türkiye haritası "görünüm" olarak eklenecek —
+> AMA **RFQ katmanı KAPALI** (sadece firma yoğunluğu + sektör; il'e tıkla→firmalar→analiz). e-Satınalma'daki
+> harita iki katmanıyla (firma + açık RFQ, MaaS eşleştirme) OLDUĞU GİBİ kalır. Yani aynı harita bileşeni iki
+> yerde: e-Satınalma'da RFQ katmanlı, Firmalar'da RFQ'suz.
+> - Uygulama: firma-analiz'e "📋 Liste / 🗺️ Harita" görünüm geçişi. Harita = harita.html'in firma yoğunluğu +
+>   sektör katmanı (RFQ katman düğmesi gizli). Aynı SVG (js/tr-harita.js) + aynı RPC'ler (il_firma_dagilimi,
+>   il_sektor_ozet, il_sektor_firmalar) → veri/kod tekrarı yok. Firmaya tıkla → mevcut detay görünümü.
+> - NOT: harita.html SVG+JS'i hub'a gömme (iframe mi port mu) kararı uygulama anında verilecek; en temizi
+>   ortak harita mantığını paylaşılan bir js modülüne çıkarıp iki sayfada layer-config ile kullanmak.
+> - ŞU AN BEKLİYOR: eşzamanlı oturum tüm nav'ları düzenliyordu (DMO/Jandarma→ana ilanlar); o iş bitince temiz
+>   zeminde yapılacak (çakışma önlemi).
+
+> ## 🏢 16 TEMMUZ (devam) — FİRMALAR DİZİNİ + FİRMA ANALİZİ BİRLEŞTİ (CANLI, commit `6218d18`)
+> Kullanıcı: ikisi aynı ekranda birleşsin. **firma-analiz.html tek hub**: açılış = firma DİZİNİ
+> (yuklenici_ozet stats + sıralanabilir yukleniciler tablosu + arama_fold + il filtre + pager, `dz-*` prefix);
+> firmaya tıkla → aynı sayfada DETAY (mevcut derin analiz + 2-firma karşılaştırma). goster() 'dizin'|'liste'|
+> 'detay'; rota varsayılan → dizin; ?yid=→detay, ?ara=/?firma=→firma-liste (deep-link korundu).
+> **firmalar.html → redirect** (query param korunur, dış `?firma=` linkleri bozulmaz). Canlı doğrulandı:
+> dizin 71.384 firma cirosu-sıralı, arama (kalyon→19), tıkla→detay+karşılaştırma, firmalar→firma-analiz redirect.
+> **ERTELENDİ (bilinçli):** menüde tek "🏢 Firmalar" tekilleştirmesi (24 sayfa nav) — EŞZAMANLI başka oturum
+> DMO/Jandarma'yı ana ilanlar'a taşıyıp kamu nav'ını değiştiriyordu (ihaleler.html dirty); bulk nav çakışmasını
+> önlemek için ayrı yapılacak. Şu an iki menü öğesi de (Firmalar Dizini + Firma Analizi) birleşik sayfaya gider.
+
 > ## 🗺️ 16 TEMMUZ (devam) — HARİTA SEKTÖR VERİSİ DÜZELTİLDİ (CANLI)
 > Kullanıcı ekran görüntüsü: harita "⚠️ Sektör verisi yüklenemedi — il_sektor_ozet RPC yanıt vermedi". İki kök neden:
 > 1. `migration_harita_sektor.sql` (başka oturumda repoya eklenmiş) prod DB'ye UYGULANMAMIŞTI → il_sektor_ozet
