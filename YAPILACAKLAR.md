@@ -1,5 +1,23 @@
 # İhalePlatform — Yapılacaklar Listesi
 
+> ## 🧠 17 TEMMUZ — EŞLEŞTİRME MOTORU KATMAN 1: JENERİK KOVA → KANONİK AI BACKFILL (✅ toplu koşu VDS'te)
+> Kullanıcı: "benzer ihaleler + uygun firmalar algoritması çok iyi çalışsın; bazı ihalelerde OKAS yok, buna
+> göre yorum yapamıyorsun — bunu düzeltmemiz lazım, zenginliğimiz buradan gelecek."
+> **SİNYAL ENVANTERİ ÖLÇÜLDÜ (356.690 ilan / 537.761 sonuç):** OKAS dolu %2,8 (10.139) → OKAS ÖLÜ.
+> Kanonik kategori %42. **JENERİK kova %58** (Mal Alımı 87K + Diğer 68K + Hizmet Alımı 51K = konu sinyali 0).
+> ilan_metni %4,5 (geçmiş kazananlarda %0,02!). embedding 1.500 (yalnız aktif). **Geçmişte tek evrensel
+> sinyal BAŞLIK.** → Asıl körlük OKAS değil, jenerik kategori + zayıf başlık eşleşmesi.
+> **3-KATMAN PLAN (kullanıcı Katman 1'i seçti):** (1) jenerik→kanonik AI backfill [BU]; (2) başlık
+> eşleşmesini IDF/nadirlik-ağırlıklı yap; (3) embedding'i 537K geçmişe yay. Ayrı VERİ işi: scraper ilan_metni.
+> **✅ YAPILDI:** DERS — migration_ai_kategori.sql prod'a HİÇ uygulanmamıştı (kolon yok → gece cron her gece
+> sessizce çıkmış, özellik hiç çalışmamış!). migration_ai_kategori_jenerik.sql (canlı): kolonu kurar +
+> ai_kategori_backfill.py'ı 3 jenerik kovaya genişletir (in.() Türkçe çift-tırnak, 205.630 satır doğrulandı) +
+> kuyruk indeksi + legacy "İnşaat & Yapım" 22K → kanonik birleşti. Dry-run ~%90 isabet ("Şapka"→Tekstil,
+> "Prısmaflex Seti"→Tıbbi Cihaz, belirsizler jenerik kalır). Maliyet ~$8 tek seferlik (4.113 istek).
+> **Toplu koşu VDS'te nohup ile başlatıldı** (--rpm 15; free daily cap bölerse zarif durur+resume). İzleyici
+> arka planda bitişi bekliyor. NOT: bulk bitmeden/cap'e takılmadan gece cron'un 400-limitiyle küçük yarış
+> olabilir (~$0.02 çöp) — önemsiz. Katman 2/3 kullanıcı onayı bekliyor.
+
 > ## 🌍 17 TEMMUZ — TİCARET: YIL+KIYAS FRONTEND CANLI + iso2 + FULL BACKFILL 2000-2026 (✅ backfill koşuyor)
 > Kullanıcı: "yıl kıyaslamasını çalışır kıl; commit/push/deploy ne gerekiyorsa yap."
 > - **Frontend statik→RPC:** ticaret-analiz.html artık TICARET_TR yerine ticaret_yillar/liste/harita/ulke
