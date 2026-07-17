@@ -1,5 +1,21 @@
 # İhalePlatform — Yapılacaklar Listesi
 
+> ## 🔎 17 TEMMUZ — İHALELER: KURUM→ARAMA YÖNLENDİRME + SONUÇ SEKMESİ ARAMA TIMEOUT (✅ CANLI, 5751e9b)
+> Kullanıcı ekran görüntüsü: (1) kurum-analiz "Tüm İhalelerini Gör" tüm sistemi açıyor, kuruma filtrelemiyor;
+> (2) İhaleler Sonuç sekmesinde "EMNİYET" araması "canceling statement due to statement timeout" veriyor.
+> - **Fix #1 (kurum→arama):** buton + benzer-kurum linki gizli `?idare=` (Detaylı Ara panelindeki f-idare'ye
+>   düşüp boş Güncel gösteriyordu) yerine görünür `?ara=<kurum>&sekme=gecmis` → arama kutusu dolu + Geçmiş
+>   sekmesinde kurumun ihaleleri. arama_fold idare'yi içeriyor (doğrulandı: grand plz idare=4952 = arama_fold=4952).
+>   Üye yolu; misafirde idare zaten maskeli. (kurum-analiz.html)
+> - **Fix #2 (Sonuç timeout):** kök neden EXPLAIN'le bulundu — count:exact → `count(*) OVER()` planlayıcıyı TÜM
+>   ihale_sonuclari'ni (2.2GB) tarayan hash-join'e itiyor → 8s authenticated timeout soğuk cache'te aşılıyor.
+>   Trigram GIN index VARDI ama ORDER BY+LIMIT+count es geçtiriyordu. Fix: Sonuç sekmesinde `count:'planned'`
+>   (frontend, DB değişikliği YOK) → count(*) OVER() kalkar, trigram+nested-loop (uyum limit200 135ms, range
+>   limit20 2.5s, hepsi <8s). Tahmini sayım "~" ile işaretlendi. (ihaleler.html)
+> - Canlı doğrulandı (guest): ?ara=+?sekme= akışı çalışıyor, Sonuç aramada timeout YOK + "~" gösterimi.
+>   Üye yolu DB'de EXPLAIN ANALYZE ile ölçüldü (82-135ms). Deploy: 5751e9b → push → VDS `git pull` (oto-deploy yok).
+> - Bkz. [[statement-timeout-edge]]. Not: node yok → syntax tarayıcı console'uyla doğrulandı.
+
 > ## 🧠 17 TEMMUZ — EŞLEŞTİRME MOTORU KATMAN 1: JENERİK KOVA → KANONİK AI BACKFILL (✅ toplu koşu VDS'te)
 > Kullanıcı: "benzer ihaleler + uygun firmalar algoritması çok iyi çalışsın; bazı ihalelerde OKAS yok, buna
 > göre yorum yapamıyorsun — bunu düzeltmemiz lazım, zenginliğimiz buradan gelecek."
