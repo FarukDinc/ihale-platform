@@ -1,5 +1,21 @@
 # İhalePlatform — Yapılacaklar Listesi
 
+> ## 🧹 17 TEMMUZ — SONUÇLANANLAR KALDIRILDI + DT DURUM SEKMELERİ + FİRMA KONSOLİDASYON CEVABI (✅ CANLI, c74e3eb)
+> Kullanıcı: (1) Sonuçlananlar sayfası Sonuç sekmesiyle redundant, kaldır; (2) DT'ye ihaleler gibi sekmeler;
+> (3) soru: ihale+DT kazananları aynı isimse tek firma mı topluyoruz?
+> - **#1 Sonuçlananlar kaldırıldı:** 22 sayfadan nav linki silindi, sayfa `ihaleler?sekme=sonuc`'a redirect
+>   (eski link 404 olmasın). Sayfaya özel 3 özet KPI (Toplam Sözleşme / Ort. Tenzilat / Farklı Firma — sonuc_ozet
+>   MV) İhaleler 'Sonuç' sekmesine taşındı (sonuc-ozet-bar, yalnız o sekmede grid). Canlı: bedel 5.248,5 Mrd ₺,
+>   firma 82.702. Redirect canlı doğrulandı.
+> - **#2 DT sekmeleri:** Güncel(aktif ~95K) / Sonuç(sonuçlanmış ~1,39M) / Tümü(~1,48M) — DURUM-bazlı.
+>   DİKKAT/DERS: önce kullanıcının istediği TARİH-bazlı (son 1 yıl) denendi ama DT tarihleri son 1 yılda
+>   kümelendiği için 1,4M/55K (anlamsız) çıktı → durum-bazlıya çevrildi (DURUM_GRUP.acik/sonuc zaten vardı).
+>   Gereksiz durum dropdown'u kaldırıldı (sekmeler kapsıyor); ?idare= ile gelince Tümü açılır. Canlı doğrulandı.
+> - **#3 CEVAP:** `yukleniciler.normalize_ad` UNIQUE (82.095 firma=82.095 tekil isim) → ihale kazananları isimle
+>   TEKLEŞTİRİLİYOR (VKN %0, isim-bazlı). AMA `dogrudan_temin_ilanlari`'nda kazanan kolonu YOK → DT kazananları
+>   hiç kaydedilmiyor (EKAP DT kazananı CAPTCHA arkasında, bkz [[dt-kazanan-captcha]]). Yani DT firma verisine
+>   girmiyor; mekanizma isim-ortak olduğundan veri gelse aynı normalize_ad ile otomatik birleşirdi. Açık: DT kazanan verisi yok.
+
 > ## 🔎 17 TEMMUZ — İHALELER: KURUM→ARAMA YÖNLENDİRME + SONUÇ SEKMESİ ARAMA TIMEOUT (✅ CANLI, 5751e9b)
 > Kullanıcı ekran görüntüsü: (1) kurum-analiz "Tüm İhalelerini Gör" tüm sistemi açıyor, kuruma filtrelemiyor;
 > (2) İhaleler Sonuç sekmesinde "EMNİYET" araması "canceling statement due to statement timeout" veriyor.
