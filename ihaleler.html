@@ -409,7 +409,6 @@
       <a href="dashboard" class="nav-item"><span class="icon">◉</span> Anasayfa</a>
       <a href="ihaleler" class="nav-item active"><span class="icon">⊞</span> İhaleler</a>
       <a href="dogrudan-temin" class="nav-item"><span class="icon">⚡</span> Doğrudan Temin</a>
-      <a href="sonuclananlar" class="nav-item"><span class="icon">🏆</span> Sonuçlananlar</a>
       <div class="nav-section-label" style="padding-left:16px;opacity:.85;">— Analiz —</div>
       <a href="rekabet-analizi" class="nav-item"><span class="icon">📊</span> Rekabet Analizi</a>
       <a href="kurum-analiz" class="nav-item"><span class="icon">🏛️</span> İdareler</a>
@@ -476,6 +475,22 @@
         <button class="tab-btn"        data-sekme="gecmis"  onclick="sekmeDegistir('gecmis')">Geçmiş <span id="tab-cnt-gecmis" style="font-size:11px;opacity:.6;font-weight:500;"></span></button>
         <button class="tab-btn"        data-sekme="sonuc"   onclick="sekmeDegistir('sonuc')">Sonuç <span id="tab-cnt-sonuc" style="font-size:11px;opacity:.6;font-weight:500;"></span></button>
         <button class="tab-btn"        data-sekme="detayli" onclick="sekmeDegistir('detayli')">Detaylı Ara</button>
+      </div>
+
+      <!-- SONUÇ ÖZET KPI (yalnız "Sonuç" sekmesinde; eski Sonuçlananlar sayfasından taşındı — sonuc_ozet MV) -->
+      <div id="sonuc-ozet-bar" style="display:none;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:14px;">
+        <div style="background:var(--navy-mid);border:1px solid var(--border);border-radius:12px;padding:12px 16px;">
+          <div style="font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);">Toplam Sözleşme Bedeli</div>
+          <div style="font-size:20px;font-weight:800;color:var(--amber);font-family:var(--font-display);margin-top:4px;" id="soz-bedel">—</div>
+        </div>
+        <div style="background:var(--navy-mid);border:1px solid var(--border);border-radius:12px;padding:12px 16px;">
+          <div style="font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);">Ortalama Tenzilat</div>
+          <div style="font-size:20px;font-weight:800;color:#4ade80;font-family:var(--font-display);margin-top:4px;" id="soz-tenzilat">—</div>
+        </div>
+        <div style="background:var(--navy-mid);border:1px solid var(--border);border-radius:12px;padding:12px 16px;">
+          <div style="font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);">Farklı Kazanan Firma</div>
+          <div style="font-size:20px;font-weight:800;color:var(--white);font-family:var(--font-display);margin-top:4px;" id="soz-firma">—</div>
+        </div>
       </div>
 
       <!-- HIZLI TARİH FİLTRELERİ -->
@@ -887,7 +902,35 @@
     document.querySelectorAll('.tab-btn').forEach(b =>
       b.classList.toggle('active', b.dataset.sekme === sekme));
     document.getElementById('gelismis-panel').classList.toggle('acik', sekme === 'detayli');
+    sonucOzetGuncelle();
     ilanlariYukle(1);
+  }
+
+  // Sonuç sekmesi özet KPI'ları (eski Sonuçlananlar sayfasından taşındı) — sonuc_ozet MV, tek sefer yüklenir.
+  let _sonucOzet = null;
+  function bedelKisa(b) {
+    b = Number(b) || 0;
+    if (b >= 1e9) return (b/1e9).toLocaleString('tr',{maximumFractionDigits:1}) + ' Mrd ₺';
+    if (b >= 1e6) return (b/1e6).toLocaleString('tr',{maximumFractionDigits:1}) + ' M ₺';
+    if (b >= 1e3) return (b/1e3).toLocaleString('tr',{maximumFractionDigits:0}) + ' B ₺';
+    return b.toLocaleString('tr') + ' ₺';
+  }
+  async function sonucOzetGuncelle() {
+    const bar = document.getElementById('sonuc-ozet-bar');
+    if (!bar) return;
+    if (aktifSekme !== 'sonuc') { bar.style.display = 'none'; return; }
+    bar.style.display = 'grid';
+    if (!_sonucOzet) {
+      try {
+        const { data, error } = await sb.rpc('sonuc_ozet');
+        if (!error && data && data[0]) _sonucOzet = data[0];
+      } catch (e) { /* özet opsiyonel */ }
+    }
+    const o = _sonucOzet;
+    if (!o) return;
+    document.getElementById('soz-bedel').textContent = bedelKisa(o.toplam_bedel);
+    document.getElementById('soz-tenzilat').textContent = o.ort_tenzilat != null ? '%' + Number(o.ort_tenzilat).toLocaleString('tr',{maximumFractionDigits:1}) : '—';
+    document.getElementById('soz-firma').textContent = o.farkli_firma != null ? Number(o.farkli_firma).toLocaleString('tr') : '—';
   }
 
   function tarihFormatla(t) {
