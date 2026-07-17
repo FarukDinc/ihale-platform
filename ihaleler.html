@@ -1078,9 +1078,14 @@
     // DB kolon-yetkisi 42501 verir (migration_anon_maske.sql); kart bunları '***' çizer.
     const uyeKolon  = uyeMi ? 'ekap_id,idare,' : '';
     const uyeSonucK = uyeMi ? 'kazanan_firma,' : '';
+    // Sonuç sekmesi ihale_sonuclari!inner + count(*) OVER() (count:exact) → planlayıcı TÜM sonuç
+    // tablosunu tarayan hash-join seçip 8s authenticated timeout'unu aşıyor (soğuk cache ~2GB).
+    // Bu sekmede planlı (tahmini) sayım → count(*) OVER() kalkar, sorgu trigram+nested-loop'a düşer
+    // (EXPLAIN: 2.2GB→~200MB, <2.5s). Diğer sekmeler küçük/join'siz → tam sayım kalır.
+    const sayimModu = aktifSekme === 'sonuc' ? 'planned' : 'exact';
     let query = sb.from('ilanlar').select(
       `id,kaynak,${uyeKolon}baslik,il,tur,usul,durum,ilan_tarihi,son_teklif_tarihi,tahmini_bedel,yaklasik_maliyet_min,yaklasik_maliyet_max,itiraz_bedeli,esik_katsayi,${sonucEmbed}(${uyeSonucK}kazanan_teklif,kazanan_teklif_farki_yuzde,sonuc_tarihi)`,
-      { count: 'exact' }
+      { count: sayimModu }
     );
 
     // Sekme kapsamı: Güncel = teklif tarihi gelecekte, Geçmiş = geçmişte, Sonuç = ihale_sonuclari'nde kaydı olanlar
@@ -1134,7 +1139,7 @@
       console.info('arama_fold/esik_katsayi kolonu henüz yok, legacy aramayla tekrar deneniyor:', error.message);
       let fallback = sb.from('ilanlar').select(
         `id,kaynak,${uyeKolon}baslik,il,tur,usul,durum,ilan_tarihi,son_teklif_tarihi,tahmini_bedel,yaklasik_maliyet_min,yaklasik_maliyet_max,itiraz_bedeli,${sonucEmbed}(${uyeSonucK}kazanan_teklif,kazanan_teklif_farki_yuzde,sonuc_tarihi)`,
-        { count: 'exact' }
+        { count: sayimModu }
       );
       if      (aktifSekme === 'guncel') fallback = fallback.gte('son_teklif_tarihi', simdiISO);
       else if (aktifSekme === 'gecmis') fallback = fallback.lt('son_teklif_tarihi', simdiISO);
@@ -1219,7 +1224,8 @@
 
     const baslangicNo = (sayfa - 1) * SAYFA_BOYUTU + 1;
     const bitisNo = Math.min((sayfa - 1) * SAYFA_BOYUTU + ilanlar.length, toplamKayit);
-    document.getElementById('result-count').innerHTML = `<strong>${toplamKayit.toLocaleString('tr')}</strong> ihale bulundu — ${baslangicNo}-${bitisNo} gösteriliyor`;
+    const sayimTahmini = (aktifSekme === 'sonuc' && !uyumModu);   // Sonuç'ta count planlı-tahmini → "~" göster
+    document.getElementById('result-count').innerHTML = `${sayimTahmini ? '~' : ''}<strong>${toplamKayit.toLocaleString('tr')}</strong> ihale bulundu — ${baslangicNo}-${bitisNo} gösteriliyor`;
     document.getElementById('pag-info').textContent = `${baslangicNo}–${bitisNo} / ${toplamKayit}`;
     document.getElementById('sb-count').textContent = toplamKayit > 999 ? Math.round(toplamKayit/1000*10)/10+'K' : toplamKayit;
 

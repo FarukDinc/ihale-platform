@@ -847,7 +847,7 @@
       return;
     }
 
-    document.getElementById('kurum-ihaleler-btn').href = `ihaleler?idare=${encodeURIComponent(KURUM)}`;
+    document.getElementById('kurum-ihaleler-btn').href = `ihaleler?ara=${encodeURIComponent(KURUM)}&sekme=gecmis`;
     document.getElementById('kurum-dt-btn').href = `dogrudan-temin?idare=${encodeURIComponent(KURUM)}`;
     document.getElementById('bc-kurum').textContent = KURUM;
     kurumTakipDurumuGuncelle();
@@ -1099,7 +1099,7 @@
         <div class="iz-aktif">${i.aktif > 0 ? i.aktif.toLocaleString('tr-TR') : '<span style="color:var(--muted)">0</span>'}</div>
         <div class="iz-actions">
           <button class="iz-btn iz-btn-amber" data-ad="${esc(i.ad)}">Analiz</button>
-          <a href="ihaleler?idare=${encodeURIComponent(i.ad)}" class="iz-btn iz-btn-ghost">İhaleler</a>
+          <a href="ihaleler?ara=${encodeURIComponent(i.ad)}&amp;sekme=gecmis" class="iz-btn iz-btn-ghost">İhaleler</a>
         </div>
       </div>`).join('');
 
