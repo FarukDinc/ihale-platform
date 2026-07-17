@@ -564,7 +564,8 @@
   };
 
   // ── HS6 kalem-kalem detay (drill-down) — dis_ticaret_hs + hs-kodlar.js (lazy) ──
-  let detayVeri = [], detayKod = '', detayYil = 0, _hsYuklu = false;
+  let detayVeri = [], detayKod = '', detayYil = 0, detayOnceYil = 0, _hsYuklu = false;
+  let detaySortAlan = 'ihr', detaySortYon = -1;   // HS6 tablo sıralaması: varsayılan ihracat azalan
   function hsKodlarYukle(){
     return new Promise(res => {
       if(_hsYuklu || window.HS_KODLAR){ _hsYuklu = true; return res(); }
@@ -596,7 +597,11 @@
       gov.innerHTML = '<div style="color:var(--muted);font-size:13px;text-align:center;padding:24px;">Bu ülke için HS6 kalem verisi bulunamadı.</div>';
       return;
     }
-    detayYil = Math.max(...data.map(r => r.yil));   // HS6 verisinin güncel yılı (2024) — TIC.yil (2025 toplam) ile karışmasın
+    // HS6 verisi yalnız 2 yıl içerir (güncel + önceki). Değişim BU sabit çift üzerinden hesaplanır
+    // (üstteki yıl seçicisinden bağımsız — HS6 kalem verisi tüm yıllar için yok). Etikette açıkça belirtilir.
+    const hsYillar = [...new Set(data.map(r => r.yil))];
+    detayYil = Math.max(...hsYillar);
+    detayOnceYil = hsYillar.length > 1 ? Math.min(...hsYillar) : 0;
     const m = {};
     for(const r of data){
       const o = m[r.hs6] || (m[r.hs6] = { ihrG:0, ihrO:0, ithG:0, ithO:0 });
@@ -605,6 +610,14 @@
       else o[cur ? 'ithG' : 'ithO'] = r.deger_usd;
     }
     detayVeri = Object.entries(m).map(([hs6, v]) => ({ hs6, ...v, ad: hsAd(hs6) }));
+    detaySortAlan = 'ihr'; detaySortYon = -1;   // yeni ülke → ihracat azalan
+    detayCiz();
+  };
+
+  // HS6 tablo başlığına tıkla → sırala (sorgu tablosuyla aynı desen)
+  window.detaySirala = function(alan){
+    if(detaySortAlan === alan) detaySortYon = -detaySortYon;    // aynı sütun → yön çevir
+    else { detaySortAlan = alan; detaySortYon = (alan === 'ad') ? 1 : -1; }
     detayCiz();
   };
 
@@ -613,16 +626,34 @@
     const ara = (document.getElementById('detay-ara').value || '').toLocaleLowerCase('tr').trim();
     let rows = detayVeri;
     if(ara) rows = rows.filter(r => r.hs6.includes(ara) || (r.ad || '').toLocaleLowerCase('tr').includes(ara));
-    rows = rows.slice().sort((a, b) => (b.ihrG || 0) - (a.ihrG || 0));
+    const A = detaySortAlan, Y = detaySortYon;
+    rows = rows.slice().sort((a, b) => {
+      if(A === 'ad') return Y * String(a.ad || a.hs6).localeCompare(String(b.ad || b.hs6), 'tr');
+      let av, bv;
+      if(A === 'ihr'){ av = a.ihrG || 0; bv = b.ihrG || 0; }
+      else if(A === 'ith'){ av = a.ithG || 0; bv = b.ithG || 0; }
+      else if(A === 'ihryoy'){ av = yoyNum(a.ihrG, a.ihrO); bv = yoyNum(b.ihrG, b.ihrO); }
+      else { av = yoyNum(a.ithG, a.ithO); bv = yoyNum(b.ithG, b.ithO); }
+      return Y * (av - bv);
+    });
     const gov = document.getElementById('detay-govde');
     if(!rows.length){ gov.innerHTML = '<div style="color:var(--muted);font-size:13px;text-align:center;padding:20px;">Eşleşen kalem yok.</div>'; return; }
+    const okd = a => A === a ? (Y < 0 ? '▼' : '▲') : '';
+    // Değişim'in sabit yıl temeli (dropdown'dan bağımsız) tooltip + dipnotla açıkça belirtilir
+    const degTitle = detayOnceYil ? `title="${detayOnceYil}→${detayYil} değişimi (HS6 verisi bu 2 yılı kapsar)"` : '';
     gov.innerHTML = `<div style="overflow-x:auto;"><table class="tic-tablo">
-      <thead><tr><th class="sol">HS6 · Kalem</th><th>Türkiye → Ülke (İhr.)</th><th class="gizle-mobil">Değişim</th><th>Ülke → Türkiye (İth.)</th><th class="gizle-mobil">Değişim</th></tr></thead>
+      <thead><tr>
+        <th class="sol" onclick="detaySirala('ad')">HS6 · Kalem <span class="ok">${okd('ad')}</span></th>
+        <th onclick="detaySirala('ihr')">Türkiye → Ülke (İhr.) <span class="ok">${okd('ihr')}</span></th>
+        <th class="gizle-mobil" onclick="detaySirala('ihryoy')" ${degTitle}>Değişim <span class="ok">${okd('ihryoy')}</span></th>
+        <th onclick="detaySirala('ith')">Ülke → Türkiye (İth.) <span class="ok">${okd('ith')}</span></th>
+        <th class="gizle-mobil" onclick="detaySirala('ithyoy')" ${degTitle}>Değişim <span class="ok">${okd('ithyoy')}</span></th>
+      </tr></thead>
       <tbody>` + rows.slice(0, 400).map(r => `
         <tr><td class="sol"><b style="color:var(--amber);font-family:ui-monospace,monospace">${r.hs6}</b> <span>${esc((r.ad || '—').slice(0, 95))}</span></td>
         <td class="deger">${paraUsd(r.ihrG)}</td><td class="gizle-mobil">${yuzde(r.ihrG, r.ihrO, 1)}</td>
         <td>${paraUsd(r.ithG)}</td><td class="gizle-mobil">${yuzde(r.ithG, r.ithO, 1)}</td></tr>`).join('') + `</tbody></table></div>
-      <div style="font-size:11px;color:var(--muted);margin-top:8px;">${rows.length} kalem${rows.length > 400 ? ' — ihracata göre ilk 400 gösteriliyor' : ''} · Kaynak: UN Comtrade (${detayYil || TIC.yil}) · HS6 = 6-haneli Armonize Sistem (GTİP'in uluslararası tabanı)</div>`;
+      <div style="font-size:11px;color:var(--muted);margin-top:8px;">${rows.length} kalem${rows.length > 400 ? ' — seçili sıralamaya göre ilk 400 gösteriliyor' : ''} · Kaynak: UN Comtrade${detayOnceYil ? ` · <b style="color:var(--off-white)">Değişim = ${detayOnceYil}→${detayYil}</b> (HS6 kalem verisi bu 2 yılı kapsar; üstteki yıl seçiminden bağımsızdır)` : ` (${detayYil || TIC.yil})`} · HS6 = 6-haneli Armonize Sistem (GTİP'in uluslararası tabanı)</div>`;
   };
 
   function satirVurgula(kod, kaydir){
