@@ -568,7 +568,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
-<script src="js/sidebar-user.js?v=2"></script>
+<script src="js/sidebar-user.js?v=4"></script>
 <script src="js/bildirim-sayaci.js"></script>
 <script src="js/plan.js"></script>
 <script src="js/api.js"></script>
@@ -1708,7 +1708,7 @@
       const gerek = [];
       if (!window.TR_HARITA)   gerek.push('js/tr-harita.js');
       if (!window.KATEGORILER) gerek.push('js/kategoriler.js');
-      if (!window.svgZoomKur)  gerek.push('js/svg-zoom.js?v=1');
+      if (!window.svgZoomKur)  gerek.push('js/svg-zoom.js?v=2');
       await Promise.all(gerek.map(assetYukle));
       const sel = document.getElementById('fah-sektor');
       (window.KATEGORILER || []).forEach(k => {

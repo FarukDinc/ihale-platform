@@ -93,7 +93,10 @@
         pinchBas = { mesafe: Math.hypot(p[0][0] - p[1][0], p[0][1] - p[1][1]) || 1, vb: vb.slice() };
       }
       surukledi = false;
-      try { svg.setPointerCapture(e.pointerId); } catch (_) {}
+      // DİKKAT: capture BURADA ALINMAZ. Capture aktifken tarayıcı click'i path yerine
+      // svg'ye hedefler → il/ülke path'lerindeki click dinleyicileri HİÇ ateşlenmez
+      // (haritada "ile tıkla" ölür — 17 Tem canlı bug'ı). Capture ancak gerçek
+      // sürükleme/pinch BAŞLAYINCA alınır (aşağıda) — temiz tıklama serbest kalır.
     });
     svg.addEventListener('pointermove', e => {
       if (!aktif.has(e.pointerId)) return;
@@ -102,7 +105,10 @@
       if (aktif.size === 1) {
         if (seviye() <= 1.01) return;   // tam görünümde kaydırılacak yer yok
         const r = svg.getBoundingClientRect();
-        if (Math.abs(e.clientX - onceki[0]) + Math.abs(e.clientY - onceki[1]) > 1) surukledi = true;
+        if (Math.abs(e.clientX - onceki[0]) + Math.abs(e.clientY - onceki[1]) > 1) {
+          surukledi = true;
+          try { svg.setPointerCapture(e.pointerId); } catch (_) {}   // sürükleme BAŞLADI → artık capture güvenli
+        }
         vb[0] -= (e.clientX - onceki[0]) / r.width * vb[2];
         vb[1] -= (e.clientY - onceki[1]) / r.height * vb[3];
         sinirla(); uygula();
@@ -112,6 +118,7 @@
         const m = Math.hypot(p[0][0] - p[1][0], p[0][1] - p[1][1]);
         if (m > 0) {
           surukledi = true;
+          try { aktif.forEach((_, id) => svg.setPointerCapture(id)); } catch (_) {}   // pinch başladı → capture
           const orta = [(p[0][0] + p[1][0]) / 2, (p[0][1] + p[1][1]) / 2];
           vb = pinchBas.vb.slice();
           zoom(m / pinchBas.mesafe, svgNokta(orta[0], orta[1]));

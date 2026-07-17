@@ -1,5 +1,22 @@
 # İhalePlatform — Yapılacaklar Listesi
 
+> ## 🌍 17 TEMMUZ — TİCARET: YIL+KIYAS FRONTEND CANLI + iso2 + FULL BACKFILL 2000-2026 (✅ backfill koşuyor)
+> Kullanıcı: "yıl kıyaslamasını çalışır kıl; commit/push/deploy ne gerekiyorsa yap."
+> - **Frontend statik→RPC:** ticaret-analiz.html artık TICARET_TR yerine ticaret_yillar/liste/harita/ulke
+>   RPC'lerinden besleniyor; Yıl+Kıyas dropdown eklendi (varsayılan: güncel vs bir önceki). KPI = ticaret_ulke('WLD').
+>   HS6 drill-down EZİLMEDEN korundu. Sektör dropdown 16 grup backend SEKTORLER ile birebir HARDCODE —
+>   DİKKAT: eski statik dosyanın sektör anahtarları FARKLI ("01-05" vs "01-05_Animal"); karışırsa harita boş döner.
+> - **Türkçe ad / iso2:** ticaret_liste artık iso2 döner (migration_ticaret_iso2.sql, canlıda). Frontend önceliği
+>   RPC iso2, fallback statik TICARET_TR.a2 → iso2 gelmeden de regresyon yoktu. Canlı doğrulandı: DEU→"DE".
+> - **Deploy:** iso2 migration + 2023 re-backfill (171 ülke/2672 sektör satırı, iso2'li) VDS'te koştu; full backfill
+>   2000-2026 arka planda (izle: `tail /opt/ihale-platform/logs/ticaret_backfill.log`). Yıllar DB'ye düştükçe
+>   dropdown kendiliğinden dolar (kod hazır). ÇİFT KOŞU YAKALANDI: iki oturum aynı backfill'i başlatmıştı
+>   (systemd + nohup) — Comtrade 500 çağrı/gün kotası için systemd olan durduruldu, nohup devam ediyor.
+> - **Canlı doğrulama (ihaleglobal.com, gerçek veri):** yıl dropdown [2000-2005, 2023]; 2023 vs 2005 kıyası —
+>   dünya ihracat ▲%247,9; Almanya $21,1Mr ▲%123; ABD $14,9Mr ▲%203; Türkçe adlar; HS6 drill-down DEU 400 kalem.
+> - ⚠️ SÜREÇ NOTU: eşzamanlı oturumlar aynı ağaçta commit süpürmesi yaptı (ticaret frontend + backend dosyaları
+>   alakasız mesajlı commit'lere girdi — iş kaybolmadı ama geçmiş kirlendi). Çoklu oturumda git'i tek oturuma bırakın.
+
 > ## 🧩 17 TEMMUZ — "ÜYE DE *** GÖRÜYOR + BOŞ KUTULAR" EKRAN GÖRÜNTÜSÜ TEŞHİSİ (✅ İKİ PARÇA DA KAPANDI)
 > Kullanıcı benzer ihalelerde 🔒*** + parçalanmış boş kartlar gösterdi ("yine olmadı sanırım").
 > İKİ AYRI kök neden çıktı:
@@ -14,7 +31,7 @@
 >    bütün, parçalı 0, iç içe link 0, meta "🔒 *** · 📍ANKARA · Son: ...". Ayrıca v3 RPC kilitleri probe
 >    edildi: ihaleye_uygun_firmalar anon→42501 ✓, benzer_ihaleler idare döndürmüyor ✓ (v3 tasarımı maskeye uymuş).
 
-> ## 👤 17 TEMMUZ — "ÜCRETSİZ ÜYE DE *** GÖRÜYOR" ŞİKAYETİ: SAHTE SIDEBAR + www/apex OTURUM BÖLÜNMESİ (kod hazır, deploy bekliyor)
+> ## 👤 17 TEMMUZ — "ÜCRETSİZ ÜYE DE *** GÖRÜYOR" ŞİKAYETİ: SAHTE SIDEBAR + www/apex OTURUM BÖLÜNMESİ (✅ CANLI — commit `389183e`+`deb41f2`, VDS pull edildi)
 > Kullanıcı: "ücretsiz planda da *** görünüyor; sadece giriş yapmayanlara *** görünsün." İNCELEME SONUCU:
 > maskeleme zaten yalnız oturumsuza çalışıyor (DB kolon-grant'ları sadece anon'dan REVOKE'lu, authenticated
 > tam görür; client `getSession()` yoksa maskeler). GERÇEK SORUN İKİ KATMANLI:
@@ -22,12 +39,22 @@
 >   Ücretsiz Plan"** hardcoded'dı → misafir veya OTURUMU DÜŞMÜŞ kullanıcı kendini "girişli ücretsiz üye"
 >   sanıp ***'ları plana bağlıyordu. FIX: 4 sayfa + profil.html nötr yer tutucuya çekildi ("Yükleniyor…/—");
 >   js/sidebar-user.js'e **misafir dalı** eklendi (oturum yoksa: 👤 Misafir / "Giriş yapın →", user-row
->   login'e gider; getUser ağ hatasında yerel getSession'a bakar). Tüm sayfalarda ?v=3 cache-bust.
+>   login'e gider; getUser ağ hatasında yerel getSession'a bakar). Cache-bust ?v=3→**?v=4**: CF, v=3
+>   URL'ini deploy ÖNCESİ eski içerikle önbelleklemişti (max-age 4h, purge yerine yeni query key seçildi —
+>   DERS: cache-bust versiyonunu deploy'dan önce canlıda kimse istememiş olmalı, yoksa eski içerik yeni
+>   anahtara yapışır). Canlı doğrulama: /js/sidebar-user.js?v=4 misafir dalını içeriyor, sayfalar v=4'ü
+>   referanslıyor, CF HIT yeni içerikle.
 > - **(2) www/apex origin bölünmesi:** www.ihaleglobal.com da apex de 200 dönüyor, redirect YOK →
 >   localStorage origin-bazlı olduğundan www'da açılan oturum apex'te görünmez (tam "girişliyim ama ***"
 >   senaryosu). FIX: sidebar-user.js + login.html + index.html'e `www.→apex location.replace` (hash
->   korunur — e-posta onay token'ı). KALICI İŞ: CF Redirect Rule veya nginx'te 301 www→apex (dashboard
->   erişimi gerek — kullanıcı yapmalı).
+>   korunur — e-posta onay token'ı). ~~KALICI İŞ: CF Redirect Rule~~ **✅ YAPILDI (17 Tem): kullanıcı CF
+>   panelinden "Redirect from WWW to root" şablonunu deploy etti** (wildcard https://www.* → https://${1},
+>   301, preserve query string; "www proxy'li olmayabilir" uyarısı yanlış alarmdı — CF-RAY ile doğrulandı).
+>   Canlı test: kök/yol/query üçü de 301→apex, zincir tek yönlendirmeyle 200. www/apex oturum bölünmesi
+>   artık kökten kapalı; client-side redirect'ler köprü olarak kalabilir (zararsız). **EK (aynı gün):
+>   origin nginx'e de www→apex 301 eklendi** (sites-enabled/ihale: www ayrı server bloğu, ana bloktan
+>   server_name'den çıkarıldı; yedek /root/ihale.nginx.bak.*, nginx -t + reload OK) — CF bypass edilse
+>   bile origin aynı cevabı verir.
 > - Doğrulama: localhost misafir görünümü OK (Misafir rozeti + *** maskeleri + sayfa tam yükleniyor).
 >   Girişli görünüm kullanıcı gözüyle doğrulanmalı: giriş yap → ihale-detay'da idare/benzer meta açık mı?
 
@@ -74,11 +101,18 @@
 > (js/kategoriler.js include edildi), efektifBedel() (yaklaşık maliyet yoksa sözleşme bedeli — Jandarma
 > sonuçlanmışlarında kritik), uygunFirmalar v3 çağrı + "Ölçek ✓" rozeti (eski "Kapasite ✓" bedel yokken
 > herkese sahte yanıyordu — artık yalnız bant uygulanınca), benzerIhaleler önce RPC sonra eski 3-kademe.
+> **v3.1–v3.3 (17 Tem devam, hepsi ✅ canlı):** EK KURAL sonrası 3 iş + 2 hata düzeltmesi:
+> - v3.1: tr_fold(baslik) trigram GIN indeksi; benzer_ihaleler'e AÇIK İHALE şartı (son_teklif geçmiş
+>   aday elenir — canlıda 4/4 benzerin tarihi geçmişti); ilan_durum_bayatlat() + run_scraper.sh adımı
+>   (TÜM scraperlardan SONRA: jandarma/dmo upsert durum:'aktif' ile kaydı yeniden açıyor).
+> - v3.2→v3.3 DERSLER: (a) baslik-kelime yolu 10.2sn sürüyordu (planner 537K sonuçtan ters girmiş,
+>   trigram indeksi kullanılmamış) → plpgsql 2-dal + MATERIALIZED ilgili CTE = 1.33sn (timeout altı);
+>   (b) plpgsql RETURN QUERY örtük cast YAPMAZ → max(bigint)::numeric şart; (c) ilanlar_durum_check
+>   = taslak/aktif/kapali/iptal/sonuclandi → bayatlama 'kapali' yazar ('kapandi' DEĞİL).
+> - İlk bayatlama koşusu: 11.627 süresi-geçmiş 'aktif' ilan kapatıldı.
 > KALAN: (1) "Mal Alımı"/jenerik kategorili ilanları kanonik kategoriye backfill (kalıcı çözüm),
 > (2) ozel-ihaleler `ihaleye_uygun_firmalar_geo` hâlâ v2 mantığında — bant kuralı istenirse oraya da,
-> (3) TESPİT (canlı doğrulamada): benzer çıkanların 4'ü de SON TEKLİFİ GEÇMİŞ ama durum='aktif'
->     (Jandarma kaynağı durum'u güncellemiyor olabilir) — benzer RPC'ye "son_teklif >= now()" şartı
->     VE/VEYA durum-bayatlama cron'u düşünülmeli; davet otomasyonu ancak AÇIK ihaleye anlam taşır.
+> (3) başlık dalı 1.33sn — istenirse ileride MV/önbellekle ms'e iner (şimdilik yeterli).
 
 > ## 🔎 17 TEMMUZ — TİCARET: HS/SEKTÖR ARAMA + TÜRKÇE HS ETİKETLERİ (canlı)
 > Kullanıcı: 'HS koduna göre de arama olmalı (sektör yanına), o kalem/sektörde Türkiye'nin ülke-ülke ihr/ith
@@ -101,6 +135,29 @@
 > **KALICI TALİMAT (12 Tem, kullanıcı emri):** Bu blok + ilgili bölümler her oturumda otomatik
 > güncellenir, kullanıcı hatırlatmak zorunda değil. Bkz. hafıza `yapilacaklar-auto-update`.
 
+> ## 📈 PLANLANAN (17 Tem, kullanıcı istedi) — TİCARET-ANALİZ İKİ İŞ
+> 1. **HS6 kalem tablosu sütun sıralama:** ülke drill-down'unda ("<Ülke> — kalem-kalem (HS6) ticaret")
+>    "TÜRKİYE → ÜLKE (İHR.)" ve "ÜLKE → TÜRKİYE (İTH.)" başlıklarına TIKLANINCA büyükten küçüğe sıralansın
+>    (toggle asc/desc; HS/sektör sorgu tablosundaki sıralanabilir-başlık deseni zaten var — f128b75 — aynısı
+>    uygulanır). Dosya: ticaret-analiz.html HS6 drill-down render'ı.
+> 2. **Yıl kıyaslama (Değişim) algoritması ŞÜPHELİ:** kullanıcı "yıllara göre kıyaslamada algoritma hatası
+>    var sanıyorum" dedi. İncele: ticaret_liste(p_yil,p_kiyas_yil) kiyas join'i + frontend yüzde hesabı
+>    (yil_ihr/kiyas_ihr), HS6 detayYil ≠ seçili yıl uyumsuzluğu (detayYil VERİDEN hesaplanıyor — kıyas
+>    yılıyla karışıyor olabilir), NULL kiyas → değişim gösterimi. Full backfill bitti (2000-2025) →
+>    artık her yıl çifti test edilebilir; hatayı repro edip düzelt.
+
+> ## 🗺️🐛 17 TEMMUZ — HARİTA "İLE TIKLA" ÖLÜYDÜ: svg-zoom pointer-capture BUG'ı (✅ FİX CANLI, 4ae7ace)
+> Kullanıcı: iki haritada da ile tıklayınca panel "Bir ile tıklayın"da kalıyor. KÖK NEDEN: js/svg-zoom.js
+> `pointerdown`'da `setPointerCapture` alıyordu → capture aktifken tarayıcı click'i path yerine SVG'ye
+> hedefler → path'lerdeki click dinleyicileri GERÇEK fare tıklamasında hiç ateşlenmez. svg-zoom eklendiğinden
+> beri (16 Tem gece) tüm choropleth tıklamaları ölüydü. **KRİTİK TEST DERSİ: `el.dispatchEvent(new MouseEvent
+> ('click'))` ile doğrulama SAHTE-POZİTİF** — dispatch doğrudan path'e gider, capture retarget'ini atlar;
+> harita doğrulamaları bu yüzden "çalışıyor" görünmüştü. Gerçek-tıklama testi için tam pointer dizisi +
+> `svg.hasPointerCapture(id)` kontrolü kullan. FİX: capture yalnız GERÇEK pan (1px+ hareket) / pinch
+> başlayınca alınır; temiz tık path'e gider, sürükleme-sonrası tık yutma (surukledi) korunur.
+> svg-zoom.js?v=2 (4 sayfa: harita, firma-analiz, ticaret-analiz, uluslararasi). Canlı doğrulandı:
+> pointerdown→capture YOK + Ankara panel 8.428 firma.
+
 > ## 🔧 17 TEMMUZ — VDS ARTIK İŞLERİ KAPANDI (kullanıcı SSH'la koştu, 3/3 ✅)
 > Geçmiş oturum artıkları önce repoya alındı (49cca01: ticaret_backfill.py + 2 ticaret migration +
 > harden_origin/persist.sh; VDS'teki elle kopyalanmış ESKİ ticaret_backfill.py /tmp'ye yedeklendi).
@@ -111,9 +168,8 @@
 >    kernel; firewall açısından reboot artık güvenli.)
 > 2. **migration_ticaret_iso2.sql ✅** — kolon zaten vardı, RPC+GRANT eklendi; canlı doğrulandı:
 >    ticaret_liste artık iso2 döndürüyor (DE/US).
-> 3. **Ticaret full backfill 2000-2026 BAŞLATILDI** — nohup, log /opt/ihale-platform/logs/ticaret_backfill.log;
->    2000→161 ülke yüklendi (ticaret_yillar=[2000,2023] anında). Yıl/~1-2dk, ~40dk'da biter; bitince
->    ticaret-analiz yıl dropdown'ı kendiliğinden dolar (RPC'den okuyor). Kontrol: rpc/ticaret_yillar.
+> 3. **Ticaret full backfill ✅ TAMAMLANDI** — ticaret_yillar artık [2000..2025], guncel_yil=2025
+>    (REST'ten doğrulandı). Yıl dropdown'ı kendiliğinden doldu; cron tazelemesi --sadece-guncel ile.
 
 > ## 🎭 17 TEMMUZ (gece) — MİSAFİR MASKELEME: KİLİT ALANLAR '***' (✅ CANLI, ihaleciler modeli)
 > Kullanıcı: "girişsiz okunmasın — ilanların kurumları, sonuçlar ve yüklenici verileri **** görünsün,
