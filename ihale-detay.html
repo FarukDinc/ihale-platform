@@ -703,7 +703,8 @@
           <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
             <div class="card-title" style="margin-bottom:0;">📝 Kişisel Notlarım</div>
             <div style="display:flex; align-items:center; gap:10px;">
-              <span id="not-kayit-bilgi" style="font-size:11px; color:var(--muted);"></span>
+              <span id="not-kayit-bilgi" style="font-size:11px; color:#4ade80; font-weight:600;"></span>
+              <button onclick="notKaydetButon(${d.id})" style="font-size:12px; color:var(--navy); background:var(--amber); border:none; border-radius:6px; padding:5px 14px; cursor:pointer; font-weight:700;">💾 Kaydet</button>
               <button onclick="notlariTemizle(${d.id})" style="font-size:12px; color:#f87171; background:rgba(239,68,68,.08); border:1px solid rgba(239,68,68,.2); border-radius:6px; padding:4px 10px; cursor:pointer;">Temizle</button>
             </div>
           </div>
@@ -713,7 +714,7 @@
             style="width:100%; background:var(--navy); border:1.5px solid var(--border); border-radius:8px; padding:14px 16px; color:var(--white); font-family:var(--font-body); font-size:14px; line-height:1.7; resize:vertical; outline:none; box-sizing:border-box; transition:border-color .15s;"
             onfocus="this.style.borderColor='var(--amber)'" onblur="this.style.borderColor='var(--border)'"></textarea>
           <div style="display:flex; justify-content:space-between; margin-top:8px;">
-            <span style="font-size:11px; color:var(--muted);">Notlarınız tarayıcınızda saklanır — hesabınızla senkronize edilmez.</span>
+            <span style="font-size:11px; color:var(--muted);">Notlarınız yazdıkça <b style="color:var(--off-white);">otomatik kaydedilir</b> (bu tarayıcıda; hesabınızla senkronize edilmez).</span>
             <span id="not-karakter" style="font-size:11px; color:var(--muted);">0 karakter</span>
           </div>
         </div>
@@ -881,7 +882,13 @@
       <div style="background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.25);border-radius:10px;padding:16px 20px;margin-bottom:20px;">
         <div style="color:#4ade80;font-weight:700;font-size:13px;margin-bottom:8px;">✓ İhale Sonuçlandı</div>
         <div style="display:flex;flex-wrap:wrap;gap:24px;font-size:13px;">
-          <div><span style="color:var(--muted);">Kazanan Firma:</span> <b style="color:var(--white);">${uyeMi ? (escHtml(s.kazanan_firma) || '—') : MASKE_ROZET}</b></div>
+          <div><span style="color:var(--muted);">Kazanan Firma:</span> ${
+            uyeMi
+              ? (s.kazanan_firma
+                  ? `<a href="firma-analiz?ara=${encodeURIComponent(s.kazanan_firma)}" style="color:var(--amber);font-weight:700;text-decoration:none;" title="Firma analizini gör">${escHtml(s.kazanan_firma)} ↗</a>`
+                  : '<b style="color:var(--white);">—</b>')
+              : `<b style="color:var(--white);">${MASKE_ROZET}</b>`
+          }</div>
           ${s.kazanan_teklif ? `<div><span style="color:var(--muted);">Sözleşme Bedeli:</span> <b style="color:var(--white);">${butceFormatla(s.kazanan_teklif)}</b></div>` : ''}
           ${s.kazanan_teklif_farki_yuzde != null ? `<div><span style="color:var(--muted);">Tenzilat:</span> <b style="color:var(--amber);">%${s.kazanan_teklif_farki_yuzde}</b></div>` : ''}
           ${s.toplam_teklif_sayisi ? `<div><span style="color:var(--muted);">Toplam Teklif:</span> <b style="color:var(--white);">${s.toplam_teklif_sayisi}</b></div>` : ''}
@@ -1060,11 +1067,25 @@
   function notKaydet(id, metin) {
     localStorage.setItem('ihale_not_' + id, metin);
     const bilgi = document.getElementById('not-kayit-bilgi');
-    if (bilgi) bilgi.textContent = '✓ Kaydedildi';
+    if (bilgi) { bilgi.textContent = '✓ Kaydedildi'; bilgi.style.opacity = '1'; }
     const karEl = document.getElementById('not-karakter');
     if (karEl) karEl.textContent = metin.length + ' karakter';
     const btn = document.getElementById('not-tab-btn');
     if (btn) btn.textContent = metin.trim() ? '📝 Notlarım ·' : '📝 Notlarım';
+  }
+
+  // Açık "Kaydet" butonu — not zaten yazdıkça oto-kaydolur; bu buton kullanıcıya güvence + belirgin geri bildirim verir.
+  function notKaydetButon(id) {
+    const ta = document.getElementById('not-alani');
+    if (!ta) return;
+    notKaydet(id, ta.value);
+    const bilgi = document.getElementById('not-kayit-bilgi');
+    if (bilgi) {
+      bilgi.textContent = '✓ Kaydedildi';
+      bilgi.style.opacity = '1';
+      clearTimeout(bilgi._solma);
+      bilgi._solma = setTimeout(() => { bilgi.style.transition = 'opacity .8s'; bilgi.style.opacity = '.5'; }, 2000);
+    }
   }
 
   function notlariTemizle(id) {
