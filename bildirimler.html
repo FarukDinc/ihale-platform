@@ -372,13 +372,13 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-<script src="js/sidebar-user.js?v=4"></script>
-<script src="js/plan.js"></script>
+<script src="js/sidebar-user.js?v=rot1"></script>
+<script src="js/plan.js?v=rot1"></script>
 <script src="js/main.js"></script>
-<script src="js/takip.js"></script>
+<script src="js/takip.js?v=rot1"></script>
 <script>
   const SUPABASE_URL = "https://ihaleglobal.com";
-  const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzgzMzUwMDE1LCJleHAiOjE5NDEwMzAwMTV9.sRB61a8oNXwzSKL9No8gt7cmkmnkoQstT0ZtHIxl1Hs";
+  const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzg0MzA3MTU4LCJleHAiOjE5NDE5ODcxNTh9.CjNKulvirotDD_y2oO2QKgo0kbqYvL0jUSV1RiDMoso";
   const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
   // XSS koruması: innerHTML'e giren TÜM DB/kullanıcı verisi bundan geçmeli (bildirim başlığı kullanıcı-kontrollü RFQ başlığından gelir).
   const esc = s => (s == null ? '' : String(s)).replace(/[<>&"']/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&#39;'}[c]));
