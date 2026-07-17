@@ -16,7 +16,7 @@
 >   Üye yolu DB'de EXPLAIN ANALYZE ile ölçüldü (82-135ms). Deploy: 5751e9b → push → VDS `git pull` (oto-deploy yok).
 > - Bkz. [[statement-timeout-edge]]. Not: node yok → syntax tarayıcı console'uyla doğrulandı.
 
-> ## 🧠 17 TEMMUZ — EŞLEŞTİRME MOTORU 3-KATMAN İYİLEŞTİRME (kullanıcı "yap hepsini") — K1 koşuyor, K2 ✅ CANLI, K3 koşuyor
+> ## 🧠 17 TEMMUZ — EŞLEŞTİRME MOTORU 3-KATMAN İYİLEŞTİRME (kullanıcı "yap hepsini") — K1 koşuyor, K2 ✅, K3 ✅ TAMAM
 > **KATMAN 2 ✅ CANLI+DOĞRULANDI (commit `5bc754d`, migration_idf_eslestirme.sql):** başlık eşleşmesi
 > IDF-nadirlik ağırlıklı. ihale_kelime_idf MV (34.236 kelime, gece REFRESH) + ihale_konu_kelimeleri_idf().
 > benzer_ihaleler embeddingsiz dalı karakter-trigram→IDF-örtüşme (gıda: benzerlik 19→55). uygun_firmalar
@@ -25,9 +25,12 @@
 > ölü 10sn timeout→src_kw→ilanlar join (EXPLAIN Bitmap, 388ms). +word-boundary \m..\M (kars→karsilanmasi
 > 4904→637) +p_bant guard. Canlı: benzer anon 200/0.3s, misafir kartı 4/4 gıda, uygun_firmalar anon-kilitli.
 > DERS: MV-inline SQL fonksiyonda tr_fold ŞEMA-NİTELİKLİ (public.tr_fold) olmalı.
-> **KATMAN 3 ⏳ KOŞUYOR (commit `0ebf461`):** aktif ilanları başlık-üstü göm. İÇGÖRÜ: benzer_ihaleler yalnız
+> **KATMAN 3 ✅ TAMAM (commit `0ebf461`):** aktif ilanları başlık-üstü göm. İÇGÖRÜ: benzer_ihaleler yalnız
 > AKTİF ilanları aday alır → 537K geçmişi gömmek gereksiz, sadece ~4.6K aktif yeter. ilan_embed_uret.py
-> 'ilan_metni not.is.null' filtresi kaldırıldı → 3.139 aktif backlog nohup ile gömülüyor (izleyici bekliyor).
+> 'ilan_metni not.is.null' filtresi kaldırıldı → **4.639/4.639 aktif gömüldü (kalan 0)**; semantik dal
+> (cosine<0.45) artık tüm aktiflerde. DERS: script PostgREST 1000-cap'e takılır → backlog için dayanıklı
+> re-run sarmalayıcı (embed_aktif_dayanikli.sh); gece cron —max 300 günlük yeni aktifler için yeterli.
+> **K1 durum:** ~49K kanoniğe atandı, kuyruk 153K, dayanıklı koşu sürüyor (free-tier, birkaç güne yayılır).
 > **AÇIK/gelecek:** uygun_firmalar'a embedding-firma dalı (356K geçmiş gömme gerekir, düşük marjinal — IDF
 > zaten iyi); scraper ilan_metni kapsaması (en değerli VERİ işi, %4,5→artır).
 >
