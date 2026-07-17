@@ -135,16 +135,19 @@
 > **KALICI TALİMAT (12 Tem, kullanıcı emri):** Bu blok + ilgili bölümler her oturumda otomatik
 > güncellenir, kullanıcı hatırlatmak zorunda değil. Bkz. hafıza `yapilacaklar-auto-update`.
 
-> ## 📈 PLANLANAN (17 Tem, kullanıcı istedi) — TİCARET-ANALİZ İKİ İŞ
-> 1. **HS6 kalem tablosu sütun sıralama:** ülke drill-down'unda ("<Ülke> — kalem-kalem (HS6) ticaret")
->    "TÜRKİYE → ÜLKE (İHR.)" ve "ÜLKE → TÜRKİYE (İTH.)" başlıklarına TIKLANINCA büyükten küçüğe sıralansın
->    (toggle asc/desc; HS/sektör sorgu tablosundaki sıralanabilir-başlık deseni zaten var — f128b75 — aynısı
->    uygulanır). Dosya: ticaret-analiz.html HS6 drill-down render'ı.
-> 2. **Yıl kıyaslama (Değişim) algoritması ŞÜPHELİ:** kullanıcı "yıllara göre kıyaslamada algoritma hatası
->    var sanıyorum" dedi. İncele: ticaret_liste(p_yil,p_kiyas_yil) kiyas join'i + frontend yüzde hesabı
->    (yil_ihr/kiyas_ihr), HS6 detayYil ≠ seçili yıl uyumsuzluğu (detayYil VERİDEN hesaplanıyor — kıyas
->    yılıyla karışıyor olabilir), NULL kiyas → değişim gösterimi. Full backfill bitti (2000-2025) →
->    artık her yıl çifti test edilebilir; hatayı repro edip düzelt.
+> ## 📈 ✅ YAPILDI (17 Tem) — TİCARET-ANALİZ İKİ İŞ (CANLI, 8b4d281)
+> 1. **HS6 kalem tablosu sütun sıralama ✅** — drill-down başlıkları (Kalem/İhr./Değişim/İth./Değişim)
+>    tıklanınca sıralar (detaySirala + yoyNum + ok göstergesi; sorgu tablosuyla aynı desen). Yeni ülke
+>    açılınca ihracat-azalan sıfırlanır; "ilk 400" notu artık seçili sıralamaya göre. Canlı test: DEU
+>    İhr.▼ / İth.▼ / Değişim▼(▲%91→82→62) / yön çevirme çalışıyor.
+> 2. **Yıl kıyaslama "algoritma hatası" — MATEMATİK DOĞRU ÇIKTI, sorun ETİKETLEMEYDİ.** Veriyle doğrulandı:
+>    ticaret_liste(Y,K) kıyas değerleri backfill sonrası birebir tutuyor (2023 ihr = sonraki sorgunun
+>    kıyas'ı; aynı yıl → yuzde guard). Ana ülke listesi + sektör YoY'si DOĞRU. TEK GERÇEK sorun: HS6 drill-
+>    down "Değişim"i dis_ticaret_hs YALNIZ 2 yıl (2023,2024) içerdiğinden SABİT 2023→2024 hesaplıyor, üstteki
+>    yıl seçicisinden BAĞIMSIZ → "yanlış" izlenimi. FİX: başlık tooltip + dipnot "Değişim = 2023→2024 (üst
+>    seçimden bağımsız)" ile açık etiketlendi. AÇIK SEÇENEK (kullanıcıya sorulacak): HS6'yı yıl dropdown'ına
+>    bağlamak = tüm yıllar için HS6 backfill (~2 yıl≈761K satır → 26 yıl ~10M satır, ağır) gerektirir; şimdilik
+>    2-yıl sabit + açık etiket yeterli görüldü.
 
 > ## 🗺️🐛 17 TEMMUZ — HARİTA "İLE TIKLA" ÖLÜYDÜ: svg-zoom pointer-capture BUG'ı (✅ FİX CANLI, 4ae7ace)
 > Kullanıcı: iki haritada da ile tıklayınca panel "Bir ile tıklayın"da kalıyor. KÖK NEDEN: js/svg-zoom.js
