@@ -14,6 +14,39 @@
 >   koyduğu `?v=rot1` rakam olmadığı için `(\?v=\d+)?` desenine takılmamıştı. Desen `(\?[^"'\s>]*)?` yapılıp
 >   20 sayfa tek `?v=3`'e normalize edildi. Script `max-age=14400` (4sa) ile servis edildiğinden bu ŞART.
 
+> ## 🗺️ 18 TEMMUZ — ANASAYFA MİNİ HARİTASI: İHALE+DT TOPLAM RENK + AYRI HOVER SAYIMI + TIKLA-SEÇ POPUP (KOD HAZIR, migration VDS'te bekliyor)
+> Kullanıcı talebi: dashboard.html'deki "Türkiye İhale Haritası" widget'ı yalnız `ilanlar` sayısını gösteriyordu.
+> Dünya ticaret haritasındaki ihracat/ithalat ayrımıyla AYNI FİKİR uygulandı: renk=TOPLAM, hover=AYRI, tık=SEÇİM.
+> - `backend/migration_dt_il_sayim.sql` (YENİ): `il_sayim()` deseninin `dogrudan_temin_ilanlari` (1.48M satır,
+>   `ilanlar`'ın 4 katı) karşılığı — `idx_dogrudan_temin_ilanlari_il` partial indeks + `dt_il_sayim()` RPC
+>   (`ALTER FUNCTION SET statement_timeout='20s'` güvence payı, Statement Timeout Edge dersiyle tutarlı).
+> - `js/harita.js`: `ilSayimGetir()` parametrik hale geldi (rpcAdi/tabloAdi) → hem ihale hem DT sayımını
+>   paralel çeker; renk artık `ihale+dt` TOPLAMINDAN (quantile eşikli); hover tooltip'i 📋 İhale / ⚡ DT'yi
+>   AYRI satırlarda + toplamı gösterir; tıklama artık DOĞRUDAN yönlendirmiyor — Leaflet popup'ı iki buton
+>   sunuyor ("📋 Güncel İhaleler" → `ihaleler?il=X`, "⚡ Doğrudan Temin" → `dogrudan-temin?il=X`), sayısı 0
+>   olan seçenek görsel olarak pasif (disabled, tıklanamaz). RPC yoksa (migration henüz koşmadıysa) sayfalı
+>   fallback'e sessizce düşer — DT için CANLIDA TEST EDİLDİ (81/81 il kapsıyor, hatasız).
+> - `dogrudan-temin.html`: `?il=` URL parametresi desteği YOKTU (yalnız `?idare=` vardı) — eklendi.
+>   `illeriYukle()` artık `await`'lenip TAMAMLANDIKTAN sonra param okunuyor (yarış durumu önlendi) +
+>   `ilSecimGarantiEt()` — il, son-5000-kayıt örnekleminde yoksa `<option>`'ı elle ekleyip seçiyor (haritadan
+>   nadir-DT'li bir ile tıklanırsa dropdown sessizce boşa düşmesin diye).
+> - `dashboard.html`: `.il-popup*` + `.leaflet-popup-content-wrapper` karanlık tema CSS'i (`.il-tooltip` ile
+>   aynı "sayfa kendi CSS'ini sağlar" kuralı — harita.js modülü CSS enjekte etmiyor); widget alt yazısı
+>   güncellendi.
+> - **Doğrulama:** canlı REST API'ye karşı uçtan uca test edildi (bu sandbox'ta Leaflet/SVG pixel-render
+>   görülemedi — tarayıcı önizlemesi bu oturumda `window.innerWidth=0` raporluyor, sayfa/CSS'ten bağımsız bir
+>   ortam kısıtı; kod mantığı bunun yerine gerçek veriyle doğrulandı): `il_sayim` RPC ✓, `dt_il_sayim` RPC
+>   henüz yok (beklenen — migration deploy edilmedi) → fallback yolu canlı test edildi (81 il, hatasız);
+>   popup HTML üretimi Ankara/İzmir/Van için doğru sayı+URL-encode ile doğrulandı; `dogrudan-temin.html?il=VAN`
+>   filtreyi doğru uyguladı (aktifSekme=tumu, VAN kaydı listede çıktı); `ihaleler.html?il=VAN` regresyonsuz.
+> - **DEPLOY (VDS):** `git pull` → `docker exec -i supabase-db psql -U postgres -d postgres <
+>   backend/migration_dt_il_sayim.sql` → sonra sayfa yenilenince DT katmanı otomatik devreye girer (RPC yoksa
+>   zaten fallback ile çalışıyor, migration ACİL değil ama performans için önerilir — 1.48M satır sayfalı
+>   fallback'te ~13 istek/13K örneklem, tam değil).
+> - **KAPSAM DIŞI (bilerek):** `index.html`'de AYNI haritanın satır-içi bir kopyası var (harita.js'in kendi
+>   yorumunda zaten "teknik borç" diye işaretli) — DT katmanı ORAYA taşınmadı, yalnız dashboard.html/harita.js
+>   güncellendi. İstenirse ayrı iş olarak index.html de aynı modüle geçirilip tekilleştirilebilir.
+
 > ## 🔴 17 TEMMUZ — AÇIK BULGU: TENZİLAT ~3 KAT ŞİŞİK (çok-lotlu ihale hatası) — DÜZELTİLMEDİ, KARAR BEKLİYOR
 > Sonuç KPI'daki "Ort. Tenzilat %48,3" şüpheliydi; araştırıldı, **gerçek bir veri hatası çıktı.**
 > - **Kök neden (kanıtlı):** `ihale_sonuclari` satır başına bir KISIM/lot tutar. Çok-lotlu ihalelerde EKAP,
@@ -290,6 +323,23 @@
 > binlerce satır tarihsel kayıt/detay — çelişki olursa BU BLOK geçerlidir.
 > **KALICI TALİMAT (12 Tem, kullanıcı emri):** Bu blok + ilgili bölümler her oturumda otomatik
 > güncellenir, kullanıcı hatırlatmak zorunda değil. Bkz. hafıza `yapilacaklar-auto-update`.
+
+> ## 🔐 18 TEMMUZ — SECRET ROTASYONU (JWT+anon+service) ✅ CANLI + DB PAROLASI İPTAL (3 ders)
+> Studio ifşası borcu kapandı. **Yapıldı:** keygen (HS256/stdlib, kullanıcı üretti — ben yalnız public anon'u
+> gördüm) → 24 HTML + 6 JS'te anon key yenilendi + `?v=rot1` cache-bust (commit 211f81a) → VDS `.env` 3 değer
+> + `docker compose up -d` + `ihale-api` restart. **Doğrulandı: eski anon 401 / yeni anon 200**, tüm sayfa+JS
+> yeni imza, REST+RPC+auth 200, konsol temiz.
+> **DB parolası (Faz 2b) DENENDİ → İPTAL.** Kısa bir kesinti yaşandı, kök nedenler ve KALICI DERSLER:
+> 1. **Stack restart sonrası kong'u da restart et.** `docker compose up -d` rest/auth'u yeniden yaratır, kong'u
+>    yaratmaz → kong bayat upstream'e bakar → container'lar "healthy" iken TÜM REST/RPC **502**. Teşhis: yanlış
+>    anahtar 401 (kong ayakta) + doğru anahtar 502 (upstream ölü). Çözüm: `docker compose restart kong`.
+> 2. **`postgres` bu sürümde SUPERUSER DEĞİL** — `supabase_admin` superuser. Ayrıcalıklı rollerde ALTER için
+>    `-U supabase_admin` şart (yoksa "Only superusers can alter privileged roles").
+> 3. **Yer-tutuculu yıkıcı komut bloklarına ABORT guard konulmalı** — `<...buraya>` doldurulmadan çalıştırıldı,
+>    sed `.env`'e çöp yazdı. (Şans: ALTER hata verip rollback oldu → DB rolleri değişmedi, `.env` geri yazılınca
+>    tamamen düzeldi, veri kaybı yok.)
+> **KARAR:** DB parolası döndürülmeyecek — 5432/6543 dışarıya kapalı olduğu için sızmış parola uzaktan
+> kullanılamaz (fayda ~0), risk kanıtlandı. Kritik olan JWT/service rotasyonu tamam.
 
 > ## 🔐 17 TEMMUZ — SECRET ROTASYONU YAPILDI (JWT+anon+service) ✅ CANLI, commit `211f81a`
 > Studio ifşasının (16 Tem) açık kalan tek borcu kapandı. **Risk modeli:** anon key zaten public —
