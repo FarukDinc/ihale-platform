@@ -80,3 +80,15 @@ docker exec -i supabase-db psql -U postgres -d postgres \
   -c "REFRESH MATERIALIZED VIEW CONCURRENTLY public.yuklenici_ozet_mv;" \
   -c "REFRESH MATERIALIZED VIEW CONCURRENTLY public.sonuc_ozet_mv;" \
   -c "REFRESH MATERIALIZED VIEW CONCURRENTLY public.ihale_kelime_idf;" >> /opt/ihale-platform/logs/scraper.log 2>&1
+
+# ── ilan_metni backfill (geçmiş kalem listeleri) — EN SONDA, BİLEREK ────────────────
+# Geçmiş ~340K ilan kompakt üretilmişti (ilan_metni=NULL, eski managed-Supabase limiti).
+# EKAP sonuçlanmış listesini sayfalayıp eksikleri doldurur → eşleştirme motoru + site içi
+# arama (arama_fold ÜRETİLMİŞ kolonu ilan_metni'yi içerir) zenginleşir.
+# NEDEN EN SONDA: EKAP üçüncü taraf; yoğun tarama IP bloğu riski taşır. Kritik gece işleri
+# (scraper/bildirim/MV) ÖNCE bitsin ki olası blok o geceki ana veri akışını vurmasın.
+# YAVAŞ & GÜVENLİ (kullanıcı kararı): 200 sayfa/gece (~20K kayıt tarama, ~%67 isabet),
+# eşzamanlılık 2 + istek arası uyku + checkpoint ile devam + ardışık hatada kendini durdurma.
+# Kabaca 25-35 gecede tamamlanır. Blok görülmezse --max-pages artırılabilir.
+echo "[$(date +'%Y-%m-%d %H:%M:%S')] === ilan_metni backfill ===" >> /opt/ihale-platform/logs/scraper.log
+$VENV/python ilan_metni_backfill.py --max-pages 200 --eszamanli 2 >> /opt/ihale-platform/logs/scraper.log 2>&1
