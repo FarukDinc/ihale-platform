@@ -73,6 +73,13 @@ _LISTE_HAM      = os.environ.get("PROXY_LIST", "")
 IP_ARALIK_SN    = float(os.environ.get("PROXY_IP_ARALIK_SN", "3.0"))
 KURESEL_RPM     = int(os.environ.get("PROXY_KURESEL_RPM", "600"))
 
+# "Bu IP ile sorun var" diyen HTTP kodları — yalnızca bunlar ucu cezalandırır.
+#   403 Forbidden / 407 Proxy Auth / 429 Too Many Requests → doğrudan blok sinyali
+#   5xx                                                    → proxy ya da uç sunucu arızası
+# 404/400/422 BİLEREK DIŞARIDA: bunlar uygulama yanıtıdır ("kayıt yok", "geçersiz
+# parametre"), proxy sağlıklıdır. Cezalandırılırsa havuz kendi kendini yer.
+BLOK_KODLARI = frozenset({403, 407, 429, 500, 502, 503, 504, 520, 521, 522, 523, 524})
+
 # Bir IP üst üste kaç hata verirse karantinaya alınır / tamamen düşürülür
 KARANTINA_ESIGI = 3
 KARANTINA_SN    = 120.0
@@ -125,6 +132,22 @@ class _Kiralama:
     def basarisiz(self) -> None:
         """Bu isteğin başarısız olduğunu bildirir → uç cezalandırılır."""
         self._basarisiz = True
+
+    def yanit(self, r) -> None:
+        """
+        HTTP yanıtına bakıp ucu cezalandırıp cezalandırmayacağına KENDİSİ karar verir.
+        `if r.status_code != 200: basarisiz()` YAZMAYIN — bunu kullanın.
+
+        NEDEN: 404 bir blok sinyali DEĞİL, "böyle kayıt yok" demektir. Uygulama
+        seviyesindeki bu yanıtları proxy hatası saymak havuzu kendi kendine yok eder:
+        ekap_sonuc_scraper ihale başına 5 detay ucu deniyor ve hepsi 404 dönüyor —
+        ardışık 9 tanesi (KARANTINA_ESIGI × OLUM_ESIGI) bir IP'yi düşürür, 100 IP
+        birkaç yüz istekte tükenir. Kazıma da durur, sebebi de anlaşılmaz.
+
+        Yalnızca gerçekten "bu IP ile sorun var" diyen kodlar cezalandırılır.
+        """
+        if r.status_code in BLOK_KODLARI:
+            self._basarisiz = True
 
 
 def ekap_ssl_baglami():

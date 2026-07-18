@@ -116,9 +116,11 @@ def dt_detay_getir(havuz, dt_ihale_token, dt_idare_token):
             r = ist.client.get(ARAMA_ENDPOINT, params={
                 "metot": "dtDetayGetir", "idareId": dt_idare_token, "dogrudanTeminId": dt_ihale_token,
             })
+            # 404 = "bu DT için detay yok" (uygulama yanıtı), IP sorunu DEĞİL.
+            # ist.yanit() yalnız gerçek blok kodlarında (403/407/429/5xx) cezalandırır;
+            # düz `!= 200 → basarisiz()` havuzu 404 seliyle kendi kendine öldürüyordu.
+            ist.yanit(r)
             if r.status_code != 200:
-                # 4xx/5xx: bu IP bloklanmış olabilir → cezalandır, tur devam etsin
-                ist.basarisiz()
                 return None
             return r.json()
     except Exception:

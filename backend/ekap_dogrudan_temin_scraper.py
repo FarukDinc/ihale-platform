@@ -101,8 +101,7 @@ def enum_haritalari(havuz) -> dict:
     with havuz.istek() as ist:
         r = ist.client.get(ARAMA_ENDPOINT, params={"ES": "", "ihaleidListesi": "", "metot": "dtEnum"},
                            headers=BASE_HEADERS, timeout=30.0)
-        if r.status_code != 200:
-            ist.basarisiz()
+        ist.yanit(r)   # yalnız gerçek blok kodları cezalandırır
         r.raise_for_status()
         veri = r.json()
     return {
@@ -138,8 +137,7 @@ def sayfa_cek(havuz, sayfa: int, deneme: int = 3) -> list:
                     },
                     headers=BASE_HEADERS, timeout=30.0,
                 )
-                if r.status_code != 200:
-                    ist.basarisiz()
+                ist.yanit(r)   # yalnız 403/407/429/5xx cezalandırır (404 uygulama yanıtı)
                 r.raise_for_status()
                 return r.json().get("yeniDogrudanTeminAramaResultList", []) or []
         except (httpx.TimeoutException, httpx.HTTPStatusError, json.JSONDecodeError) as e:
