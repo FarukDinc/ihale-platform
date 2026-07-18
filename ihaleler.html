@@ -630,6 +630,25 @@
             <option value="85">%85+</option>
           </select>
         </div>
+        <!-- TARİH ARALIKLARI: eskiden "Detaylı Ara" panelinde gömülüydü, kullanıcı bulamıyordu.
+             ID'ler AYNEN korundu (filtreleriUygula/Sifirla/mevcutFiltreleriOku/urlFiltreleriUygula
+             bu id'lere bakıyor) — yalnız DOM konumu değişti. -->
+        <div class="filter-group">
+          <label>Yayın Tarihi (Baş.)</label>
+          <input type="date" class="filter-input" id="f-yayin-bas" style="width:150px;" onchange="filtreUygula()" />
+        </div>
+        <div class="filter-group">
+          <label>Yayın Tarihi (Bitiş)</label>
+          <input type="date" class="filter-input" id="f-yayin-bit" style="width:150px;" onchange="filtreUygula()" />
+        </div>
+        <div class="filter-group">
+          <label>Son Teklif (Baş.)</label>
+          <input type="date" class="filter-input" id="f-teklif-bas" style="width:150px;" onchange="filtreUygula()" />
+        </div>
+        <div class="filter-group">
+          <label>Son Teklif (Bitiş)</label>
+          <input type="date" class="filter-input" id="f-teklif-bit" style="width:150px;" onchange="filtreUygula()" />
+        </div>
         <button class="btn-filtrele" onclick="filtreUygula()">Filtrele</button>
         <button class="btn-sifirla" onclick="filtreleriSifirla()">Sıfırla</button>
       </div>
@@ -641,22 +660,7 @@
           <label>İdare Adı</label>
           <input type="text" class="filter-input" id="f-idare" placeholder="Kurum / idare adında ara..." />
         </div>
-        <div class="filter-group">
-          <label>Yayın Tarihi (Baş.)</label>
-          <input type="date" class="filter-input" id="f-yayin-bas" style="width:160px;" />
-        </div>
-        <div class="filter-group">
-          <label>Yayın Tarihi (Bitiş)</label>
-          <input type="date" class="filter-input" id="f-yayin-bit" style="width:160px;" />
-        </div>
-        <div class="filter-group">
-          <label>Teklif Tarihi (Baş.)</label>
-          <input type="date" class="filter-input" id="f-teklif-bas" style="width:160px;" />
-        </div>
-        <div class="filter-group">
-          <label>Teklif Tarihi (Bitiş)</label>
-          <input type="date" class="filter-input" id="f-teklif-bit" style="width:160px;" />
-        </div>
+        <!-- Tarih aralıkları ANA FİLTRE BARINA taşındı (kullanıcı burada bulamıyordu). -->
         <div class="filter-group">
           <label>Sınır Değer Katsayısı (Yapım)</label>
           <select class="filter-select" id="f-esik-katsayi" style="width:170px;">
@@ -957,6 +961,19 @@
     return '—';
   }
 
+  // "Son Teklif" tarihinin yanına kalan gün. durumBadge zaten ≤3 günde "Son N Gün" rozeti
+  // basıyor; burası 4+ gün aralığını kapatıyor (eskiden 4-30 gün arası hiç sayaç yoktu).
+  // Geçmiş/boş tarihte hiçbir şey eklemez (rozet zaten "Kapandı" diyor).
+  function kalanGunEk(bitis) {
+    if (!bitis) return '';
+    const d = new Date(bitis);
+    if (isNaN(d)) return '';
+    const bugun = new Date(); bugun.setHours(0, 0, 0, 0);
+    const gun = Math.round((new Date(d.getFullYear(), d.getMonth(), d.getDate()) - bugun) / 86400000);
+    if (gun < 4) return '';   // ≤3 gün ve geçmiş → rozetin işi
+    return ` <span style="font-weight:500;color:var(--muted);">(${gun} gün)</span>`;
+  }
+
   function durumBadge(durum, bitis) {
     const gun = bitis ? Math.ceil((new Date(bitis) - new Date()) / 86400000) : null;
     if (gun !== null && gun <= 3 && gun >= 0) return `<span class="badge badge-soon">● Son ${gun} Gün</span>`;
@@ -1036,7 +1053,7 @@
         <div class="kart-alt">
           <div class="kart-tarihler">
             <div class="kart-tarih"><span>Yayın Tarihi</span><b>${tarihFormatla(ilan.ilan_tarihi)}</b></div>
-            <div class="kart-tarih"><span>Son Teklif</span><b>${tarihFormatla(ilan.son_teklif_tarihi)}</b></div>
+            <div class="kart-tarih"><span>Son Teklif</span><b>${tarihFormatla(ilan.son_teklif_tarihi)}${kalanGunEk(ilan.son_teklif_tarihi)}</b></div>
           </div>
           <div class="kart-aksiyon">
             ${uyum != null ? `<div class="compat-bar" title="Profilinize uyum skoru">
