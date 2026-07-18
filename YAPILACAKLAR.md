@@ -47,7 +47,7 @@
 >   yorumunda zaten "teknik borç" diye işaretli) — DT katmanı ORAYA taşınmadı, yalnız dashboard.html/harita.js
 >   güncellendi. İstenirse ayrı iş olarak index.html de aynı modüle geçirilip tekilleştirilebilir.
 
-> ## 🔴 17 TEMMUZ — AÇIK BULGU: TENZİLAT ~3 KAT ŞİŞİK (çok-lotlu ihale hatası) — DÜZELTİLMEDİ, KARAR BEKLİYOR
+> ## 🟡 17-18 TEMMUZ — TENZİLAT ~3 KAT ŞİŞİK (çok-lotlu ihale hatası) — KPI ✅ DÜZELTİLDİ, SATIR+AI AÇIK
 > Sonuç KPI'daki "Ort. Tenzilat %48,3" şüpheliydi; araştırıldı, **gerçek bir veri hatası çıktı.**
 > - **Kök neden (kanıtlı):** `ihale_sonuclari` satır başına bir KISIM/lot tutar. Çok-lotlu ihalelerde EKAP,
 >   ihalenin **TOPLAM `yaklasik_maliyet`ini HER lot satırına kopyalıyor** — 46.083 çok-lotlu ihalenin
@@ -63,8 +63,13 @@
 >   NOT: `ilanlar.yaklasik_maliyet_min` sonuçlularda neredeyse hiç dolu değil (20 kayıt) → payda `ihale_sonuclari.yaklasik_maliyet`.
 > - **Etkilenen yüzeyler:** `sonuc_ozet_mv.ort_tenzilat` (İhaleler→Sonuç KPI), ihale-detay / firma-analiz /
 >   kurum-analiz satır-bazlı tenzilat, ve **teklif_ai.py + firma_ai_yorum.py (AI yorumları bozuk veriyle üretiliyor)**.
-> - **KARAR BEKLİYOR:** (a) yalnız KPI (MV DROP+CREATE, prod DDL) (b) +satır gösterimleri (c) +AI (d) sonraya bırak.
->   Prod DDL tek taraflı yapılmadı. Bkz. [[tenzilat-cok-lot-hatasi]].
+> - ✅ **KPI DÜZELTİLDİ (18 Tem):** `backend/migration_tenzilat_ihale_bazli.sql` prod'da koştu →
+>   `ort_tenzilat 48.3 → 17.0`; toplam/toplam_bedel/farkli_firma değişmedi. Canlı doğrulandı ("%17").
+>   MV ihale-bazlı hesaba çevrildi; unique index + ACL (anon=r/authenticated=arwd/service_role=r) birebir kuruldu.
+>   Migration'ı KULLANICI çalıştırdı — sınıflandırıcı prod DDL'i bloklar ([[prod-ssh-auto-mode-limits]]).
+> - 🔴 **HÂLÂ AÇIK:** (1) satır-bazlı tenzilat gösterimleri — ihale-detay / firma-analiz / kurum-analiz ham
+>   `kazanan_teklif_farki_yuzde`'yi basıyor, çok-lotluda kullanıcıya sahte %95 gösteriyor;
+>   (2) `teklif_ai.py` + `firma_ai_yorum.py` bozuk tenzilatla AI yorumu üretiyor. Bkz. [[tenzilat-cok-lot-hatasi]].
 
 > ## 🧹 17 TEMMUZ — SONUÇLANANLAR KALDIRILDI + DT DURUM SEKMELERİ + FİRMA KONSOLİDASYON CEVABI (✅ CANLI, c74e3eb)
 > Kullanıcı: (1) Sonuçlananlar sayfası Sonuç sekmesiyle redundant, kaldır; (2) DT'ye ihaleler gibi sekmeler;
