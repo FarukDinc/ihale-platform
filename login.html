@@ -371,8 +371,22 @@
 
   // Zaten giriş yapılmışsa dashboard'a (veya ?donus hedefine) — ama e-posta onayı
   // işleniyorsa (hash'te access_token var) o akışın yönlendirmesini bekle, çakışma olmasın.
-  if (!_onayIsleniyor && typeof API !== 'undefined' && API.auth.girisli_mi()) {
-    window.location.href = donusHedefi();
+  //
+  // DİKKAT (17 Tem saha bulgusu — "Giriş yapın'a basınca dashboard'a atıyor" bug'ı):
+  // Eskiden `API.auth.girisli_mi()` kullanılıyordu; o SADECE legacy `ihale_token` localStorage
+  // anahtarının VARLIĞINA bakar (geçerlilik/expiry kontrolü YOK). Gerçek oturum ise Supabase'de.
+  // Bayat bir ihale_token kalınca: sidebar (Supabase getUser) "Misafir" gösteriyor → kullanıcı
+  // "Giriş yapın"a basıyor → login burada kendini "girişli" sanıp dashboard'a geri atıyordu
+  // → sonsuz bounce, giriş ekranına ULAŞILAMIYOR. Artık SUPABASE oturumuna bakıyoruz (expiry dahil).
+  if (!_onayIsleniyor && window.supabase && typeof API !== 'undefined') {
+    (async () => {
+      try {
+        const _sb = window.supabase.createClient(API.CONFIG.SUPABASE_URL, API.CONFIG.SUPABASE_ANON_KEY);
+        const { data } = await _sb.auth.getSession();
+        if (data && data.session) { window.location.href = donusHedefi(); return; }
+      } catch (_) { /* oturum okunamadı → giriş formunu göster */ }
+      localStorage.removeItem('ihale_token');   // bayat legacy token'ı temizle (bounce'un kaynağı)
+    })();
   }
 </script>
 
