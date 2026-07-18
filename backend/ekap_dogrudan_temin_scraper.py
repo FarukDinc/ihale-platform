@@ -153,6 +153,12 @@ def kayit_donustur(item: dict, haritalar: dict) -> dict:
         "duyuru_var": bool(item.get("E13")),
         "dokuman_var": bool(item.get("E14")),
         "kategori": kategori_belirle(None, tur, baslik),  # DT'de OKAS yok → keyword(baslik) + tür fallback
+        # 18 Tem: E10/E11 önceden atılıyordu — DogrudanTeminDetay.aspx (kazanan/bedel, CAPTCHA
+        # arkasında) için gerekli tek anahtarlar bunlar (bkz. backend/dt_kazanan_scraper.py).
+        "dt_ihale_token": item.get("E10") or None,
+        "dt_idare_token": item.get("E11") or None,
+        "dt_ilan_var_mi": bool(item.get("E13")),
+        "dt_dosya_var_mi": bool(item.get("E14")),
         "guncellenme": datetime.now(timezone.utc).isoformat(),
     }
 

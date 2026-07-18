@@ -273,10 +273,10 @@ def tarih_iso(s):
 
 
 def bedel_parse(s) -> int | None:
-    """'1.234.567,89 TL' veya '1234567.89' → integer (tam TL)."""
+    """'1.234.567,89 TL' / '5.833,33 TRY' / '1234567.89' → integer (tam TL)."""
     if s is None:
         return None
-    s = str(s).replace("TL", "").replace("₺", "").strip()
+    s = str(s).replace("TL", "").replace("TRY", "").replace("₺", "").strip()
     # 1.234.567,89 formatı
     s = re.sub(r'\.(?=\d{3})', '', s)  # binlik ayracı kaldır
     s = s.replace(',', '.')             # ondalık ayraç
