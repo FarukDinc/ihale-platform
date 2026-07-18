@@ -43,16 +43,39 @@ UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
 # ⚠️ TLS NOTU: httpx ile SSL handshake REDDEDİLİYOR (sunucu tarayıcı-dışı TLS
 #    parmak izini blokluyor) → playwright'ın ctx.request'i kullanılmalı.
 #
-# ❌ EŞLEŞTİRME HENÜZ ÇÖZÜLMEDİ (3 deneme başarısız):
-#   1) Ad ile join AMBİGÜ: "BİLGİ İŞLEM DAİRE BAŞKANLIĞI" listede 114 kez var.
-#   2) parentIdareKimlikKodu bu düz cevapta ÇOĞUNLUKLA KOPUK (87.528'in 70.199'u
-#      "kök" görünüyor) — ağaç UI'da tembel genişletiliyor (hasItems + ayrı çağrı).
-#   3) idareIdHash düz hash DEĞİL: sha256/sha1/md5(idareId|id|detsisNo) tutmadı
-#      (tuzlanmış olmalı).
-#   SIRADAKİ HAMLE: ihale aramasının "İdare" filtresi (idareId ile) → bir DETSİS
-#   düğümünün ihalelerini çekip idareAdi/idareIdHash ↔ DETSİS eşlemesini TERSTEN
-#   kurmak. Bunun için "Seç"e basıp Filtrele'deki GetListByParameters payload'ı
-#   yakalanmalı (idare parametresinin adı/biçimi oradan çıkar).
+# ✅ EŞLEŞTİRME DE ÇÖZÜLDÜ — ihale aramasının idare filtresi:
+#
+#   POST /b_ihalearama/api/Ihale/GetListByParameters
+#   {"searchText":"","paginationSkip":0,"paginationTake":N,
+#    "searchType":"GirdigimGibi",
+#    "idareKodList":[<idareId>]}          ← DETSİS kaydının **idareId** alanı!
+#
+#   Doğrulama: İSTANBUL BÜYÜKŞEHİR BELEDİYE BAŞKANLIĞI (idareId=572) → 1.715 ihale,
+#   dönen idareAdi = "İSTANBUL BÜYÜKŞEHİR BELEDİYESİ".
+#
+#   ⚠️ DİKKAT — YANLIŞ ANAHTARLAR: detsisNo (74731203) ve id (345264) → 0 sonuç.
+#      "idareKod" adına aldanma, DETSİS No DEĞİL, **idareId**.
+#   ⚠️ TEST TUZAĞI: 0 sonuç "filtre çalıştı" demek DEĞİL (eşleşmeyen değer de 0
+#      döner). Başarı kriteri: 0 < sonuç < filtresiz toplam.
+#
+#   ALAN ADI NASIL BULUNDU: tahmin tükendikten sonra Angular bundle'ı tarandı —
+#   ekapv2 /951.*.js içinde arama modeli açıkça yazılı:
+#     ihaleTuruIdList, ihaleUsulIdList, ihaleUsulAltIdList, idareKodList,
+#     ihaleIlIdList, ihaleDurumIdList, ihaleIlanTuruIdList, teklifTuruIdList,
+#     asiriDusukTeklifIdList, istisnaMadde, eIhale, ortakAlimMi, kismiTeklifMi...
+#   (Yeni bir filtre alanı lazım olduğunda ÖNCE bundle'a bak, tahmin etme.)
+#
+# ÇÖZÜLEN ZİNCİR:
+#   DetsisAgaci (87.528 kayıt: idareId + ad + detsisNo)
+#     → GetListByParameters(idareKodList=[idareId])
+#       → o kurumun ihaleleri (idareAdi + idareIdHash)
+#         → bizim ilanlar.idare ile EŞLEŞME (aynı string)
+#
+# NOT (hâlâ geçerli kısıtlar):
+#   - Ad ile doğrudan join AMBİGÜ ("BİLGİ İŞLEM DAİRE BAŞKANLIĞI" = 114 kayıt),
+#     bu yüzden eşleme idareId üzerinden kurulmalı.
+#   - parentIdareKimlikKodu düz cevapta çoğunlukla kopuk (ağaç tembel genişliyor).
+#   - idareIdHash düz hash değil (sha256/sha1/md5 × idareId/id/detsisNo tutmadı).
 # ══════════════════════════════════════════════════════════════════════════
 
 
