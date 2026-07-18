@@ -215,6 +215,25 @@
 > - Kalan: 2/4-hane HS İngilizce (UI'da gösterilmiyor); HS-search yılı 2024 (dis_ticaret_hs) vs sektör RPC yılı
 >   (2023, full backfill bekliyor); Faz 2 = ihale ürünü↔HS eşleşme.
 
+> ## 🛠️ 17 TEMMUZ — SAHA TESTİ DÜZELTMELERİ (kullanıcı geri bildirimi)
+> - **✅ Kazanan firma tıklanamıyordu** (ihale-detay "Sonuçlandı" banner'ı): düz <b> idi → firma-analiz linki
+>   (üyeyse; ↗). Not: sayfadaki DİĞER kazanan render'ı (satır ~853) zaten linkliydi, banner unutulmuştu.
+> - **✅ Notlarım'da Kaydet butonu yoktu**: not aslında oninput ile OTO-kaydoluyordu ama görünür buton/geri
+>   bildirim olmadığı için kullanıcı kaydolmuyor sanıyordu → "💾 Kaydet" butonu + yeşil "✓ Kaydedildi" +
+>   yardım metni "otomatik kaydedilir".
+> - **✅ "Giriş yapın" → dashboard BOUNCE (kritik):** login.html "zaten girişli mi" kontrolü
+>   `API.auth.girisli_mi()` kullanıyordu; o SADECE legacy `ihale_token` localStorage anahtarının VARLIĞINA
+>   bakar (expiry/geçerlilik YOK). Gerçek oturum Supabase'de → **iki auth sistemi çakışması**: sidebar
+>   (Supabase getUser) "Misafir" gösterirken login bayat token'ı görüp dashboard'a geri atıyordu; giriş
+>   ekranına ULAŞILAMIYORDU. Fix: Supabase `getSession()` (expiry dahil); oturum yoksa bayat ihale_token
+>   temizlenip form gösteriliyor. Canlıda reprodüce edilip doğrulandı.
+> - **⏳ Onay e-postası İngilizce:** Türkçe şablonlar hazır+deploy (`email/onay.html`, `email/sifirlama.html`;
+>   ham HTML servis ediliyor). GoTrue'da özel subject/template YOK → varsayılan İngilizce. Aktivasyon
+>   docker-compose.override.yml'e auth env (GOTRUE_MAILER_SUBJECTS_*/TEMPLATES_*) + `docker compose up -d auth`
+>   — prod-config yazımı classifier'a takıldı, KULLANICI çalıştıracak (komut bloğu chat'te verildi).
+> - **❓ "Boş çıkan link":** anon reprodüksiyon yapılamadı (üye linkleri maskeli); sayfadaki tüm href'ler
+>   geçerli göründü. Kullanıcıdan hangi link/URL olduğu soruldu.
+
 ## 🟢 ŞU AN NE DURUMDAYIZ (16 Temmuz 2026, en son güncelleme) — HERKES ÖNCE BUNU OKUSUN
 
 > Bu blok her oturumun sonunda güncellenir ve dosyanın en güncel/otoriter özetidir. Altındaki
