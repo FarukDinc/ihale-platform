@@ -782,10 +782,14 @@
       return;
     }
     const toplamBedel = sonucVeri.reduce((a, s) => a + (s.kazanan_teklif || 0), 0);
-    const tenzList = sonucVeri.filter(s => s.kazanan_teklif_farki_yuzde != null);
+    // Tenzilat YALNIZ tek kısımlı ihalede geçerli: EKAP kısım bazlı yaklaşık maliyet
+    // yayımlamadığından çok kısımlıda ihalenin TOPLAM maliyeti her kısma kopyalanıyor →
+    // satır tenzilatı sahte %95+ çıkıyor. Ortalamaya yalnız lot_sayisi=1 katılır.
+    const tenzList = sonucVeri.filter(s => s.kazanan_teklif_farki_yuzde != null && s.lot_sayisi === 1);
     const ortTenz = tenzList.length
       ? tenzList.reduce((a, s) => a + Number(s.kazanan_teklif_farki_yuzde), 0) / tenzList.length
       : null;
+    const kisimliAdet = sonucVeri.filter(s => s.lot_sayisi > 1).length;
     cont.innerHTML = `
       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px;">
         <div class="kpi-card">
@@ -801,7 +805,11 @@
         <div class="kpi-card">
           <div class="kpi-label">Ort. Tenzilat</div>
           <div class="kpi-value amber">${ortTenz != null ? '%' + ortTenz.toFixed(1) : '—'}</div>
-          <div class="kpi-sub">sözleşme indirimi</div>
+          <div class="kpi-sub" title="Kısımlı ihalelerde EKAP kısım bazlı yaklaşık maliyet yayımlamadığından tenzilat hesaplanamaz; ortalamaya katılmaz.">${
+            ortTenz != null
+              ? `${tenzList.length} tek kısımlı ihaleden${kisimliAdet ? ` (${kisimliAdet} kısımlı hariç)` : ''}`
+              : (kisimliAdet ? `${kisimliAdet} kısımlı ihale — hesaplanamaz` : 'sözleşme indirimi')
+          }</div>
         </div>
       </div>
       <div id="sonuc-liste"></div>`;
@@ -812,10 +820,13 @@
 
   function sonucKartHtml(s) {
     const ilan = s.ilan || {};
+    // Çok kısımlı ihalede satır tenzilatı bilinemez (bkz. sonuclariGoster notu) → rozet yerine kısım bilgisi
     const tenzVal = s.tenzilat_yuzde != null ? s.tenzilat_yuzde : s.kazanan_teklif_farki_yuzde;
-    const tenz = tenzVal != null
-      ? `<span class="ik-durum durum-acik">%${Number(tenzVal).toFixed(1)} tenz.</span>`
-      : '';
+    const tenz = s.lot_sayisi > 1
+      ? `<span class="ik-durum" title="Kısımlı ihale — EKAP kısım bazlı yaklaşık maliyet yayımlamadığından tenzilat hesaplanamaz">${s.lot_sayisi} kısımlı</span>`
+      : (tenzVal != null
+          ? `<span class="ik-durum durum-acik">%${Number(tenzVal).toFixed(1)} tenz.</span>`
+          : '');
     const bedel = s.sozlesme_bedeli || s.kazanan_teklif;
     const teklifSay = s.katilimci_sayisi || s.toplam_teklif_sayisi;
     const baslik = ilan.baslik || (s.ikn ? `İhale ${s.ikn}${s.kisim_no ? ' · Kısım ' + s.kisim_no : ''}` : 'İhale kaydı');
@@ -1151,7 +1162,7 @@
 
     // Kazandığı ihaleler — yuklenici_id ile kesin eşleşme + ilan başlık/idare embed'i
     const { data: sonucRaw } = await sb.from('ihale_sonuclari')
-      .select('ilan_id,ikn,kazanan_firma,kazanan_teklif,sozlesme_bedeli,kazanan_teklif_farki_yuzde,tenzilat_yuzde,toplam_teklif_sayisi,katilimci_sayisi,sonuc_tarihi,sozlesme_tarihi,kisim_no,ilanlar(id,ekap_id,baslik,idare,il,tur,kategori,ilan_tarihi,son_teklif_tarihi)')
+      .select('ilan_id,ikn,kazanan_firma,kazanan_teklif,sozlesme_bedeli,kazanan_teklif_farki_yuzde,tenzilat_yuzde,toplam_teklif_sayisi,katilimci_sayisi,sonuc_tarihi,sozlesme_tarihi,kisim_no,lot_sayisi,ilanlar(id,ekap_id,baslik,idare,il,tur,kategori,ilan_tarihi,son_teklif_tarihi)')
       .eq('yuklenici_id', yid)
       .order('sonuc_tarihi', { ascending: false })
       .limit(500);
