@@ -203,6 +203,31 @@
 > **KALICI TALİMAT (12 Tem, kullanıcı emri):** Bu blok + ilgili bölümler her oturumda otomatik
 > güncellenir, kullanıcı hatırlatmak zorunda değil. Bkz. hafıza `yapilacaklar-auto-update`.
 
+> ## 🔐 17 TEMMUZ — SECRET ROTASYONU YAPILDI (JWT+anon+service) ✅ CANLI, commit `211f81a`
+> Studio ifşasının (16 Tem) açık kalan tek borcu kapandı. **Risk modeli:** anon key zaten public —
+> tek başına döndürmek anlamsız; asıl sızan service_role + JWT_SECRET (Studio → Settings/API sayfası).
+> JWT_SECRET sızdıysa saldırgan HER token'ı üretebilir → JWT_SECRET dönmeli → anon+service yeniden imzalanır.
+> **Süreç (işleyen reçete):** (0) kullanıcı stdlib-only keygen script'i çalıştırır (HS256, dış bağımlılık yok),
+> bana YALNIZ anon key'i verir; (1) ben 24 HTML + 6 JS'te anon key swap + 6 JS'i `?v=rot1`'e normalize
+> (cache-bust) → push, VDS'e PULL ETMEDEN (site eski anahtarla ayakta); (2) kullanıcı VDS'te
+> `/opt/supabase/docker/.env` 3 değeri sed + `docker compose up -d` → HEMEN `git pull` + backend/.env
+> service key + `systemctl restart ihale-api`. Kesinti ~saniyeler.
+> **CACHE KEŞFİ (planı kolaylaştırdı):** HTML edge-cache'siz (`cf-cache-status: DYNAMIC`) → yeni anon
+> anında; yalnız 6 JS cache'li (max-age=14400) → `?v` bump yeterli, Cloudflare purge GEREKMEZ.
+> **Canlı doğrulama:** eski anon→**401**, yeni anon→**200**; 24/24 sayfa 200; REST(3 tablo)+6 RPC 200;
+> ihaleler 375 kayıt; ticaret-analiz 26-yıl dropdown+169 ülke+HS6 sıralama; firma-analiz 82.123 firma
+> (misafir maskeleme `🔒 ***` çalışıyor); konsol 0 hata; ihale-api active, /api/docs 200.
+> **DERSLER:** (a) msys `grep -oE` grup-quantifier'da yanıltır → toplu doğrulamayı Python'la yap;
+> (b) `perl -i` Windows'ta çoklu-dosyada sessizce no-op → byte-düzeyi Python replace kullan (CRLF de korunur);
+> (c) eşzamanlı oturum rotasyon commit'inin ÜSTÜNE push edebilir → VDS'te eski-imza taraması ŞART (0 çıktı).
+> **⏳ AÇIK — FAZ 2b (DB parolası):** POSTGRES_PASSWORD DÖNMEDİ. Kullanıcı "yapalım" dedi, keşif adımı
+> bekliyor. **DİKKAT — risk/fayda:** fayda DÜŞÜK (5432/6543 dışarıya kapalı, [[origin-hardening]] →
+> sızmış parola uzaktan kullanılamaz); risk YÜKSEK (authenticator/supabase_auth_admin/supabase_storage_admin/
+> supabase_admin/pooler rolleri aynı parolayı paylaşır; `.env` değişip roller ALTER edilmezse o servis çöker).
+> Sıra: önce rol keşfi (compose'da `://rol:${POSTGRES_PASSWORD}` grep + pg_roles), sonra ALTER+env+restart.
+> **NOT (kullanıcı kararı):** yeni JWT_SECRET+service key kullanıcı terminali yapıştırınca sohbete düştü;
+> kullanıcı bunu KABUL ETTİ (chat-log maruziyeti, Studio kadar geniş değil), yeniden rotasyon YAPILMAYACAK.
+
 > ## 📈 ✅ YAPILDI (17 Tem) — TİCARET-ANALİZ İKİ İŞ (CANLI, 8b4d281)
 > 1. **HS6 kalem tablosu sütun sıralama ✅** — drill-down başlıkları (Kalem/İhr./Değişim/İth./Değişim)
 >    tıklanınca sıralar (detaySirala + yoyNum + ok göstergesi; sorgu tablosuyla aynı desen). Yeni ülke
