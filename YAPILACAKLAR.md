@@ -1,5 +1,42 @@
 # İhalePlatform — Yapılacaklar Listesi
 
+> ## 🌙 18 TEMMUZ AKŞAMI — GECE TARAMASI BEKLENİYOR (sabah kaldığımız yer burası)
+> Proxy havuzuna **4 scraper'ın 3'ü** bağlandı ve push edildi: `kik_backfill`,
+> `ekap_sonuc_backfill` (async), `ekap_sonuc_scraper` (async). Hepsi gerçek EKAP/KİK'e
+> karşı 100 proxy ile doğrulandı. `dt_kazanan_scraper` + `ekap_dogrudan_temin_scraper`
+> zaten bağlıydı.
+>
+> **`ekap_scraper` BİLEREK BEKLETİLDİ.** Gerekçe: (1) üç değişikliği tek gecede izole test
+> etmek, suçluyu ayırt edebilmek; (2) ana ilan akışı ondan geliyor, en riskli dosya —
+> diğerleri sağlam çıktıktan sonra ellenmeli; (3) doğru hız tavanını tahminle değil bu
+> gecenin ölçümüyle koymak.
+>
+> ### 🔴 `ekap_scraper` İÇİN ÇÖZÜLMESİ GEREKEN İKİ SORUN
+> 1. **`post()` dışarıdan import ediliyor** — `ilan_metni_backfill.py:44` ve
+>    `ekap_ilan_metni_sonda.py:27` `from ekap_scraper import post` yapıp ona
+>    `httpx.AsyncClient` geçiriyor. İlk parametrenin anlamı değişirse o iki script
+>    **çalışma anında** (import anında değil) `AttributeError: 'AsyncClient' object has
+>    no attribute 'istek'` ile kırılır. Ya çalışma-anı tip ayrımı (`hasattr(x,'istek')`)
+>    ya da ayrı bir `post_havuz()` adı gerekiyor.
+> 2. **Hız regresyonu** — şu an 8 paralel × ihale başına 2-3 istek ≈ 20-60 istek/sn.
+>    Havuzun varsayılan tavanı 600/dk = 10/sn, yani bağlanırsa gece taraması YAVAŞLAR.
+>    Bu dosyaya ayrı `kuresel_rpm` verilmeli — rakam bu gecenin loglarından çıkacak.
+>
+> ### ☀️ SABAH İLK İŞ — bu komutun çıktısına bakılacak
+> ```
+> ssh ihale "cd /opt/ihale-platform/logs && echo '=== HAVUZ OZETLERI ==='; grep -A7 'Proxy havuzu ozeti' scraper.log | tail -40; echo '=== KARANTINA/DUSEN ==='; grep -c karantina scraper.log; grep -c 'proxy d' scraper.log; echo '=== HATALAR ==='; grep -iE 'NameError|Traceback|hata:' scraper.log | tail -15"
+> ```
+> Bakılacaklar: kaç IP karantinaya girdi/düştü · gerçek verim · `NameError` var mı
+> (üç scraperde de closure/NameError tuzağı vardı, kapatıldı ama gece koşusu asıl testtir).
+>
+> ### ⚠️ BİLİNEN: küresel tavan SÜREÇ BAŞINA
+> `PROXY_KURESEL_RPM=600` her Python süreci için ayrı uygulanıyor, makine geneli değil.
+> Elle başlatılan `dt_kazanan_scraper --limit 50000` gece cron'uyla çakışırsa EKAP'a giden
+> toplam yük 1200/dk'ya çıkar. Kullanıcı kararı: **bırakıldı** (100 IP'ye yayılıyor,
+> IP başına dk'da 12 istek — kabul edilebilir). Makine geneli tavan gerekirse dosya
+> tabanlı bir kilit/sayaç gerekir.
+
+
 > ## 🌐 18 TEMMUZ — PROXY HAVUZU: İSTEK BAŞINA IP ROTASYONU (CANLI, 2,65x HIZLANMA ÖLÇÜLDÜ)
 > Kullanıcı: "bütün scrap'i VDS IP'ine bırakma, 100 IP'yi de kullan, riski yay ve daha hızlı çek."
 >
