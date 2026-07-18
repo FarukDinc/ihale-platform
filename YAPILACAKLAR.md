@@ -1,5 +1,58 @@
 # İhalePlatform — Yapılacaklar Listesi
 
+> ## ⚡ 18 TEMMUZ — DT DETAYLI ARA + MOD-FARKINDALIK HATA SINIFI (KOD CANLI, indeks migration'ı BEKLİYOR)
+> Kullanıcı bir hata bildirdi ("Tümü'de 2 yazıyor, tıklayınca 0 ihale çıkıyor") ve bir eksik
+> istedi ("DT'yi de ihaleler gibi detaylı aramaya sokmak lazım, aksi halde çok yetersiz").
+> Bildirilen hata tek bir örnekmiş — **aynı sınıftan 6 tane daha** çıktı.
+>
+> **MOD-FARKINDALIK HATA SINIFI.** Kart bağlantıları sayımlardan ÖNCE, `if (modIhale)` dalında
+> kuruluyordu. `tumu` modunda `modIhale` de `true` olduğu için kartlar BİRLEŞİK sayı gösterip
+> linki koşulsuz ihaleler'e veriyordu. Doğru hedef ancak hangi tarafta kaç kayıt olduğu
+> bilinince seçilebilir. Politika `modLinkKur()` içinde tek yere alındı:
+> bir taraf 0 → doğrudan dolu tarafa; ikisi de dolu → seçim popup'ı; sayı bilinmiyorsa
+> (trend barları — `.limit` doygunluğu var) sayısız popup.
+> Düzeltilenler: `stat-eklendi`, `kpi-card-aktif`, `kpi-card-buyuk`, `stat-kazanim`,
+> `trend-link`, `kategori-link`, `son-eklenen-link`, `kurumlar-link` (bu sonuncusu HİÇ atanmıyordu).
+>
+> **DT DETAYLI ARA** (`dogrudan-temin.html`): idare (üyeye özel) / durum / tarih aralığı /
+> dokümanlı + hızlı tarih çipleri + aktif filtre çipleri + "Neden bazı filtreler yok?" notu.
+> DT'de karşılığı olmayan hiçbir alan uydurulmadı; yaklaşık maliyet, ihale usulü, sınır değer,
+> OKAS, kazanan firma/bedel ve yayın tarihi (%1 dolu) için gerekçeler panele yazıldı.
+> Yeni URL parametreleri: `sekme, ara, tur, durum, dokuman, detayli, tarihBas, tarihBit`.
+>
+> **`takipte.html`'e DT bölümü** — dashboard kartı ihale+DT sayarken sayfada DT yoktu
+> (kart "5", liste 3). Kullanıcı "kartı daraltma, sayfayı tamamla" dedi.
+>
+> ### 🔴 YOL AÇILAN HATALAR (hepsi kapatıldı, ders niteliğinde)
+> - **`durum` seçimi statement timeout üretiyordu (57014).** Panelden durum seçilince sekmenin
+>   grup filtresiyle AND'leniyordu → "Güncel sekmesi + Sonuç durumu" çelişkisi. Planlayıcı
+>   çelişkiyi eleyemeyip 1,49M satırda sayıma giriyordu. Tek durum seçimi artık sekme kuralını ezer.
+> - **`?tarihBas` çift uygulanıyordu** — hem modül değişkenine hem panel alanına yazılıyordu,
+>   çipler çift görünüyordu. Tek durum kaynağı = panel alanı.
+> - **`?idare=` sessizce YANLIŞ sonuç veriyordu** — serbest arama kutusuna yazılıyordu, misafirde
+>   arama yalnız `baslik`'te çalıştığı için kurum adı başlıkta geçmiyorsa liste boş çıkıyordu.
+> - **"Toplam Kazanım" misafirde DT'yi hiç saymıyordu** — bugünkü maskeleme düzeltmesinin yan
+>   etkisi: `.not('kazanan_firma','is',null)` WHERE'de de yetki istediği için 42501 dönüyor,
+>   Supabase client hata nesnesi döndürdüğü için count `null` → sayaç SESSİZCE 0. `kazanan_bedel`
+>   (anon'a açık, aynı kaydı işaret eder) ile değiştirildi. **Ders: maskeli kolonu WHERE'de
+>   kullanan her sayaç sessizce sıfırlanır — hata görünmez.**
+>
+> ### ⏭ AÇIK
+> - [ ] **`backend/migration_dt_index.sql` VDS'te uygulanmalı.** Canlıda ölçüldü: `kategori` →
+>       HTTP 522 / ~20 sn, `tur` → 38 sn (kıyas: indeksli `il` 1,6 sn). Bu, detaylı aramadan
+>       BAĞIMSIZ mevcut bir hata — mevcut dropdown'lar da bu yüzden yavaş.
+> - [ ] **`stat-kazanim` sayı/hedef evreni uyuşmuyor:** sayı `dogrudan_temin_sonuclari`'ndan
+>       (kapsam ~%1,8 — 26.214/1,49M), hedef durum-bazlı sonuç listesi (1,39M). Backfill
+>       kapsamı yükselince yeniden değerlendir. Şimdilik yalnız `dt` modundaki yanlış sayfa hatası kapatıldı.
+> - [ ] **`Büyük İhale (₺43M+)` kavram karışımı** — ihalede yaklaşık maliyet, DT'de kazanan bedel.
+>       Kullanıcı kararı: backfill bitene kadar bekletilecek.
+> - [ ] **`satinalma_talepleri.olusturan_user_id`** (bkz. anon denetimi maddesi) ve
+>       **`ilanlar_sonuc` view'ının bozuk LEFT JOIN'i** hâlâ açık.
+> - [ ] Dashboard alt yarısı (`ilanlariYukle`, `sonGorulenlerYukle`, `enIyiEslesmelerYukle`)
+>       mod-farkındalıklı DEĞİL — DT modunda hâlâ ihale gösteriyor. Ya DT'lileştir ya da
+>       bölüm başlığına "yalnız ihaleler" notu koy.
+> - [ ] `(tur, tarih DESC)` sonrası `baslik` trigram indeksi — serbest arama hâlâ seq-scan.
+
 > ## 🔴 18 TEMMUZ — ANON MASKELEME DENETİMİ: 2 KÖK NEDEN, 5 NESNE KAPATILDI (migration'lar VDS'te BEKLİYOR)
 > DT migration'ları canlıya alındıktan **sonra** yapılan doğrulamada, kendi yazdığım maskelemenin
 > etkisiz olduğu çıktı. Oradan başlayan denetim (61 nesne, çok-ajanlı, her bulgu ayrı ajanla
