@@ -119,3 +119,84 @@ window.Takip = (() => {
 
   return { liste, var: varmi, toggle, sayi: () => liste().length, syncFromDB };
 })();
+
+/**
+ * İhaleGlobal — Doğrudan Temin Takip Listesi (18 Tem 2026)
+ *
+ * Takip ile AYNI şekil/API, AYRI depolama (localStorage anahtarı + Supabase tablosu
+ * farklı) — dt_takipler'ın ilanlar(id) yerine dogrudan_temin_ilanlari.dt_no'ya
+ * bağlanması gerektiği için (farklı birincil anahtar tipi/tablosu), mevcut Takip
+ * nesnesinin tek-argümanlı imzasını bozmadan PARALEL bir nesne olarak eklendi.
+ * Misafir: yalnız localStorage (DB'ye hiç yazmaz, Takip ile aynı davranış).
+ *
+ * API: TakipDT.toggle(dtNo) / .var(dtNo) / .liste() / .sayi() / await .syncFromDB()
+ */
+window.TakipDT = (() => {
+  const ANAHTAR = 'dt_takip';
+  const SB_URL = "https://ihaleglobal.com";
+  const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzg0MzA3MTU4LCJleHAiOjE5NDE5ODcxNTh9.CjNKulvirotDD_y2oO2QKgo0kbqYvL0jUSV1RiDMoso";
+
+  function _sb() {
+    if (!window.supabase) return null;
+    return window.supabase.createClient(SB_URL, SB_KEY);
+  }
+  async function _getUser() {
+    const sb = _sb();
+    if (!sb) return null;
+    try { const { data: { user } } = await sb.auth.getUser(); return user || null; } catch { return null; }
+  }
+  function liste() {
+    try { return JSON.parse(localStorage.getItem(ANAHTAR)) || []; } catch { return []; }
+  }
+  function _kaydet(arr) {
+    localStorage.setItem(ANAHTAR, JSON.stringify([...new Set(arr.map(String))]));
+  }
+  function varmi(dtNo) { return liste().includes(String(dtNo)); }
+
+  async function _dbEkle(user, dtNo) {
+    const sb = _sb();
+    if (!sb) return;
+    try {
+      await sb.from('dt_takipler').upsert(
+        { kullanici_id: user.id, dt_no: dtNo },
+        { onConflict: 'kullanici_id,dt_no', ignoreDuplicates: true }
+      );
+    } catch { /* sessizce geç */ }
+  }
+  async function _dbCikar(user, dtNo) {
+    const sb = _sb();
+    if (!sb) return;
+    try { await sb.from('dt_takipler').delete().eq('kullanici_id', user.id).eq('dt_no', dtNo); } catch { /* sessizce geç */ }
+  }
+
+  async function syncFromDB() {
+    const user = await _getUser();
+    if (!user) return;
+    const sb = _sb();
+    try {
+      const { data } = await sb.from('dt_takipler').select('dt_no').eq('kullanici_id', user.id);
+      if (!data) return;
+      const dbIds = data.map(r => String(r.dt_no));
+      const localIds = liste();
+      _kaydet([...new Set([...dbIds, ...localIds])]);
+      for (const id of localIds.filter(id => !dbIds.includes(id))) await _dbEkle(user, id);
+    } catch { /* sessizce geç */ }
+  }
+
+  function toggle(dtNo) {
+    dtNo = String(dtNo);
+    const arr = liste();
+    const idx = arr.indexOf(dtNo);
+    let sonuc;
+    if (idx >= 0) {
+      arr.splice(idx, 1); _kaydet(arr); sonuc = false;
+      _getUser().then(user => { if (user) _dbCikar(user, dtNo); });
+    } else {
+      arr.push(dtNo); _kaydet(arr); sonuc = true;
+      _getUser().then(user => { if (user) _dbEkle(user, dtNo); });
+    }
+    return sonuc;
+  }
+
+  return { liste, var: varmi, toggle, sayi: () => liste().length, syncFromDB };
+})();
