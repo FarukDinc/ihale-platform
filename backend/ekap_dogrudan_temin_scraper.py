@@ -168,23 +168,47 @@ def kayit_donustur(item: dict, haritalar: dict) -> dict:
     }
 
 
-def upsert(client: httpx.Client, kayitlar: list):
+def upsert(client: httpx.Client, kayitlar: list, deneme: int = 5) -> bool:
+    """Supabase'e upsert — AĞ HATASINA DAYANIKLI.
+
+    18 Tem: retry YOKTU ve çağrısı ana döngünün try'ının DIŞINDAydı → tek bir
+    'ReadError: Connection reset by peer' tüm taramayı öldürüyordu (dt-yayin.service
+    738. sayfada status=1 ile düştü). Origin'de /rest/v1 hız limiti var; uzun
+    taramada reset/429 beklenen bir durum, ölümcül olmamalı.
+    """
     if not kayitlar:
-        return
-    r = client.post(
-        f"{SUPABASE_URL}/rest/v1/dogrudan_temin_ilanlari",
-        headers={
-            "apikey": SUPABASE_KEY,
-            "Authorization": f"Bearer {SUPABASE_KEY}",
-            "Content-Type": "application/json",
-            "Prefer": "resolution=merge-duplicates,return=minimal",
-        },
-        params={"on_conflict": "dt_no"},
-        json=kayitlar,
-        timeout=30.0,
-    )
-    if r.status_code >= 300:
-        print(f"    ✗ upsert hatası: {r.status_code} {r.text[:200]}")
+        return True
+    for i in range(deneme):
+        try:
+            r = client.post(
+                f"{SUPABASE_URL}/rest/v1/dogrudan_temin_ilanlari",
+                headers={
+                    "apikey": SUPABASE_KEY,
+                    "Authorization": f"Bearer {SUPABASE_KEY}",
+                    "Content-Type": "application/json",
+                    "Prefer": "resolution=merge-duplicates,return=minimal",
+                },
+                params={"on_conflict": "dt_no"},
+                json=kayitlar,
+                timeout=60.0,
+            )
+            # 429 (hız limiti) / 5xx → geçici, bekleyip tekrar dene
+            if r.status_code == 429 or r.status_code >= 500:
+                bekle = 5 * (i + 1)
+                print(f"    ⚠ upsert {r.status_code} — {bekle}sn bekleyip tekrar ({i+1}/{deneme})", flush=True)
+                time.sleep(bekle)
+                continue
+            if r.status_code >= 300:
+                print(f"    ✗ upsert hatası: {r.status_code} {r.text[:200]}", flush=True)
+                return False
+            return True
+        except (httpx.HTTPError, OSError) as e:   # ReadError/ConnectError/Timeout/reset
+            bekle = 5 * (i + 1)
+            print(f"    ⚠ upsert ağ hatası ({type(e).__name__}) — {bekle}sn bekleyip tekrar ({i+1}/{deneme})", flush=True)
+            time.sleep(bekle)
+    # Tüm denemeler tükendi: SÜRECİ ÖLDÜRME — sayfayı atla, tarama devam etsin.
+    print(f"    ✗ upsert {deneme} denemede de başarısız — bu sayfa atlandı ({len(kayitlar)} kayıt).", flush=True)
+    return False
 
 
 def main():
