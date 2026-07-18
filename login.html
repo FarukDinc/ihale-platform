@@ -376,10 +376,6 @@
     }
   }
 
-  // Zaten giriş yapılmışsa dashboard'a (veya ?donus hedefine) — ama e-posta onayı
-  // işleniyorsa (hash'te access_token var) o akışın yönlendirmesini bekle, çakışma olmasın.
-  //
-  // DİKKAT (17 Tem saha bulgusu — "Giriş yapın'a basınca dashboard'a atıyor" bug'ı):
   // Google ile giriş — yalnız GoTrue'da sağlayıcı açıldıysa (API.CONFIG.GOOGLE_GIRIS) gösterilir.
   window.googleIleGiris = async function (btn) {
     if (btn) { btn.disabled = true; btn.style.opacity = '.6'; }
@@ -390,13 +386,20 @@
       toast(trHata(e.message) || 'Google ile giriş başlatılamadı', 'hata');
     }
   };
+  // DİKKAT: api.js dosyası `const API = ...` ile tanımlanır; top-level const window'a
+  // PROPERTY olarak yazılmaz → `window.API` undefined'dır. Koşulu `typeof API` ile kur
+  // (aşağıdaki oturum kontrolü de aynı deseni kullanıyor), yoksa buton hiç görünmez.
   try {
-    if (window.API && API.CONFIG && API.CONFIG.GOOGLE_GIRIS) {
+    if (typeof API !== 'undefined' && API.CONFIG && API.CONFIG.GOOGLE_GIRIS) {
       const gb = document.getElementById('google-giris-btn');
       if (gb) gb.style.display = 'flex';
     }
   } catch (_) {}
 
+  // Zaten giriş yapılmışsa dashboard'a (veya ?donus hedefine) — ama e-posta onayı
+  // işleniyorsa (hash'te access_token var) o akışın yönlendirmesini bekle, çakışma olmasın.
+  //
+  // DİKKAT (17 Tem saha bulgusu — "Giriş yapın'a basınca dashboard'a atıyor" bug'ı):
   // Eskiden `API.auth.girisli_mi()` kullanılıyordu; o SADECE legacy `ihale_token` localStorage
   // anahtarının VARLIĞINA bakar (geçerlilik/expiry kontrolü YOK). Gerçek oturum ise Supabase'de.
   // Bayat bir ihale_token kalınca: sidebar (Supabase getUser) "Misafir" gösteriyor → kullanıcı
