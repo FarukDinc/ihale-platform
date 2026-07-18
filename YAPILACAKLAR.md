@@ -1,5 +1,58 @@
 # İhalePlatform — Yapılacaklar Listesi
 
+> ## 🌐 18 TEMMUZ — PROXY HAVUZU: İSTEK BAŞINA IP ROTASYONU (CANLI, 2,65x HIZLANMA ÖLÇÜLDÜ)
+> Kullanıcı: "bütün scrap'i VDS IP'ine bırakma, 100 IP'yi de kullan, riski yay ve daha hızlı çek."
+>
+> **BULUNAN KÖK SORUN:** `proxy_config.rastgele_proxy_url()` script başına BİR KEZ çağrılıyordu →
+> 50.000 istekli tur baştan sona TEK IP'den akıyor, havuzun 99'u boşta. Üstelik EKAP'a dokunan
+> 7 scriptten yalnız 2'si proxy kullanıyordu. Yani "100 IP aldık" ama fiilen 1 IP çalışıyordu.
+>
+> **`backend/proxy_havuz.py` (YENİ):** istek başına round-robin rotasyon · IP başına soğuma (3sn) ·
+> küresel hız tavanı (600/dk, nezaket sınırı) · otomatik karantina (3 hata→120sn, 3 karantina→düşür) ·
+> tanınabilir User-Agent · PROXY_LIST boşsa "direkt mod" (aynı arayüz, kod bozulmaz).
+> Bağlantı havuzu: proxy başına bir httpx istemcisi (keep-alive korunur; istek başına yeni istemci
+> açmak TLS el sıkışmasını tekrarlardı).
+>
+> **`backend/proxy_list_hazirla.py` (YENİ):** Webshare `ip:port:kullanıcı:şifre` dosyasını .env
+> satırlarına çevirir (`--env-yaz` ile yerinde günceller, yedek alarak). Webshare IP'leri periyodik
+> tazelediği için tekrar kullanılabilir. Sırları ekrana basmaz.
+>
+> ### 📊 CANLI SONUÇ (ölçüldü, tahmin değil)
+> | | Önce (tek IP, --rpm 300) | Sonra (100 IP, 600/dk) |
+> |---|---|---|
+> | yazma hızı | ~138 satır/dk | **~367 satır/dk** |
+> | saatlik | ~8.300 | **~22.000** |
+> EKAP dtAra testi: 6 istek → 6 farklı proxy → 6/6 HTTP 200. dtAra sayfası **55 KB** ölçüldü →
+> tüm 1,49M DT kaydı ≈ **640 MB**, Webshare 250GB/ay kotasının binde üçü. **Kota ve IP sayısı
+> sorun değil** — sorun kullanmıyor olmamızdı.
+>
+> ### 🔴 AÇIK RİSK — IP ÇEŞİTLİLİĞİ
+> - [ ] **100 IP'nin 100'ü tek /24 bloğunda** (`166.88.110.0/24`). EKAP subnet bazlı engellerse
+>       hepsi BİRDEN düşer; dağıtım göründüğünden zayıf. Paket büyütmek için ilk gerçek gerekçe bu:
+>       IP *sayısı* değil **çeşitliliği** gerekiyor. Webshare'de farklı bloklardan IP alınabiliyor mu bak.
+> - [ ] **Lokasyon doğrulanmadı:** kod yorumunda "Türkiye" yazıyor ama blok öyle görünmüyor.
+>       TR kamu sitesini yurtdışı datacenter IP'lerinden taramak daha dikkat çekicidir — panelden teyit et.
+>
+> ### ⏭ AÇIK — KALAN SCRAPER'LAR
+> - [ ] `ekap_scraper`, `ekap_sonuc_scraper`, `ekap_sonuc_backfill`, `kik_backfill` hâlâ DİREKT
+>       gidiyor. Havuza bağlanacak. Her birinin istemci kurulumu farklı; aynı turda dördünü birden
+>       değiştirip test etmeden gece hattını riske atmamak için ayrıldı.
+> - [ ] `proxy_config.py` artık ölü sayılır (yalnız `ekap_firma_probe` kullanıyor) — havuza geçir, sonra sil.
+>
+> ### ⚠️ TESTTE YAKALANAN 3 HATA (hepsi VDS'te de patlardı)
+> 1. User-Agent'ta Türkçe "toplayıcı" → HTTP başlıkları latin-1'e kodlanır, httpx istemci kurarken
+>    UnicodeEncodeError. Modül hiç çalışmadı. Saf ASCII'ye çevrildi.
+> 2. EKAP eski/zayıf TLS cipher istiyor (`DEFAULT@SECLEVEL=1`) → havuz istemcileri bunu kullanmasa
+>    her istek TLS'te ölürdü. `ekap_ssl_baglami()` eklendi.
+> 3. `with httpx.Client(...) as client:` bloğu kaldırılınca `enum_haritalari(client)` / `upsert(client)`
+>    NameError verecekti — client Supabase için geri kondu, enum havuza taşındı.
+>
+> ### 🖥 VDS DURUMU (18 Tem, giriş banner'ından)
+> Disk **14,7% / 157 GB** (≈134 GB boş) · RAM %26 · swap %0 → **büyütmeye gerek yok.**
+> Açık: `*** System restart required ***` (çekirdek güncellemesi) + 15 paket güncellemesi (3 güvenlik).
+> Restart sonrası **kong'u da yeniden başlat** (bkz. studio-3000-exposure: bayat upstream = 502).
+
+
 > ## ⚡ 18 TEMMUZ — DT DETAYLI ARA + MOD-FARKINDALIK HATA SINIFI (KOD CANLI, indeks migration'ı BEKLİYOR)
 > Kullanıcı bir hata bildirdi ("Tümü'de 2 yazıyor, tıklayınca 0 ihale çıkıyor") ve bir eksik
 > istedi ("DT'yi de ihaleler gibi detaylı aramaya sokmak lazım, aksi halde çok yetersiz").
