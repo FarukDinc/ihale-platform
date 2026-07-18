@@ -26,7 +26,11 @@
   const SB_URL = "https://ihaleglobal.com";
   const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzg0MzA3MTU4LCJleHAiOjE5NDE5ODcxNTh9.CjNKulvirotDD_y2oO2QKgo0kbqYvL0jUSV1RiDMoso";
   const GEOJSON_URL = 'data/turkey-provinces.geojson';
-  const RENKLER = ['#243b5e', '#7a5c1e', '#b07d08', '#e09600', '#f0a500', '#ef4444'];
+  // DİKKAT: kova-0 rengi "Kayıt yok" (#16233d) ile GÖZLE AYIRT EDİLEBİLİR olmalı.
+  // İlk eşik medyan (q0.50) olduğundan illerin YARISI (42/82) daima kova-0'a düşer;
+  // eski #243b5e boş renge çok yakındı → 14 bin kayıtlı il (Kırklareli 14.205,
+  // Tokat 14.134) haritada "kayıt yok" gibi görünüyordu. Belirgin şekilde açıldı.
+  const RENKLER = ['#3a6bb5', '#7a5c1e', '#b07d08', '#e09600', '#f0a500', '#ef4444'];
 
   // İl bazlı sayım — önce tek istekli RPC (hızlı), yoksa sayfalı fallback. rpcAdi/tabloAdi
   // parametreli: aynı fonksiyon hem ilanlar/il_sayim hem dogrudan_temin_ilanlari/dt_il_sayim için.
