@@ -196,7 +196,11 @@
       }).addTo(map);
       map.fitBounds(_katman.getBounds(), { padding: [10, 10] });
 
-      uygula(_aktifMod);   // ilk boyama + tooltip/click bağlama (öntanım: 'toplam')
+      // İlk çizimde sayfanın GLOBAL modu varsa (dashboard.html'in aktifDashMod'u — kullanıcı
+      // haritaya inmeden önce üstteki seçiciyle 'ihale'/'dt' seçmiş olabilir) onu kullan;
+      // yoksa öntanım 'toplam'. window.aktifDashMod dashboard.html'de plain global (IIFE'siz).
+      const ilkMod = window.aktifDashMod === 'ihale' ? 'ihale' : window.aktifDashMod === 'dt' ? 'dt' : 'toplam';
+      uygula(ilkMod);
       const y = document.getElementById('harita-yukleniyor');
       if (y) y.style.display = 'none';
     } catch (e) {

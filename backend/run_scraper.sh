@@ -28,6 +28,13 @@ $VENV/python yuklenici_yenile_calistir.py >> /opt/ihale-platform/logs/scraper.lo
 $VENV/python rakip_bildirim.py >> /opt/ihale-platform/logs/scraper.log 2>&1
 $VENV/python ilan_embed_uret.py --max 300 >> /opt/ihale-platform/logs/scraper.log 2>&1
 $VENV/python ekap_dogrudan_temin_scraper.py --max-pages 20 >> /opt/ihale-platform/logs/scraper.log 2>&1
+# DT kazanan/bedel backfill — 18 Tem bulgusu: dtDetayGetir CAPTCHA'sız açık API, Gemini/token
+# maliyeti YOK. --limit 2000/--rpm 300: günlük yeni "sonuç" durumuna geçenleri rahat karşılar.
+# BİRİKMİŞ ~1.3M kayıtlık geçmiş kuyruk BU satırla temizlenmez — ayrı, yüksek --limit'li tek
+# seferlik arka plan turu gerekir (bkz. YAPILACAKLAR.md). Migration uygulanmadıysa sessizce
+# exit 1 verir (kuyruk_say hata mesajı loga düşer, turu bozmaz).
+echo "[$(date +'%Y-%m-%d %H:%M:%S')] === DT kazanan/bedel backfill ===" >> /opt/ihale-platform/logs/scraper.log
+$VENV/python dt_kazanan_scraper.py --limit 2000 --rpm 300 >> /opt/ihale-platform/logs/scraper.log 2>&1
 # ilan.gov.tr (Basın İlan Kurumu) gazete İHALE ilanları — EKAP'ta olmayan (2886 satış/kira vb.) eklenir
 echo "[$(date +'%Y-%m-%d %H:%M:%S')] === ilan.gov.tr ===" >> /opt/ihale-platform/logs/scraper.log
 $VENV/python ilan_gov_scraper.py --max-pages 40 >> /opt/ihale-platform/logs/scraper.log 2>&1
@@ -35,7 +42,8 @@ $VENV/python ilan_gov_scraper.py --max-pages 40 >> /opt/ihale-platform/logs/scra
 echo "[$(date +'%Y-%m-%d %H:%M:%S')] === TED uluslararasi ===" >> /opt/ihale-platform/logs/scraper.log
 $VENV/python ted_scraper.py --max-pages 6 --limit 50 >> /opt/ihale-platform/logs/scraper.log 2>&1
 $VENV/python georgia_scraper.py >> /opt/ihale-platform/logs/scraper.log 2>&1
-# Kamu kurumu kaynakları (EKAP dışı, ayrı kamu_ihaleleri tablosu): DMO + Jandarma
+# Kamu kurumu kaynakları (EKAP dışı, ANA ilanlar tablosuna kaynak='dmo'/'jandarma' ile yazar —
+# 16 Tem'de ayrı kamu_ihaleleri'nden buraya taşındı, İhaleler ekranında rozetle görünür): DMO + Jandarma
 echo "[$(date +'%Y-%m-%d %H:%M:%S')] === Kamu kurumu (DMO/Jandarma) ===" >> /opt/ihale-platform/logs/scraper.log
 $VENV/python dmo_scraper.py >> /opt/ihale-platform/logs/scraper.log 2>&1
 $VENV/python jandarma_scraper.py >> /opt/ihale-platform/logs/scraper.log 2>&1
@@ -79,7 +87,9 @@ docker exec -i supabase-db psql -U postgres -d postgres \
   -c "REFRESH MATERIALIZED VIEW CONCURRENTLY public.il_firma_dagilimi_mv;" \
   -c "REFRESH MATERIALIZED VIEW CONCURRENTLY public.yuklenici_ozet_mv;" \
   -c "REFRESH MATERIALIZED VIEW CONCURRENTLY public.sonuc_ozet_mv;" \
-  -c "REFRESH MATERIALIZED VIEW CONCURRENTLY public.ihale_kelime_idf;" >> /opt/ihale-platform/logs/scraper.log 2>&1
+  -c "REFRESH MATERIALIZED VIEW CONCURRENTLY public.ihale_kelime_idf;" \
+  -c "REFRESH MATERIALIZED VIEW CONCURRENTLY public.dt_kategori_sayim_mv;" \
+  -c "REFRESH MATERIALIZED VIEW CONCURRENTLY public.dt_idare_ozet_mv;" >> /opt/ihale-platform/logs/scraper.log 2>&1
 
 # ── ilan_metni backfill (geçmiş kalem listeleri) — EN SONDA, BİLEREK ────────────────
 # Geçmiş ~340K ilan kompakt üretilmişti (ilan_metni=NULL, eski managed-Supabase limiti).

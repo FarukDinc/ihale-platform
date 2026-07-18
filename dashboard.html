@@ -51,6 +51,16 @@
     .il-popup-btn.disabled b { color: var(--muted); }
     /* Harita mod seçici — Tümü / İhaleler / Doğrudan Temin (dünya ticaret haritasındaki
        İhaleler/Ticaret mod düğmeleriyle aynı görsel dil: soluk pill, aktifte amber vurgu) */
+    /* Sayfa-geneli mod seçici (Merhaba başlığının altında) — harita-mod-btn ile aynı görsel dil, biraz daha büyük */
+    .dash-mod-wrap { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 4px 0 18px; }
+    .dash-mod-label { font-size: 12px; color: var(--muted); font-weight: 600; }
+    .dash-mod-btn {
+      padding: 6px 14px; border-radius: 16px; font-size: 12.5px; font-weight: 700;
+      background: transparent; border: 1px solid var(--border); color: var(--muted);
+      cursor: pointer; font-family: var(--font-body); transition: all .15s;
+    }
+    .dash-mod-btn:hover { color: var(--white); border-color: var(--muted); }
+    .dash-mod-btn.active { background: rgba(240,165,0,.12); border-color: var(--amber); color: var(--amber); }
     .harita-mod { display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap; }
     .harita-mod-btn {
       padding: 4px 11px; border-radius: 14px; font-size: 11px; font-weight: 700;
@@ -784,6 +794,15 @@
         </div>
       </div>
 
+      <!-- GLOBAL MOD SEÇİCİ — sayfadaki TÜM widget'ları (KPI/trend/kategori/kurumlar/harita/liste)
+           tek noktadan yönetir; her widget'ta ayrı ayrı seçtirmek yerine (18 Tem, kullanıcı talebi). -->
+      <div class="dash-mod-wrap">
+        <span class="dash-mod-label">Göster:</span>
+        <button class="dash-mod-btn active" data-mod="tumu" onclick="dashModSec('tumu')">🗺️ Tümü</button>
+        <button class="dash-mod-btn" data-mod="ihale" onclick="dashModSec('ihale')">📋 İhaleler</button>
+        <button class="dash-mod-btn" data-mod="dt" onclick="dashModSec('dt')">⚡ Doğrudan Temin</button>
+      </div>
+
       <!-- GÜNLÜK CANLI SAYAÇ -->
       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px;" id="gunluk-strip">
         <a class="stat-card" id="stat-eklendi" href="ihaleler" title="Bugün eklenen ihaleleri gör">
@@ -837,11 +856,6 @@
       <div class="table-wrap" style="padding:0; margin-bottom:16px;">
         <div class="table-header" style="padding:14px 18px 12px; flex-wrap:wrap; gap:8px;">
           <span class="table-title" style="font-size:14px;">🗺️ Türkiye İhale Haritası</span>
-          <div class="harita-mod">
-            <button class="harita-mod-btn active" data-mod="toplam" onclick="haritaModSec('toplam')">🗺️ Tümü</button>
-            <button class="harita-mod-btn" data-mod="ihale" onclick="haritaModSec('ihale')">📋 İhaleler</button>
-            <button class="harita-mod-btn" data-mod="dt" onclick="haritaModSec('dt')">⚡ Doğrudan Temin</button>
-          </div>
           <span style="font-size:12px; color:var(--muted);" id="harita-alt">Renk = İhale+Doğrudan Temin toplamı · bir ile tıklayın → seçim yapın</span>
         </div>
         <div style="padding:0 18px 16px;">
@@ -856,8 +870,8 @@
       <!-- WIDGET: 7-Günlük Trend -->
       <div class="table-wrap" style="padding:0; margin-bottom:16px;">
         <div class="table-header" style="padding:14px 18px 12px;">
-          <span class="table-title" style="font-size:14px;">📈 Son 7 Gün — Günlük Yayın Trendi</span>
-          <a href="ihaleler" style="font-size:12px; color:var(--muted); text-decoration:none;">Güncel İhaleler →</a>
+          <span class="table-title" style="font-size:14px;" id="trend-baslik">📈 Son 7 Gün — Günlük Yayın Trendi</span>
+          <a href="ihaleler" id="trend-link" style="font-size:12px; color:var(--muted); text-decoration:none;">Güncel İhaleler →</a>
         </div>
         <div id="trend-bars" style="padding:0 18px 14px; display:flex; align-items:flex-end; gap:6px; height:80px;">
           <div style="color:var(--muted); font-size:13px; line-height:80px;">Yükleniyor…</div>
@@ -867,8 +881,8 @@
       <!-- WIDGET ROW: Top Kategoriler -->
       <div class="table-wrap" style="padding:0; margin-bottom:16px;">
         <div class="table-header" style="padding:14px 18px 12px;">
-          <span class="table-title" style="font-size:14px;">Kategori Dağılımı</span>
-          <a href="ihaleler" style="font-size:12px; color:var(--muted); text-decoration:none;">Filtrele →</a>
+          <span class="table-title" style="font-size:14px;" id="kategori-baslik">Kategori Dağılımı</span>
+          <a href="ihaleler" id="kategori-link" style="font-size:12px; color:var(--muted); text-decoration:none;">Filtrele →</a>
         </div>
         <div id="top-kategoriler-list" style="padding:8px 18px 12px;">
           <div style="color:var(--muted); font-size:13px;">Yükleniyor…</div>
@@ -882,7 +896,7 @@
         <div class="table-wrap" style="padding:0; margin-bottom:0;">
           <div class="table-header" style="padding:14px 18px 12px;">
             <span class="table-title" style="font-size:14px;">En Aktif Kurumlar</span>
-            <a href="ihaleler" style="font-size:12px; color:var(--muted); text-decoration:none;">Tümü →</a>
+            <a href="ihaleler" id="kurumlar-link" style="font-size:12px; color:var(--muted); text-decoration:none;">Tümü →</a>
           </div>
           <div id="top-kurumlar-list" style="padding:4px 0 8px;">
             <div style="padding:12px 18px; color:var(--muted); font-size:13px;">Yükleniyor…</div>
@@ -892,8 +906,8 @@
         <!-- Son İhaleler -->
         <div class="table-wrap" style="padding:0; margin-bottom:0;">
           <div class="table-header" style="padding:14px 18px 12px;">
-            <span class="table-title" style="font-size:14px;">Son Eklenen İhaleler</span>
-            <a href="ihaleler" style="font-size:12px; color:var(--muted); text-decoration:none;">Tümü →</a>
+            <span class="table-title" style="font-size:14px;" id="son-eklenen-baslik">Son Eklenen İhaleler</span>
+            <a href="ihaleler" id="son-eklenen-link" style="font-size:12px; color:var(--muted); text-decoration:none;">Tümü →</a>
           </div>
           <div id="son-ihaleler-list" style="padding:4px 0 8px;">
             <div style="padding:12px 18px; color:var(--muted); font-size:13px;">Yükleniyor…</div>
@@ -1031,18 +1045,26 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
-<script src="js/harita.js?v=rot1"></script>
+<script src="js/harita.js?v=3"></script>
 <script src="js/sidebar-user.js?v=3"></script>
 <script src="js/bildirim-sayaci.js?v=rot1"></script>
 <script src="js/plan.js?v=rot1"></script>
 <script src="js/main.js"></script>
-<script src="js/takip.js?v=rot1"></script>
+<script src="js/takip.js?v=2"></script>
 <script>
   // ── Supabase config ──────────────────────────────────
   const SUPABASE_URL  = "https://ihaleglobal.com";
   const SUPABASE_KEY  = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzg0MzA3MTU4LCJleHAiOjE5NDE5ODcxNTh9.CjNKulvirotDD_y2oO2QKgo0kbqYvL0jUSV1RiDMoso";
   const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
   const esc = s => (s == null ? '' : String(s)).replace(/[<>&"']/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&#39;'}[c]));
+
+  // ── Global mod (18 Tem): Tümü/İhaleler/Doğrudan Temin — tüm widget'lar buna göre yeniden çizilir.
+  // dogrudan-temin.html DURUM_GRUP.acik ile BİREBİR (DT'nin "aktif" karşılığı).
+  // window. ile atanır (let/const üst-seviye bildirimler window özelliği OLUŞTURMAZ) — js/harita.js
+  // ayrı <script> etiketinden window.aktifDashMod'u okuyup ilk çizimde doğru modla başlayabilsin diye.
+  window.aktifDashMod = 'tumu';
+  const DT_DURUM_ACIK = ['Doğrudan Temin Duyurusu Yayımlanmış', 'Teklifler Değerlendiriliyor'];
+  const dashFmt = (n) => (n ?? 0).toLocaleString('tr');
 
   // ── Tarih formatlama ─────────────────────────────────
   function tarihFormatla(tarih) {
@@ -1292,11 +1314,22 @@
     }
   }
 
-  // ── KPI kartları (gerçek veri) ──────────────────────
-  async function kpiYukle() {
-    // Takipteki ihale (localStorage)
+  // ── KPI kartları (gerçek veri, mod-farkındalıklı — 18 Tem) ──────────────────────
+  // modIhale/modDt: 'tumu' ikisini de toplar, 'ihale'/'dt' yalnız kendi kaynağını okur.
+  // DT'nin "teklif bitiş tarihi" kavramı YOK (duyuru bazlı, deadline değil) — o iki
+  // kart (7 Gün İçinde Bitecek, Bugün Son Teklif) DT-only modda dürüstçe "—" gösterir,
+  // uydurma proxy metrik KONULMADI.
+  async function kpiYukle(mod) {
+    mod = mod || aktifDashMod;
+    const modIhale = mod === 'ihale' || mod === 'tumu';
+    const modDt    = mod === 'dt'    || mod === 'tumu';
+
     const takipEl = document.getElementById('kpi-takip');
-    if (takipEl) takipEl.textContent = Takip.sayi();
+    if (takipEl) {
+      const nIhale = modIhale ? Takip.sayi() : 0;
+      const nDt = modDt && window.TakipDT ? TakipDT.sayi() : 0;
+      takipEl.textContent = dashFmt(nIhale + nDt);
+    }
 
     const simdi = new Date();
     const birHaftaSonra = new Date(simdi.getTime() + 7 * 86400000).toISOString();
@@ -1317,39 +1350,71 @@
     const gununTarihi = bugunBaslangic.toISOString().slice(0, 10);
     const yediGunSonraTarihi = new Date(bugunBaslangic.getTime() + 7 * 86400000).toISOString().slice(0, 10);
     const setHref = (id, href) => { const el = document.getElementById(id); if (el) el.href = href; };
-    setHref('stat-eklendi', `ihaleler?sekme=detayli&yayinBas=${gununTarihi}&yayinBit=${gununTarihi}`);
-    setHref('stat-sonteklif', `ihaleler?sekme=detayli&durum=aktif&teklifBas=${gununTarihi}&teklifBit=${gununTarihi}`);
-    // sekme=guncel bilinçli tercih: son_teklif_tarihi >= şu an (alt sınır) sağlıyor,
-    // detayli'de alt sınır olmazdı (2010'dan beri süresi geçmiş ihaleler de dahil olurdu).
-    setHref('kpi-card-yaklasan', `ihaleler?sekme=guncel&durum=aktif&teklifBit=${yediGunSonraTarihi}`);
+    if (modIhale) {
+      setHref('stat-eklendi', `ihaleler?sekme=detayli&yayinBas=${gununTarihi}&yayinBit=${gununTarihi}`);
+      setHref('stat-sonteklif', `ihaleler?sekme=detayli&durum=aktif&teklifBas=${gununTarihi}&teklifBit=${gununTarihi}`);
+      // sekme=guncel bilinçli tercih: son_teklif_tarihi >= şu an (alt sınır) sağlıyor,
+      // detayli'de alt sınır olmazdı (2010'dan beri süresi geçmiş ihaleler de dahil olurdu).
+      setHref('kpi-card-yaklasan', `ihaleler?sekme=guncel&durum=aktif&teklifBit=${yediGunSonraTarihi}`);
+      setHref('kpi-card-aktif', 'ihaleler?sekme=detayli&durum=aktif');
+      setHref('kpi-card-buyuk', 'ihaleler?sekme=detayli&durum=aktif&minBedel=43142132');
+    } else {
+      setHref('stat-eklendi', 'dogrudan-temin');
+      setHref('stat-sonteklif', 'dogrudan-temin');
+      setHref('kpi-card-yaklasan', 'dogrudan-temin');
+      setHref('kpi-card-aktif', 'dogrudan-temin');
+      setHref('kpi-card-buyuk', 'dogrudan-temin');
+    }
+
+    const setVal = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = dashFmt(v); };
+    const setYok = (id) => { const el = document.getElementById(id); if (el) el.textContent = '—'; };
 
     try {
-      const [aktif, yaklasan, buyuk, bugunEklenen, bugunSonGun] = await Promise.all([
-        sb.from('ilanlar').select('id', { count: 'exact', head: true }).eq('durum', 'aktif'),
-        sb.from('ilanlar').select('id', { count: 'exact', head: true })
-          .eq('durum', 'aktif').gte('son_teklif_tarihi', simdi.toISOString()).lte('son_teklif_tarihi', birHaftaSonra),
-        sb.from('ilanlar').select('id', { count: 'exact', head: true })
-          .eq('durum', 'aktif').gte('yaklasik_maliyet_min', 43142132),
-        sb.from('ilanlar').select('id', { count: 'exact', head: true })
-          .gte('ilan_tarihi', bugunBaslangic.toISOString()).lte('ilan_tarihi', bugunBitis.toISOString()),
-        sb.from('ilanlar').select('id', { count: 'exact', head: true })
-          .eq('durum', 'aktif').gte('son_teklif_tarihi', bugunBaslangic.toISOString()).lte('son_teklif_tarihi', bugunBitis.toISOString()),
-      ]);
-      const setVal = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = (v ?? 0).toLocaleString('tr'); };
-      setVal('kpi-aktif', aktif.count);
-      setVal('kpi-yaklasan', yaklasan.count);
-      setVal('kpi-buyuk', buyuk.count);
-      setVal('hdr-bugun', bugunEklenen.count);
-      setVal('hdr-songun', bugunSonGun.count);
-      setVal('gs-eklendi', bugunEklenen.count);
-      setVal('gs-sonteklif', bugunSonGun.count);
-      // Toplam kazanım kaydı (ihale_sonuclari)
-      try {
-        const { count: kazanimSay } = await sb.from('ihale_sonuclari').select('id', { count: 'exact', head: true });
-        setVal('gs-kazanim', kazanimSay);
-      } catch (_) {}
+      let aktifT = 0, yaklasanT = 0, buyukT = 0, eklenenT = 0, sonGunT = 0, kazanimT = 0;
+
+      if (modIhale) {
+        const [aktif, yaklasan, buyuk, bugunEklenen, bugunSonGun] = await Promise.all([
+          sb.from('ilanlar').select('id', { count: 'exact', head: true }).eq('durum', 'aktif'),
+          sb.from('ilanlar').select('id', { count: 'exact', head: true })
+            .eq('durum', 'aktif').gte('son_teklif_tarihi', simdi.toISOString()).lte('son_teklif_tarihi', birHaftaSonra),
+          sb.from('ilanlar').select('id', { count: 'exact', head: true })
+            .eq('durum', 'aktif').gte('yaklasik_maliyet_min', 43142132),
+          sb.from('ilanlar').select('id', { count: 'exact', head: true })
+            .gte('ilan_tarihi', bugunBaslangic.toISOString()).lte('ilan_tarihi', bugunBitis.toISOString()),
+          sb.from('ilanlar').select('id', { count: 'exact', head: true })
+            .eq('durum', 'aktif').gte('son_teklif_tarihi', bugunBaslangic.toISOString()).lte('son_teklif_tarihi', bugunBitis.toISOString()),
+        ]);
+        aktifT += aktif.count || 0; yaklasanT += yaklasan.count || 0; buyukT += buyuk.count || 0;
+        eklenenT += bugunEklenen.count || 0; sonGunT += bugunSonGun.count || 0;
+        try {
+          const { count: kazanimSay } = await sb.from('ihale_sonuclari').select('id', { count: 'exact', head: true });
+          kazanimT += kazanimSay || 0;
+        } catch (_) {}
+      }
+
+      if (modDt) {
+        const [dtAktif, dtEklenen, dtBuyuk, dtKazanim] = await Promise.all([
+          sb.from('dogrudan_temin_ilanlari').select('id', { count: 'exact', head: true }).in('durum', DT_DURUM_ACIK),
+          sb.from('dogrudan_temin_ilanlari').select('id', { count: 'exact', head: true })
+            .gte('tarih', bugunBaslangic.toISOString()).lte('tarih', bugunBitis.toISOString()),
+          sb.from('dogrudan_temin_sonuclari').select('dt_no', { count: 'exact', head: true }).gte('kazanan_bedel', 43142132),
+          sb.from('dogrudan_temin_sonuclari').select('dt_no', { count: 'exact', head: true }).not('kazanan_firma', 'is', null),
+        ]);
+        aktifT += dtAktif.count || 0; eklenenT += dtEklenen.count || 0;
+        buyukT += dtBuyuk.count || 0; kazanimT += dtKazanim.count || 0;
+        // yaklasanT/sonGunT'e DT katkısı YOK — DT'nin "teklif bitiş tarihi" karşılığı yok.
+      }
+
+      setVal('kpi-aktif', aktifT);
+      setVal('kpi-buyuk', buyukT);
+      setVal('hdr-bugun', eklenenT);
+      setVal('gs-eklendi', eklenenT);
+      setVal('gs-kazanim', kazanimT);
+      if (modIhale) { setVal('kpi-yaklasan', yaklasanT); setVal('hdr-songun', sonGunT); setVal('gs-sonteklif', sonGunT); }
+      else { setYok('kpi-yaklasan'); setYok('hdr-songun'); setYok('gs-sonteklif'); }
+
       const rc = document.getElementById('results-count');
-      if (rc) rc.textContent = `${(aktif.count ?? 0).toLocaleString('tr')} sonuç`;
+      if (rc && modIhale) rc.textContent = `${dashFmt(aktifT)} sonuç`;
     } catch (e) {
       console.warn('KPI yüklenemedi:', e);
     }
@@ -1389,12 +1454,32 @@
   });
 
   // ── Top Kurumlar widget ──────────────────────────────
-  async function topKurumlarYukle() {
+  // İki RPC sonucunu anahtar alanına göre birleştirir (Tümü modu: ihale+DT toplamı).
+  function dashBirlestir(a, b, anahtar, sayi) {
+    const map = new Map();
+    (a || []).forEach(r => map.set(r[anahtar], { ...r }));
+    (b || []).forEach(r => {
+      const mevcut = map.get(r[anahtar]);
+      if (mevcut) mevcut[sayi] = (mevcut[sayi] || 0) + (r[sayi] || 0);
+      else map.set(r[anahtar], { ...r });
+    });
+    return [...map.values()];
+  }
+
+  async function topKurumlarYukle(mod) {
+    mod = mod || aktifDashMod;
     const el = document.getElementById('top-kurumlar-list');
     try {
       // Server-side aggregate RPC (eskiden tüm aktif ilanlar client'a inip JS'te sayılıyordu — ~16 istek/açılış)
-      const { data, error } = await sb.rpc('idare_sayim');
-      if (error) throw error;  // supabase-js hata firlatmaz — kilitli RPC'de catch'e dus (giris cagrisi)
+      // dt_idare_sayim idare_sayim ile AYNI şekil (idare/toplam/aktif/en_yakin_il) — ikisi de anon'a kapalı.
+      const istekler = [];
+      if (mod === 'ihale' || mod === 'tumu') istekler.push(sb.rpc('idare_sayim'));
+      if (mod === 'dt' || mod === 'tumu') istekler.push(sb.rpc('dt_idare_sayim'));
+      const sonuclar = await Promise.all(istekler);
+      for (const r of sonuclar) if (r.error) throw r.error;  // kilitli RPC'de catch'e düş (giriş çağrısı)
+      const data = mod === 'tumu'
+        ? dashBirlestir(sonuclar[0].data, sonuclar[1].data, 'idare', 'aktif')
+        : sonuclar[0].data;
       const sirali = (data || []).filter(r => (r.aktif || 0) > 0).sort((a, b) => (b.aktif || 0) - (a.aktif || 0)).slice(0, 7);
       const maks = sirali[0]?.aktif || 1;
       el.innerHTML = sirali.map(r => { const idare = r.idare, sayi = r.aktif; return `
@@ -1417,30 +1502,49 @@
     }
   }
 
-  // ── Son Eklenen İhaleler widget ──────────────────────
-  async function sonIhalelerYukle() {
+  // ── Son Eklenen (İhale/DT) widget ────────────────────
+  function dashParaKisa(v) {
+    if (!v) return null;
+    return v >= 1e9 ? (v/1e9).toFixed(1)+'Mr₺' : v >= 1e6 ? (v/1e6).toFixed(1)+'M₺' : (v/1000).toFixed(0)+'K₺';
+  }
+  function dashGunAy(t) { return t ? new Date(t).toLocaleDateString('tr-TR', { day: '2-digit', month: 'short' }) : null; }
+
+  async function sonIhalelerYukle(mod) {
+    mod = mod || aktifDashMod;
     const el = document.getElementById('son-ihaleler-list');
+    const baslikEl = document.getElementById('son-eklenen-baslik'), linkEl = document.getElementById('son-eklenen-link');
+    if (baslikEl) baslikEl.textContent = mod === 'ihale' ? 'Son Eklenen İhaleler' : mod === 'dt' ? 'Son Eklenen Doğrudan Temin' : 'Son Eklenenler';
+    if (linkEl) linkEl.href = mod === 'dt' ? 'dogrudan-temin' : 'ihaleler';
     try {
-      // ekap_id/idare seçiliyordu ama render hiç kullanmıyor — anon'a da kapalı kolonlar
-      // (migration_anon_maske.sql) olduğundan select'ten tamamen çıkarıldı.
-      const { data } = await sb.from('ilanlar')
-        .select('id,baslik,il,tur,son_teklif_tarihi,yaklasik_maliyet_min,ilan_tarihi')
-        .eq('durum', 'aktif').order('ilan_tarihi', { ascending: false }).limit(6);
-      if (!data || !data.length) { el.innerHTML = '<div style="padding:12px 18px; color:var(--muted); font-size:13px;">Veri yok</div>'; return; }
-      el.innerHTML = data.map(d => {
-        const maliyet = d.yaklasik_maliyet_min
-          ? (d.yaklasik_maliyet_min >= 1e9 ? (d.yaklasik_maliyet_min/1e9).toFixed(1)+'Mr₺'
-             : d.yaklasik_maliyet_min >= 1e6 ? (d.yaklasik_maliyet_min/1e6).toFixed(1)+'M₺'
-             : (d.yaklasik_maliyet_min/1000).toFixed(0)+'K₺') : '—';
-        const sonTeklif = d.son_teklif_tarihi ? new Date(d.son_teklif_tarihi).toLocaleDateString('tr-TR',{day:'2-digit',month:'short'}) : '—';
-        const yayinTarih = d.ilan_tarihi ? new Date(d.ilan_tarihi).toLocaleDateString('tr-TR',{day:'2-digit',month:'short'}) : '';
-        return `<a href="ihale-detay?id=${d.id}" style="display:block; padding:9px 18px; text-decoration:none; border-bottom:1px solid var(--border); transition:background .15s;" onmouseover="this.style.background='var(--card-bg)'" onmouseout="this.style.background=''">
+      const gosterIhale = mod === 'ihale' || mod === 'tumu';
+      const gosterDt = mod === 'dt' || mod === 'tumu';
+      const adet = mod === 'tumu' ? 4 : 6;  // Tümü'de iki kaynaktan karışık listelenir, aşırı uzamasın
+      const [ihaleRes, dtRes] = await Promise.all([
+        gosterIhale ? sb.from('ilanlar')
+          .select('id,baslik,il,tur,son_teklif_tarihi,yaklasik_maliyet_min,ilan_tarihi')
+          .eq('durum', 'aktif').order('ilan_tarihi', { ascending: false }).limit(adet) : Promise.resolve({ data: [] }),
+        gosterDt ? sb.from('dogrudan_temin_ilanlari')
+          .select('dt_no,baslik,il,tur,tarih').order('tarih', { ascending: false }).limit(adet) : Promise.resolve({ data: [] }),
+      ]);
+      const ihaleSatirlari = (ihaleRes.data || []).map(d => ({ ...d, _kaynak: 'ihale', _tarih: d.ilan_tarihi }));
+      const dtSatirlari = (dtRes.data || []).map(d => ({ ...d, _kaynak: 'dt', _tarih: d.tarih }));
+      const hepsi = [...ihaleSatirlari, ...dtSatirlari]
+        .sort((a, b) => new Date(b._tarih || 0) - new Date(a._tarih || 0)).slice(0, 6);
+      if (!hepsi.length) { el.innerHTML = '<div style="padding:12px 18px; color:var(--muted); font-size:13px;">Veri yok</div>'; return; }
+      el.innerHTML = hepsi.map(d => {
+        const href = d._kaynak === 'dt' ? `dogrudan-temin?dt_no=${encodeURIComponent(d.dt_no)}` : `ihale-detay?id=${d.id}`;
+        const rozet = d._kaynak === 'dt' ? '<span style="color:#4ade80;">⚡ DT</span>' : '<span style="color:#60a5fa;">📋 İhale</span>';
+        const maliyet = dashParaKisa(d.yaklasik_maliyet_min);
+        const tarihGoster = dashGunAy(d._tarih);
+        const sonTeklif = d._kaynak === 'ihale' ? dashGunAy(d.son_teklif_tarihi) : null;
+        return `<a href="${href}" style="display:block; padding:9px 18px; text-decoration:none; border-bottom:1px solid var(--border); transition:background .15s;" onmouseover="this.style.background='var(--card-bg)'" onmouseout="this.style.background=''">
           <div style="font-size:13px; color:var(--white); font-weight:500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; margin-bottom:3px;">${esc(d.baslik) || '—'}</div>
-          <div style="display:flex; gap:8px; font-size:11px; color:var(--muted);">
+          <div style="display:flex; gap:8px; font-size:11px; color:var(--muted); flex-wrap:wrap;">
+            ${mod === 'tumu' ? rozet : ''}
             <span>📍 ${esc(d.il) || '—'}</span>
-            <span style="color:var(--amber);">₺ ${maliyet}</span>
-            ${yayinTarih ? `<span>📅 ${yayinTarih}</span>` : ''}
-            <span>⏰ ${sonTeklif}</span>
+            ${maliyet ? `<span style="color:var(--amber);">₺ ${maliyet}</span>` : ''}
+            ${tarihGoster ? `<span>📅 ${tarihGoster}</span>` : ''}
+            ${sonTeklif ? `<span>⏰ ${sonTeklif}</span>` : ''}
           </div>
         </a>`;
       }).join('');
@@ -1448,18 +1552,29 @@
   }
 
   // ── Kategori Dağılımı widget ─────────────────────────
-  async function topKategorilerYukle() {
+  async function topKategorilerYukle(mod) {
+    mod = mod || aktifDashMod;
     const el = document.getElementById('top-kategoriler-list');
+    const baslikEl = document.getElementById('kategori-baslik'), linkEl = document.getElementById('kategori-link');
+    if (baslikEl) baslikEl.textContent = mod === 'ihale' ? 'Kategori Dağılımı — İhaleler' : mod === 'dt' ? 'Kategori Dağılımı — Doğrudan Temin' : 'Kategori Dağılımı';
+    const hedefSayfa = mod === 'dt' ? 'dogrudan-temin' : 'ihaleler';
+    if (linkEl) linkEl.href = hedefSayfa;
     try {
-      // Server-side aggregate RPC (eskiden tüm aktif ilanlar client'a inip JS'te sayılıyordu)
-      const { data } = await sb.rpc('kategori_sayim');
+      // dt_kategori_sayim kategori_sayim ile AYNI şekil (kategori/toplam/aktif) — ikisi de anon'a açık.
+      const istekler = [];
+      if (mod === 'ihale' || mod === 'tumu') istekler.push(sb.rpc('kategori_sayim'));
+      if (mod === 'dt' || mod === 'tumu') istekler.push(sb.rpc('dt_kategori_sayim'));
+      const sonuclar = await Promise.all(istekler);
+      const data = mod === 'tumu'
+        ? dashBirlestir(sonuclar[0].data, sonuclar[1].data, 'kategori', 'aktif')
+        : sonuclar[0].data;
       const sirali = (data || []).filter(r => (r.aktif || 0) > 0).sort((a,b)=>(b.aktif||0)-(a.aktif||0)).slice(0,12)
         .map(r => [r.kategori || 'Diğer', r.aktif]);
       const maks = sirali[0]?.[1] || 1;
       const RENKLER = ['#f0a500','#6366f1','#10b981','#ef4444','#3b82f6','#8b5cf6','#f59e0b','#06b6d4','#84cc16','#f97316','#ec4899','#14b8a6'];
       el.innerHTML = `<div style="display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:6px 16px;">
         ${sirali.map(([kat, sayi], i) => `
-          <a href="ihaleler?kategori=${encodeURIComponent(kat)}" style="text-decoration:none; padding:4px 0;">
+          <a href="${hedefSayfa}?kategori=${encodeURIComponent(kat)}" style="text-decoration:none; padding:4px 0;">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:3px;">
               <span style="font-size:12px; color:var(--white); font-weight:500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:80%;">${esc(kat)}</span>
               <span style="font-size:11px; color:${RENKLER[i % RENKLER.length]}; font-weight:600; margin-left:6px;">${sayi.toLocaleString('tr')}</span>
@@ -1473,51 +1588,96 @@
   }
 
   // ── Yaklaşan Bitiş (Takip Listesi) widget ────────────
-  async function yaklaşanBitisYukle() {
+  // DT'nin ihale'deki gibi bir "teklif bitiş tarihi" YOK (duyuru bazlı) — takip edilen
+  // DT kayıtları GÜN-SAYACI olmadan, en son tarihliden başlayarak listelenir.
+  async function yaklaşanBitisYukle(mod) {
+    mod = mod || aktifDashMod;
     const el = document.getElementById('yaklasan-bitis-list');
+    const gosterIhale = mod === 'ihale' || mod === 'tumu';
+    const gosterDt = (mod === 'dt' || mod === 'tumu') && window.TakipDT;
     try {
-      const takipIds = Takip.liste();
-      if (!takipIds.length) {
-        el.innerHTML = `<div style="padding:16px 18px; color:var(--muted); font-size:13px; text-align:center;">
-          <div style="font-size:24px; margin-bottom:8px;">☆</div>
-          Henüz takipte ihale yok.<br>
-          <a href="ihaleler" style="color:var(--amber); font-size:12px; margin-top:6px; display:inline-block;">İhale Ara →</a>
-        </div>`;
-        return;
-      }
-      const simdi = new Date();
-      const { data } = await sb.from('ilanlar')
-        .select('id,baslik,idare,il,son_teklif_tarihi,durum,yaklasik_maliyet_min,tahmini_bedel')
-        .in('id', takipIds)
-        .gte('son_teklif_tarihi', simdi.toISOString())
-        .order('son_teklif_tarihi', { ascending: true })
-        .limit(6);
-
-      if (!data || !data.length) {
-        el.innerHTML = `<div style="padding:12px 18px; color:var(--muted); font-size:13px;">Aktif takip ilanı bulunamadı.</div>`;
-        return;
-      }
-
       const paraCevir = v => v >= 1e9 ? (v/1e9).toFixed(1)+'M₺' : v >= 1e6 ? (v/1e6).toFixed(1)+'M₺' : v >= 1e3 ? (v/1e3).toFixed(0)+'B₺' : v+'₺';
-      el.innerHTML = data.map(d => {
-        const kalan = Math.ceil((new Date(d.son_teklif_tarihi) - simdi) / 86400000);
-        const aciliyor = kalan <= 3 ? '#ef4444' : kalan <= 7 ? '#f0a500' : '#4ade80';
-        const tarih = new Date(d.son_teklif_tarihi).toLocaleDateString('tr-TR', { day: '2-digit', month: 'short' });
-        const bedel = d.yaklasik_maliyet_min || d.tahmini_bedel;
-        const bedelStr = bedel ? ` · <span style="color:var(--amber);font-weight:600;">${paraCevir(bedel)}</span>` : '';
-        return `<a href="ihale-detay?id=${d.id}" style="display:block; padding:9px 18px; text-decoration:none; border-bottom:1px solid var(--border); transition:background .15s;" onmouseover="this.style.background='var(--card-bg)'" onmouseout="this.style.background=''">
-          <div style="display:flex; align-items:center; gap:10px;">
-            <div style="min-width:44px; text-align:center; background:rgba(0,0,0,.25); border-radius:6px; padding:4px 6px; flex-shrink:0;">
-              <div style="font-size:16px; font-weight:800; color:${aciliyor}; line-height:1;">${kalan}</div>
-              <div style="font-size:9px; color:var(--muted); text-transform:uppercase; letter-spacing:.04em;">GÜN</div>
-            </div>
-            <div style="min-width:0; flex:1;">
-              <div style="font-size:12.5px; font-weight:600; color:var(--white); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${d.baslik || '—'}</div>
-              <div style="font-size:11px; color:var(--muted); margin-top:2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${d.idare || ''}${bedelStr} · Son: ${tarih}</div>
-            </div>
-          </div>
-        </a>`;
-      }).join('');
+      const simdi = new Date();
+      let ihaleHtml = [], dtHtml = [];
+
+      if (gosterIhale) {
+        const takipIds = Takip.liste();
+        if (takipIds.length) {
+          const { data } = await sb.from('ilanlar')
+            .select('id,baslik,idare,il,son_teklif_tarihi,durum,yaklasik_maliyet_min,tahmini_bedel')
+            .in('id', takipIds).gte('son_teklif_tarihi', simdi.toISOString())
+            .order('son_teklif_tarihi', { ascending: true }).limit(mod === 'tumu' ? 4 : 6);
+          ihaleHtml = (data || []).map(d => {
+            const kalan = Math.ceil((new Date(d.son_teklif_tarihi) - simdi) / 86400000);
+            const aciliyor = kalan <= 3 ? '#ef4444' : kalan <= 7 ? '#f0a500' : '#4ade80';
+            const tarih = new Date(d.son_teklif_tarihi).toLocaleDateString('tr-TR', { day: '2-digit', month: 'short' });
+            const bedel = d.yaklasik_maliyet_min || d.tahmini_bedel;
+            const bedelStr = bedel ? ` · <span style="color:var(--amber);font-weight:600;">${paraCevir(bedel)}</span>` : '';
+            return `<a href="ihale-detay?id=${d.id}" style="display:block; padding:9px 18px; text-decoration:none; border-bottom:1px solid var(--border); transition:background .15s;" onmouseover="this.style.background='var(--card-bg)'" onmouseout="this.style.background=''">
+              <div style="display:flex; align-items:center; gap:10px;">
+                <div style="min-width:44px; text-align:center; background:rgba(0,0,0,.25); border-radius:6px; padding:4px 6px; flex-shrink:0;">
+                  <div style="font-size:16px; font-weight:800; color:${aciliyor}; line-height:1;">${kalan}</div>
+                  <div style="font-size:9px; color:var(--muted); text-transform:uppercase; letter-spacing:.04em;">GÜN</div>
+                </div>
+                <div style="min-width:0; flex:1;">
+                  <div style="font-size:12.5px; font-weight:600; color:var(--white); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${esc(d.baslik) || '—'}</div>
+                  <div style="font-size:11px; color:var(--muted); margin-top:2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${esc(d.idare) || ''}${bedelStr} · Son: ${tarih}</div>
+                </div>
+              </div>
+            </a>`;
+          });
+        }
+      }
+
+      if (gosterDt) {
+        const dtNolar = TakipDT.liste();
+        if (dtNolar.length) {
+          // idare BİLİNÇLİ select'te YOK — anon'a kapalı kolon (migration_anon_maske.sql), dahil
+          // edilirse misafirde TÜM sorgu 42501 ile çöker (sessizce boş listeye düşerdi — 18 Tem bulundu).
+          const { data } = await sb.from('dogrudan_temin_ilanlari')
+            .select('dt_no,baslik,il,tarih,durum').in('dt_no', dtNolar)
+            .order('tarih', { ascending: false }).limit(mod === 'tumu' ? 4 : 6);
+          // Bedel varsa (backfill sonrası) göstermek için ayrı sorgu — az sayıda dt_no, tek istek yeterli.
+          const dtNoListesi = (data || []).map(d => d.dt_no);
+          let bedelMap = {};
+          if (dtNoListesi.length) {
+            const { data: sonucData } = await sb.from('dogrudan_temin_sonuclari')
+              .select('dt_no,kazanan_bedel').in('dt_no', dtNoListesi).not('kazanan_bedel', 'is', null);
+            (sonucData || []).forEach(s => { bedelMap[s.dt_no] = (bedelMap[s.dt_no] || 0) + (s.kazanan_bedel || 0); });
+          }
+          dtHtml = (data || []).map(d => {
+            const tarih = d.tarih ? new Date(d.tarih).toLocaleDateString('tr-TR', { day: '2-digit', month: 'short' }) : '—';
+            const bedel = bedelMap[d.dt_no];
+            const bedelStr = bedel ? ` · <span style="color:var(--amber);font-weight:600;">${paraCevir(bedel)}</span>` : '';
+            return `<a href="dogrudan-temin?dt_no=${encodeURIComponent(d.dt_no)}" style="display:block; padding:9px 18px; text-decoration:none; border-bottom:1px solid var(--border); transition:background .15s;" onmouseover="this.style.background='var(--card-bg)'" onmouseout="this.style.background=''">
+              <div style="display:flex; align-items:center; gap:10px;">
+                <div style="min-width:44px; text-align:center; background:rgba(74,222,128,.12); border-radius:6px; padding:4px 6px; flex-shrink:0;">
+                  <div style="font-size:14px; font-weight:800; color:#4ade80; line-height:1;">⚡</div>
+                  <div style="font-size:9px; color:var(--muted); text-transform:uppercase; letter-spacing:.04em;">DT</div>
+                </div>
+                <div style="min-width:0; flex:1;">
+                  <div style="font-size:12.5px; font-weight:600; color:var(--white); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${esc(d.baslik) || '—'}</div>
+                  <div style="font-size:11px; color:var(--muted); margin-top:2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">📍 ${esc(d.il) || '—'}${bedelStr} · ${tarih}</div>
+                </div>
+              </div>
+            </a>`;
+          });
+        }
+      }
+
+      const hepsi = [...ihaleHtml, ...dtHtml];
+      if (!hepsi.length) {
+        const takipVarMi = (gosterIhale && Takip.sayi() > 0) || (gosterDt && TakipDT.sayi() > 0);
+        el.innerHTML = takipVarMi
+          ? `<div style="padding:12px 18px; color:var(--muted); font-size:13px;">Aktif takip ilanı bulunamadı.</div>`
+          : `<div style="padding:16px 18px; color:var(--muted); font-size:13px; text-align:center;">
+              <div style="font-size:24px; margin-bottom:8px;">☆</div>
+              Henüz takipte ${mod === 'dt' ? 'doğrudan temin' : 'ihale'} yok.<br>
+              <a href="${mod === 'dt' ? 'dogrudan-temin' : 'ihaleler'}" style="color:var(--amber); font-size:12px; margin-top:6px; display:inline-block;">${mod === 'dt' ? 'Doğrudan Temin Ara' : 'İhale Ara'} →</a>
+            </div>`;
+        return;
+      }
+      el.innerHTML = hepsi.join('');
     } catch (e) { el.innerHTML = '<div style="padding:12px 18px; color:var(--muted); font-size:13px;">Yüklenemedi</div>'; }
   }
 
@@ -1586,16 +1746,22 @@
   }
 
   // ── 7-Günlük Yayın Trendi widget ─────────────────────
-  async function trendYukle() {
+  async function trendYukle(mod) {
+    mod = mod || aktifDashMod;
     const el = document.getElementById('trend-bars');
+    const baslikEl = document.getElementById('trend-baslik'), linkEl = document.getElementById('trend-link');
+    if (baslikEl) baslikEl.textContent = mod === 'ihale' ? '📈 Son 7 Gün — Günlük İhale Yayını' : mod === 'dt' ? '📈 Son 7 Gün — Günlük Doğrudan Temin' : '📈 Son 7 Gün — Günlük Yayın Trendi';
+    if (linkEl) { linkEl.href = mod === 'dt' ? 'dogrudan-temin' : 'ihaleler'; linkEl.textContent = mod === 'dt' ? 'Doğrudan Temin →' : 'Güncel İhaleler →'; }
     try {
       const yediGunOnce = new Date();
       yediGunOnce.setDate(yediGunOnce.getDate() - 6);
       yediGunOnce.setHours(0, 0, 0, 0);
-      const { data } = await sb.from('ilanlar')
-        .select('ilan_tarihi')
-        .gte('ilan_tarihi', yediGunOnce.toISOString())
-        .limit(3000);
+      const gosterIhale = mod === 'ihale' || mod === 'tumu';
+      const gosterDt = mod === 'dt' || mod === 'tumu';
+      const [ihaleRes, dtRes] = await Promise.all([
+        gosterIhale ? sb.from('ilanlar').select('ilan_tarihi').gte('ilan_tarihi', yediGunOnce.toISOString()).limit(3000) : Promise.resolve({ data: [] }),
+        gosterDt ? sb.from('dogrudan_temin_ilanlari').select('tarih').gte('tarih', yediGunOnce.toISOString()).limit(3000) : Promise.resolve({ data: [] }),
+      ]);
 
       const gunAd = ['Paz', 'Pzt', 'Sal', 'Çar', 'Per', 'Cum', 'Cmt'];
       const sayim = {};
@@ -1606,9 +1772,14 @@
         sayim[key] = 0;
         gunler.push(key);
       }
-      (data || []).forEach(r => {
+      (ihaleRes.data || []).forEach(r => {
         if (!r.ilan_tarihi) return;
         const key = r.ilan_tarihi.split('T')[0];
+        if (key in sayim) sayim[key]++;
+      });
+      (dtRes.data || []).forEach(r => {
+        if (!r.tarih) return;
+        const key = r.tarih.split('T')[0];
         if (key in sayim) sayim[key]++;
       });
 
@@ -1704,6 +1875,21 @@
       if (dot) dot.style.display = count ? '' : 'none';
     } catch (_) {}
   }
+
+  // ── Global mod değişimi: TÜM mod-farkındalıklı widget'ları yeniden çizer.
+  // Harita (js/harita.js) 'toplam'/'ihale'/'dt' bekliyor — bu sayfanın 'tumu' adını eşler;
+  // haritaModSec zaten fetch YAPMAZ, yalnız mevcut katmanı yeniden stiller (ucuz çağrı).
+  window.dashModSec = function (mod) {
+    aktifDashMod = mod;
+    document.querySelectorAll('.dash-mod-btn').forEach(b => b.classList.toggle('active', b.dataset.mod === mod));
+    kpiYukle(mod);
+    trendYukle(mod);
+    topKurumlarYukle(mod);
+    sonIhalelerYukle(mod);
+    topKategorilerYukle(mod);
+    yaklaşanBitisYukle(mod);
+    if (window.haritaModSec) haritaModSec(mod === 'tumu' ? 'toplam' : mod);
+  };
 
   // ── Sayfa yüklenince ─────────────────────────────────
   kpiYukle();
