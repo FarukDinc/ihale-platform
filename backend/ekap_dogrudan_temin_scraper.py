@@ -49,6 +49,7 @@ import time
 from datetime import datetime, timezone
 
 import httpx
+from proxy_havuz import havuz_al, ekap_ssl_baglami
 from dotenv import load_dotenv
 
 sys.path.insert(0, os.path.dirname(__file__))
@@ -95,11 +96,15 @@ def checkpoint_yaz(sayfa: int):
         json.dump({"son_sayfa": sayfa}, f)
 
 
-def enum_haritalari(client: httpx.Client) -> dict:
+def enum_haritalari(havuz) -> dict:
     """EKAP'ın dtEnum'undan tür/durum/il kod->etiket haritalarını çeker."""
-    r = client.get(ARAMA_ENDPOINT, params={"ES": "", "ihaleidListesi": "", "metot": "dtEnum"}, headers=BASE_HEADERS, timeout=30.0)
-    r.raise_for_status()
-    veri = r.json()
+    with havuz.istek() as ist:
+        r = ist.client.get(ARAMA_ENDPOINT, params={"ES": "", "ihaleidListesi": "", "metot": "dtEnum"},
+                           headers=BASE_HEADERS, timeout=30.0)
+        if r.status_code != 200:
+            ist.basarisiz()
+        r.raise_for_status()
+        veri = r.json()
     return {
         "tur": {e["A"]: e["D"] for e in veri.get("enumDtTipleri", [])},
         "durum": {e["A"]: e["D"] for e in veri.get("enumDtDurumlari", [])},
@@ -118,19 +123,25 @@ def tarih_parse(s: str | None):
     return f"{y}-{int(a):02d}-{int(g):02d}T{int(sa or 0):02d}:{dk or '00'}:00"
 
 
-def sayfa_cek(client: httpx.Client, sayfa: int, deneme: int = 3) -> list:
+def sayfa_cek(havuz, sayfa: int, deneme: int = 3) -> list:
+    """Her deneme havuzdan çıkan SIRADAKİ IP ile gider — bir IP bloklanmışsa
+    tekrar denemesi başka bir IP'ye düşer. Hız sınırı (IP başına soğuma + küresel
+    tavan) havuzda uygulanıyor; burada ayrıca beklemek gerekmiyor."""
     for i in range(deneme):
         try:
-            r = client.get(
-                ARAMA_ENDPOINT,
-                params={
-                    "ES": "", "ihaleidListesi": "", "dtBilgiSecim": "1",
-                    "metot": "dtAra", "orderBy": "10", "pageIndex": sayfa,
-                },
-                headers=BASE_HEADERS, timeout=30.0,
-            )
-            r.raise_for_status()
-            return r.json().get("yeniDogrudanTeminAramaResultList", []) or []
+            with havuz.istek() as ist:
+                r = ist.client.get(
+                    ARAMA_ENDPOINT,
+                    params={
+                        "ES": "", "ihaleidListesi": "", "dtBilgiSecim": "1",
+                        "metot": "dtAra", "orderBy": "10", "pageIndex": sayfa,
+                    },
+                    headers=BASE_HEADERS, timeout=30.0,
+                )
+                if r.status_code != 200:
+                    ist.basarisiz()
+                r.raise_for_status()
+                return r.json().get("yeniDogrudanTeminAramaResultList", []) or []
         except (httpx.TimeoutException, httpx.HTTPStatusError, json.JSONDecodeError) as e:
             # json.JSONDecodeError: EKAP bazen 200 ile HTML bakım/hata sayfası döner (JSON değil) → retry
             if i == deneme - 1:
@@ -238,14 +249,19 @@ def main():
         # Zaten var olan kayıtlar upsert (ON CONFLICT) ile zararsızca üzerine yazılır.
         sayfa = args.start_page if args.start_page is not None else 1
 
+    # EKAP arama istekleri proxy havuzundan gider (istek başına IP rotasyonu).
+    # PROXY_LIST boşsa havuz direkt moda düşer ve yalnız hız sınırı uygulanır.
+    # `client` ise Supabase upsert'leri için duruyor — kendi sunucumuz, proxy'ye
+    # sokmanın anlamı yok (ve proxy bant genişliğini boşa harcardı).
+    havuz = havuz_al(ssl_baglami=ekap_ssl_baglami())
     with httpx.Client(verify=ssl_ctx()) as client:
-        haritalar = enum_haritalari(client)
+        haritalar = enum_haritalari(havuz)
         print(f"✓ Enum haritaları çekildi: {len(haritalar['tur'])} tür, {len(haritalar['durum'])} durum, {len(haritalar['il'])} il")
 
         toplam_kayit = 0
         for i in range(args.max_pages):
             try:
-                ham = sayfa_cek(client, sayfa)
+                ham = sayfa_cek(havuz, sayfa)
             except (httpx.TimeoutException, httpx.HTTPStatusError, httpx.TransportError, json.JSONDecodeError) as e:
                 # sayfa_cek kendi içinde 3 deneme yaptı ve yine de başarısız oldu —
                 # uzun süren bir EKAP kesintisi olabilir (--backfill saatlerce/günlerce
