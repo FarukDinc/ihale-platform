@@ -14,6 +14,12 @@ const API = (() => {
         // VDS'in kendi FastAPI'si — nginx /api/ proxy ile aynı origin
         BASE_URL: "https://ihaleglobal.com/api",
 
+        // Google ile giriş bayrağı. VDS'te GoTrue'ya GOTRUE_EXTERNAL_GOOGLE_ENABLED/CLIENT_ID/
+        // SECRET/REDIRECT_URI eklenip auth konteyneri yeniden başlatıldıktan SONRA true yap.
+        // Kapalıyken buton hiç gösterilmez — yapılandırılmamış sağlayıcıya tıklayınca GoTrue
+        // "Unsupported provider" hatası döndürür, kullanıcı bozuk akışa düşer.
+        GOOGLE_GIRIS: false,
+
         // Supabase — Auth için
         SUPABASE_URL: "https://ihaleglobal.com",
         SUPABASE_ANON_KEY: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzg0MzA3MTU4LCJleHAiOjE5NDE5ODcxNTh9.CjNKulvirotDD_y2oO2QKgo0kbqYvL0jUSV1RiDMoso"
@@ -155,6 +161,21 @@ const API = (() => {
         // API dışı doğrudan fetch yapan yerler (örn. ödeme) canlı token'ı buradan alsın.
         async token_canli() {
             return await token.canli();
+        },
+
+        // Google ile giriş/kayıt. Profil + 3 kredi + free plan, auth.users trigger'ı
+        // (handle_new_user) ile HER kayıt yolunda otomatik oluşur — ek iş gerekmez.
+        // firma_adi Google'dan GELMEZ (metadata: name/email/picture) → boş '' kalır,
+        // kullanıcı profil ekranında doldurur (profil_tamamlandi=false).
+        async googleIleGiris() {
+            const supabase = sbClient();
+            if (!supabase) throw new Error("Supabase istemcisi yüklenemedi");
+            const { data, error } = await supabase.auth.signInWithOAuth({
+                provider: "google",
+                options: { redirectTo: CONFIG.SUPABASE_URL + "/dashboard" }
+            });
+            if (error) throw new Error(error.message);
+            return data;
         }
     };
 
