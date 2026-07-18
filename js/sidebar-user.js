@@ -68,10 +68,22 @@
       menuler.forEach(m => m.classList.remove('acik'));
       if (zatenAcik) return;
       const r = el.getBoundingClientRect();
-      menu.style.left = Math.max(8, r.left) + 'px';
+      // Sidebar gizliyken (mobilde hamburger kapalı → display:none) rect 0×0 gelir ve menü
+      // ekran dışına konumlanır. Görünmüyorsa hiç açma.
+      if (!r.width && !r.height) return;
+      menu.style.left = Math.max(8, Math.min(r.left, window.innerWidth - 218)) + 'px';
       menu.style.width = Math.max(210, r.width) + 'px';
-      menu.style.bottom = (window.innerHeight - r.top + 8) + 'px';   // bloğun ÜSTÜNde aç
       menu.classList.add('acik');
+      // Varsayılan bloğun ÜSTÜnde; yukarı sığmıyorsa (kısa ekran) ALTINA çevir — her hâlükârda
+      // ekran içinde kalsın.
+      const h = menu.offsetHeight || 120;
+      if (r.top - h - 8 >= 0) {
+        menu.style.top = '';
+        menu.style.bottom = (window.innerHeight - r.top + 8) + 'px';
+      } else {
+        menu.style.bottom = '';
+        menu.style.top = Math.max(8, Math.min(r.bottom + 8, window.innerHeight - h - 8)) + 'px';
+      }
     };
     el.addEventListener('click', ac);
     el.addEventListener('keydown', (e) => {
