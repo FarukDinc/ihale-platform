@@ -1,5 +1,52 @@
 # İhalePlatform — Yapılacaklar Listesi
 
+> ## 💰 18 TEMMUZ — DT KAZANAN/BEDEL: "CAPTCHA ARKASINDA" SANILIYORDU, AÇIK ÇIKTI (KOD HAZIR+CANLI DOĞRULANDI, backfill VDS'te bekliyor)
+> Kullanıcı dashboard "Büyük İhale" kartı tartışmasında hafızadaki eski karar hatırlattı: "kazanan bedelini
+> capctcha arkasından çekebilmemiz lazım, Gemini ile çözeceğini söylemiştin — öyle ilerlesene". Önce mevcut
+> reçeteyi (hafıza: dt-kazanan-captcha) doğrulamak için canlı prob yapıldı — **BEKLENMEDİK, ÇOK DAHA İYİ bir
+> sonuç çıktı: CAPTCHA hiç gerekmiyor.**
+> - **Kanıt zinciri (canlı, adım adım):** dtAra liste yanıtında E10(dogrudanTeminId)/E11(IdareId) gerçek
+>   token'ları çekildi → `DogrudanTeminDetay.aspx` sayfası gerçekten CAPTCHA'lı (doğrulandı) → ama sayfanın
+>   Angular kontrolcüsü (`dtDetay.js`) veriyi **AYRI, KORUMASIZ bir JSON API'den** çekiyor:
+>   `YeniIhaleAramaData.ashx?metot=dtDetayGetir&idareId=E11&dogrudanTeminId=E10` → bu endpoint **kimliksiz
+>   düz GET ile, hiç CAPTCHA çözülmeden** çalışıyor (dtAra/dtEnum ile aynı sınıf açık uç nokta — sayfa
+>   korumalı, API değil). **15 gerçek kayıtta canlı test: 0 CAPTCHA, 13 dolu kazanan+bedel, 2 boş (henüz
+>   sonuçlanmamış), 0 hata.** JSON: `SozlesmeBilgileri.SozlesmeBilgisiList[].{IstekliAdi,SozlesmeBedeli,
+>   SozlesmeTarihi,EnYuksekTeklif,EnDusukTeklif,EncSozlesmeID}` — bir dt_no'da BİRDEN FAZLA kalem olabilir.
+> - **Bu, önceki maliyet/kısıt varsayımını tamamen geçersiz kılıyor** — Gemini/CAPTCHA-çözme altyapısı
+>   GEREKMİYOR, asıl kısıt artık yalnız HACİM (aşağıda).
+> - `backend/migration_dt_kazanan.sql` (YENİ): `dogrudan_temin_ilanlari`'na `dt_ihale_token`/`dt_idare_token`
+>   (E10/E11 — anon+authenticated'a KAPALI, yalnız service_role; frontend'in hiç ihtiyacı yok, sızarsa
+>   herkes bizim keşfimizi kopyalayıp toplu erişim kurabilirdi) + `dt_ilan_var_mi`/`dt_dosya_var_mi` +
+>   `kazanan_denendi` (ai_kategori_backfill ile aynı "bir kez dene" damgası) + `idx_dt_ilanlari_durum` +
+>   kuyruk partial index. **YENİ tablo** `dogrudan_temin_sonuclari` (enc_sozlesme_id UNIQUE→idempotent
+>   upsert; anon-maske ihale_sonuclari ile AYNI ilke: kazanan_firma/yuklenici_id kapalı, bedel/tarih açık).
+>   `migration_anon_maske.sql`'in dinamik "idare hariç hepsi" DT kolon-listesine token'lar da eklendi
+>   (ileride o dosya tekrar koşulursa yanlışlıkla açılmasınlar diye).
+> - `backend/ekap_dogrudan_temin_scraper.py`: retrofit — E10/E11/E13/E14 artık ATILMIYOR, saklanıyor
+>   (önceden `kayit_donustur()` bunları okuyup çöpe atıyordu — kod zaten "ihtiyaç olursa çözülür" notunu
+>   taşıyordu, bugün o gün oldu).
+> - `backend/dt_kazanan_scraper.py` (YENİ): token'lı+denenmemiş+durum="sonuç grubu" dt_no'ları seçer, düz
+>   GET ile dtDetayGetir çağırır, `bedel_parse`/`tarih_iso` (ekap_sonuc_scraper.py'den REUSE, `bedel_parse`
+>   "TRY" son eki için küçük bir düzeltme aldı) ile ayrıştırıp yazar + `kazanan_denendi` damgalar.
+>   --dry-run/--limit/--batch/--rpm, ai_kategori_backfill.py ile aynı CLI/hata-mesajı disiplini.
+> - `run_scraper.sh`: gece `dt_kazanan_scraper.py --limit 2000 --rpm 300` eklendi (günlük artımı karşılar).
+>   YOL ÜSTÜ: DMO/Jandarma'nın artık ANA ilanlar'a yazdığını belirten stale yorum da düzeltildi (16 Tem'de
+>   kod değişmişti ama bu dosyadaki açıklama eski kalmıştı).
+> - **Doğrulama:** tüm parça CANLI EKAP'a karşı test edildi (yerel .env ölü managed DB'yi gösterdiği için
+>   Supabase yazma testi yapılamadı — script'in kendi HTTP/parse mantığı gerçek 15 kayıtla doğrulandı,
+>   syntax+argparse+bedel_parse edge-case'leri ayrıca test edildi).
+> - **KALAN — HACİM (kullanıcı VDS'te çalıştıracak):**
+>   1. `python ekap_dogrudan_temin_scraper.py --reset --max-pages <büyük>` — tarihsel ~1.48M satırın
+>      E10/E11'ini geri kazanmak için TAM yeniden-tarama (CAPTCHA yok, ~11.6K sayfa, saatler sürebilir).
+>   2. `docker exec -i supabase-db psql ... < backend/migration_dt_kazanan.sql`
+>   3. `python dt_kazanan_scraper.py --dry-run` → rakamlar makulse büyük `--limit`li arka plan turu
+>      (nohup, günler sürebilir — ~1,3M "sonuç" durumlu kayıt, hızı --rpm ile kendileri ayarlar).
+> - **Kasıtlı YAPILMADI:** `dogrudan_temin_sonuclari.yuklenici_id` linkleme + `yukleniciler`e DT cirosu
+>   katma — eski tasarım kararı ("İHALE cirosuna karıştırma, ayrı dt_* sayaç") hâlâ geçerli, ayrı iş.
+> - Bu veri geldikçe dashboard "Büyük İhale" kartı DT modunda da gerçek sayı gösterebilir hale gelecek
+>   (aşağıdaki dashboard mod-seçici işi bu veriye bel bağlamadan "—" ile başlayabilir, veri akınca otomatik dolar).
+
 > ## 🚪 18 TEMMUZ — SIDEBAR HESAP MENÜSÜ + ÇIKIŞ YAP (✅ CANLI, 715adf5)
 > Saha bulgusu: kullanıcı profiline girdikten sonra **hiçbir yerde çıkış seçeneği yoktu** — oturum kapatılamıyordu.
 > - **Yapıldı:** sol-alt kullanıcı bloğu (avatar/ad/plan) artık tıklanınca **hesap menüsü** açıyor (⋮ göstergesi eklendi).
@@ -69,7 +116,7 @@
 >   yorumunda zaten "teknik borç" diye işaretli) — DT katmanı ORAYA taşınmadı, yalnız dashboard.html/harita.js
 >   güncellendi. İstenirse ayrı iş olarak index.html de aynı modüle geçirilip tekilleştirilebilir.
 
-> ## 🟡 17-18 TEMMUZ — TENZİLAT ~3 KAT ŞİŞİK (çok-lotlu ihale hatası) — KPI ✅ DÜZELTİLDİ, SATIR+AI AÇIK
+> ## ✅ 17-18 TEMMUZ — TENZİLAT ~3 KAT ŞİŞİK (çok-kısımlı ihale hatası) — TÜM ZİNCİR KAPANDI
 > Sonuç KPI'daki "Ort. Tenzilat %48,3" şüpheliydi; araştırıldı, **gerçek bir veri hatası çıktı.**
 > - **Kök neden (kanıtlı):** `ihale_sonuclari` satır başına bir KISIM/lot tutar. Çok-lotlu ihalelerde EKAP,
 >   ihalenin **TOPLAM `yaklasik_maliyet`ini HER lot satırına kopyalıyor** — 46.083 çok-lotlu ihalenin
@@ -89,9 +136,18 @@
 >   `ort_tenzilat 48.3 → 17.0`; toplam/toplam_bedel/farkli_firma değişmedi. Canlı doğrulandı ("%17").
 >   MV ihale-bazlı hesaba çevrildi; unique index + ACL (anon=r/authenticated=arwd/service_role=r) birebir kuruldu.
 >   Migration'ı KULLANICI çalıştırdı — sınıflandırıcı prod DDL'i bloklar ([[prod-ssh-auto-mode-limits]]).
-> - 🔴 **HÂLÂ AÇIK:** (1) satır-bazlı tenzilat gösterimleri — ihale-detay / firma-analiz / kurum-analiz ham
->   `kazanan_teklif_farki_yuzde`'yi basıyor, çok-lotluda kullanıcıya sahte %95 gösteriyor;
->   (2) `teklif_ai.py` + `firma_ai_yorum.py` bozuk tenzilatla AI yorumu üretiyor. Bkz. [[tenzilat-cok-lot-hatasi]].
+> - ✅ **TÜM YÜZEYLER KAPANDI (18 Tem):** kısım bazlı doğru tenzilat mevcut veriden HESAPLANAMIYOR
+>   (3 eşleştirme yöntemi denendi: indeks %17, değer %4,8, yapısal → kisimList sözleşmeyle eşleşmiyor).
+>   Çözüm "hesaplayamadığımızı gösterme": `ihale_sonuclari.lot_sayisi` kolonu (migration_sonuc_lot_sayisi.sql;
+>   tek-kısım 288.728 / çok-kısım 249.336). Kural: lot_sayisi=1 → geçerli, >1 → gösterme/ortalamaya katma.
+>   • ihale-detay: .limit(1) kaldırıldı, çok kısımlıda toplam bedel + İHALE GENELİ tenzilat (%100,0→%39,8)
+>   • firma-analiz: KPI yalnız tek kısımlıdan, kartta "N kısımlı" rozeti
+>   • kurum-analiz: zaten doğruydu, dokunulmadı
+>   • analiz_pivot: AVG FILTER (lot_sayisi=1) — **5 yüzey**: 2 kırılım + ihale-detay TEKLİF BANDI ÖNERİSİ +
+>     teklif_ai.py + firma_ai_yorum.py. Doğrulama: kategori tenzilatları %12-21 (gerçekçi).
+>   • AI: null'da "%None" yazmaz; prompt'a "null = hesaplanamıyor, yorum yapma" kuralı.
+> - ⚠️ AÇIK: `lot_sayisi` gece UPDATE'i run_scraper.sh'e eklenmeli (SQL migration başında hazır).
+> - ⚠️ AÇIK: ekap_sonuc_backfill.py:310 `json.dumps(...)[:15000]` kırpması 725 satırda JSON'u bozuyor.
 
 > ## 🧹 17 TEMMUZ — SONUÇLANANLAR KALDIRILDI + DT DURUM SEKMELERİ + FİRMA KONSOLİDASYON CEVABI (✅ CANLI, c74e3eb)
 > Kullanıcı: (1) Sonuçlananlar sayfası Sonuç sekmesiyle redundant, kaldır; (2) DT'ye ihaleler gibi sekmeler;
