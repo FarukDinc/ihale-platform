@@ -30,6 +30,7 @@ import uuid
 from datetime import datetime, timezone
 
 import httpx
+from proxy_havuz import async_havuz_al, ekap_ssl_baglami
 from Crypto.Cipher import AES
 from Crypto.Random import get_random_bytes
 from Crypto.Util.Padding import pad
@@ -101,14 +102,22 @@ def crypto_headers():
     }
 
 
-async def post(client: httpx.AsyncClient, endpoint: str, data: dict) -> dict | None:
+async def post(havuz, endpoint: str, data: dict) -> dict | None:
+    """İstek async proxy havuzundan çıkan sıradaki IP ile gider.
+
+    404 BURADA ÇOK SIK: sonuc_cek ihale başına 5 farklı detay ucu deniyor ve
+    hepsi 404 dönebiliyor. ist.yanit() 404'ü blok sinyali SAYMAZ — düz bir
+    `!= 200 → basarisiz()` yazılsaydı ~9 ardışık 404 bir IP'yi düşürür, 100 IP
+    birkaç yüz istekte tükenirdi (bkz. proxy_havuz.BLOK_KODLARI)."""
     headers = {**BASE_HEADERS, **crypto_headers()}
     try:
-        r = await client.post(f"{BASE}{endpoint}", json=data, headers=headers, timeout=30.0)
-        if r.status_code == 404:
-            return None  # endpoint yok
-        r.raise_for_status()
-        return r.json()
+        async with havuz.istek() as ist:
+            r = await ist.client.post(f"{BASE}{endpoint}", json=data, headers=headers, timeout=30.0)
+            ist.yanit(r)
+            if r.status_code == 404:
+                return None  # endpoint yok
+            r.raise_for_status()
+            return r.json()
     except httpx.HTTPStatusError as e:
         print(f"  ✗ HTTP {e.response.status_code} — {endpoint}")
         return None
@@ -127,12 +136,17 @@ async def probe():
     print("EKAP SONUÇ ENDPOINTİ KEŞFİ")
     print("="*60)
 
-    async with httpx.AsyncClient(verify=ssl_ctx(), http2=False, timeout=30.0) as client:
+    # probe() de havuzu kullanır: kendi istemcisini kurup post()'a geçmesi artık
+    # mümkün değil (post ilk parametrede havuz bekliyor). Bu blok `client` üretiyordu
+    # ama gövdedeki post() çağrıları havuza çevrildiği için o değişken artık ölüydü —
+    # bırakılsaydı probe her çalıştığında NameError verirdi.
+    havuz = async_havuz_al(ssl_baglami=ekap_ssl_baglami())
+    if True:
 
         # 1) GetListByParameters ile farklı durum kodları dene
         print("\n[1] GetListByParameters — ihaleDurumIdList probe:")
         for kod in DURUM_KODLARI:
-            veri = await post(client, "/b_ihalearama/api/Ihale/GetListByParameters", {
+            veri = await post(havuz, "/b_ihalearama/api/Ihale/GetListByParameters", {
                 "searchText": "", "paginationSkip": 0, "paginationTake": 5,
                 "ihaleDurumIdList": [kod], "searchType": "GirdigimGibi",
             })
@@ -151,7 +165,7 @@ async def probe():
         # 2) Var olan bir ihale üzerinde sonuç endpointlerini dene
         # Önce aktif bir ihale al, ID'sini bul
         print("\n[2] İhale bazlı sonuç endpointleri probe:")
-        liste_veri = await post(client, "/b_ihalearama/api/Ihale/GetListByParameters", {
+        liste_veri = await post(havuz, "/b_ihalearama/api/Ihale/GetListByParameters", {
             "searchText": "", "paginationSkip": 0, "paginationTake": 3,
             "ihaleDurumIdList": [2], "searchType": "GirdigimGibi",
         })
@@ -167,7 +181,7 @@ async def probe():
             if not sample_ids:
                 break
             for ihale_id in sample_ids[:1]:  # sadece ilk id ile dene
-                veri = await post(client, ep_path, {"ihaleId": ihale_id})
+                veri = await post(havuz, ep_path, {"ihaleId": ihale_id})
                 if veri is None:
                     print(f"  {ep_ad} ({ep_path}) → 404")
                 elif veri:
@@ -180,7 +194,7 @@ async def probe():
         print("\n[3] Alternatif liste endpointleri probe:")
         for ep_ad in ["alt_sonuc", "alt_kesinlesme"]:
             ep_path = SONUC_ENDPOINTS[ep_ad]
-            veri = await post(client, ep_path, {
+            veri = await post(havuz, ep_path, {
                 "searchText": "", "paginationSkip": 0, "paginationTake": 5,
             })
             if veri is None:
@@ -198,13 +212,13 @@ async def probe():
 # Probe sonucuna göre doldurulacak; şimdi en olası kodlarla dene
 SONUCLANDI_DURUM = [3]  # probe'dan öğrendikten sonra güncelle
 
-async def sonuclanmis_liste(client: httpx.AsyncClient, durum_kodlari: list[int], limit: int = 0) -> list:
+async def sonuclanmis_liste(havuz, durum_kodlari: list[int], limit: int = 0) -> list:
     """Sonuçlanmış ihale listesini çeker."""
     print(f"\n→ Sonuçlanmış ihaleler çekiliyor (durum={durum_kodlari})…")
     tum = []
     skip = 0
     while True:
-        veri = await post(client, "/b_ihalearama/api/Ihale/GetListByParameters", {
+        veri = await post(havuz, "/b_ihalearama/api/Ihale/GetListByParameters", {
             "searchText": "", "paginationSkip": skip, "paginationTake": SAYFA_BOYUTU,
             "ihaleDurumIdList": durum_kodlari, "searchType": "GirdigimGibi",
         })
@@ -226,7 +240,7 @@ async def sonuclanmis_liste(client: httpx.AsyncClient, durum_kodlari: list[int],
 
 
 # ── Tek ihale için sonuç çek ──────────────────────────────
-async def sonuc_cek(client: httpx.AsyncClient, ihale_id: str, ekap_id: str) -> dict | None:
+async def sonuc_cek(havuz, ihale_id: str, ekap_id: str) -> dict | None:
     """
     Bir ihale için bilinen tüm sonuç endpointlerini sırayla dener,
     ilk veri döndüreni kullanır.
@@ -239,7 +253,7 @@ async def sonuc_cek(client: httpx.AsyncClient, ihale_id: str, ekap_id: str) -> d
         ("sonuc_detay", "/b_ihalearama/api/IhaleDetay/GetByIhaleIdSonuc"),
     ]
     for ep_ad, ep_path in ep_sirasi:
-        veri = await post(client, ep_path, {"ihaleId": ihale_id})
+        veri = await post(havuz, ep_path, {"ihaleId": ihale_id})
         if veri and (veri.get("item") or veri.get("data") or veri.get("yuklenici")
                      or veri.get("sozlesmeBedeli") or veri.get("sonuc")):
             print(f"    ✓ {ep_ad} → veri geldi (keys: {list(veri.keys())[:6]})")
@@ -534,7 +548,7 @@ async def main(args):
 
         async with sem:
             print(f"  → {ikn_} ({idare[:40] if idare else '?'})…")
-            ham_sonuc = await sonuc_cek(client, ihale_id, ekap_id)
+            ham_sonuc = await sonuc_cek(havuz, ihale_id, ekap_id)
             await asyncio.sleep(0.2)
 
         if not ham_sonuc:
@@ -555,8 +569,13 @@ async def main(args):
         kayitlar.append(kayit)
         scrape_log_yaz(sb, ekap_id, ihale_id, True)
 
-    async with httpx.AsyncClient(verify=ssl_ctx(), http2=False, timeout=30.0) as client:
+    # DİKKAT: isle() `client`i closure ile kullanıyordu (parametre almıyor). Bu blok
+    # değişirken sonuc_cek çağrısı da AYNI düzenlemede havuza çevrildi — biri unutulsaydı
+    # her ihalede NameError olurdu ve gather altında sessizce yutulup tur 0 kayıtla biterdi.
+    havuz = async_havuz_al(ssl_baglami=ekap_ssl_baglami())
+    if True:
         await asyncio.gather(*(isle(i) for i in ihaleler))
+    havuz.ozet_yaz()
 
     print(f"\n{'='*55}")
     print(f"Toplam: {len(ihaleler)} | Sonuç bulundu: {len(kayitlar)} | Boş: {bos_sayisi}")
