@@ -1,5 +1,24 @@
 # İhalePlatform — Yapılacaklar Listesi
 
+> ## 🔴 17 TEMMUZ — AÇIK BULGU: TENZİLAT ~3 KAT ŞİŞİK (çok-lotlu ihale hatası) — DÜZELTİLMEDİ, KARAR BEKLİYOR
+> Sonuç KPI'daki "Ort. Tenzilat %48,3" şüpheliydi; araştırıldı, **gerçek bir veri hatası çıktı.**
+> - **Kök neden (kanıtlı):** `ihale_sonuclari` satır başına bir KISIM/lot tutar. Çok-lotlu ihalelerde EKAP,
+>   ihalenin **TOPLAM `yaklasik_maliyet`ini HER lot satırına kopyalıyor** — 46.083 çok-lotlu ihalenin
+>   46.077'sinde (%99,99) tüm satırlarda ym birebir aynı. Tenzilat=(ym−teklif)/ym tutarlı hesaplanıyor ama
+>   payda LOTUN değil İHALENİN maliyeti → küçük lot teklifi ÷ dev toplam = **sahte %95 tenzilat**.
+>   Örnek (5 lot, ym=6.297.340): teklifler 293K/1.008K/60K/257K/210K → %95,3/%84/%99/%95,9/%96,7 kaydedilmiş;
+>   gerçekte teklif toplamı 1.827.580 = ym'nin %29'u → tenzilat ≈%71.
+> - **Ölçü:** 246.639 satır (%46) etkili. %90-100 bandındaki 158.755 kaydın %99,2'si çok-lotlu.
+>   Tek-lot ort %14,75 (medyan %10,64) · çok-lot ort %86,78 (medyan %95,02) → karışım %48,3 = YANLIŞ.
+> - **DOĞRU METRİK (ihale bazında, lotları topla):** ort **%16,96** / medyan %12,43 (n=328.823).
+>   SQL: `WITH ihale AS (SELECT ilan_id, max(yaklasik_maliyet) ym, sum(kazanan_teklif) toplam FROM
+>   ihale_sonuclari WHERE yaklasik_maliyet>0 AND kazanan_teklif IS NOT NULL GROUP BY ilan_id)` → `(ym−toplam)/ym*100`.
+>   NOT: `ilanlar.yaklasik_maliyet_min` sonuçlularda neredeyse hiç dolu değil (20 kayıt) → payda `ihale_sonuclari.yaklasik_maliyet`.
+> - **Etkilenen yüzeyler:** `sonuc_ozet_mv.ort_tenzilat` (İhaleler→Sonuç KPI), ihale-detay / firma-analiz /
+>   kurum-analiz satır-bazlı tenzilat, ve **teklif_ai.py + firma_ai_yorum.py (AI yorumları bozuk veriyle üretiliyor)**.
+> - **KARAR BEKLİYOR:** (a) yalnız KPI (MV DROP+CREATE, prod DDL) (b) +satır gösterimleri (c) +AI (d) sonraya bırak.
+>   Prod DDL tek taraflı yapılmadı. Bkz. [[tenzilat-cok-lot-hatasi]].
+
 > ## 🧹 17 TEMMUZ — SONUÇLANANLAR KALDIRILDI + DT DURUM SEKMELERİ + FİRMA KONSOLİDASYON CEVABI (✅ CANLI, c74e3eb)
 > Kullanıcı: (1) Sonuçlananlar sayfası Sonuç sekmesiyle redundant, kaldır; (2) DT'ye ihaleler gibi sekmeler;
 > (3) soru: ihale+DT kazananları aynı isimse tek firma mı topluyoruz?
