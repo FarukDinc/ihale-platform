@@ -667,6 +667,29 @@
 > **KALICI TALİMAT (12 Tem, kullanıcı emri):** Bu blok + ilgili bölümler her oturumda otomatik
 > güncellenir, kullanıcı hatırlatmak zorunda değil. Bkz. hafıza `yapilacaklar-auto-update`.
 
+> ## 🏛️ 18 TEMMUZ (gece) — İDARE TÜRÜ SINIFLANDIRMASI: altyapı hazır, TAM TARAMA ÇALIŞIYOR
+> Hedef: "kurumları EKAP'taki gibi kategorize et" → ihalelerde "sadece belediyeler/hastaneler" filtresi.
+> **EKAP'ta hazır tür filtresi YOK** (İdare Seç=tek tek kurum, Kapsam=4734 yasal kapsam) → kendimiz kurduk.
+> **ÇÖZÜLEN ZİNCİR** (hafıza: [[ekap-detsis-idare-tur]] — pahalıya mal oldu, tekrar arama):
+>   DetsisAgaci (87.528 kayıt: idareId+ad+detsisNo) → GetListByParameters **idareKodList=[idareId]**
+>   → o kurumun ihaleleri → `idareAdi` bizim `ilanlar.idare` ile AYNI STRING → eşleşme kesin.
+> **3 TUZAK:** (1) "idareKod" DETSİS No DEĞİL idareId (detsisNo/id→0 sonuç); (2) **0 sonuç "filtre çalıştı"
+> demek DEĞİL** — eşleşmeyen değer de 0 döner, ilk testim bu yanlış-pozitifle doğru anahtarı atlamıştı;
+> (3) ad ile join ambigü ("BİLGİ İŞLEM DAİRE BAŞKANLIĞI" DETSİS'te 114 kez).
+> **GENEL TEKNİK:** bilinmeyen API alanını TAHMİN ETME (15 payload+6 ad boşa gitti) → **Angular bundle'ını
+> oku** (/951.*.js içinde arama modeli açıkça yazılı). TLS: EKAP zayıf cipher → ekap_ssl_baglami() şart.
+> **TÜR ÇIKARIMI DETSİS'İN UZUN ADINDAN** (üst kurum zinciri içerir): "İDARİ VE MALİ İŞLER DAİRESİ
+> BAŞKANLIĞI" (jenerik) → "…KAMU İHALE KURUMU" → diger_kamu ✓ — kural motorunun çözemediği durum.
+> **YAZILANLAR:** migration_idare_tur.sql (+_fix: idare_normalize'da şema-nitelikli tr_fold, yoksa ifade
+> indeksi kurulmuyor) · idare_tur_siniflandir.py (14 tür, 741 kelime, 14 ajanlık envanter; su idaresi
+> kısaltma tuzağı ESKİ/BASKI korumalı) · ekap_detsis_cek.py (async, 24 işçi, proxy havuzlu, checkpoint'li).
+> **MİMARİ (kullanıcı itirazıyla):** tek seferlik dump bayatlar → (a) gece tazeleme (b) idare_tur_bosluk()
+> yeni-birim alarmı (c) boşluk kural/AI ile geçici sınıflanır, `kaynak` alanı kesin/geçici ayrımını tutar.
+> **PERF DERSİ:** sıralı 1.6 istek/sn → 15 saat; darboğaz havuz değil tek-akış×600ms → async 24 işçi ~2,5 saat.
+> **DURUM:** tam tarama VDS'te sürüyor (proxy 100/100 IP, 0 hata, VDS IP'si kullanılmıyor).
+> **SIRADAKİ (sabah):** `--yaz` → tabloya bas · gece tazeleme+boşluk raporu run_scraper.sh'e · arayüzde
+> "İdare Türü" filtresi (İhaleler/DT/İdareler) · kalan "bilinmiyor"lara AI katmanı.
+
 > ## 🧭 18 TEMMUZ — HS HİYERARŞİSİ + TÜM ETİKETLER TÜRKÇE + 🔴 KIRPILMA HATASI (✅ CANLI, 792bac0)
 > Kullanıcı: "alt pozisyonu pozisyona, pozisyonu fasıla bağlayalım, aramaları öyle kategorize edelim."
 > **🔴 ÖNCE BULUNAN GİZLİ HATA:** `detayAc` `.limit(4000)` diyordu ama **PostgREST 1000-satır tavanı
