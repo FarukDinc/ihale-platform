@@ -309,6 +309,36 @@
 
   function esc(s) { return (s || '').replace(/[<>&"]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c])); }
 
+  // İki tarih AYRI ve ETİKETLİ gösterilir — eskiden etiketsiz tek 📅 vardı ve hangi tarih
+  // olduğu belirsizdi:
+  //   yayin_tarihi (EKAP E8) = duyuru ne zaman YAYIMLANDI ("ne zaman eklendi"nin tek doğru
+  //                            kaynağı; olusturulma bizim kazıma anımız, yanıltıcı)
+  //   tarih        (EKAP E7) = ihale/teklif tarihi — aktif duyurularda GELECEĞE gider
+  // yayin_tarihi tam tarama bitene kadar NULL olabilir → o satır basitçe basılmaz.
+  function gunFarki(iso) {
+    const d = new Date(iso);
+    if (isNaN(d)) return null;
+    const bugun = new Date(); bugun.setHours(0, 0, 0, 0);
+    return Math.round((new Date(d.getFullYear(), d.getMonth(), d.getDate()) - bugun) / 86400000);
+  }
+  function tarihlerHtml(k) {
+    const p = [];
+    if (k.yayin_tarihi) {
+      p.push(`<span title="Duyurunun EKAP'ta yayımlandığı tarih">📅 Yayın: <b>${tarihFormat(k.yayin_tarihi)}</b></span>`);
+    }
+    if (k.tarih) {
+      const fark = gunFarki(k.tarih);
+      if (fark === 0) {
+        p.push(`<span style="color:#f87171;font-weight:700;" title="Teklif verilebilecek son tarih">⏳ Son teklif: BUGÜN</span>`);
+      } else if (fark != null && fark > 0) {
+        p.push(`<span title="Teklif verilebilecek son tarih"${fark <= 3 ? ' style="color:#f87171;font-weight:700;"' : ''}>⏳ Son teklif: <b>${tarihFormat(k.tarih)}</b> (${fark} gün)</span>`);
+      } else {
+        p.push(`<span title="EKAP'ın bu duyuru için bildirdiği ihale tarihi">🏁 İhale tarihi: <b>${tarihFormat(k.tarih)}</b></span>`);
+      }
+    }
+    return p.join('');
+  }
+
   // Ham durumu renkli gruba çevir (filtre gruplarıyla tutarlı)
   function durumRozet(durum) {
     if (!durum) return '';
@@ -353,7 +383,7 @@
     // 616K satırda seq-scan → exact count statement-timeout eder (kod 57014, doğrulandı). Bu yüzden
     // arama modunda sayım yapmayıp bir FAZLA satır çekeriz; PER_PAGE+1 dönerse sonraki sayfa var.
     let query = sb.from('dogrudan_temin_ilanlari')
-      .select(`dt_no,baslik,${uyeMi ? 'idare,' : ''}tur,il,tarih,durum,kategori,dokuman_var,duyuru_var`,
+      .select(`dt_no,baslik,${uyeMi ? 'idare,' : ''}tur,il,tarih,yayin_tarihi,durum,kategori,dokuman_var,duyuru_var`,
               aramaVar ? {} : { count: 'exact' });
     query = filtreleriUygula(query);
     const idareSirala = siralamaAlan === 'idare' && uyeMi;   // idare sıralaması üyelik ister (kolon kapalı)
@@ -459,7 +489,7 @@
         ${!uyeMi
           ? `<span class="dt-idare" style="cursor:default;">🏛️ İdare: ${MASKE_ROZET}</span>`
           : k.idare ? `<a class="dt-idare" href="dogrudan-temin?idare=${encodeURIComponent(k.idare)}" title="Bu idarenin tüm doğrudan teminleri">🏛️ ${esc(k.idare)}</a>` : ''}
-        ${k.tarih ? `<span>📅 ${tarihFormat(k.tarih)}</span>` : ''}
+        ${tarihlerHtml(k)}
         ${k.durum ? `<span>${esc(k.durum)}</span>` : ''}
       </div>
     </div>`).join('');
