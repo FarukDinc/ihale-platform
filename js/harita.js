@@ -34,7 +34,7 @@
 
   // İl bazlı sayım — önce tek istekli RPC (hızlı), yoksa sayfalı fallback. rpcAdi/tabloAdi
   // parametreli: aynı fonksiyon hem ilanlar/il_sayim hem dogrudan_temin_ilanlari/dt_il_sayim için.
-  async function ilSayimGetir(sb, rpcAdi, tabloAdi, sayfaUst) {
+  async function ilSayimGetir(sb, rpcAdi, tabloAdi, sayfaUst, aktifFiltre) {
     try {
       const { data, error } = await sb.rpc(rpcAdi);
       if (!error && Array.isArray(data) && data.length) {
@@ -43,9 +43,13 @@
         return sayim;
       }
     } catch (_) { /* RPC yoksa fallback */ }
+    // Fallback AYNI "aktif" tanımını uygulamalı: yoksa RPC yokken harita sessizce
+    // TÜM ZAMANLARI (üstelik yalnız ilk 13K satırı) sayıp yanlış tablo çizer.
     const istekler = [];
     for (let off = 0; off < sayfaUst; off += 1000) {
-      istekler.push(sb.from(tabloAdi).select('il').not('il', 'is', null).range(off, off + 999));
+      let q = sb.from(tabloAdi).select('il').not('il', 'is', null);
+      if (aktifFiltre) q = aktifFiltre(q);
+      istekler.push(q.range(off, off + 999));
     }
     const sonuc = await Promise.all(istekler);
     const sayim = {};
@@ -171,8 +175,16 @@
       const sb = window.supabase.createClient(SB_URL, SB_KEY);
       const [geo, ihaleSayim, dtSayim] = await Promise.all([
         fetch(GEOJSON_URL).then(r => r.json()),
-        ilSayimGetir(sb, 'il_sayim', 'ilanlar', 13000),
-        ilSayimGetir(sb, 'dt_il_sayim', 'dogrudan_temin_ilanlari', 13000),
+        // AKTİF sayımlar: harita "şu an fırsat nerede" sorusunu yanıtlamalı. Eskiden
+        // il_sayim/dt_il_sayim kullanılıyordu; onlar TÜM ZAMANLARI sayıyor (ilanlar 356.904,
+        // DT 1.490.591 — geçmiş+sonuçlanmış dahil) ve popup "Güncel İhaleler" dediği hâlde
+        // toplamı gösteriyordu. Aktif: ~4.654 + ~95.695 → dashboard KPI'sıyla tutarlı.
+        // (Mevcut RPC'ler DURUYOR: dt_il_sayim, DT sayfasındaki il dropdown'ının tam
+        //  listesini besliyor; aktif-only yapılsaydı iller sessizce düşerdi.)
+        ilSayimGetir(sb, 'il_sayim_aktif', 'ilanlar', 13000,
+          q => q.gte('son_teklif_tarihi', new Date().toISOString())),
+        ilSayimGetir(sb, 'dt_il_sayim_aktif', 'dogrudan_temin_ilanlari', 13000,
+          q => q.in('durum', ['Doğrudan Temin Duyurusu Yayımlanmış', 'Teklifler Değerlendiriliyor'])),
       ]);
       _ihaleSayim = ihaleSayim;
       _dtSayim = dtSayim;
