@@ -524,6 +524,25 @@
 > **KALICI TALİMAT (12 Tem, kullanıcı emri):** Bu blok + ilgili bölümler her oturumda otomatik
 > güncellenir, kullanıcı hatırlatmak zorunda değil. Bkz. hafıza `yapilacaklar-auto-update`.
 
+> ## 🧭 18 TEMMUZ — HS HİYERARŞİSİ + TÜM ETİKETLER TÜRKÇE + 🔴 KIRPILMA HATASI (✅ CANLI, 792bac0)
+> Kullanıcı: "alt pozisyonu pozisyona, pozisyonu fasıla bağlayalım, aramaları öyle kategorize edelim."
+> **🔴 ÖNCE BULUNAN GİZLİ HATA:** `detayAc` `.limit(4000)` diyordu ama **PostgREST 1000-satır tavanı
+> `.limit()`'i eziyor** → HS6 drill-down büyük ortaklarda SESSİZCE kırpıyordu: **DEU 478 kalem
+> gösteriyordu, gerçeği 4.910** (16.450 ham satır); USA/ITA/ROU aynı. Sıralama ve Değişim de bu kırpık
+> alt kümeye göreydi. **KURAL: `.limit(>1000)` gördüğün her sorgu zaten kırpıktır → jsonb RPC'ye taşı.**
+> **backend/migration_hs_hiyerarsi.sql (kullanıcı uyguladı, CANLI):** ticaret_hs_kalem / ticaret_hs_ulkeler
+> / ticaret_hs_fasil + `hs6 text_pattern_ops` indeksi (LIKE prefix için şart) + timeout.
+> **ETİKETLER:** fasıl (97) + pozisyon (1.229) İngilizceydi → GTİP üslubunda Türkçeleştirildi
+> (3 workflow / 33 ajan: 1.326 çeviri + 465 diakritik düzeltme). **6.939 kodun tamamı Türkçe.**
+> DERS: ajan çıktısı diakritiksiz gelebilir; tespitte kelime listesi değil "15+ karakter, hiç çğıöşü yok"
+> kuralı kullan (kelime listesi 265'in 200'ünü kaçırdı).
+> **HİYERARŞİ:** arama 3 seviyede (📚Fasıl/📂Pozisyon/📦Kalem rozetli; eskiden `kod.length!==6 continue`
+> ile 2/4-hane atlanıyordu → "makine" 0 sonuç, şimdi 423 / "çelik" 338); fasıl seçince o fasıldaki TÜM
+> kalemlerin toplamı sorgulanır; fasıl filtresi + satır breadcrumb'ı ("Makineler › Aksam ve parçalar").
+> **Canlı doğrulama:** DEU 4.910 kalem, 98 fasıl seçeneği, Fasıl 84 → 537 kalemin toplamı / 169 ülke
+> (Almanya $3 Mr), Pozisyon 8407 → 8 kalemin toplamı. Geriye dönük uyumlu (RPC yoksa eski yol + uyarı).
+> **SIRADAKİ (kullanıcı istedi):** kurumları EKAP'taki gibi kategorize et.
+
 > ## 🔐 18 TEMMUZ — SECRET ROTASYONU (JWT+anon+service) ✅ CANLI + DB PAROLASI İPTAL (3 ders)
 > Studio ifşası borcu kapandı. **Yapıldı:** keygen (HS256/stdlib, kullanıcı üretti — ben yalnız public anon'u
 > gördüm) → 24 HTML + 6 JS'te anon key yenilendi + `?v=rot1` cache-bust (commit 211f81a) → VDS `.env` 3 değer
