@@ -149,6 +149,11 @@ def kayit_donustur(item: dict, haritalar: dict) -> dict:
         "tur": tur,
         "il": haritalar["il"].get(item.get("E12")),
         "tarih": tarih_parse(item.get("E7")),
+        # 18 Tem: E8 = DUYURUNUN YAYIN/GÜNCELLENME tarihi (EKAP'ta liste yanıtında hep vardı,
+        # alınmıyordu). E7'den FARKLI: E7 kayda özgü (ihale/teklif tarihi, aktiflerde geleceğe
+        # gidebiliyor — 2028'e kadar), E8 ise duyurunun yayımlandığı gün. "Ne zaman eklendi"
+        # sorusunun tek doğru kaynağı budur; olusturulma bizim kazıma anımız (yanıltıcı).
+        "yayin_tarihi": tarih_parse(item.get("E8")),
         "durum": haritalar["durum"].get(item.get("E9")),
         "duyuru_var": bool(item.get("E13")),
         "dokuman_var": bool(item.get("E14")),
