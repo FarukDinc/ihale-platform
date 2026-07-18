@@ -75,6 +75,12 @@ CREATE POLICY "dt_sonuc_herkes_okur" ON public.dogrudan_temin_sonuclari FOR SELE
 
 -- Anon maskeleme: kazanan_firma + yuklenici_id KAPALI (kimlik), bedel/tarih/sayılar AÇIK
 -- (ihale_sonuclari ile AYNI ilke — "Sayılar/tarihler misafire açık, kimlik kapalı").
+--
+-- REVOKE ŞART — atlanırsa kolon-GRANT DEKORATİF kalır: self-hosted Supabase'de
+-- "ALTER DEFAULT PRIVILEGES ... GRANT ALL ON TABLES TO anon" yürürlükte olduğu için
+-- yeni tablo doğuştan tablo-geneli anon SELECT'e sahiptir; kolon-GRANT yetkiyi
+-- daraltmaz, ekler. (Bu satır ilk sürümde unutuldu → migration_dt_anon_fix.sql)
+REVOKE SELECT ON public.dogrudan_temin_sonuclari FROM anon;
 GRANT SELECT (
   id, dt_no, kazanan_bedel, sozlesme_tarihi, en_yuksek_teklif, en_dusuk_teklif,
   sozlesme_mi, olusturulma

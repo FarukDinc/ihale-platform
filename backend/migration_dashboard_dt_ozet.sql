@@ -51,6 +51,10 @@ WHERE idare IS NOT NULL
 GROUP BY idare;
 CREATE UNIQUE INDEX IF NOT EXISTS idx_dt_idare_ozet_mv_idare ON public.dt_idare_ozet_mv (idare);
 -- anon'a GRANT YOK (bilinçli) — idare_ozet_mv ile aynı maskeleme.
+-- "GRANT yazmamak" YETMEZ: MV'ler de ALTER DEFAULT PRIVILEGES üzerinden doğuştan
+-- tablo-geneli anon SELECT alır. Açıkça REVOKE edilmezse anon MV'yi doğrudan okuyup
+-- kapalı dt_idare_sayim() RPC'sini baypas eder. (İlk sürümde unutuldu → migration_dt_anon_fix.sql)
+REVOKE SELECT ON public.dt_idare_ozet_mv FROM anon;
 GRANT SELECT ON public.dt_idare_ozet_mv TO authenticated, service_role;
 
 CREATE OR REPLACE FUNCTION public.dt_idare_sayim()
@@ -88,6 +92,9 @@ DROP POLICY IF EXISTS "dt_takipler_kendi_siler" ON public.dt_takipler;
 CREATE POLICY "dt_takipler_kendi_siler" ON public.dt_takipler
   FOR DELETE USING (auth.uid() = kullanici_id);
 
+-- REVOKE ŞART (derinlemesine savunma): RLS anon'u satır bazında zaten durduruyor ama
+-- tablo-geneli yetki varsayılan ayrıcalıklardan doğuştan geliyor; bırakılmamalı.
+REVOKE ALL ON public.dt_takipler FROM anon;
 GRANT SELECT, INSERT, DELETE ON public.dt_takipler TO authenticated;
 GRANT SELECT, INSERT, DELETE, UPDATE ON public.dt_takipler TO service_role;
 -- anon'a HİÇ grant yok — misafir takip edemez (mevcut Takip.js zaten girişsiz yalnız
