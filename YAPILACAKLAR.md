@@ -51,7 +51,26 @@
 >   Üye yolu DB'de EXPLAIN ANALYZE ile ölçüldü (82-135ms). Deploy: 5751e9b → push → VDS `git pull` (oto-deploy yok).
 > - Bkz. [[statement-timeout-edge]]. Not: node yok → syntax tarayıcı console'uyla doğrulandı.
 
-> ## 🧠 17 TEMMUZ — EŞLEŞTİRME MOTORU 3-KATMAN İYİLEŞTİRME (kullanıcı "yap hepsini") — K1 koşuyor, K2 ✅, K3 ✅ TAMAM
+> ## 📦 18 TEMMUZ — KATMAN 4 (VERİ): GEÇMİŞ KALEM LİSTESİ (ilan_metni) BACKFILL'İ — ✅ GECE CRON'DA
+> Kullanıcı "yavaş ve güvenli olanı tercih et" dedi → tek seferlik 6 saatlik tarama YERİNE gece cron'una
+> 200 sayfa/gece dilim (~25-35 gecede tamamlanır), EKAP bloğu riskini minimize eder.
+> **SORUN:** ~340K geçmiş ilan `ilan_metni=NULL` — ekap_sonuc_backfill'in BİLİNÇLİ "kompakt" kararı
+> (satır 412 yorumu: "geçmiş=kompakt ~0.5KB, HTML yok"). O karar eski managed-Supabase limitleri içindi;
+> VDS'te kısıt YOK (128GB boş, DB 3.5GB). ilan_metni EN ZENGİN konu sinyali + `arama_fold` ÜRETİLMİŞ
+> kolonuna girdiği için 352K geçmiş ilanı **site içi aramada da** aranabilir yapar.
+> **KRİTİK EKAP DERSİ (sonda ile bulundu):** `ekap_id` İKN saklar ("2026/1210669") ama detay endpoint'i
+> EKAP'ın İÇ id'sini ister → İKN ile **HTTP 500**; searchText İKN aramaz (totalCount=0). İç id YALNIZCA
+> liste yanıtından gelir → listeyi sayfalayıp İKN eşleştirmek ZORUNLU. (İlk sondam bu yüzden yanlışlıkla
+> "EKAP vermiyor" dedi; doğru id ile **6/6 metin geldi**, 630-5464 char.)
+> **backend/ilan_metni_backfill.py:** checkpoint'li, sayfa başına TEK DB sorgusu (dev harita kurmaz),
+> yalnız ilan_metni yazar (ilan_html DEĞİL — depolama yarısı + XSS yüzeyi yok), eşzamanlılık 2 + uyku +
+> ardışık hatada kendini durdurma + proxy havuzu. **Canlı doğrulama:** dry-run 300 kayıt→201 eksik/201 metin
+> (%67 isabet, 0 hata); gerçek 2 sayfa → metinli sayı 15.921→16.059 (138 yazıldı); arama_fold uzunluğu
+> metni içerecek şekilde büyüdü (1901 vs ilan_metni 1814). Cron satır 94, EN SONDA (kritik işler önce bitsin).
+> **DEPLOY DERSİ:** test için scp'lenen dosya commit sonrası VDS'te untracked kalınca `git pull` SESSİZCE
+> durur ("untracked files would be overwritten") — scp kopyalarını silip pull et.
+>
+> ## 🧠 17 TEMMUZ — EŞLEŞTİRME MOTORU 3-KATMAN İYİLEŞTİRME (kullanıcı "yap hepsini") — K1 ✅, K2 ✅, K3 ✅ TAMAM
 > **KATMAN 2 ✅ CANLI+DOĞRULANDI (commit `5bc754d`, migration_idf_eslestirme.sql):** başlık eşleşmesi
 > IDF-nadirlik ağırlıklı. ihale_kelime_idf MV (34.236 kelime, gece REFRESH) + ihale_konu_kelimeleri_idf().
 > benzer_ihaleler embeddingsiz dalı karakter-trigram→IDF-örtüşme (gıda: benzerlik 19→55). uygun_firmalar
