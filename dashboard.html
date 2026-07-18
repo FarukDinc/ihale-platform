@@ -61,6 +61,21 @@
     }
     .dash-mod-btn:hover { color: var(--white); border-color: var(--muted); }
     .dash-mod-btn.active { background: rgba(240,165,0,.12); border-color: var(--amber); color: var(--amber); }
+    /* Kart kaynak seçici — "Tümü" modunda birleşik sayı gösteren bir karta tıklanınca
+       açılır (il-popup'ın kart karşılığı: aynı satır düzeni, aynı amber vurgu). */
+    .kaynak-secim {
+      position: absolute; z-index: 60; left: 12px; right: 12px; top: calc(100% - 6px);
+      background: var(--navy-mid); border: 1px solid var(--border); border-radius: 10px;
+      box-shadow: 0 10px 28px rgba(0,0,0,.45); overflow: hidden; cursor: default;
+    }
+    .kaynak-secim a {
+      display: flex; align-items: center; justify-content: space-between; gap: 10px;
+      padding: 9px 12px; font-size: 12.5px; font-weight: 600;
+      color: var(--white); text-decoration: none; transition: background .12s;
+    }
+    .kaynak-secim a + a { border-top: 1px solid var(--border); }
+    .kaynak-secim a:hover { background: rgba(240,165,0,.10); color: var(--amber); }
+    .kaynak-secim b { color: var(--amber); font-size: 13px; }
     .harita-mod { display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap; }
     .harita-mod-btn {
       padding: 4px 11px; border-radius: 14px; font-size: 11px; font-weight: 700;
@@ -1314,6 +1329,80 @@
     }
   }
 
+  // ── Kart bağlantıları: mod-farkındalıklı hedef seçimi ────────────────────────────
+  // 'ihale'/'dt' modunda hedef zaten belli. 'tumu' modunda kart BİRLEŞİK sayı gösterdiği
+  // için hedef belirsiz — haritadaki il-tıklaması için verilen kararın aynısını uyguluyoruz:
+  //   · bir taraf 0 ise → doğrudan dolu tarafa git (popup'la kullanıcıyı yormaya gerek yok)
+  //   · ikisi de doluysa → küçük seçim popup'ı (harita popup'ıyla aynı dil)
+  //   · ikisi de 0 ise → link bırakılır, tıklayınca boş liste görmesi dürüst davranış
+  function kartLinkleriKur(mod, sIh, sDt, gunTarih, yediGun) {
+    const IH = {
+      eklendi:  `ihaleler?sekme=detayli&yayinBas=${gunTarih}&yayinBit=${gunTarih}`,
+      sonteklif:`ihaleler?sekme=detayli&durum=aktif&teklifBas=${gunTarih}&teklifBit=${gunTarih}`,
+      // sekme=guncel bilinçli tercih: son_teklif_tarihi >= şu an (alt sınır) sağlıyor,
+      // detayli'de alt sınır olmazdı (2010'dan beri süresi geçmiş ihaleler de dahil olurdu).
+      yaklasan: `ihaleler?sekme=guncel&durum=aktif&teklifBit=${yediGun}`,
+      aktif:    'ihaleler?sekme=detayli&durum=aktif',
+      buyuk:    'ihaleler?sekme=detayli&durum=aktif&minBedel=43142132',
+    };
+    const DT = {
+      eklendi: `dogrudan-temin?tarihBas=${gunTarih}&tarihBit=${gunTarih}`,
+      aktif:   'dogrudan-temin',
+      buyuk:   'dogrudan-temin',
+    };
+
+    // (elemanId, ihaleHref, dtHref, ihaleSayi, dtSayi)
+    const kur = (id, ihHref, dtHref, nIh, nDt) => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.onclick = null;                       // önceki modun handler'ı kalmasın
+      el.removeAttribute('data-secim');
+      if (mod === 'ihale' || !dtHref) { el.href = ihHref; return; }
+      if (mod === 'dt') { el.href = dtHref; return; }
+      // tumu
+      if (nDt === 0) { el.href = ihHref; return; }
+      if (nIh === 0) { el.href = dtHref; return; }
+      el.href = ihHref;                        // JS kapalıysa makul bir varsayılan kalsın
+      el.setAttribute('data-secim', '1');
+      el.onclick = (e) => { e.preventDefault(); kaynakSecimAc(el, ihHref, dtHref, nIh, nDt); };
+    };
+
+    kur('stat-eklendi',      IH.eklendi,  DT.eklendi, sIh.eklenen, sDt.eklenen);
+    kur('kpi-card-aktif',    IH.aktif,    DT.aktif,   sIh.aktif,   sDt.aktif);
+    kur('kpi-card-buyuk',    IH.buyuk,    DT.buyuk,   sIh.buyuk,   sDt.buyuk);
+    // Bu ikisinin DT karşılığı YOK (DT'de teklif bitiş tarihi kavramı yok, duyuru bazlı).
+    // DT modunda kart zaten "—" gösteriyor; linki de DT listesine bırakıyoruz.
+    const soloIh = (id, href) => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.onclick = null;
+      el.href = (mod === 'dt') ? 'dogrudan-temin' : href;
+    };
+    soloIh('stat-sonteklif',     IH.sonteklif);
+    soloIh('kpi-card-yaklasan',  IH.yaklasan);
+  }
+
+  // Kartın altında açılan küçük kaynak seçici (harita il-popup'ının kart karşılığı).
+  function kaynakSecimAc(anchorEl, ihHref, dtHref, nIh, nDt) {
+    document.querySelectorAll('.kaynak-secim').forEach(n => n.remove());
+    const box = document.createElement('div');
+    box.className = 'kaynak-secim';
+    box.innerHTML =
+      `<a href="${ihHref}"><span>📋 İhaleler</span><b>${dashFmt(nIh)}</b></a>
+       <a href="${dtHref}"><span>⚡ Doğrudan Temin</span><b>${dashFmt(nDt)}</b></a>`;
+    anchorEl.style.position = anchorEl.style.position || 'relative';
+    anchorEl.appendChild(box);
+    // Dışarı tıklayınca kapat (aynı tıklama olayında kapanmasın diye bir tur geciktiriyoruz)
+    setTimeout(() => {
+      const kapat = (ev) => {
+        if (box.contains(ev.target)) return;
+        box.remove();
+        document.removeEventListener('click', kapat);
+      };
+      document.addEventListener('click', kapat);
+    }, 0);
+  }
+
   // ── KPI kartları (gerçek veri, mod-farkındalıklı — 18 Tem) ──────────────────────
   // modIhale/modDt: 'tumu' ikisini de toplar, 'ihale'/'dt' yalnız kendi kaynağını okur.
   // DT'nin "teklif bitiş tarihi" kavramı YOK (duyuru bazlı, deadline değil) — o iki
@@ -1349,28 +1438,22 @@
     // f-yayin-bas/f-yayin-bit/f-teklif-bas/f-teklif-bit URL parametreleri, YYYY-MM-DD).
     const gununTarihi = bugunBaslangic.toISOString().slice(0, 10);
     const yediGunSonraTarihi = new Date(bugunBaslangic.getTime() + 7 * 86400000).toISOString().slice(0, 10);
-    const setHref = (id, href) => { const el = document.getElementById(id); if (el) el.href = href; };
-    if (modIhale) {
-      setHref('stat-eklendi', `ihaleler?sekme=detayli&yayinBas=${gununTarihi}&yayinBit=${gununTarihi}`);
-      setHref('stat-sonteklif', `ihaleler?sekme=detayli&durum=aktif&teklifBas=${gununTarihi}&teklifBit=${gununTarihi}`);
-      // sekme=guncel bilinçli tercih: son_teklif_tarihi >= şu an (alt sınır) sağlıyor,
-      // detayli'de alt sınır olmazdı (2010'dan beri süresi geçmiş ihaleler de dahil olurdu).
-      setHref('kpi-card-yaklasan', `ihaleler?sekme=guncel&durum=aktif&teklifBit=${yediGunSonraTarihi}`);
-      setHref('kpi-card-aktif', 'ihaleler?sekme=detayli&durum=aktif');
-      setHref('kpi-card-buyuk', 'ihaleler?sekme=detayli&durum=aktif&minBedel=43142132');
-    } else {
-      setHref('stat-eklendi', 'dogrudan-temin');
-      setHref('stat-sonteklif', 'dogrudan-temin');
-      setHref('kpi-card-yaklasan', 'dogrudan-temin');
-      setHref('kpi-card-aktif', 'dogrudan-temin');
-      setHref('kpi-card-buyuk', 'dogrudan-temin');
-    }
+    // Kart bağlantıları ARTIK BURADA KURULMUYOR — sayımlar geldikten sonra kartLinkleriKur()
+    // ile kuruluyor. Sebebi bir hataydı: 'tumu' modunda modIhale de true olduğu için kartlar
+    // BİRLEŞİK sayıyı gösterip linki koşulsuz ihaleler sayfasına veriyordu. Bugün eklenen 2
+    // kaydın ikisi de Doğrudan Temin olduğunda kullanıcı "2" görüp tıklıyor, ihaleler sayfası
+    // "0 ihale bulundu" diyordu. Doğru hedef ancak hangi tarafta kaç kayıt olduğu bilinince
+    // seçilebilir, o da sorgulardan sonra belli oluyor.
 
     const setVal = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = dashFmt(v); };
     const setYok = (id) => { const el = document.getElementById(id); if (el) el.textContent = '—'; };
 
     try {
       let aktifT = 0, yaklasanT = 0, buyukT = 0, eklenenT = 0, sonGunT = 0, kazanimT = 0;
+      // Kaynak-bazlı kırılım: 'tumu' modunda toplam sayı tek başına linki seçmeye yetmiyor
+      // (2 kayıt gösterip ihaleler'e gitmek gibi). Hangi tarafta kaç kayıt var, onu tutuyoruz.
+      const sIh = { aktif: 0, buyuk: 0, eklenen: 0 };
+      const sDt = { aktif: 0, buyuk: 0, eklenen: 0 };
 
       if (modIhale) {
         const [aktif, yaklasan, buyuk, bugunEklenen, bugunSonGun] = await Promise.all([
@@ -1386,6 +1469,7 @@
         ]);
         aktifT += aktif.count || 0; yaklasanT += yaklasan.count || 0; buyukT += buyuk.count || 0;
         eklenenT += bugunEklenen.count || 0; sonGunT += bugunSonGun.count || 0;
+        sIh.aktif = aktif.count || 0; sIh.buyuk = buyuk.count || 0; sIh.eklenen = bugunEklenen.count || 0;
         try {
           const { count: kazanimSay } = await sb.from('ihale_sonuclari').select('id', { count: 'exact', head: true });
           kazanimT += kazanimSay || 0;
@@ -1402,6 +1486,7 @@
         ]);
         aktifT += dtAktif.count || 0; eklenenT += dtEklenen.count || 0;
         buyukT += dtBuyuk.count || 0; kazanimT += dtKazanim.count || 0;
+        sDt.aktif = dtAktif.count || 0; sDt.buyuk = dtBuyuk.count || 0; sDt.eklenen = dtEklenen.count || 0;
         // yaklasanT/sonGunT'e DT katkısı YOK — DT'nin "teklif bitiş tarihi" karşılığı yok.
       }
 
@@ -1412,6 +1497,9 @@
       setVal('gs-kazanim', kazanimT);
       if (modIhale) { setVal('kpi-yaklasan', yaklasanT); setVal('hdr-songun', sonGunT); setVal('gs-sonteklif', sonGunT); }
       else { setYok('kpi-yaklasan'); setYok('hdr-songun'); setYok('gs-sonteklif'); }
+
+      // Sayımlar hazır — kart bağlantılarını ancak şimdi doğru hedefe kurabiliriz.
+      kartLinkleriKur(mod, sIh, sDt, gununTarihi, yediGunSonraTarihi);
 
       const rc = document.getElementById('results-count');
       if (rc && modIhale) rc.textContent = `${dashFmt(aktifT)} sonuç`;

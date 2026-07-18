@@ -224,6 +224,12 @@
         <button class="dt-tab" data-sekme="tumu" onclick="sekmeDegistir('tumu')">Tümü <span class="cnt" id="dt-cnt-tumu"></span></button>
       </div>
 
+      <!-- Derin linkle gelinen tarih aralığı rozeti (?tarihBas/?tarihBit) — kullanıcı
+           dashboard'dan tıklayıp geldiğinde listenin neden daraldığını görsün diye. -->
+      <div id="dt-tarih-bilgi" style="display:none;margin:10px 0 0;padding:7px 12px;border-radius:8px;
+           background:rgba(255,193,7,.08);border:1px solid rgba(255,193,7,.25);color:var(--amber);
+           font-size:13px;font-weight:600;"></div>
+
       <!-- TOOLBAR -->
       <div class="toolbar">
         <input type="text" id="f-ara" placeholder="🔍 Başlık veya idare ara…" oninput="aramaDegisti()" />
@@ -300,6 +306,8 @@
   const PER_PAGE = 25;
   let aktifSekme = 'guncel';   // durum-bazlı: 'guncel'(aktif) | 'sonuc'(sonuçlanmış) | 'tumu'(hepsi)
   let dtNoParam = null;        // ?dt_no= ile gelinen tek-kayıt görünümü (ayrı detay sayfası yok — liste tek kayda daralır)
+  let tarihBasParam = null;    // ?tarihBas=YYYY-MM-DD — dashboard kartlarından derin link
+  let tarihBitParam = null;    // ?tarihBit=YYYY-MM-DD
   const kisaSayi = n => n >= 1e6 ? (n/1e6).toLocaleString('tr',{maximumFractionDigits:1})+'M' : n >= 1e3 ? Math.round(n/1e3)+'K' : String(n);
 
   function tarihFormat(s) {
@@ -369,6 +377,13 @@
     if (kat) query = query.eq('kategori', kat);
     if (il) query = query.eq('il', il);
     if (dtNoParam) query = query.eq('dt_no', dtNoParam);
+    // Tarih aralığı (?tarihBas=YYYY-MM-DD&tarihBit=YYYY-MM-DD) — dashboard'daki
+    // "Bugün Eklendi" gibi kartlar buraya derin link verebilsin diye. tarih kolonu
+    // indexli (idx_dt_ilanlari_tarih), 1,49M satırda tam tarama yapmaz.
+    // Bitiş sınırı gün SONUNA çekilir: ham 'YYYY-MM-DD' gece yarısı demektir ve
+    // lte ile o günün kayıtlarını dışarıda bırakırdı.
+    if (tarihBasParam) query = query.gte('tarih', tarihBasParam + 'T00:00:00');
+    if (tarihBitParam) query = query.lte('tarih', tarihBitParam + 'T23:59:59.999');
     if (q) query = uyeMi
       ? query.or(`baslik.ilike.*${q}*,idare.ilike.*${q}*`)
       : query.ilike('baslik', `*${q}*`);   // idare kolonu anon'a kapalı (WHERE de yetki ister)
@@ -614,6 +629,25 @@
       dtNoParam = dtNoUrl;
       aktifSekme = 'tumu';
       document.querySelectorAll('.dt-tab').forEach(b => b.classList.toggle('active', b.dataset.sekme === 'tumu'));
+    }
+    // Tarih aralığı — dashboard'ın "Bugün Eklendi" kartı gibi derin linkler için.
+    // Sekme 'tumu'ya alınır: aksi halde Güncel sekmesinin durum filtresi, o gün eklenmiş
+    // ama sonuçlanmış kayıtları gizler ve kullanıcı dashboard'da gördüğü sayıyı burada bulamaz.
+    const tbUrl = params.get('tarihBas');
+    const tsUrl = params.get('tarihBit');
+    if (tbUrl || tsUrl) {
+      tarihBasParam = tbUrl || null;
+      tarihBitParam = tsUrl || null;
+      aktifSekme = 'tumu';
+      document.querySelectorAll('.dt-tab').forEach(b => b.classList.toggle('active', b.dataset.sekme === 'tumu'));
+      const bilgi = document.getElementById('dt-tarih-bilgi');
+      if (bilgi) {
+        const fmt = (s) => s ? s.split('-').reverse().join('.') : '';
+        bilgi.textContent = (tbUrl && tsUrl && tbUrl === tsUrl)
+          ? `📅 ${fmt(tbUrl)} tarihli duyurular`
+          : `📅 ${fmt(tbUrl) || '…'} – ${fmt(tsUrl) || '…'} arası duyurular`;
+        bilgi.style.display = '';
+      }
     }
     await veriYukle(true);
   })();
