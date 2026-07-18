@@ -29,6 +29,36 @@
     }
     .leaflet-tooltip.il-tooltip::before { display: none; }
     .il-tooltip .tt-sayi { color: var(--amber); font-weight: 700; margin-left: 4px; }
+    /* İl tıklama popup'ı — İhaleler / Doğrudan Temin seçim menüsü */
+    .leaflet-popup-content-wrapper.il-popup-wrap {
+      background: var(--navy-mid); color: var(--off-white); border: 1px solid var(--border);
+      border-radius: 10px; box-shadow: 0 8px 24px rgba(0,0,0,.5);
+    }
+    .il-popup-wrap .leaflet-popup-content { margin: 12px 14px; }
+    .il-popup-wrap .leaflet-popup-tip { background: var(--navy-mid); }
+    .il-popup-wrap .leaflet-popup-close-button { color: var(--muted) !important; }
+    .il-popup-ad { display: block; font-size: 13px; color: var(--white); margin-bottom: 8px; font-family: var(--font-display); }
+    .il-popup-row { display: flex; flex-direction: column; gap: 6px; }
+    .il-popup-btn {
+      display: flex; align-items: center; justify-content: space-between; gap: 10px;
+      background: var(--navy); border: 1px solid var(--border); border-radius: 7px;
+      padding: 7px 10px; color: var(--off-white); text-decoration: none;
+      font-size: 12px; font-weight: 600; transition: border-color .15s, color .15s;
+    }
+    .il-popup-btn:hover { border-color: var(--amber); color: var(--amber); }
+    .il-popup-btn b { color: var(--amber); font-weight: 800; }
+    .il-popup-btn.disabled { opacity: .4; pointer-events: none; cursor: default; }
+    .il-popup-btn.disabled b { color: var(--muted); }
+    /* Harita mod seçici — Tümü / İhaleler / Doğrudan Temin (dünya ticaret haritasındaki
+       İhaleler/Ticaret mod düğmeleriyle aynı görsel dil: soluk pill, aktifte amber vurgu) */
+    .harita-mod { display: inline-flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+    .harita-mod-btn {
+      padding: 4px 11px; border-radius: 14px; font-size: 11px; font-weight: 700;
+      background: transparent; border: 1px solid var(--border); color: var(--muted);
+      cursor: pointer; font-family: var(--font-body); transition: all .15s; white-space: nowrap;
+    }
+    .harita-mod-btn:hover { color: var(--white); border-color: var(--muted); }
+    .harita-mod-btn.active { background: rgba(240,165,0,.12); border-color: var(--amber); color: var(--amber); }
     .harita-legend {
       display: flex; flex-wrap: wrap; align-items: center; gap: 4px;
       padding: 10px 4px 2px; font-size: 11px; color: var(--muted);
@@ -805,9 +835,14 @@
 
       <!-- WIDGET: Türkiye Haritası -->
       <div class="table-wrap" style="padding:0; margin-bottom:16px;">
-        <div class="table-header" style="padding:14px 18px 12px;">
+        <div class="table-header" style="padding:14px 18px 12px; flex-wrap:wrap; gap:8px;">
           <span class="table-title" style="font-size:14px;">🗺️ Türkiye İhale Haritası</span>
-          <span style="font-size:12px; color:var(--muted);">Bir ile tıklayın → o ilin ihaleleri</span>
+          <div class="harita-mod">
+            <button class="harita-mod-btn active" data-mod="toplam" onclick="haritaModSec('toplam')">🗺️ Tümü</button>
+            <button class="harita-mod-btn" data-mod="ihale" onclick="haritaModSec('ihale')">📋 İhaleler</button>
+            <button class="harita-mod-btn" data-mod="dt" onclick="haritaModSec('dt')">⚡ Doğrudan Temin</button>
+          </div>
+          <span style="font-size:12px; color:var(--muted);" id="harita-alt">Renk = İhale+Doğrudan Temin toplamı · bir ile tıklayın → seçim yapın</span>
         </div>
         <div style="padding:0 18px 16px;">
           <div class="harita-wrap">

@@ -14,6 +14,28 @@
 >   koyduğu `?v=rot1` rakam olmadığı için `(\?v=\d+)?` desenine takılmamıştı. Desen `(\?[^"'\s>]*)?` yapılıp
 >   20 sayfa tek `?v=3`'e normalize edildi. Script `max-age=14400` (4sa) ile servis edildiğinden bu ŞART.
 
+> ## 🗺️ 18 TEMMUZ — ANASAYFA MİNİ HARİTASI: TOPLAM/İHALE/DT MOD SEÇİCİ EKLENDİ (KOD HAZIR+DOĞRULANDI, migration VDS'te bekliyor)
+> **Ek (aynı gün, kullanıcı isteği):** "üstte seçme butonu — firma isterse DT isterse ihale görsün" — aşağıdaki
+> tıkla-seç popup'ın YANINA, widget başlığına 3 pill-düğme eklendi: **🗺️ Tümü / 📋 İhaleler / ⚡ Doğrudan Temin**.
+> `js/harita.js`: veri (ihale+DT sayımı, 3 quantile eşik seti) TEK SEFER çekiliyor; `window.haritaModSec(mod)`
+> mevcut Leaflet katmanını yeniden fetch YAPMADAN yeniden stiller/bağlar — 'Tümü'de eski toplam-renk+popup
+> davranışı aynen kalır, 'İhaleler'/'Doğrudan Temin' seçilince renk YALNIZ o metriğe göre olur ve tıklama
+> ARTIK POPUP AÇMAZ, doğrudan ilgili sayfaya gider (`layer.off('click')` + mod'a özel `bindTooltip`/`bindPopup`
+> veya `unbindPopup()`+`on('click',...)`). Legend başlığı + widget alt yazısı + düğme aktif-durumu mod'a göre.
+> **🐛 Yol üstü bug (kendi test sürecimde bulundu, düzeltildi):** docblock yorumunda `.il-popup*/.harita-mod-btn`
+> yazarken `*/` JS blok-yorumunu ERKEN KAPATTI → geri kalan yorum metni kod olarak parse edilmeye çalışılıp
+> `SyntaxError: Unexpected token '.'` ile TÜM script çöküyordu (harita hiç çizilmiyordu). `/*` `*/` sayaç
+> kontrolüyle teşhis edildi, boşluk eklenerek düzeltildi. **DERS:** yorum metninde `*/` alt dizesi geçen
+> herhangi bir ifade (ör. "A*/B" gibi kısaltma) JS blok yorumunu kırar — CSS/regex örnekleri yazarken dikkat.
+> Ayrıca bu turda **Read tool'un bir kez bayat/önbelleklenmiş içerik döndürdüğü** gözlemlendi (dosya doğru
+> haldeyken eski hali gösterdi) — şüpheli bir "dosya değişti" bildirimi görülürse Bash `cat`/`git diff` ile
+> DOĞRUDAN diskten çapraz-doğrulama yapılmalı, Read'e körü körüne güvenilmemeli.
+> Doğrulama: yerel statik sunucu (python http.server, .claude/launch.json'daki "ihale-platform" config) +
+> zorla-render tekniğiyle (IntersectionObserver mock'lanıp modül yeniden eval edildi — bu sandbox'ta gerçek
+> scroll-tetiklemesi hiç çalışmıyor) 3 modun HEPSİ canlı veriyle test edildi: legend/alt-yazı/düğme-aktifliği
+> her modda doğru değişti; 'dt' modunda bir ile tıklama gerçekten `dogrudan-temin?il=KONYA`'ya yönlendirdi
+> (test sunucusu .html uzantısız route'u 404'ledi — nginx'li canlıda sorun olmaz, python http.server kısıtı).
+
 > ## 🗺️ 18 TEMMUZ — ANASAYFA MİNİ HARİTASI: İHALE+DT TOPLAM RENK + AYRI HOVER SAYIMI + TIKLA-SEÇ POPUP (KOD HAZIR, migration VDS'te bekliyor)
 > Kullanıcı talebi: dashboard.html'deki "Türkiye İhale Haritası" widget'ı yalnız `ilanlar` sayısını gösteriyordu.
 > Dünya ticaret haritasındaki ihracat/ithalat ayrımıyla AYNI FİKİR uygulandı: renk=TOPLAM, hover=AYRI, tık=SEÇİM.

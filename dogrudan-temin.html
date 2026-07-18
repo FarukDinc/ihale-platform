@@ -514,6 +514,18 @@
     });
   }
 
+  // Haritadan (?il=) gelen il, son 5000 kayıtlık örneklemde olmayabilir (nadir DT'li il) —
+  // seçenek yoksa <select>.value sessizce boşa düşerdi; yoksa ekleyip garanti altına alıyoruz.
+  function ilSecimGarantiEt(il) {
+    const sel = document.getElementById('f-il');
+    if (!sel.querySelector(`option[value="${CSS.escape(il)}"]`)) {
+      const o = document.createElement('option');
+      o.value = il; o.textContent = il;
+      sel.appendChild(o);
+    }
+    sel.value = il;
+  }
+
   const CSV_LIMIT = 5000;
 
   // Başlangıç
@@ -521,12 +533,20 @@
     // uyeMi ilk sorgudan önce kesinleşmeli (misafir select'i idare'siz)
     try { const { data } = await sb.auth.getSession(); uyeMi = !!(data && data.session); } catch (_) { uyeMi = false; }
     kategorileriYukle();
-    illeriYukle();
+    await illeriYukle();   // il param seçenek-garantisi illeriYukle'nin DOM'a option eklemesinden SONRA çalışmalı
     istatistikYukle();
-    const idareParam = new URLSearchParams(window.location.search).get('idare');
+    const params = new URLSearchParams(window.location.search);
+    const idareParam = params.get('idare');
     if (idareParam) {
       document.getElementById('f-ara').value = idareParam;
       aktifSekme = 'tumu';   // kurumdan gelindiyse TÜM DT geçmişi görünsün (Güncel/aktif'te az çıkar)
+      document.querySelectorAll('.dt-tab').forEach(b => b.classList.toggle('active', b.dataset.sekme === 'tumu'));
+    }
+    const ilParam = params.get('il');
+    if (ilParam) {
+      // Harita zaten DB formatında (BÜYÜK harf) gönderir; elle/eski link için güvenlik ağı.
+      ilSecimGarantiEt(ilParam.toLocaleUpperCase('tr'));
+      aktifSekme = 'tumu';   // haritadan gelindiyse TÜM DT geçmişi görünsün (Güncel/aktif'te az çıkar)
       document.querySelectorAll('.dt-tab').forEach(b => b.classList.toggle('active', b.dataset.sekme === 'tumu'));
     }
     await veriYukle(true);
