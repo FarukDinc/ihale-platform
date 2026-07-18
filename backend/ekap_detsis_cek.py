@@ -33,6 +33,7 @@ Kullanım:
 Env: SUPABASE_URL, SUPABASE_SERVICE_KEY, PROXY_* (backend/.env)
 """
 import argparse
+import asyncio
 import base64
 import json
 import os
@@ -52,8 +53,13 @@ from Crypto.Random import get_random_bytes
 from Crypto.Util.Padding import pad
 
 sys.path.insert(0, os.path.dirname(__file__))
-from proxy_havuz import havuz_al, ekap_ssl_baglami           # noqa: E402
-from idare_tur_siniflandir import idare_tur_belirle, fold    # noqa: E402
+from proxy_havuz import havuz_al, async_havuz_al, ekap_ssl_baglami   # noqa: E402
+from idare_tur_siniflandir import idare_tur_belirle, fold            # noqa: E402
+
+# Eşzamanlı işçi sayısı. Sıralı sürüm 1.6 istek/sn veriyordu (istek gecikmesi
+# ~600ms × tek akış) → 85K kurum ≈ 15 saat. Havuzun küresel tavanı 600/dk (=10/sn)
+# olduğu için asıl sınır o; 24 işçi tavanı doldurmaya fazlasıyla yeter (~2,5 saat).
+ESZAMANLI = int(os.environ.get("DETSIS_ESZAMANLI", "24"))
 
 load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), ".env"))
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "")
@@ -127,6 +133,78 @@ def agac_yukle():
         return json.load(f)
 
 
+# ── 2a) Eşzamanlı tarama çekirdeği ────────────────────────────────────────
+async def _tara_async(hedefler, kurumlar, sonuc, baslangic):
+    """
+    ESZAMANLI işçiyle tara. Sıralı sürüm 1.6 istek/sn veriyordu (tek akış ×
+    ~600ms gecikme) → 85K kurum ≈ 15 saat. Gerçek sınır havuzun küresel
+    tavanı (600/dk); işçiler onu doldurur, ~2,5 saate iner.
+    Havuz zaten IP soğuması + küresel tavan + karantina uyguluyor; burada
+    ek bir hız kısıtı GEREKMEZ (iki kat sınırlama işi yavaşlatırdı).
+    """
+    havuz = async_havuz_al(ssl_baglami=ekap_ssl_baglami())
+    kilit = asyncio.Lock()
+    sayac = {"islenen": 0}
+    t0 = time.time()
+
+    async def isle(iid):
+        kayit = kurumlar[iid]
+        yuk = {"searchText": "", "paginationSkip": 0, "paginationTake": 1,
+               "searchType": "GirdigimGibi", "idareKodList": [iid]}
+        d = None
+        async with havuz.istek() as ist:
+            try:
+                r = await ist.client.post(LISTE_URL, headers=crypto_headers(), json=yuk, timeout=40)
+                # DİKKAT: `if status != 200: basarisiz()` YAZMA — 404/400 blok
+                # sinyali değildir, havuzu kendi kendine tüketir. Kararı yanit() versin.
+                ist.yanit(r)
+                if r.status_code == 200:
+                    d = r.json()
+            except Exception:
+                ist.basarisiz()          # gerçek ağ/TLS hatası → uç cezalansın
+
+        async with kilit:
+            sayac["islenen"] += 1
+            i = sayac["islenen"]
+            if d:
+                n = d.get("totalCount") or 0
+                liste = d.get("list") or []
+                if n > 0 and liste:
+                    idare_adi = (liste[0].get("idareAdi") or "").strip()
+                    if idare_adi:
+                        # TÜR: DETSİS'in UZUN adından (üst kurum zincirini içerir)
+                        tur, guven = idare_tur_belirle(kayit.get("ad") or "")
+                        if tur == "bilinmiyor":      # uzun ad da çözemediyse kısa adı dene
+                            tur, guven = idare_tur_belirle(idare_adi)
+                        anahtar = fold(idare_adi)
+                        onceki = sonuc.get(anahtar)
+                        if onceki is None or n > onceki.get("ihale_sayisi", 0):
+                            sonuc[anahtar] = {
+                                "idare_ad": idare_adi, "tur": tur, "guven": guven,
+                                "detsis_no": kayit.get("detsisNo"), "idare_id": iid,
+                                "detsis_ad": kayit.get("ad"), "ihale_sayisi": n,
+                            }
+            if i % 250 == 0:
+                gecen = time.time() - t0
+                hiz = i / gecen if gecen else 0
+                kalan = (len(hedefler) - i) / hiz / 60 if hiz else 0
+                print(f"  {i:,}/{len(hedefler):,} · eşleşme {len(sonuc):,} · "
+                      f"{hiz:.1f} istek/sn · ~{kalan:.0f} dk kaldı", flush=True)
+                with open(CHECKPOINT, "w", encoding="utf-8") as f:
+                    json.dump({"indeks": baslangic + i, "sonuc": sonuc}, f, ensure_ascii=False)
+
+    sem = asyncio.Semaphore(ESZAMANLI)
+
+    async def sinirli(iid):
+        async with sem:
+            await isle(iid)
+
+    print(f"→ {ESZAMANLI} eşzamanlı işçi ile taranıyor…")
+    await asyncio.gather(*(sinirli(x) for x in hedefler))
+    await havuz.kapat()
+    havuz.ozet_yaz()
+
+
 # ── 2) Tam tarama: her idareId için ihale var mı, varsa idareAdi ne? ───────
 def tara(havuz, limit=0, devam=False):
     agac = agac_yukle()
@@ -160,61 +238,7 @@ def tara(havuz, limit=0, devam=False):
     else:
         hedefler = hedefler[baslangic:]
 
-    bulunan = len(sonuc)
-    t0 = time.time()
-    for i, iid in enumerate(hedefler, start=1):
-        kayit = kurumlar[iid]
-        yuk = {"searchText": "", "paginationSkip": 0, "paginationTake": 1,
-               "searchType": "GirdigimGibi", "idareKodList": [iid]}
-        with havuz.istek() as ist:
-            try:
-                r = ist.client.post(LISTE_URL, headers=crypto_headers(), json=yuk, timeout=40)
-                # DİKKAT: `if status != 200: basarisiz()` YAZMA — 404/400 blok sinyali
-                # değildir, havuzu kendi kendine tüketir. Kararı yanit() versin.
-                ist.yanit(r)
-                if r.status_code != 200:
-                    continue
-                d = r.json()
-            except Exception:
-                ist.basarisiz()          # gerçek ağ/TLS hatası → uç cezalansın
-                continue
-
-        n = d.get("totalCount") or 0
-        if n <= 0:
-            continue
-        liste = d.get("list") or []
-        if not liste:
-            continue
-        idare_adi = (liste[0].get("idareAdi") or "").strip()
-        if not idare_adi:
-            continue
-
-        # TÜR: DETSİS'in UZUN adından (üst kurum zincirini içerir), kısa addan değil
-        tur, guven = idare_tur_belirle(kayit.get("ad") or "")
-        if tur == "bilinmiyor":                     # uzun ad da çözemediyse kısa adı dene
-            tur, guven = idare_tur_belirle(idare_adi)
-
-        anahtar = fold(idare_adi)
-        onceki = sonuc.get(anahtar)
-        if onceki is None or n > onceki.get("ihale_sayisi", 0):
-            sonuc[anahtar] = {
-                "idare_ad": idare_adi,
-                "tur": tur,
-                "guven": guven,
-                "detsis_no": kayit.get("detsisNo"),
-                "idare_id": iid,
-                "detsis_ad": kayit.get("ad"),
-                "ihale_sayisi": n,
-            }
-            bulunan = len(sonuc)
-
-        if i % 250 == 0:
-            gecen = time.time() - t0
-            hiz = i / gecen if gecen else 0
-            kalan = (len(hedefler) - i) / hiz / 60 if hiz else 0
-            print(f"  {i:,}/{len(hedefler):,} · eşleşme {bulunan:,} · {hiz:.1f} istek/sn · ~{kalan:.0f} dk kaldı", flush=True)
-            with open(CHECKPOINT, "w", encoding="utf-8") as f:
-                json.dump({"indeks": baslangic + i, "sonuc": sonuc}, f, ensure_ascii=False)
+    asyncio.run(_tara_async(hedefler, kurumlar, sonuc, baslangic))
 
     with open(SONUC_DOSYA, "w", encoding="utf-8") as f:
         json.dump(sonuc, f, ensure_ascii=False, indent=1)
@@ -225,7 +249,7 @@ def tara(havuz, limit=0, devam=False):
     print("\n=== TÜR DAĞILIMI ===")
     for t, n in dag.most_common():
         print(f"   {t:<24} {n:>6}")
-    havuz.ozet_yaz()
+    # NOT: havuz özeti _tara_async içinde basılır (havuz orada oluşturulup kapatılır)
 
 
 # ── 3) idare_tur tablosuna yaz ────────────────────────────────────────────
@@ -285,11 +309,10 @@ def main():
 
     if a.agac_cek or a.tara:
         # EKAP zayıf TLS → ssl_baglami ŞART; proxy havuzu VDS IP'sini korur
-        havuz = havuz_al(ssl_baglami=ekap_ssl_baglami())
         if a.agac_cek:
-            agac_cek(havuz)
+            agac_cek(havuz_al(ssl_baglami=ekap_ssl_baglami()))
         if a.tara:
-            tara(havuz, limit=a.limit, devam=a.devam)
+            tara(None, limit=a.limit, devam=a.devam)   # async havuzu içeride alınır
     if a.yaz:
         yaz()
 
