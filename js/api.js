@@ -18,7 +18,7 @@ const API = (() => {
         // SECRET/REDIRECT_URI eklenip auth konteyneri yeniden başlatıldıktan SONRA true yap.
         // Kapalıyken buton hiç gösterilmez — yapılandırılmamış sağlayıcıya tıklayınca GoTrue
         // "Unsupported provider" hatası döndürür, kullanıcı bozuk akışa düşer.
-        GOOGLE_GIRIS: false,
+        GOOGLE_GIRIS: true,
 
         // Supabase — Auth için
         SUPABASE_URL: "https://ihaleglobal.com",
