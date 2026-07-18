@@ -30,6 +30,31 @@ KEY = b"Qm2LtXR0aByP69vZNKef4wMJ"   # AES-192-CBC (environment.r8fact) — mevcu
 UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
       "(KHTML, like Gecko) Chrome/125.0.0.0 Safari/537.36")
 
+# ══════════════════════════════════════════════════════════════════════════
+# ✅ ÇÖZÜLDÜ (18 Tem) — DETSİS ağacı endpoint'i ve payload'ı:
+#
+#   POST https://ekapv2.kik.gov.tr/b_idare/api/DetsisKurumBirim/DetsisAgaci
+#   body: {"loadOptions":{"filter":{"sort":[],"group":[],"filter":[],
+#          "totalSummary":[],"groupSummary":[],"select":[],"preSelect":[],
+#          "primaryKey":[]}}}
+#   → 200, 14.9 MB (gzip'te ~3 MB), 87.528 kayıt
+#   Alanlar: detsisNo, ad, parentIdareKimlikKodu, seviye, id, idareId, hasItems
+#
+# ⚠️ TLS NOTU: httpx ile SSL handshake REDDEDİLİYOR (sunucu tarayıcı-dışı TLS
+#    parmak izini blokluyor) → playwright'ın ctx.request'i kullanılmalı.
+#
+# ❌ EŞLEŞTİRME HENÜZ ÇÖZÜLMEDİ (3 deneme başarısız):
+#   1) Ad ile join AMBİGÜ: "BİLGİ İŞLEM DAİRE BAŞKANLIĞI" listede 114 kez var.
+#   2) parentIdareKimlikKodu bu düz cevapta ÇOĞUNLUKLA KOPUK (87.528'in 70.199'u
+#      "kök" görünüyor) — ağaç UI'da tembel genişletiliyor (hasItems + ayrı çağrı).
+#   3) idareIdHash düz hash DEĞİL: sha256/sha1/md5(idareId|id|detsisNo) tutmadı
+#      (tuzlanmış olmalı).
+#   SIRADAKİ HAMLE: ihale aramasının "İdare" filtresi (idareId ile) → bir DETSİS
+#   düğümünün ihalelerini çekip idareAdi/idareIdHash ↔ DETSİS eşlemesini TERSTEN
+#   kurmak. Bunun için "Seç"e basıp Filtrele'deki GetListByParameters payload'ı
+#   yakalanmalı (idare parametresinin adı/biçimi oradan çıkar).
+# ══════════════════════════════════════════════════════════════════════════
+
 
 def crypto_headers():
     guid = str(uuid.uuid4())
