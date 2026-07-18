@@ -194,7 +194,11 @@
           layer.__ilAd = f.properties.name;
           layer.on({
             mouseover: e => e.target.setStyle({ weight: 2, color: '#fff', fillOpacity: 0.95 }),
-            mouseout: e => _katman.resetStyle(e.target),
+            // resetStyle() KULLANMA: katmanı `style` seçeneğine döndürür, o da fillColor
+            // İÇERMEZ (gerçek rengi uygula() atıyor) → üzerinden geçilen her il rengini
+            // KALICI kaybediyordu ("kayıt yok" gibi görünüyordu; mod değişince düzeliyordu
+            // çünkü uygula() hepsini yeniden boyuyor). Yalnız hover'ın bozduğunu geri al.
+            mouseout: e => e.target.setStyle({ weight: 1, color: '#334155', fillOpacity: 0.85 }),
           });
         },
       }).addTo(map);
