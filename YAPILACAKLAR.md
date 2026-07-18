@@ -1,5 +1,61 @@
 # İhalePlatform — Yapılacaklar Listesi
 
+> ## 🔴 18 TEMMUZ — ANON MASKELEME DENETİMİ: 2 KÖK NEDEN, 5 NESNE KAPATILDI (migration'lar VDS'te BEKLİYOR)
+> DT migration'ları canlıya alındıktan **sonra** yapılan doğrulamada, kendi yazdığım maskelemenin
+> etkisiz olduğu çıktı. Oradan başlayan denetim (61 nesne, çok-ajanlı, her bulgu ayrı ajanla
+> çürütmeye çalışıldı) önceden var olan daha büyük bir deliği de ortaya çıkardı.
+>
+> **KÖK NEDEN A — varsayılan ayrıcalık kalıntısı.** Self-hosted Supabase'de
+> `ALTER DEFAULT PRIVILEGES ... GRANT ALL ON TABLES TO anon` yürürlükte. Bu yüzden `public`
+> şemasında **yeni oluşturulan her tablo VE materialized view doğuştan tablo-geneli anon SELECT
+> yetkisi alır.** Sonuç: sadece `GRANT SELECT (kolon listesi) ... TO anon` yazmak **maskeleme
+> YAPMAZ** — kolon-GRANT yetkiyi daraltmaz, ekler. Önce `REVOKE SELECT ... FROM anon` şart.
+> Doğru kalıp `migration_anon_maske.sql`'de zaten vardı; yeni dosyalara taşınmadı.
+> Maskeleme **opt-in**: o dosyada adı geçmeyen tablo korunmuyor.
+>
+> **KÖK NEDEN B — view sahip-yetkisi (daha sinsi).** PG view'ları varsayılan olarak
+> `security_invoker` DEĞİL; view'i sorgulayanın değil **sahibinin** yetkisiyle çalışır. Bu yüzden
+> taban tablodaki kolon-REVOKE'ları view üzerinden **hiç uygulanmaz**. `ilanlar`'da maskeleme
+> kusursuz çalışırken aynı kolonlar `ilanlar_sonuc` view'ından serbestçe okunuyordu.
+>
+> **`backend/migration_dt_anon_fix.sql`** (benim açtığım delikler):
+> - `dt_idare_ozet_mv` — KRİTİK, aktif sızıntıydı. 38.105 satır idare adı misafire açıktı ve
+>   bilinçli kapattığım `dt_idare_sayim()` RPC'sini tamamen baypas ediyordu. Kardeş nesne
+>   `idare_ozet_mv` aynı sorguda 401 dönüyor → kalıp farkı buradan yakalandı.
+> - `dogrudan_temin_sonuclari` — YÜKSEK ama **latent**: `kazanan_firma`/`yuklenici_id`/
+>   `enc_sozlesme_id` açıktı, tablo 0 satır olduğu için henüz sızıntı yok. **Kazanan/bedel
+>   backfill'i BU DÜZELTMEDEN ÖNCE koşulursa anında aktif sızıntıya döner.**
+> - `dt_takipler` — ORTA. Yetki fazlalığı; RLS satırları filtrelediği için fiili ifşa yok.
+> - Kaynak migration'lara da REVOKE eklendi ki sıfırdan kurulumda delik geri gelmesin.
+>
+> **`backend/migration_anon_maske_v2.sql`** (önceden var olanlar, benim değil):
+> - `ilanlar_sonuc` — **KRİTİK, 356.904 satır.** `idare`/`ekap_id`/`ikn` view üzerinden açıktı
+>   (kök neden B). Frontend kullanımı SIFIR → düz REVOKE hiçbir sayfayı bozmuyor.
+> - `kamu_ihaleleri` — YÜKSEK, 172 satır. Tablo tamamen açıktı, anon `idare` üzerinde
+>   filtreleyebiliyordu. GRANT listesi `ozel-ihaleler.html:389-397`'den birebir türetildi
+>   (WHERE'de kullanılan kolon için de SELECT yetkisi gerekir — filtre kolonları dahil).
+> - `kik_kararlar` — ORTA, 97 satır. `ham_veri` jsonb'si frontend hiç kullanmadığı halde açıktı.
+>   Kritik değil çünkü içindeki `uzmanTCKN` 97/97 satırda BOŞ.
+>
+> ### ⏭ AÇIK — SIRADAKİ
+> - [ ] **VDS'te uygula** (ikisi de bekliyor; ilk deneme yanlış dizinde koşuldu):
+>       `cd /opt/ihale-platform && git pull` sonra `migration_dt_anon_fix.sql` +
+>       `migration_anon_maske_v2.sql`. Sonra dosyaların sonundaki doğrulama curl'leri.
+> - [ ] **`kamu_ihaleleri.idare` — ürün kararı bekliyor.** Politika idare'yi misafire kapalı
+>       sayıyor ama `ozel-ihaleler.html` misafire açık ve KA listesinde idare adını hem gösterip
+>       hem aratıyor. Kapatmak sayfayı işlevsiz bırakır → şimdilik **bilerek açık** bırakıldı.
+>       Politikaya birebir uyum istenirse doğru iş REVOKE değil, sayfaya uyeMi dalı + dar select.
+> - [ ] **`satinalma_talepleri.olusturan_user_id`** — DÜŞÜK. Tek başına REVOKE edilemez:
+>       `ozel-ihale-detay.html:265` `guvenliKolonlar` dizesi kolonu anon select'ine sabit yazıyor.
+>       Önce HTML'den çıkar, sonra REVOKE. Ters sıra sayfayı "İhale bulunamadı"ya düşürür.
+> - [ ] **`ilanlar_sonuc` view'ının LEFT JOIN'i BOZUK** (denetimde yan bulgu, güvenlikten ayrı):
+>       `i.ekap_id = s.ekap_id` hiç eşleşmiyor → `ihale_sonuclari` kaynaklı tüm kolonlar
+>       356.904 satırın TAMAMINDA NULL (`yuklenici_ad`/`sozlesme_bedeli`/`sonuc_tur` count=0).
+>       View fiilen yarım çalışıyor. Ayrı iş.
+> - [ ] **Yeni tablo eklerken kontrol listesi:** REVOKE + kolon-GRANT yaz, sonra
+>       `migration_dt_anon_fix.sql` sonundaki "anon'a tablo-geneli yetkisi kalan nesneler"
+>       denetim sorgusunu koş. Çıkan her satır bilinçli bir karar olmalı.
+
 > ## 🌐 18 TEMMUZ — DASHBOARD: TEK GLOBAL MOD SEÇİCİ (Tümü/İhaleler/DT) + DT-TAKİP MEKANİZMASI (KOD HAZIR+CANLI DOĞRULANDI, migration'lar VDS'te bekliyor)
 > Kullanıcı önceki turdaki harita mod-düğmesini beğendi ama "her widget'ta ayrı ayrı seçtirmek yersiz —
 > en üstte TEK seçtirmelisin" dedi + "Tümü + haritada tıklama" ikilemine "küçük popup" önerimi onayladı +
