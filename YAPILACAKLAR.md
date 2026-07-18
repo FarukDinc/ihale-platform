@@ -1,5 +1,66 @@
 # İhalePlatform — Yapılacaklar Listesi
 
+> ## 🌐 18 TEMMUZ — DASHBOARD: TEK GLOBAL MOD SEÇİCİ (Tümü/İhaleler/DT) + DT-TAKİP MEKANİZMASI (KOD HAZIR+CANLI DOĞRULANDI, migration'lar VDS'te bekliyor)
+> Kullanıcı önceki turdaki harita mod-düğmesini beğendi ama "her widget'ta ayrı ayrı seçtirmek yersiz —
+> en üstte TEK seçtirmelisin" dedi + "Tümü + haritada tıklama" ikilemine "küçük popup" önerimi onayladı +
+> kişisel liste widget'larını (Takip/Yaklaşan/Bültenler/Eşleşme/Görüntülenen) da "şimdi kapsama al" dedi.
+> - **"Merhaba, X" başlığının altına** 3 pill-düğme (🗺️Tümü/📋İhaleler/⚡Doğrudan Temin) — TEK kontrol noktası.
+>   `window.dashModSec(mod)` tüm mod-farkındalıklı widget'ları yeniden çizer + `haritaModSec` köprüsüyle
+>   haritayı da senkronlar (harita artık KENDİ 3 düğmesini kaybetti, redundant'tı — global'e bağlandı).
+> - **Mod-farkındalıklı hale getirilenler:** günlük-strip (Bugün Eklendi/Son Teklif/Kazanım), 4 KPI kartı
+>   (Aktif/7Gün/Büyük İhale/Takipteki), trend (7 gün), Kategori Dağılımı, En Aktif Kurumlar, Son Eklenenler,
+>   Yaklaşan Son Tarihler. **DT'nin karşılığı olmayan kavramlar UYDURULMADI** — "7 Gün İçinde Bitecek" ve
+>   "Bugün Son Teklif" DT-only modda dürüstçe "—" gösterir (DT'de sabit teklif-bitiş tarihi kavramı yok,
+>   duyuru bazlı). "Büyük İhale (₺43M+)" artık GERÇEK `dogrudan_temin_sonuclari.kazanan_bedel`'den okuyor —
+>   bugünkü DT-kazanan backfill'iyle DOĞRUDAN bağlantılı, veri geldikçe otomatik dolacak (şu an 0, dürüst).
+> - `backend/migration_dashboard_dt_ozet.sql` (YENİ): `dt_kategori_sayim_mv`/`dt_idare_ozet_mv` +
+>   RPC'leri — mevcut `kategori_sayim`/`idare_sayim` (materialized view deseni, canlı GROUP BY 350K+ satırda
+>   yavaş/timeout riskliydi) BİREBİR aynı desen, DT'nin 1.48M satırı için tekrarlandı. `idare` kimlik-benzeri
+>   olduğu için `dt_idare_sayim` da (idare_sayim gibi) anon'a KAPALI. `run_scraper.sh`'nin gece REFRESH
+>   zincirine eklendi.
+> - **DT-Takip mekanizması (yeni kapsam, "şimdi kapsama al" kararı):** `js/takip.js`'e `window.TakipDT`
+>   eklendi — mevcut `Takip` ile AYNI API şekli (liste/var/toggle/sayi/syncFromDB), AYRI depolama
+>   (localStorage `dt_takip` + Supabase `dt_takipler` tablosu). `takipler.ilan_id`'nin muhtemel FK'sine
+>   karışmamak için (farklı tablo/anahtar tipi) BİLEREK ayrı tablo — kod tabanının tekrarlayan "DT'yi ayrı
+>   tut" deseniyle tutarlı. `dogrudan-temin.html`'e ☆/★ takip butonu eklendi (kart başına, giriş şartsız —
+>   misafir localStorage'da tutar, `ihaleler.html`'deki `takibeAl` ile aynı basitlik).
+>   `backend/migration_dashboard_dt_ozet.sql` içinde `dt_takipler` tablosu + RLS (kullanıcı yalnız kendi
+>   satırını görür/yazar/siler, anon hiç yazamaz).
+> - **Ayrı DT detay sayfası YOK (bilinçli, kapsam kararı)** — `dogrudan-temin.html`'e `?dt_no=` (liste TEK
+>   kayda daralır) ve `?kategori=` URL parametreleri eklendi; "Son Eklenen"/"Yaklaşan Son Tarihler"
+>   widget'ları DT öğelerini bu URL'lerle bu sayfaya yönlendirir (yeni bir sayfa mimarisi kurmadan
+>   pratik bir "detay görünümü" ikamesi).
+> - **Kişisel widget'lardan kapsam dışı bırakılanlar (zaman kısıtı, açıkça not düşülüyor):** Kayıtlı
+>   Aramalar (Bültenlerim — saved-search alerts, "mod" kavramına doğal uymuyor), En İyi Eşleşmeler
+>   (profil-uyum skorlama motoru DT'ye henüz uzanmıyor), Son Görüntülenenler (view-history, DT detay
+>   sayfası olmadığı için iz sürecek bir yer yok). Bunlar ihale-only kaldı — istenirse ayrı iş.
+> - **🐛 Yol üstü 2 bug (kendi test sürecimde bulundu, düzeltildi):**
+>   1. `js/harita.js`'in ilk çizimi HEP 'toplam' modunda başlıyordu, dashboard'un global moduna bakmıyordu
+>      (kullanıcı önce "DT" seçip sonra haritaya inerse harita yanlış modda açılırdı). Kök neden ikili:
+>      (a) harita.js `window.aktifDashMod`'u okumuyordu → eklendi; (b) dashboard.html'de `let aktifDashMod`
+>      ÜST-SEVİYE bildirimi `window` özelliği OLUŞTURMAZ (JS'in bilinen bir tuzağı — `var` oluşturur, `let`/
+>      `const` oluşturmaz) → `window.aktifDashMod = 'tumu'` şeklinde AÇIKÇA global yapıldı.
+>   2. `yaklaşanBitisYukle()`'nin YENİ yazdığım DT dalı `idare` kolonunu select ediyordu — `idare` DT
+>      tablosunda da anon'a KAPALI (migration_anon_maske.sql) → misafir kullanıcıda TÜM sorgu 42501 ile
+>      çöküyor, "Aktif takip ilanı bulunamadı" diye YANLIŞ boş durum gösteriyordu. `idare` select'ten
+>      çıkarıldı, `il` ile değiştirildi.
+>   **Bu ikinci bug'ı ararken PRE-EXISTING (benim yazmadığım) bir bulgu daha çıktı:** aynı hata dashboard.html'in
+>   3 ayrı yerinde (`ilanlariYukle`, `enIyiEslesmelerYukle`, `yaklaşanBitisYukle`'nin İHALE dalı) `ilanlar.idare`/
+>   `ekap_id` için de var — misafir kullanıcılarda bu 3 widget da hep boş/kırık. Kapsam dışı tutulup
+>   `spawn_task` ile ayrı göreve düşürüldü (task_7a0462ae).
+> - **Doğrulama:** yerel statik sunucu + zorla-render tekniğiyle uçtan uca test edildi. Tümü modu canlı
+>   `kpi-aktif=100.708` (ihale+DT toplamı) döndü; İhale modu `kpi-aktif=4.656`/`kpi-buyuk=846` — kullanıcının
+>   PAYLAŞTIĞI orijinal ekran görüntüsündeki sayılarla BİREBİR eşleşti (regresyonsuz doğrulama). DT modu
+>   `kpi-aktif=96.052`, `kpi-buyuk=0` (backfill henüz yok, dürüst), `kpi-yaklasan`/`hdr-songun`="—" (doğru).
+>   `dogrudan-temin.html?dt_no=X` liste tek kayda daraldı, ☆→★ takip toggle + localStorage doğrulandı,
+>   dashboard'da o kayıt "Yaklaşan Son Tarihler"de göründü (fix sonrası). Konsol hatasız (tüm turlar).
+> - **DEPLOY (VDS):** `git pull` → `docker exec -i supabase-db psql ... < backend/migration_dashboard_dt_ozet.sql`
+>   (dt_kategori_sayim/dt_idare_sayim RPC'leri + dt_takipler tablosu için) — migration öncesi de sayfa
+>   ÇÖKMEZ, o widget'lar sadece boş/hata durumunda kalır (zaten canlıda böyle test edildi).
+> - **Cache-bust notu (ders — bir önceki turda da yaşanmıştı):** `js/harita.js` `?v=2`→`?v=3`, `js/takip.js`
+>   TÜM 8 sayfada `?v=rot1`→`?v=2` yükseltildi (CF `max-age=14400` — bump edilmezse yeni kod saatlerce
+>   önbellekte takılı kalır, buton/özellik "çalışmıyor" gibi görünür).
+
 > ## 💰 18 TEMMUZ — DT KAZANAN/BEDEL: "CAPTCHA ARKASINDA" SANILIYORDU, AÇIK ÇIKTI (KOD HAZIR+CANLI DOĞRULANDI, backfill VDS'te bekliyor)
 > Kullanıcı dashboard "Büyük İhale" kartı tartışmasında hafızadaki eski karar hatırlattı: "kazanan bedelini
 > capctcha arkasından çekebilmemiz lazım, Gemini ile çözeceğini söylemiştin — öyle ilerlesene". Önce mevcut
