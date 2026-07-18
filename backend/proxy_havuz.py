@@ -57,7 +57,7 @@ import os
 import random
 import threading
 import time
-from contextlib import contextmanager
+from contextlib import asynccontextmanager, contextmanager
 from dataclasses import dataclass, field
 
 import httpx
@@ -288,7 +288,75 @@ class ProxyHavuzu:
                 u.client = None
 
 
+class AsyncProxyHavuzu(ProxyHavuzu):
+    """
+    Async scraper'lar için (httpx.AsyncClient) aynı havuz.
+
+    Zamanlama mantığı (round-robin, IP soğuması, küresel tavan, karantina) taban
+    sınıftan AYNEN gelir — tek fark istemci tipi ve beklemenin `asyncio.sleep` ile
+    yapılması. `time.sleep` async bir döngüde tüm event loop'u dondururdu.
+
+    KULLANIM
+        from proxy_havuz import async_havuz_al, ekap_ssl_baglami
+        havuz = async_havuz_al(ssl_baglami=ekap_ssl_baglami())
+        async with havuz.istek() as ist:
+            r = await ist.client.get(URL, params=...)
+            if r.status_code != 200:
+                ist.basarisiz()
+        await havuz.kapat()
+    """
+
+    def _client(self, uc: _Uc):
+        if uc.client is None:
+            uc.client = httpx.AsyncClient(
+                proxy=uc.url,
+                headers={"User-Agent": VARSAYILAN_UA},
+                timeout=30.0,
+                follow_redirects=True,
+                verify=self.ssl_baglami if self.ssl_baglami is not None else True,
+            )
+        return uc.client
+
+    @asynccontextmanager
+    async def istek(self):
+        import asyncio
+        with self._kilit:
+            uc, bekle = self._sonraki_uc()
+        if bekle > 0:
+            await asyncio.sleep(bekle)
+            self._bekleme_sn += bekle
+
+        simdi = time.monotonic()
+        uc.son_kullanim = simdi
+        uc.istek += 1
+        self._toplam_istek += 1
+        self._son_kuresel = simdi
+
+        kiralama = _Kiralama(client=self._client(uc), etiket=uc.etiket, _uc=uc)
+        hata_olustu = False
+        try:
+            yield kiralama
+        except Exception:
+            hata_olustu = True
+            raise
+        finally:
+            if hata_olustu or kiralama._basarisiz:
+                self._cezalandir(uc)
+            else:
+                uc.ardisik_hata = 0
+
+    async def kapat(self) -> None:
+        for u in self.uclar:
+            if u.client:
+                try:
+                    await u.client.aclose()
+                except Exception:
+                    pass
+                u.client = None
+
+
 _havuz: ProxyHavuzu | None = None
+_async_havuz: AsyncProxyHavuzu | None = None
 
 
 def havuz_al(ip_aralik_sn: float | None = None, kuresel_rpm: int | None = None,
@@ -307,6 +375,23 @@ def havuz_al(ip_aralik_sn: float | None = None, kuresel_rpm: int | None = None,
             print(f"→ Proxy havuzu: {n} IP · IP başına ≥{_havuz.ip_aralik_sn:.1f}sn · "
                   f"küresel tavan {_havuz.kuresel_rpm}/dk (etkin ~{tavan}/dk)", flush=True)
     return _havuz
+
+
+def async_havuz_al(ip_aralik_sn: float | None = None, kuresel_rpm: int | None = None,
+                   ssl_baglami=None) -> AsyncProxyHavuzu:
+    """Async scraper'lar için süreç genelinde tek havuz."""
+    global _async_havuz
+    if _async_havuz is None:
+        _async_havuz = AsyncProxyHavuzu(ip_aralik_sn=ip_aralik_sn, kuresel_rpm=kuresel_rpm,
+                                        ssl_baglami=ssl_baglami)
+        n = len(_async_havuz.uclar)
+        if _async_havuz.direkt_mod:
+            print("⚠ PROXY_LIST boş — DİREKT bağlantı (tüm istekler VDS IP'sinden). "
+                  "Riski yaymak için backend/.env'e PROXY_LIST ekleyin.", flush=True)
+        else:
+            print(f"→ Proxy havuzu (async): {n} IP · IP başına ≥{_async_havuz.ip_aralik_sn:.1f}sn · "
+                  f"küresel tavan {_async_havuz.kuresel_rpm}/dk", flush=True)
+    return _async_havuz
 
 
 if __name__ == "__main__":
