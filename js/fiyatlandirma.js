@@ -94,7 +94,9 @@ document.addEventListener("DOMContentLoaded", async () => {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
-                    "Authorization": `Bearer ${localStorage.getItem("ihale_token")}`
+                    // Bayat kopya DEĞİL canlı oturum token'ı: access_token ~1sa'de yenilenir,
+                    // localStorage aynası o an eski olabilirdi → ödeme 401 alıyordu.
+                    "Authorization": `Bearer ${await API.auth.token_canli()}`
                 },
                 body: JSON.stringify({
                     plan_kodu:        secili_plan,
