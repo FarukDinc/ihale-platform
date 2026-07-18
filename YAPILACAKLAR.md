@@ -261,9 +261,26 @@
 >   ekranına ULAŞILAMIYORDU. Fix: Supabase `getSession()` (expiry dahil); oturum yoksa bayat ihale_token
 >   temizlenip form gösteriliyor. Canlıda reprodüce edilip doğrulandı.
 > - **⏳ Onay e-postası İngilizce:** Türkçe şablonlar hazır+deploy (`email/onay.html`, `email/sifirlama.html`;
->   ham HTML servis ediliyor). GoTrue'da özel subject/template YOK → varsayılan İngilizce. Aktivasyon
->   docker-compose.override.yml'e auth env (GOTRUE_MAILER_SUBJECTS_*/TEMPLATES_*) + `docker compose up -d auth`
->   — prod-config yazımı classifier'a takıldı, KULLANICI çalıştıracak (komut bloğu chat'te verildi).
+>   ham HTML servis ediliyor). GoTrue'da özel subject/template YOK → varsayılan İngilizce. Prod-config yazımı
+>   classifier'a takıldı → **VDS'te KULLANICI çalıştıracak.** Çalıştırılacak komut (mevcut `studio` bloğunu
+>   koruyor — Studio 127.0.0.1'de kapalı kalır; `.bak` yedeği alır):
+>   ```bash
+>   cd /opt/supabase/docker && cp docker-compose.override.yml docker-compose.override.yml.bak && cat > docker-compose.override.yml <<'EOF'
+>   services:
+>     studio:
+>       ports:
+>         - "127.0.0.1:3000:3000"
+>     auth:
+>       environment:
+>         GOTRUE_MAILER_SUBJECTS_CONFIRMATION: "E-posta adresinizi doğrulayın · İhaleGlobal"
+>         GOTRUE_MAILER_SUBJECTS_RECOVERY: "Şifre sıfırlama · İhaleGlobal"
+>         GOTRUE_MAILER_TEMPLATES_CONFIRMATION: "https://ihaleglobal.com/email/onay.html"
+>         GOTRUE_MAILER_TEMPLATES_RECOVERY: "https://ihaleglobal.com/email/sifirlama.html"
+>   EOF
+>   docker compose up -d auth
+>   ```
+>   Doğrulama: yeni kayıt denemesi → gelen mail Türkçe olmalı. Geri alma: `cp docker-compose.override.yml.bak
+>   docker-compose.override.yml && docker compose up -d auth`.
 > - **❓ "Boş çıkan link":** anon reprodüksiyon yapılamadı (üye linkleri maskeli); sayfadaki tüm href'ler
 >   geçerli göründü. Kullanıcıdan hangi link/URL olduğu soruldu.
 
