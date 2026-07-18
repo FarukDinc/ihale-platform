@@ -30,7 +30,13 @@
     .leaflet-tooltip.il-tooltip::before { display: none; }
     .il-tooltip .tt-sayi { color: var(--amber); font-weight: 700; margin-left: 4px; }
     /* İl tıklama popup'ı — İhaleler / Doğrudan Temin seçim menüsü */
-    .leaflet-popup-content-wrapper.il-popup-wrap {
+    /* DİKKAT: Leaflet'in popup `className` seçeneği sınıfı DIŞ kapsayıcıya (.leaflet-popup)
+       ekler, iç kutuya değil. Eskiden aynı-element seçicisi kullanılıyordu
+       (.leaflet-popup-content-wrapper.il-popup-wrap) → HİÇ eşleşmiyordu, popup Leaflet'in
+       varsayılan BEYAZ arka planında kalıyor ve .il-popup-ad (color:var(--white)) beyaz
+       üstüne beyaz olduğu için İL ADI GÖRÜNMÜYORDU. Torun seçicisi doğrusu (alttaki
+       .leaflet-popup-content / -tip kuralları zaten bu formu kullanıyordu). */
+    .il-popup-wrap .leaflet-popup-content-wrapper {
       background: var(--navy-mid); color: var(--off-white); border: 1px solid var(--border);
       border-radius: 10px; box-shadow: 0 8px 24px rgba(0,0,0,.5);
     }
