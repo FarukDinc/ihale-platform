@@ -1349,27 +1349,21 @@
       eklendi: `dogrudan-temin?tarihBas=${gunTarih}&tarihBit=${gunTarih}`,
       aktif:   'dogrudan-temin',
       buyuk:   'dogrudan-temin',
+      // ?sekme=sonuc yeni eklendi (dogrudan-temin.html). Kartın SAYISI hâlâ
+      // dogrudan_temin_sonuclari'ndan (kazanan/bedel derlenmiş kayıtlar, kapsam ~%1,3)
+      // gelirken hedef durum-bazlı sonuç listesi — ikisi henüz aynı evren DEĞİL.
+      // Backfill kapsamı yükselince yeniden değerlendirilecek; şimdilik en azından
+      // 'dt' modunda ihaleler sayfasına gitme hatası kapatıldı.
+      kazanim: 'dogrudan-temin?sekme=sonuc',
     };
 
-    // (elemanId, ihaleHref, dtHref, ihaleSayi, dtSayi)
-    const kur = (id, ihHref, dtHref, nIh, nDt) => {
-      const el = document.getElementById(id);
-      if (!el) return;
-      el.onclick = null;                       // önceki modun handler'ı kalmasın
-      el.removeAttribute('data-secim');
-      if (mod === 'ihale' || !dtHref) { el.href = ihHref; return; }
-      if (mod === 'dt') { el.href = dtHref; return; }
-      // tumu
-      if (nDt === 0) { el.href = ihHref; return; }
-      if (nIh === 0) { el.href = dtHref; return; }
-      el.href = ihHref;                        // JS kapalıysa makul bir varsayılan kalsın
-      el.setAttribute('data-secim', '1');
-      el.onclick = (e) => { e.preventDefault(); kaynakSecimAc(el, ihHref, dtHref, nIh, nDt); };
-    };
+    const kur = (id, ihHref, dtHref, nIh, nDt) =>
+      modLinkKur(document.getElementById(id), ihHref, dtHref, nIh, nDt, mod);
 
     kur('stat-eklendi',      IH.eklendi,  DT.eklendi, sIh.eklenen, sDt.eklenen);
     kur('kpi-card-aktif',    IH.aktif,    DT.aktif,   sIh.aktif,   sDt.aktif);
     kur('kpi-card-buyuk',    IH.buyuk,    DT.buyuk,   sIh.buyuk,   sDt.buyuk);
+    kur('stat-kazanim',      'ihaleler?sekme=sonuc', DT.kazanim, sIh.kazanim, sDt.kazanim);
     // Bu ikisinin DT karşılığı YOK (DT'de teklif bitiş tarihi kavramı yok, duyuru bazlı).
     // DT modunda kart zaten "—" gösteriyor; linki de DT listesine bırakıyoruz.
     const soloIh = (id, href) => {
@@ -1382,14 +1376,35 @@
     soloIh('kpi-card-yaklasan',  IH.yaklasan);
   }
 
+  // Tek bağlantı için mod-farkındalıklı hedef ataması. KPI kartları da, bölüm
+  // başlıklarındaki "Tümü →" linkleri de bunu kullanır — politika tek yerde dursun.
+  // nIh/nDt null geçilebilir: sayı bilinmiyor demektir ('tumu'da popup sayısız çıkar,
+  // "bir taraf 0 ise doğrudan git" kısayolu uygulanamaz).
+  function modLinkKur(el, ihHref, dtHref, nIh, nDt, mod) {
+    if (!el) return;
+    mod = mod || aktifDashMod;
+    el.onclick = null;                       // önceki modun handler'ı kalmasın
+    el.removeAttribute('data-secim');
+    if (mod === 'ihale' || !dtHref) { el.href = ihHref; return; }
+    if (mod === 'dt') { el.href = dtHref; return; }
+    // tumu — sayı biliniyorsa boş tarafı atla, bilinmiyorsa doğrudan seçim sun
+    if (nDt === 0) { el.href = ihHref; return; }
+    if (nIh === 0) { el.href = dtHref; return; }
+    el.href = ihHref;                        // JS kapalıysa makul bir varsayılan kalsın
+    el.setAttribute('data-secim', '1');
+    el.onclick = (e) => { e.preventDefault(); kaynakSecimAc(el, ihHref, dtHref, nIh, nDt); };
+  }
+
   // Kartın altında açılan küçük kaynak seçici (harita il-popup'ının kart karşılığı).
+  // nIh/nDt null ise sayı rozeti basılmaz — "bilinmiyor"u sıfır gibi göstermemek için.
   function kaynakSecimAc(anchorEl, ihHref, dtHref, nIh, nDt) {
     document.querySelectorAll('.kaynak-secim').forEach(n => n.remove());
     const box = document.createElement('div');
     box.className = 'kaynak-secim';
+    const rozet = (n) => (n === null || n === undefined) ? '' : `<b>${dashFmt(n)}</b>`;
     box.innerHTML =
-      `<a href="${ihHref}"><span>📋 İhaleler</span><b>${dashFmt(nIh)}</b></a>
-       <a href="${dtHref}"><span>⚡ Doğrudan Temin</span><b>${dashFmt(nDt)}</b></a>`;
+      `<a href="${ihHref}"><span>📋 İhaleler</span>${rozet(nIh)}</a>
+       <a href="${dtHref}"><span>⚡ Doğrudan Temin</span>${rozet(nDt)}</a>`;
     anchorEl.style.position = anchorEl.style.position || 'relative';
     anchorEl.appendChild(box);
     // Dışarı tıklayınca kapat (aynı tıklama olayında kapanmasın diye bir tur geciktiriyoruz)
@@ -1452,8 +1467,8 @@
       let aktifT = 0, yaklasanT = 0, buyukT = 0, eklenenT = 0, sonGunT = 0, kazanimT = 0;
       // Kaynak-bazlı kırılım: 'tumu' modunda toplam sayı tek başına linki seçmeye yetmiyor
       // (2 kayıt gösterip ihaleler'e gitmek gibi). Hangi tarafta kaç kayıt var, onu tutuyoruz.
-      const sIh = { aktif: 0, buyuk: 0, eklenen: 0 };
-      const sDt = { aktif: 0, buyuk: 0, eklenen: 0 };
+      const sIh = { aktif: 0, buyuk: 0, eklenen: 0, kazanim: 0 };
+      const sDt = { aktif: 0, buyuk: 0, eklenen: 0, kazanim: 0 };
 
       if (modIhale) {
         const [aktif, yaklasan, buyuk, bugunEklenen, bugunSonGun] = await Promise.all([
@@ -1472,7 +1487,7 @@
         sIh.aktif = aktif.count || 0; sIh.buyuk = buyuk.count || 0; sIh.eklenen = bugunEklenen.count || 0;
         try {
           const { count: kazanimSay } = await sb.from('ihale_sonuclari').select('id', { count: 'exact', head: true });
-          kazanimT += kazanimSay || 0;
+          kazanimT += kazanimSay || 0; sIh.kazanim = kazanimSay || 0;
         } catch (_) {}
       }
 
@@ -1482,11 +1497,16 @@
           sb.from('dogrudan_temin_ilanlari').select('id', { count: 'exact', head: true })
             .gte('tarih', bugunBaslangic.toISOString()).lte('tarih', bugunBitis.toISOString()),
           sb.from('dogrudan_temin_sonuclari').select('dt_no', { count: 'exact', head: true }).gte('kazanan_bedel', 43142132),
-          sb.from('dogrudan_temin_sonuclari').select('dt_no', { count: 'exact', head: true }).not('kazanan_firma', 'is', null),
+          // kazanan_firma DEĞİL kazanan_bedel: kazanan_firma anon'a kapalı (kimlik) ve
+          // WHERE de SELECT yetkisi istediği için misafirde 42501 dönüyordu — sayaç
+          // sessizce 0 kalıyor, kart DT katkısını hiç göstermiyordu. kazanan_bedel
+          // anon'a açık ve aynı kaydı işaret ediyor (sonucu derlenmiş DT).
+          sb.from('dogrudan_temin_sonuclari').select('id', { count: 'exact', head: true }).not('kazanan_bedel', 'is', null),
         ]);
         aktifT += dtAktif.count || 0; eklenenT += dtEklenen.count || 0;
         buyukT += dtBuyuk.count || 0; kazanimT += dtKazanim.count || 0;
         sDt.aktif = dtAktif.count || 0; sDt.buyuk = dtBuyuk.count || 0; sDt.eklenen = dtEklenen.count || 0;
+        sDt.kazanim = dtKazanim.count || 0;
         // yaklasanT/sonGunT'e DT katkısı YOK — DT'nin "teklif bitiş tarihi" karşılığı yok.
       }
 
@@ -1557,6 +1577,8 @@
   async function topKurumlarYukle(mod) {
     mod = mod || aktifDashMod;
     const el = document.getElementById('top-kurumlar-list');
+    // Bu link hiç atanmıyordu: HTML'deki sabit href='ihaleler' her modda kalıyordu.
+    modLinkKur(document.getElementById('kurumlar-link'), 'ihaleler', 'dogrudan-temin', null, null, mod);
     try {
       // Server-side aggregate RPC (eskiden tüm aktif ilanlar client'a inip JS'te sayılıyordu — ~16 istek/açılış)
       // dt_idare_sayim idare_sayim ile AYNI şekil (idare/toplam/aktif/en_yakin_il) — ikisi de anon'a kapalı.
@@ -1602,7 +1624,8 @@
     const el = document.getElementById('son-ihaleler-list');
     const baslikEl = document.getElementById('son-eklenen-baslik'), linkEl = document.getElementById('son-eklenen-link');
     if (baslikEl) baslikEl.textContent = mod === 'ihale' ? 'Son Eklenen İhaleler' : mod === 'dt' ? 'Son Eklenen Doğrudan Temin' : 'Son Eklenenler';
-    if (linkEl) linkEl.href = mod === 'dt' ? 'dogrudan-temin' : 'ihaleler';
+    // 'tumu'da eskiden koşulsuz ihaleler'e gidiyordu; liste ise iki kaynağı karıştırıyor.
+    modLinkKur(linkEl, 'ihaleler', 'dogrudan-temin', null, null, mod);
     try {
       const gosterIhale = mod === 'ihale' || mod === 'tumu';
       const gosterDt = mod === 'dt' || mod === 'tumu';
@@ -1646,7 +1669,7 @@
     const baslikEl = document.getElementById('kategori-baslik'), linkEl = document.getElementById('kategori-link');
     if (baslikEl) baslikEl.textContent = mod === 'ihale' ? 'Kategori Dağılımı — İhaleler' : mod === 'dt' ? 'Kategori Dağılımı — Doğrudan Temin' : 'Kategori Dağılımı';
     const hedefSayfa = mod === 'dt' ? 'dogrudan-temin' : 'ihaleler';
-    if (linkEl) linkEl.href = hedefSayfa;
+    modLinkKur(linkEl, 'ihaleler', 'dogrudan-temin', null, null, mod);
     try {
       // dt_kategori_sayim kategori_sayim ile AYNI şekil (kategori/toplam/aktif) — ikisi de anon'a açık.
       const istekler = [];
@@ -1839,7 +1862,12 @@
     const el = document.getElementById('trend-bars');
     const baslikEl = document.getElementById('trend-baslik'), linkEl = document.getElementById('trend-link');
     if (baslikEl) baslikEl.textContent = mod === 'ihale' ? '📈 Son 7 Gün — Günlük İhale Yayını' : mod === 'dt' ? '📈 Son 7 Gün — Günlük Doğrudan Temin' : '📈 Son 7 Gün — Günlük Yayın Trendi';
-    if (linkEl) { linkEl.href = mod === 'dt' ? 'dogrudan-temin' : 'ihaleler'; linkEl.textContent = mod === 'dt' ? 'Doğrudan Temin →' : 'Güncel İhaleler →'; }
+    if (linkEl) {
+      linkEl.textContent = mod === 'dt' ? 'Doğrudan Temin →' : mod === 'ihale' ? 'Güncel İhaleler →' : 'Listeye git →';
+      // Barlar 'tumu'da iki kaynağın TOPLAMI; sayı kırılımı burada güvenilir değil
+      // (sorgularda .limit doygunluğu var) → sayısız popup.
+      modLinkKur(linkEl, 'ihaleler', 'dogrudan-temin', null, null, mod);
+    }
     try {
       const yediGunOnce = new Date();
       yediGunOnce.setDate(yediGunOnce.getDate() - 6);
