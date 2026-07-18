@@ -1,5 +1,19 @@
 # İhalePlatform — Yapılacaklar Listesi
 
+> ## 🚪 18 TEMMUZ — SIDEBAR HESAP MENÜSÜ + ÇIKIŞ YAP (✅ CANLI, 715adf5)
+> Saha bulgusu: kullanıcı profiline girdikten sonra **hiçbir yerde çıkış seçeneği yoktu** — oturum kapatılamıyordu.
+> - **Yapıldı:** sol-alt kullanıcı bloğu (avatar/ad/plan) artık tıklanınca **hesap menüsü** açıyor (⋮ göstergesi eklendi).
+>   Girişli: ⚙️ Profil & Ayarlar · 💳 Abonelik · 🚪 **Çıkış Yap**. Misafir: 🔑 Giriş Yap · ✨ Ücretsiz Kayıt Ol.
+> - **Çıkış:** `sb.auth.signOut()` + `localStorage.removeItem('ihale_token')` → `/`. Legacy token DA temizleniyor;
+>   kalırsa login sayfası kendini "girişli" sanıp dashboard'a geri atıyordu (bkz. [[iki-auth-sistemi-bounce]]).
+> - **Menü DOM'da `body`'ye fixed eklenir** — sidebar'ın `overflow-y:auto`'su absolute popover'ı kırpıyordu.
+> - **DERS (konumlandırma):** sidebar mobilde `display:none` olduğundan satırın rect'i 0×0 gelir; `bottom`'u
+>   ondan hesaplayınca menü ekran DIŞINA (top:-92) düşüyordu. Guard eklendi (görünmüyorsa açma) + yukarı
+>   sığmazsa altına çevirme + sol kenar viewport'a kırpma. Canlı ölçüm: menü satırın tam üstünde, tamamen ekran içinde.
+> - **DERS (cache-bust):** ilk sweep `js/sidebar-user.js?v=2?v=rot1` gibi **çift query** üretti — başka oturumun
+>   koyduğu `?v=rot1` rakam olmadığı için `(\?v=\d+)?` desenine takılmamıştı. Desen `(\?[^"'\s>]*)?` yapılıp
+>   20 sayfa tek `?v=3`'e normalize edildi. Script `max-age=14400` (4sa) ile servis edildiğinden bu ŞART.
+
 > ## 🔴 17 TEMMUZ — AÇIK BULGU: TENZİLAT ~3 KAT ŞİŞİK (çok-lotlu ihale hatası) — DÜZELTİLMEDİ, KARAR BEKLİYOR
 > Sonuç KPI'daki "Ort. Tenzilat %48,3" şüpheliydi; araştırıldı, **gerçek bir veri hatası çıktı.**
 > - **Kök neden (kanıtlı):** `ihale_sonuclari` satır başına bir KISIM/lot tutar. Çok-lotlu ihalelerde EKAP,
