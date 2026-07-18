@@ -78,4 +78,5 @@ docker exec -i supabase-db psql -U postgres -d postgres \
   -c "REFRESH MATERIALIZED VIEW CONCURRENTLY public.il_sayim_mv;" \
   -c "REFRESH MATERIALIZED VIEW CONCURRENTLY public.il_firma_dagilimi_mv;" \
   -c "REFRESH MATERIALIZED VIEW CONCURRENTLY public.yuklenici_ozet_mv;" \
-  -c "REFRESH MATERIALIZED VIEW CONCURRENTLY public.sonuc_ozet_mv;" >> /opt/ihale-platform/logs/scraper.log 2>&1
+  -c "REFRESH MATERIALIZED VIEW CONCURRENTLY public.sonuc_ozet_mv;" \
+  -c "REFRESH MATERIALIZED VIEW CONCURRENTLY public.ihale_kelime_idf;" >> /opt/ihale-platform/logs/scraper.log 2>&1

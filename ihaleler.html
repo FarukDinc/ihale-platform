@@ -409,7 +409,6 @@
       <a href="dashboard" class="nav-item"><span class="icon">◉</span> Anasayfa</a>
       <a href="ihaleler" class="nav-item active"><span class="icon">⊞</span> İhaleler</a>
       <a href="dogrudan-temin" class="nav-item"><span class="icon">⚡</span> Doğrudan Temin</a>
-      <a href="sonuclananlar" class="nav-item"><span class="icon">🏆</span> Sonuçlananlar</a>
       <div class="nav-section-label" style="padding-left:16px;opacity:.85;">— Analiz —</div>
       <a href="rekabet-analizi" class="nav-item"><span class="icon">📊</span> Rekabet Analizi</a>
       <a href="kurum-analiz" class="nav-item"><span class="icon">🏛️</span> İdareler</a>
@@ -476,6 +475,22 @@
         <button class="tab-btn"        data-sekme="gecmis"  onclick="sekmeDegistir('gecmis')">Geçmiş <span id="tab-cnt-gecmis" style="font-size:11px;opacity:.6;font-weight:500;"></span></button>
         <button class="tab-btn"        data-sekme="sonuc"   onclick="sekmeDegistir('sonuc')">Sonuç <span id="tab-cnt-sonuc" style="font-size:11px;opacity:.6;font-weight:500;"></span></button>
         <button class="tab-btn"        data-sekme="detayli" onclick="sekmeDegistir('detayli')">Detaylı Ara</button>
+      </div>
+
+      <!-- SONUÇ ÖZET KPI (yalnız "Sonuç" sekmesinde; eski Sonuçlananlar sayfasından taşındı — sonuc_ozet MV) -->
+      <div id="sonuc-ozet-bar" style="display:none;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:14px;">
+        <div style="background:var(--navy-mid);border:1px solid var(--border);border-radius:12px;padding:12px 16px;">
+          <div style="font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);">Toplam Sözleşme Bedeli</div>
+          <div style="font-size:20px;font-weight:800;color:var(--amber);font-family:var(--font-display);margin-top:4px;" id="soz-bedel">—</div>
+        </div>
+        <div style="background:var(--navy-mid);border:1px solid var(--border);border-radius:12px;padding:12px 16px;">
+          <div style="font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);">Ortalama Tenzilat</div>
+          <div style="font-size:20px;font-weight:800;color:#4ade80;font-family:var(--font-display);margin-top:4px;" id="soz-tenzilat">—</div>
+        </div>
+        <div style="background:var(--navy-mid);border:1px solid var(--border);border-radius:12px;padding:12px 16px;">
+          <div style="font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);">Farklı Kazanan Firma</div>
+          <div style="font-size:20px;font-weight:800;color:var(--white);font-family:var(--font-display);margin-top:4px;" id="soz-firma">—</div>
+        </div>
       </div>
 
       <!-- HIZLI TARİH FİLTRELERİ -->
@@ -722,13 +737,13 @@
 <div class="toast" id="toast">✅ <span id="toast-msg"></span></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-<script src="js/sidebar-user.js?v=4"></script>
-<script src="js/bildirim-sayaci.js"></script>
-<script src="js/plan.js"></script>
-<script src="js/takip.js"></script>
+<script src="js/sidebar-user.js?v=rot1"></script>
+<script src="js/bildirim-sayaci.js?v=rot1"></script>
+<script src="js/plan.js?v=rot1"></script>
+<script src="js/takip.js?v=rot1"></script>
 <script>
   const SUPABASE_URL = "https://ihaleglobal.com";
-  const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzgzMzUwMDE1LCJleHAiOjE5NDEwMzAwMTV9.sRB61a8oNXwzSKL9No8gt7cmkmnkoQstT0ZtHIxl1Hs";
+  const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzg0MzA3MTU4LCJleHAiOjE5NDE5ODcxNTh9.CjNKulvirotDD_y2oO2QKgo0kbqYvL0jUSV1RiDMoso";
   const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
   // XSS: innerHTML'e giren scrape edilen DB metni (baslik/idare/il/tur/firma) bundan geçmeli.
   const esc = s => (s == null ? '' : String(s)).replace(/[<>&"']/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&#39;'}[c]));
@@ -887,7 +902,35 @@
     document.querySelectorAll('.tab-btn').forEach(b =>
       b.classList.toggle('active', b.dataset.sekme === sekme));
     document.getElementById('gelismis-panel').classList.toggle('acik', sekme === 'detayli');
+    sonucOzetGuncelle();
     ilanlariYukle(1);
+  }
+
+  // Sonuç sekmesi özet KPI'ları (eski Sonuçlananlar sayfasından taşındı) — sonuc_ozet MV, tek sefer yüklenir.
+  let _sonucOzet = null;
+  function bedelKisa(b) {
+    b = Number(b) || 0;
+    if (b >= 1e9) return (b/1e9).toLocaleString('tr',{maximumFractionDigits:1}) + ' Mrd ₺';
+    if (b >= 1e6) return (b/1e6).toLocaleString('tr',{maximumFractionDigits:1}) + ' M ₺';
+    if (b >= 1e3) return (b/1e3).toLocaleString('tr',{maximumFractionDigits:0}) + ' B ₺';
+    return b.toLocaleString('tr') + ' ₺';
+  }
+  async function sonucOzetGuncelle() {
+    const bar = document.getElementById('sonuc-ozet-bar');
+    if (!bar) return;
+    if (aktifSekme !== 'sonuc') { bar.style.display = 'none'; return; }
+    bar.style.display = 'grid';
+    if (!_sonucOzet) {
+      try {
+        const { data, error } = await sb.rpc('sonuc_ozet');
+        if (!error && data && data[0]) _sonucOzet = data[0];
+      } catch (e) { /* özet opsiyonel */ }
+    }
+    const o = _sonucOzet;
+    if (!o) return;
+    document.getElementById('soz-bedel').textContent = bedelKisa(o.toplam_bedel);
+    document.getElementById('soz-tenzilat').textContent = o.ort_tenzilat != null ? '%' + Number(o.ort_tenzilat).toLocaleString('tr',{maximumFractionDigits:1}) : '—';
+    document.getElementById('soz-firma').textContent = o.farkli_firma != null ? Number(o.farkli_firma).toLocaleString('tr') : '—';
   }
 
   function tarihFormatla(t) {
@@ -1078,9 +1121,14 @@
     // DB kolon-yetkisi 42501 verir (migration_anon_maske.sql); kart bunları '***' çizer.
     const uyeKolon  = uyeMi ? 'ekap_id,idare,' : '';
     const uyeSonucK = uyeMi ? 'kazanan_firma,' : '';
+    // Sonuç sekmesi ihale_sonuclari!inner + count(*) OVER() (count:exact) → planlayıcı TÜM sonuç
+    // tablosunu tarayan hash-join seçip 8s authenticated timeout'unu aşıyor (soğuk cache ~2GB).
+    // Bu sekmede planlı (tahmini) sayım → count(*) OVER() kalkar, sorgu trigram+nested-loop'a düşer
+    // (EXPLAIN: 2.2GB→~200MB, <2.5s). Diğer sekmeler küçük/join'siz → tam sayım kalır.
+    const sayimModu = aktifSekme === 'sonuc' ? 'planned' : 'exact';
     let query = sb.from('ilanlar').select(
       `id,kaynak,${uyeKolon}baslik,il,tur,usul,durum,ilan_tarihi,son_teklif_tarihi,tahmini_bedel,yaklasik_maliyet_min,yaklasik_maliyet_max,itiraz_bedeli,esik_katsayi,${sonucEmbed}(${uyeSonucK}kazanan_teklif,kazanan_teklif_farki_yuzde,sonuc_tarihi)`,
-      { count: 'exact' }
+      { count: sayimModu }
     );
 
     // Sekme kapsamı: Güncel = teklif tarihi gelecekte, Geçmiş = geçmişte, Sonuç = ihale_sonuclari'nde kaydı olanlar
@@ -1134,7 +1182,7 @@
       console.info('arama_fold/esik_katsayi kolonu henüz yok, legacy aramayla tekrar deneniyor:', error.message);
       let fallback = sb.from('ilanlar').select(
         `id,kaynak,${uyeKolon}baslik,il,tur,usul,durum,ilan_tarihi,son_teklif_tarihi,tahmini_bedel,yaklasik_maliyet_min,yaklasik_maliyet_max,itiraz_bedeli,${sonucEmbed}(${uyeSonucK}kazanan_teklif,kazanan_teklif_farki_yuzde,sonuc_tarihi)`,
-        { count: 'exact' }
+        { count: sayimModu }
       );
       if      (aktifSekme === 'guncel') fallback = fallback.gte('son_teklif_tarihi', simdiISO);
       else if (aktifSekme === 'gecmis') fallback = fallback.lt('son_teklif_tarihi', simdiISO);
@@ -1219,7 +1267,8 @@
 
     const baslangicNo = (sayfa - 1) * SAYFA_BOYUTU + 1;
     const bitisNo = Math.min((sayfa - 1) * SAYFA_BOYUTU + ilanlar.length, toplamKayit);
-    document.getElementById('result-count').innerHTML = `<strong>${toplamKayit.toLocaleString('tr')}</strong> ihale bulundu — ${baslangicNo}-${bitisNo} gösteriliyor`;
+    const sayimTahmini = (aktifSekme === 'sonuc' && !uyumModu);   // Sonuç'ta count planlı-tahmini → "~" göster
+    document.getElementById('result-count').innerHTML = `${sayimTahmini ? '~' : ''}<strong>${toplamKayit.toLocaleString('tr')}</strong> ihale bulundu — ${baslangicNo}-${bitisNo} gösteriliyor`;
     document.getElementById('pag-info').textContent = `${baslangicNo}–${bitisNo} / ${toplamKayit}`;
     document.getElementById('sb-count').textContent = toplamKayit > 999 ? Math.round(toplamKayit/1000*10)/10+'K' : toplamKayit;
 

@@ -3,8 +3,12 @@ Faz D3 — gece cron'da aktif ilanlardan embedding'i eksik olanları doldurur.
 
 Kasıtlı olarak SINIRLI/aşamalı: bir kerede TÜM geçmişi (51k+ satır) embed etmeye
 çalışmaz — Gemini kota/maliyetine dikkat (bkz. proje hafızası "Gemini kota uyarısı").
-Her gece varsayılan 300 satır işler. Yalnızca `durum='aktif'` işlenir — geçmiş/kompakt
-satırların zaten `ilan_metni` yok, embed edilecek anlamlı metin de yok.
+Her gece varsayılan 300 satır işler. Yalnızca `durum='aktif'` işlenir — benzer_ihaleler
+RPC yalnız aktif ilanları aday aldığından (durum='aktif' AND son_teklif>=now()) embedding
+YALNIZ aktifler için değer taşır; geçmişi gömmek benzer eşleşmeye katkı vermez.
+17 Tem: `ilan_metni not.is.null` filtresi KALDIRILDI — Katman 2/3'te BAŞLIK asıl konu
+sinyali (ilan_metni %4,5 dolu). Metinsiz aktif ilan da başlık-üstü gömülür (semantik dal
+sadece 1500 değil TÜM ~4.6K aktif ilanda çalışsın).
 ⚠️ Sıralama BİLEREK `olusturulma DESC` (en yeni önce): kullanıcıya "Güncel" sekmesinde
 gösterilen taze ilanların semantik skoru en çok değer taşır. Eğer bir gecede yeni aktif
 ilan sayısı `--max`'i aşarsa, embed'i eksik ESKİ aktif ilanlar o gece sıraya giremez —
@@ -57,7 +61,9 @@ def main():
                 "select": "id,baslik,ilan_metni",
                 "durum": "eq.aktif",
                 "embedding": "is.null",
-                "ilan_metni": "not.is.null",
+                # ilan_metni filtresi YOK: başlıksa da gömülür (baslik asıl sinyal). baslik boşsa
+                # embed_uret None döner, satır atlanır (embedding NULL kalır, sonraki turda denenir).
+                "baslik": "not.is.null",
                 "order": "olusturulma.desc",
                 "limit": str(args.max),
             },

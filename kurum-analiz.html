@@ -311,7 +311,6 @@
       <a href="dashboard" class="nav-item"><span class="icon">◉</span> Anasayfa</a>
       <a href="ihaleler" class="nav-item"><span class="icon">⊞</span> İhaleler</a>
       <a href="dogrudan-temin" class="nav-item"><span class="icon">⚡</span> Doğrudan Temin</a>
-      <a href="sonuclananlar" class="nav-item"><span class="icon">🏆</span> Sonuçlananlar</a>
       <div class="nav-section-label" style="padding-left:16px;opacity:.85;">— Analiz —</div>
       <a href="rekabet-analizi" class="nav-item"><span class="icon">📊</span> Rekabet Analizi</a>
       <a href="kurum-analiz" class="nav-item active"><span class="icon">🏛️</span> İdareler</a>
@@ -528,12 +527,12 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
-<script src="js/sidebar-user.js?v=4"></script>
-<script src="js/bildirim-sayaci.js"></script>
+<script src="js/sidebar-user.js?v=rot1"></script>
+<script src="js/bildirim-sayaci.js?v=rot1"></script>
 <script>
 (() => {
   const SB_URL = "https://ihaleglobal.com";
-  const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzgzMzUwMDE1LCJleHAiOjE5NDEwMzAwMTV9.sRB61a8oNXwzSKL9No8gt7cmkmnkoQstT0ZtHIxl1Hs";
+  const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzg0MzA3MTU4LCJleHAiOjE5NDE5ODcxNTh9.CjNKulvirotDD_y2oO2QKgo0kbqYvL0jUSV1RiDMoso";
   const sb = window.supabase.createClient(SB_URL, SB_KEY);
   const esc = s => (s == null ? '' : String(s)).replace(/[<>&"']/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&#39;'}[c]));
 
@@ -847,7 +846,7 @@
       return;
     }
 
-    document.getElementById('kurum-ihaleler-btn').href = `ihaleler?idare=${encodeURIComponent(KURUM)}`;
+    document.getElementById('kurum-ihaleler-btn').href = `ihaleler?ara=${encodeURIComponent(KURUM)}&sekme=gecmis`;
     document.getElementById('kurum-dt-btn').href = `dogrudan-temin?idare=${encodeURIComponent(KURUM)}`;
     document.getElementById('bc-kurum').textContent = KURUM;
     kurumTakipDurumuGuncelle();
@@ -1099,7 +1098,7 @@
         <div class="iz-aktif">${i.aktif > 0 ? i.aktif.toLocaleString('tr-TR') : '<span style="color:var(--muted)">0</span>'}</div>
         <div class="iz-actions">
           <button class="iz-btn iz-btn-amber" data-ad="${esc(i.ad)}">Analiz</button>
-          <a href="ihaleler?idare=${encodeURIComponent(i.ad)}" class="iz-btn iz-btn-ghost">İhaleler</a>
+          <a href="ihaleler?ara=${encodeURIComponent(i.ad)}&amp;sekme=gecmis" class="iz-btn iz-btn-ghost">İhaleler</a>
         </div>
       </div>`).join('');
 

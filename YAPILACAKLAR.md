@@ -1,5 +1,73 @@
 # İhalePlatform — Yapılacaklar Listesi
 
+> ## 🧹 17 TEMMUZ — SONUÇLANANLAR KALDIRILDI + DT DURUM SEKMELERİ + FİRMA KONSOLİDASYON CEVABI (✅ CANLI, c74e3eb)
+> Kullanıcı: (1) Sonuçlananlar sayfası Sonuç sekmesiyle redundant, kaldır; (2) DT'ye ihaleler gibi sekmeler;
+> (3) soru: ihale+DT kazananları aynı isimse tek firma mı topluyoruz?
+> - **#1 Sonuçlananlar kaldırıldı:** 22 sayfadan nav linki silindi, sayfa `ihaleler?sekme=sonuc`'a redirect
+>   (eski link 404 olmasın). Sayfaya özel 3 özet KPI (Toplam Sözleşme / Ort. Tenzilat / Farklı Firma — sonuc_ozet
+>   MV) İhaleler 'Sonuç' sekmesine taşındı (sonuc-ozet-bar, yalnız o sekmede grid). Canlı: bedel 5.248,5 Mrd ₺,
+>   firma 82.702. Redirect canlı doğrulandı.
+> - **#2 DT sekmeleri:** Güncel(aktif ~95K) / Sonuç(sonuçlanmış ~1,39M) / Tümü(~1,48M) — DURUM-bazlı.
+>   DİKKAT/DERS: önce kullanıcının istediği TARİH-bazlı (son 1 yıl) denendi ama DT tarihleri son 1 yılda
+>   kümelendiği için 1,4M/55K (anlamsız) çıktı → durum-bazlıya çevrildi (DURUM_GRUP.acik/sonuc zaten vardı).
+>   Gereksiz durum dropdown'u kaldırıldı (sekmeler kapsıyor); ?idare= ile gelince Tümü açılır. Canlı doğrulandı.
+> - **#3 CEVAP:** `yukleniciler.normalize_ad` UNIQUE (82.095 firma=82.095 tekil isim) → ihale kazananları isimle
+>   TEKLEŞTİRİLİYOR (VKN %0, isim-bazlı). AMA `dogrudan_temin_ilanlari`'nda kazanan kolonu YOK → DT kazananları
+>   hiç kaydedilmiyor (EKAP DT kazananı CAPTCHA arkasında, bkz [[dt-kazanan-captcha]]). Yani DT firma verisine
+>   girmiyor; mekanizma isim-ortak olduğundan veri gelse aynı normalize_ad ile otomatik birleşirdi. Açık: DT kazanan verisi yok.
+
+> ## 🔎 17 TEMMUZ — İHALELER: KURUM→ARAMA YÖNLENDİRME + SONUÇ SEKMESİ ARAMA TIMEOUT (✅ CANLI, 5751e9b)
+> Kullanıcı ekran görüntüsü: (1) kurum-analiz "Tüm İhalelerini Gör" tüm sistemi açıyor, kuruma filtrelemiyor;
+> (2) İhaleler Sonuç sekmesinde "EMNİYET" araması "canceling statement due to statement timeout" veriyor.
+> - **Fix #1 (kurum→arama):** buton + benzer-kurum linki gizli `?idare=` (Detaylı Ara panelindeki f-idare'ye
+>   düşüp boş Güncel gösteriyordu) yerine görünür `?ara=<kurum>&sekme=gecmis` → arama kutusu dolu + Geçmiş
+>   sekmesinde kurumun ihaleleri. arama_fold idare'yi içeriyor (doğrulandı: grand plz idare=4952 = arama_fold=4952).
+>   Üye yolu; misafirde idare zaten maskeli. (kurum-analiz.html)
+> - **Fix #2 (Sonuç timeout):** kök neden EXPLAIN'le bulundu — count:exact → `count(*) OVER()` planlayıcıyı TÜM
+>   ihale_sonuclari'ni (2.2GB) tarayan hash-join'e itiyor → 8s authenticated timeout soğuk cache'te aşılıyor.
+>   Trigram GIN index VARDI ama ORDER BY+LIMIT+count es geçtiriyordu. Fix: Sonuç sekmesinde `count:'planned'`
+>   (frontend, DB değişikliği YOK) → count(*) OVER() kalkar, trigram+nested-loop (uyum limit200 135ms, range
+>   limit20 2.5s, hepsi <8s). Tahmini sayım "~" ile işaretlendi. (ihaleler.html)
+> - Canlı doğrulandı (guest): ?ara=+?sekme= akışı çalışıyor, Sonuç aramada timeout YOK + "~" gösterimi.
+>   Üye yolu DB'de EXPLAIN ANALYZE ile ölçüldü (82-135ms). Deploy: 5751e9b → push → VDS `git pull` (oto-deploy yok).
+> - Bkz. [[statement-timeout-edge]]. Not: node yok → syntax tarayıcı console'uyla doğrulandı.
+
+> ## 🧠 17 TEMMUZ — EŞLEŞTİRME MOTORU 3-KATMAN İYİLEŞTİRME (kullanıcı "yap hepsini") — K1 koşuyor, K2 ✅, K3 ✅ TAMAM
+> **KATMAN 2 ✅ CANLI+DOĞRULANDI (commit `5bc754d`, migration_idf_eslestirme.sql):** başlık eşleşmesi
+> IDF-nadirlik ağırlıklı. ihale_kelime_idf MV (34.236 kelime, gece REFRESH) + ihale_konu_kelimeleri_idf().
+> benzer_ihaleler embeddingsiz dalı karakter-trigram→IDF-örtüşme (gıda: benzerlik 19→55). uygun_firmalar
+> başlık dalı IDF-relevans. 4-lens 25-ajan çekişmeli inceleme 2 KRİTİK yakaladı+düzeltti: (a) ölü kolon
+> a.a_il→a.il (CREATE patlıyor, DROP kaldırıldı+BEGIN/COMMIT); (b) başlık dalı join yönü ters→trigram indeksi
+> ölü 10sn timeout→src_kw→ilanlar join (EXPLAIN Bitmap, 388ms). +word-boundary \m..\M (kars→karsilanmasi
+> 4904→637) +p_bant guard. Canlı: benzer anon 200/0.3s, misafir kartı 4/4 gıda, uygun_firmalar anon-kilitli.
+> DERS: MV-inline SQL fonksiyonda tr_fold ŞEMA-NİTELİKLİ (public.tr_fold) olmalı.
+> **KATMAN 3 ✅ TAMAM (commit `0ebf461`):** aktif ilanları başlık-üstü göm. İÇGÖRÜ: benzer_ihaleler yalnız
+> AKTİF ilanları aday alır → 537K geçmişi gömmek gereksiz, sadece ~4.6K aktif yeter. ilan_embed_uret.py
+> 'ilan_metni not.is.null' filtresi kaldırıldı → **4.639/4.639 aktif gömüldü (kalan 0)**; semantik dal
+> (cosine<0.45) artık tüm aktiflerde. DERS: script PostgREST 1000-cap'e takılır → backlog için dayanıklı
+> re-run sarmalayıcı (embed_aktif_dayanikli.sh); gece cron —max 300 günlük yeni aktifler için yeterli.
+> **K1 durum:** ~49K kanoniğe atandı, kuyruk 153K, dayanıklı koşu sürüyor (free-tier, birkaç güne yayılır).
+> **AÇIK/gelecek:** uygun_firmalar'a embedding-firma dalı (356K geçmiş gömme gerekir, düşük marjinal — IDF
+> zaten iyi); scraper ilan_metni kapsaması (en değerli VERİ işi, %4,5→artır).
+>
+> ## 🧠 17 TEMMUZ — EŞLEŞTİRME MOTORU KATMAN 1: JENERİK KOVA → KANONİK AI BACKFILL (✅ toplu koşu VDS'te)
+> Kullanıcı: "benzer ihaleler + uygun firmalar algoritması çok iyi çalışsın; bazı ihalelerde OKAS yok, buna
+> göre yorum yapamıyorsun — bunu düzeltmemiz lazım, zenginliğimiz buradan gelecek."
+> **SİNYAL ENVANTERİ ÖLÇÜLDÜ (356.690 ilan / 537.761 sonuç):** OKAS dolu %2,8 (10.139) → OKAS ÖLÜ.
+> Kanonik kategori %42. **JENERİK kova %58** (Mal Alımı 87K + Diğer 68K + Hizmet Alımı 51K = konu sinyali 0).
+> ilan_metni %4,5 (geçmiş kazananlarda %0,02!). embedding 1.500 (yalnız aktif). **Geçmişte tek evrensel
+> sinyal BAŞLIK.** → Asıl körlük OKAS değil, jenerik kategori + zayıf başlık eşleşmesi.
+> **3-KATMAN PLAN (kullanıcı Katman 1'i seçti):** (1) jenerik→kanonik AI backfill [BU]; (2) başlık
+> eşleşmesini IDF/nadirlik-ağırlıklı yap; (3) embedding'i 537K geçmişe yay. Ayrı VERİ işi: scraper ilan_metni.
+> **✅ YAPILDI:** DERS — migration_ai_kategori.sql prod'a HİÇ uygulanmamıştı (kolon yok → gece cron her gece
+> sessizce çıkmış, özellik hiç çalışmamış!). migration_ai_kategori_jenerik.sql (canlı): kolonu kurar +
+> ai_kategori_backfill.py'ı 3 jenerik kovaya genişletir (in.() Türkçe çift-tırnak, 205.630 satır doğrulandı) +
+> kuyruk indeksi + legacy "İnşaat & Yapım" 22K → kanonik birleşti. Dry-run ~%90 isabet ("Şapka"→Tekstil,
+> "Prısmaflex Seti"→Tıbbi Cihaz, belirsizler jenerik kalır). Maliyet ~$8 tek seferlik (4.113 istek).
+> **Toplu koşu VDS'te nohup ile başlatıldı** (--rpm 15; free daily cap bölerse zarif durur+resume). İzleyici
+> arka planda bitişi bekliyor. NOT: bulk bitmeden/cap'e takılmadan gece cron'un 400-limitiyle küçük yarış
+> olabilir (~$0.02 çöp) — önemsiz. Katman 2/3 kullanıcı onayı bekliyor.
+
 > ## 🌍 17 TEMMUZ — TİCARET: YIL+KIYAS FRONTEND CANLI + iso2 + FULL BACKFILL 2000-2026 (✅ backfill koşuyor)
 > Kullanıcı: "yıl kıyaslamasını çalışır kıl; commit/push/deploy ne gerekiyorsa yap."
 > - **Frontend statik→RPC:** ticaret-analiz.html artık TICARET_TR yerine ticaret_yillar/liste/harita/ulke
@@ -134,6 +202,31 @@
 > binlerce satır tarihsel kayıt/detay — çelişki olursa BU BLOK geçerlidir.
 > **KALICI TALİMAT (12 Tem, kullanıcı emri):** Bu blok + ilgili bölümler her oturumda otomatik
 > güncellenir, kullanıcı hatırlatmak zorunda değil. Bkz. hafıza `yapilacaklar-auto-update`.
+
+> ## 🔐 17 TEMMUZ — SECRET ROTASYONU YAPILDI (JWT+anon+service) ✅ CANLI, commit `211f81a`
+> Studio ifşasının (16 Tem) açık kalan tek borcu kapandı. **Risk modeli:** anon key zaten public —
+> tek başına döndürmek anlamsız; asıl sızan service_role + JWT_SECRET (Studio → Settings/API sayfası).
+> JWT_SECRET sızdıysa saldırgan HER token'ı üretebilir → JWT_SECRET dönmeli → anon+service yeniden imzalanır.
+> **Süreç (işleyen reçete):** (0) kullanıcı stdlib-only keygen script'i çalıştırır (HS256, dış bağımlılık yok),
+> bana YALNIZ anon key'i verir; (1) ben 24 HTML + 6 JS'te anon key swap + 6 JS'i `?v=rot1`'e normalize
+> (cache-bust) → push, VDS'e PULL ETMEDEN (site eski anahtarla ayakta); (2) kullanıcı VDS'te
+> `/opt/supabase/docker/.env` 3 değeri sed + `docker compose up -d` → HEMEN `git pull` + backend/.env
+> service key + `systemctl restart ihale-api`. Kesinti ~saniyeler.
+> **CACHE KEŞFİ (planı kolaylaştırdı):** HTML edge-cache'siz (`cf-cache-status: DYNAMIC`) → yeni anon
+> anında; yalnız 6 JS cache'li (max-age=14400) → `?v` bump yeterli, Cloudflare purge GEREKMEZ.
+> **Canlı doğrulama:** eski anon→**401**, yeni anon→**200**; 24/24 sayfa 200; REST(3 tablo)+6 RPC 200;
+> ihaleler 375 kayıt; ticaret-analiz 26-yıl dropdown+169 ülke+HS6 sıralama; firma-analiz 82.123 firma
+> (misafir maskeleme `🔒 ***` çalışıyor); konsol 0 hata; ihale-api active, /api/docs 200.
+> **DERSLER:** (a) msys `grep -oE` grup-quantifier'da yanıltır → toplu doğrulamayı Python'la yap;
+> (b) `perl -i` Windows'ta çoklu-dosyada sessizce no-op → byte-düzeyi Python replace kullan (CRLF de korunur);
+> (c) eşzamanlı oturum rotasyon commit'inin ÜSTÜNE push edebilir → VDS'te eski-imza taraması ŞART (0 çıktı).
+> **⏳ AÇIK — FAZ 2b (DB parolası):** POSTGRES_PASSWORD DÖNMEDİ. Kullanıcı "yapalım" dedi, keşif adımı
+> bekliyor. **DİKKAT — risk/fayda:** fayda DÜŞÜK (5432/6543 dışarıya kapalı, [[origin-hardening]] →
+> sızmış parola uzaktan kullanılamaz); risk YÜKSEK (authenticator/supabase_auth_admin/supabase_storage_admin/
+> supabase_admin/pooler rolleri aynı parolayı paylaşır; `.env` değişip roller ALTER edilmezse o servis çöker).
+> Sıra: önce rol keşfi (compose'da `://rol:${POSTGRES_PASSWORD}` grep + pg_roles), sonra ALTER+env+restart.
+> **NOT (kullanıcı kararı):** yeni JWT_SECRET+service key kullanıcı terminali yapıştırınca sohbete düştü;
+> kullanıcı bunu KABUL ETTİ (chat-log maruziyeti, Studio kadar geniş değil), yeniden rotasyon YAPILMAYACAK.
 
 > ## 📈 ✅ YAPILDI (17 Tem) — TİCARET-ANALİZ İKİ İŞ (CANLI, 8b4d281)
 > 1. **HS6 kalem tablosu sütun sıralama ✅** — drill-down başlıkları (Kalem/İhr./Değişim/İth./Değişim)

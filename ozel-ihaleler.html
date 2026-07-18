@@ -104,7 +104,6 @@
       <a href="dashboard" class="nav-item"><span class="icon">◉</span> Anasayfa</a>
       <a href="ihaleler" class="nav-item"><span class="icon">⊞</span> İhaleler</a>
       <a href="dogrudan-temin" class="nav-item"><span class="icon">⚡</span> Doğrudan Temin</a>
-      <a href="sonuclananlar" class="nav-item"><span class="icon">🏆</span> Sonuçlananlar</a>
       <div class="nav-section-label" style="padding-left:16px;opacity:.85;">— Analiz —</div>
       <a href="rekabet-analizi" class="nav-item"><span class="icon">📊</span> Rekabet Analizi</a>
       <a href="kurum-analiz" class="nav-item"><span class="icon">🏛️</span> İdareler</a>
@@ -224,13 +223,13 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-<script src="js/sidebar-user.js?v=4"></script>
-<script src="js/bildirim-sayaci.js"></script>
-<script src="js/plan.js?v=v4"></script>
+<script src="js/sidebar-user.js?v=rot1"></script>
+<script src="js/bildirim-sayaci.js?v=rot1"></script>
+<script src="js/plan.js?v=rot1"></script>
 <script>
 (() => {
   const SB_URL = "https://ihaleglobal.com";
-  const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzgzMzUwMDE1LCJleHAiOjE5NDEwMzAwMTV9.sRB61a8oNXwzSKL9No8gt7cmkmnkoQstT0ZtHIxl1Hs";
+  const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzg0MzA3MTU4LCJleHAiOjE5NDE5ODcxNTh9.CjNKulvirotDD_y2oO2QKgo0kbqYvL0jUSV1RiDMoso";
   const sb = window.supabase.createClient(SB_URL, SB_KEY);
 
   const KATEGORILER = ["Akaryakıt - Gazyakıt - Madeni Yağ","Asansör - Yapı Otomasyon - Mekanik Güvenlik","Eğitim - Araştırma - Anket - Tercümanlık","Elektronik - Bilgisayar - İletişim - Ölçü Aletleri","Endüstriyel Makine - Motor - Konveyör","Enerji - Aydınlatma - Sinyalizasyon - Elektrik Tesisatı","Gayrimenkul - Arsa Satışı - Kantin","Gıda - Tarım Ürünleri - Yiyecek - İçecek","Hayvancılık - Veterinerlik - Hayvan Yemi","Hazır Yemek - Lokantacılık","Hırdavat - Nalburiye - Metal ve Plastik","İnşaat - Altyapı - Üstyapı - Yapım","İnşaat Malzemeleri","İş Sağlığı - İş Güvenliği ve Ekipmanları","İşletmecilik - İşçilik - Sosyal Hizmetler","Kanalizasyon - Boru - Su - Doğalgaz - Sıhhi Tesisat","Kent Mobilyaları - Prefabrik - Doğramacılık","Kimyasal Maddeler - Dezenfektan - Gübre","Klima - Soğutma - Isıtma - Havalandırma","Madencilik - Sondaj - Doğal Kaynaklar","Matbaa - Kırtasiye - Toner - Kartuş - Ambalaj","Menkul Mallar - Araç ve Hurda Satışı","Mobilya - Beyaz Eşya - Mutfak - Züccaciye","Mühendislik - Mimarlık - Danışmanlık","Nakliye - Servis - Taşımacılık","Odun - Kömür - Katıyakıt","Ormancılık - Bahçıvanlık - Peyzaj","Özel Güvenlik - Koruma - Bekçilik","Reklam - Tabela - Billboard - Tanıtım","Sağlık - Medikal - İlaç - Kozmetik","Sanat Eserleri - Müzik Aletleri - Heykel","Savunma Sanayi - Silah - Denizcilik - Havacılık","Sigortacılık - Mali ve Hukuki Hizmetler","Tekstil - Giyim - Spor Ekipmanları","Temizlik - İlaçlama - Geri Dönüşüm","Turizm - Organizasyon - Ödüllendirme","Taşıt - İş Makinesi - Yedek Parça","Tıbbi Cihaz - Laboratuvar - Hastane Ekipmanları","Uydu Takip - Kamera - Scada - Haberleşme","Yangın Algılama - Söndürme","Yazılım - Bilişim - Bilgi Yönetim"];

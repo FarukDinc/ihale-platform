@@ -138,7 +138,6 @@
       <a href="dashboard" class="nav-item"><span class="icon">◉</span> Anasayfa</a>
       <a href="ihaleler" class="nav-item"><span class="icon">⊞</span> İhaleler</a>
       <a href="dogrudan-temin" class="nav-item active"><span class="icon">⚡</span> Doğrudan Temin</a>
-      <a href="sonuclananlar" class="nav-item"><span class="icon">🏆</span> Sonuçlananlar</a>
       <div class="nav-section-label" style="padding-left:16px;opacity:.85;">— Analiz —</div>
       <a href="rekabet-analizi" class="nav-item"><span class="icon">📊</span> Rekabet Analizi</a>
       <a href="kurum-analiz" class="nav-item"><span class="icon">🏛️</span> İdareler</a>
@@ -208,6 +207,20 @@
         </div>
       </div>
 
+      <!-- SEKMELER (DT'de teklif son tarihi yok → durum-bazlı: Güncel=aktif, Sonuç=sonuçlanmış, Tümü=hepsi) -->
+      <style>
+        .dt-tab-bar { display:flex; gap:2px; border-bottom:1px solid var(--border); margin-bottom:14px; flex-wrap:wrap; }
+        .dt-tab { padding:9px 18px; background:none; border:none; border-bottom:2px solid transparent; color:var(--muted); font-size:14px; font-weight:600; cursor:pointer; font-family:inherit; }
+        .dt-tab:hover { color:var(--white); }
+        .dt-tab.active { color:var(--amber); border-bottom-color:var(--amber); }
+        .dt-tab .cnt { font-size:11px; opacity:.6; font-weight:500; margin-left:2px; }
+      </style>
+      <div class="dt-tab-bar">
+        <button class="dt-tab active" data-sekme="guncel" onclick="sekmeDegistir('guncel')">Güncel <span class="cnt" id="dt-cnt-guncel"></span></button>
+        <button class="dt-tab" data-sekme="sonuc" onclick="sekmeDegistir('sonuc')">Sonuç <span class="cnt" id="dt-cnt-sonuc"></span></button>
+        <button class="dt-tab" data-sekme="tumu" onclick="sekmeDegistir('tumu')">Tümü <span class="cnt" id="dt-cnt-tumu"></span></button>
+      </div>
+
       <!-- TOOLBAR -->
       <div class="toolbar">
         <input type="text" id="f-ara" placeholder="🔍 Başlık veya idare ara…" oninput="aramaDegisti()" />
@@ -220,11 +233,6 @@
         </select>
         <select id="f-kategori" onchange="filtreDegisti()">
           <option value="">Tüm Kategoriler</option>
-        </select>
-        <select id="f-durum" onchange="filtreDegisti()">
-          <option value="">Tüm Durumlar</option>
-          <option value="acik">🟢 Açık / Teklif Bekleyen</option>
-          <option value="sonuc">✅ Sonuçlanmış</option>
         </select>
         <select id="f-il" onchange="filtreDegisti()">
           <option value="">Tüm İller</option>
@@ -261,13 +269,13 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-<script src="js/sidebar-user.js?v=4"></script>
-<script src="js/bildirim-sayaci.js"></script>
+<script src="js/sidebar-user.js?v=rot1"></script>
+<script src="js/bildirim-sayaci.js?v=rot1"></script>
 <script src="js/kategoriler.js"></script>
 <script>
 (() => {
   const SB_URL = "https://ihaleglobal.com";
-  const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzgzMzUwMDE1LCJleHAiOjE5NDEwMzAwMTV9.sRB61a8oNXwzSKL9No8gt7cmkmnkoQstT0ZtHIxl1Hs";
+  const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzg0MzA3MTU4LCJleHAiOjE5NDE5ODcxNTh9.CjNKulvirotDD_y2oO2QKgo0kbqYvL0jUSV1RiDMoso";
   const sb = window.supabase.createClient(SB_URL, SB_KEY);
 
   // Misafir maskeleme: DT.idare anon'a DB'de kapalı (migration_anon_maske.sql) —
@@ -286,6 +294,8 @@
   let topSayfa = 1;
   let aramaTimer = null;
   const PER_PAGE = 25;
+  let aktifSekme = 'guncel';   // durum-bazlı: 'guncel'(aktif) | 'sonuc'(sonuçlanmış) | 'tumu'(hepsi)
+  const kisaSayi = n => n >= 1e6 ? (n/1e6).toLocaleString('tr',{maximumFractionDigits:1})+'M' : n >= 1e3 ? Math.round(n/1e3)+'K' : String(n);
 
   function tarihFormat(s) {
     if (!s) return '—';
@@ -313,14 +323,15 @@
   };
 
   function filtreleriUygula(query) {
+    // Sekme kapsamı (durum-bazlı) — Güncel=aktif, Sonuç=sonuçlanmış, Tümü=filtresiz
+    if (aktifSekme === 'guncel')     query = query.in('durum', DURUM_GRUP.acik);
+    else if (aktifSekme === 'sonuc') query = query.in('durum', DURUM_GRUP.sonuc);
     const q = aramaTemizle(document.getElementById('f-ara').value);
     const tur = document.getElementById('f-tur').value;
     const kat = document.getElementById('f-kategori').value;
-    const durum = document.getElementById('f-durum').value;
     const il = document.getElementById('f-il').value;
     if (tur) query = query.eq('tur', tur);
     if (kat) query = query.eq('kategori', kat);
-    if (durum && DURUM_GRUP[durum]) query = query.in('durum', DURUM_GRUP[durum]);
     if (il) query = query.eq('il', il);
     if (q) query = uyeMi
       ? query.or(`baslik.ilike.*${q}*,idare.ilike.*${q}*`)
@@ -373,6 +384,13 @@
   window.aramaDegisti = function() {                       // arama kutusu → debounce'lu
     clearTimeout(aramaTimer);
     aramaTimer = setTimeout(() => veriYukle(true), 350);
+  };
+
+  window.sekmeDegistir = function(sekme) {
+    if (aktifSekme === sekme) return;
+    aktifSekme = sekme;
+    document.querySelectorAll('.dt-tab').forEach(b => b.classList.toggle('active', b.dataset.sekme === sekme));
+    veriYukle(true);
   };
 
   window.sirala = function(alan, btn) {
@@ -454,14 +472,21 @@
       const { count } = await q;
       return count || 0;
     };
-    const [toplam, mal, hizmet, yapim] = await Promise.all([
-      say(null), say('Mal'), say('Hizmet'), say('Yapım'),
+    const sayGuncel = sb.from('dogrudan_temin_ilanlari').select('id', { count: 'exact', head: true }).in('durum', DURUM_GRUP.acik);
+    const saySonuc  = sb.from('dogrudan_temin_ilanlari').select('id', { count: 'exact', head: true }).in('durum', DURUM_GRUP.sonuc);
+    const [toplam, mal, hizmet, yapim, gRes, sRes] = await Promise.all([
+      say(null), say('Mal'), say('Hizmet'), say('Yapım'), sayGuncel, saySonuc,
     ]);
     el('st-toplam').textContent = toplam.toLocaleString('tr');
     el('st-mal').textContent = mal.toLocaleString('tr');
     el('st-hizmet').textContent = hizmet.toLocaleString('tr');
     el('st-yapim').textContent = yapim.toLocaleString('tr');
     el('results-count').textContent = `${toplam.toLocaleString('tr')} kayıt`;
+    // Sekme sayaçları (global; durum-bazlı): Güncel=aktif, Sonuç=sonuçlanmış, Tümü=toplam
+    const guncel = (gRes && gRes.count) || 0, sonuc = (sRes && sRes.count) || 0;
+    el('dt-cnt-guncel').textContent = kisaSayi(guncel);
+    el('dt-cnt-sonuc').textContent = kisaSayi(sonuc);
+    el('dt-cnt-tumu').textContent = kisaSayi(toplam);
   }
 
   function kategorileriYukle() {
@@ -499,7 +524,11 @@
     illeriYukle();
     istatistikYukle();
     const idareParam = new URLSearchParams(window.location.search).get('idare');
-    if (idareParam) document.getElementById('f-ara').value = idareParam;
+    if (idareParam) {
+      document.getElementById('f-ara').value = idareParam;
+      aktifSekme = 'tumu';   // kurumdan gelindiyse TÜM DT geçmişi görünsün (Güncel/aktif'te az çıkar)
+      document.querySelectorAll('.dt-tab').forEach(b => b.classList.toggle('active', b.dataset.sekme === 'tumu'));
+    }
     await veriYukle(true);
   })();
 })();

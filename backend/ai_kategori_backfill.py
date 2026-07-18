@@ -1,9 +1,12 @@
 # -*- coding: utf-8 -*-
 """
-ai_kategori_backfill.py — "Diğer" kalan ilanları Gemini ile 41 kanonik kategoriye oturtur.
+ai_kategori_backfill.py — JENERİK kova ilanlarını Gemini ile 41 kanonik kategoriye oturtur.
 
-NEDEN: OKAS'sız + kelime kurallarının çözemediği ilanlar 'Diğer'de birikiyor. Bu son katman
-onları başlığa bakıp iş-dostu kategoriye atar (site filtresi/harita/sektör bildirimi zenginleşir).
+NEDEN: Eşleştirme motorunun (uygun-firma/benzer-ihale) asıl körlüğü OKAS değil (OKAS %2,8) —
+ilanların %58'i "Mal Alımı"/"Hizmet Alımı"/"Diğer" JENERİK kovada; bunlar EKAP'ın satınalma
+TÜRÜ, sektör değil → "konusu ne?" sorusuna cevap vermiyor. Bu katman başlığa (varsa OKAS'a)
+bakıp iş-dostu kanonik sektöre atar (site filtresi/harita/sektör bildirimi + eşleştirme zenginleşir).
+17 Tem'de kapsam 'Diğer'den → tüm jenerik kovalara genişletildi (bkz. migration_ai_kategori_jenerik.sql).
 
 TASARIM (maliyet güvenliği):
   • Her satır ömründe YALNIZCA BİR KEZ AI'a gider. Sonuç yazıldıktan sonra ilanlar.ai_kategori_denendi
@@ -81,14 +84,21 @@ _URETIM_CONFIG = types.GenerateContentConfig(
 # (ör. "Diğer İhale İlanları") 'Diğer' kaldıysa, bu BELİRSİZLİĞİN kendisidir — AI'ın tek bir kanoniğe
 # zorlaması kategori_backfill'in koruduğu şeyi arkadan dolanıp bozardı (16 Tem incelemesinde bulundu).
 _KAYNAK_HARIC = "not.in.(dmo,jandarma)"
+# JENERİK kovalar: EKAP'ın satınalma-türü etiketleri (sektör değil) → AI ile kanoniğe oturtulacak.
+# migration_ai_kategori_jenerik.sql'deki kuyruk indeksinin predicate'iyle BİREBİR aynı liste olmalı
+# (aksi halde seçim indeks kullanamaz). 'İnşaat & Yapım' burada YOK — o legacy etiket migration'da
+# deterministik olarak kanoniğe birleştirildi (AI'sız).
+_JENERIK_KOVALAR = ("Diğer", "Mal Alımı", "Hizmet Alımı")
+# PostgREST in.() — Türkçe/boşluklu değerler çift-tırnakla sarılır (virgül/boşluk ayracıyla karışmasın).
+_KATEGORI_FILTRE = "in.(" + ",".join(f'"{k}"' for k in _JENERIK_KOVALAR) + ")"
 # secim_cek'in uyguladığı TÜM filtrelerle BİREBİR aynı olmalı — aksi halde kuyruk_say hiç 0'a inmeyen
-# satırları da sayar (ör. başlıksız 'Diğer') ve dry-run maliyet projeksiyonu şişer (16 Tem incelemesinde bulundu).
-_KUYRUK_FILTRE = {"kategori": "eq.Diğer", "ai_kategori_denendi": "is.null",
+# satırları da sayar (ör. başlıksız jenerik) ve dry-run maliyet projeksiyonu şişer (16 Tem incelemesinde bulundu).
+_KUYRUK_FILTRE = {"kategori": _KATEGORI_FILTRE, "ai_kategori_denendi": "is.null",
                   "baslik": "not.is.null", "kaynak": _KAYNAK_HARIC}
 
 
 def kuyruk_say(client):
-    """Denenmemiş + gerçekten işlenebilir 'Diğer' satır sayısı (kuyruk boyu) — secim_cek ile aynı filtre.
+    """Denenmemiş + gerçekten işlenebilir JENERİK-kova satır sayısı (kuyruk boyu) — secim_cek ile aynı filtre.
     Hata durumunda -1 döner (content-range yokluğunu SESSİZCE 0'a yorumlamaz — bir HTTP hatası "kuyruk boş"
     ile karıştırılırsa migration eksikliği gibi gerçek sorunlar fark edilmeden geçerdi)."""
     r = client.get(f"{SUPABASE_URL}/rest/v1/ilanlar",
@@ -104,7 +114,7 @@ def kuyruk_say(client):
 
 
 def secim_cek(client, n):
-    """Sıradaki n adet denenmemiş 'Diğer' satırı (id, baslik, okas). İşlenen satırlar
+    """Sıradaki n adet denenmemiş JENERİK-kova satırı (id, baslik, okas). İşlenen satırlar
     damgalandığı/yeniden-kategorize edildiği için her çağrı offset'siz SONRAKİ grubu döndürür."""
     r = client.get(f"{SUPABASE_URL}/rest/v1/ilanlar",
                    params={**_KUYRUK_FILTRE, "select": "id,baslik,okas", "order": "id", "limit": str(n)},
@@ -216,7 +226,7 @@ def _usage_tok(usage):
 
 
 def main():
-    ap = argparse.ArgumentParser(description="AI kategori backfill (Diğer → 41 kanonik)")
+    ap = argparse.ArgumentParser(description="AI kategori backfill (jenerik kovalar → 41 kanonik)")
     ap.add_argument("--limit", type=int, default=500, help="Bu turda işlenecek azami satır (öntanım 500)")
     ap.add_argument("--batch", type=int, default=BATCH_VARSAYILAN, help="İstek başına başlık (öntanım 50)")
     ap.add_argument("--rpm", type=int, default=0, help="Dakika başına azami istek (0=sınırsız; free tier için ~15)")
@@ -246,7 +256,7 @@ def main():
                   "  Önce çalıştırın: docker exec -i supabase-db psql -U postgres -d postgres "
                   "< backend/migration_ai_kategori.sql")
             sys.exit(1)
-        print(f"→ Kuyruk (denenmemiş 'Diğer'): {kuyruk} satır | model={MODEL}")
+        print(f"→ Kuyruk (denenmemiş jenerik: {', '.join(_JENERIK_KOVALAR)}): {kuyruk} satır | model={MODEL}")
 
         if args.dry_run:
             batch = secim_cek(client, args.batch)
@@ -259,7 +269,7 @@ def main():
                 return
             print(f"\n→ DRY-RUN örnek ({len(batch)} başlık, {len(atamalar)} tanesi sınıflandı):")
             for b in batch:
-                kat = atamalar.get(b["id"], "· Diğer kalır ·")
+                kat = atamalar.get(b["id"], "· jenerik kalır ·")
                 print(f"   {kat[:42]:<44} ← {(b.get('baslik') or '')[:60]}")
             if usage:
                 gt, ct = _usage_tok(usage)
@@ -300,7 +310,7 @@ def main():
                 time.sleep(bekle_s)
 
         print(f"\n✓ Bitti: {islenen} işlendi, {siniflanan} kanonik kategoriye atandı, "
-              f"{islenen - siniflanan} 'Diğer' kaldı (denendi işaretli).")
+              f"{islenen - siniflanan} jenerik kaldı (denendi işaretli).")
         if istek:
             print(f"  {istek} istek · {girdi_tok} girdi + {cikti_tok} çıktı tokeni ≈ ${_maliyet(girdi_tok, cikti_tok):.4f}")
 
