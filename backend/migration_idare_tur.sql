@@ -30,7 +30,7 @@ CREATE OR REPLACE FUNCTION public.idare_normalize(s text)
   PARALLEL SAFE
 AS $$
   SELECT btrim(regexp_replace(
-           regexp_replace(tr_fold(coalesce(s, '')), '[^a-z0-9]+', ' ', 'g'),
+           regexp_replace(public.tr_fold(coalesce(s, '')), '[^a-z0-9]+', ' ', 'g'),
            '\s+', ' ', 'g'));
 $$;
 
