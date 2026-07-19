@@ -755,6 +755,26 @@
 > **KALICI TALİMAT (12 Tem, kullanıcı emri):** Bu blok + ilgili bölümler her oturumda otomatik
 > güncellenir, kullanıcı hatırlatmak zorunda değil. Bkz. hafıza `yapilacaklar-auto-update`.
 
+> ## 🏛️ 19 TEMMUZ — "İDARE TÜRÜ" FİLTRESİ CANLI (✅ ihaleler + doğrudan temin)
+> Kullanıcının baştan beri istediği "sadece belediyeler / sadece hastaneler" araması çalışıyor.
+> **TASARIM:** denormalize `idare_tur` kolonu (join/view DEĞİL) — mevcut PostgREST desenine
+> (.eq('il')/.eq('kategori')) birebir oturdu, frontend'e tek satır eklendi. `idare_tur_tazele()`
+> eşleme tablosundan iki ana tabloyu günceller (IS DISTINCT FROM → yalnız değişenler).
+> **CANLI RAKAMLAR** (tarama %10'dayken): ihaleler 44.569 sınıflı (belediye 7.764 · il özel idare
+> 6.109 · sağlık 5.217 · KİT 3.978 · milli eğitim 3.528 · üniversite 3.340); **DT 345.453 sınıflı**
+> (belediye 75.470 · üniversite 62.537). Tarama ilerledikçe kapsama orantılı artacak.
+> **İKİ CANLI HATA YAKALANDI VE DÜZELTİLDİ:**
+> 1. `idare_normalize` gövdesinde `tr_fold` şema-niteliksizdi → ifade indeksi KURULMADI
+>    ("function tr_fold(text) does not exist" index build sırasında). → `public.tr_fold` (_fix.sql).
+> 2. **Yeni kolon kolon-GRANT'a girmiyor** → filtre seçilince misafirde 42501, sayfa boş. PostgREST
+>    WHERE için de SELECT yetkisi ister. → `GRANT SELECT (idare_tur)` (_grant.sql). **KALICI KURAL:**
+>    bu iki tabloya kolon eklendiğinde grant dosyasına da satır ekle. Bkz [[anon-maske-iki-kok-neden]].
+>    Güvenlik: tür bir KATEGORİ, kimlik değil — `idare` misafire kapalı kalmaya devam ediyor.
+> **DETSİS TAM TARAMA:** Webshare "government sites" eşiğine takılıp durmuştu; kullanıcı kimlik
+> doğrulamasını tamamladı, havuz tekrar aktif (100/100 IP, 0 hata) ve tarama devam ediyor.
+> **SIRADAKİ:** tarama bitince `--yaz` + `idare_tur_tazele()` · gece tazeleme + boşluk raporu
+> run_scraper.sh'e · kalan "bilinmiyor"lara AI katmanı · kurum-analiz/idareler dizinine tür rozeti.
+
 > ## 🏛️ 18 TEMMUZ (gece) — İDARE TÜRÜ SINIFLANDIRMASI: altyapı hazır, TAM TARAMA ÇALIŞIYOR
 > Hedef: "kurumları EKAP'taki gibi kategorize et" → ihalelerde "sadece belediyeler/hastaneler" filtresi.
 > **EKAP'ta hazır tür filtresi YOK** (İdare Seç=tek tek kurum, Kapsam=4734 yasal kapsam) → kendimiz kurduk.
