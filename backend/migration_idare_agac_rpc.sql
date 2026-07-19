@@ -118,6 +118,19 @@ COMMIT;
 -- =============================================================================
 -- 6) İHALE/DT TARAFI — detsis_no kolonu
 --
+-- !! DİKKAT — BU DOSYAYI AĞIR BİR UPDATE KOŞARKEN TEKRAR ÇALIŞTIRMAYIN !!
+-- 19 Tem'de yaşandı: ilan_detsis_esle() çalışırken bu dosya iki kez daha
+-- başlatıldı (önceki denemeler Ctrl+C ile kesilmişti ama sunucu tarafındaki
+-- sorgular ölmemişti). ALTER TABLE — IF NOT EXISTS olsa ve hiçbir iş yapmasa
+-- bile — ACCESS EXCLUSIVE kilidi ister. Kilit sıraya girince PostgreSQL
+-- ARKASINA GELEN HER SORGUYU da sıraya alır: düz bir SELECT bile. Yani canlı
+-- sitenin ilanlar okumaları tıkandı. Çözüm pg_cancel_backend ile bekleyen
+-- ALTER'ları iptal etmek oldu.
+--
+-- DERS: şema değişikliği (ALTER/CREATE INDEX) ile veri doldurma (UPDATE) aynı
+-- dosyada durmamalı. Bu dosya şemayı kurar; doldurmayı ilan_detsis_esle() ayrı
+-- ve ELLE çağrılarak yapar.
+--
 -- AYRI TRANSACTION: index CONCURRENTLY kurulacak, transaction içinde çalışmaz.
 -- Bu kolon olmadan "bu kurumun altındaki tüm ihaleler" araması yapılamaz;
 -- her seferinde idare metnini normalize edip idare_tur'a join etmek 356K/1,49M
