@@ -72,9 +72,20 @@ CREATE INDEX IF NOT EXISTS idx_ata_torun_torun ON public.idare_ata_torun (torun_
 -- 3) Kapanış tablosunu ağaçtan üreten fonksiyon
 --    idare_hiyerarsi yüklendikten SONRA çağrılır; gece tazelemede de.
 -- ---------------------------------------------------------------------------
+-- SECURITY DEFINER ŞART: fonksiyon idare_ata_torun'u TRUNCATE + INSERT ediyor.
+-- Çağıran service_role'e bu yetkileri ayrıca vermek yerine fonksiyon sahibinin
+-- (postgres) yetkisiyle çalışıyor — yazma yolu TEK ve denetlenebilir kalıyor.
+-- İlk sürümde bu yoktu ve canlıda "permission denied for table idare_ata_torun"
+-- (42501) alındı: SELECT verilmişti ama TRUNCATE/INSERT verilmemişti.
+--
+-- search_path SABİTLENDİ: SECURITY DEFINER fonksiyonlarda zorunlu güvenlik
+-- önlemi — aksi halde çağıran kendi search_path'iyle sahte bir public şeması
+-- gösterip fonksiyonu kendi tablolarına yönlendirebilir.
 CREATE OR REPLACE FUNCTION public.idare_kapanis_uret()
 RETURNS integer
 LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, pg_temp
 AS $$
 DECLARE
   n integer;
