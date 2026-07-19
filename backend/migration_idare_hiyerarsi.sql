@@ -115,54 +115,22 @@ $$;
 -- ilanlar.idare (metin) → idare_tur.idare_norm → idare_tur.detsis_no zinciriyle
 -- bağlanıyor. Ad ile DOĞRUDAN join YAPILMIYOR: "BİLGİ İŞLEM DAİRE BAŞKANLIĞI"
 -- adında 114 DETSİS kaydı var, ad-join sessizce yanlış ağaç üretir.
+--
+-- MV BU DOSYADA DEĞİL → backend/migration_idare_hiyerarsi_sayim.sql
+-- Sebep: MV, idare_tur + idare_normalize()'a bağımlı. İlk sürümde hepsi tek
+-- dosyada ve tek transaction'daydı; MV'deki bir yazım hatası AĞAÇ TABLOLARINI
+-- DA geri aldı (canlıda yaşandı). Ayrılınca ağaç her hâlükârda kuruluyor.
 -- ---------------------------------------------------------------------------
-DROP MATERIALIZED VIEW IF EXISTS public.idare_hiyerarsi_sayim_mv;
-CREATE MATERIALIZED VIEW public.idare_hiyerarsi_sayim_mv AS
-WITH dugum_ihale AS (
-  SELECT t.detsis_no, count(*)::bigint AS adet
-    FROM public.ilanlar i
-    JOIN public.idare_tur t ON t.idare_norm = public.idare_normalize(i.idare)
-   WHERE t.detsis_no IS NOT NULL
-   GROUP BY t.detsis_no
-),
-dugum_dt AS (
-  SELECT t.detsis_no, count(*)::bigint AS adet
-    FROM public.dogrudan_temin_ilanlari d
-    JOIN public.idare_tur t ON t.idare_norm = public.idare_normalize(d.idare)
-   WHERE t.detsis_no IS NOT NULL
-   GROUP BY t.detsis_no
-)
-SELECT
-  h.detsis_no,
-  h.ad,
-  h.idare_id,
-  h.ust_detsis_no,
-  h.seviye,
-  COALESCE(ki.adet, 0)                                   AS kendi_ihale,
-  COALESCE(kd.adet, 0)                                   AS kendi_dt,
-  COALESCE((SELECT sum(x.adet) FROM public.idare_ata_torun at
-              JOIN dugum_ihale x ON x.detsis_no = at.torun_no
-             WHERE at.ata_no = h.detsis_no), 0)::bigint  AS toplam_ihale,
-  COALESCE((SELECT sum(x.adet) FROM public.idare_ata_torun at
-              JOIN dugum_dt x ON x.detsis_no = at.torun_no
-             WHERE at.ata_no = h.detsis_no), 0)::bigint  AS toplam_dt,
-  (SELECT count(*) FROM public.idare_hiyerarsi c WHERE c.ust_detsis_no = h.detsis_no) AS cocuk_sayisi
-FROM public.idare_hiyerarsi h;
-
-CREATE UNIQUE INDEX IF NOT EXISTS idx_idare_hiy_sayim_pk  ON public.idare_hiyerarsi_sayim_mv (detsis_no);
-CREATE INDEX        IF NOT EXISTS idx_idare_hiy_sayim_ust ON public.idare_hiyerarsi_sayim_mv (ust_detsis_no);
-CREATE INDEX        IF NOT EXISTS idx_idare_hiy_sayim_top ON public.idare_hiyerarsi_sayim_mv (toplam_ihale DESC);
 
 -- ---------------------------------------------------------------------------
 -- 5) YETKİLER — hepsi anon'a KAPALI (yukarıdaki uyarıya bakın)
+--    MV'nin yetkileri kendi dosyasında.
 -- ---------------------------------------------------------------------------
-REVOKE ALL ON public.idare_hiyerarsi           FROM anon;
-REVOKE ALL ON public.idare_ata_torun           FROM anon;
-REVOKE ALL ON public.idare_hiyerarsi_sayim_mv  FROM anon;
+REVOKE ALL ON public.idare_hiyerarsi FROM anon;
+REVOKE ALL ON public.idare_ata_torun FROM anon;
 
-GRANT SELECT ON public.idare_hiyerarsi          TO authenticated, service_role;
-GRANT SELECT ON public.idare_ata_torun          TO authenticated, service_role;
-GRANT SELECT ON public.idare_hiyerarsi_sayim_mv TO authenticated, service_role;
+GRANT SELECT ON public.idare_hiyerarsi TO authenticated, service_role;
+GRANT SELECT ON public.idare_ata_torun TO authenticated, service_role;
 GRANT INSERT, UPDATE, DELETE ON public.idare_hiyerarsi TO service_role;
 
 REVOKE EXECUTE ON FUNCTION public.idare_kapanis_uret() FROM PUBLIC, anon;
@@ -178,7 +146,8 @@ NOTIFY pgrst, 'reload schema';
 --   1) Bu dosyayı uygula
 --   2) Ağacı yükle:      python backend/idare_hiyerarsi_yukle.py
 --   3) Kapanışı üret:    SELECT public.idare_kapanis_uret();
---   4) Sayaçları tazele: REFRESH MATERIALIZED VIEW public.idare_hiyerarsi_sayim_mv;
+--   4) Sayaç MV'si:      migration_idare_hiyerarsi_sayim.sql  (idare_tur GEREKİR)
+--   5) Sayaçları tazele: REFRESH MATERIALIZED VIEW public.idare_hiyerarsi_sayim_mv;
 --   5) run_scraper.sh'in gece REFRESH zincirine (3) ve (4) eklenmeli
 --
 -- DOĞRULAMA — kullanıcının verdiği senaryo
