@@ -75,10 +75,15 @@
 > **Veri hatalı DEĞİL, etiket hatalıydı** — E8 eşleşmesi doğru.
 >
 > ### 🔴 AÇIK KALAN (bu oturumdan)
-> - [ ] `dogrudan_temin_ilanlari` üzerinde `GRANT SELECT ... TO authenticated` hâlâ
->       TABLO GENELİ → `dt_ihale_token`/`dt_idare_token` her üyeye açık.
->       `migration_dt_kazanan.sql:24-26` yorumu bunun aksini varsayıyor (YANLIŞ).
->       Gereken: `REVOKE SELECT ... FROM authenticated` + kolon-GRANT (prod, onay ister).
+> - 🟡 **TOKEN AÇIĞI — migration YAZILDI, prod'a UYGULANMADI:**
+>       `backend/migration_dt_token_authenticated.sql` (commit `e9bc6e1`).
+>       `dogrudan_temin_ilanlari` üzerinde `GRANT SELECT ... TO authenticated` tablo
+>       geneliydi → `dt_ihale_token`/`dt_idare_token` her üyeye açıktı.
+>       `migration_dt_kazanan.sql:24-26` yorumu aksini varsayıyordu (YANLIŞ).
+>       Migration kendi kendini doğruluyor, başarısızsa COMMIT etmiyor. Çalıştır:
+>       `docker exec -i supabase-db psql -U postgres -d postgres < backend/migration_dt_token_authenticated.sql`
+>       Sonra dosya sonundaki **curl doğrulamalarını atlama** (özellikle B şıkkı:
+>       üye token'ıyla token kolonu çekmeyi dene, 401 gelmeli).
 > - [ ] DT tam taraması hâlâ eksik (`yayin_tarihi` kayıtların ~%1'inde dolu) — proxy
 >       402'den düştü; başka oturum `7f25615` ile direkt-mod geri çekilmesi ekledi.
 > - [ ] `lot_sayisi` gece UPDATE'i `run_scraper.sh`'e eklenmeli (18 Tem'den devir).
