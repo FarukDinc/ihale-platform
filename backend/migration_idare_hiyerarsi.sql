@@ -81,11 +81,16 @@ CREATE INDEX IF NOT EXISTS idx_ata_torun_torun ON public.idare_ata_torun (torun_
 -- search_path SABİTLENDİ: SECURITY DEFINER fonksiyonlarda zorunlu güvenlik
 -- önlemi — aksi halde çağıran kendi search_path'iyle sahte bir public şeması
 -- gösterip fonksiyonu kendi tablolarına yönlendirebilir.
+-- statement_timeout FONKSIYONA GÖMÜLÜ: PostgREST bağlantılarında ~3 sn'lik bir
+-- sınır var (bkz. hafıza statement-timeout-edge) ve bu fonksiyon 87.528 düğümden
+-- ~330.000 ata-torun çifti üretiyor. Canlıda 57014 ile düştü. Gece cron'u da bunu
+-- RPC üzerinden çağıracağı için çözüm çağıran tarafta değil, fonksiyonda olmalı.
 CREATE OR REPLACE FUNCTION public.idare_kapanis_uret()
 RETURNS integer
 LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = public, pg_temp
+SET statement_timeout = '600s'
 AS $$
 DECLARE
   n integer;
