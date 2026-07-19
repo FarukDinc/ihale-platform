@@ -25,6 +25,11 @@
 -- ANON'A KAPALI: idare adı bu projede kimlik verisi (bkz. migration_anon_maske.sql).
 -- =============================================================================
 
+-- PERFORMANS NOTU: dugum_ihale/dugum_dt CTE'leri idare_normalize()'i SATIR BAŞINA
+-- çağırıyor (356K ilan + 1,49M DT). İfade indeksi yoksa tam tarama olur ama tek
+-- seferlik; asıl darboğaz ilişkili alt sorgulardı, o kaldırıldı. MV gece bir kez
+-- REFRESH ediliyor, çalışma anında bu maliyet kullanıcıya yansımıyor.
+
 BEGIN;
 
 DROP MATERIALIZED VIEW IF EXISTS public.idare_hiyerarsi_sayim_mv;
@@ -42,6 +47,28 @@ dugum_dt AS (
     JOIN public.idare_tur t ON t.idare_norm = public.idare_normalize(d.idare)
    WHERE t.detsis_no IS NOT NULL
    GROUP BY t.detsis_no
+),
+-- YUVARLAMA — TEK GEÇİŞ.
+-- İlk sürümde bu, satır başına İLİŞKİLİ ALT SORGU olarak yazılmıştı:
+--   COALESCE((SELECT sum(...) FROM idare_ata_torun WHERE ata_no = h.detsis_no), 0)
+-- Yani 87.528 düğümün HER BİRİ için 312.259 satırlık kapanış tablosuna ayrı bir
+-- sorgu. Canlıda MV yaratma komutu asıldı (kullanıcı Ctrl+C ile durdurdu).
+-- Doğrusu: kapanış tablosunu bir kez tarayıp ata_no'ya göre grupla, sonra JOIN et.
+yuvarlanan AS (
+  SELECT at.ata_no,
+         COALESCE(sum(di.adet), 0)::bigint AS toplam_ihale,
+         COALESCE(sum(dd.adet), 0)::bigint AS toplam_dt
+    FROM public.idare_ata_torun at
+    LEFT JOIN dugum_ihale di ON di.detsis_no = at.torun_no
+    LEFT JOIN dugum_dt    dd ON dd.detsis_no = at.torun_no
+   GROUP BY at.ata_no
+),
+-- cocuk_sayisi da ilişkili alt sorguydu (87.528 kez tam tarama) → grupla+JOIN
+cocuklar AS (
+  SELECT ust_detsis_no AS ata_no, count(*)::bigint AS adet
+    FROM public.idare_hiyerarsi
+   WHERE ust_detsis_no IS NOT NULL
+   GROUP BY ust_detsis_no
 )
 SELECT
   h.detsis_no,
@@ -49,20 +76,16 @@ SELECT
   h.idare_id,
   h.ust_detsis_no,
   h.seviye,
-  -- ki/kd aşağıda LEFT JOIN ile bağlanıyor. İlk sürümde bu JOIN'ler YOKTU ve
-  -- "missing FROM-clause entry for table ki" ile tüm migration geri alındı.
-  COALESCE(ki.adet, 0)                                   AS kendi_ihale,
-  COALESCE(kd.adet, 0)                                   AS kendi_dt,
-  COALESCE((SELECT sum(x.adet) FROM public.idare_ata_torun at
-              JOIN dugum_ihale x ON x.detsis_no = at.torun_no
-             WHERE at.ata_no = h.detsis_no), 0)::bigint  AS toplam_ihale,
-  COALESCE((SELECT sum(x.adet) FROM public.idare_ata_torun at
-              JOIN dugum_dt x ON x.detsis_no = at.torun_no
-             WHERE at.ata_no = h.detsis_no), 0)::bigint  AS toplam_dt,
-  (SELECT count(*) FROM public.idare_hiyerarsi c WHERE c.ust_detsis_no = h.detsis_no) AS cocuk_sayisi
+  COALESCE(ki.adet, 0)::bigint        AS kendi_ihale,
+  COALESCE(kd.adet, 0)::bigint        AS kendi_dt,
+  COALESCE(y.toplam_ihale, 0)::bigint AS toplam_ihale,
+  COALESCE(y.toplam_dt, 0)::bigint    AS toplam_dt,
+  COALESCE(c.adet, 0)::bigint         AS cocuk_sayisi
 FROM public.idare_hiyerarsi h
 LEFT JOIN dugum_ihale ki ON ki.detsis_no = h.detsis_no
-LEFT JOIN dugum_dt    kd ON kd.detsis_no = h.detsis_no;
+LEFT JOIN dugum_dt    kd ON kd.detsis_no = h.detsis_no
+LEFT JOIN yuvarlanan  y  ON y.ata_no     = h.detsis_no
+LEFT JOIN cocuklar    c  ON c.ata_no     = h.detsis_no;
 
 CREATE UNIQUE INDEX idx_idare_hiy_sayim_pk  ON public.idare_hiyerarsi_sayim_mv (detsis_no);
 CREATE INDEX        idx_idare_hiy_sayim_ust ON public.idare_hiyerarsi_sayim_mv (ust_detsis_no);
