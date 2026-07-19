@@ -110,6 +110,23 @@ docker exec -i supabase-db psql -U postgres -d postgres \
   -c "REFRESH MATERIALIZED VIEW CONCURRENTLY public.dt_kategori_sayim_mv;" \
   -c "REFRESH MATERIALIZED VIEW CONCURRENTLY public.dt_idare_ozet_mv;" >> /opt/ihale-platform/logs/scraper.log 2>&1
 
+# ── Türetilmiş alanlar: etkin_tarih + idare_tur ────────────────────────────────────
+# İKİSİ DE UCUZ (yalnız DEĞİŞEN satırları yazar, IS DISTINCT FROM) ve MV'lerden ÖNCE
+# koşmalı: MV'ler bu kolonları okuyabilir.
+#   etkin_tarih  : ihalelerin %95'inde üç tarih alanı da boş (sonuç-backfill kayıtları);
+#                  sıralama/filtre için bağlı sonuç kaydının tarihinden türetilir.
+#                  ilan_tarihi'ye YAZILMAZ — sonuç tarihi ≠ ilan tarihi (veri çarpıtmaz).
+#   idare_tur    : EKAP/DETSİS eşlemesinden (idare_tur tablosu) ilanlar + DT'ye taşınır.
+echo "[$(date +'%Y-%m-%d %H:%M:%S')] === Turetilmis alanlar (etkin_tarih + idare_tur) ===" >> /opt/ihale-platform/logs/scraper.log
+docker exec -i supabase-db psql -U postgres -d postgres   -c "SELECT public.etkin_tarih_tazele();"   -c "SELECT public.idare_tur_tazele();" >> /opt/ihale-platform/logs/scraper.log 2>&1
+
+# ── İdare türü boşluk alarmı ───────────────────────────────────────────────────────
+# İhalede görünüp idare_tur eşlemesinde KARŞILIĞI OLMAYAN idareler = yeni açılan/ad
+# değiştiren birimler. Sessizce "sınıfsız" kalmasınlar diye log'a düşer; sayı büyürse
+# ekap_detsis_cek.py --tara --devam ile eşleme tazelenir.
+echo "[$(date +'%Y-%m-%d %H:%M:%S')] === Idare turu bosluk raporu ===" >> /opt/ihale-platform/logs/scraper.log
+docker exec -i supabase-db psql -U postgres -d postgres -tAc   "SELECT 'eksik idare: ' || (public.idare_tur_bosluk(20)->>'eksik_idare_sayisi') || ' | etkilenen ihale: ' || (public.idare_tur_bosluk(20)->>'eksik_ihale_sayisi');"   >> /opt/ihale-platform/logs/scraper.log 2>&1
+
 # ── ilan_metni backfill (geçmiş kalem listeleri) — EN SONDA, BİLEREK ────────────────
 # Geçmiş ~340K ilan kompakt üretilmişti (ilan_metni=NULL, eski managed-Supabase limiti).
 # EKAP sonuçlanmış listesini sayfalayıp eksikleri doldurur → eşleştirme motoru + site içi
