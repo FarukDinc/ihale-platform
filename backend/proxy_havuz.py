@@ -177,6 +177,7 @@ class ProxyHavuzu:
         self._toplam_istek = 0
         self._toplam_hata = 0
         self._bekleme_sn = 0.0
+        self._direkt_yedek: _Uc | None = None   # tüm IP'ler düşerse buraya çekiliriz
 
         liste = [p.strip() for p in _LISTE_HAM.split(",") if p.strip()]
         yapilandirilmis = bool(liste and PROXY_KULLANICI and PROXY_SIFRE)
@@ -218,10 +219,25 @@ class ProxyHavuzu:
         simdi = time.monotonic()
         canli = [u for u in self.uclar if not u.olu]
         if not canli:
-            raise RuntimeError(
-                "Proxy havuzunda canlı uç kalmadı — tüm IP'ler üst üste hata verdi. "
-                "PROXY_LIST'i ve Webshare hesabının durumunu kontrol edin."
-            )
+            # TÜM IP'LER DÜŞTÜ → DİREKT MODA GERİ ÇEKİL (eskiden RuntimeError atıyordu).
+            #
+            # Gerekçe: 18/19 Tem gecesi havuzun 100 IP'sinin 100'ü düştü (300 karantina).
+            # Havuz istisna atınca scraper'lar ÇÖKTÜ — yani proxy sorunu, veri akışının
+            # tamamen durmasına dönüştü. Oysa VDS'in kendi IP'si çalışıyordu.
+            # Proxy bir DAYANIKLILIK aracı; onun arızası kazımayı durdurmamalı.
+            #
+            # Sessiz değil GÜRÜLTÜLÜ düşüyoruz: tüm trafiğin VDS IP'sine dönmesi
+            # operatörün bilmesi gereken bir davranış değişikliği.
+            if self._direkt_yedek is None:
+                self._direkt_yedek = _Uc(etiket="direkt-yedek", url=None)
+                print("\n" + "!" * 68, flush=True)
+                print("! TÜM PROXY IP'LERİ DÜŞTÜ — DİREKT BAĞLANTIYA GERİ ÇEKİLİYOR", flush=True)
+                print("! Bundan sonraki istekler VDS'in KENDİ IP'sinden gidecek.", flush=True)
+                print("! Kazıma durmuyor ama risk dağıtımı YOK. Proxy'leri kontrol edin.", flush=True)
+                print("!" * 68 + "\n", flush=True)
+            uc = self._direkt_yedek
+            bekle = max(uc.hazir_zamani() - simdi, self._kuresel_bekle(simdi), 0.0)
+            return uc, bekle
         n = len(canli)
         # round-robin: sıradan başlayıp müsait ilk ucu al
         for i in range(n):
@@ -274,7 +290,8 @@ class ProxyHavuzu:
             if uc.ardisik_hata >= KARANTINA_ESIGI:
                 uc.karantina_sayisi += 1
                 uc.ardisik_hata = 0
-                if uc.karantina_sayisi >= OLUM_ESIGI and not self.direkt_mod:
+                # direkt-yedek düşürülemez: düşerse gidecek hiçbir yer kalmaz.
+                if uc.karantina_sayisi >= OLUM_ESIGI and not self.direkt_mod and uc.etiket != "direkt-yedek":
                     uc.olu = True
                     if uc.client:
                         try: uc.client.close()
@@ -284,7 +301,11 @@ class ProxyHavuzu:
                           f"({uc.hata} hata, {uc.karantina_sayisi} karantina)", flush=True)
                 else:
                     uc.karantina_bitis = time.monotonic() + KARANTINA_SN
-                    print(f"    ⏸ proxy karantinada {KARANTINA_SN:.0f}sn: {uc.etiket}", flush=True)
+                    # direkt-yedek sürekli hata veriyorsa (hedef bizi gerçekten
+                    # sınırlıyordur) geri çekilmesi DOĞRU, ama aynı satırı her 3
+                    # istekte bir basmasın — log'u boğuyor.
+                    if uc.etiket != "direkt-yedek" or uc.karantina_sayisi == 1:
+                        print(f"    ⏸ proxy karantinada {KARANTINA_SN:.0f}sn: {uc.etiket}", flush=True)
 
     def ozet_yaz(self) -> None:
         canli = [u for u in self.uclar if not u.olu]
@@ -296,6 +317,9 @@ class ProxyHavuzu:
         print(f"   hatalı istek   : {self._toplam_hata}")
         print(f"   kullanılan IP  : {len(kullanilan)} / {len(self.uclar)} (canlı {len(canli)})")
         print(f"   hız sınırı bekl: {self._bekleme_sn:.0f} sn")
+        if self._direkt_yedek is not None:
+            print(f"   ⚠ DİREKT YEDEK: {self._direkt_yedek.istek} istek VDS IP'sinden gitti "
+                  f"(tüm proxy IP'leri düşmüştü)")
         if not self.direkt_mod and kullanilan:
             en_cok = max(kullanilan, key=lambda u: u.istek)
             print(f"   en çok yüklenen: {en_cok.etiket} ({en_cok.istek} istek)")
