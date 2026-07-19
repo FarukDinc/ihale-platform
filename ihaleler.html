@@ -1074,8 +1074,13 @@
         </div>
         <div class="kart-alt">
           <div class="kart-tarihler">
-            <div class="kart-tarih"><span>Yayın Tarihi</span><b>${tarihFormatla(ilan.ilan_tarihi)}</b></div>
-            <div class="kart-tarih"><span>Son Teklif</span><b>${tarihFormatla(ilan.son_teklif_tarihi)}${kalanGunEk(ilan.son_teklif_tarihi)}</b></div>
+            ${/* Geçmiş backfill kayıtlarında ilan/teklif tarihi yok, elimizdeki tek tarih sonuç
+                  tarihi. Onu "Yayın Tarihi" diye göstermek YANLIŞ bilgi olur → dürüstçe etiketle. */
+              (!ilan.ilan_tarihi && !ilan.son_teklif_tarihi && ilan.etkin_tarih)
+              ? `<div class="kart-tarih"><span>Sonuçlanma</span><b>${tarihFormatla(ilan.etkin_tarih)}</b></div>
+                 <div class="kart-tarih"><span>Son Teklif</span><b>—</b></div>`
+              : `<div class="kart-tarih"><span>Yayın Tarihi</span><b>${tarihFormatla(ilan.ilan_tarihi)}</b></div>
+                 <div class="kart-tarih"><span>Son Teklif</span><b>${tarihFormatla(ilan.son_teklif_tarihi)}${kalanGunEk(ilan.son_teklif_tarihi)}</b></div>`}
           </div>
           <div class="kart-aksiyon">
             ${uyum != null ? `<div class="compat-bar" title="Profilinize uyum skoru">
@@ -1167,13 +1172,16 @@
     // (EXPLAIN: 2.2GB→~200MB, <2.5s). Diğer sekmeler küçük/join'siz → tam sayım kalır.
     const sayimModu = aktifSekme === 'sonuc' ? 'planned' : 'exact';
     let query = sb.from('ilanlar').select(
-      `id,kaynak,${uyeKolon}baslik,il,tur,usul,durum,ilan_tarihi,son_teklif_tarihi,tahmini_bedel,yaklasik_maliyet_min,yaklasik_maliyet_max,itiraz_bedeli,esik_katsayi,${sonucEmbed}(${uyeSonucK}kazanan_teklif,kazanan_teklif_farki_yuzde,sonuc_tarihi)`,
+      `id,kaynak,${uyeKolon}baslik,il,tur,usul,durum,ilan_tarihi,son_teklif_tarihi,etkin_tarih,etkin_tarih_kaynak,tahmini_bedel,yaklasik_maliyet_min,yaklasik_maliyet_max,itiraz_bedeli,esik_katsayi,${sonucEmbed}(${uyeSonucK}kazanan_teklif,kazanan_teklif_farki_yuzde,sonuc_tarihi)`,
       { count: sayimModu }
     );
 
     // Sekme kapsamı: Güncel = teklif tarihi gelecekte, Geçmiş = geçmişte, Sonuç = ihale_sonuclari'nde kaydı olanlar
+    // ⚠️ Geçmiş'te ÖLÇÜT etkin_tarih: 340K geçmiş kaydın son_teklif_tarihi'si BOŞ (sonuç
+    // backfill'inden geldiler) → eski 'son_teklif_tarihi < now' ölçütü onları HİÇBİR sekmede
+    // göstermiyordu. etkin_tarih bunları sonuç tarihinden türetir (migration_etkin_tarih.sql).
     if      (aktifSekme === 'guncel') query = query.gte('son_teklif_tarihi', simdiISO);
-    else if (aktifSekme === 'gecmis') query = query.lt('son_teklif_tarihi', simdiISO);
+    else if (aktifSekme === 'gecmis') query = query.lt('etkin_tarih', simdiISO);
 
     // Misafir: arama_fold ve idare kolonları anon'a kapalı (WHERE için de SELECT yetkisi
     // gerekir) → arama başlık/açıklama ILIKE'a düşer (TR katlama yok ama çalışır),
@@ -1195,8 +1203,10 @@
     if (idare && uyeMi) query = query.ilike('idare', `%${idare}%`);
     if (yayinBas) query = query.gte('ilan_tarihi', yayinBas);
     if (yayinBit) query = query.lte('ilan_tarihi', `${yayinBit}T23:59:59`);
-    if (teklifBas)query = query.gte('son_teklif_tarihi', teklifBas);
-    if (teklifBit)query = query.lte('son_teklif_tarihi', `${teklifBit}T23:59:59`);
+    // Geçmiş'te tarih aralığı etkin_tarih'e uygulanır (son_teklif_tarihi orada çoğunlukla boş)
+    const tarihKol = aktifSekme === 'gecmis' ? 'etkin_tarih' : 'son_teklif_tarihi';
+    if (teklifBas)query = query.gte(tarihKol, teklifBas);
+    if (teklifBit)query = query.lte(tarihKol, `${teklifBit}T23:59:59`);
     if (esikKatsayi) {
       const [ekMin, ekMax] = esikKatsayi.split('-').map(Number);
       query = query.gte('esik_katsayi', ekMin).lte('esik_katsayi', ekMax);
@@ -1205,6 +1215,8 @@
     if (sort === 'tahmini_bedel_desc') query = query.order('yaklasik_maliyet_min', { ascending: false, nullsFirst: false });
     else if (sort === 'tahmini_bedel_asc') query = query.order('yaklasik_maliyet_min', { ascending: true, nullsFirst: false });
     else if (sort === 'ilan_tarihi') query = query.order('ilan_tarihi', { ascending: false });
+    // Geçmiş'te son_teklif_tarihi'ye göre sıralamak 340K NULL'u bir uca yığar → etkin_tarih DESC (en yeni önce)
+    else if (aktifSekme === 'gecmis') query = query.order('etkin_tarih', { ascending: false, nullsFirst: false });
     else query = query.order('son_teklif_tarihi', { ascending: true });
 
     if (uyumModu) {
@@ -1222,11 +1234,11 @@
     if (error && /esik_katsayi|arama_fold/.test(error.message || '')) {
       console.info('arama_fold/esik_katsayi kolonu henüz yok, legacy aramayla tekrar deneniyor:', error.message);
       let fallback = sb.from('ilanlar').select(
-        `id,kaynak,${uyeKolon}baslik,il,tur,usul,durum,ilan_tarihi,son_teklif_tarihi,tahmini_bedel,yaklasik_maliyet_min,yaklasik_maliyet_max,itiraz_bedeli,${sonucEmbed}(${uyeSonucK}kazanan_teklif,kazanan_teklif_farki_yuzde,sonuc_tarihi)`,
+        `id,kaynak,${uyeKolon}baslik,il,tur,usul,durum,ilan_tarihi,son_teklif_tarihi,etkin_tarih,etkin_tarih_kaynak,tahmini_bedel,yaklasik_maliyet_min,yaklasik_maliyet_max,itiraz_bedeli,${sonucEmbed}(${uyeSonucK}kazanan_teklif,kazanan_teklif_farki_yuzde,sonuc_tarihi)`,
         { count: sayimModu }
       );
       if      (aktifSekme === 'guncel') fallback = fallback.gte('son_teklif_tarihi', simdiISO);
-      else if (aktifSekme === 'gecmis') fallback = fallback.lt('son_teklif_tarihi', simdiISO);
+      else if (aktifSekme === 'gecmis') fallback = fallback.lt('etkin_tarih', simdiISO);
       if (arama)    fallback = uyeMi
         ? fallback.or(`baslik.ilike.%${arama}%,idare.ilike.%${arama}%,okas.ilike.%${arama}%,isin_yapilacagi_yer.ilike.%${arama}%,ilan_metni.ilike.%${arama}%`)
         : fallback.or(`baslik.ilike.%${arama}%,aciklama.ilike.%${arama}%`);
@@ -1242,11 +1254,12 @@
       if (idare && uyeMi) fallback = fallback.ilike('idare', `%${idare}%`);
       if (yayinBas) fallback = fallback.gte('ilan_tarihi', yayinBas);
       if (yayinBit) fallback = fallback.lte('ilan_tarihi', `${yayinBit}T23:59:59`);
-      if (teklifBas)fallback = fallback.gte('son_teklif_tarihi', teklifBas);
-      if (teklifBit)fallback = fallback.lte('son_teklif_tarihi', `${teklifBit}T23:59:59`);
+      if (teklifBas)fallback = fallback.gte(tarihKol, teklifBas);
+      if (teklifBit)fallback = fallback.lte(tarihKol, `${teklifBit}T23:59:59`);
       if (sort === 'tahmini_bedel_desc') fallback = fallback.order('yaklasik_maliyet_min', { ascending: false, nullsFirst: false });
       else if (sort === 'tahmini_bedel_asc') fallback = fallback.order('yaklasik_maliyet_min', { ascending: true, nullsFirst: false });
       else if (sort === 'ilan_tarihi') fallback = fallback.order('ilan_tarihi', { ascending: false });
+      else if (aktifSekme === 'gecmis') fallback = fallback.order('etkin_tarih', { ascending: false, nullsFirst: false });
       else fallback = fallback.order('son_teklif_tarihi', { ascending: true });
       if (uyumModu) { fallback = fallback.limit(200); }
       else { const baslangic = (sayfa - 1) * SAYFA_BOYUTU; fallback = fallback.range(baslangic, baslangic + SAYFA_BOYUTU - 1); }
@@ -1663,7 +1676,7 @@
     try {
       const [guncel, gecmis, sonuc] = await Promise.all([
         sb.from('ilanlar').select('id', { count: 'exact', head: true }).gte('son_teklif_tarihi', simdi),
-        sb.from('ilanlar').select('id', { count: 'exact', head: true }).lt('son_teklif_tarihi', simdi),
+        sb.from('ilanlar').select('id', { count: 'exact', head: true }).lt('etkin_tarih', simdi),
         sb.from('ihale_sonuclari').select('id', { count: 'exact', head: true }),
       ]);
       const fmt = n => n >= 1000 ? (n/1000).toFixed(1)+'K' : String(n);
