@@ -1,5 +1,54 @@
 # İhalePlatform — Yapılacaklar Listesi
 
+> ## 🛑 20 TEM — PROXY HAVUZU DÜŞTÜ (402), KAZIMA İŞLERİ BLOKE
+> Webshare uçlarının **tamamı `402 Payment Required`** dönüyor (httpx CONNECT
+> aşamasında; `curl -x` de bağlanamıyor → exit 56). 19 Tem'deki "government sites"
+> doğrulaması ayrı bir olaydı ve çözülmüştü — bu **kota/ödeme** kaynaklı yeni bir durum.
+>
+> **Kullanıcı aksiyonu gerekiyor** (ödeme/hesap bilgisi giremem): Webshare panelinde
+> bandwidth kotası + abonelik durumuna bakılmalı.
+>
+> **Bloke olan işler:** 2. madde (1,6M geçmiş ihale tam backfill), 3. madde (DT geçmiş
+> yıllar — checkpoint sayfa 4925'te, `--backfill` ile devam eder).
+>
+> **Yeniden başlarken doğrulama:**
+> ```bash
+> ssh ihale "cd /opt/ihale-platform/backend && set -a && . ./.env && set +a && \
+>   HP=\$(echo \$PROXY_LIST|cut -d, -f1) && \
+>   curl -s --max-time 20 -x http://\$PROXY_KULLANICI:\$PROXY_SIFRE@\$HP https://api.ipify.org"
+> ```
+>
+> ### 1,6M backfill için bölümleme kararı (araştırma sonucu)
+> Düz sayfalama 1,9M kayıtta çöker → dilimlemek şart. **Yıl alanı bundle'da bulunamadı**
+> (arama modeli lazy-load chunk'ta, `main.*.js` içinde yok; `Lookup/GetIKNYil` endpoint'i
+> ağ kaydında var ama alan adı doğrulanmadı). **Yıl aramaya gerek yok:** bundle'dan
+> doğrulanmış `ihaleIlIdList` + `ihaleTuruIdList` ile **81 il × 4 tür = 324 dilim**
+> (~6.000 kayıt/dilim) sayfalama derinliği sorununu çözer. Proxy açılınca önce bu iki
+> alanın filtrelediği **0 < sonuç < toplam** ölçütüyle doğrulanmalı
+> (⚠️ "0 sonuç = filtre çalıştı" tuzağı — bkz. `ekap-detsis-idare-tur` hafıza notu).
+
+> ## ✅ 20 TEM — ETKİN TARİH: 335K GEÇMİŞ İHALE ARAYÜZE AÇILDI (canlıda doğrulandı)
+> **Sorun:** 356.904 ihalenin 340.538'inde (%95) ilan/teklif/ihale tarihi BOŞ (sonuç
+> backfill'inden gelen kayıtlar). Sekme ölçütü `son_teklif_tarihi` olduğu için bunlar
+> **ne Güncel'de ne Geçmiş'te** görünüyordu — yalnız Sonuç sekmesinden erişilebiliyordu.
+>
+> **`backend/migration_etkin_tarih.sql`** (uygulandı): `etkin_tarih` + `etkin_tarih_kaynak`
+> kolonları, `etkin_tarih_tazele()`, DESC indeks, misafir kolon-GRANT'ı.
+> İlk doldurma: `{"kendi_tarihi": 16368, "sonuctan_turetilen": 335212}` → 351.580 dolu,
+> 5.324 boş (bunların bağlı sonuç kaydı da yok).
+>
+> ⚠️ **`ilan_tarihi`'ye YAZILMADI** — sonuç tarihi ≠ ilan tarihi; boş alanı doldurmak
+> "bu ihale şu tarihte ilan edildi" diye yanlış bilgi üretirdi. Ayrı eksen + kaynak etiketi.
+>
+> **`ihaleler.html`** (commit `4c45cb9`): Geçmiş kapsamı ve sekme sayacı `etkin_tarih`'e
+> geçti (**11.712 → 346.926**, ölçüldü), Geçmiş'te varsayılan sıralama `etkin_tarih DESC`,
+> tarih aralığı filtresi Geçmiş'te `etkin_tarih`'e uygulanıyor, kart yalnız sonuçtan
+> türetilmiş tarihi **"Sonuçlanma"** diye etiketliyor. Fallback sorgu kolu da güncellendi.
+> Canlı doğrulama: sekme "Geçmiş (346.9K)"; 2022 filtresinde kart
+> `SONUÇLANMA | 30 Ara 2022 | SON TEKLİF | —`.
+>
+> `run_scraper.sh` gece `etkin_tarih_tazele()` çağırıyor → yeni sonuçlar otomatik işlenir.
+
 > ## 🏛️ YARIN (20 TEM) — İDARE HİYERARŞİSİ: HEM İHALELER HEM DOĞRUDAN TEMİN
 > Kullanıcının 19 Tem'deki talebi: *"yarın idareler kısmı yapacağız, doğrudan temin ve
 > ihaleler kısmına onu da ekleyeceğiz."* Yani bu iş TEK sayfalık değil — **iki liste
