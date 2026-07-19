@@ -613,6 +613,28 @@
           </select>
         </div>
         <div class="filter-group">
+          <label>İdare Türü</label>
+          <!-- Değerler idare_tur tablosundan (EKAP/DETSİS hiyerarşisi) gelir;
+               ilanlar.idare_tur denormalize kolonu gece tazelenir. -->
+          <select class="filter-select" id="f-idare-tur">
+            <option value="">Tümü</option>
+            <option value="belediye">🏛️ Belediye</option>
+            <option value="buyuksehir_belediye">🏙️ Büyükşehir Belediyesi</option>
+            <option value="belediye_sirket">🏢 Belediye Şirketi</option>
+            <option value="su_kanal">💧 Su ve Kanalizasyon İdaresi</option>
+            <option value="il_ozel_idare">📍 İl Özel İdaresi</option>
+            <option value="saglik">🏥 Sağlık</option>
+            <option value="universite">🎓 Üniversite</option>
+            <option value="milli_egitim">🏫 Milli Eğitim</option>
+            <option value="bakanlik_merkez">🏛️ Bakanlık (Merkez)</option>
+            <option value="bakanlik_tasra">📋 Bakanlık (Taşra)</option>
+            <option value="kit">🏭 KİT / Kamu Şirketi</option>
+            <option value="guvenlik">🛡️ Güvenlik / Savunma</option>
+            <option value="yargi">⚖️ Yargı / Ceza İnfaz</option>
+            <option value="diger_kamu">🏢 Diğer Kamu</option>
+          </select>
+        </div>
+        <div class="filter-group">
           <label>Yak. Maliyet Min (₺)</label>
           <input type="number" class="filter-input" id="f-min-bedel" placeholder="0" style="width:120px;" />
         </div>
@@ -1117,6 +1139,7 @@
     const maxBedel = parseInt(document.getElementById('f-max-bedel').value) || 0;
     const kategori = document.getElementById('f-kategori').value;
     const kaynak   = document.getElementById('f-kaynak').value;
+    const idareTur = (document.getElementById('f-idare-tur') || {}).value || '';
     const minUyum  = parseInt(document.getElementById('f-min-uyum').value) || 0;
     const sort     = document.getElementById('sort-select').value;
     // Detaylı Ara alanları
@@ -1164,6 +1187,7 @@
     if (il)       query = query.eq('il', il);
     if (kategori) query = query.eq('kategori', kategori);
     if (kaynak)   query = query.eq('kaynak', kaynak);
+    if (idareTur) query = query.eq('idare_tur', idareTur);   // EKAP/DETSİS türü (denormalize kolon)
     if (tur)      query = query.eq('tur', tur);
     if (usul)     query = query.ilike('usul', `%${usul}%`);
     if (minBedel) query = query.gte('yaklasik_maliyet_min', minBedel);
@@ -1310,7 +1334,7 @@
 
 
   function filtreleriSifirla() {
-    ['f-arama','f-il','f-kategori','f-tur','f-usul','f-kaynak','f-min-bedel','f-max-bedel',
+    ['f-arama','f-il','f-kategori','f-tur','f-usul','f-kaynak','f-idare-tur','f-min-bedel','f-max-bedel',
      'f-idare','f-yayin-bas','f-yayin-bit','f-teklif-bas','f-teklif-bit','f-esik-katsayi','f-okas']
       .forEach(id => { document.getElementById(id).value = ''; });
     document.getElementById('f-min-uyum').value = '0';
@@ -1400,6 +1424,8 @@
     if (tur) document.getElementById('f-tur').value = tur;
     const kaynak = p.get('kaynak');
     if (kaynak) document.getElementById('f-kaynak').value = kaynak;
+    const pIdareTur = p.get('idare_tur');
+    if (pIdareTur) document.getElementById('f-idare-tur').value = pIdareTur;
     const okas = p.get('okas');
     if (okas) { document.getElementById('f-okas').value = okas; document.getElementById('gelismis-panel').classList.add('acik'); }
     const minBedel = p.get('minBedel');
@@ -1441,6 +1467,7 @@
       tur:      document.getElementById('f-tur').value,
       usul:     document.getElementById('f-usul').value,
       kaynak:   document.getElementById('f-kaynak').value,
+      idare_tur: document.getElementById('f-idare-tur').value,
       minBedel: document.getElementById('f-min-bedel').value,
       maxBedel: document.getElementById('f-max-bedel').value,
       minUyum:  document.getElementById('f-min-uyum').value,
@@ -1568,6 +1595,7 @@
     document.getElementById('f-tur').value      = p.tur      || '';
     document.getElementById('f-usul').value     = p.usul     || '';
     document.getElementById('f-kaynak').value   = p.kaynak   || '';
+    document.getElementById('f-idare-tur').value = p.idare_tur || '';
     document.getElementById('f-min-bedel').value= p.minBedel || '';
     document.getElementById('f-max-bedel').value= p.maxBedel || '';
     document.getElementById('f-min-uyum').value = p.minUyum  || '0';

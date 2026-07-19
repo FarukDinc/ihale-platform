@@ -332,6 +332,25 @@
         <select id="f-il" onchange="filtreDegisti()">
           <option value="">Tüm İller</option>
         </select>
+        <!-- İdare türü: idare_tur tablosundan (EKAP/DETSİS), dogrudan_temin_ilanlari.idare_tur
+             denormalize kolonu gece tazelenir. İhaleler sayfasıyla aynı değer kümesi. -->
+        <select id="f-idare-tur" onchange="filtreDegisti()">
+          <option value="">Tüm İdare Türleri</option>
+          <option value="belediye">🏛️ Belediye</option>
+          <option value="buyuksehir_belediye">🏙️ Büyükşehir Belediyesi</option>
+          <option value="belediye_sirket">🏢 Belediye Şirketi</option>
+          <option value="su_kanal">💧 Su ve Kanalizasyon İdaresi</option>
+          <option value="il_ozel_idare">📍 İl Özel İdaresi</option>
+          <option value="saglik">🏥 Sağlık</option>
+          <option value="universite">🎓 Üniversite</option>
+          <option value="milli_egitim">🏫 Milli Eğitim</option>
+          <option value="bakanlik_merkez">🏛️ Bakanlık (Merkez)</option>
+          <option value="bakanlik_tasra">📋 Bakanlık (Taşra)</option>
+          <option value="kit">🏭 KİT / Kamu Şirketi</option>
+          <option value="guvenlik">🛡️ Güvenlik / Savunma</option>
+          <option value="yargi">⚖️ Yargı / Ceza İnfaz</option>
+          <option value="diger_kamu">🏢 Diğer Kamu</option>
+        </select>
         <button type="button" id="dt-detay-btn" class="dt-detay-btn" onclick="detayPaneliAcKapa()">🔍 Detaylı Ara</button>
       </div>
 
@@ -560,6 +579,8 @@
     if (tur) query = query.eq('tur', tur);
     if (kat) query = query.eq('kategori', kat);
     if (il) query = query.eq('il', il);
+    const idareTur = (document.getElementById('f-idare-tur') || {}).value || '';
+    if (idareTur) query = query.eq('idare_tur', idareTur);   // EKAP/DETSİS türü
     if (dtNoParam) query = query.eq('dt_no', dtNoParam);
     // ── Detaylı arama alanları ───────────────────────────────────────────────
     // NOT: ?tarihBas/?tarihBit URL parametreleri de doğrudan panel alanlarına yazılıyor,
@@ -648,7 +669,7 @@
   function sayacFiltreImzasi() {
     const v = (id) => { const e = document.getElementById(id); return e ? e.value : ''; };
     const d = dtDetayDegerleri();
-    return JSON.stringify([v('f-ara'), v('f-tur'), v('f-kategori'), v('f-il'),
+    return JSON.stringify([v('f-ara'), v('f-tur'), v('f-kategori'), v('f-il'), v('f-idare-tur'),
                            dtNoParam, d.idare, d.durum, d.tarihBas, d.tarihBit, d.dokuman, uyeMi]);
   }
 
