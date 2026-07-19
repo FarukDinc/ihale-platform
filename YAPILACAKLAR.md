@@ -86,7 +86,26 @@
 >       üye token'ıyla token kolonu çekmeyi dene, 401 gelmeli).
 > - [ ] DT tam taraması hâlâ eksik (`yayin_tarihi` kayıtların ~%1'inde dolu) — proxy
 >       402'den düştü; başka oturum `7f25615` ile direkt-mod geri çekilmesi ekledi.
-> - [ ] `lot_sayisi` gece UPDATE'i `run_scraper.sh`'e eklenmeli (18 Tem'den devir).
+> - ✅ `lot_sayisi` + `idare_tur` gece tazelemesi `run_scraper.sh`'e eklendi (`c021157`).
+>
+> ### ✅ 19 TEM EK — İKİ MIGRATION PROD'A UYGULANDI + CANLI DOĞRULANDI
+> 1. **`migration_dt_token_authenticated.sql`** — `authenticated`a 18 kolon GRANT
+>    (2 token hariç). Üyeler artık `dt_ihale_token`/`dt_idare_token` çekemiyor.
+> 2. **`migration_idare_tur_anon_grant.sql`** — CANLI HATA kapatıldı: yeni "İdare
+>    Türü" filtresi misafirde 42501 verip listeyi öldürüyordu (kolon-GRANT sonradan
+>    eklenen kolona genişlemiyor; WHERE'de kullanmak da SELECT yetkisi ister).
+>
+> Canlı curl doğrulaması (9/9 geçti): token'lar 401 · `idare_tur` 200 ·
+> `idare`/`kazanan_firma` maskesi 401 · misafir liste akışı 200.
+> Tarayıcı: `?il=ANKARA` → Güncel sekmesi, 6K/109K/115K, liste 6.290, kart linki
+> `dt-detay?dt_no=…`, idare maskeli, konsol temiz.
+>
+> ### 🟡 İDARE TÜRÜ FİLTRESİ — KAPSAM UYARISI (ölçüldü 19 Tem)
+> `idare_tur` dolu oranı: **DT %23** (345.453/1.490.644) · **İhaleler %12,5**
+> (44.569/356.904). 14 seçeneğin hepsinde veri VAR (ölü seçenek yok) ama filtre
+> uygulandığında sınıflandırılmamış kayıtlar sessizce düşüyor. Gece tazelemesi
+> artık bağlı (`c021157`) → kapsam her gece artacak. Kapsam yükselene kadar
+> dropdown'a "sınıflandırılmış kayıtlar" ipucu düşünülebilir.
 
 > ## 🌙 18 TEMMUZ AKŞAMI — GECE TARAMASI BEKLENİYOR (sabah kaldığımız yer burası)
 > Proxy havuzuna **4 scraper'ın 3'ü** bağlandı ve push edildi: `kik_backfill`,
