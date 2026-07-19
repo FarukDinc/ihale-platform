@@ -85,9 +85,17 @@
     .dt-kart {
       background: var(--navy-mid); border: 1px solid var(--border);
       border-radius: 10px; padding: 16px 20px; margin-bottom: 10px;
-      transition: border-color .15s;
+      transition: border-color .15s; position: relative;
     }
     .dt-kart:hover { border-color: rgba(240,165,0,.4); }
+    .dt-kart:hover .dt-baslik { color: var(--amber); }
+    /* "Stretched link": kartın tamamını tıklanabilir yapar. Kartı <a> ile SARMAK
+       yanlış olurdu — içinde zaten bir <a class="dt-idare"> ve bir <button> var,
+       iç içe anchor geçersiz HTML üretir ve buton tıklaması yutulur. Bunun yerine
+       mutlak konumlu boş bir bağlantı kartı kaplar, etkileşimli öğeler z-index ile
+       onun ÜSTÜNE çıkarılır. */
+    .dt-kart-link { position: absolute; inset: 0; z-index: 1; border-radius: 10px; }
+    .dt-kart .dt-takip-btn, .dt-kart a.dt-idare { position: relative; z-index: 2; }
     .dt-ust { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 8px; }
     .dt-baslik { font-size: 14px; font-weight: 700; color: var(--off-white); line-height: 1.4; }
     .dt-no { font-size: 11px; font-weight: 700; color: var(--amber); white-space: nowrap; flex-shrink: 0; font-family: var(--font-body); }
@@ -226,36 +234,58 @@
         }
         .dt-detay-btn:hover { color:var(--white); border-color:var(--muted); }
         .dt-detay-btn.acik { background:rgba(240,165,0,.12); border-color:var(--amber); color:var(--amber); }
+        /* Görsel dil ihaleler.html'in .filter-bar / .gelismis-panel'inden birebir alındı
+           (padding 16px 20px · radius 10px · etiket 11px/600/.08em · input radius 6px,
+           background var(--navy) · buton margin-top:18px ile input hizası). Sınıf ADLARI
+           kopyalanmadı bilinçli: o sınıflar bu dosyada tanımlı değil, .dt-* korunuyor. */
         .dt-detay-panel {
-          margin-top:12px; padding:16px 18px; border-radius:12px;
+          margin-top:12px; margin-bottom:20px; padding:16px 20px; border-radius:10px;
           background:var(--navy-mid); border:1px solid var(--border);
         }
-        .dt-detay-baslik { font-size:12px; font-weight:800; letter-spacing:.06em; color:var(--amber); margin-bottom:14px; }
-        .dt-hizli-satir { display:flex; align-items:center; gap:7px; flex-wrap:wrap; margin-bottom:14px; }
-        .dt-hizli-etiket { font-size:11px; font-weight:700; color:var(--muted); letter-spacing:.05em; }
+        .dt-detay-baslik {
+          width:100%; font-size:12px; font-weight:700; letter-spacing:.08em;
+          text-transform:uppercase; color:var(--amber); margin-bottom:14px;
+        }
+        .dt-hizli-satir { display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-bottom:14px; }
+        .dt-hizli-etiket { font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.5px; margin-right:2px; }
         .dt-hizli-btn {
-          padding:5px 12px; border-radius:14px; font-size:11.5px; font-weight:600; cursor:pointer;
-          background:transparent; border:1px solid var(--border); color:var(--muted); font-family:var(--font-body);
+          padding:4px 13px; border-radius:20px; font-size:12px; font-weight:500; cursor:pointer;
+          background:var(--card-bg); border:1px solid var(--border); color:var(--muted);
+          font-family:var(--font-body); transition:all .15s;
         }
-        .dt-hizli-btn:hover { color:var(--white); border-color:var(--muted); }
-        .dt-hizli-btn.aktif { background:rgba(240,165,0,.12); border-color:var(--amber); color:var(--amber); }
-        .dt-detay-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:12px 14px; }
-        .dt-alan { display:flex; flex-direction:column; gap:5px; }
-        .dt-alan-etiket { font-size:10.5px; font-weight:700; letter-spacing:.05em; color:var(--muted); }
+        /* Mavi = "hızlı seçim kısayolu" (ihaleler konvansiyonu); amber = "uygulanmış filtre"
+           (.dt-cip). İki rengin ayrı anlamı var, birleştirme. */
+        .dt-hizli-btn:hover { border-color:#3b82f6; color:var(--white); }
+        .dt-hizli-btn.aktif { background:#3b82f6; border-color:#3b82f6; color:#fff; }
+        .dt-detay-grid { display:flex; gap:12px; flex-wrap:wrap; align-items:center; }
+        .dt-alan { display:flex; flex-direction:column; gap:4px; min-width:140px; max-width:100%; }
+        .dt-alan-etiket { font-size:11px; font-weight:600; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); }
         .dt-alan input[type=text], .dt-alan input[type=date], .dt-alan select {
-          padding:8px 10px; border-radius:8px; font-size:13px; font-family:var(--font-body);
-          background:var(--navy-deep); border:1px solid var(--border); color:var(--white);
+          padding:8px 12px; border-radius:6px; font-size:13px; font-family:var(--font-body);
+          background:var(--navy); border:1px solid var(--border); color:var(--white);
+          outline:none; max-width:100%;
         }
+        .dt-alan input[type=text]:focus, .dt-alan input[type=date]:focus, .dt-alan select:focus { border-color:var(--amber); }
+        .dt-alan input::placeholder { color:var(--muted); }
+        .dt-alan select { cursor:pointer; }
         .dt-alan input:disabled, .dt-alan select:disabled { opacity:.45; cursor:not-allowed; }
         .dt-alan-not { font-size:10.5px; color:var(--muted); }
-        .dt-alan-onay { flex-direction:row; align-items:center; gap:8px; font-size:12.5px; align-self:end; padding-bottom:8px; }
+        /* margin-top:18px → etiketsiz oldukları için input satırıyla hizalanırlar
+           (ihaleler'deki .btn-filtrele/.btn-sifirla ile aynı hile). */
+        .dt-alan-onay { flex-direction:row; align-items:center; gap:8px; font-size:12.5px; margin-top:18px; }
         .dt-alan-onay input { width:15px; height:15px; accent-color:var(--amber); cursor:pointer; }
-        .dt-alan-aksiyon { justify-content:flex-end; }
+        .dt-alan-aksiyon { flex-direction:row; align-items:center; gap:8px; margin-top:18px; }
+        .dt-filtrele-btn {
+          background:var(--amber); color:var(--navy); border:none;
+          padding:8px 20px; border-radius:6px; font-size:13px;
+          font-weight:700; cursor:pointer; white-space:nowrap; font-family:var(--font-body);
+        }
+        .dt-filtrele-btn:hover { background:var(--amber-dim); }
         .dt-sifirla-btn {
-          padding:8px 14px; border-radius:8px; font-size:12.5px; font-weight:700; cursor:pointer;
+          padding:8px 16px; border-radius:6px; font-size:13px; font-weight:600; cursor:pointer;
           background:transparent; border:1px solid var(--border); color:var(--muted); font-family:var(--font-body);
         }
-        .dt-sifirla-btn:hover { color:var(--white); border-color:var(--muted); }
+        .dt-sifirla-btn:hover { color:var(--white); border-color:rgba(var(--overlay-rgb),.3); }
         .dt-neden-yok { margin-top:14px; border-top:1px solid var(--border); padding-top:12px; }
         .dt-neden-yok summary { cursor:pointer; font-size:12px; font-weight:700; color:var(--muted); }
         .dt-neden-yok summary:hover { color:var(--amber); }
@@ -325,7 +355,8 @@
         <div class="dt-detay-grid">
           <label class="dt-alan">
             <span class="dt-alan-etiket">İDARE ADI</span>
-            <input type="text" id="f-dt-idare" placeholder="Kurum / idare adında ara…" oninput="aramaDegisti()" />
+            <input type="text" id="f-dt-idare" placeholder="Kurum / idare adında ara…" style="min-width:240px;"
+                   oninput="aramaDegisti()" onkeydown="if(event.key==='Enter'){event.preventDefault();filtreDegisti();}" />
             <span class="dt-alan-not" id="f-dt-idare-not"></span>
           </label>
 
@@ -362,6 +393,10 @@
           </label>
 
           <div class="dt-alan dt-alan-aksiyon">
+            <!-- Filtreler zaten anında uygulanıyor (her alanda onchange/oninput). Bu buton
+                 ihaleler.html ile görsel parite + idare kutusuna yazıp "uygula" arayan
+                 kullanıcı için ikinci yol; yeni bir davranış getirmiyor. -->
+            <button type="button" class="dt-filtrele-btn" onclick="filtreDegisti()">Filtrele</button>
             <button type="button" class="dt-sifirla-btn" onclick="dtFiltreleriSifirla()">Sıfırla</button>
           </div>
         </div>
@@ -466,7 +501,12 @@
   function tarihlerHtml(k) {
     const p = [];
     if (k.yayin_tarihi) {
-      p.push(`<span title="Duyurunun EKAP'ta yayımlandığı tarih">📅 Yayın: <b>${tarihFormat(k.yayin_tarihi)}</b></span>`);
+      // E8, kaydın O ANKİ duyurusunun yayım tarihidir — sonuçlanmışlarda bu, ilk
+      // duyurunun değil SONUÇ duyurusunun tarihidir. Canlı veriyle ölçüldü:
+      // aktif kayıtlarda yayin>ihale oranı %0, sonuçlananlarda %58. Hepsine birden
+      // "Yayın" demek sonuçlanmış kayıtlarda yanlış bilgi olurdu.
+      const sonuclu = DURUM_GRUP.sonuc.includes(k.durum);
+      p.push(`<span title="${sonuclu ? 'Sonuç duyurusunun EKAP\'ta yayımlandığı tarih' : 'Duyurunun EKAP\'ta yayımlandığı tarih'}">📅 ${sonuclu ? 'Sonuç duyurusu' : 'Yayın'}: <b>${tarihFormat(k.yayin_tarihi)}</b></span>`);
     }
     if (k.tarih) {
       const fark = gunFarki(k.tarih);
@@ -499,14 +539,17 @@
     sonuc: ['Sonuç Duyurusu Yayımlanmış', 'Doğrudan Temin Sonuçlandırıldı', 'Sonuç Bilgileri Gönderildi'],
   };
 
-  function filtreleriUygula(query) {
+  // sekmeUygula=false → sekmenin durum kapsamı ATLANIR, diğer tüm filtreler uygulanır.
+  // Sekme sayaçları bunu kullanır: her sayaç kendi durum grubunu kendisi ekler,
+  // aktif sekmeninkini değil.
+  function filtreleriUygula(query, { sekmeUygula = true } = {}) {
     const dDurum = (document.getElementById('f-dt-durum') || {}).value || '';
     // Sekme kapsamı (durum-bazlı) — Güncel=aktif, Sonuç=sonuçlanmış, Tümü=filtresiz.
     // Panelden TEK bir ham durum seçilmişse sekmenin grup kuralı UYGULANMAZ: ikisi
     // AND'lenirse "Güncel sekmesi + Sonuç durumu" gibi çelişkili koşul oluşuyor.
     // Bu yalnız boş liste değil, statement timeout (57014) da üretti — planlayıcı
     // çelişkiyi eleyemeyip 1,49M satırda sayıma giriyordu (canlıda görüldü).
-    if (!dDurum) {
+    if (sekmeUygula && !dDurum) {
       if (aktifSekme === 'guncel')     query = query.in('durum', DURUM_GRUP.acik);
       else if (aktifSekme === 'sonuc') query = query.in('durum', DURUM_GRUP.sonuc);
     }
@@ -580,6 +623,75 @@
            || dtNoParam);
   }
 
+  // ── Sekme sayaçları (Güncel / Sonuç / Tümü) ───────────────────────────────
+  // Sayaçlar AKTİF FİLTRELERİN kapsamında sayar. Önce global sayıyorlardı: haritadan
+  // ANKARA ile gelince sekmede "Güncel 96K" yazıyor ama liste 6K gösteriyordu —
+  // kullanıcı haklı olarak "veri güncellenmemiş" sandı. Sayaç ile listenin aynı
+  // evreni sayması, sayfanın güvenilirliği açısından şart.
+  //
+  // Maliyet kontrolü:
+  //  • İmza cache'i — sekme değiştirmek filtreyi değiştirmez, sayaç yeniden sorulmaz
+  //    (en sık etkileşim bu; aksi halde her tıklamada 3 boş sorgu giderdi).
+  //  • sayimYapilabilirMi() kapısı — ILIKE arama/idare varsa sayım timeout eder (57014),
+  //    sayaçlar boşaltılır. Boş <span class="cnt"> zaten görünmez.
+  //  • count:'exact' bilinçli: istatistikYukle zaten açılışta 6 exact head-count atıyor
+  //    ve bu tabloda sorunsuz çalışıyor. 'estimated' sapması burada kabul edilemez —
+  //    kullanıcının şikâyeti tam olarak sayacın yanlış rakam göstermesiydi.
+  let sayacImza = null;    // son hesabın filtre imzası (sekme HARİÇ)
+  let sayacIstekNo = 0;    // yarış koruması: select'ler debounce'suz tetikliyor
+
+  function sayacYaz(g, s, t) {
+    const set = (id, v) => { const e = document.getElementById(id); if (e) e.textContent = v; };
+    set('dt-cnt-guncel', g); set('dt-cnt-sonuc', s); set('dt-cnt-tumu', t);
+  }
+
+  function sayacFiltreImzasi() {
+    const v = (id) => { const e = document.getElementById(id); return e ? e.value : ''; };
+    const d = dtDetayDegerleri();
+    return JSON.stringify([v('f-ara'), v('f-tur'), v('f-kategori'), v('f-il'),
+                           dtNoParam, d.idare, d.durum, d.tarihBas, d.tarihBit, d.dokuman, uyeMi]);
+  }
+
+  async function sekmeSayaclariYukle() {
+    const imza = sayacFiltreImzasi();
+    if (imza === sayacImza) return;          // filtre değişmedi (ör. sadece sekme/sayfa değişti)
+    if (!sayimYapilabilirMi()) { sayacImza = imza; sayacYaz('', '', ''); return; }
+    sayacImza = imza;
+    const benim = ++sayacIstekNo;
+
+    // Her sayaç kendi durum grubunu ekler; aktif sekmenin kapsamı devre dışı.
+    const say = (grup) => {
+      let q = sb.from('dogrudan_temin_ilanlari').select('dt_no', { count: 'exact', head: true });
+      q = filtreleriUygula(q, { sekmeUygula: false });
+      if (grup) q = q.in('durum', DURUM_GRUP[grup]);
+      return q;
+    };
+
+    try {
+      const d = dtDetayDegerleri();
+      if (d.durum) {
+        // Panelden TEK ham durum seçili. İKİ nedenle tek sorgu atıp üçünü eşitliyoruz:
+        //  1) Sekme grubuyla AND'lemek çelişkili koşul üretir; planlayıcı eleyemeyip
+        //     1,49M satırda sayıma girer (57014 — canlıda görüldü).
+        //  2) Bu durumda filtreleriUygula sekme kapsamını HİÇ uygulamıyor (dDurum
+        //     dalı), yani üç sekme de birebir AYNI listeyi gösteriyor. Sayaçların
+        //     farklı rakam göstermesi yalan olurdu: "Güncel 0" yazıp tıklayınca
+        //     79K kayıt gelmesi tam da düzeltmeye çalıştığımız hatanın kendisi.
+        const { count } = await say(null);
+        if (benim !== sayacIstekNo) return;
+        const t = kisaSayi(count || 0);
+        sayacYaz(t, t, t);
+        return;
+      }
+      const [g, s, t] = await Promise.all([say('acik'), say('sonuc'), say(null)]);
+      if (benim !== sayacIstekNo) return;    // daha yeni bir istek başladı, bayat sonucu yazma
+      sayacYaz(kisaSayi(g.count || 0), kisaSayi(s.count || 0), kisaSayi(t.count || 0));
+    } catch (e) {
+      if (benim === sayacIstekNo) { sayacImza = null; sayacYaz('', '', ''); }
+      console.info('sekme sayaçları atlandı:', e && e.message);
+    }
+  }
+
   async function veriYukle(resetSayfa = true) {
     if (resetSayfa) sayfa = 1;
     // Sayım kararı artık yalnız "arama var mı"ya değil, tüm pahalı filtrelere bakıyor
@@ -622,6 +734,9 @@
     sonSatirlar = rows;
     render();
     dtCipleriGuncelle();
+    // Bilinçli olarak await EDİLMİYOR — sayaçlar listenin render'ını bekletmesin.
+    // İmza cache'i sayesinde sayfa gezinme/sekme değişiminde sorgu atmaz.
+    sekmeSayaclariYukle();
   }
 
   window.filtreDegisti = () => veriYukle(true);            // tür/il select'leri → anında
@@ -778,11 +893,13 @@
     }
 
     cont.innerHTML = sonSatirlar.map(k => `<div class="dt-kart" id="dt-kart-${esc(k.dt_no)}">
+      <a class="dt-kart-link" href="dt-detay?dt_no=${encodeURIComponent(k.dt_no)}"
+         aria-label="${esc(k.baslik) || 'Duyuru'} — detay"></a>
       <div class="dt-ust">
         <div class="dt-baslik">${esc(k.baslik) || '(başlık yok)'}</div>
         <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
           <button class="dt-takip-btn${window.TakipDT && TakipDT.var(k.dt_no) ? ' aktif' : ''}"
-                  onclick="dtTakibeAl(this,'${esc(k.dt_no)}')" title="Takibe al">
+                  onclick="event.stopPropagation();dtTakibeAl(this,'${esc(k.dt_no)}')" title="Takibe al">
             ${window.TakipDT && TakipDT.var(k.dt_no) ? '★' : '☆'}
           </button>
           <div class="dt-no">${esc(k.dt_no)}</div>
@@ -832,21 +949,24 @@
       const { count } = await q;
       return count || 0;
     };
-    const sayGuncel = sb.from('dogrudan_temin_ilanlari').select('id', { count: 'exact', head: true }).in('durum', DURUM_GRUP.acik);
-    const saySonuc  = sb.from('dogrudan_temin_ilanlari').select('id', { count: 'exact', head: true }).in('durum', DURUM_GRUP.sonuc);
-    const [toplam, mal, hizmet, yapim, gRes, sRes] = await Promise.all([
-      say(null), say('Mal'), say('Hizmet'), say('Yapım'), sayGuncel, saySonuc,
+    // Güncel/Sonuç sayımları BURADAN KALDIRILDI — sekme sayaçlarını artık
+    // sekmeSayaclariYukle() filtre kapsamında hesaplıyor, bu iki sorgu boşa gidiyordu.
+    // Açılıştaki head-count sayısı 6 → 4'e indi.
+    const [toplam, mal, hizmet, yapim] = await Promise.all([
+      say(null), say('Mal'), say('Hizmet'), say('Yapım'),
     ]);
     el('st-toplam').textContent = toplam.toLocaleString('tr');
     el('st-mal').textContent = mal.toLocaleString('tr');
     el('st-hizmet').textContent = hizmet.toLocaleString('tr');
     el('st-yapim').textContent = yapim.toLocaleString('tr');
-    el('results-count').textContent = `${toplam.toLocaleString('tr')} kayıt`;
-    // Sekme sayaçları (global; durum-bazlı): Güncel=aktif, Sonuç=sonuçlanmış, Tümü=toplam
-    const guncel = (gRes && gRes.count) || 0, sonuc = (sRes && sRes.count) || 0;
-    el('dt-cnt-guncel').textContent = kisaSayi(guncel);
-    el('dt-cnt-sonuc').textContent = kisaSayi(sonuc);
-    el('dt-cnt-tumu').textContent = kisaSayi(toplam);
+    // "(tüm veri)" ibaresi ŞART: sekme sayaçları artık filtreliyken bu rakam global
+    // kalıyor. Etiketsiz bırakılsa "Güncel 6K" ile "1.490.591 kayıt" yan yana durur
+    // ve kullanıcı yine sayıların tutmadığını düşünür.
+    el('results-count').textContent = `${toplam.toLocaleString('tr')} kayıt (tüm veri)`;
+    // NOT: Sekme sayaçları artık BURADAN yazılmıyor — sekmeSayaclariYukle() aktif
+    // filtrelerin kapsamında hesaplıyor. Buradan da yazılsaydı açılışta iki yazar
+    // çakışır, filtreli sayacın üstüne global rakam binerdi (asıl şikâyet buydu).
+    // Üstteki stat kartları ve #results-count GLOBAL kalıyor — etiketleri de öyle diyor.
   }
 
   function kategorileriYukle() {
@@ -929,8 +1049,12 @@
     if (ilParam) {
       // Harita zaten DB formatında (BÜYÜK harf) gönderir; elle/eski link için güvenlik ağı.
       ilSecimGarantiEt(ilParam.toLocaleUpperCase('tr'));
-      aktifSekme = 'tumu';   // haritadan gelindiyse TÜM DT geçmişi görünsün (Güncel/aktif'te az çıkar)
-      document.querySelectorAll('.dt-tab').forEach(b => b.classList.toggle('active', b.dataset.sekme === 'tumu'));
+      // Harita artık AKTİF sayım gösteriyor (dt_il_sayim_aktif), popup'taki rakam = Güncel
+      // sekmesinin sayısı. 'tumu'ya düşürmek kullanıcıyı popup'ta gördüğü sayıyı bulamadığı
+      // bir listeye atıyordu (Ankara: popup ~6K, liste 115K). Açıkça yazıyoruz — varsayılana
+      // güvenmiyoruz, çünkü aşağıdaki ?kategori= / ?dt_no= blokları sekmeyi ezebiliyor.
+      aktifSekme = 'guncel';
+      document.querySelectorAll('.dt-tab').forEach(b => b.classList.toggle('active', b.dataset.sekme === 'guncel'));
     }
     const kategoriParam = params.get('kategori');
     if (kategoriParam) {

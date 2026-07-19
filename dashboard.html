@@ -1649,7 +1649,7 @@
         .sort((a, b) => new Date(b._tarih || 0) - new Date(a._tarih || 0)).slice(0, 6);
       if (!hepsi.length) { el.innerHTML = '<div style="padding:12px 18px; color:var(--muted); font-size:13px;">Veri yok</div>'; return; }
       el.innerHTML = hepsi.map(d => {
-        const href = d._kaynak === 'dt' ? `dogrudan-temin?dt_no=${encodeURIComponent(d.dt_no)}` : `ihale-detay?id=${d.id}`;
+        const href = d._kaynak === 'dt' ? `dt-detay?dt_no=${encodeURIComponent(d.dt_no)}` : `ihale-detay?id=${d.id}`;
         const rozet = d._kaynak === 'dt' ? '<span style="color:#4ade80;">⚡ DT</span>' : '<span style="color:#60a5fa;">📋 İhale</span>';
         const maliyet = dashParaKisa(d.yaklasik_maliyet_min);
         const tarihGoster = dashGunAy(d._tarih);
@@ -1766,7 +1766,7 @@
             const tarih = d.tarih ? new Date(d.tarih).toLocaleDateString('tr-TR', { day: '2-digit', month: 'short' }) : '—';
             const bedel = bedelMap[d.dt_no];
             const bedelStr = bedel ? ` · <span style="color:var(--amber);font-weight:600;">${paraCevir(bedel)}</span>` : '';
-            return `<a href="dogrudan-temin?dt_no=${encodeURIComponent(d.dt_no)}" style="display:block; padding:9px 18px; text-decoration:none; border-bottom:1px solid var(--border); transition:background .15s;" onmouseover="this.style.background='var(--card-bg)'" onmouseout="this.style.background=''">
+            return `<a href="dt-detay?dt_no=${encodeURIComponent(d.dt_no)}" style="display:block; padding:9px 18px; text-decoration:none; border-bottom:1px solid var(--border); transition:background .15s;" onmouseover="this.style.background='var(--card-bg)'" onmouseout="this.style.background=''">
               <div style="display:flex; align-items:center; gap:10px;">
                 <div style="min-width:44px; text-align:center; background:rgba(74,222,128,.12); border-radius:6px; padding:4px 6px; flex-shrink:0;">
                   <div style="font-size:14px; font-weight:800; color:#4ade80; line-height:1;">⚡</div>

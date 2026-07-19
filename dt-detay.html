@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!-- noindex ŞART: 1,49M doğrudan temin kaydı × ayrı URL = crawl patlaması.
+       follow bırakıldı ki içerideki idare/kategori linkleri yine de keşfedilsin. -->
+  <meta name="robots" content="noindex,follow" />
+  <title>Doğrudan Temin Detayı — İhaleGlobal</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <script src="js/theme.js?v=5"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    body { background: var(--navy); }
+    .app { display: flex; min-height: 100vh; }
+
+    /* SIDEBAR — dogrudan-temin.html ile birebir aynı (sidebar-user.js bu id/sınıfları seçiyor) */
+    .sidebar {
+      background: var(--navy-mid); border-right: 1px solid var(--border);
+      width: 240px; flex-shrink: 0; position: sticky; top: 0;
+      height: 100vh; display: flex; flex-direction: column; overflow-y: auto;
+    }
+    .sidebar-logo { padding: 20px 20px 16px; border-bottom: 1px solid var(--border); }
+    .sidebar-logo a {
+      font-family: var(--font-display); font-size: 18px; font-weight: 800;
+      color: var(--white); text-decoration: none; display: flex; align-items: center; gap: 8px;
+    }
+    .sidebar-logo span { color: var(--amber); }
+    .sidebar-nav { flex: 1; padding: 16px 12px; overflow-y: auto; }
+    .nav-section-label {
+      font-size: 10px; font-weight: 700; letter-spacing: .1em;
+      text-transform: uppercase; color: var(--muted); padding: 12px 8px 6px;
+    }
+    .nav-item {
+      display: flex; align-items: center; gap: 10px; padding: 9px 12px;
+      border-radius: 6px; color: var(--muted); text-decoration: none;
+      font-size: 13px; font-weight: 500; transition: all .15s; margin-bottom: 2px;
+    }
+    .nav-item:hover { background: var(--card-bg); color: var(--white); }
+    .nav-item.active { background: rgba(240,165,0,0.12); color: var(--amber); }
+    .nav-item .icon { font-size: 16px; width: 20px; text-align: center; }
+    .sidebar-footer { padding: 16px; border-top: 1px solid var(--border); }
+    .user-row { display: flex; align-items: center; gap: 10px; }
+    .user-avatar {
+      width: 32px; height: 32px; border-radius: 50%;
+      background: var(--amber); color: var(--navy);
+      font-size: 12px; font-weight: 800; display: flex; align-items: center; justify-content: center;
+    }
+    .user-name { font-size: 13px; font-weight: 600; color: var(--white); }
+    .user-plan { font-size: 11px; color: var(--muted); }
+
+    .main { display: flex; flex-direction: column; flex: 1; min-width: 0; height: 100vh; overflow-y: auto; }
+    .topbar {
+      background: var(--navy-mid); border-bottom: 1px solid var(--border);
+      padding: 0 24px; height: 56px; display: flex; align-items: center;
+      position: sticky; top: 0; z-index: 20;
+    }
+    .topbar-left { display: flex; align-items: center; gap: 12px; }
+    .page-body { padding: 24px; max-width: 1100px; width: 100%; }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loading-wrap { text-align: center; padding: 60px 20px; color: var(--muted); }
+    .loading-spinner { width: 32px; height: 32px; border: 3px solid var(--border); border-top-color: var(--amber); border-radius: 50%; animation: spin .8s linear infinite; margin: 0 auto 16px; }
+    .empty-wrap { background: var(--navy-mid); border: 1px solid var(--border); border-radius: 12px; padding: 48px; text-align: center; }
+    .empty-icon { font-size: 40px; margin-bottom: 14px; }
+    .empty-baslik { font-size: 16px; font-weight: 700; color: var(--white); margin-bottom: 8px; }
+    .empty-alt { font-size: 13px; color: var(--muted); max-width: 420px; margin: 0 auto 18px; line-height: 1.6; }
+
+    .geri-link {
+      display: inline-flex; align-items: center; gap: 6px; margin-bottom: 16px;
+      font-size: 13px; font-weight: 600; color: var(--muted); text-decoration: none;
+    }
+    .geri-link:hover { color: var(--amber); }
+
+    .detay-kart {
+      background: var(--navy-mid); border: 1px solid var(--border);
+      border-radius: 10px; padding: 20px 22px; margin-bottom: 16px;
+    }
+    .kart-baslik {
+      font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
+      color: var(--amber); margin-bottom: 14px;
+    }
+    .detay-ust { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; }
+    .detay-h1 { font-size: 19px; font-weight: 800; color: var(--white); line-height: 1.35; margin: 0 0 10px; }
+    .detay-no { font-size: 12px; font-weight: 700; color: var(--amber); white-space: nowrap; font-family: var(--font-body); }
+    .detay-arac { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+    .takip-btn { background: transparent; border: none; cursor: pointer; font-size: 20px; color: var(--muted); padding: 2px 4px; line-height: 1; transition: transform .1s, color .15s; }
+    .takip-btn:hover { color: var(--amber); transform: scale(1.15); }
+    .takip-btn.aktif { color: var(--amber); }
+    .paylas-btn {
+      background: transparent; border: 1px solid var(--border); color: var(--muted);
+      padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: 600;
+      cursor: pointer; font-family: var(--font-body); white-space: nowrap;
+    }
+    .paylas-btn:hover { color: var(--white); border-color: rgba(var(--overlay-rgb),.3); }
+
+    .badges { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
+    .etiket { font-size: 11px; padding: 3px 9px; border-radius: 10px; font-weight: 600; background: rgba(var(--overlay-rgb),.06); color: var(--muted); }
+    .etiket.tur { background: rgba(59,130,246,.12); color: #60a5fa; }
+    .etiket.kategori { background: rgba(240,165,0,.1); color: var(--amber); }
+    .etiket.dokuman { background: rgba(34,197,94,.12); color: #4ade80; }
+    .etiket.durum-sonuc { background: rgba(34,197,94,.14); color: #4ade80; }
+    .etiket.durum-acik { background: rgba(240,165,0,.14); color: var(--amber); }
+
+    .bilgi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 16px 20px; }
+    .bilgi-etiket { font-size: 10.5px; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); margin-bottom: 5px; }
+    .bilgi-deger { font-size: 14px; font-weight: 600; color: var(--off-white); line-height: 1.45; word-break: break-word; }
+    .bilgi-deger a { color: var(--off-white); text-decoration: none; }
+    .bilgi-deger a:hover { color: var(--amber); text-decoration: underline; }
+    .bilgi-deger.vurgu { color: var(--amber); font-size: 17px; font-weight: 800; }
+    .bilgi-deger.acil { color: #f87171; }
+
+    .sonuc-satir { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 14px 20px; padding: 14px 0; border-top: 1px solid var(--border); }
+    .sonuc-satir:first-of-type { border-top: none; padding-top: 0; }
+
+    .not-satir { font-size: 12.5px; color: var(--muted); line-height: 1.6; }
+    .not-satir b { color: var(--off-white); }
+    .ekap-link {
+      display: inline-block; margin-top: 10px; padding: 8px 16px; border-radius: 6px;
+      background: transparent; border: 1px solid var(--border); color: var(--muted);
+      font-size: 12.5px; font-weight: 600; text-decoration: none;
+    }
+    .ekap-link:hover { color: var(--amber); border-color: var(--amber); }
+
+    .ilgili-baglar { display: flex; gap: 10px; flex-wrap: wrap; }
+    .ilgili-bag {
+      padding: 8px 14px; border-radius: 6px; background: var(--navy-soft);
+      border: 1px solid var(--border); color: var(--off-white);
+      font-size: 12.5px; font-weight: 600; text-decoration: none;
+    }
+    .ilgili-bag:hover { border-color: var(--amber); color: var(--amber); }
+
+    @media (max-width: 900px) { .sidebar { display: none; } }
+  </style>
+</head>
+<body>
+<div class="app">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <a href="/">
+        <span style="width:6px;height:6px;background:var(--amber);border-radius:50%;display:inline-block;"></span>
+        İhale<span>Global</span>
+      </a>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">Kamu İhaleleri</div>
+      <a href="dashboard" class="nav-item"><span class="icon">◉</span> Anasayfa</a>
+      <a href="ihaleler" class="nav-item"><span class="icon">⊞</span> İhaleler</a>
+      <a href="dogrudan-temin" class="nav-item active"><span class="icon">⚡</span> Doğrudan Temin</a>
+      <div class="nav-section-label" style="padding-left:16px;opacity:.85;">— Analiz —</div>
+      <a href="rekabet-analizi" class="nav-item"><span class="icon">📊</span> Rekabet Analizi</a>
+      <a href="kurum-analiz" class="nav-item"><span class="icon">🏛️</span> İdareler</a>
+      <a href="firma-analiz" class="nav-item"><span class="icon">🏢</span> Firmalar</a>
+      <a href="sektorler" class="nav-item"><span class="icon">🏭</span> Sektörler Dizini</a>
+      <a href="kik-kararlar" class="nav-item"><span class="icon">⚖️</span> KİK Kararlar</a>
+      <div class="nav-section-label">Uluslararası</div>
+      <a href="uluslararasi" class="nav-item"><span class="icon">🌍</span> Uluslararası İhaleler</a>
+      <a href="ticaret-analiz" class="nav-item"><span class="icon">📈</span> Ticaret Analizi</a>
+      <div class="nav-section-label">Özel İhaleler</div>
+      <a href="ozel-ihaleler" class="nav-item"><span class="icon">🤝</span> e-Satınalma</a>
+      <a href="harita" class="nav-item"><span class="icon">🗺️</span> Harita</a>
+      <div class="nav-section-label">Firmam</div>
+      <a href="ihalelerim" class="nav-item"><span class="icon">📑</span> İhalelerim</a>
+      <a href="takipte" class="nav-item"><span class="icon">☆</span> Takibim</a>
+      <a href="bildirimler" class="nav-item"><span class="icon">🔔</span> Bildirimler</a>
+      <a href="uyumluluk" class="nav-item"><span class="icon">✓</span> Uyumluluk</a>
+      <a href="dokumanlar" class="nav-item"><span class="icon">📁</span> Dökümanlar</a>
+      <a href="profil" class="nav-item"><span class="icon">⚙</span> Profil & Filtreler</a>
+      <a href="fiyatlandirma_odeme_bolumu" class="nav-item"><span class="icon">💳</span> Abonelik</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-row" id="sb-user-row">
+        <div class="user-avatar" id="sb-avatar">?</div>
+        <div>
+          <div class="user-name" id="sb-name">Yükleniyor…</div>
+          <div class="user-plan" id="sb-plan">—</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-left">
+        <span style="font-size:14px;font-weight:700;color:var(--white);">⚡ Doğrudan Temin Detayı</span>
+        <span style="font-size:12px;color:var(--muted);" id="topbar-no"></span>
+      </div>
+    </div>
+
+    <div class="page-body">
+      <a class="geri-link" href="dogrudan-temin">← Doğrudan Temin listesine dön</a>
+
+      <div id="yukleniyor" class="loading-wrap">
+        <div class="loading-spinner"></div>
+        <div>Duyuru yükleniyor…</div>
+      </div>
+
+      <div id="bulunamadi" class="empty-wrap" style="display:none;">
+        <div class="empty-icon">🔍</div>
+        <div class="empty-baslik">Duyuru bulunamadı</div>
+        <div class="empty-alt" id="bulunamadi-alt">Bu numaraya ait bir doğrudan temin duyurusu kayıtlarımızda yok.</div>
+        <a class="ilgili-bag" href="dogrudan-temin">Listeye dön</a>
+      </div>
+
+      <div id="icerik" style="display:none;"></div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="js/sidebar-user.js?v=3"></script>
+<script src="js/bildirim-sayaci.js?v=rot1"></script>
+<script src="js/kategoriler.js"></script>
+<script src="js/takip.js?v=2"></script>
+<script>
+(() => {
+  const SB_URL = "https://ihaleglobal.com";
+  const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzg0MzA3MTU4LCJleHAiOjE5NDE5ODcxNTh9.CjNKulvirotDD_y2oO2QKgo0kbqYvL0jUSV1RiDMoso";
+  const sb = window.supabase.createClient(SB_URL, SB_KEY);
+
+  // Misafir maskeleme — dogrudan-temin.html ile AYNI kural:
+  //   dogrudan_temin_ilanlari.idare       → anon'a DB'de kapalı
+  //   dogrudan_temin_sonuclari.kazanan_firma → anon'a DB'de kapalı
+  // Bu iki kolon misafir select'ine EKLENİRSE tüm sorgu 42501 ile düşer (kısmî sonuç değil).
+  let uyeMi = false;
+  const MASKE_ROZET = '<a href="login" style="color:var(--amber);text-decoration:none;" title="Üyelere özel — giriş yapın">🔒 ***</a>';
+
+  // ── Yardımcılar (dogrudan-temin.html'den kopya) ──────────────────────────────
+  // NOT: Bilerek kopyalandı, ortak bir js dosyasına çıkarılmadı — iki sayfalık bir
+  // paylaşım için yeni bir global bağımlılık eklemeye değmedi. dogrudan-temin.html'de
+  // bu fonksiyonlar değişirse BURASI DA güncellenmeli (özellikle DURUM_GRUP).
+  const DURUM_GRUP = {
+    acik:  ['Doğrudan Temin Duyurusu Yayımlanmış', 'Teklifler Değerlendiriliyor'],
+    sonuc: ['Sonuç Duyurusu Yayımlanmış', 'Doğrudan Temin Sonuçlandırıldı', 'Sonuç Bilgileri Gönderildi'],
+  };
+
+  function esc(s) { return (s || '').replace(/[<>&"]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c])); }
+
+  function tarihFormat(s) {
+    if (!s) return '—';
+    return new Date(s).toLocaleDateString('tr-TR', { day:'2-digit', month:'short', year:'numeric' });
+  }
+
+  function gunFarki(iso) {
+    const d = new Date(iso);
+    if (isNaN(d)) return null;
+    const bugun = new Date(); bugun.setHours(0, 0, 0, 0);
+    return Math.round((new Date(d.getFullYear(), d.getMonth(), d.getDate()) - bugun) / 86400000);
+  }
+
+  function durumRozet(durum) {
+    if (!durum) return '';
+    if (DURUM_GRUP.sonuc.includes(durum)) return `<span class="etiket durum-sonuc">✅ Sonuçlandı</span>`;
+    if (DURUM_GRUP.acik.includes(durum))  return `<span class="etiket durum-acik">🟢 Açık</span>`;
+    return `<span class="etiket">${esc(durum)}</span>`;
+  }
+
+  function bedelFormat(n) {
+    if (n == null || isNaN(n)) return '—';
+    return Number(n).toLocaleString('tr-TR', { style:'currency', currency:'TRY', maximumFractionDigits: 0 });
+  }
+
+  // ── Veri ────────────────────────────────────────────────────────────────────
+  const DT_KOLONLAR = 'dt_no,baslik,tur,il,tarih,yayin_tarihi,durum,kategori,dokuman_var,duyuru_var';
+
+  async function ilanGetir(dtNo) {
+    // select('*') ASLA: token kolonları (dt_ihale_token/dt_idare_token) frontend'e
+    // hiç inmemeli, misafirde de 42501 üretirdi.
+    const { data, error } = await sb.from('dogrudan_temin_ilanlari')
+      .select(uyeMi ? DT_KOLONLAR + ',idare' : DT_KOLONLAR)
+      .eq('dt_no', dtNo)
+      .maybeSingle();   // single() olmayan kayıtta 406 atardı; maybeSingle null döner
+    if (error) throw error;
+    return data;
+  }
+
+  async function sonucGetir(dtNo) {
+    // Bir dt_no'da BİRDEN FAZLA sözleşme satırı olabilir (EKAP SozlesmeBilgisiList).
+    const { data, error } = await sb.from('dogrudan_temin_sonuclari')
+      .select(`${uyeMi ? 'kazanan_firma,' : ''}kazanan_bedel,sozlesme_tarihi,en_yuksek_teklif,en_dusuk_teklif,sozlesme_mi`)
+      .eq('dt_no', dtNo)
+      .limit(200);
+    if (error) { console.info('sonuç bilgisi alınamadı:', error.message); return []; }
+    return data || [];
+  }
+
+  // ── Render ──────────────────────────────────────────────────────────────────
+  function tarihBlogu(k) {
+    const p = [];
+    if (k.yayin_tarihi) {
+      // Bkz. dogrudan-temin.html'deki aynı not: E8 = o anki duyurunun yayım tarihi.
+      // Sonuçlanmış kayıtta bu, SONUÇ duyurusunun tarihi (ölçüldü: aktiflerde
+      // yayin>ihale %0, sonuçlananlarda %58) — etiket bunu söylemeli.
+      const sonuclu = DURUM_GRUP.sonuc.includes(k.durum);
+      p.push(`<div><div class="bilgi-etiket">${sonuclu ? 'Sonuç Duyurusu Tarihi' : 'Yayın Tarihi'}</div>
+              <div class="bilgi-deger">${tarihFormat(k.yayin_tarihi)}</div></div>`);
+    }
+    if (k.tarih) {
+      const fark = gunFarki(k.tarih);
+      let etiket = 'İhale Tarihi', deger = tarihFormat(k.tarih), sinif = '';
+      if (fark === 0)      { etiket = 'Son Teklif Tarihi'; deger = 'BUGÜN'; sinif = ' acil'; }
+      else if (fark > 0)   { etiket = 'Son Teklif Tarihi'; deger = `${tarihFormat(k.tarih)} <span style="font-weight:600;font-size:12.5px;color:var(--muted);">(${fark} gün kaldı)</span>`; sinif = fark <= 3 ? ' acil' : ''; }
+      p.push(`<div><div class="bilgi-etiket">${etiket}</div>
+              <div class="bilgi-deger${sinif}">${deger}</div></div>`);
+    }
+    return p.join('');
+  }
+
+  function sonucKarti(satirlar) {
+    if (!satirlar.length) return '';
+    const toplam = satirlar.reduce((a, s) => a + (Number(s.kazanan_bedel) || 0), 0);
+    const cok = satirlar.length > 1;
+    const govde = satirlar.map(s => `
+      <div class="sonuc-satir">
+        <div>
+          <div class="bilgi-etiket">Kazanan Firma</div>
+          <div class="bilgi-deger">${uyeMi ? (esc(s.kazanan_firma) || '—') : MASKE_ROZET}</div>
+        </div>
+        <div>
+          <div class="bilgi-etiket">Sözleşme Bedeli</div>
+          <div class="bilgi-deger vurgu">${bedelFormat(s.kazanan_bedel)}</div>
+        </div>
+        <div>
+          <div class="bilgi-etiket">Sözleşme Tarihi</div>
+          <div class="bilgi-deger">${tarihFormat(s.sozlesme_tarihi)}</div>
+        </div>
+        ${(s.en_dusuk_teklif != null || s.en_yuksek_teklif != null) ? `
+        <div>
+          <div class="bilgi-etiket">Teklif Aralığı</div>
+          <div class="bilgi-deger">${bedelFormat(s.en_dusuk_teklif)} – ${bedelFormat(s.en_yuksek_teklif)}</div>
+        </div>` : ''}
+      </div>`).join('');
+    return `
+      <div class="detay-kart">
+        <div class="kart-baslik">Sonuç Bilgileri${cok ? ` — ${satirlar.length} kalem, toplam ${bedelFormat(toplam)}` : ''}</div>
+        ${govde}
+      </div>`;
+  }
+
+  function ilgiliKarti(k) {
+    const baglar = [];
+    if (uyeMi && k.idare) {
+      baglar.push(`<a class="ilgili-bag" href="dogrudan-temin?idare=${encodeURIComponent(k.idare)}">🏛️ Bu idarenin diğer duyuruları</a>`);
+    }
+    if (k.kategori) {
+      baglar.push(`<a class="ilgili-bag" href="dogrudan-temin?kategori=${encodeURIComponent(k.kategori)}">🏭 Aynı kategori: ${esc(k.kategori)}</a>`);
+    }
+    if (k.il) {
+      baglar.push(`<a class="ilgili-bag" href="dogrudan-temin?il=${encodeURIComponent(k.il)}">📍 ${esc(k.il)} duyuruları</a>`);
+    }
+    if (!baglar.length) return '';
+    return `<div class="detay-kart">
+      <div class="kart-baslik">İlgili Aramalar</div>
+      <div class="ilgili-baglar">${baglar.join('')}</div>
+    </div>`;
+  }
+
+  function ciz(k, sonuclar) {
+    const takipte = window.TakipDT && TakipDT.var(k.dt_no);
+    document.getElementById('topbar-no').textContent = k.dt_no || '';
+    document.title = `${k.baslik || 'Doğrudan Temin'} — İhaleGlobal`;
+
+    document.getElementById('icerik').innerHTML = `
+      <div class="detay-kart">
+        <div class="detay-ust">
+          <div style="min-width:0;">
+            <h1 class="detay-h1">${esc(k.baslik) || '(başlık yok)'}</h1>
+            <div class="badges">
+              ${k.tur ? `<span class="etiket tur">${esc(k.tur)}</span>` : ''}
+              ${k.kategori && k.kategori !== 'Diğer' ? `<span class="etiket kategori">${esc(k.kategori)}</span>` : ''}
+              ${durumRozet(k.durum)}
+              ${k.il ? `<span class="etiket">📍 ${esc(k.il)}</span>` : ''}
+              ${k.dokuman_var ? `<span class="etiket dokuman">📄 Doküman var</span>` : ''}
+            </div>
+          </div>
+          <div class="detay-arac">
+            <button class="takip-btn${takipte ? ' aktif' : ''}" id="takip-btn"
+                    onclick="dtTakibeAl(this)" title="Takibe al">${takipte ? '★' : '☆'}</button>
+            <button class="paylas-btn" onclick="baglantiKopyala(this)">🔗 Bağlantıyı kopyala</button>
+            <span class="detay-no">${esc(k.dt_no)}</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="detay-kart">
+        <div class="kart-baslik">Duyuru Bilgileri</div>
+        <div class="bilgi-grid">
+          <div>
+            <div class="bilgi-etiket">İdare</div>
+            <div class="bilgi-deger">${uyeMi
+              ? (k.idare ? `<a href="dogrudan-temin?idare=${encodeURIComponent(k.idare)}">${esc(k.idare)}</a>` : '—')
+              : MASKE_ROZET}</div>
+          </div>
+          <div><div class="bilgi-etiket">İl</div><div class="bilgi-deger">${esc(k.il) || '—'}</div></div>
+          <div><div class="bilgi-etiket">Tür</div><div class="bilgi-deger">${esc(k.tur) || '—'}</div></div>
+          <div><div class="bilgi-etiket">Kategori</div><div class="bilgi-deger">${esc(k.kategori) || '—'}</div></div>
+          ${tarihBlogu(k)}
+          <div><div class="bilgi-etiket">Durum</div><div class="bilgi-deger">${esc(k.durum) || '—'}</div></div>
+          <div><div class="bilgi-etiket">Duyuru No</div><div class="bilgi-deger">${esc(k.dt_no)}</div></div>
+        </div>
+      </div>
+
+      ${sonucKarti(sonuclar)}
+
+      <div class="detay-kart">
+        <div class="kart-baslik">EKAP Kaydı</div>
+        <div class="not-satir">
+          Bu duyurunun resmî kaydı EKAP'tadır. EKAP doğrudan temin duyuruları için kalıcı bir
+          derin bağlantı vermediğinden, arama sayfasında <b>${esc(k.dt_no)}</b> numarası ile
+          aratmanız gerekiyor.
+          ${!k.dokuman_var ? '<br>Bu duyuruda indirilebilir doküman bulunmuyor.' : ''}
+        </div>
+        <a class="ekap-link" href="https://ekapv2.kik.gov.tr/ekap-dt/search" target="_blank" rel="noopener noreferrer">
+          EKAP doğrudan temin arama →
+        </a>
+      </div>
+
+      ${ilgiliKarti(k)}
+    `;
+    document.getElementById('yukleniyor').style.display = 'none';
+    document.getElementById('icerik').style.display = '';
+    window.__dtNo = k.dt_no;
+  }
+
+  window.dtTakibeAl = function (btn) {
+    const takipte = TakipDT.toggle(window.__dtNo);
+    btn.classList.toggle('aktif', takipte);
+    btn.textContent = takipte ? '★' : '☆';
+  };
+
+  window.baglantiKopyala = function (btn) {
+    const eski = btn.textContent;
+    navigator.clipboard.writeText(window.location.href)
+      .then(() => { btn.textContent = '✓ Kopyalandı'; setTimeout(() => { btn.textContent = eski; }, 1600); })
+      .catch(() => { btn.textContent = '✕ Kopyalanamadı'; setTimeout(() => { btn.textContent = eski; }, 1600); });
+  };
+
+  function hata(baslik, alt) {
+    document.getElementById('yukleniyor').style.display = 'none';
+    document.querySelector('#bulunamadi .empty-baslik').textContent = baslik;
+    document.getElementById('bulunamadi-alt').textContent = alt;
+    document.getElementById('bulunamadi').style.display = '';
+  }
+
+  // ── Başlangıç ───────────────────────────────────────────────────────────────
+  (async () => {
+    const dtNo = new URLSearchParams(window.location.search).get('dt_no');
+    if (!dtNo) { hata('Duyuru seçilmedi', 'Adreste bir duyuru numarası (dt_no) yok.'); return; }
+
+    // uyeMi ilk sorgudan ÖNCE kesinleşmeli: misafir select'i idare/kazanan_firma'sız olmalı.
+    try { const { data } = await sb.auth.getSession(); uyeMi = !!(data && data.session); } catch (_) { uyeMi = false; }
+
+    try {
+      const k = await ilanGetir(dtNo);
+      if (!k) { hata('Duyuru bulunamadı', `"${dtNo}" numaralı bir doğrudan temin duyurusu kayıtlarımızda yok.`); return; }
+      const sonuclar = DURUM_GRUP.sonuc.includes(k.durum) ? await sonucGetir(dtNo) : [];
+      ciz(k, sonuclar);
+    } catch (e) {
+      console.error(e);
+      hata('Duyuru yüklenemedi', (e && e.message) || 'Bilinmeyen bir hata oluştu.');
+    }
+  })();
+})();
+</script>
+<script src="js/main.js"></script>
+</body>
+</html>

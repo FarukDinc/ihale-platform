@@ -756,7 +756,7 @@
     el.innerHTML = sirali.map(d => `
       <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);">
         <div style="min-width:0;">
-          <a href="dogrudan-temin?dt_no=${encodeURIComponent(d.dt_no)}"
+          <a href="dt-detay?dt_no=${encodeURIComponent(d.dt_no)}"
              style="color:var(--white);text-decoration:none;font-size:13px;font-weight:600;display:block;">
             ${kacar(d.baslik) || '(başlıksız)'}
           </a>

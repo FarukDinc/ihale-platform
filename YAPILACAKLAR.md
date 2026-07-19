@@ -1,5 +1,88 @@
 # İhalePlatform — Yapılacaklar Listesi
 
+> ## 🏛️ YARIN (20 TEM) — İDARE HİYERARŞİSİ: HEM İHALELER HEM DOĞRUDAN TEMİN
+> Kullanıcının 19 Tem'deki talebi: *"yarın idareler kısmı yapacağız, doğrudan temin ve
+> ihaleler kısmına onu da ekleyeceğiz."* Yani bu iş TEK sayfalık değil — **iki liste
+> sayfasının ortak filtresi** olarak tasarlanmalı.
+>
+> **Hedef:** idareleri bakanlıktan aşağı doğru sınıflandırıp (bakanlık → bağlı kurum →
+> il müdürlüğü → daire) **özelden genele** filtreleme/sıralama. Referans: ihaleciler.com
+> bu şekilde çekiyor.
+>
+> **Araştırma TAMAM (18 Tem), uygulama BAŞLAMADI.** Kaynak: EKAP DETSİS ağacı —
+> `DetsisAgaci` 87.528 kayıt, eşleştirme anahtarı **`idareKodList=[idareId]`**.
+> Detaylar + 3 tuzak (idareKod ≠ detsisNo · 0-sonuç ≠ filtre çalıştı · ad-join ambigü)
+> için bkz. hafıza notu `ekap-detsis-idare-tur`.
+>
+> ### Uygulama sırası (öneri)
+> 1. DETSİS ağacını yerel tabloya aynala (BFS ile tam ağaç) → `detsis_agaci`
+> 2. `ilanlar.detsis_no` + `hiyerarsi_yolu` kolonları (DT tarafında da aynısı)
+> 3. Her iki sayfaya ortak "İdare Türü / Üst Kurum" filtresi — **tek bileşen, iki sayfa**
+> 4. `idareler.html`'de ağaç görünümü (drill-down)
+>
+> ⚠️ DT tarafında idare filtresi ŞU AN üyelere özel (misafirde maskeli) — hiyerarşi
+> filtresi eklenirken bu ayrım korunmalı, yoksa maskeleme delinir.
+
+> ## ✅ 19 TEMMUZ — DOĞRUDAN TEMİN: 5 DÜZELTME (hepsi yerelde doğrulandı)
+> Kullanıcının haritadan `?il=ANKARA` ile DT'ye gelip gördüğü üç hata + iki istek.
+>
+> ### 1. Haritadan gelince yanlış sekme — `dogrudan-temin.html`
+> `?il=` bloğu sekmeyi `'tumu'`ya çekiyordu (harita TOPLAM sayarken doğruydu). Harita
+> 18 Tem'de AKTİF sayıma geçince popup "6K" derken liste 115K gösteriyordu → `'guncel'`.
+>
+> ### 2. Sekme sayaçları global sayıyordu — asıl şikâyet
+> Ankara seçiliyken "Güncel 96K" yazıyordu (ülke geneli). Artık **aktif filtrelerin
+> kapsamında** sayılıyor: Ankara → 6K/109K/115K, liste 6.291. Uygulama:
+> - `filtreleriUygula(query, {sekmeUygula})` — sekme kapsamı opsiyonel oldu
+> - `sekmeSayaclariYukle()` — **imza cache'i** (sekme değişimi sorgu ATMAZ: ölçüldü,
+>   sekme=1 istek / filtre=4 istek) + yarış koruması + `sayimYapilabilirMi()` kapısı
+> - `istatistikYukle`'den 2 gereksiz sorgu kalktı (açılışta 6→4 head-count)
+> - ⚠️ Panelden **tek ham durum** seçilince sekme kapsamı hiç uygulanmıyor (mevcut
+>   bilinçli davranış) → üç sekme de AYNI listeyi gösterir, bu yüzden üç sayaç da
+>   aynı rakamı yazıyor. Farklı yazmak yalan olurdu.
+> - Topbar sayacına **"(tüm veri)"** eklendi — o global kalıyor, karışmasın.
+>
+> ### 3. DT kartları tıklanamıyordu → **YENİ `dt-detay.html`**
+> Kart `<a>` ile SARILMADI (içinde `<a class="dt-idare">` + `<button>` var → iç içe
+> anchor); "stretched link" deseni: mutlak konumlu `.dt-kart-link` + etkileşimli
+> öğeler `z-index:2`. Doğrulandı: kart gövdesi linke, yıldız yıldıza gidiyor.
+> Sayfa: başlık/rozetler/takip/paylaş · duyuru bilgileri · **sonuç kartı**
+> (`dogrudan_temin_sonuclari`, çok kalemliyse toplam) · EKAP notu · ilgili aramalar.
+> - Maskeleme korundu: `idare` ve `kazanan_firma` yalnız üyeye; misafirde `🔒 ***`
+>   (gizli pencerede doğrulandı, konsolda 42501 YOK). `select('*')` ve token kolonları
+>   ASLA seçilmiyor.
+> - `<meta robots="noindex,follow">` — 1,49M kayıt × URL crawl patlamasını önler.
+> - `dashboard.html` (2) + `takipte.html` (1) derin linkleri yeni sayfaya çevrildi.
+>
+> ### 4. DT "Detaylı Ara" paneli ihaleler.html görünümüne getirildi
+> Sadece GÖRSEL dil taşındı, davranış korundu (DT anında uyguluyor, ihaleler butonla —
+> DT'ninki daha iyi). Ölçülerle doğrulandı: panel 16px 20px/radius 10px, etiket
+> 11px/600/.08em, input radius 6px, grid→flex, çipler 20px radius. `Filtrele` butonu
+> ve idare kutusuna Enter desteği eklendi. **Hiçbir id değişmedi** (6 URL bloğu +
+> 6 fonksiyon bu id'leri okuyor).
+>
+> ### 5. ihaleler.html sıralama — istenen zaten VARDI, etiket yanlıştı
+> "En Yeni" seçeneği zaten `ilan_tarihi DESC` yapıyordu → **"İlan Tarihi ↓ (Yeni → Eski)"**
+> olarak açık yazıldı. "Son Teklif ↑" → "(Yakın → Uzak)".
+> 🔵 İSTENİRSE Aşama 2: "Sisteme Yeni Düşen" (`olusturulma DESC`) — **ÖN KOŞUL**
+> `CREATE INDEX CONCURRENTLY idx_ilanlar_olusturulma`; indeks YOK, onsuz timeout eder.
+>
+> ### 🔍 YAN BULGU — `yayin_tarihi` (E8) etiketi yanıltıcıydı, düzeltildi
+> Canlı veriyle ölçüldü (1000 + 500 kayıt örneklem): E8, kaydın **o anki** duyurusunun
+> yayım tarihi. Aktif kayıtlarda `yayin > ihale` oranı **%0** (doğru), sonuçlananlarda
+> **%58** — çünkü orada E8 = SONUÇ duyurusunun tarihi. Hepsine "Yayın" demek yanlıştı;
+> artık sonuçlananlarda "Sonuç duyurusu" / "Sonuç Duyurusu Tarihi" yazıyor.
+> **Veri hatalı DEĞİL, etiket hatalıydı** — E8 eşleşmesi doğru.
+>
+> ### 🔴 AÇIK KALAN (bu oturumdan)
+> - [ ] `dogrudan_temin_ilanlari` üzerinde `GRANT SELECT ... TO authenticated` hâlâ
+>       TABLO GENELİ → `dt_ihale_token`/`dt_idare_token` her üyeye açık.
+>       `migration_dt_kazanan.sql:24-26` yorumu bunun aksini varsayıyor (YANLIŞ).
+>       Gereken: `REVOKE SELECT ... FROM authenticated` + kolon-GRANT (prod, onay ister).
+> - [ ] DT tam taraması hâlâ eksik (`yayin_tarihi` kayıtların ~%1'inde dolu) — proxy
+>       402'den düştü; başka oturum `7f25615` ile direkt-mod geri çekilmesi ekledi.
+> - [ ] `lot_sayisi` gece UPDATE'i `run_scraper.sh`'e eklenmeli (18 Tem'den devir).
+
 > ## 🌙 18 TEMMUZ AKŞAMI — GECE TARAMASI BEKLENİYOR (sabah kaldığımız yer burası)
 > Proxy havuzuna **4 scraper'ın 3'ü** bağlandı ve push edildi: `kik_backfill`,
 > `ekap_sonuc_backfill` (async), `ekap_sonuc_scraper` (async). Hepsi gerçek EKAP/KİK'e
