@@ -3,16 +3,20 @@
 -- =============================================================================
 --
 -- migration_idare_hiyerarsi.sql'den AYRI bir dosya, bilinçli olarak:
--- bu MV `idare_tur` tablosuna ve `idare_normalize(text)` fonksiyonuna bağımlı
+-- bu MV artık ilanlar.detsis_no kolonuna bağımlı (dolaylı olarak idare_tur'a)
 -- (ikisi de migration_idare_tur.sql'den gelir). İlk sürümde hepsi tek dosyada
 -- ve tek transaction'daydı; MV'deki bir hata AĞAÇ TABLOLARINI DA geri aldı.
 -- Ayırınca ağaç + kapanış tablosu her hâlükârda kuruluyor, sayaçlar hazır
 -- olduğunda ekleniyor.
 --
--- ÖNKOŞUL:
---   1) migration_idare_tur.sql       uygulanmış olmalı
---   2) migration_idare_hiyerarsi.sql uygulanmış olmalı
---   3) python backend/idare_hiyerarsi_yukle.py --kapanis  çalışmış olmalı
+-- ÖNKOŞUL (SIRAYLA):
+--   1) migration_idare_tur.sql        — idare_tur + idare_normalize
+--   2) migration_idare_hiyerarsi.sql  — ağaç + kapanış fonksiyonu
+--   3) idare_hiyerarsi_yukle.py       — 87.528 düğüm
+--   4) SELECT idare_kapanis_uret();   — kapanış tablosu (312.259 satır)
+--   5) migration_idare_agac_rpc.sql   — detsis_no KOLONU + ilan_detsis_esle()
+--   6) SELECT * FROM ilan_detsis_esle();  — kolonu doldur (UZUN SÜRER, psql'den)
+--   7) BU DOSYA
 --
 -- Uygulama:
 --   docker exec -i supabase-db psql -U postgres -d postgres < backend/migration_idare_hiyerarsi_sayim.sql
@@ -25,35 +29,38 @@
 -- ANON'A KAPALI: idare adı bu projede kimlik verisi (bkz. migration_anon_maske.sql).
 -- =============================================================================
 
--- PERFORMANS NOTU: dugum_ihale/dugum_dt CTE'leri idare_normalize()'i SATIR BAŞINA
--- çağırıyor (356K ilan + 1,49M DT). İfade indeksi yoksa tam tarama olur ama tek
--- seferlik; asıl darboğaz ilişkili alt sorgulardı, o kaldırıldı. MV gece bir kez
--- REFRESH ediliyor, çalışma anında bu maliyet kullanıcıya yansımıyor.
+-- !! SIRA ÖNEMLİ — ÖNCE migration_idare_agac_rpc.sql, SONRA BU DOSYA !!
+-- Bu MV artık ilanlar.detsis_no / dogrudan_temin_ilanlari.detsis_no kolonlarını
+-- okuyor; o kolonlar diğer migration'da ekleniyor ve ilan_detsis_esle() ile
+-- dolduruluyor. Kolon boşsa MV kurulur ama tüm sayaçlar 0 çıkar.
+--
+-- NEDEN BÖYLE — İKİ KEZ ASILDI:
+--   1. deneme: toplam_* alanları ilişkili alt sorguydu → 87.528 düğüm × 312.259
+--      satırlık kapanış tablosu. Karesel iş, asıldı.
+--   2. deneme: alt sorgular düzeltildi ama CTE'ler hâlâ
+--      `JOIN idare_tur ON idare_norm = idare_normalize(i.idare)` yapıyordu —
+--      yani 1,85 MİLYON satırda (356K ilan + 1,49M DT) satır başına fonksiyon
+--      çağrısı. Yine asıldı.
+--   Çözüm: normalize işini MV'den tamamen çıkarmak. ilan_detsis_esle() bunu
+--   BİR KEZ yapıp detsis_no kolonuna yazıyor (psql'de, zaman aşımı sınırı yok);
+--   MV yalnız indeksli kolonda gruplu sayım yapıyor.
 
 BEGIN;
 
 DROP MATERIALIZED VIEW IF EXISTS public.idare_hiyerarsi_sayim_mv;
 CREATE MATERIALIZED VIEW public.idare_hiyerarsi_sayim_mv AS
 WITH dugum_ihale AS (
-  SELECT t.detsis_no, count(*)::bigint AS adet
+  SELECT i.detsis_no, count(*)::bigint AS adet
     FROM public.ilanlar i
-    JOIN public.idare_tur t ON t.idare_norm = public.idare_normalize(i.idare)
-   WHERE t.detsis_no IS NOT NULL
-   GROUP BY t.detsis_no
+   WHERE i.detsis_no IS NOT NULL
+   GROUP BY i.detsis_no
 ),
 dugum_dt AS (
-  SELECT t.detsis_no, count(*)::bigint AS adet
+  SELECT d.detsis_no, count(*)::bigint AS adet
     FROM public.dogrudan_temin_ilanlari d
-    JOIN public.idare_tur t ON t.idare_norm = public.idare_normalize(d.idare)
-   WHERE t.detsis_no IS NOT NULL
-   GROUP BY t.detsis_no
+   WHERE d.detsis_no IS NOT NULL
+   GROUP BY d.detsis_no
 ),
--- YUVARLAMA — TEK GEÇİŞ.
--- İlk sürümde bu, satır başına İLİŞKİLİ ALT SORGU olarak yazılmıştı:
---   COALESCE((SELECT sum(...) FROM idare_ata_torun WHERE ata_no = h.detsis_no), 0)
--- Yani 87.528 düğümün HER BİRİ için 312.259 satırlık kapanış tablosuna ayrı bir
--- sorgu. Canlıda MV yaratma komutu asıldı (kullanıcı Ctrl+C ile durdurdu).
--- Doğrusu: kapanış tablosunu bir kez tarayıp ata_no'ya göre grupla, sonra JOIN et.
 yuvarlanan AS (
   SELECT at.ata_no,
          COALESCE(sum(di.adet), 0)::bigint AS toplam_ihale,
