@@ -66,6 +66,25 @@ $VENV/python ai_kategori_backfill.py --limit 400 --rpm 15 >> /opt/ihale-platform
 # p_gun=1 → yalnız bugünkü yeni kayıtlar (retroaktif spam yok); dedup tekrar üretmez.
 echo "[$(date +'%Y-%m-%d %H:%M:%S')] === Sektor bildirim ===" >> /opt/ihale-platform/logs/scraper.log
 docker exec -i supabase-db psql -U postgres -d postgres -c "SELECT public.yeni_ilan_bildirim_uret(1) AS ilan, public.yeni_rfq_bildirim_uret(1) AS rfq;" >> /opt/ihale-platform/logs/scraper.log 2>&1
+# ── TÜRETİLMİŞ KOLON TAZELEME ────────────────────────────────────────────────
+# İkisi de migration'da BİR KEZ dolduruldu ama gece işine bağlanmamıştı; yani her
+# gece taranan yeni kayıtlar bu kolonlarda NULL/bayat kalıyordu — kapsam artmıyor,
+# AZALIYORDU. MV tazelemelerinden ÖNCE koşmalılar: lot_sayisi tenzilat
+# ortalamalarını, idare_tur ise idare özetini besliyor.
+#
+# 1) idare_tur — ilanlar + dogrudan_temin_ilanlari'na idare türünü (belediye/
+#    üniversite/bakanlık…) denormalize eder. 19 Tem ölçümü: DT %23, ihaleler %12,5
+#    kapsam. "İdare Türü" filtresi (ihaleler.html + dogrudan-temin.html) buna bağlı;
+#    tazelenmezse yeni ilanlar filtreye HİÇ yakalanmaz.
+echo "[$(date +'%Y-%m-%d %H:%M:%S')] === Idare turu tazeleme ===" >> /opt/ihale-platform/logs/scraper.log
+docker exec -i supabase-db psql -U postgres -d postgres -c "SELECT public.idare_tur_tazele();" >> /opt/ihale-platform/logs/scraper.log 2>&1
+# 2) lot_sayisi — her sonuç satırına ihalesinin kısım sayısını yazar. Tenzilat
+#    yüzeyleri "lot_sayisi = 1 değilse gösterme" kuralıyla çalışıyor (bkz.
+#    migration_sonuc_lot_sayisi.sql); bayatlarsa yeni çok-kısımlı ihaleler yine
+#    sahte %95 tenzilat üretir — 18 Tem'de kapatılan hatanın geri gelmesi demek.
+echo "[$(date +'%Y-%m-%d %H:%M:%S')] === Lot sayisi tazeleme ===" >> /opt/ihale-platform/logs/scraper.log
+docker exec -i supabase-db psql -U postgres -d postgres -c "UPDATE public.ihale_sonuclari s SET lot_sayisi = c.n FROM (SELECT ilan_id, count(*)::int n FROM public.ihale_sonuclari GROUP BY ilan_id) c WHERE c.ilan_id = s.ilan_id AND s.lot_sayisi IS DISTINCT FROM c.n;" >> /opt/ihale-platform/logs/scraper.log 2>&1
+
 # İdareler Dizini özeti — gece verisi değiştikten sonra MV tazele (idareler.html
 # idare_dizin_json() ile bunu okur; CONCURRENTLY = okumalar bloklanmaz).
 echo "[$(date +'%Y-%m-%d %H:%M:%S')] === Idare ozet MV ===" >> /opt/ihale-platform/logs/scraper.log
