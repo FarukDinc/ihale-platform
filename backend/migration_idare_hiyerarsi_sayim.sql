@@ -91,13 +91,6 @@ CREATE UNIQUE INDEX idx_idare_hiy_sayim_pk  ON public.idare_hiyerarsi_sayim_mv (
 CREATE INDEX        idx_idare_hiy_sayim_ust ON public.idare_hiyerarsi_sayim_mv (ust_detsis_no);
 CREATE INDEX        idx_idare_hiy_sayim_top ON public.idare_hiyerarsi_sayim_mv (toplam_ihale DESC);
 
-REVOKE ALL  ON public.idare_hiyerarsi_sayim_mv FROM anon;
-GRANT SELECT ON public.idare_hiyerarsi_sayim_mv TO authenticated, service_role;
-
-CREATE UNIQUE INDEX idx_idare_hiy_sayim_pk  ON public.idare_hiyerarsi_sayim_mv (detsis_no);
-CREATE INDEX        idx_idare_hiy_sayim_ust ON public.idare_hiyerarsi_sayim_mv (ust_detsis_no);
-CREATE INDEX        idx_idare_hiy_sayim_top ON public.idare_hiyerarsi_sayim_mv (toplam_ihale DESC);
-
 REVOKE ALL   ON public.idare_hiyerarsi_sayim_mv FROM anon;
 GRANT SELECT ON public.idare_hiyerarsi_sayim_mv TO authenticated, service_role;
 
