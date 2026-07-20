@@ -70,6 +70,13 @@ PROXY_KULLANICI = os.environ.get("PROXY_KULLANICI", "").strip()
 PROXY_SIFRE     = os.environ.get("PROXY_SIFRE", "").strip()
 _LISTE_HAM      = os.environ.get("PROXY_LIST", "")
 
+# Bir süreçte kaç uç kullanılsın. 20 Tem ölçümü: iki scraper AYNI ANDA koşunca
+# 2 x 100 = 240 açık soket oldu ve istekler 'read timeout' vermeye başladı;
+# tek scraper koşarken aynı proxy'ler 1,2 sn'de yanıt veriyordu. Webshare
+# paylaşımlı planın eşzamanlı bağlantı bütçesi aşılıyor.
+# Havuz yine 100 IP arasında DÖNER (rotasyon bozulmaz) ama aynı anda en fazla
+# bu kadar istemci/soket açık tutar.
+AZAMI_UC        = int(os.environ.get("PROXY_AZAMI_UC", "40"))
 IP_ARALIK_SN    = float(os.environ.get("PROXY_IP_ARALIK_SN", "3.0"))
 KURESEL_RPM     = int(os.environ.get("PROXY_KURESEL_RPM", "600"))
 
@@ -213,6 +220,9 @@ class ProxyHavuzu:
 
         if yapilandirilmis:
             random.shuffle(liste)          # her koşuda farklı sırayla başla
+            # AZAMI_UC ile kırp: karışık sıradan alındığı için her koşu farklı bir
+            # alt küme kullanır, yani 100 IP zamanla yine dönüşüme girer.
+            liste = liste[:AZAMI_UC] if AZAMI_UC > 0 else liste
             self.uclar = [
                 _Uc(etiket=hp, url=f"http://{PROXY_KULLANICI}:{PROXY_SIFRE}@{hp}")
                 for hp in liste if ":" in hp
