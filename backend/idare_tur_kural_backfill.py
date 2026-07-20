@@ -196,10 +196,29 @@ def main():
         kayitlar, dagilim, cozulemeyen = [], Counter(), []
         atlanan_korumali = 0
         satir_dagilim = Counter()
+        # ── Normalize ÇAKIŞMASI (ölçüldü: PostgreSQL 21000 ile patladı) ────────
+        # Farklı ham adlar aynı idare_norm'a düşebilir: "TİC.A.Ş." ↔ "TİC. A.Ş.",
+        # satır kırılması artıkları ("HİZMETL ERİ" ↔ "HİZMETLERİ"), çift boşluk...
+        # Aynı POST gövdesinde yinelenen çakışma anahtarı → 21000 "ON CONFLICT DO
+        # UPDATE command cannot affect row a second time". Norm bazında TEKİLLEŞTİR:
+        # temsilci = en çok satır tutan ham ad, adetler toplanır.
+        norm_temsilci = {}
         for ad, adet in toplam_ad.items():
             norm = fold(ad)
             if not norm:
                 continue
+            onceki = norm_temsilci.get(norm)
+            if onceki is None:
+                norm_temsilci[norm] = (adet, ad)
+            else:
+                norm_temsilci[norm] = (onceki[0] + adet,
+                                       onceki[1] if onceki[0] >= adet else ad)
+        cakisma = len(toplam_ad) - len(norm_temsilci)
+        if cakisma:
+            print(f"  {cakisma:,} ham ad normalize çakışmasıyla birleşti "
+                  f"→ {len(norm_temsilci):,} tekil anahtar")
+
+        for norm, (adet, ad) in norm_temsilci.items():
             var = mevcut.get(norm)
             if var in KORUNAN_KAYNAK:
                 atlanan_korumali += 1
@@ -220,15 +239,15 @@ def main():
             kayitlar.append({"idare_norm": norm, "idare_ad": ad, "tur": tur,
                              "kaynak": var or "kural", "guven": guven})
         sure = time.time() - t0
-        print(f"  {len(toplam_ad):,} ad {sure:.1f}sn'de sınıflandı "
-              f"({len(toplam_ad)/max(sure,0.01):,.0f} ad/sn)")
+        print(f"  {len(norm_temsilci):,} tekil ad {sure:.1f}sn'de sınıflandı "
+              f"({len(norm_temsilci)/max(sure,0.01):,.0f} ad/sn)")
         if atlanan_korumali:
             print(f"  {atlanan_korumali} ad ATLANDI (kaynak='elle', insan düzeltmesi korunur)")
 
         print("\n── dağılım (ad sayısı / etkilenen satır) ──")
         for tur, n in dagilim.most_common():
             print(f"  {TURLER.get(tur, tur):<28} {n:>7,} ad   {satir_dagilim[tur]:>9,} satır")
-        coz_ad = len(toplam_ad) - dagilim["bilinmiyor"] - atlanan_korumali
+        coz_ad = len(kayitlar)
         coz_satir = sum(satir_dagilim.values()) - satir_dagilim["bilinmiyor"]
         print(f"\n  ÇÖZÜLEN : {coz_ad:,} ad · {coz_satir:,} satır")
         print(f"  KALAN   : {dagilim['bilinmiyor']:,} ad · {satir_dagilim['bilinmiyor']:,} satır")
