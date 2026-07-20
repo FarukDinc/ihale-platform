@@ -437,6 +437,7 @@
             <div class="counter-item">
               <div class="counter-number" id="cnt-budget">—</div>
               <div class="counter-label">Milyar TL Bütçe</div>
+              <div class="counter-change" id="cnt-budget-not" style="opacity:.55;"></div>
             </div>
             <div class="counter-item">
               <div class="counter-number" id="cnt-win">—</div>
@@ -835,11 +836,16 @@
       // flag'i süresi geçince güncellenmediğinden ~15K'da takılı kalıyor (11K'sı süresi geçmiş) — bu
       // ihaleler.html "Güncel" sekmesiyle (aynı filtre) tutarlı, gerçek açık-ihale sayısını verir.
       const acikFiltre = simdi.toISOString();
+      // ⚠️ Bütçe SUNUCUDA toplanır. Eskiden satırlar çekilip tarayıcıda toplanıyordu;
+      // .limit() olmadığı için PostgREST db-max-rows=1000 SESSİZCE kesiyordu →
+      // 4.452 kaydın yalnız 1.000'i toplanıp gerçeğin ~dörtte biri gösteriliyordu
+      // (ölçüldü 20 Tem: 25,0 milyar TL). Sayaçlar count:exact+head olduğu için
+      // kesilmiyordu, onlar olduğu gibi kaldı.
       const [aktif, bugun, butce] = await Promise.all([
         sb.from('ilanlar').select('id', { count: 'exact', head: true }).gte('son_teklif_tarihi', acikFiltre),
         sb.from('ilanlar').select('id', { count: 'exact', head: true })
           .gte('ilan_tarihi', bugunBaslangic.toISOString()),
-        sb.from('ilanlar').select('yaklasik_maliyet_min').gte('son_teklif_tarihi', acikFiltre).not('yaklasik_maliyet_min', 'is', null),
+        sb.rpc('acik_ihale_butce'),
       ]);
 
       const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
@@ -847,10 +853,17 @@
       set('cnt-active', (aktif.count ?? 0).toLocaleString('tr'));
       set('cnt-today',  (bugun.count  ?? 0).toLocaleString('tr'));
 
-      if (butce.data && butce.data.length > 0) {
-        const toplamTL = butce.data.reduce((s, r) => s + (r.yaklasik_maliyet_min || 0), 0);
+      const b = butce.data;
+      if (b && b.toplam_butce > 0) {
+        const toplamTL = Number(b.toplam_butce) || 0;
         const milyar = toplamTL / 1_000_000_000;
         set('cnt-budget', milyar >= 1 ? milyar.toFixed(1) : (toplamTL / 1_000_000).toFixed(0) + 'M TL');
+        // DÜRÜSTLÜK: toplam TÜM açık ihaleleri değil, maliyeti BİLİNEN kayıtları kapsıyor.
+        // Kapsamı yazmazsak kullanıcı bunu "açık ihalelerin toplam bütçesi" sanır.
+        const not = document.getElementById('cnt-budget-not');
+        if (not && b.acik_ihale) {
+          not.textContent = `${Number(b.butce_kayit).toLocaleString('tr')} / ${Number(b.acik_ihale).toLocaleString('tr')} ihale`;
+        }
       } else {
         set('cnt-budget', '—');
       }

@@ -589,6 +589,14 @@
             <option value="diger_kamu">🏢 Diğer Kamu</option>
           </select>
         </div>
+        <!-- Geçmiş sekmesinde bedel/OKAS kapsamı dar (backfill kayıtlarında bu alanlar boş) -->
+        <div id="kapsam-uyari" style="display:none;flex-basis:100%;font-size:11px;line-height:1.5;
+             color:var(--muted);background:rgba(251,191,36,.07);border:1px solid rgba(251,191,36,.25);
+             border-radius:8px;padding:8px 11px;margin-bottom:2px;">
+          ⓘ Geçmiş ihalelerin çoğunda <b>yaklaşık maliyet</b> ve <b>OKAS</b> bilgisi sistemde yok
+          (sonuç kayıtlarından türetildiler). Bu iki filtre yalnızca verisi çekilmiş kayıtlarda
+          eşleşir — sonuç boş gelirse "böyle ihale yok" anlamına gelmez.
+        </div>
         <div class="filter-group">
           <label>Yak. Maliyet Min (₺)</label>
           <input type="number" class="filter-input" id="f-min-bedel" placeholder="0" style="width:120px;" />
@@ -886,8 +894,32 @@
     document.querySelectorAll('.tab-btn').forEach(b =>
       b.classList.toggle('active', b.dataset.sekme === sekme));
     document.getElementById('gelismis-panel').classList.toggle('acik', sekme === 'detayli');
+    kapsamiOlmayanFiltreler(sekme);
     sonucOzetGuncelle();
     ilanlariYukle(1);
+  }
+
+  // ── Geçmiş sekmesinde veri kapsamı olmayan filtreler ────────────────────────
+  // Geçmiş kayıtların (sonuç backfill'inden gelen 335K + gelecek 1,6M) bu alanları
+  // BOŞ. Filtreyi açık bırakmak "0 sonuç" gösterir ve kullanıcı bunu "böyle ihale
+  // yok" diye okur — oysa gerçek "biz o veriyi çekmedik". Sessizce yanlış çalışan
+  // bir filtre, olmayan filtreden kötüdür.
+  //
+  // esik_katsayi AYRICA anlamsız: sınır değer katsayısı teklif FİYATLAMA girdisidir,
+  // ihale sonuçlandığında sınır değer de kimin altında kaldığı da bellidir.
+  //
+  // Bedel ve OKAS gizlenmiyor, UYARILIYOR: canlı kazımadan gelen geçmiş kayıtlarda
+  // bu alanlar dolu, yani filtre tümüyle ölü değil — yalnız kapsamı dar.
+  function kapsamiOlmayanFiltreler(sekme) {
+    const gecmis = (sekme === 'gecmis');
+    const esik = document.getElementById('f-esik-katsayi');
+    if (esik) {
+      const grup = esik.closest('.filter-group');
+      if (grup) grup.style.display = gecmis ? 'none' : '';
+      if (gecmis && esik.value) { esik.value = ''; }   // gizlerken filtreyi de bırak
+    }
+    const uyari = document.getElementById('kapsam-uyari');
+    if (uyari) uyari.style.display = gecmis ? '' : 'none';
   }
 
   // Sonuç sekmesi özet KPI'ları (eski Sonuçlananlar sayfasından taşındı) — sonuc_ozet MV, tek sefer yüklenir.
