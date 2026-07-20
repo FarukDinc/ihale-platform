@@ -27,6 +27,7 @@ echo "[$(date +'%Y-%m-%d %H:%M:%S')] === Yuklenici tazeleme ===" >> /opt/ihale-p
 $VENV/python yuklenici_yenile_calistir.py >> /opt/ihale-platform/logs/scraper.log 2>&1
 $VENV/python rakip_bildirim.py >> /opt/ihale-platform/logs/scraper.log 2>&1
 $VENV/python ilan_embed_uret.py --max 300 >> /opt/ihale-platform/logs/scraper.log 2>&1
+echo "[$(date +'%Y-%m-%d %H:%M:%S')] === Dogrudan Temin listesi ===" >> /opt/ihale-platform/logs/scraper.log
 $VENV/python ekap_dogrudan_temin_scraper.py --max-pages 20 >> /opt/ihale-platform/logs/scraper.log 2>&1
 # DT kazanan/bedel backfill — 18 Tem bulgusu: dtDetayGetir CAPTCHA'sız açık API, Gemini/token
 # maliyeti YOK. --limit 2000/--rpm 300: günlük yeni "sonuç" durumuna geçenleri rahat karşılar.
@@ -119,6 +120,19 @@ docker exec -i supabase-db psql -U postgres -d postgres \
 #   idare_tur    : EKAP/DETSİS eşlemesinden (idare_tur tablosu) ilanlar + DT'ye taşınır.
 echo "[$(date +'%Y-%m-%d %H:%M:%S')] === Turetilmis alanlar (etkin_tarih + idare_tur) ===" >> /opt/ihale-platform/logs/scraper.log
 docker exec -i supabase-db psql -U postgres -d postgres   -c "SELECT public.etkin_tarih_tazele();"   -c "SELECT public.idare_tur_tazele();" >> /opt/ihale-platform/logs/scraper.log 2>&1
+
+# ── İdare hiyerarşisi: eşleme → kapanış → sayaçlar ────────────────────────────────
+# SIRA ZORUNLU ve bu üçü de 20 Tem'e kadar cron'da HİÇ YOKTU — yani her gece eklenen
+# ilanların detsis_no'su NULL kalıyor, ağaç sayaçları bayatlıyordu.
+#   1) ilan_detsis_esle     : yeni ilan/DT satırlarına detsis_no yazar (idare_tur üzerinden,
+#                             bu yüzden idare_tur_tazele'den SONRA gelmeli)
+#   2) idare_kapanis_uret   : ağaç değiştiyse ata-torun tablosunu yeniden üretir (~312K satır)
+#   3) REFRESH ...sayim_mv  : kendi/toplam sayaçları; (1) ve (2) bitmeden çalıştırılırsa
+#                             bir önceki günün rakamlarını gösterir
+# CONCURRENTLY: benzersiz indeks var (idx_idare_hiy_sayim_pk), gece okumaları kilitlenmesin.
+echo "[$(date +'%Y-%m-%d %H:%M:%S')] === Idare hiyerarsisi ===" >> /opt/ihale-platform/logs/scraper.log
+docker exec -i supabase-db psql -U postgres -d postgres   -c "SELECT * FROM public.ilan_detsis_esle();"   -c "SELECT public.idare_kapanis_uret() AS kapanis_satiri;" >> /opt/ihale-platform/logs/scraper.log 2>&1
+docker exec -i supabase-db psql -U postgres -d postgres   -c "REFRESH MATERIALIZED VIEW CONCURRENTLY public.idare_hiyerarsi_sayim_mv;" >> /opt/ihale-platform/logs/scraper.log 2>&1
 
 # ── İdare türü boşluk alarmı ───────────────────────────────────────────────────────
 # İhalede görünüp idare_tur eşlemesinde KARŞILIĞI OLMAYAN idareler = yeni açılan/ad

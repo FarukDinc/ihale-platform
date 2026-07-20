@@ -42,7 +42,8 @@ from dotenv import load_dotenv
 
 sys.path.insert(0, os.path.dirname(__file__))
 from ekap_scraper import post, html_temizle                      # imzalı POST + HTML→metin
-from ekap_sonuc_backfill import ssl_ctx, sb_headers, rastgele_proxy_url
+from ekap_sonuc_backfill import ssl_ctx, sb_headers  # rastgele_proxy_url ARTIK KULLANILMIYOR
+from proxy_havuz import async_havuz_al, ekap_ssl_baglami
 
 load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), ".env"))
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "").rstrip("/")
@@ -101,10 +102,10 @@ def metni_yaz(ilan_id: str, metin: str) -> bool:
         return True
 
 
-async def bir_ihale(client, sem, ikn: str, ic_id, ilan_id: str, dry_run: bool) -> str:
+async def bir_ihale(havuz, sem, ikn: str, ic_id, ilan_id: str, dry_run: bool) -> str:
     """Tek ihale: detay çek → ilan HTML'ini metne çevir → yaz. Döner: 'yazildi'|'bos'|'hata'."""
     async with sem:
-        veri = await post(client, DETAY_ENDPOINT, {"ihaleId": ic_id})
+        veri = await post(havuz, DETAY_ENDPOINT, {"ihaleId": ic_id})
         await asyncio.sleep(0.35)          # EKAP'a nazik ol (eşzamanlılıkla birlikte etkin hız düşük)
     if not veri:
         return "hata"
@@ -121,18 +122,18 @@ async def bir_ihale(client, sem, ikn: str, ic_id, ilan_id: str, dry_run: bool) -
 
 async def calis(max_pages: int, dry_run: bool, start_skip: int | None, eszamanli: int):
     skip = start_skip if start_skip is not None else checkpoint_oku()
-    proxy = rastgele_proxy_url()
-    if proxy:
-        print(f"→ Proxy: {proxy.split('@')[-1]}")
+    # ESKİ: rastgele_proxy_url() tur başına TEK IP seçiyordu — 100 IP'nin 99'u boşta.
+    # 20 Tem: dört scraper havuza bağlanırken bu dosya listede yoktu, eski yöntemde kalmıştı.
+    havuz = async_havuz_al(ssl_baglami=ekap_ssl_baglami())
     print(f"→ EKAP sonuçlanmış liste taranıyor (skip={skip}, max_pages={max_pages}, eşzamanlı={eszamanli})\n")
 
     sem = asyncio.Semaphore(eszamanli)
     tarandi = hedef = yazildi = bos = hata = 0
     ardisik_hata = 0
 
-    async with httpx.AsyncClient(verify=ssl_ctx(), http2=False, timeout=30.0, proxy=proxy) as client:
+    if True:
         for _ in range(max_pages):
-            veri = await post(client, LISTE_ENDPOINT, {
+            veri = await post(havuz, LISTE_ENDPOINT, {
                 "searchText": "", "paginationSkip": skip, "paginationTake": SAYFA_BOYUTU,
                 "ihaleDurumIdList": [5], "searchType": "GirdigimGibi",
             })
@@ -154,7 +155,7 @@ async def calis(max_pages: int, dry_run: bool, start_skip: int | None, eszamanli
 
             if hedefler:
                 sonuclar = await asyncio.gather(*[
-                    bir_ihale(client, sem, str(it.get("ikn")), it.get("id"),
+                    bir_ihale(havuz, sem, str(it.get("ikn")), it.get("id"),
                               eksik[str(it.get("ikn"))], dry_run)
                     for it in hedefler
                 ])

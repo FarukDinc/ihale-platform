@@ -355,10 +355,29 @@ def crypto_headers():
 
 
 # ── Tek HTTP POST ─────────────────────────────────────────
-async def post(client: httpx.AsyncClient, endpoint: str, data: dict) -> dict:
+async def post(baglanti, endpoint: str, data: dict) -> dict:
+    """
+    İlk parametre İKİ TİPTEN biri olabilir — çalışma anında ayırt edilir:
+      · httpx.AsyncClient   → eski davranış, doğrudan bağlantı
+      · AsyncProxyHavuzu    → istek başına IP rotasyonu (proxy_havuz)
+
+    NEDEN ÇALIŞMA-ANI AYRIMI: bu fonksiyonu iki dış script import ediyor
+    (ilan_metni_backfill.py:44, ekap_ilan_metni_sonda.py:27) ve ikisi de
+    AsyncClient geçiyor. İmzayı doğrudan havuza çevirmek onları IMPORT anında
+    değil ÇALIŞMA anında kırardı: 'AsyncClient' object has no attribute 'istek'.
+    Geriye dönük uyumlu tutup çağıranları tek tek geçiriyoruz.
+    """
     headers = {**BASE_HEADERS, **crypto_headers()}
+    havuz_mu = hasattr(baglanti, "istek")
     try:
-        r = await client.post(f"{BASE}{endpoint}", json=data, headers=headers, timeout=30.0)
+        if havuz_mu:
+            async with baglanti.istek() as ist:
+                r = await ist.client.post(f"{BASE}{endpoint}", json=data,
+                                          headers=headers, timeout=30.0)
+                ist.yanit(r)      # yalnız 403/407/429/5xx ucu cezalandırır
+                r.raise_for_status()
+                return r.json()
+        r = await baglanti.post(f"{BASE}{endpoint}", json=data, headers=headers, timeout=30.0)
         r.raise_for_status()
         return r.json()
     except httpx.HTTPStatusError as e:
@@ -672,11 +691,58 @@ def tur_donustur(tip):
         if k.lower() in tip.lower(): return v
     return tip or "Diğer"
 
-def durum_donustur(d):
-    d = (d or "").lower()
-    if "açık" in d or "devam" in d or "katılım" in d: return "aktif"
-    if "sonuçland" in d or "tamamland" in d: return "sonuclandi"
+# Eşleşmeyen EKAP durum metinleri — eşlemeyi KANITLA tamamlamak için sayılıyor.
+# (Tahminle genişletmek yanlış: hangi metinlerin geldiğini bilmiyoruz.)
+BILINMEYEN_DURUMLAR = {}
+
+
+def durum_donustur(d, son_teklif_iso=None):
+    """EKAP durum metnini kanonik duruma çevirir.
+
+    ⚠️ 20 Tem 2026 — BLANKET `return "aktif"` KALDIRILDI.
+    Eski hâlinde eşleşmeyen HER durum "aktif" oluyordu. ekap_ihale_backfill.py
+    bunu 1,6M geçmiş ihalede çağırınca canlıda 163.464 kayıt "aktif" göründü
+    (gerçekte açık olan 4.856) — idareler dizinindeki "aktif" sütunu ve
+    kurum_ozet durum kırılımı şişti.
+
+    `son_teklif_iso` verilirse TANINMAYAN durumda tarihe bakılır. Bu, körlemesine
+    "kapandi" yazmaktan güvenli: canlı scraper da aynı fonksiyonu kullanıyor ve
+    tanınmayan bir metin yüzünden GERÇEK aktif ihaleyi gizlemek, ters yönde ama
+    daha sinsi bir hata olurdu. Tarih varsa gerçeği tarih söyler.
+    """
+    ham = (d or "").strip()
+    dl = ham.lower()
+    if "açık" in dl or "devam" in dl or "katılım" in dl:
+        return "aktif"
+    if "sonuçland" in dl or "tamamland" in dl:
+        return "sonuclandi"
+
+    BILINMEYEN_DURUMLAR[ham] = BILINMEYEN_DURUMLAR.get(ham, 0) + 1
+
+    if son_teklif_iso:
+        try:
+            t = datetime.fromisoformat(str(son_teklif_iso).replace("Z", "+00:00"))
+            if t.tzinfo is None:
+                t = t.replace(tzinfo=timezone.utc)
+            return "aktif" if t > datetime.now(timezone.utc) else "kapandi"
+        except (ValueError, TypeError):
+            pass
+    # Tarih de yoksa eski davranış korunur (canlıda böyle yalnız 2 kayıt var).
     return "aktif"
+
+
+def bilinmeyen_durum_raporu():
+    """Eşleşmeyen durum metinlerini sıklığa göre yazdırır — eşlemeyi bu çıktıya
+    bakarak tamamlayacağız. Tur sonunda çağrılır."""
+    if not BILINMEYEN_DURUMLAR:
+        return
+    # ASCII başlık bilinçli: Windows konsolu (cp1254) emoji'de UnicodeEncodeError
+    # veriyor ve bu, raporun tamamını kaybettiriyor.
+    print(f"\n[!] ESLESMEYEN DURUM METINLERI ({len(BILINMEYEN_DURUMLAR)} farkli):", flush=True)
+    for metin, adet in sorted(BILINMEYEN_DURUMLAR.items(), key=lambda x: -x[1])[:25]:
+        print(f"     {adet:>8,}  {metin!r}", flush=True)
+    print("   -> Bunlar tarihten turetildi. durum_donustur() eslemesi bu listeye"
+          " bakilarak tamamlanmali.", flush=True)
 
 # CPV/OKAS kodunun ilk 2 hanesi → ana kategori
 # Yeni iş-dostu kategori sınıflandırıcı (ihaleciler.com tarzı, OKAS açıklaması + başlık keyword).
@@ -792,7 +858,10 @@ def ihaleleri_isle(ham_liste: list, detaylar: dict) -> list:
             "il":                   mojibake_duzelt((i.get("ihaleIlAdi") or "").strip()),
             "tur":                  tur_donustur(i.get("ihaleTipAciklama")),
             "usul":                 usul_donustur(i.get("ihaleUsulAciklama")),
-            "durum":                durum_donustur(i.get("ihaleDurumAciklama")),
+            # tarih 2. argüman olarak veriliyor: EKAP'ın tanımadığımız bir durum
+            # metni gelirse "aktif" varsaymak yerine tarihten türetilsin.
+            "durum":                durum_donustur(i.get("ihaleDurumAciklama"),
+                                                   tarih_iso(i.get("ihaleTarihSaat"))),
             "son_teklif_tarihi":    tarih_iso(i.get("ihaleTarihSaat")),
             "ilan_tarihi":          d.get("ilan_tarihi") or tarih_iso(
                                         i.get("ilanTarihi") or i.get("yayimTarihi")
