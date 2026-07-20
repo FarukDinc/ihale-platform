@@ -20,6 +20,21 @@
 --   WHERE sl.basarili = true
 --     AND NOT EXISTS (SELECT 1 FROM ihale_sonuclari s WHERE s.ekap_id = sl.ekap_id);
 
+-- ⛔ 21 Tem — UYGULANMADI, İKİ SEBEP (ölçümle doğrulandı):
+--   (1) NO-OP: scrape_log'da başarılı=true kayıt YOK (ekap_sonuc_scraper.py prod'da hiç
+--       koşmamış; ihale_sonuclari'nı ekap_sonuc_backfill.py dolduruyor, ilan_id anahtarıyla).
+--   (2) BOZUK JOIN: aşağıdaki NOT EXISTS `s.ekap_id = sl.ekap_id` ile eşleştiriyor ama
+--       ihale_sonuclari.ekap_id TÜM satırlarda NULL (ilanlar_sonuc view'ındaki aynı bozuk
+--       join — bkz. migration_sonucjoin_fix.sql). scrape_log dolu OLSAYDI bu NOT EXISTS her
+--       satırda true olur ve TÜM başarılı kayıtları false'a çevirirdi (devasa gereksiz
+--       yeniden çekim). Doğru anahtar ilan_id/ihale_id olmalı.
+-- Bu blok, hem NO-OP olduğu hem de join'i düzeltilmeden GÜVENLİ olmadığı için ABORT guard'lı.
+-- ekap_sonuc_scraper.py ileride prod'a alınırsa: önce join'i ilan_id'ye çevir, sonra bu guard'ı kaldır.
+DO $$
+BEGIN
+  RAISE EXCEPTION 'ABORT: bu kurtarma NO-OP ve join''i bozuk (ihale_sonuclari.ekap_id NULL). Uygulanmadan once ilan_id anahtarina cevir. Bkz. dosya basi.';
+END $$;
+
 BEGIN;
 
 UPDATE scrape_log sl
