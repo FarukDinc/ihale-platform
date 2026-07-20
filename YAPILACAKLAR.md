@@ -105,6 +105,44 @@
 > NOT: `claude/happy-gauss-ce4605` dalında 1 birleşmemiş commit görünür — içeriği yeni
 > koda UYARLANARAK uygulandı, dal yalnızca kayıt olarak duruyor.
 >
+> ## 📊 VERİ ENVANTERİ (20 Tem gece — "her şey çekildi mi?" denetimi)
+> **Cevap: HAYIR.** Denetim anında **hiçbir scraper çalışmıyordu** ve üç hat sessizce durmuştu.
+>
+> | Kaynak | Çekilen | Eksik | Durum |
+> |---|---|---|---|
+> | İhale ilanları | 1.618.303 | ~341K (2012 yarım + 2011 + 2010) | ▶️ koşuyor |
+> | DT duyuruları | 1.490.644 | — | ✅ |
+> | İhale sonuçları | 538.064 (ihalelerin %20,7'si) | — | durdu |
+> | **DT kazananları** | 117.384 (**%7,9**) | 464.581 token'lı + **817.376 token'sız** | ⏸️ |
+> | DT token | 630.347 (%42,3) | ~860K | ⏸️ sayfa-4966 duvarı |
+> | KİK kararları | 97 → **179** | geçmiş yıllar | ✅ blokaj çözüldü |
+> | Uluslararası (TED) | 1.249 | çok büyük | ▶️ koşuyor |
+> | İlan metni | 16.362 (**%1,0**) | 1,6M | ⏸️ hiç koşmadı |
+> | Embedding | 5.539 (%0,3) | 1,6M | ⏸️ |
+> | AI kategori | %71,8 | ~456K | kısmi |
+>
+> ### 🔴 BACKFILL'DE İKİ GERÇEK HATA BULUNDU VE DÜZELTİLDİ
+> 1. **Zehirli kayıt (`bdc967e`)** — 2012'de skip≈47.000 sabit HTTP 500 veriyor, backfill
+>    8 ardışık hatada duruyordu. **Sondajla kanıtlandı:** aynı offset `take=200` ile OK,
+>    `take=500/1000` ile HATA; `skip=100.000 take=1000` ile OK. Yani ne offset derinliği ne
+>    sayfa boyutu — o aralıktaki TEK BİR kayıt EKAP'ın yanıtını bozuyor.
+>    → Hata alınca parti 4'e bölünerek küçülüyor (1000→250→62→…), zehirli kayıt dar pencereye
+>    sıkışıyor; `take=1`'de bile patlarsa O KAYIT atlanıp sayılıyor. Sonra boyut geri tırmanıyor.
+> 2. **Boş liste = SESSİZ VERİ KAYBI (`bee3e0a`)** — 1. düzeltme zehirli bölgeyi geçti, ama
+>    hemen ardından EKAP boş liste döndürdü ve koddaki koşulsuz `if not lst: break` yılı
+>    "bitti" sayıp 2011'e geçti. **2012 checkpoint'i 47.062/166.242'de kaldı, 119.180 kayıt
+>    sessizce düştü ve log "tamam" izlenimi verdi.** → Artık boş listede `skip >= toplam` mı
+>    diye bakılıyor; değilse DELİK olarak gürültülü loglanıp atlanıyor, checkpoint yazılıyor.
+>
+> ### ⏭ SIRADAKİ VERİ İŞLERİ (paralel scraper verimi 10x düşürdüğü için SIRALI)
+> 1. İhale backfill bitişi (2012 kalanı + 2011 + 2010) — koşuyor
+> 2. **DT token hattı** — asıl darboğaz: 817.376 sonuçlanmış duyuruda token YOK, o yüzden
+>    kazanan çekilemiyor. Derin sayfalama duvarına takılıyor; il/tarih dilimlemesi denenmeli.
+> 3. DT kazananları (464.581 token'lı kuyruk)
+> 4. `ilan_metni` (%1,0) — eşleştirme için "en değerli veri işi" diye işaretlenmişti
+> 5. KİK geçmiş yılları (blokaj çözüldü, artık çekilebilir)
+> ⚠️ TED çevirisi Gemini kotası yakıyor (7 günde 6.660 başlık) — geniş backfill'de maliyet gözet.
+>
 > ## ⏸️ TEK BEKLEYEN MIGRATION: `migration_dt_arama.sql` — BAKIM PENCERESİ İSTER
 > DT'ye `baslik_fold` + `arama_fold` generated kolonları + trigram GIN indeksleri ekliyor.
 > **MALİYET (dosyanın kendi notu):** 1,49M satırda `ADD COLUMN GENERATED` tabloyu yeniden
