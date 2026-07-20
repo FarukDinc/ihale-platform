@@ -1,5 +1,46 @@
 # İhalePlatform — Yapılacaklar Listesi
 
+> ## 🔧 20 TEMMUZ — PROXY TEŞHİS TURU: 4 YANLIŞ TEŞHİS, 3 GERÇEK BULGU
+> Webshare 402'si çözüldükten sonra backfill'ler yine yazmadı. Teşhis uzun sürdü ve
+> bu turda **dört kez yanlış yöne saptım**; kayda geçiyorum çünkü desen tekrar edebilir.
+>
+> ### ✅ DOĞRULANAN (ölçümle)
+> - Proxy'ler sağlıklı: VDS'ten `curl -x` → HTTP 200, 1,2 sn
+> - Havuz sağlıklı: VDS'te izole test `dtEnum` 5/5, `dtDetayGetir` gerçek token'larla 5/5
+> - Scraper çalışıyor: bir parti işledi (+200 denendi, +203 sonuç yazıldı)
+> - Token scraper yazıyor: 629.886 → 630.063
+>
+> ### 🔴 GERÇEK BULGULAR
+> 1. **Eşzamanlı bağlantı bütçesi.** İki scraper aynı anda koşunca 2×100 = **240 açık
+>    soket** oldu ve istekler "read timeout" vermeye başladı. Tek scraper koşarken aynı
+>    proxy'ler 1,2 sn'de yanıt veriyordu. → `PROXY_AZAMI_UC=40` eklendi: havuz yine
+>    100 IP'den karışık sırayla seçer (rotasyon bozulmaz) ama aynı anda en fazla 40
+>    soket tutar. Ölçüm: 240 → 153.
+> 2. **`setsid --fork` ŞART.** `nohup setsid ... &` ile başlatılan süreç ssh kapanınca
+>    **traceback bırakmadan** ölüyor. Bu tek başına iki yanlış teşhise yol açtı.
+> 3. **EKAP derin sayfalamada yavaşlıyor.** Token backfill'i sayfa ~4959-4961'de
+>    ısrarla timeout alıyor; erken sayfalar sorunsuzdu. Bizim tarafımız değil.
+>
+> ### ⚠️ ÖLÇÜM TUZAKLARI (yanlış teşhislerin asıl sebebi)
+> - `kuyruk_say()` 1,49M satırda `count=exact` yapıyor → **ilk çıktı ~100 saniye** sonra
+>   geliyor. Bu sürede süreç "uyuyor" görünüyor ve log boş — "asıldı" sanılıyor.
+> - Scraper 200'lük partiler hâlinde işaretliyor → **parti başına ~260 saniye**.
+>   90-100 saniyelik ölçüm pencereleri bir partiyi bile kapsamıyor, "0 ilerleme" gösteriyor.
+> - Python çıktıyı tamponluyor; `-u` olmadan log yanıltıcı.
+> - `olusturulma` sadece YENİ satırlarda değişir; upsert'lerde donuk kalır. Hafta sonu
+>   ilan yayımlanmadığı için "iki gündür sıfır" **normaldi** — gece hattı hiç bozulmamıştı.
+>
+> ### ⏭ AÇIK
+> - [ ] Sürdürülebilir verimin ölçülmesi: iki scraper 40 uçlu havuzla koşuyor, ilk
+>       partilerini bekliyor. Sayaçlar (`denendi`/`sonuc`/`token`) 10-15 dk aralıkla
+>       kontrol edilmeli — 90 sn'lik pencere YANILTIR.
+> - [ ] `ilan_metni_backfill` havuza bağlandı ama 402 döneminden beri hiç koşmadı, teyit yok.
+> - [ ] Eşleştirme ara çözümü (`paginationTake=1` → `300`): kapsama %32 → ~%90.
+>       Kök neden kanıtlandı (take=1 adı, o kurumun ihalelerinin %33,5'ini kapsıyor).
+> - [ ] `ekap_scraper` hâlâ havuza bağlı değil (post() artık iki tipi de kabul ediyor,
+>       yolu açık).
+
+
 > # 📌 OTURUM DEVRİ — 20 TEM (tek oturuma dönüş)
 > Kullanıcı paralel oturumları kapatıp tek oturuma dönüyor. **Bu blok, dağınık
 > oturumların birleşik durumudur — yeni oturum İLK BUNU okusun.**
