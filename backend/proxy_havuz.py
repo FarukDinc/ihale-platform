@@ -185,6 +185,8 @@ class ProxyHavuzu:
         self._toplam_hata = 0
         self._bekleme_sn = 0.0
         self._direkt_yedek: _Uc | None = None   # tüm IP'ler düşerse buraya çekiliriz
+        self._ardisik_hata = 0        # arka arkaya HİÇ başarı olmadan kaç hata
+        self._karantina_log = 0       # kaç karantina satırı basıldı (log boğulmasın)
 
         liste = [p.strip() for p in _LISTE_HAM.split(",") if p.strip()]
         yapilandirilmis = bool(liste and PROXY_KULLANICI and PROXY_SIFRE)
@@ -294,8 +296,24 @@ class ProxyHavuzu:
         finally:
             if hata_olustu or kiralama._basarisiz:
                 self._cezalandir(uc)
+                self._ardisik_hata += 1
+                # SAĞLAYICI-SEVİYESİ ARIZA: havuzun TAMAMI bir tur denenip hiç başarı
+                # alınamamışsa sorun tek tek IP'lerde değil, sağlayıcıdadır
+                # (402 kota, hesap askıya alma, subnet engeli). 100 IP'yi tek tek
+                # karantinaya alıp 300 satır log basmanın hiçbir faydası yok —
+                # 20 Tem'de tam bu yaşandı ve asıl hatayı log selinde kaybettik.
+                canli = sum(1 for u in self.uclar if not u.olu)
+                if canli and self._ardisik_hata >= max(6, len(self.uclar)):
+                    raise RuntimeError(
+                        f"SAĞLAYICI-SEVİYESİ PROXY ARIZASI: {self._ardisik_hata} ardışık hata, "
+                        "hiç başarılı istek yok.\n"
+                        "  Tek tek IP sorunu DEĞİL — kota/ödeme (402), hesap askısı ya da\n"
+                        "  subnet engeli olma ihtimali yüksek. Tur durduruldu.\n"
+                        "  Teşhis: curl -x http://KULLANICI:SIFRE@IP:PORT https://api.ipify.org"
+                    )
             else:
                 uc.ardisik_hata = 0
+                self._ardisik_hata = 0
 
     def _cezalandir(self, uc: _Uc) -> None:
         with self._kilit:
@@ -319,8 +337,14 @@ class ProxyHavuzu:
                     # direkt-yedek sürekli hata veriyorsa (hedef bizi gerçekten
                     # sınırlıyordur) geri çekilmesi DOĞRU, ama aynı satırı her 3
                     # istekte bir basmasın — log'u boğuyor.
-                    if uc.etiket != "direkt-yedek" or uc.karantina_sayisi == 1:
+                    # Log kısıtı: ilk 5 karantina yazılır, sonrası susturulur.
+                    # Aksi halde 100 IP × 3 karantina = 300 satır ve asıl hata
+                    # (ekap_scraper'ın çıktısı) selin altında kaybolur — 20 Tem'de oldu.
+                    self._karantina_log += 1
+                    if self._karantina_log <= 5:
                         print(f"    ⏸ proxy karantinada {KARANTINA_SN:.0f}sn: {uc.etiket}", flush=True)
+                    elif self._karantina_log == 6:
+                        print("    ⏸ (karantina mesajları susturuldu — özet sonda)", flush=True)
 
     def ozet_yaz(self) -> None:
         canli = [u for u in self.uclar if not u.olu]
@@ -332,6 +356,8 @@ class ProxyHavuzu:
         print(f"   hatalı istek   : {self._toplam_hata}")
         print(f"   kullanılan IP  : {len(kullanilan)} / {len(self.uclar)} (canlı {len(canli)})")
         print(f"   hız sınırı bekl: {self._bekleme_sn:.0f} sn")
+        if self._karantina_log:
+            print(f"   karantina olayı: {self._karantina_log} (ilk 5'i loglandı)")
         if self._direkt_yedek is not None:
             print(f"   ⚠ DİREKT YEDEK: {self._direkt_yedek.istek} istek VDS IP'sinden gitti "
                   f"(tüm proxy IP'leri düşmüştü)")
