@@ -63,6 +63,46 @@ const API = (() => {
         }
     };
 
+    // ── Bildirim ────────────────────────────────────────
+    // Eskiden burada UI.bildirim_goster() çağrılıyordu ama UI yalnız js/ui.js'te
+    // tanımlıydı ve api.js yükleyen 6 sayfanın HİÇBİRİ ui.js yüklemiyordu →
+    // çağrılar çalışma anında ReferenceError veriyordu. Somut sonucu:
+    // firma-analiz.html:748'de 402 (kredi bitti) uyarısı kullanıcıya HİÇ ulaşmıyor,
+    // bunun yerine catch dalı yanıltıcı "Bu özellik yakında aktif olacak" gösteriyordu.
+    // (js/ui.js 20 Tem'de silindi — hiçbir sayfa yüklemiyordu.)
+    //
+    // ⚠️ Sınıf adı bilinçli olarak 'toast' DEĞİL: teklif-olustur.html:410 ve
+    // ihaleler.html:376 kendi `.toast { opacity: 0 }` kuralını taşıyor (görünürlüğü
+    // `.toast.show` veriyor). 'toast' deseydik mesaj o iki sayfada GÖRÜNMEZ olurdu.
+    // Stil inline: sayfa CSS'ine hiç bağlı değil, her sayfada aynı çalışır.
+    function bildirimGoster(mesaj, tur = "bilgi", link = null) {
+        try {
+            const renk = { basari: "#16a34a", hata: "#dc2626", uyari: "#d97706", bilgi: "#2563eb" }[tur] || "#2563eb";
+            document.querySelectorAll(".ig-api-toast").forEach(e => e.remove());
+            const el = document.createElement("div");
+            el.className = "ig-api-toast";
+            el.textContent = mesaj || "Bir hata oluştu";   // textContent — innerHTML DEĞİL (XSS)
+            el.style.cssText =
+                "position:fixed;bottom:24px;right:24px;z-index:99999;max-width:340px;" +
+                "padding:12px 20px;border-radius:8px;font-size:14px;font-weight:600;" +
+                "font-family:inherit;color:#fff;background:" + renk + ";" +
+                // GÖRÜNÜRLÜK BAŞTAN 1 — giriş animasyonu YOK. Bilinçli:
+                // önce opacity:0 + rAF/reflow ile 1'e geçiş deneniyordu; sekme arka
+                // plandayken rAF askıya alınıyor ve CSS geçişi ilerlemiyor → bildirim
+                // opacity:0'da takılı kalıp HİÇ görünmüyordu (yerel testte yakalandı).
+                // Artık görünürlük hiçbir animasyona bağlı değil; yalnız ÇIKIŞ animasyonlu
+                // ve o başarısız olursa bildirim aniden kaybolur — zararsız taraf.
+                "box-shadow:0 4px 16px rgba(0,0,0,.2);opacity:1;" +
+                "transition:opacity .3s;" + (link ? "cursor:pointer;" : "pointer-events:none;");
+            if (link) el.addEventListener("click", () => { window.location.href = link; });
+            document.body.appendChild(el);
+            setTimeout(() => {
+                el.style.opacity = "0";
+                setTimeout(() => el.remove(), 350);   // geçiş ilerlemese de kaldırılır
+            }, link ? 6000 : 4000);
+        } catch (_) { /* bildirim ASLA akışı kırmasın */ }
+    }
+
     // ── Temel istek fonksiyonu ──────────────────────────
     async function istek(metot, yol, veri = null, auth = true) {
         const basliklar = { "Content-Type": "application/json" };
@@ -94,8 +134,8 @@ const API = (() => {
 
             // Kredi yetersiz
             if (yanit.status === 402) {
-                const hata = await yanit.json();
-                UI.bildirim_goster("Yetersiz kredi! Paket yükseltmek için tıklayın.", "uyari", "/fiyatlandirma_odeme_bolumu");
+                try { await yanit.json(); } catch (_) {}   // gövde tüketilsin; içeriği kullanılmıyor
+                bildirimGoster("Yetersiz kredi! Paket yükseltmek için tıklayın.", "uyari", "/fiyatlandirma_odeme_bolumu");
                 return null;
             }
 
@@ -108,7 +148,7 @@ const API = (() => {
 
         } catch (e) {
             console.error(`API hatası [${metot} ${yol}]:`, e);
-            UI.bildirim_goster(e.message, "hata");
+            bildirimGoster(e && e.message ? e.message : "Bir hata oluştu", "hata");
             return null;
         }
     }
