@@ -66,6 +66,7 @@ sys.path.insert(0, os.path.dirname(__file__))
 from ekap_scraper import (
     BASE, BASE_HEADERS, crypto_headers,
     tur_donustur, usul_donustur, durum_donustur, tarih_iso, mojibake_duzelt,
+    bilinmeyen_durum_raporu,
 )
 from kategori_siniflandir import kategori_belirle
 from proxy_havuz import havuz_al, ekap_ssl_baglami
@@ -139,7 +140,11 @@ def satir_uret(i):
         "il":                mojibake_duzelt((i.get("ihaleIlAdi") or "").strip()),
         "tur":               tur,
         "usul":              usul_donustur(i.get("ihaleUsulAciklama")),
-        "durum":             durum_donustur(i.get("ihaleDurumAciklama")),
+        # ⚠️ tarih 2. argüman ŞART: bu script 1,6M GEÇMİŞ ihale yüklüyor ve EKAP'ın
+        # geçmiş kayıtlar için döndürdüğü durum metinleri eşlemeye uymuyordu →
+        # eski blanket "aktif" varsayılanı canlıda 163.464 sahte "aktif" üretti.
+        "durum":             durum_donustur(i.get("ihaleDurumAciklama"),
+                                            tarih_iso(i.get("ihaleTarihSaat"))),
         "son_teklif_tarihi": tarih_iso(i.get("ihaleTarihSaat")),
         # okas DETAY'dan gelir, listede yok → kategori başlık+türden çıkarılır
         "kategori":          kategori_belirle(None, tur, baslik),
@@ -276,6 +281,9 @@ def main():
 
     sure = time.time() - t0
     print(f"\n✓ BİTTİ — {toplam_gonderilen:,} satır gönderildi, {sure/60:.1f} dakika", flush=True)
+    # Eşlemeye uymayan EKAP durum metinleri — bunlar tarihten türetildi.
+    # Çıktıya bakıp durum_donustur() eşlemesini kanıtla tamamlayacağız.
+    bilinmeyen_durum_raporu()
     print("  (gönderilen ≠ eklenen: mevcut ekap_id'ler ON CONFLICT ile atlandı)")
     havuz.ozet_yaz()
 
