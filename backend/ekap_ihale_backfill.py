@@ -278,7 +278,14 @@ def yil_cek(havuz, client, yil, toplam, sayfa_boyutu, cp):
         print(f"  {yil}: {skip:>7,}/{toplam:,}  ({100*skip/toplam:5.1f}%)  "
               f"{hiz:6.0f} kayıt/sn  kalan ~{kalan/60:.0f}dk", flush=True)
 
-        if len(lst) < sayfa_boyutu:
+        # ⚠️ ESKİDEN ölçüt `len(lst) < sayfa_boyutu` idi ve uyarlamalı küçültmeyle
+        # BİRLİKTE sessiz veri kaybı üretiyordu: zehirli kayıt yüzünden parti 62'ye
+        # indiğinde dönen 62 kayıt "1000'den az → son sayfa" sanılıp yıl TERK ediliyordu.
+        # 2012 tam bu yüzden 47.124/166.242'de bırakıldı (log "✓ bitti" bile yazdı).
+        # Doğru ölçüt İSTENEN parti boyutu; üstelik tek başına yetmez — gerçekten sona
+        # gelindiğini `skip >= toplam` ile teyit ediyoruz. Aksi hâlde while koşulu zaten
+        # döngüyü sürdürür, boş-liste dalı da gerçek bitişi yakalar.
+        if len(lst) < aktif_boyut and skip >= toplam:
             break
 
     return gonderilen, skip
