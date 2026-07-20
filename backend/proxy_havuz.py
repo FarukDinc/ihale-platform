@@ -87,6 +87,26 @@ DIREKT_YEDEK_IZIN = os.environ.get("PROXY_DIREKT_YEDEK", "0").strip() in ("1", "
 # parametre"), proxy sağlıklıdır. Cezalandırılırsa havuz kendi kendini yer.
 BLOK_KODLARI = frozenset({403, 407, 429, 500, 502, 503, 504, 520, 521, 522, 523, 524})
 
+# ── Bağlantı ayak izi ─────────────────────────────────────────────────────────
+# 20 Tem, canlı teşhis: havuz her uç için AYRI httpx.Client tutuyor ve varsayılan
+# keep-alive ile bağlantıyı açık bırakıyordu. 100 uç = 100 kalıcı soket; ölçümde
+# 100 ESTAB + 48 CLOSE-WAIT (= 148 açık soket) görüldü. Süreçler UYUYORDU: py-spy
+# yığını `read (httpcore/_backends/sync.py)` — proxy'den yanıt beklerken asılı.
+# Aynı anda AYNI proxy'ye curl 1,2 sn'de HTTP 200 döndürdü, yani proxy sağlıklıydı.
+# Teşhis: Webshare paylaşımlı planda eşzamanlı bağlantı sınırı var; 148 soket o
+# sınırı aşınca yeni istekler yanıtsız kalıyor.
+#
+# keepalive_expiry=5s: 100 IP + 3sn soğuma + 600/dk tavanla bir IP ortalama ~10sn'de
+# bir kullanılıyor → bağlantı kullanımlar ARASINDA kapanıyor, ayak izi düşüyor.
+# Bedeli kullanım başına bir TLS el sıkışması; 600/dk hızda ihmal edilebilir.
+BAGLANTI_SINIRI = httpx.Limits(max_connections=1, max_keepalive_connections=1,
+                               keepalive_expiry=5.0)
+
+# Açık zaman aşımı: tek bir sayı yerine aşama aşama. Asılma read'de oluyordu ve
+# 30sn'lik tek değer, 200'lük bir partiyi 100 dakikaya çıkarıyordu — hata hızlı
+# yüzeye çıksın ki havuz bozuk ucu karantinaya alabilsin.
+ZAMAN_ASIMI = httpx.Timeout(connect=10.0, read=20.0, write=10.0, pool=5.0)
+
 # Bir IP üst üste kaç hata verirse karantinaya alınır / tamamen düşürülür
 KARANTINA_ESIGI = 3
 KARANTINA_SN    = 120.0
@@ -209,7 +229,8 @@ class ProxyHavuzu:
             uc.client = httpx.Client(
                 proxy=uc.url,
                 headers={"User-Agent": VARSAYILAN_UA},
-                timeout=30.0,
+                timeout=ZAMAN_ASIMI,
+                limits=BAGLANTI_SINIRI,
                 follow_redirects=True,
                 verify=self.ssl_baglami if self.ssl_baglami is not None else True,
             )
@@ -399,7 +420,8 @@ class AsyncProxyHavuzu(ProxyHavuzu):
             uc.client = httpx.AsyncClient(
                 proxy=uc.url,
                 headers={"User-Agent": VARSAYILAN_UA},
-                timeout=30.0,
+                timeout=ZAMAN_ASIMI,
+                limits=BAGLANTI_SINIRI,
                 follow_redirects=True,
                 verify=self.ssl_baglami if self.ssl_baglami is not None else True,
             )

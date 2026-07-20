@@ -799,6 +799,10 @@ _USUL_HARITA = [
     ("DIGER",                  "Diğer / İstisna"),
 ]
 
+# 4734 sayılı Kanun md.3 istisna bentleri (3-b, 3-g, 3-i…). Ham API bazen çeviri
+# anahtarı + madde referansını birlikte döndürüyor: "...TENDER_TYPE 4734 / 3-g".
+_MADDE_RE = re.compile(r"4734\s*/\s*(3\s*-\s*[a-zçğıöşü])", re.IGNORECASE)
+
 def usul_donustur(s):
     s = (s or "").strip()
     if not s:
@@ -807,12 +811,13 @@ def usul_donustur(s):
     for frag, label in _USUL_HARITA:
         if frag in s_upper:
             return label
-    # EKAP bazen çevrilmemiş ham i18n key döndürüyor:
-    # "TENDER_SEARCH.MAIN.PAGEITEM.TENDER_TYPE 4734 / 3-g" → 4734 sayılı Kanun istisna maddesi
-    if "TENDER_TYPE" in s_upper or "TENDER_SEARCH" in s_upper:
-        m = re.search(r"(4734)\s*/\s*(3-[A-Za-zÇĞİÖŞÜçğıöşü])", s)
-        if m:
-            return f"İstisna ({m.group(1)} {m.group(2).lower()})"
+    # "4734 / 3-g" gibi istisna madde referansı — anlamlı, oku­nabilir hale getir
+    m = _MADDE_RE.search(s)
+    if m:
+        return "İstisna (4734 md. " + re.sub(r"\s+", "", m.group(1)).lower() + ")"
+    # Ham i18n anahtarı kalmışsa (TENDER_SEARCH/PAGEITEM/ENUMERATIONS) → kullanıcıya çöp
+    # gösterme, "Diğer / İstisna" ver.
+    if any(k in s_upper for k in ("TENDER_SEARCH", "PAGEITEM", "ENUMERATIONS")):
         return "Diğer / İstisna"
     # Zaten okunabilir metin (örn. "Açık İhale Usulü" → "Açık İhale Usulü")
     return s.replace("İhale Usulü:", "").strip() or None
