@@ -64,6 +64,10 @@ BASE = "https://ekap.kik.gov.tr"
 ARAMA_ENDPOINT = f"{BASE}/EKAP/Ortak/YeniIhaleAramaData.ashx"
 CHECKPOINT_FILE = os.path.join(os.path.dirname(__file__), ".dt_scraper_checkpoint.json")
 SAYFA_BOYUTU = 128  # test edildi (12 Tem 2026), sabit
+# Üst üste bu kadar sayfa Supabase'e YAZILAMAZSA (DB/ağ tümüyle erişilemez) tarama
+# durur — sonsuza dek başarısız upsert'le dönmek yerine checkpoint korunur, sonraki
+# tur kaldığı yerden devam eder (bkz. ekap_ihale_backfill.py ARDISIK_HATA_SINIRI).
+ARDISIK_UPSERT_HATA_SINIRI = 5
 
 
 def ssl_ctx():
@@ -258,7 +262,14 @@ def main():
         haritalar = enum_haritalari(havuz)
         print(f"✓ Enum haritaları çekildi: {len(haritalar['tur'])} tür, {len(haritalar['durum'])} durum, {len(haritalar['il'])} il")
 
-        toplam_kayit = 0
+        toplam_kayit = 0          # başarıyla YAZILAN kayıt sayısı (dürüst özet için)
+        atlanan_kayit = 0         # upsert başarısız olduğu için yazılamayan kayıt sayısı
+        basarisiz_sayfa = 0       # hiç yazılamayan sayfa sayısı
+        ardisik_basarisiz = 0     # üst üste yazılamayan sayfa (DB down erken çıkış için)
+        checkpoint_kilit = False  # bir upsert başarısız olunca True: checkpoint bir daha İLERLEMEZ
+        veri_bitti = False        # boş sayfa görüldü mü (normal, gerçek bitiş)
+        abort_edildi = False      # DB erişilemez diye erken mi çıktık
+        son_ham_uzunluk = None    # son çekilen sayfanın kayıt sayısı (tavan tespiti için, B4)
         for i in range(args.max_pages):
             try:
                 ham = sayfa_cek(havuz, sayfa)
@@ -273,24 +284,77 @@ def main():
                 continue
             if not ham:
                 print(f"  Sayfa {sayfa}: boş — veri bitti.")
+                veri_bitti = True
                 break
 
+            son_ham_uzunluk = len(ham)
             kayitlar = [kayit_donustur(item, haritalar) for item in ham]
             if args.dry_run:
                 print(f"  [DRY-RUN] Sayfa {sayfa}: {len(kayitlar)} kayıt (örn: {kayitlar[0]['dt_no']} — {kayitlar[0]['baslik'][:50] if kayitlar[0]['baslik'] else ''})")
-            else:
-                upsert(client, kayitlar)
-                print(f"  Sayfa {sayfa}: {len(kayitlar)} kayıt upsert edildi.")
+                toplam_kayit += len(kayitlar)
+                if args.backfill:
+                    checkpoint_yaz(sayfa)
+                sayfa += 1
+                time.sleep(0.3)
+                continue
 
-            toplam_kayit += len(kayitlar)
-            if args.backfill:
-                checkpoint_yaz(sayfa)
+            # ── B6: upsert SONUCUNU kontrol et — yoksa sessiz veri kaybı ──────────
+            # upsert 5 denemede de başarısız olursa False döner. Eskiden dönüş
+            # KONTROL EDİLMİYORDU: sahte "upsert edildi" basılıp checkpoint yazılamayan
+            # sayfanın ÖTESİNE ilerliyordu → o ~128 kayıt bir daha çekilmiyordu.
+            if upsert(client, kayitlar):
+                print(f"  Sayfa {sayfa}: {len(kayitlar)} kayıt upsert edildi.")
+                toplam_kayit += len(kayitlar)
+                ardisik_basarisiz = 0
+                # Checkpoint YALNIZ veri gerçekten yazıldıktan sonra ve kilit yoksa ilerler.
+                # Kilit varsa (bu turda daha önce bir sayfa yazılamadı) bir daha ilerletmeyiz;
+                # aksi hâlde yazılamayan sayfanın üstünden atlar, o kayıtlar kaybolurdu.
+                if args.backfill and not checkpoint_kilit:
+                    checkpoint_yaz(sayfa)
+            else:
+                # Sahte "✓" BASMA, checkpoint'i İLERLETME, sayacı tut. Sonraki tur bu
+                # sayfayı (ve sonrasını) tekrar dener; upsert idempotent (merge-duplicates).
+                atlanan_kayit += len(kayitlar)
+                basarisiz_sayfa += 1
+                ardisik_basarisiz += 1
+                checkpoint_kilit = True
+                print(f"  ✗ Sayfa {sayfa}: {len(kayitlar)} kayıt YAZILAMADI — checkpoint ilerletilmedi; "
+                      f"sonraki tur bu sayfayı tekrar deneyecek.", flush=True)
+                # Ardışık başarısızlık sınırı: DB/ağ tümüyle erişilemezse boşuna her sayfada
+                # 5'er retry'la tüm tavanı dolaşma; dur (checkpoint korunur), sonraki tur devam.
+                if ardisik_basarisiz >= ARDISIK_UPSERT_HATA_SINIRI:
+                    print(f"  ✗ {ardisik_basarisiz} sayfa üst üste yazılamadı — Supabase erişilemiyor "
+                          f"olabilir. Tarama durduruluyor, checkpoint korunuyor.", flush=True)
+                    abort_edildi = True
+                    break
+
             sayfa += 1
             time.sleep(0.3)
 
-        print(f"\n✓ dogrudan_temin_scraper: {toplam_kayit} kayıt tarandı.")
+        # ── Dürüst özet (rule 4): başarısızlık varsa sahte "✓" verme ─────────────
+        if basarisiz_sayfa:
+            print(f"\n⚠ dogrudan_temin_scraper: {toplam_kayit} kayıt yazıldı, ancak {basarisiz_sayfa} sayfa "
+                  f"({atlanan_kayit} kayıt) YAZILAMADI — sonraki turda tekrar denenecek.")
+        else:
+            print(f"\n✓ dogrudan_temin_scraper: {toplam_kayit} kayıt tarandı.")
+
+        # ── B4: tavana mı çarptık yoksa veri mi bitti? ───────────────────────────
+        # Döngü boş sayfa görmeden (veri_bitti=False) ve DB hatasıyla durmadan
+        # (abort_edildi=False) bittiyse max-pages tavanına çarpmıştır. Son sayfa DOLUYSA
+        # (==SAYFA_BOYUTU) tavanın ötesinde çekilmemiş ilan kalmış olabilir; kısmi sayfa
+        # (<SAYFA_BOYUTU) ise zaten gerçek son sayfaydı, uyarma.
+        if not veri_bitti and not abort_edildi and son_ham_uzunluk == SAYFA_BOYUTU:
+            if args.backfill:
+                print(f"  ⚠ --max-pages ({args.max_pages}) tavanına ulaşıldı, veri bitmedi. "
+                      f"Checkpoint kaydedildi; --backfill ile tekrar çalıştırıp kaldığı yerden devam edin.")
+            else:
+                print(f"  ⚠ --max-pages ({args.max_pages}) tavanına ulaşıldı, veri bitmedi — tavan ötesinde "
+                      f"yeni ilan kalmış olabilir. Tümünü çekmek için --backfill ile çalıştırın.")
+
         if args.backfill:
-            print(f"  Sonraki --backfill çalıştırması sayfa {sayfa}'dan devam eder (checkpoint: {CHECKPOINT_FILE}).")
+            # Kilit varsa `sayfa` başarısız noktanın ötesine kaymış olabilir; sonraki turun
+            # gerçek başlangıcı checkpoint dosyasıdır (checkpoint_oku = son yazılan + 1).
+            print(f"  Sonraki --backfill çalıştırması sayfa {checkpoint_oku()}'dan devam eder (checkpoint: {CHECKPOINT_FILE}).")
 
 
 if __name__ == "__main__":
