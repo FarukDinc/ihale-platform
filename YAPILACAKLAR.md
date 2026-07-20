@@ -1,5 +1,16 @@
 # İhalePlatform — Yapılacaklar Listesi
 
+> ## ⚡ ACİL PERF: `idare_tur_tazele()` her gece ~25 dk CPU yakıyor (20 Tem, ölçüldü)
+> 340K backfill sonrası zincirde bu fonksiyon **24+ dakika** aktif kaldı (CPU-bound, kilit
+> beklemiyor). Kök neden: iki UPDATE de `WHERE t.idare_norm = idare_normalize(i.idare)` —
+> JOIN koşulunda satır-başı fonksiyon çağrısı, **ifade indeksi YOK** → 1,9M + 1,49M satırda
+> tam tarama. Fonksiyon `statement_timeout='1800s'` (30 dk) ile korunmuş, yani yavaşlık
+> biliniyormuş. ÇÖZÜM (zincir bitince, CONCURRENTLY):
+> `CREATE INDEX CONCURRENTLY idx_ilanlar_idare_norm_expr ON ilanlar (public.idare_normalize(idare));`
+> ve DT için aynısı. ⚠️ `idare_normalize` IMMUTABLE olmalı (ifade indeksi şart koşar) —
+> değilse önce onu IMMUTABLE işaretle. Kalıcı çözüm backlog #31 (`idare_norm` STORED generated
+> column) ama ifade indeksi migration'sız-şema-değişikliksiz ilk adım.
+
 > # 🧭 GÜNCEL BACKLOG (20 Tem akşam — TAM TARAMA + CANLI DOĞRULAMA SONRASI)
 > Bu blok, 5.195 satırın tamamının 6 paralel okuyucuyla taranıp çıkan **227 aday açık
 > maddenin 232 kapanış kanıtıyla çapraz-elenmesi** sonucudur. Aşağıdakiler **gerçekten
