@@ -15,14 +15,23 @@ echo "[$(date +'%Y-%m-%d %H:%M:%S')] === Bildirimler ===" >> /opt/ihale-platform
 $VENV/python notify.py >> /opt/ihale-platform/logs/scraper.log 2>&1
 echo "[$(date +'%Y-%m-%d %H:%M:%S')] === Bitti ===" >> /opt/ihale-platform/logs/scraper.log
 
-# KİK Kurul Kararları — pencere BİLEREK geniş (90 gün, 30'ar günlük 3 dilim).
+# KİK Kurul Kararları — pencere BİLEREK geniş (90 gün, 30'ar günlük dilimler:
+# 90 gün 4 dilim üretir — 3x30 gün + artan 1 günlük son dilim).
 # 20 Tem teşhisi: KİK kararları seans bazlı ve karar tarihinden HAFTALAR sonra
 # yayımlanıyor (ölçüm: ≥17 gün). Eski `--gun 3` hiçbir seansa denk gelmediği için
 # cron her gece 0 kayıt yazıyor, üstelik "Çekme hatası" + exit 1 veriyordu — bu
 # "KİK bizi blokluyor" sanılmasına yol açtı. Endpoint sağlıklı (HTTP 200).
 # Upsert karar_no üzerinden idempotent; aynı seansı her gece görmek zararsız.
+#
+# EXIT KODU KONTROL EDİLİYOR: script artık "gerçekten boş pencere" (exit 0) ile
+# "dilimlerin bir kısmı düştü, kapsam eksik" (exit 1) ayrımını yapıyor. Bu ayrımı
+# loga taşımazsak tek sinyal özet satırı olur ve gece logu yine yanlış okunur —
+# bu işin varlık sebebi tam olarak oydu.
 echo "[$(date +'%Y-%m-%d %H:%M:%S')] === KIK kurul kararlari ===" >> /opt/ihale-platform/logs/scraper.log
 $VENV/python kik_backfill.py --gun 90 >> /opt/ihale-platform/logs/scraper.log 2>&1
+if [ $? -ne 0 ]; then
+  echo "[$(date +'%Y-%m-%d %H:%M:%S')] !!! UYARI: KIK BACKFILL BAŞARISIZ (exit≠0) — dilim düştü veya yazma eksik, KİK kapsamı bu gece EKSİK" >> /opt/ihale-platform/logs/scraper.log
+fi
 $VENV/python bulten_gonder.py >> /opt/ihale-platform/logs/scraper.log 2>&1
 
 # ÖNCELİK 10 Faz A1/B2 — sonuç verisi taraması + firma sözlüğü tazeleme (9 Tem 2026)

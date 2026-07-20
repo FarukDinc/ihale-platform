@@ -55,6 +55,16 @@ Gerçek kök neden İKİ katmanlı:
    Ayrıca boş yanıtta liste `[null]` geliyor (içinde None olan bir liste) —
    eski döngü `grup.get(...)` ile AttributeError atardı; None grupları atlanıyor.
 
+   ⛔ BU DÜZELTMENİN TERSİ DE BİR HATADIR — ikisi arasındaki ayrım korunmalı:
+      "pencere gerçekten boş" (exit 0, normal gece)  ≠  "bakamadık" (exit 1).
+      Dilimlerden biri bile düştüyse sonucun boş olması BİLGİ DEĞİLDİR; öyle bir
+      turu "karar yok, hata değil" diye loglamak, gerçek bir KİK kesintisini ya da
+      proxy havuzu çöküşünü normal bir geceye benzetir ve bir sonraki teşhis yine
+      yanlış yerden başlar. Bu yüzden dilimleri_cek() başarısız dilim SAYISINI
+      döndürür, özet satırı dilim sağlığını HER ZAMAN yazar (`4/4 dilim OK` ya da
+      `3/4 dilim BAŞARISIZ`) ve basarisiz>0 iken exit kodu asla 0 olmaz.
+      run_scraper.sh bu exit kodunu ayrıca kontrol edip loga uyarı basar.
+
 VERİ KAYBI: tablo 97 satırda donmuştu ve 97'sinin de karar_tarihi 03.07.2026 idi
 (tek seans). Oysa API tek başına son 7 haftada 393 karar veriyor. Geniş pencereyle
 ilk koşu bu farkı kapatacak.
@@ -190,9 +200,10 @@ def kararlari_cek(havuz, baslangic: datetime, bitis: datetime) -> list:
     return kararlar
 
 
-def dilimleri_cek(havuz, baslangic: datetime, bitis: datetime, dilim_gun: int) -> list:
+def dilimleri_cek(havuz, baslangic: datetime, bitis: datetime, dilim_gun: int) -> tuple[list, int, int]:
     """
     Aralığı `dilim_gun` günlük parçalara bölüp sırayla çeker.
+    `(kararlar, dilim_sayisi, basarisiz_dilim)` döner.
 
     NEDEN DİLİM: yayın gecikmesi haftalarca olduğu için pencereyi geniş tutmak
     ŞART (bkz. dosya başı teşhis), ama tek dev istek 408/503 riski taşıyor —
@@ -200,8 +211,21 @@ def dilimleri_cek(havuz, baslangic: datetime, bitis: datetime, dilim_gun: int) -
     güvenli bant içinde (50 gün = 4,6 sn).
 
     Bir dilim hata verirse tur DURMAZ: o dilim atlanır, kalanlar denenir. Böylece
-    tek bir geçici hata 90 günlük pencerenin tamamını çöpe atmaz. Hepsi
-    başarısızsa çağıran taraf bunu anlasın diye (dilim_sayisi, basarisiz) döner.
+    tek bir geçici hata 90 günlük pencerenin tamamını çöpe atmaz.
+
+    ⚠️ NEDEN SAYAÇ DÖNÜYOR — bu fonksiyon "başarılı/başarısız" KARARINI VERMEZ:
+    Kısmi başarısızlık BAŞARI gibi raporlanamaz. Önceki sürüm yalnız `kararlar`
+    listesini döndürüyor ve sadece dilimlerin TAMAMI patlarsa hata veriyordu.
+    Sonuç: 4 dilimin 3'ü çökse bile ayakta kalan tek dilim boş dönünce main()
+    "karar yok — Hata DEĞİL" + exit 0, dolu dönünce "✓ N karar yazıldı" basıyordu;
+    pencerenin %75'inin düştüğü ÖZET SATIRINDA HİÇ GÖRÜNMÜYORDU. Bu işin varlık
+    sebebi tam olarak "gece logu gerçeği yansıtmıyor"du (boş pencere "Çekme hatası"
+    diye okunup haftalarca "KİK bizi blokluyor" teşhisi konmuştu) — sayacı
+    yutmak aynı hata sınıfını ters yönde geri getirir: gerçek bir KİK kesintisi
+    ya da proxy havuzu çöküşü "karar yok, hata değil" diye loglanır ve bir sonraki
+    teşhis yine yanlış yerden başlar.
+
+    Karar main()'e ait: orada hem exit kodu hem özet satırı dilim durumunu söyler.
     """
     kararlar, gorulen_no = [], set()
     dilimler, imlec = [], baslangic
@@ -232,9 +256,7 @@ def dilimleri_cek(havuz, baslangic: datetime, bitis: datetime, dilim_gun: int) -
             yeni += 1
         log.info(f"  dilim {i}/{len(dilimler)} ({bas.date()}—{bit.date()}): {yeni} karar")
 
-    if basarisiz and basarisiz == len(dilimler):
-        raise RuntimeError(f"tüm dilimler ({basarisiz}) başarısız — KİK erişimi gerçekten bozuk")
-    return kararlar
+    return kararlar, len(dilimler), basarisiz
 
 
 def karar_satira_donustur(ham: dict) -> dict | None:
@@ -335,37 +357,65 @@ def main():
     havuz = havuz_al(ssl_baglami=ekap_ssl_baglami())
     with httpx.Client(verify=ssl_ctx()) as client:
         try:
-            ham_kararlar = dilimleri_cek(havuz, baslangic, bitis, max(1, args.dilim_gun))
+            ham_kararlar, dilim_sayisi, basarisiz = dilimleri_cek(
+                havuz, baslangic, bitis, max(1, args.dilim_gun))
         except Exception as e:
             log.error(f"Çekme hatası: {e}")
+            sys.exit(1)
+
+        # Her özet satırında dilim sağlığı GÖRÜNÜR olmalı — "N karar yazıldı" tek
+        # başına, pencerenin ne kadarının gerçekten tarandığını söylemiyor.
+        dilim_ozet = (f"{dilim_sayisi - basarisiz}/{dilim_sayisi} dilim OK" if not basarisiz
+                      else f"{basarisiz}/{dilim_sayisi} dilim BAŞARISIZ")
+
+        if basarisiz == dilim_sayisi:
+            log.error(f"✗ kik_backfill: {dilim_sayisi} dilimin TAMAMI başarısız — KİK erişimi "
+                      "gerçekten bozuk (endpoint/proxy havuzu). Hiçbir şey yazılmadı.")
             sys.exit(1)
 
         satirlar = [s for h in ham_kararlar if (s := karar_satira_donustur(h))]
         seanslar = sorted({s["karar_tarihi"] for s in satirlar if s["karar_tarihi"]})
         log.info(f"{len(ham_kararlar)} ham karar · {len(satirlar)} geçerli satır · "
-                 f"{len(seanslar)} seans günü: {', '.join(seanslar[-6:]) or '(yok)'}")
+                 f"{len(seanslar)} seans günü: {', '.join(seanslar[-6:]) or '(yok)'} · {dilim_ozet}")
 
         if not satirlar:
-            # ARTIK exit 1 DEĞİL: boş pencere normal bir sonuçtur (KİK seans bazlı
-            # yayımlıyor). Eskiden burası "Çekme hatası" + exit 1 üretiyordu ve
+            if basarisiz:
+                # "Karar yok" ile "bakamadık" AYNI ŞEY DEĞİL. Dilim düştüyse pencerenin
+                # boş olduğunu BİLMİYORUZ — bunu "Hata DEĞİL" diye loglamak, gerçek bir
+                # kesintiyi normal bir geceye benzetir (bkz. dilimleri_cek docstring).
+                log.error(f"✗ kik_backfill: 0 karar — AMA {dilim_ozet}. Bu 'kayıt yok' değil, "
+                          "EKSİK TARAMA; pencerenin gerçekten boş olup olmadığı bilinmiyor.")
+                sys.exit(1)
+            # Tüm dilimler başarılı ve sonuç boş: bu normal bir sonuçtur (KİK seans
+            # bazlı yayımlıyor). Eskiden burası "Çekme hatası" + exit 1 üretiyordu ve
             # bu, kaynağın bloklandığı sanılmasına yol açtı.
-            log.warning("Bu aralıkta yayımlanmış karar yok — pencereyi genişletmeyi "
-                        "deneyin (--gun 180). Hata DEĞİL.")
+            log.warning(f"Bu aralıkta yayımlanmış karar yok ({dilim_ozet}) — pencereyi "
+                        "genişletmeyi deneyin (--gun 180). Hata DEĞİL.")
             return
 
         if args.dry_run:
             for s in satirlar[:5]:
                 log.info(f"  [DRY-RUN] {s['karar_no']} — {s['idare']} — {(s['baslik'] or '')[:60]}")
-            log.info(f"✓ kik_backfill [DRY-RUN]: {len(satirlar)} karar hazırlandı (yazılmadı).")
-            return
+            log.info(f"{'✗' if basarisiz else '✓'} kik_backfill [DRY-RUN]: "
+                     f"{len(satirlar)} karar hazırlandı (yazılmadı) · {dilim_ozet}.")
+            sys.exit(1 if basarisiz else 0)
 
         yazilan = upsert(client, satirlar)
 
     if yazilan < len(satirlar):
         # Kısmi/tam yazma hatasını BAŞARI gibi loglamak eski davranıştı.
-        log.error(f"✗ kik_backfill: {len(satirlar)} satırın yalnız {yazilan} tanesi yazıldı.")
+        log.error(f"✗ kik_backfill: {len(satirlar)} satırın yalnız {yazilan} tanesi yazıldı · {dilim_ozet}.")
         sys.exit(1)
-    log.info(f"✓ kik_backfill: {yazilan} karar yazıldı ({len(seanslar)} seans).")
+
+    if basarisiz:
+        # Yazma başarılı ama pencerenin bir kısmı HİÇ taranmadı. Elde olanı yazmak
+        # doğru (upsert idempotent, veri kaybı yok) — ama bunu "✓ başarılı" diye
+        # loglayıp exit 0 vermek, gece logunu yine yalancı yapardı.
+        log.error(f"✗ kik_backfill: {yazilan} karar yazıldı ({len(seanslar)} seans) AMA {dilim_ozet} — "
+                  "pencerenin bir bölümü hiç taranmadı, kapsam EKSİK.")
+        sys.exit(1)
+
+    log.info(f"✓ kik_backfill: {yazilan} karar yazıldı ({len(seanslar)} seans · {dilim_ozet}).")
 
 
 if __name__ == "__main__":
