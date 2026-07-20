@@ -189,8 +189,11 @@
 
       <!-- AYLIK TREND -->
       <div class="chart-card-wide" style="margin-bottom:16px;">
-        <div class="chart-title">Aylık İhale Trendi</div>
-        <div class="chart-sub">Son 24 aydaki ihale yayınlanma eğilimi (ilan tarihine göre)</div>
+        <!-- Eksen 20 Tem'de etkin_tarih'e taşındı (ilan_tarihi yalnız ~%3 dolu).
+             Başlık "Trend"den "Hareket"e çevrildi: 335K geçmiş kayıtta etkin_tarih
+             SONUÇ tarihidir, ilan tarihi değil — "yayınlanma eğilimi" demek yanlış olurdu. -->
+        <div class="chart-title">Aylık İhale Hareketi</div>
+        <div class="chart-sub">Son 24 ayda ihale hareketi — ilan, teklif veya sonuç tarihinden eldeki en güncel olanı</div>
         <div class="chart-wrap" style="height:200px;"><canvas id="chart-trend"></canvas></div>
       </div>
 
