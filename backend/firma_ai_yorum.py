@@ -45,7 +45,10 @@ VERİ:
 Bu veriye dayanarak, bir rakip ihale teklifçisine yönelik KISA (4-6 cümle, madde işaretsiz düz
 metin) bir Türkçe analiz yaz. Şunlara değin:
 - Bu firma hangi idare(ler)de/sektör(ler)de baskın (en çok iş aldığı yerler)
-- Tenzilat davranışı agresif mi ihtiyatlı mı (ortalama tenzilat yüzdelerine bak)
+- Tenzilat davranışı agresif mi ihtiyatlı mı (ortalama tenzilat yüzdelerine bak).
+  ÖNEMLİ: ort_tenzilat null ise o kırılımda tenzilat HESAPLANAMIYOR demektir (kısımlı ihalede
+  EKAP kısım bazlı yaklaşık maliyet yayımlamıyor) — null'lar için tenzilat yorumu YAPMA,
+  tenzilat verisi olmadığını belirt ya da bu maddeyi atla. Null'u sıfır/düşük tenzilat sanma.
 - Varsa yıllara göre bir yönelim/artış-azalış sinyali
 - Bu firmayla aynı ihalede karşılaşan bir rakibe kısa bir tavsiye cümlesi
 

@@ -49,6 +49,7 @@ import time
 from datetime import datetime, timezone
 
 import httpx
+from proxy_havuz import havuz_al, ekap_ssl_baglami
 from dotenv import load_dotenv
 
 sys.path.insert(0, os.path.dirname(__file__))
@@ -75,6 +76,8 @@ def ssl_ctx():
     return ctx
 
 BASE_HEADERS = {
+    # ŞART: yoksa açıklama alanları i18n anahtarı/İngilizce döner (bkz. ekap_scraper.py)
+    "Accept-Language": "tr-TR,tr;q=0.9",
     "User-Agent": (
         "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
         "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36"
@@ -95,11 +98,14 @@ def checkpoint_yaz(sayfa: int):
         json.dump({"son_sayfa": sayfa}, f)
 
 
-def enum_haritalari(client: httpx.Client) -> dict:
+def enum_haritalari(havuz) -> dict:
     """EKAP'ın dtEnum'undan tür/durum/il kod->etiket haritalarını çeker."""
-    r = client.get(ARAMA_ENDPOINT, params={"ES": "", "ihaleidListesi": "", "metot": "dtEnum"}, headers=BASE_HEADERS, timeout=30.0)
-    r.raise_for_status()
-    veri = r.json()
+    with havuz.istek() as ist:
+        r = ist.client.get(ARAMA_ENDPOINT, params={"ES": "", "ihaleidListesi": "", "metot": "dtEnum"},
+                           headers=BASE_HEADERS, timeout=30.0)
+        ist.yanit(r)   # yalnız gerçek blok kodları cezalandırır
+        r.raise_for_status()
+        veri = r.json()
     return {
         "tur": {e["A"]: e["D"] for e in veri.get("enumDtTipleri", [])},
         "durum": {e["A"]: e["D"] for e in veri.get("enumDtDurumlari", [])},
@@ -118,19 +124,24 @@ def tarih_parse(s: str | None):
     return f"{y}-{int(a):02d}-{int(g):02d}T{int(sa or 0):02d}:{dk or '00'}:00"
 
 
-def sayfa_cek(client: httpx.Client, sayfa: int, deneme: int = 3) -> list:
+def sayfa_cek(havuz, sayfa: int, deneme: int = 3) -> list:
+    """Her deneme havuzdan çıkan SIRADAKİ IP ile gider — bir IP bloklanmışsa
+    tekrar denemesi başka bir IP'ye düşer. Hız sınırı (IP başına soğuma + küresel
+    tavan) havuzda uygulanıyor; burada ayrıca beklemek gerekmiyor."""
     for i in range(deneme):
         try:
-            r = client.get(
-                ARAMA_ENDPOINT,
-                params={
-                    "ES": "", "ihaleidListesi": "", "dtBilgiSecim": "1",
-                    "metot": "dtAra", "orderBy": "10", "pageIndex": sayfa,
-                },
-                headers=BASE_HEADERS, timeout=30.0,
-            )
-            r.raise_for_status()
-            return r.json().get("yeniDogrudanTeminAramaResultList", []) or []
+            with havuz.istek() as ist:
+                r = ist.client.get(
+                    ARAMA_ENDPOINT,
+                    params={
+                        "ES": "", "ihaleidListesi": "", "dtBilgiSecim": "1",
+                        "metot": "dtAra", "orderBy": "10", "pageIndex": sayfa,
+                    },
+                    headers=BASE_HEADERS, timeout=30.0,
+                )
+                ist.yanit(r)   # yalnız 403/407/429/5xx cezalandırır (404 uygulama yanıtı)
+                r.raise_for_status()
+                return r.json().get("yeniDogrudanTeminAramaResultList", []) or []
         except (httpx.TimeoutException, httpx.HTTPStatusError, json.JSONDecodeError) as e:
             # json.JSONDecodeError: EKAP bazen 200 ile HTML bakım/hata sayfası döner (JSON değil) → retry
             if i == deneme - 1:
@@ -149,31 +160,66 @@ def kayit_donustur(item: dict, haritalar: dict) -> dict:
         "tur": tur,
         "il": haritalar["il"].get(item.get("E12")),
         "tarih": tarih_parse(item.get("E7")),
+        # 18 Tem: E8 = DUYURUNUN YAYIN/GÜNCELLENME tarihi (EKAP'ta liste yanıtında hep vardı,
+        # alınmıyordu). E7'den FARKLI: E7 kayda özgü (ihale/teklif tarihi, aktiflerde geleceğe
+        # gidebiliyor — 2028'e kadar), E8 ise duyurunun yayımlandığı gün. "Ne zaman eklendi"
+        # sorusunun tek doğru kaynağı budur; olusturulma bizim kazıma anımız (yanıltıcı).
+        "yayin_tarihi": tarih_parse(item.get("E8")),
         "durum": haritalar["durum"].get(item.get("E9")),
         "duyuru_var": bool(item.get("E13")),
         "dokuman_var": bool(item.get("E14")),
         "kategori": kategori_belirle(None, tur, baslik),  # DT'de OKAS yok → keyword(baslik) + tür fallback
+        # 18 Tem: E10/E11 önceden atılıyordu — DogrudanTeminDetay.aspx (kazanan/bedel, CAPTCHA
+        # arkasında) için gerekli tek anahtarlar bunlar (bkz. backend/dt_kazanan_scraper.py).
+        "dt_ihale_token": item.get("E10") or None,
+        "dt_idare_token": item.get("E11") or None,
+        "dt_ilan_var_mi": bool(item.get("E13")),
+        "dt_dosya_var_mi": bool(item.get("E14")),
         "guncellenme": datetime.now(timezone.utc).isoformat(),
     }
 
 
-def upsert(client: httpx.Client, kayitlar: list):
+def upsert(client: httpx.Client, kayitlar: list, deneme: int = 5) -> bool:
+    """Supabase'e upsert — AĞ HATASINA DAYANIKLI.
+
+    18 Tem: retry YOKTU ve çağrısı ana döngünün try'ının DIŞINDAydı → tek bir
+    'ReadError: Connection reset by peer' tüm taramayı öldürüyordu (dt-yayin.service
+    738. sayfada status=1 ile düştü). Origin'de /rest/v1 hız limiti var; uzun
+    taramada reset/429 beklenen bir durum, ölümcül olmamalı.
+    """
     if not kayitlar:
-        return
-    r = client.post(
-        f"{SUPABASE_URL}/rest/v1/dogrudan_temin_ilanlari",
-        headers={
-            "apikey": SUPABASE_KEY,
-            "Authorization": f"Bearer {SUPABASE_KEY}",
-            "Content-Type": "application/json",
-            "Prefer": "resolution=merge-duplicates,return=minimal",
-        },
-        params={"on_conflict": "dt_no"},
-        json=kayitlar,
-        timeout=30.0,
-    )
-    if r.status_code >= 300:
-        print(f"    ✗ upsert hatası: {r.status_code} {r.text[:200]}")
+        return True
+    for i in range(deneme):
+        try:
+            r = client.post(
+                f"{SUPABASE_URL}/rest/v1/dogrudan_temin_ilanlari",
+                headers={
+                    "apikey": SUPABASE_KEY,
+                    "Authorization": f"Bearer {SUPABASE_KEY}",
+                    "Content-Type": "application/json",
+                    "Prefer": "resolution=merge-duplicates,return=minimal",
+                },
+                params={"on_conflict": "dt_no"},
+                json=kayitlar,
+                timeout=60.0,
+            )
+            # 429 (hız limiti) / 5xx → geçici, bekleyip tekrar dene
+            if r.status_code == 429 or r.status_code >= 500:
+                bekle = 5 * (i + 1)
+                print(f"    ⚠ upsert {r.status_code} — {bekle}sn bekleyip tekrar ({i+1}/{deneme})", flush=True)
+                time.sleep(bekle)
+                continue
+            if r.status_code >= 300:
+                print(f"    ✗ upsert hatası: {r.status_code} {r.text[:200]}", flush=True)
+                return False
+            return True
+        except (httpx.HTTPError, OSError) as e:   # ReadError/ConnectError/Timeout/reset
+            bekle = 5 * (i + 1)
+            print(f"    ⚠ upsert ağ hatası ({type(e).__name__}) — {bekle}sn bekleyip tekrar ({i+1}/{deneme})", flush=True)
+            time.sleep(bekle)
+    # Tüm denemeler tükendi: SÜRECİ ÖLDÜRME — sayfayı atla, tarama devam etsin.
+    print(f"    ✗ upsert {deneme} denemede de başarısız — bu sayfa atlandı ({len(kayitlar)} kayıt).", flush=True)
+    return False
 
 
 def main():
@@ -203,14 +249,19 @@ def main():
         # Zaten var olan kayıtlar upsert (ON CONFLICT) ile zararsızca üzerine yazılır.
         sayfa = args.start_page if args.start_page is not None else 1
 
+    # EKAP arama istekleri proxy havuzundan gider (istek başına IP rotasyonu).
+    # PROXY_LIST boşsa havuz direkt moda düşer ve yalnız hız sınırı uygulanır.
+    # `client` ise Supabase upsert'leri için duruyor — kendi sunucumuz, proxy'ye
+    # sokmanın anlamı yok (ve proxy bant genişliğini boşa harcardı).
+    havuz = havuz_al(ssl_baglami=ekap_ssl_baglami())
     with httpx.Client(verify=ssl_ctx()) as client:
-        haritalar = enum_haritalari(client)
+        haritalar = enum_haritalari(havuz)
         print(f"✓ Enum haritaları çekildi: {len(haritalar['tur'])} tür, {len(haritalar['durum'])} durum, {len(haritalar['il'])} il")
 
         toplam_kayit = 0
         for i in range(args.max_pages):
             try:
-                ham = sayfa_cek(client, sayfa)
+                ham = sayfa_cek(havuz, sayfa)
             except (httpx.TimeoutException, httpx.HTTPStatusError, httpx.TransportError, json.JSONDecodeError) as e:
                 # sayfa_cek kendi içinde 3 deneme yaptı ve yine de başarısız oldu —
                 # uzun süren bir EKAP kesintisi olabilir (--backfill saatlerce/günlerce

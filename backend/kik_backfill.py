@@ -49,6 +49,7 @@ import uuid
 from datetime import date, datetime, timedelta
 
 import httpx
+from proxy_havuz import havuz_al, ekap_ssl_baglami
 from Crypto.Cipher import AES
 from Crypto.Random import get_random_bytes
 from Crypto.Util.Padding import pad
@@ -70,6 +71,8 @@ BASE_HEADERS = {
     "Accept": "application/json",
     "Content-Type": "application/json",
     "api-version": "v1",
+    # ŞART: yoksa açıklama alanları i18n anahtarı/İngilizce döner (bkz. ekap_scraper.py)
+    "Accept-Language": "tr-TR,tr;q=0.9",
     "Origin": BASE,
     "User-Agent": (
         "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
@@ -104,7 +107,9 @@ def crypto_headers():
     }
 
 
-def kararlari_cek(client: httpx.Client, baslangic: datetime, bitis: datetime) -> list:
+def kararlari_cek(havuz, baslangic: datetime, bitis: datetime) -> list:
+    """KİK isteği proxy havuzundan gider (istek başına IP rotasyonu).
+    DİKKAT: main()'deki `client` KALDIRILMADI — o Supabase upsert'i için gerekli."""
     body = {
         "sorgulaKurulKararlari": {
             "keyValuePairs": {
@@ -116,9 +121,11 @@ def kararlari_cek(client: httpx.Client, baslangic: datetime, bitis: datetime) ->
         }
     }
     headers = {**BASE_HEADERS, **crypto_headers()}
-    r = client.post(ENDPOINT, json=body, headers=headers, timeout=60.0)
-    r.raise_for_status()
-    veri = r.json()
+    with havuz.istek() as ist:
+        r = ist.client.post(ENDPOINT, json=body, headers=headers, timeout=60.0)
+        ist.yanit(r)   # yalnız 403/407/429/5xx cezalandırır — 404 uygulama yanıtı
+        r.raise_for_status()
+        veri = r.json()
     sonuc = veri.get("SorgulaKurulKararlariResponse", {}).get("SorgulaKurulKararlariResult", {})
     if sonuc.get("hataKodu") not in (None, "0"):
         raise RuntimeError(f"KİK API hatası: {sonuc.get('hataMesaji')}")
@@ -200,9 +207,14 @@ def main():
 
     log.info(f"KİK Kurul Kararları çekiliyor: {baslangic.date()} — {bitis.date()}")
 
+    # KİK istekleri havuzdan; `client` YALNIZ Supabase upsert'i için duruyor.
+    # Bu bloğu "artık gereksiz" diye silmek satır ~217'deki upsert(client, ...) çağrısını
+    # NameError'a düşürür — ve o hata yalnız --dry-run OLMAYAN koşuda patlar, yani elle
+    # dry-run testi görmez, gece cron'u sessizce ölür.
+    havuz = havuz_al(ssl_baglami=ekap_ssl_baglami())
     with httpx.Client(verify=ssl_ctx()) as client:
         try:
-            ham_kararlar = kararlari_cek(client, baslangic, bitis)
+            ham_kararlar = kararlari_cek(havuz, baslangic, bitis)
         except Exception as e:
             log.error(f"Çekme hatası: {e}")
             sys.exit(1)

@@ -241,7 +241,10 @@
       <div class="liste-card" id="detay-card" style="display:none;">
         <div class="liste-head">
           <span class="baslik" id="detay-baslik">📦 Kalem-kalem</span>
-          <input type="text" id="detay-ara" class="liste-ara" placeholder="🔍 HS kod veya açıklama ara…" oninput="detayCiz()" />
+          <select id="detay-fasil" class="liste-ara" onchange="detayCiz()" style="min-width:210px;cursor:pointer;">
+            <option value="">📚 Tüm fasıllar</option>
+          </select>
+          <input type="text" id="detay-ara" class="liste-ara" placeholder="🔍 HS kod, kalem, pozisyon veya fasıl ara…" oninput="detayCiz()" />
         </div>
         <div id="detay-govde"></div>
       </div>
@@ -565,11 +568,15 @@
   // ── HS6 kalem-kalem detay (drill-down) — dis_ticaret_hs + hs-kodlar.js (lazy) ──
   let detayVeri = [], detayKod = '', detayYil = 0, detayOnceYil = 0, _hsYuklu = false;
   let detaySortAlan = 'ihr', detaySortYon = -1;   // HS6 tablo sıralaması: varsayılan ihracat azalan
+  let detayKirpik = false;                        // eski yolda 1000-satır tavanına dayandıysa uyar
+  // HS hiyerarşisi: alt pozisyon (6) → pozisyon (4) → fasıl (2)
+  const hsFasil = k => (k || '').slice(0, 2);
+  const hsPoz   = k => (k || '').slice(0, 4);
   function hsKodlarYukle(){
     return new Promise(res => {
       if(_hsYuklu || window.HS_KODLAR){ _hsYuklu = true; return res(); }
       const s = document.createElement('script');
-      s.src = 'js/hs-kodlar.js?v=2';   // v2 = Türkçe HS açıklamaları
+      s.src = 'js/hs-kodlar.js?v=3';   // v2 = Türkçe HS açıklamaları
       s.onload = () => { _hsYuklu = true; res(); };
       s.onerror = () => res();   // etiket yüklenmese de kodlarla göster
       document.head.appendChild(s);
@@ -588,30 +595,70 @@
     gov.innerHTML = '<div class="mini-spin" style="margin:30px auto;"></div>';
     kart.scrollIntoView({ behavior:'smooth', block:'start' });
     await hsKodlarYukle();
-    const { data, error } = await sb.from('dis_ticaret_hs')
-      .select('hs6,yon,yil,deger_usd').eq('ulke_iso3', kod)
-      .order('deger_usd', { ascending:false }).limit(4000);
-    if(detayKod !== kod) return;   // araya başka ülke tıklandıysa bu cevabı yok say
-    if(error || !data || !data.length){
-      gov.innerHTML = '<div style="color:var(--muted);font-size:13px;text-align:center;padding:24px;">Bu ülke için HS6 kalem verisi bulunamadı.</div>';
-      return;
+    detayKirpik = false;
+    let kalemler = null;
+
+    // 1) TERCİH EDİLEN: sunucu-taraflı jsonb RPC — satır tavanı YOK, ülkenin TÜM kalemleri gelir.
+    //    (Eski yol .limit() ile PostgREST db-max-rows=1000'e takılıyordu: DEU 16.450 satır → 1.000.)
+    try {
+      const paket = await rpc('ticaret_hs_kalem', { p_iso3: kod });
+      if(paket && Array.isArray(paket.kalemler) && paket.kalemler.length){
+        detayYil     = Number(paket.guncel_yil) || 0;
+        detayOnceYil = Number(paket.onceki_yil) || 0;
+        if(detayOnceYil === detayYil) detayOnceYil = 0;
+        kalemler = paket.kalemler.map(r => ({
+          hs6: r.hs6, ihrG: num(r.ihr_g), ihrO: num(r.ihr_o), ithG: num(r.ith_g), ithO: num(r.ith_o)
+        }));
+      }
+    } catch(e){ /* RPC henüz uygulanmadı (migration_hs_hiyerarsi.sql) → eski yola düş */ }
+
+    // 2) GERİYE DÖNÜK: doğrudan tablo. 1000-satır tavanı nedeniyle büyük ülkelerde KIRPIK olabilir.
+    if(!kalemler){
+      const { data, error } = await sb.from('dis_ticaret_hs')
+        .select('hs6,yon,yil,deger_usd').eq('ulke_iso3', kod)
+        .order('deger_usd', { ascending:false }).limit(1000);
+      if(detayKod !== kod) return;   // araya başka ülke tıklandıysa bu cevabı yok say
+      if(error || !data || !data.length){
+        gov.innerHTML = '<div style="color:var(--muted);font-size:13px;text-align:center;padding:24px;">Bu ülke için HS6 kalem verisi bulunamadı.</div>';
+        return;
+      }
+      detayKirpik = data.length >= 1000;   // tavana dayandı → veri eksik, kullanıcıya söyle
+      // HS6 verisi yalnız 2 yıl içerir (güncel + önceki); Değişim BU sabit çift üzerinden hesaplanır.
+      const hsYillar = [...new Set(data.map(r => r.yil))];
+      detayYil = Math.max(...hsYillar);
+      detayOnceYil = hsYillar.length > 1 ? Math.min(...hsYillar) : 0;
+      const m = {};
+      for(const r of data){
+        const o = m[r.hs6] || (m[r.hs6] = { ihrG:0, ihrO:0, ithG:0, ithO:0 });
+        const cur = (r.yil === detayYil);
+        if(r.yon === 'X') o[cur ? 'ihrG' : 'ihrO'] = r.deger_usd;
+        else o[cur ? 'ithG' : 'ithO'] = r.deger_usd;
+      }
+      kalemler = Object.entries(m).map(([hs6, v]) => ({ hs6, ...v }));
     }
-    // HS6 verisi yalnız 2 yıl içerir (güncel + önceki). Değişim BU sabit çift üzerinden hesaplanır
-    // (üstteki yıl seçicisinden bağımsız — HS6 kalem verisi tüm yıllar için yok). Etikette açıkça belirtilir.
-    const hsYillar = [...new Set(data.map(r => r.yil))];
-    detayYil = Math.max(...hsYillar);
-    detayOnceYil = hsYillar.length > 1 ? Math.min(...hsYillar) : 0;
-    const m = {};
-    for(const r of data){
-      const o = m[r.hs6] || (m[r.hs6] = { ihrG:0, ihrO:0, ithG:0, ithO:0 });
-      const cur = (r.yil === detayYil);
-      if(r.yon === 'X') o[cur ? 'ihrG' : 'ihrO'] = r.deger_usd;
-      else o[cur ? 'ithG' : 'ithO'] = r.deger_usd;
-    }
-    detayVeri = Object.entries(m).map(([hs6, v]) => ({ hs6, ...v, ad: hsAd(hs6) }));
+    if(detayKod !== kod) return;
+
+    // Hiyerarşi alanlarını ekle (fasıl/pozisyon) — gruplama, filtre ve breadcrumb için
+    detayVeri = kalemler.map(r => ({ ...r, ad: hsAd(r.hs6), fasil: hsFasil(r.hs6), poz: hsPoz(r.hs6) }));
     detaySortAlan = 'ihr'; detaySortYon = -1;   // yeni ülke → ihracat azalan
+    detayFasilDoldur();
     detayCiz();
   };
+
+  // Fasıl (2-hane) filtresini o ülkenin verisinden doldur — ihracat büyüklüğüne göre sıralı
+  function detayFasilDoldur(){
+    const sel = document.getElementById('detay-fasil');
+    if(!sel) return;
+    const m = {};
+    detayVeri.forEach(r => {
+      const o = m[r.fasil] || (m[r.fasil] = { ihr:0, adet:0 });
+      o.ihr += r.ihrG || 0; o.adet++;
+    });
+    const sirali = Object.entries(m).sort((a,b) => b[1].ihr - a[1].ihr);
+    sel.innerHTML = `<option value="">📚 Tüm fasıllar (${detayVeri.length} kalem)</option>` +
+      sirali.map(([f, v]) => `<option value="${f}">${f} · ${esc((hsAd(f) || '—').slice(0, 42))} (${v.adet})</option>`).join('');
+    sel.value = '';
+  }
 
   // HS6 tablo başlığına tıkla → sırala (sorgu tablosuyla aynı desen)
   window.detaySirala = function(alan){
@@ -623,8 +670,15 @@
   window.detayCiz = function(){
     if(!detayVeri.length) return;
     const ara = (document.getElementById('detay-ara').value || '').toLocaleLowerCase('tr').trim();
+    const fasilSec = (document.getElementById('detay-fasil') || {}).value || '';
     let rows = detayVeri;
-    if(ara) rows = rows.filter(r => r.hs6.includes(ara) || (r.ad || '').toLocaleLowerCase('tr').includes(ara));
+    if(fasilSec) rows = rows.filter(r => r.fasil === fasilSec);   // hiyerarşi: fasıl süzgeci
+    // Arama artık hiyerarşide de eşleşir: kalem adı VEYA üst pozisyon/fasıl adı
+    if(ara) rows = rows.filter(r =>
+      r.hs6.includes(ara) ||
+      (r.ad || '').toLocaleLowerCase('tr').includes(ara) ||
+      (hsAd(r.poz) || '').toLocaleLowerCase('tr').includes(ara) ||
+      (hsAd(r.fasil) || '').toLocaleLowerCase('tr').includes(ara));
     const A = detaySortAlan, Y = detaySortYon;
     rows = rows.slice().sort((a, b) => {
       if(A === 'ad') return Y * String(a.ad || a.hs6).localeCompare(String(b.ad || b.hs6), 'tr');
@@ -649,10 +703,12 @@
         <th class="gizle-mobil" onclick="detaySirala('ithyoy')" ${degTitle}>Değişim <span class="ok">${okd('ithyoy')}</span></th>
       </tr></thead>
       <tbody>` + rows.slice(0, 400).map(r => `
-        <tr><td class="sol"><b style="color:var(--amber);font-family:ui-monospace,monospace">${r.hs6}</b> <span>${esc((r.ad || '—').slice(0, 95))}</span></td>
+        <tr><td class="sol"><b style="color:var(--amber);font-family:ui-monospace,monospace">${r.hs6}</b> <span>${esc((r.ad || '—').slice(0, 95))}</span>
+          <div style="font-size:10.5px;color:var(--muted);margin-top:2px;">${esc((hsAd(r.fasil) || r.fasil).slice(0, 34))} › ${esc((hsAd(r.poz) || r.poz).slice(0, 44))}</div></td>
         <td class="deger">${paraUsd(r.ihrG)}</td><td class="gizle-mobil">${yuzde(r.ihrG, r.ihrO, 1)}</td>
         <td>${paraUsd(r.ithG)}</td><td class="gizle-mobil">${yuzde(r.ithG, r.ithO, 1)}</td></tr>`).join('') + `</tbody></table></div>
-      <div style="font-size:11px;color:var(--muted);margin-top:8px;">${rows.length} kalem${rows.length > 400 ? ' — seçili sıralamaya göre ilk 400 gösteriliyor' : ''} · Kaynak: UN Comtrade${detayOnceYil ? ` · <b style="color:var(--off-white)">Değişim = ${detayOnceYil}→${detayYil}</b> (HS6 kalem verisi bu 2 yılı kapsar; üstteki yıl seçiminden bağımsızdır)` : ` (${detayYil || TIC.yil})`} · HS6 = 6-haneli Armonize Sistem (GTİP'in uluslararası tabanı)</div>`;
+      ${detayKirpik ? `<div style="font-size:11px;color:#fbbf24;margin-top:8px;border:1px solid rgba(251,191,36,.3);background:rgba(251,191,36,.07);border-radius:6px;padding:7px 10px;">⚠️ Veri kırpıldı — bu ülkenin kalemlerinin yalnız en büyük bir bölümü gösteriliyor (sunucu tarafı toplama henüz etkin değil). Tam liste için <code>migration_hs_hiyerarsi.sql</code> uygulanmalı.</div>` : ''}
+      <div style="font-size:11px;color:var(--muted);margin-top:8px;">${rows.length} kalem${fasilSec ? ` · fasıl <b style="color:var(--off-white)">${fasilSec} ${esc((hsAd(fasilSec) || '').slice(0,40))}</b> (${detayVeri.length} kalem içinden)` : ''}${rows.length > 400 ? ' — seçili sıralamaya göre ilk 400 gösteriliyor' : ''} · Kaynak: UN Comtrade${detayOnceYil ? ` · <b style="color:var(--off-white)">Değişim = ${detayOnceYil}→${detayYil}</b> (HS6 kalem verisi bu 2 yılı kapsar; üstteki yıl seçiminden bağımsızdır)` : ` (${detayYil || TIC.yil})`} · Hiyerarşi: fasıl (2) › pozisyon (4) › kalem (6)</div>`;
   };
 
   function satirVurgula(kod, kaydir){
@@ -723,28 +779,55 @@
       if(q.length < 2){ kutu.classList.remove('gor'); return; }
       await hsKodlarYukle();
       const H = window.HS_KODLAR || {};
-      const eslesme = [];
+      // HİYERARŞİK ARAMA: fasıl (2) + pozisyon (4) + kalem (6) — eskiden yalnız 6-hane aranıyordu.
+      // Geniş kodlar üste alınır (fasıl seçmek = o fasıldaki tüm kalemlerin toplamı).
+      const bul = [];
       for(const kod in H){
-        if(kod.length !== 6) continue;
-        if(kod.startsWith(q) || (H[kod] || '').toLocaleLowerCase('tr').includes(q)){
-          eslesme.push([kod, H[kod]]);
-          if(eslesme.length >= 50) break;
-        }
+        const n = kod.length;
+        if(n !== 2 && n !== 4 && n !== 6) continue;
+        if(kod.startsWith(q) || (H[kod] || '').toLocaleLowerCase('tr').includes(q)) bul.push([kod, H[kod], n]);
       }
+      const SEV = { 2: '📚 Fasıl', 4: '📂 Pozisyon', 6: '📦 Kalem' };
+      bul.sort((a, b) => a[2] - b[2] || a[0].localeCompare(b[0]));   // önce fasıl, sonra pozisyon, sonra kalem
+      const eslesme = bul.slice(0, 60);
       kutu.innerHTML = eslesme.length
-        ? eslesme.map(([k, ad]) => `<div class="oner-sat" onclick="sorguHs('${k}')"><b>${k}</b>${esc((ad || '').slice(0, 82))}</div>`).join('')
+        ? eslesme.map(([k, ad, n]) => `<div class="oner-sat" onclick="sorguHs('${k}')">
+            <span style="display:inline-block;min-width:74px;font-size:10.5px;color:var(--muted);">${SEV[n]}</span>
+            <b>${k}</b>${esc((ad || '').slice(0, 74))}</div>`).join('')
         : '<div class="oner-sat" style="color:var(--muted)">Eşleşen kalem yok.</div>';
       kutu.classList.add('gor');
     }, 180);
   };
 
-  // HS kodu → ülke ülke (dis_ticaret_hs)
+  // HS kodu → ülke ülke. Artık HER SEVİYE çalışır: '84' (fasıl) | '8407' (pozisyon) | '840710' (kalem)
   window.sorguHs = async function(hs6){
     document.getElementById('sorgu-hs-oner').classList.remove('gor');
     await hsKodlarYukle();
+    const SEV = { 2: 'Fasıl', 4: 'Pozisyon', 6: 'Kalem' };
+    const sev = SEV[hs6.length] || 'Kod';
     document.getElementById('sorgu-hs-ara').value = hs6 + ' — ' + (hsAd(hs6) || '');
     const sonuc = document.getElementById('sorgu-sonuc');
     sonuc.innerHTML = '<div class="mini-spin" style="margin:24px auto;"></div>';
+
+    // 1) TERCİH EDİLEN: sunucuda topla (fasıl sorgusu client-side imkânsız — 84* = 96.718 satır)
+    try {
+      const p = await rpc('ticaret_hs_ulkeler', { p_kod: hs6 });
+      if(p && Array.isArray(p.ulkeler) && p.ulkeler.length){
+        const rows = p.ulkeler.map(u => ({
+          ad: ulkeAdTr(u.iso3), ihrG: num(u.ihr_g), ihrO: num(u.ihr_o), ithG: num(u.ith_g), ithO: num(u.ith_o)
+        }));
+        const adet = Number(p.kod_adet) || 0;
+        sorguSonucCiz(`${sev} <b style="color:var(--amber);font-family:ui-monospace,monospace">${hs6}</b> · ${esc(hsAd(hs6) || '')} (${p.guncel_yil})` +
+          (adet > 1 ? ` <span style="color:var(--muted)">— ${adet} kalemin toplamı</span>` : ''), rows);
+        return;
+      }
+    } catch(e){ /* RPC henüz uygulanmadı → aşağıdaki eski yol (yalnız 6-hane) */ }
+
+    // 2) GERİYE DÖNÜK: yalnız 6-haneli kalem (fasıl/pozisyon toplaması sunucu gerektirir)
+    if(hs6.length !== 6){
+      sonuc.innerHTML = '<div style="color:var(--muted);font-size:13px;padding:16px;">Fasıl/pozisyon toplaması sunucu tarafı gerektirir (<code>migration_hs_hiyerarsi.sql</code> uygulanmalı). Şimdilik 6-haneli bir kalem seçin.</div>';
+      return;
+    }
     const { data, error } = await sb.from('dis_ticaret_hs')
       .select('ulke_iso3,yon,yil,deger_usd').eq('hs6', hs6)
       .order('deger_usd', { ascending: false }).limit(2000);

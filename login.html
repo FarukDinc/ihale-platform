@@ -197,6 +197,13 @@
       </form>
 
       <div class="divider">veya</div>
+      <!-- Google ile giriş: API.CONFIG.GOOGLE_GIRIS true olunca gösterilir (GoTrue'da sağlayıcı
+           açılmadan gösterilirse "Unsupported provider" hatası alınır) -->
+      <button class="btn-secondary" id="google-giris-btn" style="display:none;align-items:center;justify-content:center;gap:8px;"
+              onclick="googleIleGiris(this)">
+        <svg width="17" height="17" viewBox="0 0 48 48" aria-hidden="true"><path fill="#4285F4" d="M45.1 24.5c0-1.6-.1-2.7-.4-3.9H24v7.1h12.1c-.2 1.8-1.6 4.6-4.5 6.5l6.9 5.3c4.1-3.8 6.6-9.4 6.6-15z"/><path fill="#34A853" d="M24 46c5.9 0 10.9-2 14.5-5.3l-6.9-5.3c-1.8 1.3-4.3 2.2-7.6 2.2-5.8 0-10.7-3.8-12.5-9.900L4.4 32.9C8 40.1 15.4 46 24 46z"/><path fill="#FBBC05" d="M11.5 27.7c-.5-1.4-.7-2.9-.7-4.4s.3-3 .7-4.4l-7.1-5.5C2.9 16.3 2 20 2 23.3s.9 7 2.4 9.9l7.1-5.5z"/><path fill="#EA4335" d="M24 9.5c4.1 0 6.9 1.8 8.5 3.3l6.2-6C34.9 3.3 29.9 1 24 1 15.4 1 8 6.9 4.4 14.1l7.1 5.5C13.3 13.4 18.2 9.5 24 9.5z"/></svg>
+        Google ile devam et
+      </button>
       <button class="btn-secondary" onclick="panelGoster('kayit')">Ücretsiz Hesap Oluştur</button>
 
       <p class="terms">
@@ -237,7 +244,7 @@
 
 <!-- Supabase JS -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-<script src="js/api.js?v=rot1"></script>
+<script src="js/api.js?v=goog1"></script>
 
 <script>
   // Panel geçişi
@@ -368,6 +375,26 @@
       btn.disabled = false;
     }
   }
+
+  // Google ile giriş — yalnız GoTrue'da sağlayıcı açıldıysa (API.CONFIG.GOOGLE_GIRIS) gösterilir.
+  window.googleIleGiris = async function (btn) {
+    if (btn) { btn.disabled = true; btn.style.opacity = '.6'; }
+    try {
+      await API.auth.googleIleGiris();   // Google'a yönlendirir; dönüşte oturum kurulur
+    } catch (e) {
+      if (btn) { btn.disabled = false; btn.style.opacity = ''; }
+      toast(trHata(e.message) || 'Google ile giriş başlatılamadı', 'hata');
+    }
+  };
+  // DİKKAT: api.js dosyası `const API = ...` ile tanımlanır; top-level const window'a
+  // PROPERTY olarak yazılmaz → `window.API` undefined'dır. Koşulu `typeof API` ile kur
+  // (aşağıdaki oturum kontrolü de aynı deseni kullanıyor), yoksa buton hiç görünmez.
+  try {
+    if (typeof API !== 'undefined' && API.CONFIG && API.CONFIG.GOOGLE_GIRIS) {
+      const gb = document.getElementById('google-giris-btn');
+      if (gb) gb.style.display = 'flex';
+    }
+  } catch (_) {}
 
   // Zaten giriş yapılmışsa dashboard'a (veya ?donus hedefine) — ama e-posta onayı
   // işleniyorsa (hash'te access_token var) o akışın yönlendirmesini bekle, çakışma olmasın.

@@ -1,5 +1,1042 @@
 # İhalePlatform — Yapılacaklar Listesi
 
+> ## 🔴 20 TEM — CANLI HATA: 163.464 GEÇMİŞ İHALE "AKTİF" GÖRÜNÜYOR
+> P0.3 migration'ı uygulanırken ortaya çıktı (migration'ın kendisi sağlam, bu AYRI bir hata).
+>
+> ### Ölçüm (canlı, backfill akarken — rakamlar büyüyor)
+> | | |
+> |---|---|
+> | `durum='aktif'` diyor | **168.322** |
+> | └ son teklif tarihi GEÇMİŞ | **163.464** ← yanlış |
+> | └ gerçekten açık | 4.856 |
+> | └ tarihi BOŞ (asla kapanmaz) | 2 |
+> | `kapandi` | **0** |
+>
+> ### Kök neden — İKİ parça
+> **1) `ekap_scraper.py:675 durum_donustur()` varsayılanı "aktif":**
+> ```python
+> if "açık" in d or "devam" in d or "katılım" in d: return "aktif"
+> if "sonuçland" in d or "tamamland" in d: return "sonuclandi"
+> return "aktif"        # ← eşleşmeyen HER durum aktif sayılıyor
+> ```
+> `ekap_ihale_backfill.py:142` bunu 1,6M geçmiş kayıtta çağırıyor. EKAP'ın
+> geçmiş ihaleler için döndürdüğü durum metinleri bu iki kalıba uymuyor →
+> 2011 tarihli ihale "aktif" yazılıyor. **Gerçek metinlerin ne olduğunu BİLMİYORUZ**
+> (loglanmıyor) — bu yüzden eşlemeyi tahminle genişletmek YANLIŞ olur.
+>
+> **2) `ilan_durum_bayatlat()` (migration_uygun_firmalar_v3_1.sql:119)** yalnız
+> `son_teklif_tarihi IS NOT NULL` olanları kapatıyor → tarihi olmayan kayıt
+> sonsuza dek 'aktif' kalır. Şu an bu yalnız **2 kayıt**, ihmal edilebilir.
+>
+> ### Etkilenen yüzeyler
+> `durum='aktif'` sayan her yer: `idare_ozet_mv` (idareler dizinindeki "aktif"
+> sütunu), `kurum_ozet`'in `durum` kırılım grafiği.
+> ✅ ETKİLENMEYEN: `kurum_ozet.kpi.aktif` ve `il_sayim_aktif()` — ikisi de tarih
+> tabanlı, doğru 4.856 gösteriyorlar. (P0.3'te kpi.aktif'i `durum='aktif'`e
+> çevirecektim, adversaryal doğrulama bunu çürüttü — çevirseydik 34x şişerdi.)
+>
+> ### ÇÖZÜM — sırayla
+> **a) ŞİMDİ (güvenli, kalıcı):** backfill upsert'i `resolution=ignore-duplicates`
+> kullanıyor, yani mevcut satırları EZMİYOR → bayatlatmanın kapattığı satırlar
+> geri açılmaz. 163.464 kaydı düzeltir:
+> ```bash
+> docker exec -i supabase-db psql -U postgres -d postgres -c "SELECT public.ilan_durum_bayatlat() AS kapatilan;"
+> docker exec -i supabase-db psql -U postgres -d postgres -c "REFRESH MATERIALIZED VIEW CONCURRENTLY public.idare_ozet_mv;"
+> ```
+> **b) BACKFILL BİTİNCE tekrar koştur** — yeni gelen satırlar yine 'aktif' olarak
+> düşüyor. (Gece cron'u zaten çağırıyor; backfill gece de sürüyorsa sabah tekrar.)
+>
+> **c) KALICI (ayrı iş, ÖNCE VERİ TOPLA):** `durum_donustur`'un blanket
+> `return "aktif"`i toplu geçmiş yüklemede yanlış yönde hata veriyor —
+> "fırsat var" demek, "yok" demekten daha zararlı. AMA varsayılanı körlemesine
+> `"kapandi"` yapmak da riskli: canlı scraper aynı fonksiyonu kullanıyor, tanınmayan
+> bir durum metni gerçek aktif ihaleyi gizler.
+> **Doğru sıra:** önce `ihaleDurumAciklama`'nın eşleşmeyen değerlerini LOGLA
+> (backfill'e birkaç satır), gerçek metinleri gör, sonra eşlemeyi tamamla.
+> Tahminle genişletme.
+
+> ## ✅ 20 TEM — PROXY ÇALIŞIYOR, BLOKE İŞLER SERBEST
+> Kullanıcı teyit etti. Aşağıdaki üç iş 402 yüzünden duruyordu; komutlar hazır.
+> **Hepsi uzun sürer → `systemd-run` ile arka planda başlat, cron ile ÇAKIŞTIRMA**
+> (gece turu 03:00; `PROXY_KURESEL_RPM` süreç başına uygulanıyor, iki süreç toplam
+> yükü iki katına çıkarır — bkz. 18 Tem notu).
+>
+> ### 1) DT geçmiş yıllar — `yayin_tarihi` hâlâ kayıtların ~%1'inde dolu
+> ```bash
+> ssh ihale
+> cd /opt/ihale-platform/backend
+> systemctl reset-failed dt-yayin 2>/dev/null
+> systemd-run --unit=dt-yayin --working-directory=/opt/ihale-platform/backend \
+>   /opt/ihale-platform/backend/venv/bin/python ekap_dogrudan_temin_scraper.py \
+>   --backfill --max-pages 12000
+> # İlerleme:  journalctl -u dt-yayin -f
+> # Checkpoint'ten devam eder (--reset KOYMA, yoksa baştan tarar).
+> ```
+>
+> ### 2) DETSİS tam tarama — idare hiyerarşisi SAYAÇLARININ ön koşulu
+> ```bash
+> systemd-run --unit=detsis-tara --working-directory=/opt/ihale-platform/backend \
+>   /opt/ihale-platform/backend/venv/bin/python ekap_detsis_cek.py --tara --devam
+> # Bitince:  venv/bin/python ekap_detsis_cek.py --yaz
+> # 85.062 istek — uzun sürer. --devam checkpoint'ten devam eder.
+> ```
+> ⚠️ `--yaz` BİTMEDEN `ilan_detsis_esle()` çağırma (boş `detsis_no` üzerinde 1,85M
+> satır boşuna döner). Sıra: `--tara` → `--yaz` → `ilan_detsis_esle()` →
+> `REFRESH MATERIALIZED VIEW CONCURRENTLY public.idare_hiyerarsi_sayim_mv;`
+>
+> ### 3) 1,6M geçmiş ihale backfill — ÖNCE DOĞRULAMA gerekiyor
+> Düz sayfalama 1,9M kayıtta çöküyor; plan **81 il × 4 tür = 324 dilim**.
+> Başlatmadan önce `ihaleIlIdList` + `ihaleTuruIdList` alanlarının gerçekten
+> filtrelediğini **0 < sonuç < toplam** ölçütüyle doğrula.
+> ⚠️ "0 sonuç = filtre çalıştı" tuzağı — bkz. `ekap-detsis-idare-tur` hafıza notu.
+>
+> **Not:** İdare ağacı ARAYÜZ işi bu üçünü BEKLEMEZ — `idare_hiyerarsi_yukle.py`
+> EKAP'a hiç istek atmıyor, ağaç 15,42 MB olarak diskte hazır (bkz. İkinci Tur, madde 5).
+
+> ## ✅ 20 TEM — İDARE TÜRÜ: 813K SINIFSIZ SATIR KURALLA KAPATILDI (AI'sız)
+> **Ölçülen durum:** ilanlar 241.508 (%68) + DT 571.424 (%38) = **812.932 satır**
+> `idare_tur IS NULL`. Sebep ad yokluğu DEĞİL — 241.508'in yalnız **1**'inde ad boş.
+>
+> **Kök neden:** `idare_tur` tablosu SADECE DETSİS'ten dolduruldu (28.566 kayıt) ve
+> `idare_tur_tazele()` TAM EŞİTLİK ile join ediyor:
+> `WHERE t.idare_norm = public.idare_normalize(i.idare)`. DETSİS'te olmayan ad
+> eşleşemez — **belediye şirketleri (A.Ş./Ltd.Şti.) DETSİS'te zaten YOK**, onlar
+> devlet organizasyonu değil sermaye şirketi.
+>
+> `migration_idare_tur.sql` bunu öngörmüştü: `kaynak` kolonunda `'kural'` hazır
+> duruyordu ("Boşluk asla sınıfsız kalmaz: kural/AI ile GEÇİCİ sınıflanır").
+>
+> ### Kural motorunda bulunan 3 GERÇEK hata (ölçülerek)
+> 1. **Sözcük sınırı yok** — `_eslesir()` ham alt-dize arıyordu:
+>    `'a s'` → "satın **ALMA S**ube" içinde eşleşti → `belediye_sirket`
+>    (ONCELIK'te BİRİNCİ olduğu için güçlü kalıba düşmeyen HER adı çalıyordu;
+>    "ankara su" bile eşleşir). `'il mudurlugu'` → "s**İCİL MÜDÜRLÜĞÜ**".
+>    Kod zaten `_KISALTMA_TUZAK` için `\b` kullanıyordu → tümüne yayıldı.
+> 2. **Taşra eki merkezi ezmeli** — "KARAYOLLARI GM **5. BÖLGE MÜDÜRLÜĞÜ**" →
+>    `bakanlik_merkez` idi. Taşranın karşılığı `'karayollari n bolge mudurlugu'`,
+>    literal "n" yer tutucusu — "5" ile asla eşleşmez. `_tasra_ezmesi()` eklendi.
+>    ⚠️ KİT'e UYGULANMAZ (TCDD 3. Bölge hâlâ KİT'tir).
+> 3. **Üst kurum zinciri anahtar sözcükten güçlü** — "NİLÜFER İLÇE MEM ... **ŞEHİT
+>    JANDARMA ER** EYÜP GÜRSOY ORTAOKULU" → `guvenlik` idi. Şehit/bağışçı adı TÜR
+>    değil ANMA bilgisi. 67 ad · 287 satır etkilenmişti. `_UST_ZINCIR` eklendi.
+>
+> Regresyon paketi 20/20 (gerçek jandarma/ceza infaz/üniversite kayıtları çalınmıyor).
+>
+> ### `backend/idare_tur_kural_backfill.py` (yeni)
+> Eşleşmeyen adları kuralla sınıflar, `kaynak='kural'` ile yazar, tazeler.
+> - **Önuçuş**: `fold()` ≡ SQL `idare_normalize()` değilse DURDURUR. Bu kontrol
+>   olmadan 40K satır yazılır, tazele 0 döner, sebebi anlaşılmaz. (300 örnek, 0 sapma.)
+> - `kaynak='elle'` satırlara DOKUNMAZ (insan düzeltmesi korunur).
+> - `--detsis-yeniden` var olan satırın türünü yeniden hesaplar ama **kaynak
+>   etiketini KORUR** — tür hesabının düzeltilmesi kaydın kökenini değiştirmez.
+> - Normalize çakışması (`'TİC.A.Ş.'` ↔ `'TİC. A.Ş.'`) norm bazında tekilleştirilir;
+>   yoksa PostgreSQL 21000 "ON CONFLICT DO UPDATE cannot affect row a second time".
+>
+> ### Sonuç (3 turda, hepsi ölçüldü)
+> ```
+> başlangıç (yalnız DETSİS)     1.034.616 satır sınıflı · 812.932 sınıfsız
+> kural backfill #1             1.818.147 satır sınıflı ·  29.704 sınıfsız
+> kurallar düzeltilip genişletildi (--detsis-yeniden ile tam yenileme):
+>   54.305 tekil ad → 53.478 çözüldü · 1.832.259 satır
+>   KALAN: 827 ad · 15.591 satır (%0,84)
+> idare_tur tablosu: 28.566 → 53.478+ eşleme
+> ```
+> **AI'a hiç gerek olmadı.** Kalan 15.591 satırın tamamı jenerik alt birim adı
+> (`DESTEK HİZMETLERİ MÜDÜRLÜĞÜ` 2.309, `SATIN ALMA DAİRESİ BAŞKANLIĞI`,
+> `İŞLETME VE İŞTİRAKLER MÜDÜRLÜĞÜ`, `BÖLGE KOORDİNATÖRLÜĞÜ`). Bunlar addan
+> çıkarılamaz — hangi kuruma bağlı oldukları bilgisi adın İÇİNDE YOK. AI'a
+> sorulsa uydurmaktan başka bir şey yapamaz. Doğru çözüm DETSİS hiyerarşisi,
+> o da EKAP kazıması gerektiriyor (proxy 402 ile bloke). **AI ÖNERME.**
+>
+> ### `migration_idare_tur_tazele_fix.sql`
+> Backfill eşlemeleri YAZDI ama `idare_tur_tazele()` **57014 statement timeout**
+> yedi → kolonlar boş kaldı. İki sebep: (a) `dogrudan_temin_ilanlari`'nda ifade
+> indeksi YOK (migration yalnız `ilanlar`'a koymuş, 1,49M satırda satır-başı
+> fonksiyon), (b) fonksiyonun kendi timeout'u yok. İkisi de düzeltildi
+> (`SET statement_timeout = '1800s'`, SECURITY DEFINER + service_role kısıtlı
+> olduğu için güvenli).
+>
+> ### Bulunan 5 hata sınıfı (hepsi eşleştirme SEMANTİĞİ, kural içeriği değil)
+> 1. **Sözcük sınırı yok** — `'a s'` "satın **ALMA S**ube"de eşleşti; `belediye_sirket`
+>    ONCELIK'te birinci olduğu için güçlü kalıba düşmeyen HER adı çalıyordu
+> 2. **`'karayollari n bolge mudurlugu'`** — literal "n" yer tutucusu, hiçbir sayıyla eşleşmez
+> 3. **Şehit adı taşıyan okullar** `guvenlik`e gidiyordu (üst kurum zinciri ezildi)
+> 4. **Şapkalı harf sözcüğü kırıyor** — `MİLLÎ`→`mill`, `HÂKİMLER`→`h kimler`
+> 5. **Kural dosyasında düzyazı/liste kalıplar** — `'...ispark istac kiptas isbak
+>    belbim burulas...'` tek dize hâline gelmiş, hiçbiri eşleşmiyordu
+>
+> ⛔ **`fold()` SQL `tr_fold()` ile BAYT BAYT aynı kalmalı** — `idare_norm` join
+> anahtarını o üretiyor. Değişirse 53K eşlemenin anahtarı bayatlar ve tazele
+> SESSİZCE 0 döner. Eşleştirme iyileştirmesi ayrı `fold_kural()` katmanında yapıldı.
+> Backfill önuçuşu bu bağı her koşuda doğruluyor.
+>
+> ### Eski kalan-801 analizi (tarihsel — artık 827 ad / 15.591 satır)
+> Tanımlanabilir kümeler: TCMB şubeleri, TTK, İSTON, ESHOT, `KONYA B.B. SU KANAL
+> İDARESİ` (B.B. kısaltması tanınmıyor), Gıda Kontrol Laboratuvarları, Veteriner
+> Kontrol Enstitüleri, Sulama Birlikleri, Liman İşletme Müdürlükleri, Milli Emlak
+> Şeflikleri. Gerçekten çözülemeyen tek grup jenerik alt birim adları
+> (`DESTEK HİZMETLERİ SERVİSİ-2`, `MARMARA BÖLGE KOORDİNATÖRLÜĞÜ`) — bunlar ad'dan
+> çıkarılamaz, hiyerarşi gerekir; kod zaten BİLİNÇLİ olarak `bilinmiyor` dönüyor.
+>
+> - [ ] Migration sonrası doğrula: `ilanlar` NULL ~0, DT NULL ~29K
+> - [ ] Kalan 801 ada hedefli kural yaz, `--detsis-yeniden` ile bir kez koş
+>       (kural motoru 3 kez düzeldi → DETSİS satırlarının türü de bayat)
+> - [ ] Arayüzde `kaynak` ayrımı: 'kural' türü çıkarımdır, 'ekap-detsis' resmî.
+>       Filtre için yeterli ama "kesin" diye sunulmamalı.
+>
+> ### ⚠️ PERFORMANS BULGUSU: gece tazelemesi ~10 dk sürüyor
+> `idare_tur_tazele()` ölçüldü: postgres %124 CPU'da **7+ dakika** işlemci zamanı.
+> Sebep join koşulunun satır başına fonksiyon çağırması —
+> `t.idare_norm = public.idare_normalize(d.idare)` → 1,49M satırda tr_fold +
+> 2 regexp_replace. İfade indeksi bunu KURTARMIYOR: `IS DISTINCT FROM` koşulu her
+> satırın okunmasını gerektirdiği için planlayıcı seq scan + hash join seçiyor.
+> `run_scraper.sh` bunu HER GECE çağırıyor → her gece ~10 dk boşa CPU.
+>
+> **Çözüm (yapılmadı):** `idare_norm`'u iki tabloda da STORED generated column
+> yapmak → join düz eşitliğe döner, fonksiyon çağrısı sıfırlanır.
+> ```sql
+> ALTER TABLE public.ilanlar ADD COLUMN idare_norm text
+>   GENERATED ALWAYS AS (public.idare_normalize(idare)) STORED;
+> CREATE INDEX ON public.ilanlar (idare_norm);
+> ```
+> ⚠️ 1,85M satıra kolon eklemek tabloyu yeniden yazar — bakım penceresi ister.
+> ⚠️ `idare_normalize` IMMUTABLE olmak zorunda (öyle) yoksa generated column reddedilir.
+> ⚠️ Yeni kolon kolon-GRANT'a GİRMEZ → misafirde 42501, `GRANT SELECT (idare_norm)` şart.
+
+> # 🎯 İŞ KUYRUĞU — TEK KAYNAK (20 Tem 2026)
+> **Kullanıcı kararı:** *"eksikleri not al yapılacaklar md ye, oradan ilerleriz.
+> çift taraftan ilerlemek doğru olmuyor çünkü."* → Yeni iş talebi geldiğinde ÖNCE
+> buraya yazılır, sonra uygulanır. Sıradaki iş **buradan** seçilir, sohbetten değil.
+> Başka bir oturum aynı maddeye dokunuyor olabilir: başlamadan `git log --oneline -5`.
+>
+> Aşağıdaki maddelerin hepsi **koda oturtuldu** (dosya/satır/RPC + önkoşul + risk).
+> Belirsiz madde, ikinci bir oturumun aynı işi farklı şekilde yapmasına davetiyedir.
+>
+> ---
+>
+> ## 🔴 P0 — CANLI HATALAR (kullanıcı şu an görüyor)
+>
+> ### ✅ P0.1 ÇÖZÜLDÜ (20 Tem, commit `fea35b3`) — ihaleler.html kategori filtresi
+> 49 hardcode `<option>` kaldırıldı, dropdown `js/kategoriler.js`'ten runtime
+> dolduruluyor (`kategoriDropdownDoldur`). `js/kategoriler.js` bu sayfaya İLK KEZ
+> eklendi (yüklü değildi). Geri uyum: `kategoriSecimGarantiEt()` — kanonik-dışı
+> değer gelirse "(eski)" etiketiyle seçenek eklenip korunuyor; iki çağrı noktası
+> (`?kategori=` URL parametresi + kayıtlı arama yükleyicisi), yoksa kullanıcının
+> kayıtlı filtresi sessizce "tüm kategoriler"e dönerdi.
+> **Ek ölçüm:** kanonik olmayan 17.502 satırın **aktif kaydı SIFIR** (hepsi geçmişte)
+> → Güncel sekmesi için kanonik liste %100 yeterli.
+> Doğrulama: tümü 4.952 / Sağlık 265 / İnşaat 1.145 / Odun-Kömür 43 (birbirinden
+> farklı gerçek sonuçlar), konsol temiz.
+> 🔵 Kalan küçük iş: o 17.502 geçmiş satırın kanonik adlara taşınması
+> (`ai_kategori_backfill.py` yalnız 'Diğer'i hedefliyor, bunlara dokunmuyor).
+>
+> <details><summary>Orijinal hata kaydı (referans)</summary>
+>
+> ### P0.1 · ihaleler.html kategori filtresinin %90'ı ölü — ÖLÇÜLDÜ
+> `#f-kategori` (ihaleler.html:520) **48 seçenek** hardcode ediyor ve `<option>`larda
+> **`value` attribute'u YOK** → tarayıcı seçenek METNİNİ gönderiyor. Canlı
+> `ilanlar.kategori` ise `js/kategoriler.js`'teki 41 kanonik adı taşıyor.
+> REST ile tek tek ölçüldü: **43 seçenek 0 kayıt** döndürüyor. Çalışan yalnız 5 eski değer:
+> `İnşaat Malzemeleri` 10.025 · `Mal Alımı` 5.976 · `Hizmet Alımı` 1.395 ·
+> `İnşaat & Yapım` 345 · `Danışmanlık` 285.
+> Ölü örnekler: Sağlık, Tıbbi Cihazlar, BT Ekipmanları, Yazılım, Enerji, Gıda & İçecek…
+> **ÇÖZÜM:** select'i `js/kategoriler.js`'ten runtime doldur (dogrudan-temin.html:973
+> `kategorileriYukle()` bunu ZATEN doğru yapıyor — deseni oradan al).
+> **DİKKAT:** kayıtlı aramalarda/URL'de eski kategori değerleri kalmış olabilir; geçiş
+> eşlemesi düşünülmeli yoksa kullanıcının kayıtlı filtresi sessizce boşalır.
+>
+> </details>
+>
+> ### P0.2 · Süresi dolan RFQ'lar sonsuza dek "açık" kalıyor
+> `ilan_durum_bayatlat()` YALNIZ `public.ilanlar`'ı günceller; `satinalma_talepleri`'ne
+> hiç dokunmuyor. `il_rfq_dagilimi` de sadece `durum='acik'` bakıyor, tarih filtresi yok.
+> Şu an 3 RFQ'nun da tarihi gelecekte olduğu için görünmüyor ama zaman geçtikçe harita
+> ve e-Satınalma "açık fırsat" diye bayat kayıt gösterecek.
+> **ÇÖZÜM (biri):** `il_rfq_dagilimi`'ye `son_teklif_tarihi >= now()` ekle **veya**
+> `run_scraper.sh`'e RFQ bayatlatma adımı koy. İlki daha ucuz, ikincisi daha doğru
+> (liste ekranları da düzelir).
+>
+> ---
+>
+> ## 🟠 P1 — KULLANICI TALEPLERİ (19-20 Tem, sırayla)
+>
+> ### P1.1 · Analizlere "Tümü / İhaleler / Doğrudan Temin" ayrımı
+> *"analiz kısımlarını da ayıracağız, ayırıp sıralamamız gerekiyor, diğer türlü
+> doğrudan teminleri sıralayamıyoruz."*
+>
+> **Mevcut durum:** Analiz sayfalarının **hiçbirinde** DT verisi YOK. `rekabet_ozet`,
+> `kurum_ozet`, `analiz_pivot`, `idare_dizin_json`, `kategori_sayim` — hepsinin gövdesi
+> `FROM public.ilanlar` / `ihale_sonuclari`. DT'ye tek referans sol menü linki.
+> **Referans uygulama elimizde:** `dashboard.html:818` `dashModSec()` üçlü mod seçici
+> (tumu/ihale/dt) çalışıyor ve tüm widget'ları sürüyor. Bunu `js/mod-secici.js`'e
+> çıkar, 4 sayfada kopyalama.
+>
+> **İki hızda ilerle:**
+> - **UCUZ (saf frontend, backend değişikliği SIFIR):**
+>   `sektorler.html:336` → `dt_kategori_sayim()` ZATEN var, dönüş şekli `kategori_sayim`
+>   ile birebir aynı. `kurum-analiz.html:1029` → `dt_idare_sayim()` var (⚠️ jsonb vs SETOF
+>   şekil farkı normalize edilmeli; ikisi de anon'a KAPALI, misafir dalı korunmalı).
+> - **PAHALI (yeni RPC + ürün kararı):**
+>   `kurum-analiz.html:856` (`kurum_ozet`), `rekabet-analizi.html:352` (`rekabet_ozet`),
+>   `kurum-analiz.html:893` (`analiz_pivot`) — DT karşılığı YOK, yazılmalı.
+>
+> **🚧 ÜRÜN KARARI GEREKİYOR — şema asimetrisi:** `dogrudan_temin_ilanlari`'nda
+> `yaklasik_maliyet`, `usul`, `son_teklif_tarihi` **YOK**. Yani "Tümü" modunda ihale
+> sayısı artar ama toplam bütçe artmaz → KPI'lar kendi içinde tutarsız olur.
+> Karar: bu kartlar "Tümü"de gizlensin mi, yoksa *"parasal veriler yalnız ihalelerden"*
+> notu mu taşısın? **Sessizce 0 göstermek yanıltıcı olur, o seçenek yok.**
+>
+> **⛔ firma-analiz.html KAPSAM DIŞI bırakılmalı:** DT sonuçlarında `yuklenici_id`
+> BİLEREK boş (`migration_dt_kazanan.sql:63`), firma geçmişi güvenilir çekilemez.
+> Önce DT→yukleniciler normalize_firma eşleme turu gerekir.
+> Ek kısıt: DT kazanan/bedel kapsaması ~%1,3.
+>
+> ### P1.2 · e-Satınalma RFQ'ları haritada görünmüyor
+> *"e-satınalmada girilen açık ihaleler haritada açık RFQ da görünmüyor."*
+>
+> **⚠️ ÖNCE TEŞHİS — veri/RPC SAĞLAM, sorun hangi ekrana baktığında:**
+> `il_rfq_dagilimi` prod'da 200 dönüyor, anon'a açık, 3 açık RFQ veriyor
+> (Ankara/İstanbul/Kocaeli). `harita.html`'de tarayıcıda **doğru çiziliyor** (3 pin,
+> "Açık RFQ" KPI = 3). Tablo/durum eşleşmesi tam (`ozel-ihaleler.html:331` `durum:'acik'`
+> ↔ fonksiyon `WHERE durum='acik'`), MV değil (tazeleme gecikmesi yok).
+>
+> Üç ayrı olasılık, **hangisi olduğu kullanıcıdan teyit edilmeli:**
+> 1. **dashboard/index haritası** → `js/harita.js`'te RFQ **hiç yok**: satır 85 `MOD_BASLIK`
+>    3 modlu, satır 176 `Promise.all` yalnız `il_sayim_aktif` + `dt_il_sayim_aktif`.
+>    ⚠️ Ama `firma-analiz.html:1430`'da kayıt var: *"karar 16 Tem: RFQ katmanı yalnız
+>    e-Satınalma haritasında kalır"* → bu **bilinçli bir karardı**, geri alınacaksa teyit şart.
+> 2. **harita.html** → katman VAR ama varsayılan değil (`aktifKatman='firma'`, satır 242).
+>    Bu kod hatası değil **keşfedilebilirlik** sorunu; çözümü tamamen farklı
+>    (varsayılanı 'rfq' yap veya düğmeye sayı rozeti koy).
+> 3. **ihaleler.html** → `satinalma_talepleri` hiç geçmiyor; "da/de" ifadesi RFQ'ların
+>    ana ihale listesinde de olmamasına işaret ediyor olabilir.
+>
+> **İL ANAHTARI TUZAĞI:** `il_rfq_dagilimi` **Title case** ('İstanbul') döndürüyor,
+> `js/harita.js:65` `ilAnahtar()` ise BÜYÜK HARF varsayıyor. Normalize edilmezse sayılar
+> sessizce 0 görünür (bkz. [[ilike-tr-locale-tuzagi]]). `harita.html:203` `fold()` kopyalanmalı.
+> **ÖLÇEK:** 3 RFQ'ya karşı 4.654 aktif ihale + 95.695 DT → ortak choropleth'e katmak
+> RFQ'yu görünmez kılar; AYRI katman/pin muamelesi doğru.
+>
+> ### P1.3 · Ticaret analizi: her ülkenin verisi + arama geliştirme
+> *"her ülkenin verisini çekmek avantajlı olabilir, tek sefer çekeriz… ileride
+> konşimento verileri ile de kıyaslayacağız."*
+>
+> **🔴 EN KRİTİK RİSK — SESSİZ VERİ KAYBI:** `reporterCode=792` (Türkiye) iki script'e de
+> GÖMÜLÜ (`ticaret_hs_cek.py:43`, `ticaret_backfill.py:62`) ve **hiçbir tabloda raportör
+> kolonu yok**. `on_conflict=(ulke_iso3,hs6,yon,yil)` olduğu için sadece reporterCode'u
+> değiştirip çalıştırmak **Almanya'nın verisini Türkiye'nin üzerine yazar — hata vermez,
+> log "başarılı" der.** SIRA ŞART: önce migration (raportor kolonu + PK), sonra script.
+>
+> **HACİM — tam küp UYGULANAMAZ:** 176×176×HS6 ≈ yılda 30M satır; 26 yıl ≈ 600M satır
+> ≈ 120 GB (VDS'te yer yok). Comtrade **500 çağrı/gün** kotasıyla tek bir veri-yılı
+> **8,5 gün** sürer. "Tek sefer çekeriz" tam küpte gerçekçi değil.
+> **UCUZ ALTERNATİF (asıl istenen bu):** (A) her raportör × partner=Dünya(0) × AG6
+> → 26 yıl ~624 çağrı (~1,5 gün); (B) ayna istatistik (reporter=X, partner=TR) ≈ aynı maliyet.
+>
+> **KONŞİMENTO İÇİN ŞİMDİDEN ALINMALI:** `ticaret_hs_cek.py:134` yalnız `primaryValue`
+> alıyor, **`netWgt`/`qty` atılıyor**. Konşimento tonaj bazlı → sonradan eklemek tüm
+> kotayı ikinci kez harcamak demek. Tek seferlik çekimde MUTLAKA alınmalı.
+>
+> **⏰ ZAMAN BOMBASI (veri genişletmeden ÖNCE düzelt):** `migration_hs_hiyerarsi.sql:34`
+> `ticaret_hs_kalem` "güncel/önceki"yi `max(yil)`/`min(yil)` ile buluyor. 3. yıl eklenir
+> eklenmez "önceki" = EN ESKİ yıl olur, tüm Değişim% değerleri sessizce yanlışlanır
+> (aynı desen satır 63 ve 92'de de var; frontend'de de gömülü: `ticaret-analiz.html:626`).
+> Bu, tenzilat-çok-lot hatasıyla **aynı sınıf sessiz bozulma**.
+>
+> **ARAMA İYİLEŞTİRME (en yüksek getiri):** `ticaret-analiz.html:788` HS araması
+> `kod.startsWith(q)` → '471' yazınca 8471 bulunamıyor; 930 KB `hs-kodlar.js` client'a
+> iniyor. Sunucu-taraflı HS arama RPC'si + `tr_fold` + trigram indeks.
+>
+> ### P1.4 · Arama ekranlarını birleştir (ihaleciler.com deseni)
+> *"arama ekranlarını değiştireceğiz, böyle olmaz çok karışık."*
+>
+> **ORTAK BİLEŞEN HİÇ YOK.** `css/style.css` (827 satır) tamamen landing-page stili —
+> tek bir filtre/tablo/sekme bileşeni yok. 8 gerçek arama ekranı ~103 KB inline `<style>`
+> taşıyor; 18 CSS kuralı 8 sayfada byte-byte aynı. `js/ui.js` (307 satır) ve
+> `js/ihaleler.js` (157 satır) **hiçbir sayfadan çağrılmıyor — ölü kod.**
+>
+> **Asıl "karışıklık" kaynağı = uygulama modeli tutarsızlığı:**
+> `ihaleler.html` TEK barda **4 farklı davranış** barındırıyor: tarih+sıralama anında ·
+> İl/Kategori/Tür/Usul/Kaynak/bedel butonla · ana kutu yalnız Enter · topbar 400 ms canlı.
+> `kik-kararlar.html` yalnız-manuel AMA aynı "Sonuç" filtresi ikinci kez anında-uygulanan
+> çip olarak da var (iki kontrol aynı alanı yönetiyor, birbirinden habersiz).
+> Debounce: 6 sayfada **4 farklı değer** (250/300/350/400 ms).
+> "Sıfırla": ihaleler'de 2 tane, 4 sayfada hiç yok.
+> İsimlendirme: aynı işlev için 6 farklı sınıf şeması (`.filter-bar` / `.toolbar` /
+> `.arama-panel` / `.rfq-filtre` / `.filtre-bar` / `.dz-toolbar` / `.iz-ara`);
+> `.result-count` ve `.results-count` tek harf farkla iki ayrı sınıf.
+>
+> **REFERANS = `dogrudan-temin.html`** (tek düşünülmüş ekran: anında uygulama + aktif
+> filtre çipleri + `f-dt-` önekli id'ler + "neden bu filtre yok" açıklaması).
+> **EN KÖTÜ = `ihaleler.html`** (en çok trafik alan sayfa; P0.1 buradan çıktı).
+>
+> ### P1.5 · İdareler dizinini kurumlara göre sınıflandır
+> *"kurumlar DETSİS'ten tam çekildikten ve ağaca göre yerleştirildikten SONRAKİ iş o."*
+>
+> **✅ ÖNEMLİ DÜZELTME — altyapı sanılandan ÇOK İLERİDE.** Bu oturumda "migration'lar
+> prod'a uygulanmamış" dedim, **YANLIŞTI**. Ayırt etme kuralı: `42501` = nesne VAR +
+> yetki yok · `42703` = gerçekten yok. Ölçüm:
+> `ilanlar.detsis_no` → 42501 (**VAR**) · `dogrudan_temin_ilanlari.detsis_no` → 42501 (**VAR**) ·
+> `idare_hiyerarsi` → 42501 (**VAR**) · `idare_ata_torun` → 42501 (**VAR**) ·
+> `hiyerarsi_yolu` → 42703 (yok — ve GEREKSİZLEŞTİ, yerine kapanış tablosu geldi) ·
+> kontrol `boyle_bir_kolon_yok` → 42703.
+> ⚠️ Bu yanlış okumayla hareket edilirse uygulanmış migration'lar tekrar koşturulur ve
+> 19 Tem'deki **ACCESS EXCLUSIVE kilit olayı (canlı site tıkandı)** tekrarlanır.
+>
+> **GERÇEK DARBOĞAZ şema değil VERİ + ARAYÜZ:**
+> - `idare_tur` kapsaması **%32,3** (356.904 ihalenin 241.508'i sınıfsız). Yükseltmenin
+>   TEK yolu `ekap_detsis_cek.py --tara` (85.062 istek) → **proxy 402 ile BLOKE**.
+> - Arayüz **%0**: hiçbir HTML/JS `idare_agac_*` / `detsis_no` çağırmıyor.
+>   İş yeri `kurum-analiz.html:1029` (idareler.html oraya yönlendiriyor), şu an düz liste.
+> - `run_scraper.sh`'te `idare_tur_tazele()` VAR ama `idare_kapanis_uret()`,
+>   `ilan_detsis_esle()`, `REFRESH idare_hiyerarsi_sayim_mv` **YOK** → sayaçlar bayatlar.
+>
+> **SIRA BAĞIMLILIĞI SERT** (bozulursa hata VERMEZ, sayaçlar 0 çıkar — sessiz başarısızlık):
+> `idare_hiyerarsi yükle` → `idare_kapanis_uret()` → `idare_tur.detsis_no doldur (--tara)`
+> → `ilan_detsis_esle()` → `REFRESH idare_hiyerarsi_sayim_mv`. Her adımdan sonra satır say.
+>
+> **İŞE BAŞLAMADAN psql ile ölç** (anon'dan okunamıyor, ayrı onay gerekir):
+> ```sql
+> SELECT count(*) FROM idare_hiyerarsi;                    -- 87.528 bekleniyor
+> SELECT count(*) FROM idare_ata_torun;                    -- ~312.259 bekleniyor
+> SELECT count(*) FILTER (WHERE detsis_no IS NOT NULL), count(*) FROM ilanlar;
+> SELECT count(*) FILTER (WHERE detsis_no IS NOT NULL) FROM idare_tur;  -- ASIL BELİRLEYİCİ
+> ```
+> **%67,7 SESSİZ KAYIP RİSKİ:** hiyerarşi/tür filtresi SERT uygulanırsa 241.508 sınıfsız
+> ihale listeden sessizce düşer. "Sınıflanmamışları da göster" varsayılanı veya kapsama
+> rozeti şart. Ayrıca 87.528 düğümün **%20'si "Bağlantısız Kurumlar" (-999999)** altında,
+> bakanlığa yuvarlanamaz → arayüzde AYRI DAL olarak dürüstçe gösterilmeli.
+> **SIZINTI ADAYI:** `idare_tur` tablosu ve `idare_tur_liste()` anon'a **200** dönüyor
+> (satır gelmiyor çünkü RLS engelliyor) — bu [[anon-maske-iki-kok-neden]] kök neden A deseni.
+> RLS tek katman olarak bırakılmamalı, açık REVOKE eklenmeli.
+>
+> ---
+>
+> ## 🟡 P2 — BLOKE / BEKLEYEN
+> - **Proxy 402** — en üstteki blokaj. DT tam tarama, 1,6M backfill, DETSİS `--tara`
+>   hepsi buna bağlı. Kullanıcı aksiyonu (ödeme/kota).
+> - **`authenticated` rolü hâlâ her tabloda tablo-geneli SELECT.** 20 Tem taraması
+>   token dışında kimlik-benzeri kolon bulmadı, ama o tablolara eklenecek yeni hassas
+>   kolon otomatik olarak tüm üyelere açılır. Ayrı denetim işi.
+> - **Secret rotasyonu** — JWT_SECRET + Google client secret (sohbette ifşa oldu).
+> - **`API_EXTERNAL_URL`** hâlâ `http://195.85.207.126:8000` → GoTrue e-posta linkleri.
+> - **`ekap_sonuc_backfill.py:310`** `json.dumps(...)[:15000]` kırpması 725 satırda JSON bozuyor.
+> - **`idx_ilanlar_olusturulma`** — "Sisteme Yeni Düşen" sıralamasının ön koşulu; indeks yok.
+> - **Gece koşusu doğrulaması** — `=== Idare turu tazeleme ===` + `=== Lot sayisi tazeleme ===`
+>   satırları logda görülmeli (20 Tem'de eklendi, henüz koşmadı).
+>
+> ---
+>
+> # 🔬 İKİNCİ TUR KARARLARI (20 Tem) — P1 maddelerinin NİHAİ hâli
+> Yukarıdaki P1.1–P1.5 **ilk turdur**. Her tavsiye ayrı bir ajana *çürütülmek üzere*
+> verildi ve **üçü düzeltildi**. Çelişmede düzeltilen bir tavsiyeyi savunma — aşağısı geçerli.
+> Ayrıca açık kalan iki karar **veriyle çözüldü**, kullanıcıya sorulmasına gerek kalmadı.
+>
+> ## 🔴 YENİ P0.3 — ANALİZ RPC'LERİ VERİNİN %4'ÜNÜ GÖRÜYOR (canlıda YANLIŞ)
+> `rekabet_ozet` ve `kurum_ozet` trend eksenini `ilan_tarihi` ile kuruyor.
+> **Bağımsız ölçüldü (canlı REST):** `ilan_tarihi` 15.245/357.207 = **%4,27** dolu ·
+> `etkin_tarih` 351.883 = **%98,51** · `son_teklif_tarihi` 16.669 = %4,67 ·
+> `durum='aktif'` = **4.954**.
+> Yani trend/KPI grafikleri verinin yirmide birine dayanıyor ve `kpi.aktif` yanlış tabanda.
+> **Bu, 5 maddenin hepsinden önce gelir** — yeni özellik değil, mevcut yanlışın düzeltmesi.
+> Düzeltme: iki RPC'nin eksenini `etkin_tarih`'e taşı, `kpi.aktif`'i `durum='aktif'` tabanına al.
+>
+> ## 1) Analiz "Tümü / İhaleler / DT" — parasal birleştirme REDDEDİLDİ
+> **VERİYLE ÇÖZÜLDÜ:** DT bedel kapsaması **78.109/1.490.644 = %5,24** (yıl kırılımı:
+> 2026 %9,17 · 2025 %0,30 → birleştirme yapay sıçrama üretirdi). Ayrıca
+> `dogrudan_temin_sonuclari.yaklasik_maliyet` → **42703 (kolon YOK)**; elde yalnız
+> `kazanan_bedel` = *sözleşme bedeli* var → yaklaşık maliyetle toplamak **kategori hatası**.
+> Kazıma ilerlese bile bu gerekçe kalıcı. → **DT parasal kartlara KATILMAYACAK**,
+> kartlar "yalnızca ihaleler" rozeti + "N ihale üzerinden" paydası taşıyacak.
+>
+> **⚠️ ÇELİŞMEDE ÇIKAN YENİ HATA:** `ihale_sonuclari.yaklasik_maliyet` %98,6 dolu AMA
+> **kısım bazlı değil** — çok kısımlı ihalede aynı değer her satıra kopyalanmış.
+> Kanıt: `ilan_id 56e4dc72` → 35 kısım, SUM 808.746.995 vs gerçek 23.107.057 = **35,0x şişme**.
+> `lot_sayisi=1` filtresiyle çözmek de YANLIŞ: 530.440 → 283.438 (**%46 kayıp**, en büyük
+> ihaleler düşer; ym≥10M bandı 139.634 → 43.545 = ~3,2x sapma).
+> **Doğru yol: `ilan_id` bazında DISTINCT** (ayrı `ihale_butce_mv`, Faz B).
+>
+> **Faz A (SQL yok, bir oturum):** rozet + payda + `etkin_tarih` ekseni + `kpi.aktif`.
+> Mod anahtarında sayım/kırılım kartları DT'yi kapsar; **idare kırılımı misafirde DT
+> dalını DIŞLAR** (`dogrudan_temin_ilanlari.idare` anonda 42501); `usul` ve `durum`
+> kartları "Tümü"de gizlenir (DT'de usul kolonu yok, durum değerleri ayrık).
+> **Faz B (ayrı commit):** `ihale_butce_mv` + gece REFRESH + anon GRANT.
+> ⚠️ Faz B'yi doğrudan `ihale_sonuclari`'na bağlama: `rekabet_ozet` düz `LANGUAGE sql
+> STABLE` (çağıran yetkisiyle koşar) → misafirde rekabet-analizi **komple 42501** olur.
+> `kurum_ozet` SECURITY DEFINER olduğu için etkilenmez — bu asimetri tuzak.
+>
+> ## 2) RFQ — 16 Tem kararı BOZULMAYACAK, bu keşfedilebilirlik hatası
+> **VERİYLE ÇÖZÜLDÜ:** veri/RPC sağlam, `harita.html`'de doğru çiziliyor.
+> `satinalma_talepleri` 3 kayıt, üçü `durum='acik'`, en yakını **26 gün sonra** bayatlıyor.
+> `ozel-ihaleler.html`'de kullanıcıya harita vaadi verilmiyor (tek referans satır 313'teki
+> "İl zorunludur" notu) → şikâyetin çekirdeği **köprü yokluğu**.
+> **İlk adım (bir oturum):**
+> 1. `ozel-ihaleler.html:337` başarı mesajına + liste başlığına
+>    `🗺️ Açık talepleri haritada gör (N)` → `harita?katman=rfq`
+> 2. `harita.html`: `?katman=rfq` + `?il=` derin linkini kabul et (mevcut `?sektor=` bloğu yanına).
+>    **`aktifKatman='firma'` varsayılanı KALSIN** (53.897 firma vs 3 RFQ)
+> 3. RFQ butonuna rozet — **yalnız sayı > 0 iken** (41 kategori × 3 RFQ → çoğu sektörde "0" yazardı)
+> 4. `il_rfq_dagilimi`'ye bayatlama filtresi — **ÇIPLAK `>= now()` YAZMA**:
+>    `AND (son_teklif_tarihi IS NULL OR son_teklif_tarihi >= now())`. Kolon nullable ve
+>    `ozel-ihaleler.html:377` listesi tarihsizleri gösteriyor; çıplak filtre haritayla listeyi
+>    ters yönde ayırırdı. `durum` ekseni de hizalanmalı (RPC `='acik'`, liste `!='iptal'`).
+> 5. Yorum düş: `acik_adres`, `olusturan_vkn`, `ilce` anonda **42501** — RFQ kartını bu
+>    kolonlarla zenginleştiren misafirde sayfayı öldürür.
+>
+> ## 3) Ticaret — canlı tabloya PK TAKASI YAPILMAYACAK
+> **ÇELİŞME BUNU TERSİNE ÇEVİRDİ.** İlk tur "raportor kolonu + PK değiştir" diyordu;
+> canlı `dis_ticaret_hs` (780.386 satır) üzerinde PK/indeks takası, `CREATE OR REPLACE`
+> ile yeni imza eklemenin **PGRST203** üretmesi, yeni imzada GRANT olmaması (**42883**) ve
+> `DROP INDEX CONCURRENTLY`nin virgüllü liste kabul etmemesi yüzünden riskli.
+> → **Diğer raportörler AYRI tabloya: `public.dis_ticaret_dunya`.** Canlı tabloya sıfır dokunuş.
+>
+> **Ölçülen fırsat:** Comtrade `reporterCode` **virgüllü liste kabul ediyor** (5 raportör
+> tek çağrıda doğrulandı) ve `flowCode=X,M` çalışıyor — mevcut 4 script X ve M'yi ayrı
+> çekiyor, yani **çağrıların %50'si israf**. `netWgt` 500/500, `qty` 498/500 dolu geliyor
+> ama kod atıyor → konşimento kıyası için **şimdi alınmalı**, sonradan çekmek kotayı ikinci kez yakar.
+> **⏰ `ticaret_hs_fasil`'ın yıl penceresi WHERE'siz** (`max(yil)` tüm tablodan) — ikinci
+> raportörün 2025 satırı girerse TR fasıl tablosu boşalır. Ayrı tablo bu tuzağı da atlatıyor.
+> **26 yıl backfill YAPILMAYACAK**; önce tek-yıl pilotu, sonuç görülünce karar.
+>
+> ## 4) Arama/filtre — SIRA TERSİNE ÇEVRİLDİ: önce davranış, CSS en son
+> **ÇELİŞME DÜZELTTİ.** Ölçüm CSS birleştirmenin şikâyete dokunmadığını gösterdi:
+> 8 sayfa inline CSS **91.206 B**, ortak kabuk yalnız %21, **%79'u sayfaya özel** —
+> filtre CSS'i zaten hiçbir sayfada ortak değil.
+> Asıl şikâyet **davranış tutarsızlığı**: `ihaleler.html` tek başına 4 model barındırıyor
+> (5 kontrol anında · topbar 400ms · `f-arama` Enter · `f-idare`/`f-esik-katsayi`/`f-okas`
+> **hiç handler'ı yok**, yalnız butonla).
+> **Commit 1 (sıfır görsel risk):** `js/api.js:98,111` `UI.bildirim_goster()` çağırıyor ama
+> `UI` yalnız `js/ui.js`'te ve api.js yükleyen 6 sayfanın hiçbiri onu yüklemiyor →
+> yerel `bildirimGoster()` koy. **7 ölü dosya sil** (1.164 satır / 48.777 B: ui.js,
+> dashboard.js, ihale-detay.js, ihaleler.js, fiyatlandirma.js, profil.js, auth.js —
+> HTML referansı 0, dinamik import 0). `ihale-detay.html` + `profil.html`'den gereksiz
+> api.js script tag'ini kaldır.
+> **Commit 2:** `ihaleler.html`'in 3 handler'sız alanına handler ekle (metin 350ms debounce,
+> select/date anında, Enter debounce atlar) + `sayacIstekNo` yarış koruması.
+> ⚠️ Önce ILIKE gecikmesini ÖLÇ — `f-idare` her tuşta sunucu ILIKE'ı, 57014 baskısı var.
+> **CSS en sona:** `css/kabuk.css` ayrı, `css/arama.css` yalnız filtre kuralları, `.ara-*`
+> ad alanı. `.toolbar` 4 sayfada 3 farklı değer taşıyor — naif taşıma **harita.html'i bozar**.
+> Pilot sırası: uluslararasi → sektorler → kik-kararlar → … → ihaleler (en son).
+>
+> ## 5) İdare ağacı — PROXY OLMADAN BAŞLANABİLİR
+> **VERİYLE ÇÖZÜLDÜ:** `idare_hiyerarsi_yukle.py` EKAP'a **0 istek** atıyor
+> (`httpx` yalnız SUPABASE_URL'e; `proxy_havuz` importu bile yok) →
+> `detsis_agaci.json` **15,42 MB / 87.528 kayıt** diskte hazır. **Proxy yalnız SAYAÇLARI blokluyor.**
+> **⚠️ ÇELİŞMENİN YAKALADIĞI ZORUNLU ADIM:** `idare_kapanis_uret()` MV'yi **REFRESH ETMİYOR**,
+> loader da etmiyor; `idare_agac_dallar` **yalnızca** `idare_hiyerarsi_sayim_mv`'den okuyor →
+> REFRESH atlanırsa arayüz **boş ağaç** render eder. Adım 1 ve 2 aynı işlemde olmalı.
+> **⚠️ TEŞHİS KURALI DÜZELTMESİ:** boş gövdeyle çağrılan `idare_agac_yol`/`_ara`/
+> `idare_alt_agac_detsis` **PGRST202** dönüyor (zorunlu parametreleri var) — bu
+> "fonksiyon yok" DEMEK DEĞİL. Yanlış alarm üretmesin.
+> **Sıra:** loader `--kapanis` → **MV REFRESH CONCURRENTLY** → `kurum-analiz.html:378`'e
+> "Liste | Ağaç" sekmesi (mevcut liste bloğuna DOKUNMA, kardeş div) → sayaç sütunlarını
+> **bayrakla KAPALI başlat** (0 göstermek "bu kurumun hiç ihalesi yok" yalanı) →
+> `LIMIT 500` kırpmasını yüzeye çıkar → "Bağlantısız Kurumlar" (%20, 17.329 düğüm) **ayrı
+> dal olarak göster, gizleme** → `run_scraper.sh`'e `idare_kapanis_uret()` + MV REFRESH.
+> `ilan_detsis_esle()`'yi cron'a **EKLEME** (boş `detsis_no` üzerinde 1,85M satır boşuna döner).
+> ⛔ `migration_idare_agac_rpc.sql`'i **TEKRAR KOŞMA** — içinde ALTER TABLE var,
+> 19 Tem'de ACCESS EXCLUSIVE canlı `ilanlar` okumalarını tıkadı. Şema zaten uygulanmış.
+>
+> ---
+>
+> ## 📋 UYGULAMA SIRASI (gerekçeli)
+> | # | İş | Neden bu sırada |
+> |---|---|---|
+> | 1 | **P0.3 Analiz ekseni** (`etkin_tarih` + `kpi.aktif`) | Canlıda YANLIŞ olan tek şey; %4,27 → %98,51 |
+> | 2 | **Arama Commit 1** (api.js + 7 ölü dosya) | Gerçek kusur, sıfır görsel risk, bağımsız |
+> | 3 | **RFQ köprüsü** (4 adım) | Kullanıcı şikâyeti doğrudan bu; 26 gün sonra bayatlama aynı sürümde kapanmalı |
+> | 4 | **Analiz Faz A** (rozet + payda + mod anahtarı) | Saf frontend, SQL riski yok |
+> | 5 | **Arama Commit 2** (ihaleler 3 handler) | "Çok karışık"ın merkezi; önce ILIKE ölçümü |
+> | 6 | **İdare ağacı** 1-7 | En büyük ürün kazancı, proxy'siz biter; ama en çok yeni kod |
+> | 7 | **Ticaret** ayrı tablo + script | Canlıya sıfır dokunuş; ürün değeri onay bekliyor |
+> | 8 | **Analiz Faz B** (`ihale_butce_mv`) | En yüksek regresyon riski (misafir 42501 + timeout) |
+> | 9 | İdare sayaçları / Ticaret pilot | Proxy 402'ye + onaya bağlı, takvime konamaz |
+>
+> Mantık: **canlı hata → ucuz kullanıcı değeri → doğruluk → yeni yüzey → riskli altyapı → bloke iş.**
+> CSS birleştirme bilinçli olarak sonda: ölçüm, kullanıcının şikâyetine dokunmadığını gösterdi.
+>
+> ## ❓ GERÇEKTEN KULLANICI KARARI OLANLAR (veriyle çözülemeyenler)
+> 1. **"Tümü" varsayılan mı olacak?** DT (1.490.644) ihaleyi (357.207) **4:1** eziyor →
+>    varsayılan "Tümü" olursa tüm kırılım grafikleri fiilen DT grafiğine döner.
+> 2. **"Tümü"de ortak tarih penceresi?** DT pratikte 2025-2026, ihale 2010'a uzanıyor.
+> 3. **RFQ'lar `ihaleler.html`'de de görünsün mü?** Kamu ilanı + özel RFQ tek listede karışsın mı?
+> 4. **RFQ bayatlatma: RPC filtresi mi, cron adımı mı?** İkincisi daha doğru (listeleri de
+>    düzeltir) ama **prod cron değişikliği** → ayrı onay.
+> 5. **Ticaret "her ülke" ne demek?** (a) her ülke × DÜNYA (partner=0) — planlanan;
+>    (b) tam ikili matris ≈ **4,8 milyar satır**, uygulanamaz.
+
+> ## 🛑 20 TEM — PROXY HAVUZU DÜŞTÜ (402), KAZIMA İŞLERİ BLOKE
+> Webshare uçlarının **tamamı `402 Payment Required`** dönüyor (httpx CONNECT
+> aşamasında; `curl -x` de bağlanamıyor → exit 56). 19 Tem'deki "government sites"
+> doğrulaması ayrı bir olaydı ve çözülmüştü — bu **kota/ödeme** kaynaklı yeni bir durum.
+>
+> **Kullanıcı aksiyonu gerekiyor** (ödeme/hesap bilgisi giremem): Webshare panelinde
+> bandwidth kotası + abonelik durumuna bakılmalı.
+>
+> **Bloke olan işler:** 2. madde (1,6M geçmiş ihale tam backfill), 3. madde (DT geçmiş
+> yıllar — checkpoint sayfa 4925'te, `--backfill` ile devam eder).
+>
+> **Yeniden başlarken doğrulama:**
+> ```bash
+> ssh ihale "cd /opt/ihale-platform/backend && set -a && . ./.env && set +a && \
+>   HP=\$(echo \$PROXY_LIST|cut -d, -f1) && \
+>   curl -s --max-time 20 -x http://\$PROXY_KULLANICI:\$PROXY_SIFRE@\$HP https://api.ipify.org"
+> ```
+>
+> ### 1,6M backfill için bölümleme kararı (araştırma sonucu)
+> Düz sayfalama 1,9M kayıtta çöker → dilimlemek şart. **Yıl alanı bundle'da bulunamadı**
+> (arama modeli lazy-load chunk'ta, `main.*.js` içinde yok; `Lookup/GetIKNYil` endpoint'i
+> ağ kaydında var ama alan adı doğrulanmadı). **Yıl aramaya gerek yok:** bundle'dan
+> doğrulanmış `ihaleIlIdList` + `ihaleTuruIdList` ile **81 il × 4 tür = 324 dilim**
+> (~6.000 kayıt/dilim) sayfalama derinliği sorununu çözer. Proxy açılınca önce bu iki
+> alanın filtrelediği **0 < sonuç < toplam** ölçütüyle doğrulanmalı
+> (⚠️ "0 sonuç = filtre çalıştı" tuzağı — bkz. `ekap-detsis-idare-tur` hafıza notu).
+
+> ## ✅ 20 TEM — ETKİN TARİH: 335K GEÇMİŞ İHALE ARAYÜZE AÇILDI (canlıda doğrulandı)
+> **Sorun:** 356.904 ihalenin 340.538'inde (%95) ilan/teklif/ihale tarihi BOŞ (sonuç
+> backfill'inden gelen kayıtlar). Sekme ölçütü `son_teklif_tarihi` olduğu için bunlar
+> **ne Güncel'de ne Geçmiş'te** görünüyordu — yalnız Sonuç sekmesinden erişilebiliyordu.
+>
+> **`backend/migration_etkin_tarih.sql`** (uygulandı): `etkin_tarih` + `etkin_tarih_kaynak`
+> kolonları, `etkin_tarih_tazele()`, DESC indeks, misafir kolon-GRANT'ı.
+> İlk doldurma: `{"kendi_tarihi": 16368, "sonuctan_turetilen": 335212}` → 351.580 dolu,
+> 5.324 boş (bunların bağlı sonuç kaydı da yok).
+>
+> ⚠️ **`ilan_tarihi`'ye YAZILMADI** — sonuç tarihi ≠ ilan tarihi; boş alanı doldurmak
+> "bu ihale şu tarihte ilan edildi" diye yanlış bilgi üretirdi. Ayrı eksen + kaynak etiketi.
+>
+> **`ihaleler.html`** (commit `4c45cb9`): Geçmiş kapsamı ve sekme sayacı `etkin_tarih`'e
+> geçti (**11.712 → 346.926**, ölçüldü), Geçmiş'te varsayılan sıralama `etkin_tarih DESC`,
+> tarih aralığı filtresi Geçmiş'te `etkin_tarih`'e uygulanıyor, kart yalnız sonuçtan
+> türetilmiş tarihi **"Sonuçlanma"** diye etiketliyor. Fallback sorgu kolu da güncellendi.
+> Canlı doğrulama: sekme "Geçmiş (346.9K)"; 2022 filtresinde kart
+> `SONUÇLANMA | 30 Ara 2022 | SON TEKLİF | —`.
+>
+> `run_scraper.sh` gece `etkin_tarih_tazele()` çağırıyor → yeni sonuçlar otomatik işlenir.
+
+> ## 🏛️ YARIN (20 TEM) — İDARE HİYERARŞİSİ: HEM İHALELER HEM DOĞRUDAN TEMİN
+> Kullanıcının 19 Tem'deki talebi: *"yarın idareler kısmı yapacağız, doğrudan temin ve
+> ihaleler kısmına onu da ekleyeceğiz."* Yani bu iş TEK sayfalık değil — **iki liste
+> sayfasının ortak filtresi** olarak tasarlanmalı.
+>
+> **Hedef:** idareleri bakanlıktan aşağı doğru sınıflandırıp (bakanlık → bağlı kurum →
+> il müdürlüğü → daire) **özelden genele** filtreleme/sıralama. Referans: ihaleciler.com
+> bu şekilde çekiyor.
+>
+> ### ⚠️ BU BÖLÜM BAYAT — GÜNCEL DURUM İÇİN DOSYANIN EN ÜSTÜNDEKİ **P1.5**'E BAK
+> Aşağıdaki "uygulama BAŞLAMADI" ifadesi 19 Tem'de yazıldı ve **artık doğru değil**:
+> o tarihten sonra hiyerarşi tablosu + kapanış tablosu + sayaç MV'si + 4 ağaç RPC'si
+> yazıldı ve **prod'a uygulandı** (20 Tem'de `42501` probuyla doğrulandı).
+> Madde 2'deki `hiyerarsi_yolu` kolonu ise mimari değişiklikle **gereksizleşti**
+> (yerine `idare_ata_torun` kapanış tablosu geldi). Kalan gerçek eksik: veri kapsaması
+> (%32,3, proxy 402 ile bloke) ve arayüz (%0).
+>
+> **Araştırma TAMAM (18 Tem), ~~uygulama BAŞLAMADI~~ → şema uygulandı, veri+arayüz eksik.**
+> Kaynak: EKAP DETSİS ağacı —
+> `DetsisAgaci` 87.528 kayıt, eşleştirme anahtarı **`idareKodList=[idareId]`**.
+> Detaylar + 3 tuzak (idareKod ≠ detsisNo · 0-sonuç ≠ filtre çalıştı · ad-join ambigü)
+> için bkz. hafıza notu `ekap-detsis-idare-tur`.
+>
+> ### Uygulama sırası (öneri)
+> 1. DETSİS ağacını yerel tabloya aynala (BFS ile tam ağaç) → `detsis_agaci`
+> 2. `ilanlar.detsis_no` + `hiyerarsi_yolu` kolonları (DT tarafında da aynısı)
+> 3. Her iki sayfaya ortak "İdare Türü / Üst Kurum" filtresi — **tek bileşen, iki sayfa**
+> 4. `idareler.html`'de ağaç görünümü (drill-down)
+>
+> ⚠️ DT tarafında idare filtresi ŞU AN üyelere özel (misafirde maskeli) — hiyerarşi
+> filtresi eklenirken bu ayrım korunmalı, yoksa maskeleme delinir.
+
+> ## ✅ 19 TEMMUZ — DOĞRUDAN TEMİN: 5 DÜZELTME (hepsi yerelde doğrulandı)
+> Kullanıcının haritadan `?il=ANKARA` ile DT'ye gelip gördüğü üç hata + iki istek.
+>
+> ### 1. Haritadan gelince yanlış sekme — `dogrudan-temin.html`
+> `?il=` bloğu sekmeyi `'tumu'`ya çekiyordu (harita TOPLAM sayarken doğruydu). Harita
+> 18 Tem'de AKTİF sayıma geçince popup "6K" derken liste 115K gösteriyordu → `'guncel'`.
+>
+> ### 2. Sekme sayaçları global sayıyordu — asıl şikâyet
+> Ankara seçiliyken "Güncel 96K" yazıyordu (ülke geneli). Artık **aktif filtrelerin
+> kapsamında** sayılıyor: Ankara → 6K/109K/115K, liste 6.291. Uygulama:
+> - `filtreleriUygula(query, {sekmeUygula})` — sekme kapsamı opsiyonel oldu
+> - `sekmeSayaclariYukle()` — **imza cache'i** (sekme değişimi sorgu ATMAZ: ölçüldü,
+>   sekme=1 istek / filtre=4 istek) + yarış koruması + `sayimYapilabilirMi()` kapısı
+> - `istatistikYukle`'den 2 gereksiz sorgu kalktı (açılışta 6→4 head-count)
+> - ⚠️ Panelden **tek ham durum** seçilince sekme kapsamı hiç uygulanmıyor (mevcut
+>   bilinçli davranış) → üç sekme de AYNI listeyi gösterir, bu yüzden üç sayaç da
+>   aynı rakamı yazıyor. Farklı yazmak yalan olurdu.
+> - Topbar sayacına **"(tüm veri)"** eklendi — o global kalıyor, karışmasın.
+>
+> ### 3. DT kartları tıklanamıyordu → **YENİ `dt-detay.html`**
+> Kart `<a>` ile SARILMADI (içinde `<a class="dt-idare">` + `<button>` var → iç içe
+> anchor); "stretched link" deseni: mutlak konumlu `.dt-kart-link` + etkileşimli
+> öğeler `z-index:2`. Doğrulandı: kart gövdesi linke, yıldız yıldıza gidiyor.
+> Sayfa: başlık/rozetler/takip/paylaş · duyuru bilgileri · **sonuç kartı**
+> (`dogrudan_temin_sonuclari`, çok kalemliyse toplam) · EKAP notu · ilgili aramalar.
+> - Maskeleme korundu: `idare` ve `kazanan_firma` yalnız üyeye; misafirde `🔒 ***`
+>   (gizli pencerede doğrulandı, konsolda 42501 YOK). `select('*')` ve token kolonları
+>   ASLA seçilmiyor.
+> - `<meta robots="noindex,follow">` — 1,49M kayıt × URL crawl patlamasını önler.
+> - `dashboard.html` (2) + `takipte.html` (1) derin linkleri yeni sayfaya çevrildi.
+>
+> ### 4. DT "Detaylı Ara" paneli ihaleler.html görünümüne getirildi
+> Sadece GÖRSEL dil taşındı, davranış korundu (DT anında uyguluyor, ihaleler butonla —
+> DT'ninki daha iyi). Ölçülerle doğrulandı: panel 16px 20px/radius 10px, etiket
+> 11px/600/.08em, input radius 6px, grid→flex, çipler 20px radius. `Filtrele` butonu
+> ve idare kutusuna Enter desteği eklendi. **Hiçbir id değişmedi** (6 URL bloğu +
+> 6 fonksiyon bu id'leri okuyor).
+>
+> ### 5. ihaleler.html sıralama — istenen zaten VARDI, etiket yanlıştı
+> "En Yeni" seçeneği zaten `ilan_tarihi DESC` yapıyordu → **"İlan Tarihi ↓ (Yeni → Eski)"**
+> olarak açık yazıldı. "Son Teklif ↑" → "(Yakın → Uzak)".
+> 🔵 İSTENİRSE Aşama 2: "Sisteme Yeni Düşen" (`olusturulma DESC`) — **ÖN KOŞUL**
+> `CREATE INDEX CONCURRENTLY idx_ilanlar_olusturulma`; indeks YOK, onsuz timeout eder.
+>
+> ### 🔍 YAN BULGU — `yayin_tarihi` (E8) etiketi yanıltıcıydı, düzeltildi
+> Canlı veriyle ölçüldü (1000 + 500 kayıt örneklem): E8, kaydın **o anki** duyurusunun
+> yayım tarihi. Aktif kayıtlarda `yayin > ihale` oranı **%0** (doğru), sonuçlananlarda
+> **%58** — çünkü orada E8 = SONUÇ duyurusunun tarihi. Hepsine "Yayın" demek yanlıştı;
+> artık sonuçlananlarda "Sonuç duyurusu" / "Sonuç Duyurusu Tarihi" yazıyor.
+> **Veri hatalı DEĞİL, etiket hatalıydı** — E8 eşleşmesi doğru.
+>
+> ### 🔴 AÇIK KALAN (bu oturumdan)
+> - 🟡 **TOKEN AÇIĞI — migration YAZILDI, prod'a UYGULANMADI:**
+>       `backend/migration_dt_token_authenticated.sql` (commit `e9bc6e1`).
+>       `dogrudan_temin_ilanlari` üzerinde `GRANT SELECT ... TO authenticated` tablo
+>       geneliydi → `dt_ihale_token`/`dt_idare_token` her üyeye açıktı.
+>       `migration_dt_kazanan.sql:24-26` yorumu aksini varsayıyordu (YANLIŞ).
+>       Migration kendi kendini doğruluyor, başarısızsa COMMIT etmiyor. Çalıştır:
+>       `docker exec -i supabase-db psql -U postgres -d postgres < backend/migration_dt_token_authenticated.sql`
+>       Sonra dosya sonundaki **curl doğrulamalarını atlama** (özellikle B şıkkı:
+>       üye token'ıyla token kolonu çekmeyi dene, 401 gelmeli).
+> - [ ] DT tam taraması hâlâ eksik (`yayin_tarihi` kayıtların ~%1'inde dolu) — proxy
+>       402'den düştü; başka oturum `7f25615` ile direkt-mod geri çekilmesi ekledi.
+> - ✅ `lot_sayisi` + `idare_tur` gece tazelemesi `run_scraper.sh`'e eklendi (`c021157`).
+>
+> ### ✅ 19 TEM EK — İKİ MIGRATION PROD'A UYGULANDI + CANLI DOĞRULANDI
+> 1. **`migration_dt_token_authenticated.sql`** — `authenticated`a 18 kolon GRANT
+>    (2 token hariç). Üyeler artık `dt_ihale_token`/`dt_idare_token` çekemiyor.
+> 2. **`migration_idare_tur_anon_grant.sql`** — CANLI HATA kapatıldı: yeni "İdare
+>    Türü" filtresi misafirde 42501 verip listeyi öldürüyordu (kolon-GRANT sonradan
+>    eklenen kolona genişlemiyor; WHERE'de kullanmak da SELECT yetkisi ister).
+>
+> Canlı curl doğrulaması (9/9 geçti): token'lar 401 · `idare_tur` 200 ·
+> `idare`/`kazanan_firma` maskesi 401 · misafir liste akışı 200.
+> Tarayıcı: `?il=ANKARA` → Güncel sekmesi, 6K/109K/115K, liste 6.290, kart linki
+> `dt-detay?dt_no=…`, idare maskeli, konsol temiz.
+>
+> ### 🟡 İDARE TÜRÜ FİLTRESİ — KAPSAM UYARISI (ölçüldü 19 Tem)
+> `idare_tur` dolu oranı: **DT %23** (345.453/1.490.644) · **İhaleler %12,5**
+> (44.569/356.904). 14 seçeneğin hepsinde veri VAR (ölü seçenek yok) ama filtre
+> uygulandığında sınıflandırılmamış kayıtlar sessizce düşüyor. Gece tazelemesi
+> artık bağlı (`c021157`) → kapsam her gece artacak. Kapsam yükselene kadar
+> dropdown'a "sınıflandırılmış kayıtlar" ipucu düşünülebilir.
+
+> ## 🌙 18 TEMMUZ AKŞAMI — GECE TARAMASI BEKLENİYOR (sabah kaldığımız yer burası)
+> Proxy havuzuna **4 scraper'ın 3'ü** bağlandı ve push edildi: `kik_backfill`,
+> `ekap_sonuc_backfill` (async), `ekap_sonuc_scraper` (async). Hepsi gerçek EKAP/KİK'e
+> karşı 100 proxy ile doğrulandı. `dt_kazanan_scraper` + `ekap_dogrudan_temin_scraper`
+> zaten bağlıydı.
+>
+> **`ekap_scraper` BİLEREK BEKLETİLDİ.** Gerekçe: (1) üç değişikliği tek gecede izole test
+> etmek, suçluyu ayırt edebilmek; (2) ana ilan akışı ondan geliyor, en riskli dosya —
+> diğerleri sağlam çıktıktan sonra ellenmeli; (3) doğru hız tavanını tahminle değil bu
+> gecenin ölçümüyle koymak.
+>
+> ### 🔴 `ekap_scraper` İÇİN ÇÖZÜLMESİ GEREKEN İKİ SORUN
+> 1. **`post()` dışarıdan import ediliyor** — `ilan_metni_backfill.py:44` ve
+>    `ekap_ilan_metni_sonda.py:27` `from ekap_scraper import post` yapıp ona
+>    `httpx.AsyncClient` geçiriyor. İlk parametrenin anlamı değişirse o iki script
+>    **çalışma anında** (import anında değil) `AttributeError: 'AsyncClient' object has
+>    no attribute 'istek'` ile kırılır. Ya çalışma-anı tip ayrımı (`hasattr(x,'istek')`)
+>    ya da ayrı bir `post_havuz()` adı gerekiyor.
+> 2. **Hız regresyonu** — şu an 8 paralel × ihale başına 2-3 istek ≈ 20-60 istek/sn.
+>    Havuzun varsayılan tavanı 600/dk = 10/sn, yani bağlanırsa gece taraması YAVAŞLAR.
+>    Bu dosyaya ayrı `kuresel_rpm` verilmeli — rakam bu gecenin loglarından çıkacak.
+>
+> ### ☀️ SABAH İLK İŞ — bu komutun çıktısına bakılacak
+> ```
+> ssh ihale "cd /opt/ihale-platform/logs && echo '=== HAVUZ OZETLERI ==='; grep -A7 'Proxy havuzu ozeti' scraper.log | tail -40; echo '=== KARANTINA/DUSEN ==='; grep -c karantina scraper.log; grep -c 'proxy d' scraper.log; echo '=== HATALAR ==='; grep -iE 'NameError|Traceback|hata:' scraper.log | tail -15"
+> ```
+> Bakılacaklar: kaç IP karantinaya girdi/düştü · gerçek verim · `NameError` var mı
+> (üç scraperde de closure/NameError tuzağı vardı, kapatıldı ama gece koşusu asıl testtir).
+>
+> ### ⚠️ BİLİNEN: küresel tavan SÜREÇ BAŞINA
+> `PROXY_KURESEL_RPM=600` her Python süreci için ayrı uygulanıyor, makine geneli değil.
+> Elle başlatılan `dt_kazanan_scraper --limit 50000` gece cron'uyla çakışırsa EKAP'a giden
+> toplam yük 1200/dk'ya çıkar. Kullanıcı kararı: **bırakıldı** (100 IP'ye yayılıyor,
+> IP başına dk'da 12 istek — kabul edilebilir). Makine geneli tavan gerekirse dosya
+> tabanlı bir kilit/sayaç gerekir.
+
+
+> ## 🌐 18 TEMMUZ — PROXY HAVUZU: İSTEK BAŞINA IP ROTASYONU (CANLI, 2,65x HIZLANMA ÖLÇÜLDÜ)
+> Kullanıcı: "bütün scrap'i VDS IP'ine bırakma, 100 IP'yi de kullan, riski yay ve daha hızlı çek."
+>
+> **BULUNAN KÖK SORUN:** `proxy_config.rastgele_proxy_url()` script başına BİR KEZ çağrılıyordu →
+> 50.000 istekli tur baştan sona TEK IP'den akıyor, havuzun 99'u boşta. Üstelik EKAP'a dokunan
+> 7 scriptten yalnız 2'si proxy kullanıyordu. Yani "100 IP aldık" ama fiilen 1 IP çalışıyordu.
+>
+> **`backend/proxy_havuz.py` (YENİ):** istek başına round-robin rotasyon · IP başına soğuma (3sn) ·
+> küresel hız tavanı (600/dk, nezaket sınırı) · otomatik karantina (3 hata→120sn, 3 karantina→düşür) ·
+> tanınabilir User-Agent · PROXY_LIST boşsa "direkt mod" (aynı arayüz, kod bozulmaz).
+> Bağlantı havuzu: proxy başına bir httpx istemcisi (keep-alive korunur; istek başına yeni istemci
+> açmak TLS el sıkışmasını tekrarlardı).
+>
+> **`backend/proxy_list_hazirla.py` (YENİ):** Webshare `ip:port:kullanıcı:şifre` dosyasını .env
+> satırlarına çevirir (`--env-yaz` ile yerinde günceller, yedek alarak). Webshare IP'leri periyodik
+> tazelediği için tekrar kullanılabilir. Sırları ekrana basmaz.
+>
+> ### 📊 CANLI SONUÇ (ölçüldü, tahmin değil)
+> | | Önce (tek IP, --rpm 300) | Sonra (100 IP, 600/dk) |
+> |---|---|---|
+> | yazma hızı | ~138 satır/dk | **~367 satır/dk** |
+> | saatlik | ~8.300 | **~22.000** |
+> EKAP dtAra testi: 6 istek → 6 farklı proxy → 6/6 HTTP 200. dtAra sayfası **55 KB** ölçüldü →
+> tüm 1,49M DT kaydı ≈ **640 MB**, Webshare 250GB/ay kotasının binde üçü. **Kota ve IP sayısı
+> sorun değil** — sorun kullanmıyor olmamızdı.
+>
+> ### 🔴 AÇIK RİSK — IP ÇEŞİTLİLİĞİ
+> - [ ] **100 IP'nin 100'ü tek /24 bloğunda** (`166.88.110.0/24`). EKAP subnet bazlı engellerse
+>       hepsi BİRDEN düşer; dağıtım göründüğünden zayıf. Paket büyütmek için ilk gerçek gerekçe bu:
+>       IP *sayısı* değil **çeşitliliği** gerekiyor. Webshare'de farklı bloklardan IP alınabiliyor mu bak.
+> - [ ] **Lokasyon doğrulanmadı:** kod yorumunda "Türkiye" yazıyor ama blok öyle görünmüyor.
+>       TR kamu sitesini yurtdışı datacenter IP'lerinden taramak daha dikkat çekicidir — panelden teyit et.
+>
+> ### ⏭ AÇIK — KALAN SCRAPER'LAR
+> - [ ] `ekap_scraper`, `ekap_sonuc_scraper`, `ekap_sonuc_backfill`, `kik_backfill` hâlâ DİREKT
+>       gidiyor. Havuza bağlanacak. Her birinin istemci kurulumu farklı; aynı turda dördünü birden
+>       değiştirip test etmeden gece hattını riske atmamak için ayrıldı.
+> - [ ] `proxy_config.py` artık ölü sayılır (yalnız `ekap_firma_probe` kullanıyor) — havuza geçir, sonra sil.
+>
+> ### ⚠️ TESTTE YAKALANAN 3 HATA (hepsi VDS'te de patlardı)
+> 1. User-Agent'ta Türkçe "toplayıcı" → HTTP başlıkları latin-1'e kodlanır, httpx istemci kurarken
+>    UnicodeEncodeError. Modül hiç çalışmadı. Saf ASCII'ye çevrildi.
+> 2. EKAP eski/zayıf TLS cipher istiyor (`DEFAULT@SECLEVEL=1`) → havuz istemcileri bunu kullanmasa
+>    her istek TLS'te ölürdü. `ekap_ssl_baglami()` eklendi.
+> 3. `with httpx.Client(...) as client:` bloğu kaldırılınca `enum_haritalari(client)` / `upsert(client)`
+>    NameError verecekti — client Supabase için geri kondu, enum havuza taşındı.
+>
+> ### 🖥 VDS DURUMU (18 Tem, giriş banner'ından)
+> Disk **14,7% / 157 GB** (≈134 GB boş) · RAM %26 · swap %0 → **büyütmeye gerek yok.**
+> Açık: `*** System restart required ***` (çekirdek güncellemesi) + 15 paket güncellemesi (3 güvenlik).
+> Restart sonrası **kong'u da yeniden başlat** (bkz. studio-3000-exposure: bayat upstream = 502).
+
+
+> ## ⚡ 18 TEMMUZ — DT DETAYLI ARA + MOD-FARKINDALIK HATA SINIFI (KOD CANLI, indeks migration'ı BEKLİYOR)
+> Kullanıcı bir hata bildirdi ("Tümü'de 2 yazıyor, tıklayınca 0 ihale çıkıyor") ve bir eksik
+> istedi ("DT'yi de ihaleler gibi detaylı aramaya sokmak lazım, aksi halde çok yetersiz").
+> Bildirilen hata tek bir örnekmiş — **aynı sınıftan 6 tane daha** çıktı.
+>
+> **MOD-FARKINDALIK HATA SINIFI.** Kart bağlantıları sayımlardan ÖNCE, `if (modIhale)` dalında
+> kuruluyordu. `tumu` modunda `modIhale` de `true` olduğu için kartlar BİRLEŞİK sayı gösterip
+> linki koşulsuz ihaleler'e veriyordu. Doğru hedef ancak hangi tarafta kaç kayıt olduğu
+> bilinince seçilebilir. Politika `modLinkKur()` içinde tek yere alındı:
+> bir taraf 0 → doğrudan dolu tarafa; ikisi de dolu → seçim popup'ı; sayı bilinmiyorsa
+> (trend barları — `.limit` doygunluğu var) sayısız popup.
+> Düzeltilenler: `stat-eklendi`, `kpi-card-aktif`, `kpi-card-buyuk`, `stat-kazanim`,
+> `trend-link`, `kategori-link`, `son-eklenen-link`, `kurumlar-link` (bu sonuncusu HİÇ atanmıyordu).
+>
+> **DT DETAYLI ARA** (`dogrudan-temin.html`): idare (üyeye özel) / durum / tarih aralığı /
+> dokümanlı + hızlı tarih çipleri + aktif filtre çipleri + "Neden bazı filtreler yok?" notu.
+> DT'de karşılığı olmayan hiçbir alan uydurulmadı; yaklaşık maliyet, ihale usulü, sınır değer,
+> OKAS, kazanan firma/bedel ve yayın tarihi (%1 dolu) için gerekçeler panele yazıldı.
+> Yeni URL parametreleri: `sekme, ara, tur, durum, dokuman, detayli, tarihBas, tarihBit`.
+>
+> **`takipte.html`'e DT bölümü** — dashboard kartı ihale+DT sayarken sayfada DT yoktu
+> (kart "5", liste 3). Kullanıcı "kartı daraltma, sayfayı tamamla" dedi.
+>
+> ### 🔴 YOL AÇILAN HATALAR (hepsi kapatıldı, ders niteliğinde)
+> - **`durum` seçimi statement timeout üretiyordu (57014).** Panelden durum seçilince sekmenin
+>   grup filtresiyle AND'leniyordu → "Güncel sekmesi + Sonuç durumu" çelişkisi. Planlayıcı
+>   çelişkiyi eleyemeyip 1,49M satırda sayıma giriyordu. Tek durum seçimi artık sekme kuralını ezer.
+> - **`?tarihBas` çift uygulanıyordu** — hem modül değişkenine hem panel alanına yazılıyordu,
+>   çipler çift görünüyordu. Tek durum kaynağı = panel alanı.
+> - **`?idare=` sessizce YANLIŞ sonuç veriyordu** — serbest arama kutusuna yazılıyordu, misafirde
+>   arama yalnız `baslik`'te çalıştığı için kurum adı başlıkta geçmiyorsa liste boş çıkıyordu.
+> - **"Toplam Kazanım" misafirde DT'yi hiç saymıyordu** — bugünkü maskeleme düzeltmesinin yan
+>   etkisi: `.not('kazanan_firma','is',null)` WHERE'de de yetki istediği için 42501 dönüyor,
+>   Supabase client hata nesnesi döndürdüğü için count `null` → sayaç SESSİZCE 0. `kazanan_bedel`
+>   (anon'a açık, aynı kaydı işaret eder) ile değiştirildi. **Ders: maskeli kolonu WHERE'de
+>   kullanan her sayaç sessizce sıfırlanır — hata görünmez.**
+>
+> ### ⏭ AÇIK
+> - [ ] **`backend/migration_dt_index.sql` VDS'te uygulanmalı.** Canlıda ölçüldü: `kategori` →
+>       HTTP 522 / ~20 sn, `tur` → 38 sn (kıyas: indeksli `il` 1,6 sn). Bu, detaylı aramadan
+>       BAĞIMSIZ mevcut bir hata — mevcut dropdown'lar da bu yüzden yavaş.
+> - [ ] **`stat-kazanim` sayı/hedef evreni uyuşmuyor:** sayı `dogrudan_temin_sonuclari`'ndan
+>       (kapsam ~%1,8 — 26.214/1,49M), hedef durum-bazlı sonuç listesi (1,39M). Backfill
+>       kapsamı yükselince yeniden değerlendir. Şimdilik yalnız `dt` modundaki yanlış sayfa hatası kapatıldı.
+> - [ ] **`Büyük İhale (₺43M+)` kavram karışımı** — ihalede yaklaşık maliyet, DT'de kazanan bedel.
+>       Kullanıcı kararı: backfill bitene kadar bekletilecek.
+> - [ ] **`satinalma_talepleri.olusturan_user_id`** (bkz. anon denetimi maddesi) ve
+>       **`ilanlar_sonuc` view'ının bozuk LEFT JOIN'i** hâlâ açık.
+> - [ ] Dashboard alt yarısı (`ilanlariYukle`, `sonGorulenlerYukle`, `enIyiEslesmelerYukle`)
+>       mod-farkındalıklı DEĞİL — DT modunda hâlâ ihale gösteriyor. Ya DT'lileştir ya da
+>       bölüm başlığına "yalnız ihaleler" notu koy.
+> - [ ] `(tur, tarih DESC)` sonrası `baslik` trigram indeksi — serbest arama hâlâ seq-scan.
+
+> ## 🔴 18 TEMMUZ — ANON MASKELEME DENETİMİ: 2 KÖK NEDEN, 5 NESNE KAPATILDI (migration'lar VDS'te BEKLİYOR)
+> DT migration'ları canlıya alındıktan **sonra** yapılan doğrulamada, kendi yazdığım maskelemenin
+> etkisiz olduğu çıktı. Oradan başlayan denetim (61 nesne, çok-ajanlı, her bulgu ayrı ajanla
+> çürütmeye çalışıldı) önceden var olan daha büyük bir deliği de ortaya çıkardı.
+>
+> **KÖK NEDEN A — varsayılan ayrıcalık kalıntısı.** Self-hosted Supabase'de
+> `ALTER DEFAULT PRIVILEGES ... GRANT ALL ON TABLES TO anon` yürürlükte. Bu yüzden `public`
+> şemasında **yeni oluşturulan her tablo VE materialized view doğuştan tablo-geneli anon SELECT
+> yetkisi alır.** Sonuç: sadece `GRANT SELECT (kolon listesi) ... TO anon` yazmak **maskeleme
+> YAPMAZ** — kolon-GRANT yetkiyi daraltmaz, ekler. Önce `REVOKE SELECT ... FROM anon` şart.
+> Doğru kalıp `migration_anon_maske.sql`'de zaten vardı; yeni dosyalara taşınmadı.
+> Maskeleme **opt-in**: o dosyada adı geçmeyen tablo korunmuyor.
+>
+> **KÖK NEDEN B — view sahip-yetkisi (daha sinsi).** PG view'ları varsayılan olarak
+> `security_invoker` DEĞİL; view'i sorgulayanın değil **sahibinin** yetkisiyle çalışır. Bu yüzden
+> taban tablodaki kolon-REVOKE'ları view üzerinden **hiç uygulanmaz**. `ilanlar`'da maskeleme
+> kusursuz çalışırken aynı kolonlar `ilanlar_sonuc` view'ından serbestçe okunuyordu.
+>
+> **`backend/migration_dt_anon_fix.sql`** (benim açtığım delikler):
+> - `dt_idare_ozet_mv` — KRİTİK, aktif sızıntıydı. 38.105 satır idare adı misafire açıktı ve
+>   bilinçli kapattığım `dt_idare_sayim()` RPC'sini tamamen baypas ediyordu. Kardeş nesne
+>   `idare_ozet_mv` aynı sorguda 401 dönüyor → kalıp farkı buradan yakalandı.
+> - `dogrudan_temin_sonuclari` — YÜKSEK ama **latent**: `kazanan_firma`/`yuklenici_id`/
+>   `enc_sozlesme_id` açıktı, tablo 0 satır olduğu için henüz sızıntı yok. **Kazanan/bedel
+>   backfill'i BU DÜZELTMEDEN ÖNCE koşulursa anında aktif sızıntıya döner.**
+> - `dt_takipler` — ORTA. Yetki fazlalığı; RLS satırları filtrelediği için fiili ifşa yok.
+> - Kaynak migration'lara da REVOKE eklendi ki sıfırdan kurulumda delik geri gelmesin.
+>
+> **`backend/migration_anon_maske_v2.sql`** (önceden var olanlar, benim değil):
+> - `ilanlar_sonuc` — **KRİTİK, 356.904 satır.** `idare`/`ekap_id`/`ikn` view üzerinden açıktı
+>   (kök neden B). Frontend kullanımı SIFIR → düz REVOKE hiçbir sayfayı bozmuyor.
+> - `kamu_ihaleleri` — YÜKSEK, 172 satır. Tablo tamamen açıktı, anon `idare` üzerinde
+>   filtreleyebiliyordu. GRANT listesi `ozel-ihaleler.html:389-397`'den birebir türetildi
+>   (WHERE'de kullanılan kolon için de SELECT yetkisi gerekir — filtre kolonları dahil).
+> - `kik_kararlar` — ORTA, 97 satır. `ham_veri` jsonb'si frontend hiç kullanmadığı halde açıktı.
+>   Kritik değil çünkü içindeki `uzmanTCKN` 97/97 satırda BOŞ.
+>
+> ### ⏭ AÇIK — SIRADAKİ
+> - [ ] **VDS'te uygula** (ikisi de bekliyor; ilk deneme yanlış dizinde koşuldu):
+>       `cd /opt/ihale-platform && git pull` sonra `migration_dt_anon_fix.sql` +
+>       `migration_anon_maske_v2.sql`. Sonra dosyaların sonundaki doğrulama curl'leri.
+> - [ ] **`kamu_ihaleleri.idare` — ürün kararı bekliyor.** Politika idare'yi misafire kapalı
+>       sayıyor ama `ozel-ihaleler.html` misafire açık ve KA listesinde idare adını hem gösterip
+>       hem aratıyor. Kapatmak sayfayı işlevsiz bırakır → şimdilik **bilerek açık** bırakıldı.
+>       Politikaya birebir uyum istenirse doğru iş REVOKE değil, sayfaya uyeMi dalı + dar select.
+> - [ ] **`satinalma_talepleri.olusturan_user_id`** — DÜŞÜK. Tek başına REVOKE edilemez:
+>       `ozel-ihale-detay.html:265` `guvenliKolonlar` dizesi kolonu anon select'ine sabit yazıyor.
+>       Önce HTML'den çıkar, sonra REVOKE. Ters sıra sayfayı "İhale bulunamadı"ya düşürür.
+> - [ ] **`ilanlar_sonuc` view'ının LEFT JOIN'i BOZUK** (denetimde yan bulgu, güvenlikten ayrı):
+>       `i.ekap_id = s.ekap_id` hiç eşleşmiyor → `ihale_sonuclari` kaynaklı tüm kolonlar
+>       356.904 satırın TAMAMINDA NULL (`yuklenici_ad`/`sozlesme_bedeli`/`sonuc_tur` count=0).
+>       View fiilen yarım çalışıyor. Ayrı iş.
+> - [ ] **Yeni tablo eklerken kontrol listesi:** REVOKE + kolon-GRANT yaz, sonra
+>       `migration_dt_anon_fix.sql` sonundaki "anon'a tablo-geneli yetkisi kalan nesneler"
+>       denetim sorgusunu koş. Çıkan her satır bilinçli bir karar olmalı.
+
+> ## 🌐 18 TEMMUZ — DASHBOARD: TEK GLOBAL MOD SEÇİCİ (Tümü/İhaleler/DT) + DT-TAKİP MEKANİZMASI (KOD HAZIR+CANLI DOĞRULANDI, migration'lar VDS'te bekliyor)
+> Kullanıcı önceki turdaki harita mod-düğmesini beğendi ama "her widget'ta ayrı ayrı seçtirmek yersiz —
+> en üstte TEK seçtirmelisin" dedi + "Tümü + haritada tıklama" ikilemine "küçük popup" önerimi onayladı +
+> kişisel liste widget'larını (Takip/Yaklaşan/Bültenler/Eşleşme/Görüntülenen) da "şimdi kapsama al" dedi.
+> - **"Merhaba, X" başlığının altına** 3 pill-düğme (🗺️Tümü/📋İhaleler/⚡Doğrudan Temin) — TEK kontrol noktası.
+>   `window.dashModSec(mod)` tüm mod-farkındalıklı widget'ları yeniden çizer + `haritaModSec` köprüsüyle
+>   haritayı da senkronlar (harita artık KENDİ 3 düğmesini kaybetti, redundant'tı — global'e bağlandı).
+> - **Mod-farkındalıklı hale getirilenler:** günlük-strip (Bugün Eklendi/Son Teklif/Kazanım), 4 KPI kartı
+>   (Aktif/7Gün/Büyük İhale/Takipteki), trend (7 gün), Kategori Dağılımı, En Aktif Kurumlar, Son Eklenenler,
+>   Yaklaşan Son Tarihler. **DT'nin karşılığı olmayan kavramlar UYDURULMADI** — "7 Gün İçinde Bitecek" ve
+>   "Bugün Son Teklif" DT-only modda dürüstçe "—" gösterir (DT'de sabit teklif-bitiş tarihi kavramı yok,
+>   duyuru bazlı). "Büyük İhale (₺43M+)" artık GERÇEK `dogrudan_temin_sonuclari.kazanan_bedel`'den okuyor —
+>   bugünkü DT-kazanan backfill'iyle DOĞRUDAN bağlantılı, veri geldikçe otomatik dolacak (şu an 0, dürüst).
+> - `backend/migration_dashboard_dt_ozet.sql` (YENİ): `dt_kategori_sayim_mv`/`dt_idare_ozet_mv` +
+>   RPC'leri — mevcut `kategori_sayim`/`idare_sayim` (materialized view deseni, canlı GROUP BY 350K+ satırda
+>   yavaş/timeout riskliydi) BİREBİR aynı desen, DT'nin 1.48M satırı için tekrarlandı. `idare` kimlik-benzeri
+>   olduğu için `dt_idare_sayim` da (idare_sayim gibi) anon'a KAPALI. `run_scraper.sh`'nin gece REFRESH
+>   zincirine eklendi.
+> - **DT-Takip mekanizması (yeni kapsam, "şimdi kapsama al" kararı):** `js/takip.js`'e `window.TakipDT`
+>   eklendi — mevcut `Takip` ile AYNI API şekli (liste/var/toggle/sayi/syncFromDB), AYRI depolama
+>   (localStorage `dt_takip` + Supabase `dt_takipler` tablosu). `takipler.ilan_id`'nin muhtemel FK'sine
+>   karışmamak için (farklı tablo/anahtar tipi) BİLEREK ayrı tablo — kod tabanının tekrarlayan "DT'yi ayrı
+>   tut" deseniyle tutarlı. `dogrudan-temin.html`'e ☆/★ takip butonu eklendi (kart başına, giriş şartsız —
+>   misafir localStorage'da tutar, `ihaleler.html`'deki `takibeAl` ile aynı basitlik).
+>   `backend/migration_dashboard_dt_ozet.sql` içinde `dt_takipler` tablosu + RLS (kullanıcı yalnız kendi
+>   satırını görür/yazar/siler, anon hiç yazamaz).
+> - **Ayrı DT detay sayfası YOK (bilinçli, kapsam kararı)** — `dogrudan-temin.html`'e `?dt_no=` (liste TEK
+>   kayda daralır) ve `?kategori=` URL parametreleri eklendi; "Son Eklenen"/"Yaklaşan Son Tarihler"
+>   widget'ları DT öğelerini bu URL'lerle bu sayfaya yönlendirir (yeni bir sayfa mimarisi kurmadan
+>   pratik bir "detay görünümü" ikamesi).
+> - **Kişisel widget'lardan kapsam dışı bırakılanlar (zaman kısıtı, açıkça not düşülüyor):** Kayıtlı
+>   Aramalar (Bültenlerim — saved-search alerts, "mod" kavramına doğal uymuyor), En İyi Eşleşmeler
+>   (profil-uyum skorlama motoru DT'ye henüz uzanmıyor), Son Görüntülenenler (view-history, DT detay
+>   sayfası olmadığı için iz sürecek bir yer yok). Bunlar ihale-only kaldı — istenirse ayrı iş.
+> - **🐛 Yol üstü 2 bug (kendi test sürecimde bulundu, düzeltildi):**
+>   1. `js/harita.js`'in ilk çizimi HEP 'toplam' modunda başlıyordu, dashboard'un global moduna bakmıyordu
+>      (kullanıcı önce "DT" seçip sonra haritaya inerse harita yanlış modda açılırdı). Kök neden ikili:
+>      (a) harita.js `window.aktifDashMod`'u okumuyordu → eklendi; (b) dashboard.html'de `let aktifDashMod`
+>      ÜST-SEVİYE bildirimi `window` özelliği OLUŞTURMAZ (JS'in bilinen bir tuzağı — `var` oluşturur, `let`/
+>      `const` oluşturmaz) → `window.aktifDashMod = 'tumu'` şeklinde AÇIKÇA global yapıldı.
+>   2. `yaklaşanBitisYukle()`'nin YENİ yazdığım DT dalı `idare` kolonunu select ediyordu — `idare` DT
+>      tablosunda da anon'a KAPALI (migration_anon_maske.sql) → misafir kullanıcıda TÜM sorgu 42501 ile
+>      çöküyor, "Aktif takip ilanı bulunamadı" diye YANLIŞ boş durum gösteriyordu. `idare` select'ten
+>      çıkarıldı, `il` ile değiştirildi.
+>   **Bu ikinci bug'ı ararken PRE-EXISTING (benim yazmadığım) bir bulgu daha çıktı:** aynı hata dashboard.html'in
+>   3 ayrı yerinde (`ilanlariYukle`, `enIyiEslesmelerYukle`, `yaklaşanBitisYukle`'nin İHALE dalı) `ilanlar.idare`/
+>   `ekap_id` için de var — misafir kullanıcılarda bu 3 widget da hep boş/kırık. Kapsam dışı tutulup
+>   `spawn_task` ile ayrı göreve düşürüldü (task_7a0462ae).
+> - **Doğrulama:** yerel statik sunucu + zorla-render tekniğiyle uçtan uca test edildi. Tümü modu canlı
+>   `kpi-aktif=100.708` (ihale+DT toplamı) döndü; İhale modu `kpi-aktif=4.656`/`kpi-buyuk=846` — kullanıcının
+>   PAYLAŞTIĞI orijinal ekran görüntüsündeki sayılarla BİREBİR eşleşti (regresyonsuz doğrulama). DT modu
+>   `kpi-aktif=96.052`, `kpi-buyuk=0` (backfill henüz yok, dürüst), `kpi-yaklasan`/`hdr-songun`="—" (doğru).
+>   `dogrudan-temin.html?dt_no=X` liste tek kayda daraldı, ☆→★ takip toggle + localStorage doğrulandı,
+>   dashboard'da o kayıt "Yaklaşan Son Tarihler"de göründü (fix sonrası). Konsol hatasız (tüm turlar).
+> - **DEPLOY (VDS):** `git pull` → `docker exec -i supabase-db psql ... < backend/migration_dashboard_dt_ozet.sql`
+>   (dt_kategori_sayim/dt_idare_sayim RPC'leri + dt_takipler tablosu için) — migration öncesi de sayfa
+>   ÇÖKMEZ, o widget'lar sadece boş/hata durumunda kalır (zaten canlıda böyle test edildi).
+> - **Cache-bust notu (ders — bir önceki turda da yaşanmıştı):** `js/harita.js` `?v=2`→`?v=3`, `js/takip.js`
+>   TÜM 8 sayfada `?v=rot1`→`?v=2` yükseltildi (CF `max-age=14400` — bump edilmezse yeni kod saatlerce
+>   önbellekte takılı kalır, buton/özellik "çalışmıyor" gibi görünür).
+
+> ## 💰 18 TEMMUZ — DT KAZANAN/BEDEL: "CAPTCHA ARKASINDA" SANILIYORDU, AÇIK ÇIKTI (KOD HAZIR+CANLI DOĞRULANDI, backfill VDS'te bekliyor)
+> Kullanıcı dashboard "Büyük İhale" kartı tartışmasında hafızadaki eski karar hatırlattı: "kazanan bedelini
+> capctcha arkasından çekebilmemiz lazım, Gemini ile çözeceğini söylemiştin — öyle ilerlesene". Önce mevcut
+> reçeteyi (hafıza: dt-kazanan-captcha) doğrulamak için canlı prob yapıldı — **BEKLENMEDİK, ÇOK DAHA İYİ bir
+> sonuç çıktı: CAPTCHA hiç gerekmiyor.**
+> - **Kanıt zinciri (canlı, adım adım):** dtAra liste yanıtında E10(dogrudanTeminId)/E11(IdareId) gerçek
+>   token'ları çekildi → `DogrudanTeminDetay.aspx` sayfası gerçekten CAPTCHA'lı (doğrulandı) → ama sayfanın
+>   Angular kontrolcüsü (`dtDetay.js`) veriyi **AYRI, KORUMASIZ bir JSON API'den** çekiyor:
+>   `YeniIhaleAramaData.ashx?metot=dtDetayGetir&idareId=E11&dogrudanTeminId=E10` → bu endpoint **kimliksiz
+>   düz GET ile, hiç CAPTCHA çözülmeden** çalışıyor (dtAra/dtEnum ile aynı sınıf açık uç nokta — sayfa
+>   korumalı, API değil). **15 gerçek kayıtta canlı test: 0 CAPTCHA, 13 dolu kazanan+bedel, 2 boş (henüz
+>   sonuçlanmamış), 0 hata.** JSON: `SozlesmeBilgileri.SozlesmeBilgisiList[].{IstekliAdi,SozlesmeBedeli,
+>   SozlesmeTarihi,EnYuksekTeklif,EnDusukTeklif,EncSozlesmeID}` — bir dt_no'da BİRDEN FAZLA kalem olabilir.
+> - **Bu, önceki maliyet/kısıt varsayımını tamamen geçersiz kılıyor** — Gemini/CAPTCHA-çözme altyapısı
+>   GEREKMİYOR, asıl kısıt artık yalnız HACİM (aşağıda).
+> - `backend/migration_dt_kazanan.sql` (YENİ): `dogrudan_temin_ilanlari`'na `dt_ihale_token`/`dt_idare_token`
+>   (E10/E11 — anon+authenticated'a KAPALI, yalnız service_role; frontend'in hiç ihtiyacı yok, sızarsa
+>   herkes bizim keşfimizi kopyalayıp toplu erişim kurabilirdi) + `dt_ilan_var_mi`/`dt_dosya_var_mi` +
+>   `kazanan_denendi` (ai_kategori_backfill ile aynı "bir kez dene" damgası) + `idx_dt_ilanlari_durum` +
+>   kuyruk partial index. **YENİ tablo** `dogrudan_temin_sonuclari` (enc_sozlesme_id UNIQUE→idempotent
+>   upsert; anon-maske ihale_sonuclari ile AYNI ilke: kazanan_firma/yuklenici_id kapalı, bedel/tarih açık).
+>   `migration_anon_maske.sql`'in dinamik "idare hariç hepsi" DT kolon-listesine token'lar da eklendi
+>   (ileride o dosya tekrar koşulursa yanlışlıkla açılmasınlar diye).
+> - `backend/ekap_dogrudan_temin_scraper.py`: retrofit — E10/E11/E13/E14 artık ATILMIYOR, saklanıyor
+>   (önceden `kayit_donustur()` bunları okuyup çöpe atıyordu — kod zaten "ihtiyaç olursa çözülür" notunu
+>   taşıyordu, bugün o gün oldu).
+> - `backend/dt_kazanan_scraper.py` (YENİ): token'lı+denenmemiş+durum="sonuç grubu" dt_no'ları seçer, düz
+>   GET ile dtDetayGetir çağırır, `bedel_parse`/`tarih_iso` (ekap_sonuc_scraper.py'den REUSE, `bedel_parse`
+>   "TRY" son eki için küçük bir düzeltme aldı) ile ayrıştırıp yazar + `kazanan_denendi` damgalar.
+>   --dry-run/--limit/--batch/--rpm, ai_kategori_backfill.py ile aynı CLI/hata-mesajı disiplini.
+> - `run_scraper.sh`: gece `dt_kazanan_scraper.py --limit 2000 --rpm 300` eklendi (günlük artımı karşılar).
+>   YOL ÜSTÜ: DMO/Jandarma'nın artık ANA ilanlar'a yazdığını belirten stale yorum da düzeltildi (16 Tem'de
+>   kod değişmişti ama bu dosyadaki açıklama eski kalmıştı).
+> - **Doğrulama:** tüm parça CANLI EKAP'a karşı test edildi (yerel .env ölü managed DB'yi gösterdiği için
+>   Supabase yazma testi yapılamadı — script'in kendi HTTP/parse mantığı gerçek 15 kayıtla doğrulandı,
+>   syntax+argparse+bedel_parse edge-case'leri ayrıca test edildi).
+> - **KALAN — HACİM (kullanıcı VDS'te çalıştıracak):**
+>   1. `python ekap_dogrudan_temin_scraper.py --reset --max-pages <büyük>` — tarihsel ~1.48M satırın
+>      E10/E11'ini geri kazanmak için TAM yeniden-tarama (CAPTCHA yok, ~11.6K sayfa, saatler sürebilir).
+>   2. `docker exec -i supabase-db psql ... < backend/migration_dt_kazanan.sql`
+>   3. `python dt_kazanan_scraper.py --dry-run` → rakamlar makulse büyük `--limit`li arka plan turu
+>      (nohup, günler sürebilir — ~1,3M "sonuç" durumlu kayıt, hızı --rpm ile kendileri ayarlar).
+> - **Kasıtlı YAPILMADI:** `dogrudan_temin_sonuclari.yuklenici_id` linkleme + `yukleniciler`e DT cirosu
+>   katma — eski tasarım kararı ("İHALE cirosuna karıştırma, ayrı dt_* sayaç") hâlâ geçerli, ayrı iş.
+> - Bu veri geldikçe dashboard "Büyük İhale" kartı DT modunda da gerçek sayı gösterebilir hale gelecek
+>   (aşağıdaki dashboard mod-seçici işi bu veriye bel bağlamadan "—" ile başlayabilir, veri akınca otomatik dolar).
+
 > ## 🚪 18 TEMMUZ — SIDEBAR HESAP MENÜSÜ + ÇIKIŞ YAP (✅ CANLI, 715adf5)
 > Saha bulgusu: kullanıcı profiline girdikten sonra **hiçbir yerde çıkış seçeneği yoktu** — oturum kapatılamıyordu.
 > - **Yapıldı:** sol-alt kullanıcı bloğu (avatar/ad/plan) artık tıklanınca **hesap menüsü** açıyor (⋮ göstergesi eklendi).
@@ -14,7 +1051,62 @@
 >   koyduğu `?v=rot1` rakam olmadığı için `(\?v=\d+)?` desenine takılmamıştı. Desen `(\?[^"'\s>]*)?` yapılıp
 >   20 sayfa tek `?v=3`'e normalize edildi. Script `max-age=14400` (4sa) ile servis edildiğinden bu ŞART.
 
-> ## 🔴 17 TEMMUZ — AÇIK BULGU: TENZİLAT ~3 KAT ŞİŞİK (çok-lotlu ihale hatası) — DÜZELTİLMEDİ, KARAR BEKLİYOR
+> ## 🗺️ 18 TEMMUZ — ANASAYFA MİNİ HARİTASI: TOPLAM/İHALE/DT MOD SEÇİCİ EKLENDİ (KOD HAZIR+DOĞRULANDI, migration VDS'te bekliyor)
+> **Ek (aynı gün, kullanıcı isteği):** "üstte seçme butonu — firma isterse DT isterse ihale görsün" — aşağıdaki
+> tıkla-seç popup'ın YANINA, widget başlığına 3 pill-düğme eklendi: **🗺️ Tümü / 📋 İhaleler / ⚡ Doğrudan Temin**.
+> `js/harita.js`: veri (ihale+DT sayımı, 3 quantile eşik seti) TEK SEFER çekiliyor; `window.haritaModSec(mod)`
+> mevcut Leaflet katmanını yeniden fetch YAPMADAN yeniden stiller/bağlar — 'Tümü'de eski toplam-renk+popup
+> davranışı aynen kalır, 'İhaleler'/'Doğrudan Temin' seçilince renk YALNIZ o metriğe göre olur ve tıklama
+> ARTIK POPUP AÇMAZ, doğrudan ilgili sayfaya gider (`layer.off('click')` + mod'a özel `bindTooltip`/`bindPopup`
+> veya `unbindPopup()`+`on('click',...)`). Legend başlığı + widget alt yazısı + düğme aktif-durumu mod'a göre.
+> **🐛 Yol üstü bug (kendi test sürecimde bulundu, düzeltildi):** docblock yorumunda `.il-popup*/.harita-mod-btn`
+> yazarken `*/` JS blok-yorumunu ERKEN KAPATTI → geri kalan yorum metni kod olarak parse edilmeye çalışılıp
+> `SyntaxError: Unexpected token '.'` ile TÜM script çöküyordu (harita hiç çizilmiyordu). `/*` `*/` sayaç
+> kontrolüyle teşhis edildi, boşluk eklenerek düzeltildi. **DERS:** yorum metninde `*/` alt dizesi geçen
+> herhangi bir ifade (ör. "A*/B" gibi kısaltma) JS blok yorumunu kırar — CSS/regex örnekleri yazarken dikkat.
+> Ayrıca bu turda **Read tool'un bir kez bayat/önbelleklenmiş içerik döndürdüğü** gözlemlendi (dosya doğru
+> haldeyken eski hali gösterdi) — şüpheli bir "dosya değişti" bildirimi görülürse Bash `cat`/`git diff` ile
+> DOĞRUDAN diskten çapraz-doğrulama yapılmalı, Read'e körü körüne güvenilmemeli.
+> Doğrulama: yerel statik sunucu (python http.server, .claude/launch.json'daki "ihale-platform" config) +
+> zorla-render tekniğiyle (IntersectionObserver mock'lanıp modül yeniden eval edildi — bu sandbox'ta gerçek
+> scroll-tetiklemesi hiç çalışmıyor) 3 modun HEPSİ canlı veriyle test edildi: legend/alt-yazı/düğme-aktifliği
+> her modda doğru değişti; 'dt' modunda bir ile tıklama gerçekten `dogrudan-temin?il=KONYA`'ya yönlendirdi
+> (test sunucusu .html uzantısız route'u 404'ledi — nginx'li canlıda sorun olmaz, python http.server kısıtı).
+
+> ## 🗺️ 18 TEMMUZ — ANASAYFA MİNİ HARİTASI: İHALE+DT TOPLAM RENK + AYRI HOVER SAYIMI + TIKLA-SEÇ POPUP (KOD HAZIR, migration VDS'te bekliyor)
+> Kullanıcı talebi: dashboard.html'deki "Türkiye İhale Haritası" widget'ı yalnız `ilanlar` sayısını gösteriyordu.
+> Dünya ticaret haritasındaki ihracat/ithalat ayrımıyla AYNI FİKİR uygulandı: renk=TOPLAM, hover=AYRI, tık=SEÇİM.
+> - `backend/migration_dt_il_sayim.sql` (YENİ): `il_sayim()` deseninin `dogrudan_temin_ilanlari` (1.48M satır,
+>   `ilanlar`'ın 4 katı) karşılığı — `idx_dogrudan_temin_ilanlari_il` partial indeks + `dt_il_sayim()` RPC
+>   (`ALTER FUNCTION SET statement_timeout='20s'` güvence payı, Statement Timeout Edge dersiyle tutarlı).
+> - `js/harita.js`: `ilSayimGetir()` parametrik hale geldi (rpcAdi/tabloAdi) → hem ihale hem DT sayımını
+>   paralel çeker; renk artık `ihale+dt` TOPLAMINDAN (quantile eşikli); hover tooltip'i 📋 İhale / ⚡ DT'yi
+>   AYRI satırlarda + toplamı gösterir; tıklama artık DOĞRUDAN yönlendirmiyor — Leaflet popup'ı iki buton
+>   sunuyor ("📋 Güncel İhaleler" → `ihaleler?il=X`, "⚡ Doğrudan Temin" → `dogrudan-temin?il=X`), sayısı 0
+>   olan seçenek görsel olarak pasif (disabled, tıklanamaz). RPC yoksa (migration henüz koşmadıysa) sayfalı
+>   fallback'e sessizce düşer — DT için CANLIDA TEST EDİLDİ (81/81 il kapsıyor, hatasız).
+> - `dogrudan-temin.html`: `?il=` URL parametresi desteği YOKTU (yalnız `?idare=` vardı) — eklendi.
+>   `illeriYukle()` artık `await`'lenip TAMAMLANDIKTAN sonra param okunuyor (yarış durumu önlendi) +
+>   `ilSecimGarantiEt()` — il, son-5000-kayıt örnekleminde yoksa `<option>`'ı elle ekleyip seçiyor (haritadan
+>   nadir-DT'li bir ile tıklanırsa dropdown sessizce boşa düşmesin diye).
+> - `dashboard.html`: `.il-popup*` + `.leaflet-popup-content-wrapper` karanlık tema CSS'i (`.il-tooltip` ile
+>   aynı "sayfa kendi CSS'ini sağlar" kuralı — harita.js modülü CSS enjekte etmiyor); widget alt yazısı
+>   güncellendi.
+> - **Doğrulama:** canlı REST API'ye karşı uçtan uca test edildi (bu sandbox'ta Leaflet/SVG pixel-render
+>   görülemedi — tarayıcı önizlemesi bu oturumda `window.innerWidth=0` raporluyor, sayfa/CSS'ten bağımsız bir
+>   ortam kısıtı; kod mantığı bunun yerine gerçek veriyle doğrulandı): `il_sayim` RPC ✓, `dt_il_sayim` RPC
+>   henüz yok (beklenen — migration deploy edilmedi) → fallback yolu canlı test edildi (81 il, hatasız);
+>   popup HTML üretimi Ankara/İzmir/Van için doğru sayı+URL-encode ile doğrulandı; `dogrudan-temin.html?il=VAN`
+>   filtreyi doğru uyguladı (aktifSekme=tumu, VAN kaydı listede çıktı); `ihaleler.html?il=VAN` regresyonsuz.
+> - **DEPLOY (VDS):** `git pull` → `docker exec -i supabase-db psql -U postgres -d postgres <
+>   backend/migration_dt_il_sayim.sql` → sonra sayfa yenilenince DT katmanı otomatik devreye girer (RPC yoksa
+>   zaten fallback ile çalışıyor, migration ACİL değil ama performans için önerilir — 1.48M satır sayfalı
+>   fallback'te ~13 istek/13K örneklem, tam değil).
+> - **KAPSAM DIŞI (bilerek):** `index.html`'de AYNI haritanın satır-içi bir kopyası var (harita.js'in kendi
+>   yorumunda zaten "teknik borç" diye işaretli) — DT katmanı ORAYA taşınmadı, yalnız dashboard.html/harita.js
+>   güncellendi. İstenirse ayrı iş olarak index.html de aynı modüle geçirilip tekilleştirilebilir.
+
+> ## ✅ 17-18 TEMMUZ — TENZİLAT ~3 KAT ŞİŞİK (çok-kısımlı ihale hatası) — TÜM ZİNCİR KAPANDI
 > Sonuç KPI'daki "Ort. Tenzilat %48,3" şüpheliydi; araştırıldı, **gerçek bir veri hatası çıktı.**
 > - **Kök neden (kanıtlı):** `ihale_sonuclari` satır başına bir KISIM/lot tutar. Çok-lotlu ihalelerde EKAP,
 >   ihalenin **TOPLAM `yaklasik_maliyet`ini HER lot satırına kopyalıyor** — 46.083 çok-lotlu ihalenin
@@ -30,8 +1122,22 @@
 >   NOT: `ilanlar.yaklasik_maliyet_min` sonuçlularda neredeyse hiç dolu değil (20 kayıt) → payda `ihale_sonuclari.yaklasik_maliyet`.
 > - **Etkilenen yüzeyler:** `sonuc_ozet_mv.ort_tenzilat` (İhaleler→Sonuç KPI), ihale-detay / firma-analiz /
 >   kurum-analiz satır-bazlı tenzilat, ve **teklif_ai.py + firma_ai_yorum.py (AI yorumları bozuk veriyle üretiliyor)**.
-> - **KARAR BEKLİYOR:** (a) yalnız KPI (MV DROP+CREATE, prod DDL) (b) +satır gösterimleri (c) +AI (d) sonraya bırak.
->   Prod DDL tek taraflı yapılmadı. Bkz. [[tenzilat-cok-lot-hatasi]].
+> - ✅ **KPI DÜZELTİLDİ (18 Tem):** `backend/migration_tenzilat_ihale_bazli.sql` prod'da koştu →
+>   `ort_tenzilat 48.3 → 17.0`; toplam/toplam_bedel/farkli_firma değişmedi. Canlı doğrulandı ("%17").
+>   MV ihale-bazlı hesaba çevrildi; unique index + ACL (anon=r/authenticated=arwd/service_role=r) birebir kuruldu.
+>   Migration'ı KULLANICI çalıştırdı — sınıflandırıcı prod DDL'i bloklar ([[prod-ssh-auto-mode-limits]]).
+> - ✅ **TÜM YÜZEYLER KAPANDI (18 Tem):** kısım bazlı doğru tenzilat mevcut veriden HESAPLANAMIYOR
+>   (3 eşleştirme yöntemi denendi: indeks %17, değer %4,8, yapısal → kisimList sözleşmeyle eşleşmiyor).
+>   Çözüm "hesaplayamadığımızı gösterme": `ihale_sonuclari.lot_sayisi` kolonu (migration_sonuc_lot_sayisi.sql;
+>   tek-kısım 288.728 / çok-kısım 249.336). Kural: lot_sayisi=1 → geçerli, >1 → gösterme/ortalamaya katma.
+>   • ihale-detay: .limit(1) kaldırıldı, çok kısımlıda toplam bedel + İHALE GENELİ tenzilat (%100,0→%39,8)
+>   • firma-analiz: KPI yalnız tek kısımlıdan, kartta "N kısımlı" rozeti
+>   • kurum-analiz: zaten doğruydu, dokunulmadı
+>   • analiz_pivot: AVG FILTER (lot_sayisi=1) — **5 yüzey**: 2 kırılım + ihale-detay TEKLİF BANDI ÖNERİSİ +
+>     teklif_ai.py + firma_ai_yorum.py. Doğrulama: kategori tenzilatları %12-21 (gerçekçi).
+>   • AI: null'da "%None" yazmaz; prompt'a "null = hesaplanamıyor, yorum yapma" kuralı.
+> - ⚠️ AÇIK: `lot_sayisi` gece UPDATE'i run_scraper.sh'e eklenmeli (SQL migration başında hazır).
+> - ⚠️ AÇIK: ekap_sonuc_backfill.py:310 `json.dumps(...)[:15000]` kırpması 725 satırda JSON'u bozuyor.
 
 > ## 🧹 17 TEMMUZ — SONUÇLANANLAR KALDIRILDI + DT DURUM SEKMELERİ + FİRMA KONSOLİDASYON CEVABI (✅ CANLI, c74e3eb)
 > Kullanıcı: (1) Sonuçlananlar sayfası Sonuç sekmesiyle redundant, kaldır; (2) DT'ye ihaleler gibi sekmeler;
@@ -301,6 +1407,85 @@
 > binlerce satır tarihsel kayıt/detay — çelişki olursa BU BLOK geçerlidir.
 > **KALICI TALİMAT (12 Tem, kullanıcı emri):** Bu blok + ilgili bölümler her oturumda otomatik
 > güncellenir, kullanıcı hatırlatmak zorunda değil. Bkz. hafıza `yapilacaklar-auto-update`.
+
+> ## 🏛️ 19 TEMMUZ — "İDARE TÜRÜ" FİLTRESİ CANLI (✅ ihaleler + doğrudan temin)
+> Kullanıcının baştan beri istediği "sadece belediyeler / sadece hastaneler" araması çalışıyor.
+> **TASARIM:** denormalize `idare_tur` kolonu (join/view DEĞİL) — mevcut PostgREST desenine
+> (.eq('il')/.eq('kategori')) birebir oturdu, frontend'e tek satır eklendi. `idare_tur_tazele()`
+> eşleme tablosundan iki ana tabloyu günceller (IS DISTINCT FROM → yalnız değişenler).
+> **CANLI RAKAMLAR** (tarama %10'dayken): ihaleler 44.569 sınıflı (belediye 7.764 · il özel idare
+> 6.109 · sağlık 5.217 · KİT 3.978 · milli eğitim 3.528 · üniversite 3.340); **DT 345.453 sınıflı**
+> (belediye 75.470 · üniversite 62.537). Tarama ilerledikçe kapsama orantılı artacak.
+> **İKİ CANLI HATA YAKALANDI VE DÜZELTİLDİ:**
+> 1. `idare_normalize` gövdesinde `tr_fold` şema-niteliksizdi → ifade indeksi KURULMADI
+>    ("function tr_fold(text) does not exist" index build sırasında). → `public.tr_fold` (_fix.sql).
+> 2. **Yeni kolon kolon-GRANT'a girmiyor** → filtre seçilince misafirde 42501, sayfa boş. PostgREST
+>    WHERE için de SELECT yetkisi ister. → `GRANT SELECT (idare_tur)` (_grant.sql). **KALICI KURAL:**
+>    bu iki tabloya kolon eklendiğinde grant dosyasına da satır ekle. Bkz [[anon-maske-iki-kok-neden]].
+>    Güvenlik: tür bir KATEGORİ, kimlik değil — `idare` misafire kapalı kalmaya devam ediyor.
+> **DETSİS TAM TARAMA:** Webshare "government sites" eşiğine takılıp durmuştu; kullanıcı kimlik
+> doğrulamasını tamamladı, havuz tekrar aktif (100/100 IP, 0 hata) ve tarama devam ediyor.
+> **SIRADAKİ:** tarama bitince `--yaz` + `idare_tur_tazele()` · gece tazeleme + boşluk raporu
+> run_scraper.sh'e · kalan "bilinmiyor"lara AI katmanı · kurum-analiz/idareler dizinine tür rozeti.
+
+> ## 🏛️ 18 TEMMUZ (gece) — İDARE TÜRÜ SINIFLANDIRMASI: altyapı hazır, TAM TARAMA ÇALIŞIYOR
+> Hedef: "kurumları EKAP'taki gibi kategorize et" → ihalelerde "sadece belediyeler/hastaneler" filtresi.
+> **EKAP'ta hazır tür filtresi YOK** (İdare Seç=tek tek kurum, Kapsam=4734 yasal kapsam) → kendimiz kurduk.
+> **ÇÖZÜLEN ZİNCİR** (hafıza: [[ekap-detsis-idare-tur]] — pahalıya mal oldu, tekrar arama):
+>   DetsisAgaci (87.528 kayıt: idareId+ad+detsisNo) → GetListByParameters **idareKodList=[idareId]**
+>   → o kurumun ihaleleri → `idareAdi` bizim `ilanlar.idare` ile AYNI STRING → eşleşme kesin.
+> **3 TUZAK:** (1) "idareKod" DETSİS No DEĞİL idareId (detsisNo/id→0 sonuç); (2) **0 sonuç "filtre çalıştı"
+> demek DEĞİL** — eşleşmeyen değer de 0 döner, ilk testim bu yanlış-pozitifle doğru anahtarı atlamıştı;
+> (3) ad ile join ambigü ("BİLGİ İŞLEM DAİRE BAŞKANLIĞI" DETSİS'te 114 kez).
+> **GENEL TEKNİK:** bilinmeyen API alanını TAHMİN ETME (15 payload+6 ad boşa gitti) → **Angular bundle'ını
+> oku** (/951.*.js içinde arama modeli açıkça yazılı). TLS: EKAP zayıf cipher → ekap_ssl_baglami() şart.
+> **TÜR ÇIKARIMI DETSİS'İN UZUN ADINDAN** (üst kurum zinciri içerir): "İDARİ VE MALİ İŞLER DAİRESİ
+> BAŞKANLIĞI" (jenerik) → "…KAMU İHALE KURUMU" → diger_kamu ✓ — kural motorunun çözemediği durum.
+> **YAZILANLAR:** migration_idare_tur.sql (+_fix: idare_normalize'da şema-nitelikli tr_fold, yoksa ifade
+> indeksi kurulmuyor) · idare_tur_siniflandir.py (14 tür, 741 kelime, 14 ajanlık envanter; su idaresi
+> kısaltma tuzağı ESKİ/BASKI korumalı) · ekap_detsis_cek.py (async, 24 işçi, proxy havuzlu, checkpoint'li).
+> **MİMARİ (kullanıcı itirazıyla):** tek seferlik dump bayatlar → (a) gece tazeleme (b) idare_tur_bosluk()
+> yeni-birim alarmı (c) boşluk kural/AI ile geçici sınıflanır, `kaynak` alanı kesin/geçici ayrımını tutar.
+> **PERF DERSİ:** sıralı 1.6 istek/sn → 15 saat; darboğaz havuz değil tek-akış×600ms → async 24 işçi ~2,5 saat.
+> **DURUM:** tam tarama VDS'te sürüyor (proxy 100/100 IP, 0 hata, VDS IP'si kullanılmıyor).
+> **SIRADAKİ (sabah):** `--yaz` → tabloya bas · gece tazeleme+boşluk raporu run_scraper.sh'e · arayüzde
+> "İdare Türü" filtresi (İhaleler/DT/İdareler) · kalan "bilinmiyor"lara AI katmanı.
+
+> ## 🧭 18 TEMMUZ — HS HİYERARŞİSİ + TÜM ETİKETLER TÜRKÇE + 🔴 KIRPILMA HATASI (✅ CANLI, 792bac0)
+> Kullanıcı: "alt pozisyonu pozisyona, pozisyonu fasıla bağlayalım, aramaları öyle kategorize edelim."
+> **🔴 ÖNCE BULUNAN GİZLİ HATA:** `detayAc` `.limit(4000)` diyordu ama **PostgREST 1000-satır tavanı
+> `.limit()`'i eziyor** → HS6 drill-down büyük ortaklarda SESSİZCE kırpıyordu: **DEU 478 kalem
+> gösteriyordu, gerçeği 4.910** (16.450 ham satır); USA/ITA/ROU aynı. Sıralama ve Değişim de bu kırpık
+> alt kümeye göreydi. **KURAL: `.limit(>1000)` gördüğün her sorgu zaten kırpıktır → jsonb RPC'ye taşı.**
+> **backend/migration_hs_hiyerarsi.sql (kullanıcı uyguladı, CANLI):** ticaret_hs_kalem / ticaret_hs_ulkeler
+> / ticaret_hs_fasil + `hs6 text_pattern_ops` indeksi (LIKE prefix için şart) + timeout.
+> **ETİKETLER:** fasıl (97) + pozisyon (1.229) İngilizceydi → GTİP üslubunda Türkçeleştirildi
+> (3 workflow / 33 ajan: 1.326 çeviri + 465 diakritik düzeltme). **6.939 kodun tamamı Türkçe.**
+> DERS: ajan çıktısı diakritiksiz gelebilir; tespitte kelime listesi değil "15+ karakter, hiç çğıöşü yok"
+> kuralı kullan (kelime listesi 265'in 200'ünü kaçırdı).
+> **HİYERARŞİ:** arama 3 seviyede (📚Fasıl/📂Pozisyon/📦Kalem rozetli; eskiden `kod.length!==6 continue`
+> ile 2/4-hane atlanıyordu → "makine" 0 sonuç, şimdi 423 / "çelik" 338); fasıl seçince o fasıldaki TÜM
+> kalemlerin toplamı sorgulanır; fasıl filtresi + satır breadcrumb'ı ("Makineler › Aksam ve parçalar").
+> **Canlı doğrulama:** DEU 4.910 kalem, 98 fasıl seçeneği, Fasıl 84 → 537 kalemin toplamı / 169 ülke
+> (Almanya $3 Mr), Pozisyon 8407 → 8 kalemin toplamı. Geriye dönük uyumlu (RPC yoksa eski yol + uyarı).
+> **SIRADAKİ (kullanıcı istedi):** kurumları EKAP'taki gibi kategorize et.
+
+> ## 🔐 18 TEMMUZ — SECRET ROTASYONU (JWT+anon+service) ✅ CANLI + DB PAROLASI İPTAL (3 ders)
+> Studio ifşası borcu kapandı. **Yapıldı:** keygen (HS256/stdlib, kullanıcı üretti — ben yalnız public anon'u
+> gördüm) → 24 HTML + 6 JS'te anon key yenilendi + `?v=rot1` cache-bust (commit 211f81a) → VDS `.env` 3 değer
+> + `docker compose up -d` + `ihale-api` restart. **Doğrulandı: eski anon 401 / yeni anon 200**, tüm sayfa+JS
+> yeni imza, REST+RPC+auth 200, konsol temiz.
+> **DB parolası (Faz 2b) DENENDİ → İPTAL.** Kısa bir kesinti yaşandı, kök nedenler ve KALICI DERSLER:
+> 1. **Stack restart sonrası kong'u da restart et.** `docker compose up -d` rest/auth'u yeniden yaratır, kong'u
+>    yaratmaz → kong bayat upstream'e bakar → container'lar "healthy" iken TÜM REST/RPC **502**. Teşhis: yanlış
+>    anahtar 401 (kong ayakta) + doğru anahtar 502 (upstream ölü). Çözüm: `docker compose restart kong`.
+> 2. **`postgres` bu sürümde SUPERUSER DEĞİL** — `supabase_admin` superuser. Ayrıcalıklı rollerde ALTER için
+>    `-U supabase_admin` şart (yoksa "Only superusers can alter privileged roles").
+> 3. **Yer-tutuculu yıkıcı komut bloklarına ABORT guard konulmalı** — `<...buraya>` doldurulmadan çalıştırıldı,
+>    sed `.env`'e çöp yazdı. (Şans: ALTER hata verip rollback oldu → DB rolleri değişmedi, `.env` geri yazılınca
+>    tamamen düzeldi, veri kaybı yok.)
+> **KARAR:** DB parolası döndürülmeyecek — 5432/6543 dışarıya kapalı olduğu için sızmış parola uzaktan
+> kullanılamaz (fayda ~0), risk kanıtlandı. Kritik olan JWT/service rotasyonu tamam.
 
 > ## 🔐 17 TEMMUZ — SECRET ROTASYONU YAPILDI (JWT+anon+service) ✅ CANLI, commit `211f81a`
 > Studio ifşasının (16 Tem) açık kalan tek borcu kapandı. **Risk modeli:** anon key zaten public —

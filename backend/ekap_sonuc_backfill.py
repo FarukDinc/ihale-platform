@@ -63,7 +63,9 @@ from dotenv import load_dotenv
 
 load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), ".env"))
 
-from proxy_config import rastgele_proxy_url
+from proxy_config import rastgele_proxy_url  # KALSIN: ilan_metni_backfill.py:45 bunu
+                                             # bu modülden import ediyor, silinirse o script açılışta ölür
+from proxy_havuz import async_havuz_al, ekap_ssl_baglami
 
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "")
 SUPABASE_KEY = os.environ.get("SUPABASE_SERVICE_KEY", "")
@@ -75,6 +77,8 @@ BASE_HEADERS = {
     "Accept": "application/json",
     "Content-Type": "application/json",
     "api-version": "v1",
+    # ŞART: yoksa açıklama alanları i18n anahtarı/İngilizce döner (bkz. ekap_scraper.py)
+    "Accept-Language": "tr-TR,tr;q=0.9",
     "Origin": BASE,
     "User-Agent": (
         "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
@@ -110,14 +114,19 @@ def crypto_headers():
     }
 
 
-async def post(client: httpx.AsyncClient, endpoint: str, data: dict) -> dict | None:
+async def post(havuz, endpoint: str, data: dict) -> dict | None:
+    """İstek async proxy havuzundan çıkan sıradaki IP ile gider.
+    404 zaten None dönüyordu (kayıt yok) — ist.yanit() de onu blok sinyali SAYMAZ,
+    yalnız 403/407/429/5xx cezalandırır."""
     headers = {**BASE_HEADERS, **crypto_headers()}
     try:
-        r = await client.post(f"{BASE}{endpoint}", json=data, headers=headers, timeout=30.0)
-        if r.status_code == 404:
-            return None
-        r.raise_for_status()
-        return r.json()
+        async with havuz.istek() as ist:
+            r = await ist.client.post(f"{BASE}{endpoint}", json=data, headers=headers, timeout=30.0)
+            ist.yanit(r)
+            if r.status_code == 404:
+                return None
+            r.raise_for_status()
+            return r.json()
     except httpx.HTTPStatusError as e:
         print(f"    ✗ HTTP {e.response.status_code} — {endpoint}")
         return None
@@ -240,8 +249,8 @@ def sonuc_ilan_html_bul(ilan_list: list) -> dict | None:
     return ilan_list[-1]
 
 
-async def ekap_detay_cek(client: httpx.AsyncClient, ihale_id: str) -> dict | None:
-    return await post(client, "/b_ihalearama/api/IhaleDetay/GetByIhaleIdIhaleDetay", {"ihaleId": ihale_id})
+async def ekap_detay_cek(havuz, ihale_id: str) -> dict | None:
+    return await post(havuz, "/b_ihalearama/api/IhaleDetay/GetByIhaleIdIhaleDetay", {"ihaleId": ihale_id})
 
 
 def sonuc_kayitlari_olustur(ilan: dict, detay: dict) -> list[dict]:
@@ -499,19 +508,19 @@ async def calis(max_pages: int, dry_run: bool, start_skip: int | None, tum_kayit
     # Webshare'in 100 IP'lik havuzundan rastgele biri seçilir (PROXY_LIST yapılandırılmamışsa
     # None döner, direkt bağlantıya düşer). Bloklanırsa script'i yeniden başlatmak (checkpoint
     # kaldığı yerden devam eder) farklı bir IP'ye düşürür.
-    secilen_proxy = rastgele_proxy_url()
-    if secilen_proxy:
-        print(f"→ Proxy kullanılıyor: {secilen_proxy.split('@')[-1]}")
-    async with httpx.AsyncClient(verify=ssl_ctx(), http2=False, timeout=30.0, proxy=secilen_proxy) as client:
+    # ESKİ: rastgele_proxy_url() tur başına TEK IP seçiyordu (havuzun 99'u boşta).
+    # YENİ: async havuz, istek başına rotasyon + IP soğuması + küresel tavan + karantina.
+    havuz = async_havuz_al(ssl_baglami=ekap_ssl_baglami())
+    if True:
         for sayfa in range(max_pages):
-            veri = await post(client, "/b_ihalearama/api/Ihale/GetListByParameters", {
+            veri = await post(havuz, "/b_ihalearama/api/Ihale/GetListByParameters", {
                 "searchText": "", "paginationSkip": skip, "paginationTake": SAYFA_BOYUTU,
                 "ihaleDurumIdList": [5], "searchType": "GirdigimGibi",
             })
             if veri is None:
                 # Geçici ağ/HTTP hatası olabilir — bir kez daha dene, olmazsa bu sayfayı atla (durma).
                 await asyncio.sleep(1.0)
-                veri = await post(client, "/b_ihalearama/api/Ihale/GetListByParameters", {
+                veri = await post(havuz, "/b_ihalearama/api/Ihale/GetListByParameters", {
                     "searchText": "", "paginationSkip": skip, "paginationTake": SAYFA_BOYUTU,
                     "ihaleDurumIdList": [5], "searchType": "GirdigimGibi",
                 })
@@ -538,7 +547,7 @@ async def calis(max_pages: int, dry_run: bool, start_skip: int | None, tum_kayit
                     continue
                 eslesen += 1
                 try:
-                    detay = await ekap_detay_cek(client, item["id"])
+                    detay = await ekap_detay_cek(havuz, item["id"])
                     if not detay:
                         continue
                     kayitlar = sonuc_kayitlari_olustur(ilan, detay)

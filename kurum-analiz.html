@@ -459,14 +459,14 @@
         <!-- GENEL BAKIŞ -->
         <div id="tab-genel" class="tab-panel active">
           <div class="detay-card" style="margin-bottom:20px;">
-            <div class="card-title">Aylık İhale Trendi <span style="font-size:11px;font-weight:400;color:var(--muted);">— son 24 ay</span></div>
+            <div class="card-title">Aylık İhale Hareketi <span style="font-size:11px;font-weight:400;color:var(--muted);">— son 24 ay (ilan/teklif/sonuç)</span></div>
             <div class="chart-wrap" style="height:180px;">
               <canvas id="aylik-chart"></canvas>
             </div>
           </div>
           <div class="iki-sutun">
             <div class="detay-card">
-              <div class="card-title">Yıllara Göre İhale Sayısı</div>
+              <div class="card-title">Yıllara Göre İhale Hareketi <span style="font-size:11px;font-weight:400;color:var(--muted);">— kayıttaki en güncel tarihe göre</span></div>
               <div class="chart-wrap">
                 <canvas id="yillik-chart"></canvas>
               </div>
@@ -602,7 +602,12 @@
     const { data: dilim, error } = await sb.from('ilanlar')
       .select('id,ekap_id,baslik,il,tur,ilan_tarihi,son_teklif_tarihi,yaklasik_maliyet_min,yaklasik_maliyet_max,ihale_sonuclari(kazanan_firma,kazanan_teklif,kazanan_teklif_farki_yuzde,sonuc_tarihi,kisim_no)')
       .ilike('idare', `%${KURUM}%`)
-      .order('ilan_tarihi', { ascending: false, nullsFirst: false })
+      // etkin_tarih (20 Tem): ilan_tarihi yalnız ~%3 dolu olduğu için liste fiilen
+      // sıralanmıyordu — kayıtların %97'si nullsLast kovasına düşüp id'ye göre
+      // rastgele diziliyordu. Üstteki grafikler de aynı eksene taşındı; ikisi ayrı
+      // kalsaydı grafik 2015'te hareket gösterirken liste o kayıtları en sona atardı.
+      // anon erişimi doğrulandı (kolon-GRANT listesinde, 200 dönüyor).
+      .order('etkin_tarih', { ascending: false, nullsFirst: false })
       .order('id', { ascending: true })
       .range(bas, bas + PER_PAGE - 1);
     if (istek !== listeIstek) return; // araya yeni istek girdi

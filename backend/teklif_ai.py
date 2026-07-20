@@ -47,8 +47,12 @@ def _prompt_olustur(ilan: dict, firma_profil: dict, piyasa_baglami: list) -> str
 
     piyasa_metni = "Bu idare/sektörde geçmiş sonuçlanan iş kaydı bulunamadı."
     if piyasa_baglami:
+        # ort_tenzilat yalnız TEK KISIMLI ihalelerden hesaplanır (analiz_pivot FILTER lot_sayisi=1);
+        # kısımlı ihalelerde EKAP kısım bazlı yaklaşık maliyet vermediğinden tenzilat bilinemez → NULL.
+        # AI'ya "%None" gitmesin: tenzilat yoksa satırdan tamamen çıkar.
         satirlar = [
-            f"- {p.get('grup_deger')}: {p.get('ihale_sayisi')} iş, ortalama tenzilat %{p.get('ort_tenzilat')}"
+            f"- {p.get('grup_deger')}: {p.get('ihale_sayisi')} iş"
+            + (f", ortalama tenzilat %{p.get('ort_tenzilat')}" if p.get("ort_tenzilat") is not None else "")
             for p in piyasa_baglami[:5]
         ]
         piyasa_metni = "Bu idare/sektörde geçmişte kazanan firmalar ve ortalama tenzilatları:\n" + "\n".join(satirlar)

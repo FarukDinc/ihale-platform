@@ -309,10 +309,10 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/sidebar-user.js?v=3"></script>
 <script src="js/bildirim-sayaci.js?v=rot1"></script>
-<script src="js/api.js?v=rot1"></script>
+<script src="js/api.js?v=goog1"></script>
 <script src="js/kategoriler.js"></script>
 <script src="js/uyum.js"></script>
-<script src="js/takip.js?v=rot1"></script>
+<script src="js/takip.js?v=2"></script>
 <script>
   const SUPABASE_URL = "https://ihaleglobal.com";
   const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzg0MzA3MTU4LCJleHAiOjE5NDE5ODcxNTh9.CjNKulvirotDD_y2oO2QKgo0kbqYvL0jUSV1RiDMoso";
@@ -872,27 +872,40 @@
   async function sonucBilgiGoster(ilanId) {
     const wrap = document.getElementById('sonuc-bilgi-wrap');
     if (!wrap) return;
+    // TÜM kısımları çek — çok kısımlı ihalede tek satır ihalenin sonucu DEĞİLDİR.
+    // EKAP kısım bazlı yaklaşık maliyet yayımlamıyor; her kısım satırına ihalenin TOPLAM
+    // maliyeti kopyalanıyor (46.077/46.083 ihalede doğrulandı) → satır bazlı tenzilat
+    // sahte %95'lere çıkıyor. Bu yüzden çok kısımlıda tenzilat yalnız İHALE GENELİNDE verilir.
     const { data } = await sb.from('ihale_sonuclari')
-      .select(`${uyeMi ? 'kazanan_firma,' : ''}kazanan_teklif,kazanan_teklif_farki_yuzde,en_dusuk_teklif,en_yuksek_teklif,toplam_teklif_sayisi,sonuc_tarihi`)
-      .eq('ilan_id', ilanId).limit(1);
-    const s = data && data[0];
-    if (!s) return;
+      .select(`${uyeMi ? 'kazanan_firma,' : ''}kazanan_teklif,kazanan_teklif_farki_yuzde,yaklasik_maliyet,kisim_no,toplam_teklif_sayisi,sonuc_tarihi`)
+      .eq('ilan_id', ilanId).order('kisim_no', { ascending: true }).limit(500);
+    if (!data || !data.length) return;
+    const s = data[0];
+    const cokKisim   = data.length > 1;
+    const topBedel   = data.reduce((a, r) => a + (Number(r.kazanan_teklif) || 0), 0);
+    const ym         = Number(s.yaklasik_maliyet) || 0;
+    // Çok kısımda: (yaklaşık maliyet − kısım bedelleri toplamı) / yaklaşık maliyet
+    const tenz = cokKisim
+      ? (ym > 0 ? (ym - topBedel) / ym * 100 : null)
+      : (s.kazanan_teklif_farki_yuzde != null ? Number(s.kazanan_teklif_farki_yuzde) : null);
+    const firmalar = uyeMi ? [...new Set(data.map(r => r.kazanan_firma).filter(Boolean))] : [];
+    const firmaHtml = !uyeMi
+      ? `<b style="color:var(--white);">${MASKE_ROZET}</b>`
+      : firmalar.length === 0 ? '<b style="color:var(--white);">—</b>'
+      : firmalar.length === 1
+        ? `<a href="firma-analiz?ara=${encodeURIComponent(firmalar[0])}" style="color:var(--amber);font-weight:700;text-decoration:none;" title="Firma analizini gör">${escHtml(firmalar[0])} ↗</a>`
+        : `<b style="color:var(--white);">${firmalar.length} farklı firma</b>`;
     wrap.innerHTML = `
       <div style="background:rgba(34,197,94,0.08);border:1px solid rgba(34,197,94,0.25);border-radius:10px;padding:16px 20px;margin-bottom:20px;">
-        <div style="color:#4ade80;font-weight:700;font-size:13px;margin-bottom:8px;">✓ İhale Sonuçlandı</div>
+        <div style="color:#4ade80;font-weight:700;font-size:13px;margin-bottom:8px;">✓ İhale Sonuçlandı${cokKisim ? ` — ${data.length} kısım` : ''}</div>
         <div style="display:flex;flex-wrap:wrap;gap:24px;font-size:13px;">
-          <div><span style="color:var(--muted);">Kazanan Firma:</span> ${
-            uyeMi
-              ? (s.kazanan_firma
-                  ? `<a href="firma-analiz?ara=${encodeURIComponent(s.kazanan_firma)}" style="color:var(--amber);font-weight:700;text-decoration:none;" title="Firma analizini gör">${escHtml(s.kazanan_firma)} ↗</a>`
-                  : '<b style="color:var(--white);">—</b>')
-              : `<b style="color:var(--white);">${MASKE_ROZET}</b>`
-          }</div>
-          ${s.kazanan_teklif ? `<div><span style="color:var(--muted);">Sözleşme Bedeli:</span> <b style="color:var(--white);">${butceFormatla(s.kazanan_teklif)}</b></div>` : ''}
-          ${s.kazanan_teklif_farki_yuzde != null ? `<div><span style="color:var(--muted);">Tenzilat:</span> <b style="color:var(--amber);">%${s.kazanan_teklif_farki_yuzde}</b></div>` : ''}
-          ${s.toplam_teklif_sayisi ? `<div><span style="color:var(--muted);">Toplam Teklif:</span> <b style="color:var(--white);">${s.toplam_teklif_sayisi}</b></div>` : ''}
+          <div><span style="color:var(--muted);">Kazanan Firma:</span> ${firmaHtml}</div>
+          ${topBedel ? `<div><span style="color:var(--muted);">${cokKisim ? 'Toplam Sözleşme Bedeli' : 'Sözleşme Bedeli'}:</span> <b style="color:var(--white);">${butceFormatla(topBedel)}</b></div>` : ''}
+          ${tenz != null ? `<div><span style="color:var(--muted);">Tenzilat${cokKisim ? ' (ihale geneli)' : ''}:</span> <b style="color:var(--amber);">%${tenz.toFixed(1)}</b></div>` : ''}
+          ${!cokKisim && s.toplam_teklif_sayisi ? `<div><span style="color:var(--muted);">Toplam Teklif:</span> <b style="color:var(--white);">${s.toplam_teklif_sayisi}</b></div>` : ''}
           ${s.sonuc_tarihi ? `<div><span style="color:var(--muted);">Sözleşme Tarihi:</span> <b style="color:var(--white);">${tarihFormatla(s.sonuc_tarihi)}</b></div>` : ''}
         </div>
+        ${cokKisim ? `<div style="font-size:11.5px;color:var(--muted);margin-top:8px;">Kısımlı ihale: EKAP kısım bazlı yaklaşık maliyet yayımlamadığından tenzilat kısım kısım değil, ihale geneli için hesaplanır.</div>` : ''}
       </div>`;
   }
 

@@ -67,7 +67,11 @@ GRANT SELECT (
   son_sozlesme_tarihi, sektor, guncellendi, ortak_girisim, kategori
 ) ON public.yukleniciler TO anon;
 
--- ── 4) dogrudan_temin_ilanlari: yalnız idare maskeli (dt_no belge erişimi için kalır)
+-- ── 4) dogrudan_temin_ilanlari: idare + dt_ihale_token/dt_idare_token maskeli.
+--    Token'lar 18 Tem'de eklendi (migration_dt_kazanan.sql) — EKAP'ın CAPTCHA-korumalı
+--    detay sayfasına dahili erişim anahtarları, frontend'in hiç ihtiyaç duymadığı;
+--    açık kalırsa herkes bizim scraper'ımızın E10/E11 keşfini kopyalayıp kendi
+--    toplu-erişimini kurabilirdi (dt_no/idare gibi "teaser" veri değil, saf altyapı).
 DO $$
 DECLARE
   kolonlar text;
@@ -76,7 +80,7 @@ BEGIN
     INTO kolonlar
   FROM information_schema.columns
   WHERE table_schema = 'public' AND table_name = 'dogrudan_temin_ilanlari'
-    AND column_name <> 'idare';
+    AND column_name NOT IN ('idare', 'dt_ihale_token', 'dt_idare_token');
   EXECUTE 'REVOKE SELECT ON public.dogrudan_temin_ilanlari FROM anon';
   EXECUTE format('GRANT SELECT (%s) ON public.dogrudan_temin_ilanlari TO anon', kolonlar);
 END $$;
@@ -137,6 +141,10 @@ BEGIN
     PERFORM idare FROM public.dogrudan_temin_ilanlari LIMIT 1;
     RAISE EXCEPTION 'HATA: anon DT.idare okuyabiliyor!';
   EXCEPTION WHEN insufficient_privilege THEN RAISE NOTICE 'OK: DT.idare anon-kapali'; END;
+  BEGIN
+    PERFORM dt_ihale_token FROM public.dogrudan_temin_ilanlari LIMIT 1;
+    RAISE EXCEPTION 'HATA: anon DT.dt_ihale_token okuyabiliyor!';
+  EXCEPTION WHEN insufficient_privilege THEN RAISE NOTICE 'OK: DT.dt_ihale_token anon-kapali'; END;
   BEGIN
     PERFORM * FROM public.il_sektor_firma_mv LIMIT 1;
     RAISE EXCEPTION 'HATA: anon il_sektor_firma_mv okuyabiliyor!';

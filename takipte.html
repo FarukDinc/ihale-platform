@@ -365,6 +365,19 @@
         </table>
       </div>
 
+      <!-- TAKİP EDİLEN DOĞRUDAN TEMİNLER
+           Dashboard'daki "Takipteki İhale" kartı ihale + DT takiplerini TOPLAYIP
+           gösteriyordu ama bu sayfada DT bölümü yoktu: kart "5" yazarken liste 3
+           satır çıkıyordu. Bu bölüm o uyuşmazlığı kapatır. Ayrı tablo/ayrı depo
+           (dt_takipler + localStorage 'dt_takip'), bkz. js/takip.js -> TakipDT. -->
+      <div class="table-wrap" style="margin-top:24px;">
+        <div class="table-header">
+          <span class="table-title">⚡ Takip Ettiğim Doğrudan Teminler</span>
+          <span style="font-size:12px; color:var(--muted);" id="dt-takip-count"></span>
+        </div>
+        <div id="dt-takip-liste" style="padding:14px 18px;font-size:13px;color:var(--muted);">Yükleniyor...</div>
+      </div>
+
       <!-- TAKİP EDİLEN KURUMLAR -->
       <div class="table-wrap" style="margin-top:24px;">
         <div class="table-header">
@@ -391,7 +404,7 @@
 <script src="js/sidebar-user.js?v=3"></script>
 <script src="js/bildirim-sayaci.js?v=rot1"></script>
 <script src="js/main.js"></script>
-<script src="js/takip.js?v=rot1"></script>
+<script src="js/takip.js?v=2"></script>
 <script src="js/uyum.js"></script>
 <script>
   const SUPABASE_URL = "https://ihaleglobal.com";
@@ -694,8 +707,83 @@
     }
   }
 
+  // ── Takip Ettiğim Doğrudan Teminler ──────────────────────────────
+  async function dtTakipleriniYukle() {
+    const el = document.getElementById('dt-takip-liste');
+    const cnt = document.getElementById('dt-takip-count');
+    if (!el) return;
+    if (!window.TakipDT) { el.textContent = 'Doğrudan temin takibi yüklenemedi.'; return; }
+
+    // Girişliyse DB'den tazele (başka cihazda eklenenler de gelsin) — TakipDT.syncFromDB
+    // hata yutar, localStorage yedeği kalır.
+    try { await TakipDT.syncFromDB(); } catch (_) {}
+
+    const noLar = TakipDT.liste();
+    if (!noLar.length) {
+      el.innerHTML = 'Henüz bir doğrudan temin takip etmiyorsunuz. Doğrudan Temin sayfasında bir ilanın ☆ simgesine basarak ekleyin.';
+      if (cnt) cnt.textContent = '';
+      return;
+    }
+
+    // idare anon'a KAPALI (migration_anon_maske.sql) — select'e girerse tüm sorgu
+    // 42501 ile düşer. Misafir dalında idare istenmiyor, kartta '—' gösteriliyor.
+    let uye = false;
+    try { const { data: s } = await sb.auth.getSession(); uye = !!(s && s.session); } catch (_) {}
+
+    const { data, error } = await sb.from('dogrudan_temin_ilanlari')
+      .select(uye ? 'dt_no,baslik,idare,il,tur,tarih,durum' : 'dt_no,baslik,il,tur,tarih,durum')
+      .in('dt_no', noLar);
+
+    if (error) { el.textContent = 'Bağlantı hatası: ' + error.message; return; }
+    if (!data || !data.length) {
+      el.innerHTML = 'Takip ettiğiniz doğrudan temin kayıtları bulunamadı (kaldırılmış olabilir).';
+      if (cnt) cnt.textContent = '';
+      return;
+    }
+
+    // Takip sırasını koru (en son eklenen en üstte) — ihale listesiyle aynı davranış
+    const sirali = noLar.map(n => data.find(d => String(d.dt_no) === String(n))).filter(Boolean).reverse();
+    if (cnt) cnt.textContent = `${sirali.length} duyuru`;
+
+    const gunAy = (t) => {
+      if (!t) return '—';
+      const d = new Date(t);
+      return isNaN(d) ? '—' : d.toLocaleDateString('tr', { day: '2-digit', month: 'short', year: 'numeric' });
+    };
+    const kacar = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, c =>
+      ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+    el.innerHTML = sirali.map(d => `
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 0;border-bottom:1px solid var(--border);">
+        <div style="min-width:0;">
+          <a href="dt-detay?dt_no=${encodeURIComponent(d.dt_no)}"
+             style="color:var(--white);text-decoration:none;font-size:13px;font-weight:600;display:block;">
+            ${kacar(d.baslik) || '(başlıksız)'}
+          </a>
+          <div style="font-size:11.5px;color:var(--muted);margin-top:3px;">
+            ${uye && d.idare ? '🏛️ ' + kacar(d.idare) + ' · ' : ''}📍 ${kacar(d.il) || '—'}
+            ${d.tur ? ' · ' + kacar(d.tur) : ''} · 📅 ${gunAy(d.tarih)}
+            ${d.durum ? ' · ' + kacar(d.durum) : ''}
+          </div>
+        </div>
+        <button onclick="dtTakipCikar('${kacar(d.dt_no)}',this)"
+                style="background:none;border:1px solid var(--border);color:var(--muted);border-radius:6px;
+                       padding:4px 10px;font-size:11px;cursor:pointer;white-space:nowrap;">Takibi Bırak</button>
+      </div>`).join('');
+  }
+
+  window.dtTakipCikar = function(dtNo, btn) {
+    TakipDT.toggle(dtNo);
+    btn.closest('div[style]').remove();
+    const kalan = TakipDT.liste().length;
+    const cnt = document.getElementById('dt-takip-count');
+    if (cnt) cnt.textContent = kalan ? `${kalan} duyuru` : '';
+    if (!kalan) dtTakipleriniYukle();   // boş duruma düşünce yönlendirme metnini göster
+  };
+
   profilCek().then(() => takipListesiniYukle());
   kurumFirmaTakipleriniYukle();
+  dtTakipleriniYukle();
 </script>
 </body>
 </html>

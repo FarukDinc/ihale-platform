@@ -517,60 +517,15 @@
         </div>
         <div class="filter-group">
           <label>Kategori</label>
+          <!-- Seçenekler js/kategoriler.js'ten RUNTIME dolduruluyor — kategoriDropdownDoldur().
+               ESKİDEN 48 seçenek burada hardcode'du ve <option>'larda value attribute'u YOKTU,
+               dolayısıyla tarayıcı seçenek METNİNİ gönderiyordu ("Mal Alımı"). Canlı
+               ilanlar.kategori ise kanonik adları taşıyor ("Sağlık - Medikal - İlaç - Kozmetik")
+               → 48 seçeneğin 43'ü SIFIR kayıt döndürüyordu (20 Tem, REST ile tek tek ölçüldü).
+               Kanonik 41 ad canlı verinin %95,1'ini kapsıyor ve 41/41'inde kayıt var.
+               Aynı desen: dogrudan-temin.html kategorileriYukle(). -->
           <select class="filter-select" id="f-kategori">
             <option value="">Tüm Kategoriler</option>
-            <optgroup label="— Genel —">
-              <option>Mal Alımı</option>
-              <option>Hizmet Alımı</option>
-              <option>Danışmanlık</option>
-            </optgroup>
-            <optgroup label="— Sektör —">
-              <option>İnşaat & Yapım</option>
-              <option>İnşaat Malzemeleri</option>
-              <option>Sağlık</option>
-              <option>Tıbbi Cihazlar</option>
-              <option>Bilişim Hizmetleri</option>
-              <option>BT Ekipmanları</option>
-              <option>Yazılım</option>
-              <option>Ulaşım Araçları</option>
-              <option>Ulaşım Hizmetleri</option>
-              <option>Enerji</option>
-              <option>Elektrik Malzemeleri</option>
-              <option>Gıda & İçecek</option>
-              <option>Tarım & Ormancılık</option>
-              <option>Tarım Makineleri</option>
-              <option>Sanayi Makineleri</option>
-              <option>Madencilik</option>
-              <option>Madencilik Ekipmanı</option>
-              <option>Çevre Hizmetleri</option>
-              <option>İdari Hizmetler</option>
-              <option>Kamu Yönetimi</option>
-              <option>Kamu Hizmetleri</option>
-              <option>Eğitim</option>
-              <option>Güvenlik</option>
-              <option>Bakım & Onarım</option>
-              <option>Mimarlık & Mühendislik</option>
-              <option>Lojistik</option>
-              <option>Mobilya & Temizlik</option>
-              <option>Giyim & Tekstil</option>
-              <option>Kimyasal Ürünler</option>
-              <option>Ar-Ge</option>
-              <option>Konaklama & Yemek</option>
-              <option>Labaratuvar</option>
-              <option>Spor & Eğlence</option>
-              <option>Su</option>
-              <option>Montaj</option>
-              <option>Posta & İletişim</option>
-              <option>İletişim</option>
-              <option>Sigorta & Finans</option>
-              <option>Gayrimenkul</option>
-              <option>Petrol & Gaz</option>
-              <option>Bahçe & Çevre</option>
-              <option>Kültür & Medya</option>
-              <option>Deri & Kauçuk</option>
-              <option>Basın & Yayın</option>
-              <option>Diğer Hizmetler</option>
-            </optgroup>
           </select>
         </div>
         <div class="filter-group">
@@ -613,6 +568,36 @@
           </select>
         </div>
         <div class="filter-group">
+          <label>İdare Türü</label>
+          <!-- Değerler idare_tur tablosundan (EKAP/DETSİS hiyerarşisi) gelir;
+               ilanlar.idare_tur denormalize kolonu gece tazelenir. -->
+          <select class="filter-select" id="f-idare-tur">
+            <option value="">Tümü</option>
+            <option value="belediye">🏛️ Belediye</option>
+            <option value="buyuksehir_belediye">🏙️ Büyükşehir Belediyesi</option>
+            <option value="belediye_sirket">🏢 Belediye Şirketi</option>
+            <option value="su_kanal">💧 Su ve Kanalizasyon İdaresi</option>
+            <option value="il_ozel_idare">📍 İl Özel İdaresi</option>
+            <option value="saglik">🏥 Sağlık</option>
+            <option value="universite">🎓 Üniversite</option>
+            <option value="milli_egitim">🏫 Milli Eğitim</option>
+            <option value="bakanlik_merkez">🏛️ Bakanlık (Merkez)</option>
+            <option value="bakanlik_tasra">📋 Bakanlık (Taşra)</option>
+            <option value="kit">🏭 KİT / Kamu Şirketi</option>
+            <option value="guvenlik">🛡️ Güvenlik / Savunma</option>
+            <option value="yargi">⚖️ Yargı / Ceza İnfaz</option>
+            <option value="diger_kamu">🏢 Diğer Kamu</option>
+          </select>
+        </div>
+        <!-- Geçmiş sekmesinde bedel/OKAS kapsamı dar (backfill kayıtlarında bu alanlar boş) -->
+        <div id="kapsam-uyari" style="display:none;flex-basis:100%;font-size:11px;line-height:1.5;
+             color:var(--muted);background:rgba(251,191,36,.07);border:1px solid rgba(251,191,36,.25);
+             border-radius:8px;padding:8px 11px;margin-bottom:2px;">
+          ⓘ Geçmiş ihalelerin çoğunda <b>yaklaşık maliyet</b> ve <b>OKAS</b> bilgisi sistemde yok
+          (sonuç kayıtlarından türetildiler). Bu iki filtre yalnızca verisi çekilmiş kayıtlarda
+          eşleşir — sonuç boş gelirse "böyle ihale yok" anlamına gelmez.
+        </div>
+        <div class="filter-group">
           <label>Yak. Maliyet Min (₺)</label>
           <input type="number" class="filter-input" id="f-min-bedel" placeholder="0" style="width:120px;" />
         </div>
@@ -630,6 +615,25 @@
             <option value="85">%85+</option>
           </select>
         </div>
+        <!-- TARİH ARALIKLARI: eskiden "Detaylı Ara" panelinde gömülüydü, kullanıcı bulamıyordu.
+             ID'ler AYNEN korundu (filtreleriUygula/Sifirla/mevcutFiltreleriOku/urlFiltreleriUygula
+             bu id'lere bakıyor) — yalnız DOM konumu değişti. -->
+        <div class="filter-group">
+          <label>Yayın Tarihi (Baş.)</label>
+          <input type="date" class="filter-input" id="f-yayin-bas" style="width:150px;" onchange="filtreUygula()" />
+        </div>
+        <div class="filter-group">
+          <label>Yayın Tarihi (Bitiş)</label>
+          <input type="date" class="filter-input" id="f-yayin-bit" style="width:150px;" onchange="filtreUygula()" />
+        </div>
+        <div class="filter-group">
+          <label>Son Teklif (Baş.)</label>
+          <input type="date" class="filter-input" id="f-teklif-bas" style="width:150px;" onchange="filtreUygula()" />
+        </div>
+        <div class="filter-group">
+          <label>Son Teklif (Bitiş)</label>
+          <input type="date" class="filter-input" id="f-teklif-bit" style="width:150px;" onchange="filtreUygula()" />
+        </div>
         <button class="btn-filtrele" onclick="filtreUygula()">Filtrele</button>
         <button class="btn-sifirla" onclick="filtreleriSifirla()">Sıfırla</button>
       </div>
@@ -641,22 +645,7 @@
           <label>İdare Adı</label>
           <input type="text" class="filter-input" id="f-idare" placeholder="Kurum / idare adında ara..." />
         </div>
-        <div class="filter-group">
-          <label>Yayın Tarihi (Baş.)</label>
-          <input type="date" class="filter-input" id="f-yayin-bas" style="width:160px;" />
-        </div>
-        <div class="filter-group">
-          <label>Yayın Tarihi (Bitiş)</label>
-          <input type="date" class="filter-input" id="f-yayin-bit" style="width:160px;" />
-        </div>
-        <div class="filter-group">
-          <label>Teklif Tarihi (Baş.)</label>
-          <input type="date" class="filter-input" id="f-teklif-bas" style="width:160px;" />
-        </div>
-        <div class="filter-group">
-          <label>Teklif Tarihi (Bitiş)</label>
-          <input type="date" class="filter-input" id="f-teklif-bit" style="width:160px;" />
-        </div>
+        <!-- Tarih aralıkları ANA FİLTRE BARINA taşındı (kullanıcı burada bulamıyordu). -->
         <div class="filter-group">
           <label>Sınır Değer Katsayısı (Yapım)</label>
           <select class="filter-select" id="f-esik-katsayi" style="width:170px;">
@@ -695,10 +684,10 @@
         </div>
         <select class="sort-select" id="sort-select" onchange="filtreUygula()">
           <option value="uyum_desc">Uyum % ↓</option>
-          <option value="son_teklif_tarihi">Son Teklif ↑</option>
+          <option value="son_teklif_tarihi">Son Teklif ↑ (Yakın → Uzak)</option>
           <option value="tahmini_bedel_desc">Yak. Maliyet ↓</option>
           <option value="tahmini_bedel_asc">Yak. Maliyet ↑</option>
-          <option value="ilan_tarihi">En Yeni</option>
+          <option value="ilan_tarihi">İlan Tarihi ↓ (Yeni → Eski)</option>
         </select>
       </div>
 
@@ -740,7 +729,10 @@
 <script src="js/sidebar-user.js?v=3"></script>
 <script src="js/bildirim-sayaci.js?v=rot1"></script>
 <script src="js/plan.js?v=rot1"></script>
-<script src="js/takip.js?v=rot1"></script>
+<!-- 41 kanonik kategorinin TEK doğruluk kaynağı. Kategori dropdown'ı buradan
+     dolduruluyor; eskiden HTML'e hardcode'lu 48 seçenek vardı ve 43'ü ölüydü. -->
+<script src="js/kategoriler.js"></script>
+<script src="js/takip.js?v=2"></script>
 <script>
   const SUPABASE_URL = "https://ihaleglobal.com";
   const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzg0MzA3MTU4LCJleHAiOjE5NDE5ODcxNTh9.CjNKulvirotDD_y2oO2QKgo0kbqYvL0jUSV1RiDMoso";
@@ -902,8 +894,32 @@
     document.querySelectorAll('.tab-btn').forEach(b =>
       b.classList.toggle('active', b.dataset.sekme === sekme));
     document.getElementById('gelismis-panel').classList.toggle('acik', sekme === 'detayli');
+    kapsamiOlmayanFiltreler(sekme);
     sonucOzetGuncelle();
     ilanlariYukle(1);
+  }
+
+  // ── Geçmiş sekmesinde veri kapsamı olmayan filtreler ────────────────────────
+  // Geçmiş kayıtların (sonuç backfill'inden gelen 335K + gelecek 1,6M) bu alanları
+  // BOŞ. Filtreyi açık bırakmak "0 sonuç" gösterir ve kullanıcı bunu "böyle ihale
+  // yok" diye okur — oysa gerçek "biz o veriyi çekmedik". Sessizce yanlış çalışan
+  // bir filtre, olmayan filtreden kötüdür.
+  //
+  // esik_katsayi AYRICA anlamsız: sınır değer katsayısı teklif FİYATLAMA girdisidir,
+  // ihale sonuçlandığında sınır değer de kimin altında kaldığı da bellidir.
+  //
+  // Bedel ve OKAS gizlenmiyor, UYARILIYOR: canlı kazımadan gelen geçmiş kayıtlarda
+  // bu alanlar dolu, yani filtre tümüyle ölü değil — yalnız kapsamı dar.
+  function kapsamiOlmayanFiltreler(sekme) {
+    const gecmis = (sekme === 'gecmis');
+    const esik = document.getElementById('f-esik-katsayi');
+    if (esik) {
+      const grup = esik.closest('.filter-group');
+      if (grup) grup.style.display = gecmis ? 'none' : '';
+      if (gecmis && esik.value) { esik.value = ''; }   // gizlerken filtreyi de bırak
+    }
+    const uyari = document.getElementById('kapsam-uyari');
+    if (uyari) uyari.style.display = gecmis ? '' : 'none';
   }
 
   // Sonuç sekmesi özet KPI'ları (eski Sonuçlananlar sayfasından taşındı) — sonuc_ozet MV, tek sefer yüklenir.
@@ -955,6 +971,19 @@
     if (mn && mx == null) return `${butceFormatla(mn)} üzeri`;
     if (mn != null && mx != null) return `${butceFormatla(mn)} – ${butceFormatla(mx)}`;
     return '—';
+  }
+
+  // "Son Teklif" tarihinin yanına kalan gün. durumBadge zaten ≤3 günde "Son N Gün" rozeti
+  // basıyor; burası 4+ gün aralığını kapatıyor (eskiden 4-30 gün arası hiç sayaç yoktu).
+  // Geçmiş/boş tarihte hiçbir şey eklemez (rozet zaten "Kapandı" diyor).
+  function kalanGunEk(bitis) {
+    if (!bitis) return '';
+    const d = new Date(bitis);
+    if (isNaN(d)) return '';
+    const bugun = new Date(); bugun.setHours(0, 0, 0, 0);
+    const gun = Math.round((new Date(d.getFullYear(), d.getMonth(), d.getDate()) - bugun) / 86400000);
+    if (gun < 4) return '';   // ≤3 gün ve geçmiş → rozetin işi
+    return ` <span style="font-weight:500;color:var(--muted);">(${gun} gün)</span>`;
   }
 
   function durumBadge(durum, bitis) {
@@ -1035,8 +1064,13 @@
         </div>
         <div class="kart-alt">
           <div class="kart-tarihler">
-            <div class="kart-tarih"><span>Yayın Tarihi</span><b>${tarihFormatla(ilan.ilan_tarihi)}</b></div>
-            <div class="kart-tarih"><span>Son Teklif</span><b>${tarihFormatla(ilan.son_teklif_tarihi)}</b></div>
+            ${/* Geçmiş backfill kayıtlarında ilan/teklif tarihi yok, elimizdeki tek tarih sonuç
+                  tarihi. Onu "Yayın Tarihi" diye göstermek YANLIŞ bilgi olur → dürüstçe etiketle. */
+              (!ilan.ilan_tarihi && !ilan.son_teklif_tarihi && ilan.etkin_tarih)
+              ? `<div class="kart-tarih"><span>Sonuçlanma</span><b>${tarihFormatla(ilan.etkin_tarih)}</b></div>
+                 <div class="kart-tarih"><span>Son Teklif</span><b>—</b></div>`
+              : `<div class="kart-tarih"><span>Yayın Tarihi</span><b>${tarihFormatla(ilan.ilan_tarihi)}</b></div>
+                 <div class="kart-tarih"><span>Son Teklif</span><b>${tarihFormatla(ilan.son_teklif_tarihi)}${kalanGunEk(ilan.son_teklif_tarihi)}</b></div>`}
           </div>
           <div class="kart-aksiyon">
             ${uyum != null ? `<div class="compat-bar" title="Profilinize uyum skoru">
@@ -1100,6 +1134,7 @@
     const maxBedel = parseInt(document.getElementById('f-max-bedel').value) || 0;
     const kategori = document.getElementById('f-kategori').value;
     const kaynak   = document.getElementById('f-kaynak').value;
+    const idareTur = (document.getElementById('f-idare-tur') || {}).value || '';
     const minUyum  = parseInt(document.getElementById('f-min-uyum').value) || 0;
     const sort     = document.getElementById('sort-select').value;
     // Detaylı Ara alanları
@@ -1127,13 +1162,16 @@
     // (EXPLAIN: 2.2GB→~200MB, <2.5s). Diğer sekmeler küçük/join'siz → tam sayım kalır.
     const sayimModu = aktifSekme === 'sonuc' ? 'planned' : 'exact';
     let query = sb.from('ilanlar').select(
-      `id,kaynak,${uyeKolon}baslik,il,tur,usul,durum,ilan_tarihi,son_teklif_tarihi,tahmini_bedel,yaklasik_maliyet_min,yaklasik_maliyet_max,itiraz_bedeli,esik_katsayi,${sonucEmbed}(${uyeSonucK}kazanan_teklif,kazanan_teklif_farki_yuzde,sonuc_tarihi)`,
+      `id,kaynak,${uyeKolon}baslik,il,tur,usul,durum,ilan_tarihi,son_teklif_tarihi,etkin_tarih,etkin_tarih_kaynak,tahmini_bedel,yaklasik_maliyet_min,yaklasik_maliyet_max,itiraz_bedeli,esik_katsayi,${sonucEmbed}(${uyeSonucK}kazanan_teklif,kazanan_teklif_farki_yuzde,sonuc_tarihi)`,
       { count: sayimModu }
     );
 
     // Sekme kapsamı: Güncel = teklif tarihi gelecekte, Geçmiş = geçmişte, Sonuç = ihale_sonuclari'nde kaydı olanlar
+    // ⚠️ Geçmiş'te ÖLÇÜT etkin_tarih: 340K geçmiş kaydın son_teklif_tarihi'si BOŞ (sonuç
+    // backfill'inden geldiler) → eski 'son_teklif_tarihi < now' ölçütü onları HİÇBİR sekmede
+    // göstermiyordu. etkin_tarih bunları sonuç tarihinden türetir (migration_etkin_tarih.sql).
     if      (aktifSekme === 'guncel') query = query.gte('son_teklif_tarihi', simdiISO);
-    else if (aktifSekme === 'gecmis') query = query.lt('son_teklif_tarihi', simdiISO);
+    else if (aktifSekme === 'gecmis') query = query.lt('etkin_tarih', simdiISO);
 
     // Misafir: arama_fold ve idare kolonları anon'a kapalı (WHERE için de SELECT yetkisi
     // gerekir) → arama başlık/açıklama ILIKE'a düşer (TR katlama yok ama çalışır),
@@ -1147,6 +1185,7 @@
     if (il)       query = query.eq('il', il);
     if (kategori) query = query.eq('kategori', kategori);
     if (kaynak)   query = query.eq('kaynak', kaynak);
+    if (idareTur) query = query.eq('idare_tur', idareTur);   // EKAP/DETSİS türü (denormalize kolon)
     if (tur)      query = query.eq('tur', tur);
     if (usul)     query = query.ilike('usul', `%${usul}%`);
     if (minBedel) query = query.gte('yaklasik_maliyet_min', minBedel);
@@ -1154,8 +1193,10 @@
     if (idare && uyeMi) query = query.ilike('idare', `%${idare}%`);
     if (yayinBas) query = query.gte('ilan_tarihi', yayinBas);
     if (yayinBit) query = query.lte('ilan_tarihi', `${yayinBit}T23:59:59`);
-    if (teklifBas)query = query.gte('son_teklif_tarihi', teklifBas);
-    if (teklifBit)query = query.lte('son_teklif_tarihi', `${teklifBit}T23:59:59`);
+    // Geçmiş'te tarih aralığı etkin_tarih'e uygulanır (son_teklif_tarihi orada çoğunlukla boş)
+    const tarihKol = aktifSekme === 'gecmis' ? 'etkin_tarih' : 'son_teklif_tarihi';
+    if (teklifBas)query = query.gte(tarihKol, teklifBas);
+    if (teklifBit)query = query.lte(tarihKol, `${teklifBit}T23:59:59`);
     if (esikKatsayi) {
       const [ekMin, ekMax] = esikKatsayi.split('-').map(Number);
       query = query.gte('esik_katsayi', ekMin).lte('esik_katsayi', ekMax);
@@ -1164,6 +1205,8 @@
     if (sort === 'tahmini_bedel_desc') query = query.order('yaklasik_maliyet_min', { ascending: false, nullsFirst: false });
     else if (sort === 'tahmini_bedel_asc') query = query.order('yaklasik_maliyet_min', { ascending: true, nullsFirst: false });
     else if (sort === 'ilan_tarihi') query = query.order('ilan_tarihi', { ascending: false });
+    // Geçmiş'te son_teklif_tarihi'ye göre sıralamak 340K NULL'u bir uca yığar → etkin_tarih DESC (en yeni önce)
+    else if (aktifSekme === 'gecmis') query = query.order('etkin_tarih', { ascending: false, nullsFirst: false });
     else query = query.order('son_teklif_tarihi', { ascending: true });
 
     if (uyumModu) {
@@ -1181,11 +1224,11 @@
     if (error && /esik_katsayi|arama_fold/.test(error.message || '')) {
       console.info('arama_fold/esik_katsayi kolonu henüz yok, legacy aramayla tekrar deneniyor:', error.message);
       let fallback = sb.from('ilanlar').select(
-        `id,kaynak,${uyeKolon}baslik,il,tur,usul,durum,ilan_tarihi,son_teklif_tarihi,tahmini_bedel,yaklasik_maliyet_min,yaklasik_maliyet_max,itiraz_bedeli,${sonucEmbed}(${uyeSonucK}kazanan_teklif,kazanan_teklif_farki_yuzde,sonuc_tarihi)`,
+        `id,kaynak,${uyeKolon}baslik,il,tur,usul,durum,ilan_tarihi,son_teklif_tarihi,etkin_tarih,etkin_tarih_kaynak,tahmini_bedel,yaklasik_maliyet_min,yaklasik_maliyet_max,itiraz_bedeli,${sonucEmbed}(${uyeSonucK}kazanan_teklif,kazanan_teklif_farki_yuzde,sonuc_tarihi)`,
         { count: sayimModu }
       );
       if      (aktifSekme === 'guncel') fallback = fallback.gte('son_teklif_tarihi', simdiISO);
-      else if (aktifSekme === 'gecmis') fallback = fallback.lt('son_teklif_tarihi', simdiISO);
+      else if (aktifSekme === 'gecmis') fallback = fallback.lt('etkin_tarih', simdiISO);
       if (arama)    fallback = uyeMi
         ? fallback.or(`baslik.ilike.%${arama}%,idare.ilike.%${arama}%,okas.ilike.%${arama}%,isin_yapilacagi_yer.ilike.%${arama}%,ilan_metni.ilike.%${arama}%`)
         : fallback.or(`baslik.ilike.%${arama}%,aciklama.ilike.%${arama}%`);
@@ -1201,11 +1244,12 @@
       if (idare && uyeMi) fallback = fallback.ilike('idare', `%${idare}%`);
       if (yayinBas) fallback = fallback.gte('ilan_tarihi', yayinBas);
       if (yayinBit) fallback = fallback.lte('ilan_tarihi', `${yayinBit}T23:59:59`);
-      if (teklifBas)fallback = fallback.gte('son_teklif_tarihi', teklifBas);
-      if (teklifBit)fallback = fallback.lte('son_teklif_tarihi', `${teklifBit}T23:59:59`);
+      if (teklifBas)fallback = fallback.gte(tarihKol, teklifBas);
+      if (teklifBit)fallback = fallback.lte(tarihKol, `${teklifBit}T23:59:59`);
       if (sort === 'tahmini_bedel_desc') fallback = fallback.order('yaklasik_maliyet_min', { ascending: false, nullsFirst: false });
       else if (sort === 'tahmini_bedel_asc') fallback = fallback.order('yaklasik_maliyet_min', { ascending: true, nullsFirst: false });
       else if (sort === 'ilan_tarihi') fallback = fallback.order('ilan_tarihi', { ascending: false });
+      else if (aktifSekme === 'gecmis') fallback = fallback.order('etkin_tarih', { ascending: false, nullsFirst: false });
       else fallback = fallback.order('son_teklif_tarihi', { ascending: true });
       if (uyumModu) { fallback = fallback.limit(200); }
       else { const baslangic = (sayfa - 1) * SAYFA_BOYUTU; fallback = fallback.range(baslangic, baslangic + SAYFA_BOYUTU - 1); }
@@ -1293,7 +1337,7 @@
 
 
   function filtreleriSifirla() {
-    ['f-arama','f-il','f-kategori','f-tur','f-usul','f-kaynak','f-min-bedel','f-max-bedel',
+    ['f-arama','f-il','f-kategori','f-tur','f-usul','f-kaynak','f-idare-tur','f-min-bedel','f-max-bedel',
      'f-idare','f-yayin-bas','f-yayin-bit','f-teklif-bas','f-teklif-bit','f-esik-katsayi','f-okas']
       .forEach(id => { document.getElementById(id).value = ''; });
     document.getElementById('f-min-uyum').value = '0';
@@ -1365,6 +1409,36 @@
       TR_ILLER.map(il => `<option value="${il.toLocaleUpperCase('tr')}">${il}</option>`).join('');
   }
 
+  // Kategori dropdown'ı — tek doğruluk kaynağı js/kategoriler.js (kanonik ad =
+  // ilanlar.kategori değeri). Hardcode liste 20 Tem'de kaldırıldı: 48 seçeneğin 43'ü
+  // sıfır kayıt döndürüyordu (value attribute'u olmayan <option>'lar metin gönderiyordu).
+  function kategoriDropdownDoldur() {
+    const sel = document.getElementById('f-kategori');
+    if (!sel || !window.KATEGORILER) return;
+    sel.innerHTML = '<option value="">Tüm Kategoriler</option>' +
+      window.KATEGORILER.map(k =>
+        `<option value="${k.kod.replace(/"/g, '&quot;')}">${k.emoji ? k.emoji + ' ' : ''}${k.kod}</option>`
+      ).join('');
+  }
+
+  // Kayıtlı aramalarda ve eski derin linklerde KANONİK OLMAYAN kategori değerleri var
+  // (canlıda 17.502 satır / %4,9 hâlâ "Mal Alımı", "Hizmet Alımı" gibi eski adlar taşıyor).
+  // Bu değer listede yoksa <select>.value sessizce '' olur ve kullanıcının kayıtlı filtresi
+  // FARK ETTİRMEDEN boşalırdı. Seçeneği ekleyip koruyoruz — dogrudan-temin.html'deki
+  // ilSecimGarantiEt() ile aynı savunma.
+  function kategoriSecimGarantiEt(kat) {
+    if (!kat) return;
+    const sel = document.getElementById('f-kategori');
+    if (!sel) return;
+    if (!sel.querySelector(`option[value="${CSS.escape(kat)}"]`)) {
+      const o = document.createElement('option');
+      o.value = kat;
+      o.textContent = kat + ' (eski)';
+      sel.appendChild(o);
+    }
+    sel.value = kat;
+  }
+
   // URL parametrelerini filtrelere uygula (örn. haritadan ihaleler?il=İSTANBUL,
   // ya da dashboard'daki KPI kartlarından ihaleler?durum=aktif&minBedel=... gibi)
   function urlFiltreleriUygula() {
@@ -1376,13 +1450,15 @@
     const idare = p.get('idare');
     if (idare) document.getElementById('f-idare').value = idare;
     const kategori = p.get('kategori');
-    if (kategori) document.getElementById('f-kategori').value = kategori;
+    if (kategori) kategoriSecimGarantiEt(kategori);   // eski/kanonik-dışı değer de tutulsun
     const usul = p.get('usul');
     if (usul) document.getElementById('f-usul').value = usul;
     const tur = p.get('tur');
     if (tur) document.getElementById('f-tur').value = tur;
     const kaynak = p.get('kaynak');
     if (kaynak) document.getElementById('f-kaynak').value = kaynak;
+    const pIdareTur = p.get('idare_tur');
+    if (pIdareTur) document.getElementById('f-idare-tur').value = pIdareTur;
     const okas = p.get('okas');
     if (okas) { document.getElementById('f-okas').value = okas; document.getElementById('gelismis-panel').classList.add('acik'); }
     const minBedel = p.get('minBedel');
@@ -1424,6 +1500,7 @@
       tur:      document.getElementById('f-tur').value,
       usul:     document.getElementById('f-usul').value,
       kaynak:   document.getElementById('f-kaynak').value,
+      idare_tur: document.getElementById('f-idare-tur').value,
       minBedel: document.getElementById('f-min-bedel').value,
       maxBedel: document.getElementById('f-max-bedel').value,
       minUyum:  document.getElementById('f-min-uyum').value,
@@ -1547,10 +1624,15 @@
     const p = item.params;
     document.getElementById('f-arama').value    = p.arama    || '';
     document.getElementById('f-il').value       = p.il       || '';
-    document.getElementById('f-kategori').value = p.kategori || '';
+    // Düz atama DEĞİL: kullanıcının kaydettiği kategori kanonik-dışı olabilir
+    // (eski dropdown'dan gelme). O durumda .value sessizce '' olur ve kayıtlı arama
+    // farkında olmadan "tüm kategoriler"e dönerdi.
+    if (p.kategori) kategoriSecimGarantiEt(p.kategori);
+    else document.getElementById('f-kategori').value = '';
     document.getElementById('f-tur').value      = p.tur      || '';
     document.getElementById('f-usul').value     = p.usul     || '';
     document.getElementById('f-kaynak').value   = p.kaynak   || '';
+    document.getElementById('f-idare-tur').value = p.idare_tur || '';
     document.getElementById('f-min-bedel').value= p.minBedel || '';
     document.getElementById('f-max-bedel').value= p.maxBedel || '';
     document.getElementById('f-min-uyum').value = p.minUyum  || '0';
@@ -1577,6 +1659,7 @@
 
   // Sayfa yüklenince
   ilDropdownDoldur();          // önce dropdown dolsun ki URL'den gelen il seçilebilsin
+  kategoriDropdownDoldur();    // aynı gerekçe: ?kategori= seçilebilsin diye URL'den ÖNCE
   urlFiltreleriUygula();
   // Profil'den kaydedilmiş min. uyum eşiğini uygula (URL parametresi yoksa)
   if (!new URLSearchParams(window.location.search).has('minUyum')) {
@@ -1618,7 +1701,7 @@
     try {
       const [guncel, gecmis, sonuc] = await Promise.all([
         sb.from('ilanlar').select('id', { count: 'exact', head: true }).gte('son_teklif_tarihi', simdi),
-        sb.from('ilanlar').select('id', { count: 'exact', head: true }).lt('son_teklif_tarihi', simdi),
+        sb.from('ilanlar').select('id', { count: 'exact', head: true }).lt('etkin_tarih', simdi),
         sb.from('ihale_sonuclari').select('id', { count: 'exact', head: true }),
       ]);
       const fmt = n => n >= 1000 ? (n/1000).toFixed(1)+'K' : String(n);

@@ -85,12 +85,23 @@
     .dt-kart {
       background: var(--navy-mid); border: 1px solid var(--border);
       border-radius: 10px; padding: 16px 20px; margin-bottom: 10px;
-      transition: border-color .15s;
+      transition: border-color .15s; position: relative;
     }
     .dt-kart:hover { border-color: rgba(240,165,0,.4); }
+    .dt-kart:hover .dt-baslik { color: var(--amber); }
+    /* "Stretched link": kartın tamamını tıklanabilir yapar. Kartı <a> ile SARMAK
+       yanlış olurdu — içinde zaten bir <a class="dt-idare"> ve bir <button> var,
+       iç içe anchor geçersiz HTML üretir ve buton tıklaması yutulur. Bunun yerine
+       mutlak konumlu boş bir bağlantı kartı kaplar, etkileşimli öğeler z-index ile
+       onun ÜSTÜNE çıkarılır. */
+    .dt-kart-link { position: absolute; inset: 0; z-index: 1; border-radius: 10px; }
+    .dt-kart .dt-takip-btn, .dt-kart a.dt-idare { position: relative; z-index: 2; }
     .dt-ust { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 8px; }
     .dt-baslik { font-size: 14px; font-weight: 700; color: var(--off-white); line-height: 1.4; }
     .dt-no { font-size: 11px; font-weight: 700; color: var(--amber); white-space: nowrap; flex-shrink: 0; font-family: var(--font-body); }
+    .dt-takip-btn { background: transparent; border: none; cursor: pointer; font-size: 16px; color: var(--muted); padding: 2px 4px; line-height: 1; transition: transform .1s, color .15s; }
+    .dt-takip-btn:hover { color: var(--amber); transform: scale(1.15); }
+    .dt-takip-btn.aktif { color: var(--amber); }
     .dt-badges { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 6px; }
     .etiket { font-size: 11px; padding: 2px 8px; border-radius: 10px; font-weight: 600; background: rgba(var(--overlay-rgb),.06); color: var(--muted); }
     .etiket.tur { background: rgba(59,130,246,.12); color: #60a5fa; }
@@ -214,12 +225,96 @@
         .dt-tab:hover { color:var(--white); }
         .dt-tab.active { color:var(--amber); border-bottom-color:var(--amber); }
         .dt-tab .cnt { font-size:11px; opacity:.6; font-weight:500; margin-left:2px; }
+
+        /* ── Detaylı arama paneli ── */
+        .dt-detay-btn {
+          padding:8px 14px; border-radius:8px; font-size:13px; font-weight:700; cursor:pointer;
+          background:transparent; border:1px solid var(--border); color:var(--muted);
+          font-family:var(--font-body); transition:all .15s; white-space:nowrap;
+        }
+        .dt-detay-btn:hover { color:var(--white); border-color:var(--muted); }
+        .dt-detay-btn.acik { background:rgba(240,165,0,.12); border-color:var(--amber); color:var(--amber); }
+        /* Görsel dil ihaleler.html'in .filter-bar / .gelismis-panel'inden birebir alındı
+           (padding 16px 20px · radius 10px · etiket 11px/600/.08em · input radius 6px,
+           background var(--navy) · buton margin-top:18px ile input hizası). Sınıf ADLARI
+           kopyalanmadı bilinçli: o sınıflar bu dosyada tanımlı değil, .dt-* korunuyor. */
+        .dt-detay-panel {
+          margin-top:12px; margin-bottom:20px; padding:16px 20px; border-radius:10px;
+          background:var(--navy-mid); border:1px solid var(--border);
+        }
+        .dt-detay-baslik {
+          width:100%; font-size:12px; font-weight:700; letter-spacing:.08em;
+          text-transform:uppercase; color:var(--amber); margin-bottom:14px;
+        }
+        .dt-hizli-satir { display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-bottom:14px; }
+        .dt-hizli-etiket { font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:.5px; margin-right:2px; }
+        .dt-hizli-btn {
+          padding:4px 13px; border-radius:20px; font-size:12px; font-weight:500; cursor:pointer;
+          background:var(--card-bg); border:1px solid var(--border); color:var(--muted);
+          font-family:var(--font-body); transition:all .15s;
+        }
+        /* Mavi = "hızlı seçim kısayolu" (ihaleler konvansiyonu); amber = "uygulanmış filtre"
+           (.dt-cip). İki rengin ayrı anlamı var, birleştirme. */
+        .dt-hizli-btn:hover { border-color:#3b82f6; color:var(--white); }
+        .dt-hizli-btn.aktif { background:#3b82f6; border-color:#3b82f6; color:#fff; }
+        .dt-detay-grid { display:flex; gap:12px; flex-wrap:wrap; align-items:center; }
+        .dt-alan { display:flex; flex-direction:column; gap:4px; min-width:140px; max-width:100%; }
+        .dt-alan-etiket { font-size:11px; font-weight:600; letter-spacing:.08em; text-transform:uppercase; color:var(--muted); }
+        .dt-alan input[type=text], .dt-alan input[type=date], .dt-alan select {
+          padding:8px 12px; border-radius:6px; font-size:13px; font-family:var(--font-body);
+          background:var(--navy); border:1px solid var(--border); color:var(--white);
+          outline:none; max-width:100%;
+        }
+        .dt-alan input[type=text]:focus, .dt-alan input[type=date]:focus, .dt-alan select:focus { border-color:var(--amber); }
+        .dt-alan input::placeholder { color:var(--muted); }
+        .dt-alan select { cursor:pointer; }
+        .dt-alan input:disabled, .dt-alan select:disabled { opacity:.45; cursor:not-allowed; }
+        .dt-alan-not { font-size:10.5px; color:var(--muted); }
+        /* margin-top:18px → etiketsiz oldukları için input satırıyla hizalanırlar
+           (ihaleler'deki .btn-filtrele/.btn-sifirla ile aynı hile). */
+        .dt-alan-onay { flex-direction:row; align-items:center; gap:8px; font-size:12.5px; margin-top:18px; }
+        .dt-alan-onay input { width:15px; height:15px; accent-color:var(--amber); cursor:pointer; }
+        .dt-alan-aksiyon { flex-direction:row; align-items:center; gap:8px; margin-top:18px; }
+        .dt-filtrele-btn {
+          background:var(--amber); color:var(--navy); border:none;
+          padding:8px 20px; border-radius:6px; font-size:13px;
+          font-weight:700; cursor:pointer; white-space:nowrap; font-family:var(--font-body);
+        }
+        .dt-filtrele-btn:hover { background:var(--amber-dim); }
+        .dt-sifirla-btn {
+          padding:8px 16px; border-radius:6px; font-size:13px; font-weight:600; cursor:pointer;
+          background:transparent; border:1px solid var(--border); color:var(--muted); font-family:var(--font-body);
+        }
+        .dt-sifirla-btn:hover { color:var(--white); border-color:rgba(var(--overlay-rgb),.3); }
+        .dt-neden-yok { margin-top:14px; border-top:1px solid var(--border); padding-top:12px; }
+        .dt-neden-yok summary { cursor:pointer; font-size:12px; font-weight:700; color:var(--muted); }
+        .dt-neden-yok summary:hover { color:var(--amber); }
+        .dt-neden-govde { margin-top:10px; font-size:12px; line-height:1.65; color:var(--muted); }
+        .dt-neden-govde p { margin:0 0 7px; }
+        .dt-neden-govde b { color:var(--white); }
+        .dt-aktif-cipler { display:flex; flex-wrap:wrap; gap:7px; margin-top:12px; align-items:center; }
+        .dt-cip {
+          display:inline-flex; align-items:center; gap:7px; padding:5px 10px; border-radius:14px;
+          font-size:11.5px; font-weight:600; background:rgba(240,165,0,.10);
+          border:1px solid rgba(240,165,0,.30); color:var(--amber);
+        }
+        .dt-cip button {
+          background:none; border:none; color:inherit; cursor:pointer; font-size:13px;
+          line-height:1; padding:0; opacity:.7;
+        }
+        .dt-cip button:hover { opacity:1; }
       </style>
       <div class="dt-tab-bar">
         <button class="dt-tab active" data-sekme="guncel" onclick="sekmeDegistir('guncel')">Güncel <span class="cnt" id="dt-cnt-guncel"></span></button>
         <button class="dt-tab" data-sekme="sonuc" onclick="sekmeDegistir('sonuc')">Sonuç <span class="cnt" id="dt-cnt-sonuc"></span></button>
         <button class="dt-tab" data-sekme="tumu" onclick="sekmeDegistir('tumu')">Tümü <span class="cnt" id="dt-cnt-tumu"></span></button>
       </div>
+
+      <!-- Derin linkle gelinen tarih aralığı rozeti (?tarihBas/?tarihBit) — kullanıcı
+           dashboard'dan tıklayıp geldiğinde listenin neden daraldığını görsün diye. -->
+      <div id="dt-tarih-bilgi" style="display:none;margin:10px 0 0;padding:7px 12px;border-radius:8px;
+           background:rgba(255,193,7,.08);border:1px solid rgba(255,193,7,.25);color:var(--amber);
+           font-size:13px;font-weight:600;"></div>
 
       <!-- TOOLBAR -->
       <div class="toolbar">
@@ -237,7 +332,111 @@
         <select id="f-il" onchange="filtreDegisti()">
           <option value="">Tüm İller</option>
         </select>
+        <!-- İdare türü: idare_tur tablosundan (EKAP/DETSİS), dogrudan_temin_ilanlari.idare_tur
+             denormalize kolonu gece tazelenir. İhaleler sayfasıyla aynı değer kümesi. -->
+        <select id="f-idare-tur" onchange="filtreDegisti()">
+          <option value="">Tüm İdare Türleri</option>
+          <option value="belediye">🏛️ Belediye</option>
+          <option value="buyuksehir_belediye">🏙️ Büyükşehir Belediyesi</option>
+          <option value="belediye_sirket">🏢 Belediye Şirketi</option>
+          <option value="su_kanal">💧 Su ve Kanalizasyon İdaresi</option>
+          <option value="il_ozel_idare">📍 İl Özel İdaresi</option>
+          <option value="saglik">🏥 Sağlık</option>
+          <option value="universite">🎓 Üniversite</option>
+          <option value="milli_egitim">🏫 Milli Eğitim</option>
+          <option value="bakanlik_merkez">🏛️ Bakanlık (Merkez)</option>
+          <option value="bakanlik_tasra">📋 Bakanlık (Taşra)</option>
+          <option value="kit">🏭 KİT / Kamu Şirketi</option>
+          <option value="guvenlik">🛡️ Güvenlik / Savunma</option>
+          <option value="yargi">⚖️ Yargı / Ceza İnfaz</option>
+          <option value="diger_kamu">🏢 Diğer Kamu</option>
+        </select>
+        <button type="button" id="dt-detay-btn" class="dt-detay-btn" onclick="detayPaneliAcKapa()">🔍 Detaylı Ara</button>
       </div>
+
+      <!-- ── DETAYLI ARAMA PANELİ ────────────────────────────────────────────────
+           İhaleler sayfasındaki panelin DT karşılığı. SEKME EKLENMEDİ bilinçli:
+           DT sekmeleri durum bazlı (Güncel/Sonuç/Tümü), 4. bir "detaylı" sekmesi
+           o semantikle çakışırdı. Panel bir aç/kapa katmanı olarak duruyor.
+           Alan id'leri f-dt- önekli ki üstteki toolbar alanlarıyla karışmasın. -->
+      <div id="dt-detay-panel" class="dt-detay-panel" style="display:none;">
+        <div class="dt-detay-baslik">DETAYLI ARAMA FİLTRELERİ</div>
+
+        <div class="dt-hizli-satir">
+          <span class="dt-hizli-etiket">HIZLI:</span>
+          <button type="button" class="dt-hizli-btn" onclick="dtHizliTarih('bugun',this)">Bugün</button>
+          <button type="button" class="dt-hizli-btn" onclick="dtHizliTarih('hafta',this)">Bu Hafta</button>
+          <button type="button" class="dt-hizli-btn" onclick="dtHizliTarih('7gun',this)">Son 7 Gün</button>
+          <button type="button" class="dt-hizli-btn" onclick="dtHizliTarih('30gun',this)">Son 30 Gün</button>
+          <button type="button" class="dt-hizli-btn" onclick="dtHizliTarih('temizle',this)">✕ Tarihi Temizle</button>
+        </div>
+
+        <div class="dt-detay-grid">
+          <label class="dt-alan">
+            <span class="dt-alan-etiket">İDARE ADI</span>
+            <input type="text" id="f-dt-idare" placeholder="Kurum / idare adında ara…" style="min-width:240px;"
+                   oninput="aramaDegisti()" onkeydown="if(event.key==='Enter'){event.preventDefault();filtreDegisti();}" />
+            <span class="dt-alan-not" id="f-dt-idare-not"></span>
+          </label>
+
+          <label class="dt-alan">
+            <span class="dt-alan-etiket">DURUM</span>
+            <select id="f-dt-durum" onchange="filtreDegisti()">
+              <option value="">Tümü (sekmeye göre)</option>
+              <optgroup label="Açık">
+                <option value="Doğrudan Temin Duyurusu Yayımlanmış">Duyurusu Yayımlanmış</option>
+                <option value="Teklifler Değerlendiriliyor">Teklifler Değerlendiriliyor</option>
+              </optgroup>
+              <optgroup label="Sonuçlanmış">
+                <option value="Sonuç Duyurusu Yayımlanmış">Sonuç Duyurusu Yayımlanmış</option>
+                <option value="Doğrudan Temin Sonuçlandırıldı">Sonuçlandırıldı</option>
+                <option value="Sonuç Bilgileri Gönderildi">Sonuç Bilgileri Gönderildi</option>
+              </optgroup>
+            </select>
+          </label>
+
+          <!-- Etiket bilinçli olarak "Teklif Tarihi" DEĞİL: tarih kolonu açık kayıtlarda
+               ihale/teklif tarihini, sonuçlanmışlarda geçmiş bir tarihi taşıyor. -->
+          <label class="dt-alan">
+            <span class="dt-alan-etiket" title="Açık duyurularda ihale/teklif tarihi, sonuçlanmışlarda işlem tarihi">İHALE / SONUÇ TARİHİ (BAŞ.)</span>
+            <input type="date" id="f-dt-tarih-bas" onchange="filtreDegisti()" />
+          </label>
+          <label class="dt-alan">
+            <span class="dt-alan-etiket">İHALE / SONUÇ TARİHİ (BİT.)</span>
+            <input type="date" id="f-dt-tarih-bit" onchange="filtreDegisti()" />
+          </label>
+
+          <label class="dt-alan dt-alan-onay">
+            <input type="checkbox" id="f-dt-dokuman" onchange="filtreDegisti()" />
+            <span>Yalnız <b>dokümanı olanlar</b></span>
+          </label>
+
+          <div class="dt-alan dt-alan-aksiyon">
+            <!-- Filtreler zaten anında uygulanıyor (her alanda onchange/oninput). Bu buton
+                 ihaleler.html ile görsel parite + idare kutusuna yazıp "uygula" arayan
+                 kullanıcı için ikinci yol; yeni bir davranış getirmiyor. -->
+            <button type="button" class="dt-filtrele-btn" onclick="filtreDegisti()">Filtrele</button>
+            <button type="button" class="dt-sifirla-btn" onclick="dtFiltreleriSifirla()">Sıfırla</button>
+          </div>
+        </div>
+
+        <details class="dt-neden-yok">
+          <summary>Neden bazı filtreler yok?</summary>
+          <div class="dt-neden-govde">
+            <p><b>Yaklaşık Maliyet:</b> Doğrudan teminde yaklaşık maliyet ilan edilmez — böyle bir veri yok. Sözleşme bedeli yalnız sonuçlanan kayıtların bir kısmında bulunur, arama filtresi olarak sunulamaz.</p>
+            <p><b>İhale Usulü:</b> Doğrudan temin zaten bir usuldür (4734 sayılı Kanun md. 22); alt usul ayrımı yoktur.</p>
+            <p><b>Sınır Değer Katsayısı:</b> Sınır değer / aşırı düşük teklif değerlendirmesi rekabetçi ihaleye özgüdür, doğrudan teminde uygulanmaz.</p>
+            <p><b>OKAS / CPV Kodu:</b> EKAP doğrudan temin kayıtlarında OKAS kodu yer almaz; kategori başlıktan çıkarılır.</p>
+            <p><b>Kaynak:</b> Tüm doğrudan temin kayıtları tek kaynaktan (EKAP) gelir.</p>
+            <p><b>Kazanan firma / bedel:</b> Sonuç verisi ayrı bir kaynaktan derleniyor; şu an kayıtların çok küçük bir bölümünü kapsıyor ve filtre olarak sunmak yanıltıcı olurdu.</p>
+            <p><b>Yayın Tarihi:</b> Kolon var ama kayıtların yalnız %1'inde dolu — filtre olarak açılsa liste boşalırdı. Geçmiş verinin taranması bitince eklenecek.</p>
+          </div>
+        </details>
+      </div>
+
+      <!-- Aktif filtre çipleri: panel KAPALIYKEN de dolu alanlar sorguya girdiği için
+           kullanıcı listeyi neyin daralttığını daima görmeli. -->
+      <div id="dt-aktif-cipler" class="dt-aktif-cipler" style="display:none;"></div>
 
       <div class="toolbar">
         <span class="toolbar-label" style="font-size:12px;color:var(--muted);font-weight:500;">Sıralama:</span>
@@ -272,6 +471,7 @@
 <script src="js/sidebar-user.js?v=3"></script>
 <script src="js/bildirim-sayaci.js?v=rot1"></script>
 <script src="js/kategoriler.js"></script>
+<script src="js/takip.js?v=2"></script>
 <script>
 (() => {
   const SB_URL = "https://ihaleglobal.com";
@@ -295,6 +495,7 @@
   let aramaTimer = null;
   const PER_PAGE = 25;
   let aktifSekme = 'guncel';   // durum-bazlı: 'guncel'(aktif) | 'sonuc'(sonuçlanmış) | 'tumu'(hepsi)
+  let dtNoParam = null;        // ?dt_no= ile gelinen tek-kayıt görünümü (ayrı detay sayfası yok — liste tek kayda daralır)
   const kisaSayi = n => n >= 1e6 ? (n/1e6).toLocaleString('tr',{maximumFractionDigits:1})+'M' : n >= 1e3 ? Math.round(n/1e3)+'K' : String(n);
 
   function tarihFormat(s) {
@@ -303,6 +504,41 @@
   }
 
   function esc(s) { return (s || '').replace(/[<>&"]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c])); }
+
+  // İki tarih AYRI ve ETİKETLİ gösterilir — eskiden etiketsiz tek 📅 vardı ve hangi tarih
+  // olduğu belirsizdi:
+  //   yayin_tarihi (EKAP E8) = duyuru ne zaman YAYIMLANDI ("ne zaman eklendi"nin tek doğru
+  //                            kaynağı; olusturulma bizim kazıma anımız, yanıltıcı)
+  //   tarih        (EKAP E7) = ihale/teklif tarihi — aktif duyurularda GELECEĞE gider
+  // yayin_tarihi tam tarama bitene kadar NULL olabilir → o satır basitçe basılmaz.
+  function gunFarki(iso) {
+    const d = new Date(iso);
+    if (isNaN(d)) return null;
+    const bugun = new Date(); bugun.setHours(0, 0, 0, 0);
+    return Math.round((new Date(d.getFullYear(), d.getMonth(), d.getDate()) - bugun) / 86400000);
+  }
+  function tarihlerHtml(k) {
+    const p = [];
+    if (k.yayin_tarihi) {
+      // E8, kaydın O ANKİ duyurusunun yayım tarihidir — sonuçlanmışlarda bu, ilk
+      // duyurunun değil SONUÇ duyurusunun tarihidir. Canlı veriyle ölçüldü:
+      // aktif kayıtlarda yayin>ihale oranı %0, sonuçlananlarda %58. Hepsine birden
+      // "Yayın" demek sonuçlanmış kayıtlarda yanlış bilgi olurdu.
+      const sonuclu = DURUM_GRUP.sonuc.includes(k.durum);
+      p.push(`<span title="${sonuclu ? 'Sonuç duyurusunun EKAP\'ta yayımlandığı tarih' : 'Duyurunun EKAP\'ta yayımlandığı tarih'}">📅 ${sonuclu ? 'Sonuç duyurusu' : 'Yayın'}: <b>${tarihFormat(k.yayin_tarihi)}</b></span>`);
+    }
+    if (k.tarih) {
+      const fark = gunFarki(k.tarih);
+      if (fark === 0) {
+        p.push(`<span style="color:#f87171;font-weight:700;" title="Teklif verilebilecek son tarih">⏳ Son teklif: BUGÜN</span>`);
+      } else if (fark != null && fark > 0) {
+        p.push(`<span title="Teklif verilebilecek son tarih"${fark <= 3 ? ' style="color:#f87171;font-weight:700;"' : ''}>⏳ Son teklif: <b>${tarihFormat(k.tarih)}</b> (${fark} gün)</span>`);
+      } else {
+        p.push(`<span title="EKAP'ın bu duyuru için bildirdiği ihale tarihi">🏁 İhale tarihi: <b>${tarihFormat(k.tarih)}</b></span>`);
+      }
+    }
+    return p.join('');
+  }
 
   // Ham durumu renkli gruba çevir (filtre gruplarıyla tutarlı)
   function durumRozet(durum) {
@@ -322,10 +558,20 @@
     sonuc: ['Sonuç Duyurusu Yayımlanmış', 'Doğrudan Temin Sonuçlandırıldı', 'Sonuç Bilgileri Gönderildi'],
   };
 
-  function filtreleriUygula(query) {
-    // Sekme kapsamı (durum-bazlı) — Güncel=aktif, Sonuç=sonuçlanmış, Tümü=filtresiz
-    if (aktifSekme === 'guncel')     query = query.in('durum', DURUM_GRUP.acik);
-    else if (aktifSekme === 'sonuc') query = query.in('durum', DURUM_GRUP.sonuc);
+  // sekmeUygula=false → sekmenin durum kapsamı ATLANIR, diğer tüm filtreler uygulanır.
+  // Sekme sayaçları bunu kullanır: her sayaç kendi durum grubunu kendisi ekler,
+  // aktif sekmeninkini değil.
+  function filtreleriUygula(query, { sekmeUygula = true } = {}) {
+    const dDurum = (document.getElementById('f-dt-durum') || {}).value || '';
+    // Sekme kapsamı (durum-bazlı) — Güncel=aktif, Sonuç=sonuçlanmış, Tümü=filtresiz.
+    // Panelden TEK bir ham durum seçilmişse sekmenin grup kuralı UYGULANMAZ: ikisi
+    // AND'lenirse "Güncel sekmesi + Sonuç durumu" gibi çelişkili koşul oluşuyor.
+    // Bu yalnız boş liste değil, statement timeout (57014) da üretti — planlayıcı
+    // çelişkiyi eleyemeyip 1,49M satırda sayıma giriyordu (canlıda görüldü).
+    if (sekmeUygula && !dDurum) {
+      if (aktifSekme === 'guncel')     query = query.in('durum', DURUM_GRUP.acik);
+      else if (aktifSekme === 'sonuc') query = query.in('durum', DURUM_GRUP.sonuc);
+    }
     const q = aramaTemizle(document.getElementById('f-ara').value);
     const tur = document.getElementById('f-tur').value;
     const kat = document.getElementById('f-kategori').value;
@@ -333,26 +579,156 @@
     if (tur) query = query.eq('tur', tur);
     if (kat) query = query.eq('kategori', kat);
     if (il) query = query.eq('il', il);
+    const idareTur = (document.getElementById('f-idare-tur') || {}).value || '';
+    if (idareTur) query = query.eq('idare_tur', idareTur);   // EKAP/DETSİS türü
+    if (dtNoParam) query = query.eq('dt_no', dtNoParam);
+    // ── Detaylı arama alanları ───────────────────────────────────────────────
+    // NOT: ?tarihBas/?tarihBit URL parametreleri de doğrudan panel alanlarına yazılıyor,
+    // ayrı bir modül değişkeni TUTULMUYOR. Önce iki yol vardı (modül değişkeni + panel
+    // alanı) ve ikisi de sorguya giriyordu: filtre iki kez uygulanıp çipler çift
+    // görünüyordu. Tek durum kaynağı = panel alanı.
+    // Panel KAPALIYKEN de okunuyorlar (ihaleler.html'in "gizli alan sessizce
+    // filtreliyor" davranışı); karşılığında her aktif alan çip olarak gösteriliyor.
+    const d = dtDetayDegerleri();
+    // Tek ham durum seçimi sekmenin grup kuralını EZER (kullanıcı özellikle seçmiş).
+    if (d.durum)   query = query.eq('durum', d.durum);
+    if (d.tarihBas) query = query.gte('tarih', d.tarihBas + 'T00:00:00');
+    if (d.tarihBit) query = query.lte('tarih', d.tarihBit + 'T23:59:59.999');
+    if (d.dokuman) query = query.eq('dokuman_var', true);
+    // idare YALNIZ üyeye: kolon anon'a kapalı ve WHERE de SELECT yetkisi ister —
+    // misafirde eklenirse tüm sorgu 42501 ile düşer.
+    if (d.idare && uyeMi) query = query.ilike('idare', `*${d.idare}*`);
+
     if (q) query = uyeMi
       ? query.or(`baslik.ilike.*${q}*,idare.ilike.*${q}*`)
       : query.ilike('baslik', `*${q}*`);   // idare kolonu anon'a kapalı (WHERE de yetki ister)
     return query;
   }
 
+  // Panel alanlarının anlık değerleri (tek okuma noktası — sorgu, çipler ve
+  // sayım kapısı hep buradan besleniyor ki üçü birbirinden sapmasın).
+  function dtDetayDegerleri() {
+    const v = (id) => { const el = document.getElementById(id); return el ? el.value.trim() : ''; };
+    const c = (id) => { const el = document.getElementById(id); return !!(el && el.checked); };
+    return {
+      idare: v('f-dt-idare'), durum: v('f-dt-durum'),
+      tarihBas: v('f-dt-tarih-bas'), tarihBit: v('f-dt-tarih-bit'),
+      dokuman: c('f-dt-dokuman'),
+    };
+  }
+
+  // Sayım (count:exact) yapılabilir mi? 1,49M satırda indekssiz kolonda tam sayım
+  // statement-timeout eder (57014) — canlıda ölçüldü: kategori/tür indekssizken
+  // 20-38 sn, il (indeksli) 1,6 sn. Pahalı bir filtre varsa sayımı atlayıp
+  // PER_PAGE+1 hilesine düşüyoruz ("25+ duyuru").
+  //
+  // ÖNEMLİ: kategori/tur için idx_dt_ilanlari_kategori_tarih ve
+  // idx_dt_ilanlari_tur_tarih indeksleri gerekiyor (backend/migration_dt_index.sql).
+  // O migration uygulanmadan kategori/tür seçimi sayımsız bile yavaş kalır.
+  function sayimYapilabilirMi() {
+    const aramaVar = !!aramaTemizle(document.getElementById('f-ara').value);
+    const d = dtDetayDegerleri();
+    if (aramaVar) return false;              // baslik/idare ILIKE → seq-scan
+    if (d.idare) return false;               // idare ILIKE %v% → btree kullanılamaz
+    if (d.dokuman && !indeksliFiltreVar()) return false;  // dokuman_var indekssiz, %16,7 seçicilik
+    return true;
+  }
+
+  // Sorguyu indeksli bir kolonla daraltan en az bir filtre var mı?
+  function indeksliFiltreVar() {
+    const d = dtDetayDegerleri();
+    return !!(document.getElementById('f-il').value        // idx_..._il
+           || document.getElementById('f-kategori').value  // idx_dt_ilanlari_kategori_tarih
+           || document.getElementById('f-tur').value       // idx_dt_ilanlari_tur_tarih
+           || d.durum || d.tarihBas || d.tarihBit          // idx_dt_ilanlari_durum / _tarih
+           || dtNoParam);
+  }
+
+  // ── Sekme sayaçları (Güncel / Sonuç / Tümü) ───────────────────────────────
+  // Sayaçlar AKTİF FİLTRELERİN kapsamında sayar. Önce global sayıyorlardı: haritadan
+  // ANKARA ile gelince sekmede "Güncel 96K" yazıyor ama liste 6K gösteriyordu —
+  // kullanıcı haklı olarak "veri güncellenmemiş" sandı. Sayaç ile listenin aynı
+  // evreni sayması, sayfanın güvenilirliği açısından şart.
+  //
+  // Maliyet kontrolü:
+  //  • İmza cache'i — sekme değiştirmek filtreyi değiştirmez, sayaç yeniden sorulmaz
+  //    (en sık etkileşim bu; aksi halde her tıklamada 3 boş sorgu giderdi).
+  //  • sayimYapilabilirMi() kapısı — ILIKE arama/idare varsa sayım timeout eder (57014),
+  //    sayaçlar boşaltılır. Boş <span class="cnt"> zaten görünmez.
+  //  • count:'exact' bilinçli: istatistikYukle zaten açılışta 6 exact head-count atıyor
+  //    ve bu tabloda sorunsuz çalışıyor. 'estimated' sapması burada kabul edilemez —
+  //    kullanıcının şikâyeti tam olarak sayacın yanlış rakam göstermesiydi.
+  let sayacImza = null;    // son hesabın filtre imzası (sekme HARİÇ)
+  let sayacIstekNo = 0;    // yarış koruması: select'ler debounce'suz tetikliyor
+
+  function sayacYaz(g, s, t) {
+    const set = (id, v) => { const e = document.getElementById(id); if (e) e.textContent = v; };
+    set('dt-cnt-guncel', g); set('dt-cnt-sonuc', s); set('dt-cnt-tumu', t);
+  }
+
+  function sayacFiltreImzasi() {
+    const v = (id) => { const e = document.getElementById(id); return e ? e.value : ''; };
+    const d = dtDetayDegerleri();
+    return JSON.stringify([v('f-ara'), v('f-tur'), v('f-kategori'), v('f-il'), v('f-idare-tur'),
+                           dtNoParam, d.idare, d.durum, d.tarihBas, d.tarihBit, d.dokuman, uyeMi]);
+  }
+
+  async function sekmeSayaclariYukle() {
+    const imza = sayacFiltreImzasi();
+    if (imza === sayacImza) return;          // filtre değişmedi (ör. sadece sekme/sayfa değişti)
+    if (!sayimYapilabilirMi()) { sayacImza = imza; sayacYaz('', '', ''); return; }
+    sayacImza = imza;
+    const benim = ++sayacIstekNo;
+
+    // Her sayaç kendi durum grubunu ekler; aktif sekmenin kapsamı devre dışı.
+    const say = (grup) => {
+      let q = sb.from('dogrudan_temin_ilanlari').select('dt_no', { count: 'exact', head: true });
+      q = filtreleriUygula(q, { sekmeUygula: false });
+      if (grup) q = q.in('durum', DURUM_GRUP[grup]);
+      return q;
+    };
+
+    try {
+      const d = dtDetayDegerleri();
+      if (d.durum) {
+        // Panelden TEK ham durum seçili. İKİ nedenle tek sorgu atıp üçünü eşitliyoruz:
+        //  1) Sekme grubuyla AND'lemek çelişkili koşul üretir; planlayıcı eleyemeyip
+        //     1,49M satırda sayıma girer (57014 — canlıda görüldü).
+        //  2) Bu durumda filtreleriUygula sekme kapsamını HİÇ uygulamıyor (dDurum
+        //     dalı), yani üç sekme de birebir AYNI listeyi gösteriyor. Sayaçların
+        //     farklı rakam göstermesi yalan olurdu: "Güncel 0" yazıp tıklayınca
+        //     79K kayıt gelmesi tam da düzeltmeye çalıştığımız hatanın kendisi.
+        const { count } = await say(null);
+        if (benim !== sayacIstekNo) return;
+        const t = kisaSayi(count || 0);
+        sayacYaz(t, t, t);
+        return;
+      }
+      const [g, s, t] = await Promise.all([say('acik'), say('sonuc'), say(null)]);
+      if (benim !== sayacIstekNo) return;    // daha yeni bir istek başladı, bayat sonucu yazma
+      sayacYaz(kisaSayi(g.count || 0), kisaSayi(s.count || 0), kisaSayi(t.count || 0));
+    } catch (e) {
+      if (benim === sayacIstekNo) { sayacImza = null; sayacYaz('', '', ''); }
+      console.info('sekme sayaçları atlandı:', e && e.message);
+    }
+  }
+
   async function veriYukle(resetSayfa = true) {
     if (resetSayfa) sayfa = 1;
-    const aramaVar = !!aramaTemizle(document.getElementById('f-ara').value);
+    // Sayım kararı artık yalnız "arama var mı"ya değil, tüm pahalı filtrelere bakıyor
+    // (bkz. sayimYapilabilirMi). Değişken adı da onu yansıtsın diye aramaVar → sayilmaz.
+    const sayilmaz = !sayimYapilabilirMi();
     const bas = (sayfa - 1) * PER_PAGE;
     // Arama yokken exact count hızlı (index'li eq / tam sayım). Arama varken baslik/idare ILIKE
     // 616K satırda seq-scan → exact count statement-timeout eder (kod 57014, doğrulandı). Bu yüzden
     // arama modunda sayım yapmayıp bir FAZLA satır çekeriz; PER_PAGE+1 dönerse sonraki sayfa var.
     let query = sb.from('dogrudan_temin_ilanlari')
-      .select(`dt_no,baslik,${uyeMi ? 'idare,' : ''}tur,il,tarih,durum,kategori,dokuman_var,duyuru_var`,
-              aramaVar ? {} : { count: 'exact' });
+      .select(`dt_no,baslik,${uyeMi ? 'idare,' : ''}tur,il,tarih,yayin_tarihi,durum,kategori,dokuman_var,duyuru_var`,
+              sayilmaz ? {} : { count: 'exact' });
     query = filtreleriUygula(query);
     const idareSirala = siralamaAlan === 'idare' && uyeMi;   // idare sıralaması üyelik ister (kolon kapalı)
     query = query.order(idareSirala ? 'idare' : 'tarih', { ascending: idareSirala });
-    query = query.range(bas, aramaVar ? bas + PER_PAGE : bas + PER_PAGE - 1);
+    query = query.range(bas, sayilmaz ? bas + PER_PAGE : bas + PER_PAGE - 1);
     const { data, count, error } = await query;
     if (error) {
       document.getElementById('liste-container').innerHTML = `<div class="empty-wrap">
@@ -365,7 +741,7 @@
       return;
     }
     let rows = data || [];
-    if (aramaVar) {
+    if (sayilmaz) {
       sayimBiliniyor = false;
       sonrakiVar = rows.length > PER_PAGE;
       rows = rows.slice(0, PER_PAGE);
@@ -378,6 +754,10 @@
     }
     sonSatirlar = rows;
     render();
+    dtCipleriGuncelle();
+    // Bilinçli olarak await EDİLMİYOR — sayaçlar listenin render'ını bekletmesin.
+    // İmza cache'i sayesinde sayfa gezinme/sekme değişiminde sorgu atmaz.
+    sekmeSayaclariYukle();
   }
 
   window.filtreDegisti = () => veriYukle(true);            // tür/il select'leri → anında
@@ -399,6 +779,108 @@
     btn.classList.add('active');
     veriYukle(true);
   };
+
+  // ── Detaylı arama paneli ─────────────────────────────────────────────────────
+  window.detayPaneliAcKapa = function() {
+    const p = document.getElementById('dt-detay-panel');
+    const b = document.getElementById('dt-detay-btn');
+    const acik = p.style.display !== 'none';
+    p.style.display = acik ? 'none' : '';
+    b.classList.toggle('acik', !acik);
+    // Panel KAPANIRKEN filtreler SİLİNMEZ (bilinçli) — ama çipler görünür kaldığı
+    // için kullanıcı neyin hâlâ uygulandığını görür.
+  };
+
+  // Yerel takvim gününü YYYY-MM-DD verir. toISOString() KULLANILMIYOR: UTC'ye
+  // çevirip Türkiye'nin gece yarısı sonrası saatlerinde günü bir gün kaydırıyordu
+  // (dashboard'da aynı hata yaşandı, orada da elle düzeltildi).
+  function dtYerelTarih(d) {
+    const p = (n) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+  }
+
+  window.dtHizliTarih = function(tip, btn) {
+    const bas = document.getElementById('f-dt-tarih-bas');
+    const bit = document.getElementById('f-dt-tarih-bit');
+    const bugun = new Date();
+    document.querySelectorAll('.dt-hizli-btn').forEach(b => b.classList.remove('aktif'));
+    if (tip === 'temizle') {
+      bas.value = ''; bit.value = '';
+      const bilgi = document.getElementById('dt-tarih-bilgi');
+      if (bilgi) bilgi.style.display = 'none';
+      veriYukle(true);
+      return;
+    }
+    let baslangic = new Date(bugun);
+    if (tip === 'hafta') baslangic.setDate(bugun.getDate() - bugun.getDay() + (bugun.getDay() === 0 ? -6 : 1)); // pazartesi
+    else if (tip === '7gun') baslangic.setDate(bugun.getDate() - 7);
+    else if (tip === '30gun') baslangic.setDate(bugun.getDate() - 30);
+    bas.value = dtYerelTarih(baslangic);
+    bit.value = dtYerelTarih(bugun);
+    if (btn) btn.classList.add('aktif');
+    veriYukle(true);
+  };
+
+  window.dtFiltreleriSifirla = function() {
+    ['f-dt-idare', 'f-dt-durum', 'f-dt-tarih-bas', 'f-dt-tarih-bit'].forEach(id => {
+      const el = document.getElementById(id); if (el) el.value = '';
+    });
+    const dok = document.getElementById('f-dt-dokuman'); if (dok) dok.checked = false;
+    ['f-ara', 'f-tur', 'f-kategori', 'f-il'].forEach(id => {
+      const el = document.getElementById(id); if (el) el.value = '';
+    });
+    document.querySelectorAll('.dt-hizli-btn').forEach(b => b.classList.remove('aktif'));
+    // URL'den gelen GİZLİ parametreler de temizlenmeli — aksi halde "Sıfırla"ya
+    // basan kullanıcı liste hâlâ daralmış halde kalır ve sebebini göremez.
+    dtNoParam = null;
+    const bilgi = document.getElementById('dt-tarih-bilgi');
+    if (bilgi) bilgi.style.display = 'none';
+    veriYukle(true);
+  };
+
+  // Aktif filtre çipleri — panel kapalıyken de dolu alanlar sorguya girdiği için
+  // kullanıcı listeyi neyin daralttığını daima görebilmeli.
+  function dtCipleriGuncelle() {
+    const kap = document.getElementById('dt-aktif-cipler');
+    if (!kap) return;
+    const d = dtDetayDegerleri();
+    const cipler = [];
+    const ek = (etiket, deger, temizle) => cipler.push({ etiket, deger, temizle });
+
+    if (document.getElementById('f-tur').value)       ek('Tür', document.getElementById('f-tur').value, () => { document.getElementById('f-tur').value = ''; });
+    if (document.getElementById('f-kategori').value)  ek('Kategori', document.getElementById('f-kategori').value, () => { document.getElementById('f-kategori').value = ''; });
+    if (document.getElementById('f-il').value)        ek('İl', document.getElementById('f-il').value, () => { document.getElementById('f-il').value = ''; });
+    if (d.idare && uyeMi)  ek('İdare', d.idare, () => { document.getElementById('f-dt-idare').value = ''; });
+    if (d.durum)           ek('Durum', d.durum, () => { document.getElementById('f-dt-durum').value = ''; });
+    if (d.tarihBas)        ek('Tarih ≥', d.tarihBas, () => { document.getElementById('f-dt-tarih-bas').value = ''; });
+    if (d.tarihBit)        ek('Tarih ≤', d.tarihBit, () => { document.getElementById('f-dt-tarih-bit').value = ''; });
+    if (d.dokuman)         ek('Dokümanlı', 'evet', () => { document.getElementById('f-dt-dokuman').checked = false; });
+    if (dtNoParam)         ek('DT No', dtNoParam, () => { dtNoParam = null; });
+
+    if (!cipler.length) { kap.style.display = 'none'; kap.innerHTML = ''; return; }
+    kap.style.display = '';
+    kap.innerHTML = cipler.map((c, i) =>
+      `<span class="dt-cip">${esc(c.etiket)}: ${esc(String(c.deger))}
+         <button type="button" data-i="${i}" title="Kaldır">✕</button></span>`).join('');
+    kap.querySelectorAll('button[data-i]').forEach(b => {
+      b.onclick = () => { cipler[Number(b.dataset.i)].temizle(); veriYukle(true); };
+    });
+  }
+
+  // İdare filtresi üyeye özel: kolon anon'a kapalı, misafirde alan devre dışı.
+  function dtUyelikUygula() {
+    const el = document.getElementById('f-dt-idare');
+    const not = document.getElementById('f-dt-idare-not');
+    if (!el) return;
+    el.disabled = !uyeMi;
+    if (!uyeMi) {
+      el.value = '';
+      el.placeholder = 'Üyelere özel';
+      if (not) not.textContent = '🔒 İdare adına göre arama üyelere özeldir.';
+    } else if (not) {
+      not.textContent = '';
+    }
+  }
 
   window.sayfaGit = function(yon) {
     let hedef = sayfa;
@@ -431,10 +913,18 @@
       return;
     }
 
-    cont.innerHTML = sonSatirlar.map(k => `<div class="dt-kart">
+    cont.innerHTML = sonSatirlar.map(k => `<div class="dt-kart" id="dt-kart-${esc(k.dt_no)}">
+      <a class="dt-kart-link" href="dt-detay?dt_no=${encodeURIComponent(k.dt_no)}"
+         aria-label="${esc(k.baslik) || 'Duyuru'} — detay"></a>
       <div class="dt-ust">
         <div class="dt-baslik">${esc(k.baslik) || '(başlık yok)'}</div>
-        <div class="dt-no">${esc(k.dt_no)}</div>
+        <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
+          <button class="dt-takip-btn${window.TakipDT && TakipDT.var(k.dt_no) ? ' aktif' : ''}"
+                  onclick="event.stopPropagation();dtTakibeAl(this,'${esc(k.dt_no)}')" title="Takibe al">
+            ${window.TakipDT && TakipDT.var(k.dt_no) ? '★' : '☆'}
+          </button>
+          <div class="dt-no">${esc(k.dt_no)}</div>
+        </div>
       </div>
       <div class="dt-badges">
         ${k.tur ? `<span class="etiket tur">${esc(k.tur)}</span>` : ''}
@@ -447,7 +937,7 @@
         ${!uyeMi
           ? `<span class="dt-idare" style="cursor:default;">🏛️ İdare: ${MASKE_ROZET}</span>`
           : k.idare ? `<a class="dt-idare" href="dogrudan-temin?idare=${encodeURIComponent(k.idare)}" title="Bu idarenin tüm doğrudan teminleri">🏛️ ${esc(k.idare)}</a>` : ''}
-        ${k.tarih ? `<span>📅 ${tarihFormat(k.tarih)}</span>` : ''}
+        ${tarihlerHtml(k)}
         ${k.durum ? `<span>${esc(k.durum)}</span>` : ''}
       </div>
     </div>`).join('');
@@ -464,6 +954,14 @@
     document.getElementById('pg-son').style.display = sayimBiliniyor ? '' : 'none';
   }
 
+  // Takibe Al — Takip.js'in DT paralel nesnesi (window.TakipDT), ihaleler.html'deki
+  // takibeAl() ile aynı basitlik: giriş şartı yok, misafir localStorage'da tutar.
+  window.dtTakibeAl = function (btn, dtNo) {
+    const takipte = TakipDT.toggle(dtNo);
+    btn.classList.toggle('aktif', takipte);
+    btn.textContent = takipte ? '★' : '☆';
+  };
+
   async function istatistikYukle() {
     const el = id => document.getElementById(id);
     const say = async (tur) => {
@@ -472,21 +970,24 @@
       const { count } = await q;
       return count || 0;
     };
-    const sayGuncel = sb.from('dogrudan_temin_ilanlari').select('id', { count: 'exact', head: true }).in('durum', DURUM_GRUP.acik);
-    const saySonuc  = sb.from('dogrudan_temin_ilanlari').select('id', { count: 'exact', head: true }).in('durum', DURUM_GRUP.sonuc);
-    const [toplam, mal, hizmet, yapim, gRes, sRes] = await Promise.all([
-      say(null), say('Mal'), say('Hizmet'), say('Yapım'), sayGuncel, saySonuc,
+    // Güncel/Sonuç sayımları BURADAN KALDIRILDI — sekme sayaçlarını artık
+    // sekmeSayaclariYukle() filtre kapsamında hesaplıyor, bu iki sorgu boşa gidiyordu.
+    // Açılıştaki head-count sayısı 6 → 4'e indi.
+    const [toplam, mal, hizmet, yapim] = await Promise.all([
+      say(null), say('Mal'), say('Hizmet'), say('Yapım'),
     ]);
     el('st-toplam').textContent = toplam.toLocaleString('tr');
     el('st-mal').textContent = mal.toLocaleString('tr');
     el('st-hizmet').textContent = hizmet.toLocaleString('tr');
     el('st-yapim').textContent = yapim.toLocaleString('tr');
-    el('results-count').textContent = `${toplam.toLocaleString('tr')} kayıt`;
-    // Sekme sayaçları (global; durum-bazlı): Güncel=aktif, Sonuç=sonuçlanmış, Tümü=toplam
-    const guncel = (gRes && gRes.count) || 0, sonuc = (sRes && sRes.count) || 0;
-    el('dt-cnt-guncel').textContent = kisaSayi(guncel);
-    el('dt-cnt-sonuc').textContent = kisaSayi(sonuc);
-    el('dt-cnt-tumu').textContent = kisaSayi(toplam);
+    // "(tüm veri)" ibaresi ŞART: sekme sayaçları artık filtreliyken bu rakam global
+    // kalıyor. Etiketsiz bırakılsa "Güncel 6K" ile "1.490.591 kayıt" yan yana durur
+    // ve kullanıcı yine sayıların tutmadığını düşünür.
+    el('results-count').textContent = `${toplam.toLocaleString('tr')} kayıt (tüm veri)`;
+    // NOT: Sekme sayaçları artık BURADAN yazılmıyor — sekmeSayaclariYukle() aktif
+    // filtrelerin kapsamında hesaplıyor. Buradan da yazılsaydı açılışta iki yazar
+    // çakışır, filtreli sayacın üstüne global rakam binerdi (asıl şikâyet buydu).
+    // Üstteki stat kartları ve #results-count GLOBAL kalıyor — etiketleri de öyle diyor.
   }
 
   function kategorileriYukle() {
@@ -501,17 +1002,40 @@
   }
 
   async function illeriYukle() {
-    // İl dropdown'ı: en yeni ~5000 kaydın il değerlerinden (tüm iller pratikte kapsanır)
-    const { data } = await sb.from('dogrudan_temin_ilanlari')
-      .select('il').not('il', 'is', null)
-      .order('tarih', { ascending: false }).limit(5000);
-    const iller = [...new Set((data || []).map(k => k.il).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'tr'));
+    // İl dropdown'ı: dt_il_sayim() RPC'sinden TAM liste. Önceki sürüm en yeni ~5000
+    // kaydın il değerlerinden kuruyordu; DT hacmi düşük iller o örnekleme hiç girmiyor
+    // ve dropdown'dan sessizce düşüyordu. RPC anon+authenticated'a açık.
+    let iller = [];
+    try {
+      const { data: rpcData, error } = await sb.rpc('dt_il_sayim');
+      if (error) throw error;
+      iller = (rpcData || []).map(r => r.il).filter(Boolean);
+    } catch (_) {
+      // RPC yoksa/başarısızsa eski örneklem yöntemine düş — dropdown boş kalmasın.
+      const { data } = await sb.from('dogrudan_temin_ilanlari')
+        .select('il').not('il', 'is', null)
+        .order('tarih', { ascending: false }).limit(5000);
+      iller = (data || []).map(k => k.il).filter(Boolean);
+    }
+    iller = [...new Set(iller)].sort((a, b) => a.localeCompare(b, 'tr'));
     const sel = document.getElementById('f-il');
     iller.forEach(il => {
       const o = document.createElement('option');
       o.value = il; o.textContent = il;
       sel.appendChild(o);
     });
+  }
+
+  // Haritadan (?il=) gelen il, son 5000 kayıtlık örneklemde olmayabilir (nadir DT'li il) —
+  // seçenek yoksa <select>.value sessizce boşa düşerdi; yoksa ekleyip garanti altına alıyoruz.
+  function ilSecimGarantiEt(il) {
+    const sel = document.getElementById('f-il');
+    if (!sel.querySelector(`option[value="${CSS.escape(il)}"]`)) {
+      const o = document.createElement('option');
+      o.value = il; o.textContent = il;
+      sel.appendChild(o);
+    }
+    sel.value = il;
   }
 
   const CSV_LIMIT = 5000;
@@ -521,14 +1045,106 @@
     // uyeMi ilk sorgudan önce kesinleşmeli (misafir select'i idare'siz)
     try { const { data } = await sb.auth.getSession(); uyeMi = !!(data && data.session); } catch (_) { uyeMi = false; }
     kategorileriYukle();
-    illeriYukle();
+    await illeriYukle();   // il param seçenek-garantisi illeriYukle'nin DOM'a option eklemesinden SONRA çalışmalı
     istatistikYukle();
-    const idareParam = new URLSearchParams(window.location.search).get('idare');
+    const params = new URLSearchParams(window.location.search);
+    dtUyelikUygula();
+    // ?idare= ARTIK f-ara'ya değil, idare filtresine bağlanıyor. Eskiden serbest arama
+    // kutusuna yazılıyordu; misafirde arama yalnız baslik'te çalıştığı için (idare kolonu
+    // anon'a kapalı) kullanıcı sessizce YANLIŞ sonuç görüyordu — kurum adı başlıkta
+    // geçmediği sürece liste boş çıkıyordu.
+    const idareParam = params.get('idare');
     if (idareParam) {
-      document.getElementById('f-ara').value = idareParam;
+      if (uyeMi) {
+        const el = document.getElementById('f-dt-idare');
+        if (el) el.value = idareParam;
+        detayPaneliAcKapa();   // kullanıcı filtrenin nereden geldiğini görsün
+      } else {
+        const not = document.getElementById('f-dt-idare-not');
+        if (not) not.textContent = '🔒 İdare filtresi üyelere özeldir — bu bağlantı uygulanmadı.';
+      }
       aktifSekme = 'tumu';   // kurumdan gelindiyse TÜM DT geçmişi görünsün (Güncel/aktif'te az çıkar)
       document.querySelectorAll('.dt-tab').forEach(b => b.classList.toggle('active', b.dataset.sekme === 'tumu'));
     }
+    const ilParam = params.get('il');
+    if (ilParam) {
+      // Harita zaten DB formatında (BÜYÜK harf) gönderir; elle/eski link için güvenlik ağı.
+      ilSecimGarantiEt(ilParam.toLocaleUpperCase('tr'));
+      // Harita artık AKTİF sayım gösteriyor (dt_il_sayim_aktif), popup'taki rakam = Güncel
+      // sekmesinin sayısı. 'tumu'ya düşürmek kullanıcıyı popup'ta gördüğü sayıyı bulamadığı
+      // bir listeye atıyordu (Ankara: popup ~6K, liste 115K). Açıkça yazıyoruz — varsayılana
+      // güvenmiyoruz, çünkü aşağıdaki ?kategori= / ?dt_no= blokları sekmeyi ezebiliyor.
+      aktifSekme = 'guncel';
+      document.querySelectorAll('.dt-tab').forEach(b => b.classList.toggle('active', b.dataset.sekme === 'guncel'));
+    }
+    const kategoriParam = params.get('kategori');
+    if (kategoriParam) {
+      const sel = document.getElementById('f-kategori');
+      if ([...sel.options].some(o => o.value === kategoriParam)) sel.value = kategoriParam;
+      aktifSekme = 'tumu';
+      document.querySelectorAll('.dt-tab').forEach(b => b.classList.toggle('active', b.dataset.sekme === 'tumu'));
+    }
+    // Dashboard "Son Eklenen"/"Yaklaşan Son Tarihler" gibi widget'lardan tek bir DT kaydına
+    // gelindiğinde — ayrı bir detay sayfası yok, liste o TEK kayda daralır (aktifSekme=tumu
+    // ki durum filtresi kaydı gizlemesin).
+    const dtNoUrl = params.get('dt_no');
+    if (dtNoUrl) {
+      dtNoParam = dtNoUrl;
+      aktifSekme = 'tumu';
+      document.querySelectorAll('.dt-tab').forEach(b => b.classList.toggle('active', b.dataset.sekme === 'tumu'));
+    }
+    // Tarih aralığı — dashboard'ın "Bugün Eklendi" kartı gibi derin linkler için.
+    // Sekme 'tumu'ya alınır: aksi halde Güncel sekmesinin durum filtresi, o gün eklenmiş
+    // ama sonuçlanmış kayıtları gizler ve kullanıcı dashboard'da gördüğü sayıyı burada bulamaz.
+    const tbUrl = params.get('tarihBas');
+    const tsUrl = params.get('tarihBit');
+    if (tbUrl || tsUrl) {
+      if (tbUrl) { const e = document.getElementById('f-dt-tarih-bas'); if (e) e.value = tbUrl; }
+      if (tsUrl) { const e = document.getElementById('f-dt-tarih-bit'); if (e) e.value = tsUrl; }
+      aktifSekme = 'tumu';
+      document.querySelectorAll('.dt-tab').forEach(b => b.classList.toggle('active', b.dataset.sekme === 'tumu'));
+      const bilgi = document.getElementById('dt-tarih-bilgi');
+      if (bilgi) {
+        const fmt = (s) => s ? s.split('-').reverse().join('.') : '';
+        bilgi.textContent = (tbUrl && tsUrl && tbUrl === tsUrl)
+          ? `📅 ${fmt(tbUrl)} tarihli duyurular`
+          : `📅 ${fmt(tbUrl) || '…'} – ${fmt(tsUrl) || '…'} arası duyurular`;
+        bilgi.style.display = '';
+      }
+    }
+    // ── Detaylı arama URL parametreleri ──────────────────────────────────────
+    const setDeger = (id, deger) => {
+      if (!deger) return false;
+      const el = document.getElementById(id);
+      if (!el) return false;
+      // select ise yalnız geçerli bir seçenekse uygula (uydurma değer listeyi boşaltır)
+      if (el.tagName === 'SELECT' && ![...el.options].some(o => o.value === deger)) return false;
+      el.value = deger;
+      return true;
+    };
+    let detayDolu = false;
+    detayDolu = setDeger('f-dt-durum', params.get('durum')) || detayDolu;
+    detayDolu = setDeger('f-dt-tarih-bas', params.get('tarihBas')) || detayDolu;
+    detayDolu = setDeger('f-dt-tarih-bit', params.get('tarihBit')) || detayDolu;
+    detayDolu = setDeger('f-tur', params.get('tur')) || detayDolu;
+    setDeger('f-ara', params.get('ara'));
+    if (params.get('dokuman') === '1') {
+      const dok = document.getElementById('f-dt-dokuman');
+      if (dok) { dok.checked = true; detayDolu = true; }
+    }
+    // ?sekme= — dashboard "Toplam Kazanım" gibi kartların sonuç listesine derin link
+    // verebilmesi için. Diğer parametrelerden SONRA uygulanıyor ki onların 'tumu'
+    // ataması bu açık isteği ezmesin.
+    const sekmeUrl = params.get('sekme');
+    if (sekmeUrl && ['guncel', 'sonuc', 'tumu'].includes(sekmeUrl)) {
+      aktifSekme = sekmeUrl;
+      document.querySelectorAll('.dt-tab').forEach(b => b.classList.toggle('active', b.dataset.sekme === sekmeUrl));
+    }
+    if (detayDolu || params.get('detayli') === '1') {
+      const p = document.getElementById('dt-detay-panel');
+      if (p && p.style.display === 'none') detayPaneliAcKapa();
+    }
+
     await veriYukle(true);
   })();
 })();
