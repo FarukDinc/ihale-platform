@@ -178,3 +178,20 @@ function trAramaKalibi(metin) {
     .replace(/[oöOÖ]/g, '_');
 }
 window.trAramaKalibi = trAramaKalibi;
+
+/**
+ * TR_ILLER_BUYUK — 81 il, DB'deki yazımla (Türkçe BÜYÜK HARF).
+ *
+ * NEDEN STATİK: il dropdown'larını `select('il')` ile DB'den distinct çıkarmak
+ * D1 tuzağına düşüyor — PostgREST db-max-rows=1000 SUNUCUDA kesiyor ve `.limit(5000)`
+ * bunu AŞMIYOR. 20 Tem ölçümü: dogrudan-temin yedek yolu 81 ilden 69'unu getiriyordu;
+ * kaybolanlar tam da düşük hacimli iller (BAYBURT, ARTVİN, KİLİS, IĞDIR…) — kullanıcı
+ * "bu ilde ihale yok" sanıyordu. 1,49M satırı sayfalayarak distinct çıkarmak ise
+ * yüzlerce istek demek. İl listesi sabit bir gerçek; DB'ye sormaya gerek yok.
+ *
+ * ⚠️ Değerler DB ile BİREBİR aynı olmalı — filtreler `.eq('il', ...)` ile tam eşleşme
+ * arıyor. DB'de "İSTANBUL"/"ADANA" gibi Türkçe büyük harf tutuluyor; küçük harf ya da
+ * Title Case bir değer sessizce 0 sonuç döndürür.
+ */
+const TR_ILLER_BUYUK = ['ADANA','ADIYAMAN','AFYONKARAHİSAR','AĞRI','AKSARAY','AMASYA','ANKARA','ANTALYA','ARDAHAN','ARTVİN','AYDIN','BALIKESİR','BARTIN','BATMAN','BAYBURT','BİLECİK','BİNGÖL','BİTLİS','BOLU','BURDUR','BURSA','ÇANAKKALE','ÇANKIRI','ÇORUM','DENİZLİ','DİYARBAKIR','DÜZCE','EDİRNE','ELAZIĞ','ERZİNCAN','ERZURUM','ESKİŞEHİR','GAZİANTEP','GİRESUN','GÜMÜŞHANE','HAKKARİ','HATAY','IĞDIR','ISPARTA','İSTANBUL','İZMİR','KAHRAMANMARAŞ','KARABÜK','KARAMAN','KARS','KASTAMONU','KAYSERİ','KIRIKKALE','KIRKLARELİ','KIRŞEHİR','KİLİS','KOCAELİ','KONYA','KÜTAHYA','MALATYA','MANİSA','MARDİN','MERSİN','MUĞLA','MUŞ','NEVŞEHİR','NİĞDE','ORDU','OSMANİYE','RİZE','SAKARYA','SAMSUN','SİİRT','SİNOP','SİVAS','ŞANLIURFA','ŞIRNAK','TEKİRDAĞ','TOKAT','TRABZON','TUNCELİ','UŞAK','VAN','YALOVA','YOZGAT','ZONGULDAK'];
+window.TR_ILLER_BUYUK = TR_ILLER_BUYUK;

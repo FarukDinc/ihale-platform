@@ -1334,11 +1334,20 @@
     else if (aktifSekme === 'gecmis') query = query.lt('etkin_tarih', simdiISO);
 
     // Misafir: arama_fold ve idare kolonları anon'a kapalı (WHERE için de SELECT yetkisi
-    // gerekir) → arama başlık/açıklama ILIKE'a düşer (TR katlama yok ama çalışır),
-    // idare filtresi atlanır (kartta zaten *** — filtre oracle'ı da böylece kapalı).
+    // gerekir) → arama başlık/açıklama ILIKE'a düşer, idare filtresi atlanır (kartta zaten
+    // *** — filtre oracle'ı da böylece kapalı).
+    // ⚠️ DÜZELTME 20 Tem: buradaki eski yorum "TR katlama yok ama çalışır" diyordu — YANLIŞ.
+    // Postgres ILIKE ASCII i/I'yı katlar ama İ(U+0130)/ı'yı ve ü/ğ/ş/ç diakritiğini
+    // KATLAMAZ. Ölçüldü: misafirde "insaat" → 0 sonuç, aynı evrende TR yazımlı "nşaat" → 166.
+    // Yani üye "İNŞAAT" kayıtlarını buluyor, misafir hiçbir şey bulamıyor ve sonuçlar
+    // sessizce AYRIŞIYORDU. trAramaKalibi (js/main.js) çift varyantlı harfleri tek-karakter
+    // jokerle değiştirip bu farkı kapatıyor (üye dalı zaten arama_fold ile doğru).
     if (arama) {
       if (uyeMi) query = query.ilike('arama_fold', `%${trFold(arama)}%`);
-      else       query = query.or(`baslik.ilike.%${arama}%,aciklama.ilike.%${arama}%`);
+      else {
+        const k = window.trAramaKalibi ? window.trAramaKalibi(arama) : arama;
+        if (k) query = query.or(`baslik.ilike.%${k}%,aciklama.ilike.%${k}%`);
+      }
     }
     if (okas)     query = query.ilike('okas', `%${okas}%`);
     if (urlDurumFiltresi) query = query.eq('durum', urlDurumFiltresi);
@@ -1389,9 +1398,14 @@
       );
       if      (aktifSekme === 'guncel') fallback = fallback.gte('son_teklif_tarihi', simdiISO);
       else if (aktifSekme === 'gecmis') fallback = fallback.lt('etkin_tarih', simdiISO);
-      if (arama)    fallback = uyeMi
-        ? fallback.or(`baslik.ilike.%${arama}%,idare.ilike.%${arama}%,okas.ilike.%${arama}%,isin_yapilacagi_yer.ilike.%${arama}%,ilan_metni.ilike.%${arama}%`)
-        : fallback.or(`baslik.ilike.%${arama}%,aciklama.ilike.%${arama}%`);
+      // Yedek yol da ham ILIKE kullanıyor (arama_fold yok varsayımıyla) → TR katlaması
+      // burada da şart, yoksa fallback devreye girdiği anda arama sessizce sonuç kaybeder.
+      if (arama) {
+        const kf = window.trAramaKalibi ? window.trAramaKalibi(arama) : arama;
+        if (kf) fallback = uyeMi
+          ? fallback.or(`baslik.ilike.%${kf}%,idare.ilike.%${kf}%,okas.ilike.%${kf}%,isin_yapilacagi_yer.ilike.%${kf}%,ilan_metni.ilike.%${kf}%`)
+          : fallback.or(`baslik.ilike.%${kf}%,aciklama.ilike.%${kf}%`);
+      }
       if (okas)     fallback = fallback.ilike('okas', `%${okas}%`);
       if (urlDurumFiltresi) fallback = fallback.eq('durum', urlDurumFiltresi);
       if (il)       fallback = fallback.eq('il', il);
@@ -1474,7 +1488,15 @@
     const sayimTahmini = (aktifSekme === 'sonuc' && !uyumModu);   // Sonuç'ta count planlı-tahmini → "~" göster
     document.getElementById('result-count').innerHTML = `${sayimTahmini ? '~' : ''}<strong>${toplamKayit.toLocaleString('tr')}</strong> ihale bulundu — ${baslangicNo}-${bitisNo} gösteriliyor`;
     document.getElementById('pag-info').textContent = `${baslangicNo}–${bitisNo} / ${toplamKayit}`;
-    document.getElementById('sb-count').textContent = toplamKayit > 999 ? Math.round(toplamKayit/1000*10)/10+'K' : toplamKayit;
+    // ⚠️ 'sb-count' elemanı bu sayfada (ve tüm repoda) YOK — kaldırılmış bir kenar çubuğu
+    // sayacından kalma. getElementById null dönüyor, .textContent ataması TypeError
+    // fırlatıyordu; ilanlariYukle async olduğu ve hiçbir çağıran catch etmediği için hata
+    // yakalanmamış promise reddi olarak SESSİZCE yutuluyordu. Sonuç: bir ALT satırdaki
+    // paginasyonOlustur() HİÇ çalışmıyordu → #pagination boş, sıfır sayfa butonu,
+    // kullanıcı 1,6M kayıtta 2. sayfaya GEÇEMİYORDU (20 Tem, canlıda doğrulandı).
+    // Null-güvenli hale getirildi; eleman ileride eklenirse kendiliğinden dolar.
+    const sbCount = document.getElementById('sb-count');
+    if (sbCount) sbCount.textContent = toplamKayit > 999 ? Math.round(toplamKayit/1000*10)/10+'K' : toplamKayit;
 
     paginasyonOlustur();
   }
@@ -1898,7 +1920,7 @@
     } catch {}
   })();
 </script>
-<script src="js/main.js?v=trf1"></script>
+<script src="js/main.js?v=trf2"></script>
 </body>
 </html>
 
