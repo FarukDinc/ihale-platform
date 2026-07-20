@@ -1,5 +1,42 @@
 # İhalePlatform — Yapılacaklar Listesi
 
+> ## ✅ 20 TEM — ÇÖZÜLDÜ: SAHTE "AKTİF" İHALELER (kök neden + temizlik + doğrulama)
+> **Sonuç:** `durum='aktif'` **183.677 → 13.444**; gerçekten açık 4.765.
+> Bayatlatma 178.906 satır kapattı, `idare_ozet_mv` tazelendi.
+> Kök neden düzeltildi (`durum_donustur`, commit `9d14ef6`+`790618c`), backfill
+> düzeltilmiş kodla yeniden başlatıldı ve **kanıtlandı**: yeni kayıtlar `kapali`
+> olarak düşüyor (190.564 → 193.301), `aktif` sabit kalıyor (13.444).
+>
+> ### Kök neden — `ekap_scraper.py durum_donustur()`
+> Eşleşmeyen HER EKAP durum metni `return "aktif"` ile aktif sayılıyordu.
+> `ekap_ihale_backfill.py` bunu 1,6M geçmiş ihalede çağırıyordu.
+> **Düzeltme körlemesine `"kapali"` DEĞİL** — canlı scraper aynı fonksiyonu
+> kullanıyor, tanınmayan bir metin gerçek aktif ihaleyi gizlerdi. Artık tarihten
+> türetiliyor: tanınmayan + geçmiş → `kapali`, tanınmayan + gelecek → `aktif`,
+> tarih yok → eski davranış. Tanınan metinler HİÇ değişmedi. Test 14/14.
+>
+> ### ⚠️ BENİM HATAM — 2 saatlik backfill kesintisi
+> İlk düzeltmede `'kapandi'` döndürdüm. `ilanlar_durum_check` yalnız
+> `('taslak','aktif','kapali','iptal','sonuclandi')` kabul ediyor →
+> PostgREST **400** → backfill 2021'de çöktü. Sebep: `migration_uygun_firmalar_v3_1.sql`
+> dosyasını okudum, orada `'kapandi'` yazıyor — ama **v3_3 bunu zaten düzeltmiş**
+> ("Bayatlama 'kapandi' değil 'kapali' yazmalı — v3.1'deki ERROR'un düzeltmesi").
+> **DERS: migration dosyası okurken aynı nesnenin daha yeni sürümü var mı diye bak;
+> canlı tanımı `pg_proc`'tan doğrula.** Koda uyarı düşüldü.
+>
+> ### 🔵 AÇIK — eşleme kanıtla tamamlanacak
+> EKAP'ın geçmiş ihaleler için hangi durum metinlerini döndürdüğünü hâlâ
+> BİLMİYORUZ. `BILINMEYEN_DURUMLAR` sayacı + `bilinmeyen_durum_raporu()` eklendi;
+> backfill turu bitince eşleşmeyen metinleri sıklıkla yazdıracak:
+> ```bash
+> ssh ihale "grep -A25 'ESLESMEYEN DURUM METINLERI' /opt/ihale-platform/logs/ihale_backfill.log | tail -30"
+> ```
+> O çıktı görülünce `durum_donustur` eşlemesi tamamlanmalı (`iptal` sabiti
+> constraint'te VAR ama hiçbir arayüz onu beklemiyor — eklenirse o kayıtlar tüm
+> sekmelerden sessizce düşer, önce arayüz hazırlanmalı).
+>
+> <details><summary>Orijinal hata kaydı (referans)</summary>
+>
 > ## 🔴 20 TEM — CANLI HATA: 163.464 GEÇMİŞ İHALE "AKTİF" GÖRÜNÜYOR
 > P0.3 migration'ı uygulanırken ortaya çıktı (migration'ın kendisi sağlam, bu AYRI bir hata).
 >
@@ -54,6 +91,8 @@
 > **Doğru sıra:** önce `ihaleDurumAciklama`'nın eşleşmeyen değerlerini LOGLA
 > (backfill'e birkaç satır), gerçek metinleri gör, sonra eşlemeyi tamamla.
 > Tahminle genişletme.
+>
+> </details>
 
 > ## ✅ 20 TEM — PROXY ÇALIŞIYOR, BLOKE İŞLER SERBEST
 > Kullanıcı teyit etti. Aşağıdaki üç iş 402 yüzünden duruyordu; komutlar hazır.
@@ -92,6 +131,87 @@
 >
 > **Not:** İdare ağacı ARAYÜZ işi bu üçünü BEKLEMEZ — `idare_hiyerarsi_yukle.py`
 > EKAP'a hiç istek atmıyor, ağaç 15,42 MB olarak diskte hazır (bkz. İkinci Tur, madde 5).
+
+> ## 🔁 20 TEM — OTURUM DEVRİ (paralel oturum kapatıldı, tek kuyruğa dönülüyor)
+> Bu blok, ikinci bir oturumun yaptıklarını ve bıraktığı işleri devreder.
+> ⚠️ İki oturum aynı ağaçta çalıştı: `ekap_scraper.py`, `ekap_ihale_backfill.py`
+> ve bu dosya iki taraftan düzenlendi. Bundan sonra TEK kuyruk.
+>
+> ### ❌ BU OTURUMUN AÇTIĞI HATA (üstteki 🔴 P0'ın kaynağı)
+> `ekap_ihale_backfill.py`'yi yazarken `durum_donustur()`'un çıktısını
+> DOĞRULAMADAN kullandım → blanket `return "aktif"` 1,6M geçmiş kayda uygulandı,
+> **163.464 sahte "aktif"** üretti. Diğer oturum yakalayıp düzeltti (`9d14ef6`,
+> `790618c`). Ders: aynı gün `Accept-Language`'ı ölçerek yakalamıştım; `durum`
+> alanına aynı titizliği göstermedim. **Yeni bir alan haritalarken dönüştürücünün
+> çıktısını canlı örnekle doğrula — imzasına güvenme.**
+>
+> ### ✅ TAMAMLANANLAR
+> | iş | sonuç |
+> |---|---|
+> | `etkin_tarih` arayüz entegrasyonu | Geçmiş sekmesi 11.712 → **346.926** |
+> | İdare türü kural motoru (5 hata) | 1.832.259 satır sınıflı, kalan %0,84 |
+> | `Accept-Language` eksikliği | 6 scraper'da düzeltildi (aşağıda detay) |
+> | Anasayfa bütçe KPI'si | 1000 satırda kesiliyordu → **25,0 → 88,9 milyar TL** |
+> | Geçmiş sekmesinde ölü filtreler | `esik_katsayi` gizlendi, bedel/OKAS uyarı |
+> | `ekap_ihale_backfill.py` | yazıldı, koşuyor (2026-2023 tamam) |
+>
+> ### 🔬 ÖLÇÜLEN API GERÇEKLERİ (tahmin değil — tekrar ölçme)
+> **İhale listesi (`GetListByParameters`):**
+> - Derin sayfalama ÇÖKMÜYOR: `paginationSkip=1.900.000` → 2,4sn. *("düz sayfalama
+>   1,9M'de çöker" varsayımım YANLIŞTI — bölümleme mimarisi gereksizmiş.)*
+> - `paginationTake` 5000'e kadar çalışıyor (5000 kayıt / 18,8sn / 4,44 MB)
+> - Sıralama tarih azalan: skip=0 → 2026, skip=1,9M → 2011
+> - `iknYili` **TEKİL int** yıl filtresi çalışıyor; `iknYilList`/`iknYilIdList`/
+>   `yilList` YOK SAYILIYOR (toplam döndürürler)
+> - Kayıt başına ~1,01 KB → 1.958.053 kayıt ≈ **1,88 GB**
+> - `ihaleIlIdList=[6]` → 0 döndü; ID doğrulanmadı, il bölümlemesi KULLANILMADI
+>
+> **⚠️ `Accept-Language: tr-TR` ŞART.** Yoksa EKAP açıklama alanlarını çevirmeden
+> döndürür: `usul='TENDER_SEARCH.MAIN.PAGEITEM.TENDER_TYPE TENDER_SEARCH.ENUM'`,
+> `durum='Tender Canceled'`. Canlı etkisi: `ilanlar.usul`'de **1.297 satır** ham
+> i18n anahtarıyla yazılmış. YALNIZ bu başlık işe yarıyor — `lang`, `culture`,
+> `X-Culture` denendi, hiçbiri etkilemiyor.
+>
+> **DT listesi (`dtAra`):**
+> - Ham yanıttaki `sp = 69788` alanı **sayfa sayısı DEĞİL** (40.000. sayfa boş).
+>   Ne olduğu bilinmiyor — bu alandan çıkarım YAPMA.
+> - Liste sonu: 20.000 dolu (28.03.2024), 25.000 ve 30.000 boş →
+>   **son 20.000-25.000 arası ≈ 2,6-3,2M kayıt**
+> - Bizde 1.490.644 → kapsam **%47-58**, eksik ~1-1,7M
+> - Sayfa 4942 / 8000 / 11000 sondajı: **%100 zaten bizde**. Yani
+>   `.dt_scraper_checkpoint.json` (4952) kapsamımızın GERİSİNDE —
+>   `--backfill` oradan koşarsa saatlerce hiçbir şey eklemez.
+> - Derin sayfalar çok yavaş: 12.000/13.000/15.000 zaman aşımına uğradı
+>
+> ### 📋 DEVREDİLEN İŞLER
+> - [ ] **DT checkpoint'i doğru yere al.** Kapsamımız ≈ sayfa 11.646'ya kadar.
+>       Yeni verinin başladığı sayfayı 11.600-12.500 aralığında sondajla bul,
+>       `.dt_scraper_checkpoint.json`'ı oraya yaz, sonra `--backfill` koş.
+>       ⚠️ Şu anki 4952 değeriyle koşmak KAYNAK İSRAFI.
+> - [ ] **DT scraper loglaması yanıltıcı** — "128 kayıt upsert edildi" diyor ama
+>       kaçının YENİ olduğunu söylemiyor. Bugün 17 sayfa boyunca hiçbir şey
+>       eklemeden "başarılı" göründü. `Prefer: return=representation` veya
+>       öncesi/sonrası sayımla "X yeni / Y güncellendi" ayrımı ekle.
+> - [ ] **İhale backfill bitince: yeni idare adları.** 1,6M kayıt binlerce yeni
+>       idare adı getiriyor, eşleme tablosunda yoklar → `idare_tur` NULL kalır.
+>       ```bash
+>       python idare_tur_kural_backfill.py --detsis-yeniden --tazele-atla
+>       # sonra psql ile: SELECT public.idare_tur_tazele();   (~10 dk)
+>       ```
+> - [ ] **Kirlenen 1.297 `usul` satırı** — `Accept-Language` düzeldiğine göre
+>       yeniden çekilebilir veya NULL'lanabilir.
+> - [ ] **`ekap_ihale_backfill.py` sayfa boyutu** şu an 1000 (~145 kayıt/sn).
+>       5000 de çalışıyor ve toplam istek sayısını 1958 → 392'ye düşürür;
+>       hız benzer, istek sayısı 5 kat az. Sonraki turda değerlendirilebilir.
+>
+> ### ⚠️ TEKRARLAYAN OPERASYON TUZAKLARI (bu oturumda 3 kez düşüldü)
+> - `pgrep -f '<script>'` / `pkill -f '<script>'` **kendi komut satırınla eşleşir**
+>   → süreç bitse de "çalışıyor" sanırsın; `pkill` SSH oturumunu düşürür.
+>   Kullan: `ps -eo cmd | grep -c '[p]ython x'`
+> - Uzun çıktıyı `| tail -N` ile borulamak çıktıyı TAMPONLAR — iş bitene kadar
+>   hiçbir şey görünmez. İlerleme izlenecekse boruyu kaldır.
+> - Arka plan Python'da `python -u` kullan, yoksa TTY olmayan çıktı tamponlanır
+>   (DT scraper 6 dakika "sessiz" göründü, aslında çalışıyordu).
 
 > ## ✅ 20 TEM — İDARE TÜRÜ: 813K SINIFSIZ SATIR KURALLA KAPATILDI (AI'sız)
 > **Ölçülen durum:** ilanlar 241.508 (%68) + DT 571.424 (%38) = **812.932 satır**
