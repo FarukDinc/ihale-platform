@@ -43,8 +43,11 @@ $VENV/python ilan_gov_scraper.py --max-pages 40 >> /opt/ihale-platform/logs/scra
 # 20 Tem düzeltmesi (Backlog #19): eski satır `--max-pages 6 --limit 50` idi = koşu başına 300
 # kayıt tavanı. TED tek günde ~1.545 cn-standard ilan yayımlıyor (16 Tem ölçümü), yani günün
 # ~%19'u alınıyor, gerisi kayboluyordu. Yeni `--gun 2`: bugün + dünü TAM çeker (sorgu artık
-# publication-date ile pencerelenip totalNoticeCount'a kadar sayfalanıyor). Zaten DB'de olan
-# publication_no'lar Gemini'ye ikinci kez gönderilmez.
+# publication-date ile pencerelenip totalNoticeCount'a kadar sayfalanıyor).
+# Çeviri atlama ölçütü "DB'de var mı" DEĞİL, "gerçekten çevrilmiş mi" (baslik <> orijinal_baslik):
+# böylece kotaya takılıp çevrilemeyen başlık ertesi gece kendiliğinden yeniden denenir. Ayrıca
+# zaten çevrili satırlar upsert gövdesine baslik/kategori KOYMADAN gider (Türkçe başlık ezilmesin).
+# --rpm varsayılanı 15 (free tier); gecelik çağrı ~52-103 olduğu için hız sınırı şart.
 echo "[$(date +'%Y-%m-%d %H:%M:%S')] === TED uluslararasi ===" >> /opt/ihale-platform/logs/scraper.log
 $VENV/python ted_scraper.py --gun 2 >> /opt/ihale-platform/logs/scraper.log 2>&1
 $VENV/python georgia_scraper.py >> /opt/ihale-platform/logs/scraper.log 2>&1
