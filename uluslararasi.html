@@ -448,29 +448,39 @@
     el('st-toplam').textContent = toplamS.toLocaleString('tr');
     el('st-yapim').textContent = yapim.toLocaleString('tr');
     el('st-hizmet').textContent = hizmet.toLocaleString('tr');
-    // Ülke + kategori dropdown + ülke sayısı.
-    // ⚠️ ESKİ HALİ `.select('ulke,kategori').limit(5000)` idi ve SESSİZCE eksik veri
-    // veriyordu: PostgREST sunucu tarafında db-max-rows=1000 uyguluyor, `.limit(5000)`
-    // bunu AŞMIYOR. Tablo 1.249 satır olduğu için ~%20 düşüyordu; 20 Tem ölçümü:
-    // dropdown'da 34 ülkeden 33'ü görünüyor, 'GRL' hiç listelenmiyordu (KPI da yanlıştı).
-    // Üstelik .order() da yoktu → hangi 1000 satırın geleceği fiziksel sıraya bağlıydı.
-    // ÇÖZÜM: 1000'lik dilimlerle sayfala, dilim dolmayınca dur.
-    // (Tablo ~10K'yı geçerse bu döngü yerine distinct dönen bir RPC'ye taşınmalı.)
-    const satirlar = [];
-    for (let off = 0; off < 20000; off += 1000) {
-      const { data: dilim, error: dErr } = await sb
-        .from('uluslararasi_ihaleler')
-        .select('ulke,kategori')
-        .order('id', { ascending: true })
-        .range(off, off + 999);
-      if (dErr) { console.warn('ülke/kategori dilimi alınamadı:', dErr.message); break; }
-      if (!dilim || !dilim.length) break;
-      satirlar.push(...dilim);
-      if (dilim.length < 1000) break;   // son dilim
+    // Ülke + kategori dropdown + ülke sayısı — DISTINCT'i SUNUCU üretir.
+    // Eskiden `.select('ulke,kategori').limit(5000)` ile ÖRNEKLEMDEN üretiliyordu: ORDER BY
+    // olmadığı için tablo 5.000 satırı aştığı anda liste keyfî bir örnekleme dönüşüyor,
+    // dropdown'da sessizce ülke/kategori eksiliyor ve st-ulke sayacı yanlış çıkıyordu.
+    // TED scraper'ın gün-gün pencerelemesi tabloyu günde ~1.280 satır büyüttüğü için bu tavan
+    // birkaç gün içinde aşılacaktı (dünya haritası zaten aynı deseni ulke_ihale_dagilimi ile
+    // kullanıyor). RPC: backend/migration_uluslararasi_filtreler.sql
+    let ulkeler = [], kats = [];
+    const { data: sec, error: secErr } = await sb.rpc('uluslararasi_filtre_secenekleri');
+    if (!secErr && sec) {
+      ulkeler = sec.ulkeler || [];
+      kats = sec.kategoriler || [];
+    } else {
+      // Migration henüz uygulanmadıysa sayfa çalışmaya devam etsin (eski örneklem yolu).
+      console.warn('uluslararasi_filtre_secenekleri RPC yok — örneklem yedegine düşüldü', secErr);
+      // ⚠️ Yedek yol da eksik veri vermemeli: `.limit(5000)` PostgREST'in db-max-rows=1000
+      // tavanını AŞMIYOR (sunucu kesiyor). 20 Tem ölçümü: 34 ülkeden 33'ü görünüyordu
+      // ('GRL' eksikti), st-ulke sayacı da yanlıştı. 1000'lik dilimlerle sayfalıyoruz.
+      const satirlar = [];
+      for (let off = 0; off < 20000; off += 1000) {
+        const { data: dilim, error: dErr } = await sb.from('uluslararasi_ihaleler')
+          .select('ulke,kategori').order('id', { ascending: true }).range(off, off + 999);
+        if (dErr) { console.warn('ülke/kategori dilimi alınamadı:', dErr.message); break; }
+        if (!dilim || !dilim.length) break;
+        satirlar.push(...dilim);
+        if (dilim.length < 1000) break;   // son dilim
+      }
+      ulkeler = [...new Set(satirlar.map(x => x.ulke).filter(Boolean))];
+      kats = [...new Set(satirlar.map(x => x.kategori).filter(Boolean))];
     }
-    const data = satirlar;
-    const ulkeler = [...new Set((data || []).map(x => x.ulke).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'tr'));
-    const kats = [...new Set((data || []).map(x => x.kategori).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'tr'));
+    // Türkçe harf sırası (İ/ı, Ç, Ş, Ğ) DB collation'ına bırakılmaz, istemcide sıralanır.
+    ulkeler = ulkeler.filter(Boolean).sort((a, b) => a.localeCompare(b, 'tr'));
+    kats = kats.filter(Boolean).sort((a, b) => a.localeCompare(b, 'tr'));
     el('st-ulke').textContent = ulkeler.length;
     const uSel = document.getElementById('f-ulke'), kSel = document.getElementById('f-kategori');
     ulkeler.forEach(u => { const o = document.createElement('option'); o.value = u; o.textContent = u; uSel.appendChild(o); });

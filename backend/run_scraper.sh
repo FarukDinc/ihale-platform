@@ -40,8 +40,16 @@ $VENV/python dt_kazanan_scraper.py --limit 2000 --rpm 300 >> /opt/ihale-platform
 echo "[$(date +'%Y-%m-%d %H:%M:%S')] === ilan.gov.tr ===" >> /opt/ihale-platform/logs/scraper.log
 $VENV/python ilan_gov_scraper.py --max-pages 40 >> /opt/ihale-platform/logs/scraper.log 2>&1
 # TED Europa uluslararası ihaleler (ayrı tablo, Türkçe'ye çevrilerek)
+# 20 Tem düzeltmesi (Backlog #19): eski satır `--max-pages 6 --limit 50` idi = koşu başına 300
+# kayıt tavanı. TED tek günde ~1.545 cn-standard ilan yayımlıyor (16 Tem ölçümü), yani günün
+# ~%19'u alınıyor, gerisi kayboluyordu. Yeni `--gun 2`: bugün + dünü TAM çeker (sorgu artık
+# publication-date ile pencerelenip totalNoticeCount'a kadar sayfalanıyor).
+# Çeviri atlama ölçütü "DB'de var mı" DEĞİL, "gerçekten çevrilmiş mi" (baslik <> orijinal_baslik):
+# böylece kotaya takılıp çevrilemeyen başlık ertesi gece kendiliğinden yeniden denenir. Ayrıca
+# zaten çevrili satırlar upsert gövdesine baslik/kategori KOYMADAN gider (Türkçe başlık ezilmesin).
+# --rpm varsayılanı 15 (free tier); gecelik çağrı ~52-103 olduğu için hız sınırı şart.
 echo "[$(date +'%Y-%m-%d %H:%M:%S')] === TED uluslararasi ===" >> /opt/ihale-platform/logs/scraper.log
-$VENV/python ted_scraper.py --max-pages 6 --limit 50 >> /opt/ihale-platform/logs/scraper.log 2>&1
+$VENV/python ted_scraper.py --gun 2 >> /opt/ihale-platform/logs/scraper.log 2>&1
 $VENV/python georgia_scraper.py >> /opt/ihale-platform/logs/scraper.log 2>&1
 # Kamu kurumu kaynakları (EKAP dışı, ANA ilanlar tablosuna kaynak='dmo'/'jandarma' ile yazar —
 # 16 Tem'de ayrı kamu_ihaleleri'nden buraya taşındı, İhaleler ekranında rozetle görünür): DMO + Jandarma
