@@ -30,8 +30,36 @@ YENİ DAVRANIŞ:
   * limit varsayılanı 50 → 250 (API'nin kabul ettiği azami, test edildi) — 5 kat az round-trip.
   * --max-pages artık "gün başına güvenlik tavanı" (varsayılan 40 → 10.000 ilan/gün kapasitesi).
   * --backfill + checkpoint ile geçmişe doğru gün gün yürünebiliyor (dt scraper deseni).
-  * Yalnızca DB'de OLMAYAN publication_no'lar çevriliyor → Gemini maliyeti tekrar koşularda ~0.
+  * Yalnızca ÇEVRİLMEMİŞ publication_no'lar çevriliyor → Gemini maliyeti tekrar koşularda ~0.
 Geriye dönük uyumlu: --max-pages/--limit bayrakları duruyor, tabloya yazan upsert bloğu aynı.
+
+--------------------------------------------------------------------------------------
+20 Tem 2026 — YUKARIDAKİ DÜZELTMENİN ÜÇ REGRESYONU KAPATILDI
+--------------------------------------------------------------------------------------
+(1) TÜRKÇE BAŞLIKLAR HER GECE İNGİLİZCE'YE GERİ DÖNÜYORDU.
+    Çeviri atlama listesi ("DB'de olanı çevirme") yalnız Gemini çağrısını atlıyordu;
+    upsert gövdesi yine TÜM satırları, `notice_donustur`ün koyduğu `baslik = orijinal`
+    (İngilizce) değeriyle yolluyordu. `Prefer: resolution=merge-duplicates` bunu
+    ON CONFLICT DO UPDATE ile saklı Türkçe başlığın ÜZERİNE yazıyordu. Cron `--gun 2`
+    ile koştuğu için her kayıt ingest'ten bir gün sonra kalıcı olarak İngilizce'ye
+    dönüyor, `mevcut_nolar` onu bir daha asla çeviri kuyruğuna almıyordu.
+    ÇÖZÜM: DB'de zaten çevrili olan satırlar upsert gövdesinden `baslik`/`kategori`
+    alanları ÇIKARILARAK yollanıyor (PostgREST ON CONFLICT DO UPDATE yalnızca gövdede
+    BULUNAN kolonları SET eder → saklı Türkçe değer korunur). Gövdesi farklı iki liste
+    ayrı isteklerde gider (PostgREST toplu insert'te tüm nesnelerin anahtarları aynı olmalı).
+(2) ÇEVİRİSİ BAŞARISIZ OLAN KAYIT KALICI OLARAK İNGİLİZCE KALIYORDU.
+    `gemini_cevir` kota/hata durumunda orijinal İngilizce listeyi döner; bu değer DB'ye
+    yazılınca kayıt "DB'de var" olduğu için bir daha denenmiyordu (eski sürüm her gece
+    hepsini yeniden çevirdiği için kendi kendini onarıyordu).
+    ÇÖZÜM: atlama ölçütü "DB'de var mı" DEĞİL, "gerçekten çevrilmiş mi"
+    (`baslik <> orijinal_baslik`) → başarısız satır ertesi gece kendiliğinden yeniden
+    denenir. Ayrıca `gemini_cevir`e üstel backoff + `--rpm` hız sınırı eklendi
+    (ai_kategori_backfill.py deseni; gecelik çağrı sayısı ~12'den ~52-103'e çıktı).
+(3) SIFIR VERİMLİ PENCEREDE --backfill CHECKPOINT'İ İLERLEMİYORDU.
+    `if not satirlar: return` checkpoint yazma bloğundan ÖNCE dönüyordu; hafta sonu /
+    tatil penceresine denk gelen backfill aynı günleri sonsuza kadar yeniden tarıyordu.
+    ÇÖZÜM: checkpoint yazma `checkpoint_ilerlet()` içine alındı ve erken dönüş dahil
+    TÜM çıkış yollarında çağrılıyor.
 
 Çeviri: İngilizce başlık → Türkçe (Gemini gemini-2.5-flash, TOPLU — N başlık tek çağrıda).
 Kategori: kategori_belirle (CPV + Türkçe başlık). Ülke: ISO→Türkçe. Tür: CPV'den (45→Yapım, 5-9→Hizmet).
@@ -43,6 +71,7 @@ Kullanım:
   python ted_scraper.py --baslangic 2026-06-01 --bitis 2026-06-30
   python ted_scraper.py --backfill --gun 5       # checkpoint'ten geriye 5 gün
   python ted_scraper.py --gun 1 --dry-run --no-translate
+  python ted_scraper.py --gun 2 --rpm 15         # Gemini free tier hız sınırı (varsayılan)
 Env: SUPABASE_URL, SUPABASE_SERVICE_KEY, GEMINI_API_KEY (backend/.env)
 """
 
@@ -147,6 +176,25 @@ def checkpoint_yaz(gun):
         json.dump({"son_gun": gun.isoformat()}, f)
 
 
+def checkpoint_ilerlet(args, gunler):
+    """--backfill checkpoint'ini EN ESKİ işlenen güne kaydırır (sonraki koşu bir gün öncesinden devam eder).
+
+    HER ÇIKIŞ YOLUNDA çağrılmalıdır — pencerede hiç ilan bulunmasa bile. Eskiden bu blok
+    main()'in en sonundaydı ve `if not satirlar: return` ondan ÖNCE dönüyordu; hafta sonu /
+    resmî tatil penceresine denk gelen backfill checkpoint'i hiç ilerletmiyor, `gunleri_belirle`
+    bir sonraki koşuda BİREBİR aynı pencereyi döndürüyordu → tarama geçmişe hiç inemeden
+    sonsuza kadar aynı boş günleri tarıyordu (kullanıcı bunu fark etmiyordu).
+
+    Sıfır ilanlı gün "işlendi" sayılır: TED o gün yayın yapmamıştır, yeniden taramanın anlamı yok.
+    --dry-run checkpoint'e DOKUNMAZ (eski davranış korundu: kuru koşu durum bırakmamalı).
+    """
+    if not args.backfill or args.dry_run or not gunler:
+        return
+    checkpoint_yaz(gunler[-1])
+    print(f"  Sonraki --backfill koşusu {gunler[-1] - timedelta(days=1)} gününden geriye devam eder "
+          f"(checkpoint: {CHECKPOINT_FILE}).")
+
+
 # ---------------------------------------------------------------- TED çekimi
 def ted_cek(client, gun, page, limit):
     """Tek sayfa çeker. (notices, totalNoticeCount) döner.
@@ -205,29 +253,63 @@ def ted_gun_cek(client, gun, limit, max_sayfa):
 
 
 # ---------------------------------------------------------------- Gemini çeviri
-def gemini_cevir(basliklar):
-    """İngilizce başlık listesini Türkçe'ye çevirir (TOPLU, tek Gemini çağrısı). Hata → orijinali döner."""
-    if not GEMINI_API_KEY or not basliklar:
-        return basliklar
+def gemini_cevir(basliklar, deneme=4):
+    """İngilizce başlık listesini Türkçe'ye çevirir (TOPLU, tek Gemini çağrısı).
+
+    Döner: (liste, basarili). Başarısızlıkta (ORİJİNAL liste, False) döner — çağıran
+    bunu görüp satırın DB'deki başlığına DOKUNMAMALIDIR. Eskiden yalnız liste dönüyordu
+    ve çağıran başarıyı başarısızlıktan ayırt edemiyordu; başarısız çeviri İngilizce
+    başlık olarak DB'ye yazılıyor, satır "DB'de var" sayıldığı için bir daha hiç
+    denenmiyordu (bkz. dosya başındaki regresyon notu #2).
+
+    Kota hatasında tek denemede pes edilmesin diye üstel backoff eklendi — aynı depoda
+    ai_kategori_backfill.py `--rpm 15` ile koşuyor, yani Gemini kotası bu projede bilinen
+    bir darboğaz ve bu betiğin gecelik çağrı sayısı ~12'den ~52-103'e çıktı.
+    """
+    if not basliklar:
+        return basliklar, True
+    if not GEMINI_API_KEY:
+        print("  ⚠ GEMINI_API_KEY yok — başlıklar çevrilmedi (DB'deki Türkçe başlıklar korunacak)")
+        return basliklar, False
+
     try:
         import google.generativeai as genai
         genai.configure(api_key=GEMINI_API_KEY)
         model = genai.GenerativeModel("gemini-2.5-flash")
-        prompt = (
-            "Aşağıdaki kamu ihalesi başlıklarını Türkçe'ye çevir. Başlıklar 'Ülke – Kategori – "
-            "Proje adı' biçiminde olabilir; anlamı koru, kısa/doğal Türkçe kullan. SADECE bir JSON "
-            "dizisi döndür (girişle aynı sıra, aynı sayıda eleman), başka hiçbir şey yazma.\n\n"
-            + json.dumps(basliklar, ensure_ascii=False)
-        )
-        resp = model.generate_content(prompt)
-        metin = (resp.text or "").strip()
-        metin = re.sub(r"^```(?:json)?|```$", "", metin, flags=re.MULTILINE).strip()
-        cevrilmis = json.loads(metin)
-        if isinstance(cevrilmis, list) and len(cevrilmis) == len(basliklar):
-            return [str(x) for x in cevrilmis]
     except Exception as e:
-        print(f"  ⚠ çeviri hatası (orijinal başlık kullanılacak): {e}")
-    return basliklar
+        print(f"  ✗ Gemini istemcisi kurulamadı: {str(e)[:120]}")
+        return basliklar, False
+
+    prompt = (
+        "Aşağıdaki kamu ihalesi başlıklarını Türkçe'ye çevir. Başlıklar 'Ülke – Kategori – "
+        "Proje adı' biçiminde olabilir; anlamı koru, kısa/doğal Türkçe kullan. SADECE bir JSON "
+        "dizisi döndür (girişle aynı sıra, aynı sayıda eleman), başka hiçbir şey yazma.\n\n"
+        + json.dumps(basliklar, ensure_ascii=False)
+    )
+
+    for k in range(deneme):
+        try:
+            resp = model.generate_content(prompt)
+        except Exception as e:
+            if k == deneme - 1:
+                print(f"  ✗ çeviri kalıcı hata: {str(e)[:120]} — bu grup yazılmayacak, sonraki koşuda yeniden denenir")
+                return basliklar, False
+            bekle = min(2 ** k * 5, 60)
+            print(f"  ⚠ çeviri hatası ({str(e)[:80]}); {bekle}s bekle (tekrar {k + 1}/{deneme - 1})")
+            time.sleep(bekle)
+            continue
+        # Yanıt ALINDI → token harcandı. Ayrıştırılamıyorsa tekrar denemek israf; başarısız say.
+        try:
+            metin = (resp.text or "").strip()
+            metin = re.sub(r"^```(?:json)?|```$", "", metin, flags=re.MULTILINE).strip()
+            cevrilmis = json.loads(metin)
+            if isinstance(cevrilmis, list) and len(cevrilmis) == len(basliklar):
+                return [str(x) for x in cevrilmis], True
+            print(f"  ⚠ çeviri yanıtı beklenen biçimde değil ({len(basliklar)} başlık istendi) — grup atlandı")
+        except Exception as e:
+            print(f"  ⚠ çeviri yanıtı ayrıştırılamadı ({str(e)[:80]}) — grup atlandı")
+        return basliklar, False
+    return basliklar, False
 
 
 def notice_donustur(n):
@@ -260,12 +342,19 @@ def notice_donustur(n):
     }
 
 
-def mevcut_nolar(client, nolar):
-    """Verilen publication_no'lardan DB'de ZATEN olanları döner.
+def cevrilmis_nolar(client, nolar):
+    """Verilen publication_no'lardan DB'de BAŞLIĞI GERÇEKTEN ÇEVRİLMİŞ olanları döner.
 
-    Amaç: her gece aynı günü yeniden çekerken binlerce başlığı boşuna Gemini'ye
-    yollamamak. 150'lik gruplar hâlinde sorulur — böylece hiçbir yanıt PostgREST'in
-    ~1000 satır tavanına yaklaşmaz (limitsiz select'te liste sessizce eksik kalırdı).
+    Ölçüt bilerek "DB'de var mı" DEĞİL, "baslik <> orijinal_baslik" — iki ayrı iş görür:
+      1) Gemini'ye ikinci kez gitmeyi engeller (maliyet + kota),
+      2) upsert'te bu satırların `baslik`/`kategori` alanlarını gövdeden çıkartmak için
+         kullanılır, böylece saklı Türkçe başlık İngilizce'yle ezilmez.
+    "DB'de var" ölçütü kullanılsaydı çevirisi BAŞARISIZ olan satır (İngilizce yazılmış
+    olurdu) bir daha asla kuyruğa girmez, kalıcı olarak İngilizce kalırdı. Bu ölçütle
+    başarısız satır ertesi gece kendiliğinden yeniden denenir (kendi kendini onarma).
+
+    150'lik gruplar hâlinde sorulur — böylece hiçbir yanıt PostgREST'in ~1000 satır
+    tavanına yaklaşmaz (limitsiz select'te liste sessizce eksik kalırdı).
     """
     bulunan = set()
     nolar = list(nolar)
@@ -274,14 +363,19 @@ def mevcut_nolar(client, nolar):
         liste = ",".join(f'"{x}"' for x in grup)
         try:
             r = client.get(f"{SUPABASE_URL}/rest/v1/uluslararasi_ihaleler",
-                           params={"select": "publication_no", "publication_no": f"in.({liste})"},
+                           params={"select": "publication_no,baslik,orijinal_baslik",
+                                   "publication_no": f"in.({liste})"},
                            headers=_headers())
             if r.status_code < 300:
-                bulunan.update(x["publication_no"] for x in (r.json() or []))
+                for x in (r.json() or []):
+                    b = (x.get("baslik") or "").strip()
+                    o = (x.get("orijinal_baslik") or "").strip()
+                    if b and b != o:
+                        bulunan.add(x["publication_no"])
             else:
-                print(f"  ⚠ mevcut-kayıt sorgusu {r.status_code}: {r.text[:120]} (hepsi yeni sayılacak)")
+                print(f"  ⚠ mevcut-kayıt sorgusu {r.status_code}: {r.text[:120]} (hepsi çevrilmemiş sayılacak)")
         except Exception as e:
-            print(f"  ⚠ mevcut-kayıt sorgusu hata: {e} (hepsi yeni sayılacak)")
+            print(f"  ⚠ mevcut-kayıt sorgusu hata: {e} (hepsi çevrilmemiş sayılacak)")
     return bulunan
 
 
@@ -326,7 +420,12 @@ def main():
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--no-translate", action="store_true", help="Gemini çevirisini atla (test / büyük backfill için)")
     ap.add_argument("--yeniden-cevir", action="store_true",
-                    help="DB'de zaten olan kayıtları da yeniden çevir (varsayılan: yalnız yeni kayıtlar çevrilir)")
+                    help="DB'de zaten ÇEVRİLMİŞ kayıtları da yeniden çevir "
+                         "(varsayılan: yalnız çevrilmemiş/başarısız kayıtlar çevrilir)")
+    ap.add_argument("--rpm", type=int, default=15,
+                    help="Gemini için dakika başına azami çağrı (0=sınırsız; free tier ~15). "
+                         "Gecelik çağrı sayısı gün-gün pencereleme sonrası ~52-103'e çıktı, "
+                         "arka arkaya atılırsa kota duvarına toslar.")
     args = ap.parse_args()
 
     if not args.dry_run and (not SUPABASE_URL or not SUPABASE_KEY):
@@ -365,28 +464,47 @@ def main():
 
     print(f"→ {len(satirlar)} benzersiz TED ihalesi toplandı.")
     if not satirlar:
+        checkpoint_ilerlet(args, gunler)   # sıfır ilanlı pencere de "işlendi" sayılır
         return
 
-    # Yalnız DB'de OLMAYANLARI çevir — gece koşusu aynı günü tekrar tarayınca
-    # binlerce başlık ikinci kez Gemini'ye gitmesin (maliyet + kota).
-    cevrilecek = satirlar
-    if not args.dry_run and not args.yeniden_cevir and SUPABASE_URL and SUPABASE_KEY:
+    # DB'de başlığı ZATEN ÇEVRİLMİŞ olan kayıtlar. İki yerde kullanılır:
+    #   · çeviri kuyruğundan düşürülür (maliyet + kota),
+    #   · upsert gövdesinden baslik/kategori ÇIKARILIR (Türkçe başlık ezilmesin).
+    db_cevrili = set()
+    if not args.dry_run and SUPABASE_URL and SUPABASE_KEY:
         with httpx.Client(timeout=60) as client:
-            var_olan = mevcut_nolar(client, [s["publication_no"] for s in satirlar])
-        cevrilecek = [s for s in satirlar if s["publication_no"] not in var_olan]
-        print(f"  · {len(var_olan)} kayıt DB'de mevcut → {len(cevrilecek)} yeni başlık çevrilecek")
+            db_cevrili = cevrilmis_nolar(client, [s["publication_no"] for s in satirlar])
 
-    # TOPLU çeviri (25'erli gruplar)
+    # Çevrilecekler: --yeniden-cevir ile hepsi, aksi hâlde yalnız DB'de çevrili OLMAYANLAR.
+    # Boş orijinal başlıklar Gemini'ye gönderilmez (çeviresi yok, grubu şişirir).
+    cevrilecek = [s for s in satirlar
+                  if (args.yeniden_cevir or s["publication_no"] not in db_cevrili)
+                  and (s["orijinal_baslik"] or "").strip()]
+    print(f"  · {len(db_cevrili)} kayıt DB'de zaten çevrili → {len(cevrilecek)} başlık çevrilecek")
+
+    # TOPLU çeviri (25'erli gruplar). Başarılı grupların publication_no'ları işaretlenir;
+    # başarısız gruplarda DB'deki mevcut Türkçe başlık KORUNUR (aşağıdaki bölümleme).
+    basarili_cevrilen = set()
     if not args.no_translate and cevrilecek:
+        bekle_s = 60.0 / args.rpm if args.rpm > 0 else 0.0
         for i in range(0, len(cevrilecek), 25):
             grup = cevrilecek[i:i + 25]
             orijinaller = [s["orijinal_baslik"] or "" for s in grup]
-            cevrilmis = gemini_cevir(orijinaller)
-            for s, tr in zip(grup, cevrilmis):
-                s["baslik"] = tr
-            print(f"  … çeviri {min(i+25, len(cevrilecek))}/{len(cevrilecek)}")
+            cevrilmis, basarili = gemini_cevir(orijinaller)
+            if basarili:
+                for s, tr in zip(grup, cevrilmis):
+                    s["baslik"] = tr
+                basarili_cevrilen.update(s["publication_no"] for s in grup)
+            print(f"  … çeviri {min(i+25, len(cevrilecek))}/{len(cevrilecek)}"
+                  f"{'' if basarili else ' (BAŞARISIZ — grup atlandı)'}")
+            if bekle_s and i + 25 < len(cevrilecek):
+                time.sleep(bekle_s)   # Gemini hız sınırı (--rpm)
+    elif args.no_translate:
+        print("  · --no-translate: çeviri atlandı (DB'deki mevcut Türkçe başlıklar korunacak)")
 
-    # Kategori (çeviri sonrası Türkçe başlık + CPV ile)
+    # Kategori (çeviri sonrası Türkçe başlık + CPV ile). kategori_belirle Türkçe kelime
+    # regexleriyle çalışır; İngilizce başlıkla çağrılırsa CPV-2 fallback'ine düşer — bu yüzden
+    # aşağıda başlığı korunan satırların kategorisi de gövdeden çıkarılır.
     for s in satirlar:
         s["kategori"] = kategori_belirle(s.get("cpv"), s.get("tur"), s.get("baslik"))
 
@@ -396,26 +514,42 @@ def main():
         print(f"(dry-run — yazma yapılmadı, {len(satirlar)} satır hazırdı)")
         return
 
-    # Upsert (publication_no çakışırsa güncelle — değer/deadline değişebilir)
+    # ---- Upsert (publication_no çakışırsa güncelle — değer/deadline değişebilir) ----
+    # BAŞLIK KORUMASI: DB'de zaten çevrili olup bu koşuda BAŞARIYLA yeniden çevrilmemiş
+    # satırların gövdesinden `baslik` ve `kategori` çıkarılır. PostgREST'in
+    # `resolution=merge-duplicates` ürettiği ON CONFLICT DO UPDATE yalnızca GÖVDEDE BULUNAN
+    # kolonları SET ettiği için, çıkarılan kolonların saklı (Türkçe) değeri korunur.
+    # Bu olmadan `notice_donustur`ün koyduğu `baslik = orijinal` (İngilizce) her gece
+    # Türkçe başlığın üzerine yazılıyordu. Kapsadığı üç durum:
+    #   · normal koşu: çevrili satırlar hiç denenmez → korunur
+    #   · --yeniden-cevir başarılı: yeni Türkçe yazılır
+    #   · --yeniden-cevir/--no-translate başarısız: eski Türkçe korunur (İngilizce'ye dönmez)
+    KORUNAN_ALANLAR = ("baslik", "kategori")
+    korunacak = db_cevrili - basarili_cevrilen
+    tam_govde = [s for s in satirlar if s["publication_no"] not in korunacak]
+    korumali_govde = [{k: v for k, v in s.items() if k not in KORUNAN_ALANLAR}
+                      for s in satirlar if s["publication_no"] in korunacak]
+    if korumali_govde:
+        print(f"  · {len(korumali_govde)} kaydın baslik/kategori alanı gövdeden çıkarıldı (Türkçe başlık korunuyor)")
+
     yazilan = 0
     with httpx.Client(timeout=90) as client:
-        for i in range(0, len(satirlar), 100):
-            batch = satirlar[i:i + 100]
-            r = client.post(f"{SUPABASE_URL}/rest/v1/uluslararasi_ihaleler",
-                            params={"on_conflict": "publication_no"},
-                            json=batch,
-                            headers={**_headers(), "Prefer": "resolution=merge-duplicates,return=minimal"})
-            if r.status_code >= 300:
-                print(f"   ✗ upsert hata: {r.status_code} {r.text[:180]}")
-            else:
-                yazilan += len(batch)
+        # İki liste AYRI isteklerde gider: PostgREST toplu insert'te tüm nesnelerin
+        # anahtarları birebir aynı olmalıdır (karışık gövde 400/PGRST102 verir).
+        for etiket, liste in (("yeni/çevrilmiş", tam_govde), ("başlık korumalı", korumali_govde)):
+            for i in range(0, len(liste), 100):
+                batch = liste[i:i + 100]
+                r = client.post(f"{SUPABASE_URL}/rest/v1/uluslararasi_ihaleler",
+                                params={"on_conflict": "publication_no"},
+                                json=batch,
+                                headers={**_headers(), "Prefer": "resolution=merge-duplicates,return=minimal"})
+                if r.status_code >= 300:
+                    print(f"   ✗ upsert hata ({etiket}): {r.status_code} {r.text[:180]}")
+                else:
+                    yazilan += len(batch)
     print(f"✓ TED: {yazilan} uluslararası ihale upsert edildi (kaynak='ted').")
 
-    # Backfill checkpoint'i EN ESKİ işlenen güne kaydır (sonraki koşu bir gün öncesinden devam eder)
-    if args.backfill:
-        checkpoint_yaz(gunler[-1])
-        print(f"  Sonraki --backfill koşusu {gunler[-1] - timedelta(days=1)} gününden geriye devam eder "
-              f"(checkpoint: {CHECKPOINT_FILE}).")
+    checkpoint_ilerlet(args, gunler)
 
 
 if __name__ == "__main__":
