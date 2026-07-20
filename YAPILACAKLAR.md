@@ -2013,6 +2013,24 @@ HTML/JS dosyalarında repo↔canlı sapması YOK.
 > **KALICI TALİMAT (12 Tem, kullanıcı emri):** Bu blok + ilgili bölümler her oturumda otomatik
 > güncellenir, kullanıcı hatırlatmak zorunda değil. Bkz. hafıza `yapilacaklar-auto-update`.
 
+> ## 🗺️ 20 TEMMUZ — DASHBOARD İL FİLTRESİ ÖLÜYDÜ, DÜZELTİLDİ (✅ dashboard.html)
+> **HATA:** `ilDropdownDoldur()` il listesini `sb.from('ilanlar').select('il')...order('il')` ile
+> **limit'siz** çekiyordu. PostgREST ~1000 satır tavanına takılıyor; il'e göre sıralı ilk 1000 satırın
+> **tamamı ADANA** olduğu için dropdown `["", "ADANA"]` ile kalıyordu → dashboard alt tablosunun il
+> filtresi hem ihale hem yeni DT modunda **fiilen işlevsizdi** (misafirde canlı doğrulandı).
+> **ÇÖZÜM:** ihaleler.html'in zaten kullandığı statik 81-il listesi (`TR_ILLER`) + `.toLocaleUpperCase('tr')`.
+> Ağ turu yok, client-load-all deseni yok. **RPC değil statik seçildi çünkü** bu dropdown TEK değerle
+> İKİ tabloyu birden filtreliyor (`ilanlar.il` + `dogrudan_temin_ilanlari.il`, ikisi de `.eq`) —
+> `il_sayim()` yalnız ihale, `dt_il_sayim()` yalnız DT tarafını verirdi.
+> **DOĞRULAMA (misafir tarayıcı, canlı anon anahtarı):** 81 seçenek; 81'inin **tamamı** iki tabloda da
+> sonuç döndürüyor (ölü seçenek 0). İhale modu 13.486 → ANKARA 1.186 · DT modu 95.606 → ANKARA 6.290
+> (doğrudan API sayımıyla birebir) → ŞANLIURFA 2.871 · İSTANBUL 12.407. Konsol hatasız.
+> **YAN BULGU (veri kalitesi, ayrı iş):** `ilanlar.il`'de dropdown'a girmeyen 2 bozuk değer var —
+> `''` (84 satır) ve tekil **`'İZMIR'`** (1 satır, yanlış büyük harf; doğrusu `İZMİR` = 26.292).
+> DT tarafı temiz (81/81 birebir). Bu satırlar hiçbir il filtresinde görünmüyor.
+> **AÇIK:** `TR_ILLER` artık dashboard.html + ihaleler.html'de İKİ KOPYA — kategoriler.js gibi tek
+> kaynağa (`js/iller.js`) çekilmeli; bu iş kapsam dışı bırakıldı.
+
 > ## 🏛️ 19 TEMMUZ — "İDARE TÜRÜ" FİLTRESİ CANLI (✅ ihaleler + doğrudan temin)
 > Kullanıcının baştan beri istediği "sadece belediyeler / sadece hastaneler" araması çalışıyor.
 > **TASARIM:** denormalize `idare_tur` kolonu (join/view DEĞİL) — mevcut PostgREST desenine

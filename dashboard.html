@@ -1412,13 +1412,26 @@
   let aramaTimer;
   function filtrele() { ilanlariYukle(); }
 
-  async function ilDropdownDoldur() {
-    const { data } = await sb.from('ilanlar').select('il').not('il','is',null).order('il');
-    if (!data) return;
-    const iller = [...new Set(data.map(r => r.il).filter(Boolean))].sort((a,b) => a.localeCompare(b,'tr'));
+  // Türkiye 81 il (statik) — ihaleler.html ile aynı liste ve aynı gerekçe.
+  // Eski sürüm distinct'i `ilanlar`dan çekiyordu; sorgu limit'siz olduğu için PostgREST
+  // ~1000 satır tavanına takılıyor, il'e göre sıralı ilk 1000 satırın tamamı ADANA
+  // olduğundan dropdown'da yalnız "Tüm İller" + "ADANA" kalıyordu (20 Tem, canlı anon
+  // anahtarıyla doğrulandı) → il filtresi hem ihale hem DT modunda fiilen ölüydü.
+  // Statik liste seçildi çünkü dropdown TEK değerle iki tabloyu birden filtreliyor
+  // (ilanlar.il + dogrudan_temin_ilanlari.il, ikisi de .eq); il_sayim RPC'si yalnız
+  // ihale tarafını, dt_il_sayim yalnız DT tarafını verirdi. 20 Tem doğrulaması: bu 81
+  // değerin tamamı iki tabloda da mevcut (DT'de 81/81 birebir; ilanlar'da fazladan yalnız
+  // '' (84 satır) ve tekil bozuk 'İZMIR' (1 satır) var — ikisi de dropdown'a girmemeli).
+  const TR_ILLER = ['Adana','Adıyaman','Afyonkarahisar','Ağrı','Aksaray','Amasya','Ankara','Antalya','Ardahan','Artvin','Aydın','Balıkesir','Bartın','Batman','Bayburt','Bilecik','Bingöl','Bitlis','Bolu','Burdur','Bursa','Çanakkale','Çankırı','Çorum','Denizli','Diyarbakır','Düzce','Edirne','Elazığ','Erzincan','Erzurum','Eskişehir','Gaziantep','Giresun','Gümüşhane','Hakkari','Hatay','Iğdır','Isparta','İstanbul','İzmir','Kahramanmaraş','Karabük','Karaman','Kars','Kastamonu','Kayseri','Kırıkkale','Kırklareli','Kırşehir','Kilis','Kocaeli','Konya','Kütahya','Malatya','Manisa','Mardin','Mersin','Muğla','Muş','Nevşehir','Niğde','Ordu','Osmaniye','Rize','Sakarya','Samsun','Siirt','Sinop','Sivas','Şanlıurfa','Şırnak','Tekirdağ','Tokat','Trabzon','Tunceli','Uşak','Van','Yalova','Yozgat','Zonguldak'];
+
+  function ilDropdownDoldur() {
+    // DB'de il değerleri Türkçe BÜYÜK HARF (örn. "İSTANBUL"); value büyük harf olmalı
+    // ki eq filtresi eşleşsin, etiket okunabilir Title Case kalsın. toLocaleUpperCase('tr')
+    // ŞART — varsayılan locale'de 'i'→'I' olur ve "İSTANBUL"/"AFYONKARAHİSAR" tutmaz.
     const sel = document.getElementById('f-il');
+    if (!sel) return;
     sel.innerHTML = '<option value="">Tüm İller</option>' +
-      iller.map(il => `<option value="${il}">${il}</option>`).join('');
+      TR_ILLER.map(il => `<option value="${il.toLocaleUpperCase('tr')}">${il}</option>`).join('');
   }
 
 
