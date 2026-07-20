@@ -83,8 +83,12 @@ docker exec -i supabase-db psql -U postgres -d postgres -c "SELECT public.idare_
 #    yüzeyleri "lot_sayisi = 1 değilse gösterme" kuralıyla çalışıyor (bkz.
 #    migration_sonuc_lot_sayisi.sql); bayatlarsa yeni çok-kısımlı ihaleler yine
 #    sahte %95 tenzilat üretir — 18 Tem'de kapatılan hatanın geri gelmesi demek.
+#    20 Tem: satır-içi tam tablo GROUP BY (538K satır/gece) yerine hedefli fonksiyon
+#    (migration_lot_gece.sql): yalnız NULL satır içeren ihale gruplarını yeniden
+#    sayar (≤~5K satır/gece, kardeş satır düzeltmesi dahil). Sonuç backfill'inden
+#    SONRA, MV tazelemelerinden ÖNCE koşmalı (analiz MV'leri lot_sayisi okur).
 echo "[$(date +'%Y-%m-%d %H:%M:%S')] === Lot sayisi tazeleme ===" >> /opt/ihale-platform/logs/scraper.log
-docker exec -i supabase-db psql -U postgres -d postgres -c "UPDATE public.ihale_sonuclari s SET lot_sayisi = c.n FROM (SELECT ilan_id, count(*)::int n FROM public.ihale_sonuclari GROUP BY ilan_id) c WHERE c.ilan_id = s.ilan_id AND s.lot_sayisi IS DISTINCT FROM c.n;" >> /opt/ihale-platform/logs/scraper.log 2>&1
+docker exec -i supabase-db psql -U postgres -d postgres -c "SELECT public.lot_sayisi_tazele() AS lot_tazeleme;" >> /opt/ihale-platform/logs/scraper.log 2>&1
 
 # İdareler Dizini özeti — gece verisi değiştikten sonra MV tazele (idareler.html
 # idare_dizin_json() ile bunu okur; CONCURRENTLY = okumalar bloklanmaz).
