@@ -39,6 +39,25 @@ def fold(s):
     return re.sub(r"\s+", " ", s).strip()
 
 
+# ── ŞAPKALI HARFLER (20 Tem bulgusu) ────────────────────────────────────────
+# â î û fold()'da a-z dışında kaldığı için BOŞLUĞA dönüşüyor ve sözcüğü bozuyor:
+#   "MİLLÎ EĞİTİM AKADEMİSİ" -> "mill egitim akademisi"   (î düştü)
+#   "HÂKİMLER VE SAVCILAR"   -> "h kimler ve savcilar"    (sözcük İKİYE bölündü)
+# Resmî adlarda yaygın — TDK yazımı "Millî Eğitim", "Hâkimler ve Savcılar Kurulu".
+#
+# ⚠️ fold()'a EKLENEMEZ. fold() SQL tr_fold() ile BAYT BAYT aynı kalmak ZORUNDA:
+# idare_norm join anahtarını o üretiyor (backfill önuçuşu bunu doğruluyor). Fold
+# değişirse 68.595 eşlemenin anahtarı bayatlar ve tazele hiçbir satır bulamaz.
+# Bu yüzden şapka sadeleştirmesi YALNIZ KURAL EŞLEŞTİRME katmanında yapılır:
+# anahtar üretimi aynı kalır, eşleşme iyileşir.
+_SAPKA = str.maketrans("âÂîÎûÛêÊôÔ", "aaiiuueeoo")
+
+
+def fold_kural(s):
+    """Kural eşleştirme için fold — şapkalı harfler de sadeleşir. Anahtar ÜRETMEZ."""
+    return fold((s or "").translate(_SAPKA))
+
+
 TURLER = {
     "buyuksehir_belediye": "Büyükşehir Belediyesi",
     "belediye":            "Belediye",
@@ -198,7 +217,7 @@ def idare_tur_belirle(ad):
     Jenerik alt birim adları ('bilgi islem daire baskanligi') BİLİNÇLİ olarak
     'bilinmiyor' döner — hiyerarşi (ekap-detsis) doldurmalı.
     """
-    m = fold(ad)
+    m = fold_kural(ad)          # eşleştirme katmanı — anahtar için fold() kullanılır
     if not m:
         return ("bilinmiyor", 0)
 

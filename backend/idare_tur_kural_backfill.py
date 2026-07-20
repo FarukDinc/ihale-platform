@@ -163,11 +163,20 @@ def yaz(client, kayitlar):
     return yazilan
 
 
+def _psql_yolunu_yaz():
+    print("  → Tazelemeyi psql ile ayrık koşun (HTTP proxy'sine takılmaz):")
+    print("      nohup docker exec -i supabase-db psql -U postgres -d postgres \\")
+    print("        -c 'SELECT public.idare_tur_tazele();' \\")
+    print("        > /opt/ihale-platform/logs/idare_tazele.log 2>&1 &")
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--dry-run", action="store_true", help="yazma yok, yalnız dağılım")
     ap.add_argument("--detsis-yeniden", action="store_true",
                     help="DETSİS satırlarını da yeniden hesapla (kural motoru değiştiyse)")
+    ap.add_argument("--tazele-atla", action="store_true",
+                    help="yalnız eşlemeleri yaz, tazelemeyi psql'e bırak (toplu tazelemede önerilir)")
     a = ap.parse_args()
 
     if not SUPABASE_URL or not SUPABASE_KEY:
@@ -264,13 +273,30 @@ def main():
         print(f"\n── yazılıyor: {len(kayitlar):,} eşleme ──")
         yaz(client, kayitlar)
 
+        # ── Tazeleme ────────────────────────────────────────────────────────
+        # ⚠️ REST YOLU BÜYÜK TAZELEMEDE ÇALIŞMAZ. Ölçüldü: 813K satırlık UPDATE
+        # postgres'te ~10 dk sürüyor (join satır başına idare_normalize() çağırıyor).
+        # Fonksiyonun statement_timeout'u 1800s'e çıkarıldı ama araya nginx + Kong
+        # giriyor; onların proxy timeout'u çok daha kısa → HTTP kopar. DB işi
+        # bitirse bile sonucu göremeyiz. Küçük gecelik farklarda REST yeterli,
+        # toplu tazelemede psql şart.
+        if a.tazele_atla:
+            print("\n── tazele ATLANDI (--tazele-atla) ──")
+            _psql_yolunu_yaz()
+            return
+
         print("\n── idare_tur_tazele() ──")
-        r = client.post(f"{SUPABASE_URL}/rest/v1/rpc/idare_tur_tazele",
-                        headers=_basliklar(), json={})
-        if r.status_code >= 300:
-            print(f"! tazele hatası {r.status_code}: {r.text[:300]}")
-        else:
-            print(f"  {r.json()}")
+        try:
+            r = client.post(f"{SUPABASE_URL}/rest/v1/rpc/idare_tur_tazele",
+                            headers=_basliklar(), json={}, timeout=900)
+            if r.status_code >= 300:
+                print(f"! tazele hatası {r.status_code}: {r.text[:300]}")
+                _psql_yolunu_yaz()
+            else:
+                print(f"  {r.json()}")
+        except httpx.HTTPError as e:
+            print(f"! tazele HTTP koptu ({type(e).__name__}) — DB'de sürüyor olabilir.")
+            _psql_yolunu_yaz()
 
         r = client.post(f"{SUPABASE_URL}/rest/v1/rpc/idare_tur_kapsama",
                         headers=_basliklar(), json={})
