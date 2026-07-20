@@ -93,6 +93,29 @@ _SU_BAGLAM = ("genel mudurlugu", "su ve kanalizasyon", "su ve atiksu",
 # Şirket eki — belediye şirketini bağlı idareden ayırır
 _SIRKET_EK = re.compile(r"\b(a s|as|anonim sirketi|limited sirketi|ltd sti|ltd|sti)\b")
 
+# ── TAŞRA EKİ MERKEZİ EZER (20 Tem düzeltmesi) ──────────────────────────────
+# ÖLÇÜLEN HATA: "KARAYOLLARI GENEL MÜDÜRLÜĞÜ 5. BÖLGE MÜDÜRLÜĞÜ" → bakanlik_merkez.
+# Sebep: bakanlik_merkez.guclu içinde 'karayollari genel mudurlugu' var ve ad bunu
+# alt-dize olarak İÇERİYOR; taşranın karşılık gelen kuralı ise 'karayollari n bolge
+# mudurlugu' — literal "n" yer tutucusu, "5" ile asla eşleşmez. Güçlü kalıp döngüsü
+# tüm türleri kapsadığı için merkez, taşranın zayıf ('anahtar') kalıbını yeniyor.
+#
+# Kural: bir ad hem merkez bir teşkilatı hem de YEREL bir birim ekini taşıyorsa,
+# o kayıt o teşkilatın TAŞRA birimidir. Merkez teşkilatın kendisi bu eki taşımaz.
+#
+# ⚠️ Sadece bakanlik_merkez'e uygulanır. KİT'in bölge müdürlüğü (TCDD 3. Bölge)
+# hâlâ KİT'tir — bakanlık taşrası değil, o yüzden kit listeye alınmadı.
+# ⚠️ Sözcük sınırı ŞART: "sicil mudurlugu" alt-dize olarak "il mudurlugu" içerir.
+# ⚠️ "sube mudurlugu" BİLEREK dışarıda — merkez teşkilatlarda da şube müdürlüğü var.
+_TASRA_EK = re.compile(r"\b(bolge|il|ilce) mudurlugu\b")
+
+
+def _tasra_ezmesi(tur, m):
+    """Merkez sınıfı yerel birim eki taşıyorsa taşraya çevir."""
+    if tur == "bakanlik_merkez" and _TASRA_EK.search(m):
+        return "bakanlik_tasra"
+    return tur
+
 
 def _kurallari_yukle():
     """Ajan envanterini yükle (yanında idare_kurallar.json varsa oradan)."""
@@ -118,16 +141,37 @@ for _v in KURALLAR.values():
     JENERIK |= _v["jenerik"]
 
 
+# Kalıp → derlenmiş regex önbelleği. 1081 kalıp × on binlerce ad taranıyor;
+# her çağrıda re.compile etmek kabul edilemez, bir kez derle sakla.
+_KALIP_RE = {}
+
+
+def _kalip_re(kalip):
+    r = _KALIP_RE.get(kalip)
+    if r is None:
+        r = re.compile(r"\b" + re.escape(kalip) + r"\b")
+        _KALIP_RE[kalip] = r
+    return r
+
+
 def _eslesir(metin, kalip):
-    """Kalıp metinde geçiyor mu — kısaltma tuzağına karşı korumalı."""
+    """
+    Kalıp metinde SÖZCÜK OLARAK geçiyor mu.
+
+    ⚠️ 20 Tem düzeltmesi — eskiden ham alt-dize (`kalip in metin`) bakılıyordu.
+    Ölçülen iki gerçek hata:
+      'a s'          → "satın ALMA Sube" içinde eşleşti → belediye_sirket (ONCELIK'te
+                       BİRİNCİ olduğu için her şeyi çalıyordu; "ankara su" bile eşleşir)
+      'il mudurlugu' → "sİCİL MÜDÜRLÜĞÜ" içinde eşleşti → bakanlik_tasra
+    Kod zaten _KISALTMA_TUZAK için \b kullanıyordu; kalıpların tamamı aynı korumayı
+    hak ediyor. Kalıplar fold() çıktısı olduğu için ([a-z0-9 ]) \b güvenli çalışır.
+    """
     if not kalip:
         return False
-    # tek sözcüklük riskli kısaltma → kurumsal bağlam şart
-    if kalip in _KISALTMA_TUZAK:
-        if not any(b in metin for b in _SU_BAGLAM):
-            return False
-        return re.search(r"\b" + re.escape(kalip) + r"\b", metin) is not None
-    return kalip in metin
+    # tek sözcüklük riskli kısaltma → kurumsal bağlam AYRICA şart
+    if kalip in _KISALTMA_TUZAK and not any(b in metin for b in _SU_BAGLAM):
+        return False
+    return _kalip_re(kalip).search(metin) is not None
 
 
 def idare_tur_belirle(ad):
@@ -152,7 +196,7 @@ def idare_tur_belirle(ad):
             continue
         for kalip in k["guclu"]:
             if _eslesir(m, kalip):
-                return (tur, 95)
+                return (_tasra_ezmesi(tur, m), 95)
 
     # 2) NORMAL anahtar kelimeler — yine öncelik sırasıyla
     for tur in ONCELIK:
@@ -161,7 +205,7 @@ def idare_tur_belirle(ad):
             continue
         for kalip in k["anahtar"]:
             if _eslesir(m, kalip):
-                return (tur, 75)
+                return (_tasra_ezmesi(tur, m), 75)
 
     # 3) Yalnızca jenerik bir alt birim adıysa: karar VERME (hiyerarşi gerekli)
     if m in JENERIK or any(j and j in m for j in JENERIK):
