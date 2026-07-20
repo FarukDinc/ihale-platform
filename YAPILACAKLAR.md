@@ -134,8 +134,17 @@
 >    sessizce düştü ve log "tamam" izlenimi verdi.** → Artık boş listede `skip >= toplam` mı
 >    diye bakılıyor; değilse DELİK olarak gürültülü loglanıp atlanıyor, checkpoint yazılıyor.
 >
+> ### ✅ İHALE BACKFILL + TED TAMAMLANDI (20 Tem gece)
+> - **İhale backfill BİTTİ:** 254.416 satır gönderildi, 31 dk. `ilanlar` 1.618.303 →
+>   **1.958.302** (+340K). 2012/2011/2010 checkpoint'te TAM. 2012'de ~8 dağınık zehirli
+>   kayıt uyarlamalı küçültmeyle tek tek izole edilip atlandı (119K değil, sadece 8 kayıp).
+> - **TED BİTTİ:** 7.831 ihale upsert, `uluslararasi_ihaleler` 1.249 → **7.909** (6,3x).
+>   Sayfalama düzeltmesi devasa açığı kapattı. (Gemini 6.660 başlık çevirdi — kota yakıldı.)
+> - **Backfill sonrası zincir KOŞUYOR:** idare_tur_tazele → etkin_tarih → ilan_detsis_esle →
+>   kapanış → lot → MV refresh. 340K yeni ihalenin detsis/tür/durumu işleniyor.
+>
 > ### ⏭ SIRADAKİ VERİ İŞLERİ (paralel scraper verimi 10x düşürdüğü için SIRALI)
-> 1. İhale backfill bitişi (2012 kalanı + 2011 + 2010) — koşuyor
+> 1. ~~İhale backfill~~ ✅ + zincir koşuyor
 > 2. **DT token hattı** — asıl darboğaz: 817.376 sonuçlanmış duyuruda token YOK, o yüzden
 >    kazanan çekilemiyor. Derin sayfalama duvarına takılıyor; il/tarih dilimlemesi denenmeli.
 > 3. DT kazananları (464.581 token'lı kuyruk)
