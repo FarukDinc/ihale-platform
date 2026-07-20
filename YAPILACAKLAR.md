@@ -1,5 +1,23 @@
 # İhalePlatform — Yapılacaklar Listesi
 
+> ## ✅ SESSİZ-KAYIP DÜZELTMELERİ — 8 SCRAPER MERGE+DEPLOY (20 Tem gece)
+> Kullanıcının "aynı hata başka scraper'larda da var mı" sezgisi doğrulandı: denetim 8
+> dosyada **14 hata** buldu (4 kritik), hepsi paralel worktree'de düzeltildi, adversarial
+> incelendi, `main`'e birleşti, VDS'e deploy edildi. Çakışma YOK (her dosya ayrı).
+> - `dt_kazanan_scraper` (kritik): geçici hata alan satır artık damgalanmıyor (tuple dönüş
+>   + None sayacı); **DT kazanan %7,9 darboğazının parçası buydu.**
+> - `ekap_dogrudan_temin_scraper` (kritik): upsert False dönüşü kontrol ediliyor.
+>   ⚠️ İnceleme YENİ hata yakaladı: ilk düzeltme kalıcı 4xx'te SONSUZ TAKILMA yaratıyordu
+>   → onarım backfill'deki "partiyi böl, zehirli kaydı izole et" yaklaşımıyla çözdü (8 senaryo test).
+> - `ekap_sonuc_backfill` (kritik): `GeciciHata` tipi — 403/429/5xx artık raise ediyor,
+>   eşleşen ilan atlanmıyor, ölü emniyet dalı çalışır oldu.
+> - `ekap_sonuc_scraper` (kritik): checkpoint artık VERİDEN SONRA (önce yaz, sonra işaretle).
+> - `ilan_metni_backfill`, `ted_scraper`, `ekap_detsis_cek`, `ilan_gov_scraper`: boş-liste/
+>   kısa-parti/tavan teyidi + hata sayacı + dürüst özet.
+> - Kod deploy = sonraki gece cron'u otomatik alır. **İki KURTARMA migration'ı** (opsiyonel,
+>   kullanıcı onayı): `migration_dt_kazanan_kurtarma.sql` (yanlış damgalıları yeniden kuyruğa),
+>   `migration_sonuc_checkpoint_kurtarma.sql`.
+>
 > ## 🎯 DT KAZANAN DARBOĞAZI — TAM ANATOMİ (20 Tem gece, canlı ölçüm)
 > "DT kazanan neden %7,9?" sorusunun kesin cevabı. `dogrudan_temin_ilanlari` = 1.490.644:
 >
