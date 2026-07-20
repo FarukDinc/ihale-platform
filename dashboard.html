@@ -1082,6 +1082,14 @@
   const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
   const esc = s => (s == null ? '' : String(s)).replace(/[<>&"']/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&#39;'}[c]));
 
+  // ── Misafir maskeleme (ihaleler.html ile aynı desen, bkz. backend/migration_anon_maske.sql) ──
+  // ilanlar.idare / ilanlar.ekap_id anon'a DB'de KAPALI. Bunlardan biri select'e VEYA WHERE'e
+  // girerse PostgREST tek kolonu atlamaz — SORGUNUN TAMAMINI 42501 ile reddeder, try/catch de
+  // hatayı yuttuğu için misafir sessizce boş widget görür. uyeMi profilCek()'te, ilk sorgudan
+  // ÖNCE kesinleşir (ilanlariYukle profilCek().then içinde çağrılıyor).
+  let uyeMi = false;
+  const MASKE_ROZET = '<a href="login" style="color:var(--amber);text-decoration:none;" title="Üyelere özel — giriş yapın">🔒 ***</a>';
+
   // ── Global mod (18 Tem): Tümü/İhaleler/Doğrudan Temin — tüm widget'lar buna göre yeniden çizilir.
   // dogrudan-temin.html DURUM_GRUP.acik ile BİREBİR (DT'nin "aktif" karşılığı).
   // window. ile atanır (let/const üst-seviye bildirimler window özelliği OLUŞTURMAZ) — js/harita.js
@@ -1142,7 +1150,7 @@
         <td><input type="checkbox" /></td>
         <td class="ihale-title-cell">
           <a href="ihale-detay?id=${ilan.id}">${ilan.baslik || '—'}</a>
-          <div class="ihale-kurrum-cell">${ilan.idare || '—'} — EKAP #${ilan.ekap_id || '—'}</div>
+          <div class="ihale-kurrum-cell">${uyeMi ? `${esc(ilan.idare) || '—'} — EKAP #${esc(ilan.ekap_id) || '—'}` : MASKE_ROZET}</div>
         </td>
         <td>${durumBadge(ilan.durum, ilan.son_teklif_tarihi)}</td>
         <td class="budget-cell">${yaklasikMaliyet(ilan)}</td>
@@ -1206,6 +1214,7 @@
 
   async function profilCek() {
     const { data: { user } } = await sb.auth.getUser();
+    uyeMi = !!user;              // ilanlariYukle bu söz bittikten sonra koşar (sayfa sonu boot)
     if (!user) return;
     const { data } = await sb.from('profil').select('sektorler,tercih_iller,tercih_turler,min_bedel,max_bedel,firma_adi').eq('user_id', user.id).single();
     kullaniciProfil = data;
@@ -1342,14 +1351,21 @@
       if (aramaDt) query = query.ilike('baslik', `%${aramaDt}%`);
       query = query.order('tarih', { ascending: false });
     } else {
+      // Misafirde ekap_id/idare select'ten ÇIKAR — anon'a kapalı kolonlar; biri kalırsa
+      // sorgunun TAMAMI 42501 alır ve tablo sessizce boş kalır (18 Tem bulundu, 20 Tem
+      // ana dala uygulandı). DT dalı zaten aynı gerekçeyle idare'yi almıyor.
+      const uyeKolon = uyeMi ? 'ekap_id, idare, ' : '';
       query = sb.from('ilanlar')
-        .select('id, ekap_id, baslik, idare, il, tur, durum, son_teklif_tarihi, tahmini_bedel, yaklasik_maliyet_min, yaklasik_maliyet_max, itiraz_bedeli', { count: 'exact' });
+        .select(`id, ${uyeKolon}baslik, il, tur, durum, son_teklif_tarihi, tahmini_bedel, yaklasik_maliyet_min, yaklasik_maliyet_max, itiraz_bedeli`, { count: 'exact' });
 
       if (durum) query = query.eq('durum', durum);
       else       query = query.eq('durum', 'aktif');
       if (il)    query = query.eq('il', il);
       if (bedel) query = query.gte('yaklasik_maliyet_min', bedel);
-      if (arama) query = query.or(`baslik.ilike.%${arama}%,idare.ilike.%${arama}%`);
+      // WHERE'de kullanmak da SELECT yetkisi ister → misafirde arama yalnız başlıkta.
+      if (arama) query = uyeMi
+        ? query.or(`baslik.ilike.%${arama}%,idare.ilike.%${arama}%`)
+        : query.ilike('baslik', `%${arama}%`);
 
       if (sort === 'maliyet_desc') query = query.order('yaklasik_maliyet_min', { ascending: false, nullsFirst: false });
       else if (sort === 'maliyet_asc') query = query.order('yaklasik_maliyet_min', { ascending: true, nullsFirst: false });
@@ -1838,8 +1854,10 @@
       if (gosterIhale) {
         const takipIds = Takip.liste();
         if (takipIds.length) {
+          // idare misafirde select'ten çıkar (anon'a kapalı; kalırsa tüm sorgu 42501).
+          // DT dalı zaten idare almıyor — iki dal aynı gerekçeyle 📍il gösterir.
           const { data } = await sb.from('ilanlar')
-            .select('id,baslik,idare,il,son_teklif_tarihi,durum,yaklasik_maliyet_min,tahmini_bedel')
+            .select(`id,baslik,${uyeMi ? 'idare,' : ''}il,son_teklif_tarihi,durum,yaklasik_maliyet_min,tahmini_bedel`)
             .in('id', takipIds).gte('son_teklif_tarihi', simdi.toISOString())
             .order('son_teklif_tarihi', { ascending: true }).limit(mod === 'tumu' ? 4 : 6);
           ihaleHtml = (data || []).map(d => {
@@ -1856,7 +1874,7 @@
                 </div>
                 <div style="min-width:0; flex:1;">
                   <div style="font-size:12.5px; font-weight:600; color:var(--white); overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${esc(d.baslik) || '—'}</div>
-                  <div style="font-size:11px; color:var(--muted); margin-top:2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${esc(d.idare) || ''}${bedelStr} · Son: ${tarih}</div>
+                  <div style="font-size:11px; color:var(--muted); margin-top:2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${uyeMi ? (esc(d.idare) || '') : '📍 ' + (esc(d.il) || '—')}${bedelStr} · Son: ${tarih}</div>
                 </div>
               </div>
             </a>`;
@@ -2146,17 +2164,25 @@
   };
 
   // ── Sayfa yüklenince ─────────────────────────────────
-  kpiYukle();
-  bildirimDotGuncelle();
-  ilDropdownDoldur();
-  trendYukle();
-  topKurumlarYukle();
-  sonIhalelerYukle();
-  topKategorilerYukle();
-  yaklaşanBitisYukle();
-  kayitliAramalarWidgetYukle();
-  sonGorulenlerYukle();
-  profilCek().then(() => { ilanlariYukle(); enIyiEslesmelerYukle(); });
+  // SIRA ÖNEMLİ: uyeMi, anon'a kapalı kolona dokunan HER sorgudan önce kesinleşmeli.
+  // Aksi halde misafirde sorgu 42501 alır, try/catch yutar, widget sessizce boş kalır
+  // (18 Tem'de bulunan hata — yaklaşanBitisYukle ve ilanlariYukle bu yüzden çöküyordu).
+  // getSession() yerel token'dan okur (ağ turu yok), bu yüzden ucuz bir kapı.
+  (async () => {
+    try { const { data: { session } } = await sb.auth.getSession(); uyeMi = !!session; } catch (_) {}
+
+    kpiYukle();
+    bildirimDotGuncelle();
+    ilDropdownDoldur();
+    trendYukle();
+    topKurumlarYukle();
+    sonIhalelerYukle();
+    topKategorilerYukle();
+    yaklaşanBitisYukle();
+    kayitliAramalarWidgetYukle();
+    sonGorulenlerYukle();
+    profilCek().then(() => { ilanlariYukle(); enIyiEslesmelerYukle(); });
+  })();
 
   // ── En İyi Eşleşmeler widget ──────────────────────────
   // Mod-farkındalıklı: 'ihale'/'tumu' → aktif ihaleler (mevcut davranış — 'tumu'
