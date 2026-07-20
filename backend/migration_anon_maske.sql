@@ -9,7 +9,8 @@
 --                      tum_teklifler + ham_json (İÇİNDE TÜM KATILIMCI FİRMALAR!),
 --                      ekap_id, ikn, ihale_id
 --   yukleniciler     → ad, normalize_ad, arama_fold (ad kopyası), vergi_no, ai_yorum(+tarih)
---   dogrudan_temin_ilanlari → idare
+--   dogrudan_temin_ilanlari → idare, arama_fold (içinde idare geçer!),
+--                      dt_ihale_token, dt_idare_token
 -- Sayılar/tarihler/il/tür/kategori/bedeller misafire AÇIK (teaser değeri).
 -- Belge linkleri (ilanlar.belgeler/ekler/pdf_url) BİLİNÇLİ açık — kullanıcının
 -- teklif-hazırlama istisnası; EKAP'a tek tek gider, toplu kopyaya yaramaz.
@@ -67,20 +68,70 @@ GRANT SELECT (
   son_sozlesme_tarihi, sektor, guncellendi, ortak_girisim, kategori
 ) ON public.yukleniciler TO anon;
 
--- ── 4) dogrudan_temin_ilanlari: idare + dt_ihale_token/dt_idare_token maskeli.
+-- ── 4) dogrudan_temin_ilanlari: idare + ondan TÜRETİLEN kolonlar + tokenlar maskeli.
 --    Token'lar 18 Tem'de eklendi (migration_dt_kazanan.sql) — EKAP'ın CAPTCHA-korumalı
 --    detay sayfasına dahili erişim anahtarları, frontend'in hiç ihtiyaç duymadığı;
 --    açık kalırsa herkes bizim scraper'ımızın E10/E11 keşfini kopyalayıp kendi
 --    toplu-erişimini kurabilirdi (dt_no/idare gibi "teaser" veri değil, saf altyapı).
+--
+--    arama_fold 20 Tem'de eklendi (migration_dt_arama.sql) ve KARA LİSTEYE GİRMEK
+--    ZORUNDA: tr_fold(baslik || ' ' || idare) içerir, yani maskelenen idare adının
+--    katlanmış kopyasıdır. anon'a açılırsa idare adı trigram ILIKE'ıyla harf harf
+--    geri okunabilir (oracle) — ilanlar.arama_fold'un anon'a kapalı olmasıyla
+--    birebir aynı gerekçe (yukarıdaki başlık, satır 7).
+--
+-- ── ⚠️ NEDEN BU BLOK KARA LİSTE (ve bedeli) ─────────────────────────────────
+--    Diğer üç tablo (ilanlar/ihale_sonuclari/yukleniciler) BEYAZ liste kullanıyor;
+--    DT dinamik kara liste kullanıyor çünkü tablo geniş ve elle yazılan bir beyaz
+--    listede tek kolon atlanırsa misafir sayfası 42501 ile TÜMDEN ölür
+--    (migration_dt_token_authenticated.sql:19-23'teki gerekçe).
+--    Bedeli: kara liste AÇIK YÖNE ARIZALANIR — SONRADAN eklenen her kolon bu
+--    dosya yeniden koşturulduğunda anon'a SESSİZCE açılır. Tam olarak bu tuzak
+--    arama_fold'da işledi: migration_dt_token_authenticated.sql:45-49'daki kalıcı
+--    bakım notu "yeni kolon eklerken bu dosyayı ve migration_anon_maske.sql'i
+--    TEKRAR çalıştırın" diyor → projenin KENDİ yordamı maskeyi delerdi.
+--    Bu yüzden aşağıya BEKÇİ eklendi: sınıflandırılmamış bir `*_fold` kolonu
+--    görürse migration COMMIT ETMEZ. `*_fold` özellikle seçildi çünkü bunlar
+--    tanım gereği başka kolonların kopyasıdır ve hangi kaynaktan türediklerini
+--    adlarından anlamak imkânsızdır; migration_dt_arama.sql:54 zaten olası bir
+--    `idare_fold` kolonundan söz ediyor — açık kalsa aynı delik tekrarlanırdı.
 DO $$
 DECLARE
   kolonlar text;
+  -- anon'a KAPALI kolonlar (kimlik/altyapı + onlardan türetilmiş kopyalar)
+  anon_yasak        text[] := ARRAY['idare', 'dt_ihale_token', 'dt_idare_token', 'arama_fold'];
+  -- anon'a bilinçli AÇIK bırakılmış türev kolonlar. baslik_fold = tr_fold(baslik);
+  -- baslik zaten misafire açık olduğu için ek ifşa yok (migration_dt_arama.sql:41-44).
+  anon_serbest_fold text[] := ARRAY['baslik_fold'];
+  siniflanmamis     text;
 BEGIN
-  SELECT string_agg(quote_ident(column_name), ', ')
+  -- BEKÇİ: her `*_fold` kolonu ya yasak ya serbest listesinde OLMALI.
+  -- NOT: column_name `sql_identifier` (name üzerinde domain) — text[] ile
+  -- karşılaştırmadan önce açıkça ::text'e indiriliyor.
+  SELECT string_agg(column_name::text, ', ' ORDER BY column_name::text)
+    INTO siniflanmamis
+  FROM information_schema.columns
+  WHERE table_schema = 'public' AND table_name = 'dogrudan_temin_ilanlari'
+    AND right(column_name::text, 5) = '_fold'
+    AND NOT (column_name::text = ANY (anon_yasak))
+    AND NOT (column_name::text = ANY (anon_serbest_fold));
+
+  IF siniflanmamis IS NOT NULL THEN
+    RAISE EXCEPTION
+      'ABORT: siniflandirilmamis fold kolonu (%). Icinde idare/kimlik geciyorsa anon_yasak, gecmiyorsa anon_serbest_fold listesine EKLEYIN — aksi halde anon a sessizce acilir.',
+      siniflanmamis;
+  END IF;
+
+  SELECT string_agg(quote_ident(column_name::text), ', ')
     INTO kolonlar
   FROM information_schema.columns
   WHERE table_schema = 'public' AND table_name = 'dogrudan_temin_ilanlari'
-    AND column_name NOT IN ('idare', 'dt_ihale_token', 'dt_idare_token');
+    AND NOT (column_name::text = ANY (anon_yasak));
+
+  IF kolonlar IS NULL THEN
+    RAISE EXCEPTION 'ABORT: DT kolon listesi bos cikti — tablo adi yanlis olabilir';
+  END IF;
+
   EXECUTE 'REVOKE SELECT ON public.dogrudan_temin_ilanlari FROM anon';
   EXECUTE format('GRANT SELECT (%s) ON public.dogrudan_temin_ilanlari TO anon', kolonlar);
 END $$;
@@ -145,6 +196,25 @@ BEGIN
     PERFORM dt_ihale_token FROM public.dogrudan_temin_ilanlari LIMIT 1;
     RAISE EXCEPTION 'HATA: anon DT.dt_ihale_token okuyabiliyor!';
   EXCEPTION WHEN insufficient_privilege THEN RAISE NOTICE 'OK: DT.dt_ihale_token anon-kapali'; END;
+  -- DT fold kolonları: migration_dt_arama.sql uygulanmamış kurulumda YOKlar, o yüzden
+  -- varlık kontrolü pg_catalog'dan yapılıyor. information_schema KULLANILAMAZ: o view
+  -- rolün yetkisi olmayan kolonu GİZLER → arama_fold delik olsa bile "yok" görünür ve
+  -- kontrol sessizce atlanırdı (tam da yakalamak istediğimiz durum).
+  IF EXISTS (SELECT 1 FROM pg_attribute
+              WHERE attrelid = 'public.dogrudan_temin_ilanlari'::regclass
+                AND attname = 'arama_fold' AND attnum > 0 AND NOT attisdropped) THEN
+    BEGIN
+      PERFORM arama_fold FROM public.dogrudan_temin_ilanlari LIMIT 1;
+      RAISE EXCEPTION 'HATA: anon DT.arama_fold okuyabiliyor — icinde idare geciyor, MASKE DELINDI!';
+    EXCEPTION WHEN insufficient_privilege THEN RAISE NOTICE 'OK: DT.arama_fold anon-kapali'; END;
+  END IF;
+  -- POZİTİF yön: baslik_fold anon'a AÇIK kalmalı, yoksa misafir DT araması 42501 alır.
+  IF EXISTS (SELECT 1 FROM pg_attribute
+              WHERE attrelid = 'public.dogrudan_temin_ilanlari'::regclass
+                AND attname = 'baslik_fold' AND attnum > 0 AND NOT attisdropped) THEN
+    PERFORM baslik_fold FROM public.dogrudan_temin_ilanlari LIMIT 1;
+    RAISE NOTICE 'OK: DT.baslik_fold anon-acik (misafir aramasi calisir)';
+  END IF;
   BEGIN
     PERFORM * FROM public.il_sektor_firma_mv LIMIT 1;
     RAISE EXCEPTION 'HATA: anon il_sektor_firma_mv okuyabiliyor!';

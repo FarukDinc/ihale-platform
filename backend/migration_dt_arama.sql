@@ -54,15 +54,37 @@
 -- Kapatmak için üçüncü bir kolon (idare_fold) + üçüncü bir GIN indeks gerekirdi;
 -- 1,48M satırda maliyeti, tek bir üye-alanı için haklı çıkarmıyor. Serbest metin
 -- araması (asıl şikâyet) arama_fold üzerinden idare'yi ZATEN kapsıyor.
+-- ⚠️ Bir gün idare_fold eklenirse: saf idare kopyası olduğu için arama_fold ile
+-- AYNI muameleyi görmeli — migration_anon_maske.sql'deki `anon_yasak` listesine
+-- girmeli (bekçi zaten sınıflandırmadan geçmesine izin vermez).
 --
 -- ── ⚠️ YENİ KOLON = ANON GRANT ŞART ─────────────────────────────────────────
 -- DT tablosunda anon DA authenticated DA kolon-bazlı yetkiyle okuyor
--- (migration_anon_maske.sql:75-86 ve migration_dt_token_authenticated.sql).
+-- (migration_anon_maske.sql:98-137 ve migration_dt_token_authenticated.sql).
 -- Kolon-GRANT'lar SONRADAN eklenen kolonlara GENİŞLEMEZ → yeni kolon açıkça
 -- GRANT edilmezse onu select/WHERE eden sayfa 42501 ile TÜMDEN ölür. Bu tuzağa
 -- bu projede 3 kez düşüldü (bkz. migration_dt_yayin_tarihi.sql:36,
 -- migration_idare_tur_anon_grant.sql). Aşağıdaki DO bloğu yetkileri hem verir
 -- hem DOĞRULAR; yanlışsa COMMIT ETMEZ.
+--
+-- ── ⛔ TERS YÖN: migration_anon_maske.sql AYNI COMMIT'TE DEĞİŞTİRİLDİ ────────
+-- Yukarıdaki tuzağın simetriği, ondan daha sinsi. migration_anon_maske.sql'in DT
+-- bloğu (tek tablo olarak) KARA liste kullanıyor: "şu kolonlar HARİÇ hepsini
+-- anon'a GRANT et". arama_fold o listeye eklenmeseydi, yalnızca burada anon'a
+-- GRANT etmemek YETMEZDİ — maske dosyası bir sonraki koşusunda arama_fold'u
+-- anon'a KENDİLİĞİNDEN açardı ve iki-kolonlu bu tasarımın tek varlık sebebi
+-- (idare'nin trigram oracle'ıyla harf harf okunamaması) buharlaşırdı. Üstelik
+-- migration_dt_token_authenticated.sql:45-49 yeni kolon eklerken o dosyayı
+-- TEKRAR çalıştırmayı emrediyor → yordamı doğru izleyen kişi maskeyi delerdi.
+-- Aşağıdaki ADIM 1 doğrulaması bunu YAKALAMAZ; başka dosyanın koşusunda ihlal
+-- sessiz kalır (hafıza: anon-maske-iki-kok-neden, kök neden A/C).
+-- Bu yüzden migration_anon_maske.sql'de İKİ değişiklik yapıldı ve iki dosya
+-- birlikte taşınmalıdır:
+--   1) arama_fold kara listeye eklendi (baslik_fold bilinçli olarak anon'a açık),
+--   2) sınıflandırılmamış her `*_fold` kolonunda migration'ı durduran bekçi +
+--      kendi kontrol bölümünde arama_fold negatif testi eklendi — böylece
+--      gelecekteki bir fold kolonu (örn. aşağıda anılan idare_fold) sessizce
+--      değil, GÜRÜLTÜYLE arızalanır.
 --
 -- ── ⏱ MALİYET / KİLİT DAVRANIŞI (1.489.878 satır) ───────────────────────────
 -- ADIM 1 — ALTER TABLE ... ADD COLUMN ... GENERATED ... STORED:

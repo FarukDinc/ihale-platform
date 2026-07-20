@@ -4,7 +4,7 @@
 -- AÇIK (19 Tem 2026 denetiminde bulundu):
 --   migration_dogrudan_temin.sql:45 → GRANT SELECT ON public.dogrudan_temin_ilanlari
 --   TO authenticated;  ← TABLO GENELİ, hiç geri alınmamış.
---   migration_anon_maske.sql:84 anon için REVOKE yapmış ama `authenticated` için
+--   migration_anon_maske.sql:135 anon için REVOKE yapmış ama `authenticated` için
 --   AYNI İŞLEM YAPILMAMIŞ. Sonuç: herhangi bir üye (ücretsiz kayıt yeterli)
 --     GET /rest/v1/dogrudan_temin_ilanlari?select=dt_no,dt_ihale_token,dt_idare_token
 --   ile EKAP'ın E10/E11 anahtarlarını toplu çekebiliyor.
