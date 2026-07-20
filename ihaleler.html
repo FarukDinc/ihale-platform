@@ -517,60 +517,15 @@
         </div>
         <div class="filter-group">
           <label>Kategori</label>
+          <!-- Seçenekler js/kategoriler.js'ten RUNTIME dolduruluyor — kategoriDropdownDoldur().
+               ESKİDEN 48 seçenek burada hardcode'du ve <option>'larda value attribute'u YOKTU,
+               dolayısıyla tarayıcı seçenek METNİNİ gönderiyordu ("Mal Alımı"). Canlı
+               ilanlar.kategori ise kanonik adları taşıyor ("Sağlık - Medikal - İlaç - Kozmetik")
+               → 48 seçeneğin 43'ü SIFIR kayıt döndürüyordu (20 Tem, REST ile tek tek ölçüldü).
+               Kanonik 41 ad canlı verinin %95,1'ini kapsıyor ve 41/41'inde kayıt var.
+               Aynı desen: dogrudan-temin.html kategorileriYukle(). -->
           <select class="filter-select" id="f-kategori">
             <option value="">Tüm Kategoriler</option>
-            <optgroup label="— Genel —">
-              <option>Mal Alımı</option>
-              <option>Hizmet Alımı</option>
-              <option>Danışmanlık</option>
-            </optgroup>
-            <optgroup label="— Sektör —">
-              <option>İnşaat & Yapım</option>
-              <option>İnşaat Malzemeleri</option>
-              <option>Sağlık</option>
-              <option>Tıbbi Cihazlar</option>
-              <option>Bilişim Hizmetleri</option>
-              <option>BT Ekipmanları</option>
-              <option>Yazılım</option>
-              <option>Ulaşım Araçları</option>
-              <option>Ulaşım Hizmetleri</option>
-              <option>Enerji</option>
-              <option>Elektrik Malzemeleri</option>
-              <option>Gıda & İçecek</option>
-              <option>Tarım & Ormancılık</option>
-              <option>Tarım Makineleri</option>
-              <option>Sanayi Makineleri</option>
-              <option>Madencilik</option>
-              <option>Madencilik Ekipmanı</option>
-              <option>Çevre Hizmetleri</option>
-              <option>İdari Hizmetler</option>
-              <option>Kamu Yönetimi</option>
-              <option>Kamu Hizmetleri</option>
-              <option>Eğitim</option>
-              <option>Güvenlik</option>
-              <option>Bakım & Onarım</option>
-              <option>Mimarlık & Mühendislik</option>
-              <option>Lojistik</option>
-              <option>Mobilya & Temizlik</option>
-              <option>Giyim & Tekstil</option>
-              <option>Kimyasal Ürünler</option>
-              <option>Ar-Ge</option>
-              <option>Konaklama & Yemek</option>
-              <option>Labaratuvar</option>
-              <option>Spor & Eğlence</option>
-              <option>Su</option>
-              <option>Montaj</option>
-              <option>Posta & İletişim</option>
-              <option>İletişim</option>
-              <option>Sigorta & Finans</option>
-              <option>Gayrimenkul</option>
-              <option>Petrol & Gaz</option>
-              <option>Bahçe & Çevre</option>
-              <option>Kültür & Medya</option>
-              <option>Deri & Kauçuk</option>
-              <option>Basın & Yayın</option>
-              <option>Diğer Hizmetler</option>
-            </optgroup>
           </select>
         </div>
         <div class="filter-group">
@@ -766,6 +721,9 @@
 <script src="js/sidebar-user.js?v=3"></script>
 <script src="js/bildirim-sayaci.js?v=rot1"></script>
 <script src="js/plan.js?v=rot1"></script>
+<!-- 41 kanonik kategorinin TEK doğruluk kaynağı. Kategori dropdown'ı buradan
+     dolduruluyor; eskiden HTML'e hardcode'lu 48 seçenek vardı ve 43'ü ölüydü. -->
+<script src="js/kategoriler.js"></script>
 <script src="js/takip.js?v=2"></script>
 <script>
   const SUPABASE_URL = "https://ihaleglobal.com";
@@ -1419,6 +1377,36 @@
       TR_ILLER.map(il => `<option value="${il.toLocaleUpperCase('tr')}">${il}</option>`).join('');
   }
 
+  // Kategori dropdown'ı — tek doğruluk kaynağı js/kategoriler.js (kanonik ad =
+  // ilanlar.kategori değeri). Hardcode liste 20 Tem'de kaldırıldı: 48 seçeneğin 43'ü
+  // sıfır kayıt döndürüyordu (value attribute'u olmayan <option>'lar metin gönderiyordu).
+  function kategoriDropdownDoldur() {
+    const sel = document.getElementById('f-kategori');
+    if (!sel || !window.KATEGORILER) return;
+    sel.innerHTML = '<option value="">Tüm Kategoriler</option>' +
+      window.KATEGORILER.map(k =>
+        `<option value="${k.kod.replace(/"/g, '&quot;')}">${k.emoji ? k.emoji + ' ' : ''}${k.kod}</option>`
+      ).join('');
+  }
+
+  // Kayıtlı aramalarda ve eski derin linklerde KANONİK OLMAYAN kategori değerleri var
+  // (canlıda 17.502 satır / %4,9 hâlâ "Mal Alımı", "Hizmet Alımı" gibi eski adlar taşıyor).
+  // Bu değer listede yoksa <select>.value sessizce '' olur ve kullanıcının kayıtlı filtresi
+  // FARK ETTİRMEDEN boşalırdı. Seçeneği ekleyip koruyoruz — dogrudan-temin.html'deki
+  // ilSecimGarantiEt() ile aynı savunma.
+  function kategoriSecimGarantiEt(kat) {
+    if (!kat) return;
+    const sel = document.getElementById('f-kategori');
+    if (!sel) return;
+    if (!sel.querySelector(`option[value="${CSS.escape(kat)}"]`)) {
+      const o = document.createElement('option');
+      o.value = kat;
+      o.textContent = kat + ' (eski)';
+      sel.appendChild(o);
+    }
+    sel.value = kat;
+  }
+
   // URL parametrelerini filtrelere uygula (örn. haritadan ihaleler?il=İSTANBUL,
   // ya da dashboard'daki KPI kartlarından ihaleler?durum=aktif&minBedel=... gibi)
   function urlFiltreleriUygula() {
@@ -1430,7 +1418,7 @@
     const idare = p.get('idare');
     if (idare) document.getElementById('f-idare').value = idare;
     const kategori = p.get('kategori');
-    if (kategori) document.getElementById('f-kategori').value = kategori;
+    if (kategori) kategoriSecimGarantiEt(kategori);   // eski/kanonik-dışı değer de tutulsun
     const usul = p.get('usul');
     if (usul) document.getElementById('f-usul').value = usul;
     const tur = p.get('tur');
@@ -1604,7 +1592,11 @@
     const p = item.params;
     document.getElementById('f-arama').value    = p.arama    || '';
     document.getElementById('f-il').value       = p.il       || '';
-    document.getElementById('f-kategori').value = p.kategori || '';
+    // Düz atama DEĞİL: kullanıcının kaydettiği kategori kanonik-dışı olabilir
+    // (eski dropdown'dan gelme). O durumda .value sessizce '' olur ve kayıtlı arama
+    // farkında olmadan "tüm kategoriler"e dönerdi.
+    if (p.kategori) kategoriSecimGarantiEt(p.kategori);
+    else document.getElementById('f-kategori').value = '';
     document.getElementById('f-tur').value      = p.tur      || '';
     document.getElementById('f-usul').value     = p.usul     || '';
     document.getElementById('f-kaynak').value   = p.kaynak   || '';
@@ -1635,6 +1627,7 @@
 
   // Sayfa yüklenince
   ilDropdownDoldur();          // önce dropdown dolsun ki URL'den gelen il seçilebilsin
+  kategoriDropdownDoldur();    // aynı gerekçe: ?kategori= seçilebilsin diye URL'den ÖNCE
   urlFiltreleriUygula();
   // Profil'den kaydedilmiş min. uyum eşiğini uygula (URL parametresi yoksa)
   if (!new URLSearchParams(window.location.search).has('minUyum')) {
