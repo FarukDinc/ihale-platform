@@ -724,7 +724,12 @@ def durum_donustur(d, son_teklif_iso=None):
             t = datetime.fromisoformat(str(son_teklif_iso).replace("Z", "+00:00"))
             if t.tzinfo is None:
                 t = t.replace(tzinfo=timezone.utc)
-            return "aktif" if t > datetime.now(timezone.utc) else "kapandi"
+            # 'kapali' — 'kapandi' DEĞİL. ilanlar_durum_check yalnız
+            # ('taslak','aktif','kapali','iptal','sonuclandi') kabul ediyor;
+            # 'kapandi' yazınca PostgREST 400 döndürüp backfill'i çökertti (20 Tem).
+            # migration_uygun_firmalar_v3_1.sql 'kapandi' diyor ama v3_3 onu
+            # düzeltmiş — canlı fonksiyon 'kapali' yazıyor. v3_1 BAYAT, okumayın.
+            return "aktif" if t > datetime.now(timezone.utc) else "kapali"
         except (ValueError, TypeError):
             pass
     # Tarih de yoksa eski davranış korunur (canlıda böyle yalnız 2 kayıt var).
