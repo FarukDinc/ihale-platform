@@ -441,10 +441,28 @@
     el('st-toplam').textContent = toplamS.toLocaleString('tr');
     el('st-yapim').textContent = yapim.toLocaleString('tr');
     el('st-hizmet').textContent = hizmet.toLocaleString('tr');
-    // Ülke + kategori dropdown + ülke sayısı (örneklemden)
-    const { data } = await sb.from('uluslararasi_ihaleler').select('ulke,kategori').limit(5000);
-    const ulkeler = [...new Set((data || []).map(x => x.ulke).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'tr'));
-    const kats = [...new Set((data || []).map(x => x.kategori).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'tr'));
+    // Ülke + kategori dropdown + ülke sayısı — DISTINCT'i SUNUCU üretir.
+    // Eskiden `.select('ulke,kategori').limit(5000)` ile ÖRNEKLEMDEN üretiliyordu: ORDER BY
+    // olmadığı için tablo 5.000 satırı aştığı anda liste keyfî bir örnekleme dönüşüyor,
+    // dropdown'da sessizce ülke/kategori eksiliyor ve st-ulke sayacı yanlış çıkıyordu.
+    // TED scraper'ın gün-gün pencerelemesi tabloyu günde ~1.280 satır büyüttüğü için bu tavan
+    // birkaç gün içinde aşılacaktı (dünya haritası zaten aynı deseni ulke_ihale_dagilimi ile
+    // kullanıyor). RPC: backend/migration_uluslararasi_filtreler.sql
+    let ulkeler = [], kats = [];
+    const { data: sec, error: secErr } = await sb.rpc('uluslararasi_filtre_secenekleri');
+    if (!secErr && sec) {
+      ulkeler = sec.ulkeler || [];
+      kats = sec.kategoriler || [];
+    } else {
+      // Migration henüz uygulanmadıysa sayfa çalışmaya devam etsin (eski örneklem yolu).
+      console.warn('uluslararasi_filtre_secenekleri RPC yok — örneklem yedegine düşüldü', secErr);
+      const { data } = await sb.from('uluslararasi_ihaleler').select('ulke,kategori').limit(5000);
+      ulkeler = [...new Set((data || []).map(x => x.ulke).filter(Boolean))];
+      kats = [...new Set((data || []).map(x => x.kategori).filter(Boolean))];
+    }
+    // Türkçe harf sırası (İ/ı, Ç, Ş, Ğ) DB collation'ına bırakılmaz, istemcide sıralanır.
+    ulkeler = ulkeler.filter(Boolean).sort((a, b) => a.localeCompare(b, 'tr'));
+    kats = kats.filter(Boolean).sort((a, b) => a.localeCompare(b, 'tr'));
     el('st-ulke').textContent = ulkeler.length;
     const uSel = document.getElementById('f-ulke'), kSel = document.getElementById('f-kategori');
     ulkeler.forEach(u => { const o = document.createElement('option'); o.value = u; o.textContent = u; uSel.appendChild(o); });
