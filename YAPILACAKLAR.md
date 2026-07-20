@@ -28,10 +28,24 @@
 > `İÇİŞLERİ BAKANLIĞI` ihale 4.010 → **49.313**, DT 49.106 → **54.251**;
 > `EMNİYET GENEL MÜDÜRLÜĞÜ` ihale 1.203 → **15.148**, DT 26.835 → **30.138**.
 >
-> **⏭ KALAN:** DT kapsaması %65,9 — ihaleye göre 27 puan geride. Sebep incelenmeli
-> (DT idare adları ayrı yazım havuzu mu, yoksa DT'de idare adı hiç yok mu?).
-> Kalıcı çözüm hâlâ `idareIdHash` (bkz. backlog #30) — ad tabanlı eşleşme, idare adı
-> değişince yine kırılır.
+> **✅ DT BOŞLUĞUNUN KÖK NEDENİ BULUNDU (20 Tem gece, ölçüldü):** DT %65,9'da kalıyor
+> çünkü eşleşmeyen 508.598 satırın idare adı **boş değil** (0 boş) — adlar `idare_tur`
+> tablosunda **var** (31.325 tekil addan 29.075'i, yani %92,8) ama **hepsi
+> `kaynak='kural'` ve `detsis_no` NULL** → `ilan_detsis_esle()`'nin yazacağı numara yok.
+>
+> Sebep YAPISAL, eşleştirme hatası DEĞİL: DETSİS taraması idare adlarını EKAP'ın
+> **ihale arama** API'sinden (`GetListByParameters`) topluyor. Yalnızca doğrudan temin
+> yapan, hiç ihaleye çıkmayan kurumlar o API'de HİÇ görünmüyor → DETSİS eşleşmesi
+> hiç oluşmuyor, sadece kural motorundan *tür* etiketi alıyorlar.
+> Eşleşmeyenlerin tepesi bunu birebir doğruluyor: belediye şirketleri (EKDAĞ A.Ş. 4.463,
+> BELTUR A.Ş. 3.321, ANET A.Ş. 3.006, HARBEL A.Ş. 2.778, SANBEL Ltd. 2.543), hastane
+> başhekimlikleri ve "Satın Alma Şube Müdürlüğü" tipi alt birimler — çok DT alıp az ihale
+> yapan birimler.
+>
+> **⏭ SEÇENEKLER (karar gerek):** (a) DT tarafında idare-bazlı bir EKAP uç noktası varsa
+> aynı `idareId→ad` taramasını DT için tekrarla; (b) belediye şirketini ana belediyeye
+> bağla (yaklaşık, hiyerarşi ağacında "bağlı şirket" dalı); (c) sınırı kabul et ve
+> arayüzde kapsama rozetiyle dürüstçe göster. Kalıcı çözüm hâlâ `idareIdHash` (backlog #30).
 >
 > ## ✅ 20 TEM AKŞAM — BU OTURUMDA KAPANANLAR (8 iş paralel worktree'de üretildi,
 > ## adversarial incelemeden geçti, `main`'e birleştirildi, push edildi)
