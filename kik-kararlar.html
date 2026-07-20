@@ -378,6 +378,7 @@
   const PER_PAGE = 20;
   let tumVeri = [];
   let filtreliVeri = [];
+  let toplamKayit = 0;   // sunucudaki gerçek satır sayısı (tumVeri kırpılmış olabilir)
   let sayfa = 1;
   let aktifSonucFiltre = '';
 
@@ -432,9 +433,18 @@
     document.getElementById('toolbar').style.display = 'none';
     document.getElementById('pager').style.display = 'none';
 
+    // DAR SELECT + count: misafir maskesi nedeniyle `olusturulma`/`ham_veri` anon'a
+    // KAPALI — bu listeye girerlerse PostgREST sorgunun TAMAMINI 42501 ile reddeder.
+    //
+    // limit 1000: sayfalama CLIENT tarafında (tumVeri dilimleniyor). 20 Tem'e kadar
+    // tablo 97 satırdaydı ve tavan görünmüyordu; kik_backfill'in penceresi 3 günden
+    // 90 güne çıkınca tablo yüzlerce satıra büyüyor. PostgREST zaten ~1000'de kesiyor,
+    // daha yükseği anlamsız — bunun yerine GERÇEK toplamı count ile ayrıca sorup
+    // kırpma olduğunda kullanıcıya söylüyoruz (sessizce eksik liste göstermek YOK).
     let q = sb.from('kik_kararlar').select(
-      'id,karar_no,karar_tarihi,karar_turu,sonuc,baslik,idare,ihale_konusu,kaynak_url,ozet'
-    ).order('karar_tarihi', { ascending: false }).limit(500);
+      'id,karar_no,karar_tarihi,karar_turu,sonuc,baslik,idare,ihale_konusu,kaynak_url,ozet',
+      { count: 'exact' }
+    ).order('karar_tarihi', { ascending: false }).limit(1000);
 
     if (kelime) {
       // or() gramerini bozan karakterleri temizle (virgül or-listesini, parantez grubu kapatır → 400)
@@ -447,7 +457,7 @@
     if (bas) q = q.gte('karar_tarihi', bas);
     if (bit) q = q.lte('karar_tarihi', bit);
 
-    const { data, error } = await q;
+    const { data, error, count } = await q;
 
     if (error) {
       if (error.code === '42P01') {
@@ -465,6 +475,8 @@
     }
 
     tumVeri = data || [];
+    // Sunucudaki gerçek toplam (filtreler uygulanmış hali). data kırpılmış olabilir.
+    toplamKayit = (typeof count === 'number') ? count : tumVeri.length;
     goster();
   };
 
@@ -490,7 +502,8 @@
     const iptalSay = tumVeri.filter(k => k.sonuc === 'iptal').length;
     const kabulSay = tumVeri.filter(k => k.sonuc === 'kabul').length;
     const redSay   = tumVeri.filter(k => k.sonuc === 'red').length;
-    document.getElementById('st-toplam').textContent = tumVeri.length.toLocaleString('tr');
+    // Toplam sayacı SUNUCUDAKİ gerçek sayıyı gösterir — indirilen diliminkini değil.
+    document.getElementById('st-toplam').textContent = toplamKayit.toLocaleString('tr');
     document.getElementById('st-iptal').textContent = iptalSay.toLocaleString('tr');
     document.getElementById('st-kabul').textContent = kabulSay.toLocaleString('tr');
     document.getElementById('st-red').textContent   = redSay.toLocaleString('tr');
@@ -518,7 +531,19 @@
     document.getElementById('liste-sayi').textContent = `${filtreliVeri.length.toLocaleString('tr')} karar`;
     document.getElementById('results-label').textContent = `${filtreliVeri.length.toLocaleString('tr')} karar`;
 
-    document.getElementById('liste-container').innerHTML = dilim.map(k => kartHTML(k)).join('');
+    // Sunucu tarafı kırpma uyarısı: sessizce eksik liste göstermek yasak.
+    const kirpildi = toplamKayit > tumVeri.length;
+    const kirpmaHTML = kirpildi ? `
+      <div style="margin-bottom:12px;padding:10px 14px;border-radius:8px;
+                  background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.35);
+                  font-size:13px;line-height:1.5;">
+        ⚠️ Bu aramaya uyan <b>${toplamKayit.toLocaleString('tr')}</b> karar var; en yeni
+        <b>${tumVeri.length.toLocaleString('tr')}</b> tanesi listeleniyor.
+        Tümünü görmek için tarih aralığı veya kelime filtresi ekleyin.
+      </div>` : '';
+
+    document.getElementById('liste-container').innerHTML =
+      kirpmaHTML + dilim.map(k => kartHTML(k)).join('');
 
     // Pager
     const pager = document.getElementById('pager');
