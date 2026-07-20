@@ -105,6 +105,50 @@
 > NOT: `claude/happy-gauss-ce4605` dalında 1 birleşmemiş commit görünür — içeriği yeni
 > koda UYARLANARAK uygulandı, dal yalnızca kayıt olarak duruyor.
 >
+> ## ✅ MIGRATION'LAR UYGULANDI (20 Tem gece, kullanıcı onayıyla — 8 dosya)
+> Hepsi `ON_ERROR_STOP=1` ile, tek tek, nesne-bazlı doğrulanarak koşuldu.
+>
+> | Migration | Sonuç |
+> |---|---|
+> | `migration_temizlik_20tem` | ✅ idare_tur yüzeyi anon'dan REVOKE + `idx_ilanlar_olusturulma` |
+> | `migration_idare_dal_ihaleler` | ✅ `idare_dal_son_ihaleler` |
+> | `migration_kurum_agaci_bagsiz` | ✅ `idare_bagsiz_mv` + 2 RPC |
+> | `migration_dt_detsis_grant` | ✅ **YENİ — aşağıdaki tıkanmayı çözmek için yazıldı** |
+> | `migration_hiyerarsifiltre` | ✅ (ilk denemede kendi guard'ıyla durdu, grant sonrası geçti) |
+> | `migration_lot_gece` | ✅ `lot_sayisi_tazele()` → `{"guncellenen": 0}` |
+> | `migration_satinalma_revoke` | ✅ **user_id ifşası KAPANDI** (anon artık 42501) |
+> | `migration_sonucjoin_fix` | ✅ **ölü JOIN onarıldı** — 0 → **537.988 sonuçlu satır** |
+>
+> ### 🔴 SÜREÇTE ÇIKAN İKİ GERÇEK SORUN
+> 1. **`DT.detsis_no` hiç GRANT edilmemişti** — `migration_hiyerarsifiltre` kendi doğrulama
+>    bloğuyla uygulanmayı REDDETTİ ve işlemi geri aldı (guard tam olarak işini yaptı).
+>    Kök neden bu projede **DÖRDÜNCÜ** kez aynı: kolon-GRANT'lar sonradan eklenen kolonlara
+>    genişlemiyor. `ilanlar.detsis_no` üyeye açıktı, DT'deki kardeşi unutulmuştu.
+>    → `migration_dt_detsis_grant.sql` yazıldı (politika `ilanlar` ile birebir: üyeye açık,
+>    misafire kapalı), uygulandı, hiyerarşi filtresi sonra geçti.
+> 2. **PostgREST şema önbelleği `NOTIFY` ile tazelenmedi** — migration'lar geçmesine rağmen
+>    yeni RPC'lerin hepsi `PGRST202 "no matches were found in the schema cache"` veriyordu.
+>    → `supabase-rest` restart, ardından **`supabase-kong` restart** (bayat upstream dersi).
+>    Sonra tümü tanındı. **KURAL: yeni RPC ekleyen migration sonrası `NOTIFY`'a GÜVENME,
+>    `docker restart supabase-rest && docker restart supabase-kong` yap ve REST'ten doğrula.**
+>
+> ### 🔍 `ilanlar_sonuc` teşhisi (kesin sonuç)
+> `ihale_sonuclari.ekap_id` **538.064 satırın hepsinde NULL** (scraper o kolonu hiç yazmıyor),
+> `ilan_id` %100 dolu. Eski join `i.ekap_id = s.ekap_id` → **0 eşleşme**. Doğru join
+> `s.ilan_id = i.id` → 538.064 satır / 335.397 ihale. View `CREATE OR REPLACE` ile onarıldı
+> (grant'lar korundu), sona `kisim_no` + `lot_sayisi` eklendi. Kardinalite artık kısım bazlı
+> (1.820.970 satır) — bu BİLİNÇLİ; view'ı okuyan tüketici yok.
+>
+> ### ✅ Uygulama sonrası doğrulama
+> - 9 yeni nesnenin **9'u** canlıda (`to_regclass`/`to_regproc`).
+> - Frontend RPC parametre adları DB imzalarıyla **birebir** uyuşuyor.
+> - Anon maske regresyonu temiz: `ilanlar`, `ilanlar_sonuc`, `dogrudan_temin_sonuclari`,
+>   `idare_hiyerarsi`, `satinalma_talepleri`, `idare_bagsiz_mv` → **hepsi 401**.
+> - 10 canlı sayfa 200 dönüyor.
+>
+> ⏭ **KALAN TEK MIGRATION İŞİ:** ödeme atomikliği (`migration_payment_atomik.sql`) — hâlâ
+> kullanıcı kararında, `payment.py` düzenlemesi + API restart gerektiriyor.
+>
 > ## 🧹 SESSİZ HATA SÜPÜRGESİ (20 Tem gece) — 25 sayfa, 5 desen, çok-ajanlı
 > Kullanıcının kendi bulduğu 3 hatanın (DT kartları, il dropdown, misafir dashboard) ait
 > olduğu desenler tüm sayfalarda arandı; her bulgu **canlı anon API ile** doğrulandı.
