@@ -1,5 +1,36 @@
 # İhalePlatform — Yapılacaklar Listesi
 
+> ## 🎯 DT KAZANAN DARBOĞAZI — TAM ANATOMİ (20 Tem gece, canlı ölçüm)
+> "DT kazanan neden %7,9?" sorusunun kesin cevabı. `dogrudan_temin_ilanlari` = 1.490.644:
+>
+> | Dilim | Adet | Not |
+> |---|---|---|
+> | Sonuçlanmış (kazananı olmalı) | 1.395.038 (%93,6) | hedef evren |
+> | **Token YOK** | **860.297** | kazanan ÇEKİLEMEZ — token şart |
+> | └ bunlardan sonuçlanmış | **817.376** | asıl kayıp: değerli ama erişilemez |
+> | Token VAR | 630.347 | çekilebilir |
+> | └ `kazanan_denendi` işaretli | yalnız 129.800 | ~500K token'lı-ama-DENENMEMİŞ |
+> | `dogrudan_temin_sonuclari` (çekilmiş kazanan) | 117.384 (%7,9) | mevcut çıktı |
+>
+> **KÖK NEDEN — iki katmanlı:**
+> 1. **Token boşluğu:** `dt_ihale_token`/`dt_idare_token` (=E10/E11), DT listeleme API'sinden
+>    geliyor ama **18 Tem'den ÖNCE atlanıyordu** (`ekap_dogrudan_temin_scraper.py:172`).
+>    Kanıt: token'sız 860K'nın en yeni kazıması **17 Tem**, `yayin_tarihi` de NULL (o da E8,
+>    aynı gün eklendi). Bu kayıtlar bir daha listelenmediği için token'sız kaldı.
+> 2. **İşleme boşluğu:** token'lı 630K'nın yalnız 129K'sı denenmiş — ve `dt_kazanan_scraper`'da
+>    bulunan B6 hatası (geçici hata alan satır kalıcı `kazanan_denendi` damgalanıyor) bu düşük
+>    oranın bir parçası olabilir.
+>
+> **ÇÖZÜM PLANI (SIRALI — paralel verim 10x düşürür):**
+> - ÖN KOŞUL: `ekap_dogrudan_temin_scraper` + `dt_kazanan_scraper` B6 düzeltmeleri (şu an
+>   sessiz-kayıp workflow'unda) MERGE olmalı — yoksa backfill yine sessizce kaybeder.
+> - **Adım 1 — Token backfill:** `ekap_dogrudan_temin_scraper --backfill` tam koşusu.
+>   merge-duplicates ile 860K token'sızın E10/E11'ini doldurur. Tarih hedeflemesi YOK
+>   (`yayin_tarihi` NULL) → baştan sona gitmeli (~6.700 sayfa × ~1,5sn ≈ 3-4 saat).
+> - **Adım 2 — Kazanan backfill:** `dt_kazanan_scraper --limit 900000`. Token dolunca
+>   ~1,3M sonuçlanmış DT'nin kazananı çekilebilir hale gelir (şimdi 117K).
+> - Adım 1 bitmeden Adım 2'yi koşma (token yoksa boşa gider).
+
 > ## ⚡ ACİL PERF: `idare_tur_tazele()` her gece ~25 dk CPU yakıyor (20 Tem, ölçüldü)
 > 340K backfill sonrası zincirde bu fonksiyon **24+ dakika** aktif kaldı (CPU-bound, kilit
 > beklemiyor). Kök neden: iki UPDATE de `WHERE t.idare_norm = idare_normalize(i.idare)` —
