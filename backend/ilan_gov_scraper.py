@@ -21,6 +21,7 @@ import os
 import re
 import sys
 import ssl
+import time
 import argparse
 from datetime import datetime, timezone
 
@@ -38,6 +39,16 @@ SUPABASE_KEY = os.environ.get("SUPABASE_SERVICE_KEY", "")
 API = "https://www.ilan.gov.tr/api/api/services/app/Ad/AdsByFilter"
 SAYFA_BOYUTU = 20  # ilan.gov.tr sunucu üst sınırı
 BASE_URL = "https://www.ilan.gov.tr"
+
+# ── Sessiz kayıp önleme (geçici hata ≠ veri bitti) ──────────────────────────
+# Bir sayfa 403/407/429/5xx/timeout/TLS/ağ hatası verirse bu KALICI "veri bitti"
+# değildir; sınırlı retry sonrası sayfayı SAYIP atla ve devam et. Sayfalama
+# newest-first ve checkpoint YOK → atlanan sayfa bir sonraki gece turunda yine
+# denenir, yani sayfayı damgalamak/turu sessizce kesmek gerekmiyor. Ama kaynak
+# tümden erişilemezse sonsuza dek dövmemek için tavanlar koyuyoruz.
+RETRY = 3                  # sayfa başına geçici hatada deneme sayısı
+ARDISIK_HATA_SINIRI = 5    # üst üste bu kadar sayfa çekilemezse kaynak erişilemez → dur
+ATLAMA_SINIRI = 10         # toplam bu kadar sayfa atlanınca turu durdur (boşuna uzatma)
 
 # "İhale Türü" (ilan.gov.tr) → bizim tur değerlerimiz
 _TUR_HARITA = [
@@ -132,21 +143,67 @@ def main():
     ctx.verify_mode = ssl.CERT_NONE  # ilan.gov.tr zincir doğrulaması bazı ortamlarda takılıyor
 
     satirlar = []
+    atlanan_sayfa = 0        # geçici hata nedeniyle çekilemeyen sayfa sayısı
+    ardisik_hata = 0         # üst üste sayfa hatası (kaynağı dövmeyi durdurmak için)
+    son_sayfa_dolu = False   # işlenen son sayfa tam mı? (max-pages tavanını tespit için)
+    erisilemez = False       # üst üste hata sınırına takılıp durduk mu?
+
     with httpx.Client(timeout=40, verify=ctx) as client:
         for i in range(args.max_pages):
-            try:
-                ads = sayfa_cek(client, i * SAYFA_BOYUTU)
-            except Exception as e:
-                print(f"  ⚠ sayfa {i} hata: {e}")
-                break
+            # ── Sayfayı sınırlı retry ile çek: 403/407/429/5xx/timeout/TLS/ağ GEÇİCİDİR ──
+            ads = None
+            for deneme in range(RETRY):
+                try:
+                    ads = sayfa_cek(client, i * SAYFA_BOYUTU)
+                    break
+                except Exception as e:
+                    if deneme < RETRY - 1:
+                        print(f"  ⚠ sayfa {i} deneme {deneme+1}/{RETRY}: "
+                              f"{type(e).__name__} {str(e)[:80]} — yeniden deneniyor")
+                        time.sleep(2 * (deneme + 1))
+                    else:
+                        print(f"  ⚠ sayfa {i}: {RETRY} denemede de çekilemedi: "
+                              f"{type(e).__name__} {str(e)[:80]}")
+
+            if ads is None:
+                # GEÇİCİ hata → sayfayı DAMGALAMA, "veri bitti" SAYMA. Say, devam et;
+                # sonraki gece turu (newest-first, checkpoint yok) bu sayfayı yine dener.
+                atlanan_sayfa += 1
+                ardisik_hata += 1
+                son_sayfa_dolu = False   # bu sayfanın doluluğu bilinmiyor → tavan sanma
+                if ardisik_hata >= ARDISIK_HATA_SINIRI:
+                    print(f"  ✗ üst üste {ardisik_hata} sayfa çekilemedi — kaynak erişilemez "
+                          f"görünüyor, tur durduruluyor ({i} sayfada kesildi).")
+                    erisilemez = True
+                    break
+                if atlanan_sayfa >= ATLAMA_SINIRI:
+                    print(f"  ✗ {atlanan_sayfa} sayfa atlandı (üst sınır) — tur durduruluyor.")
+                    break
+                continue
+
+            ardisik_hata = 0
             if not ads:
-                break
+                break                # boş sayfa = veri GERÇEKTEN bitti (newest-first son) → doğal bitiş
+
             for ad in ads:
                 row = kayit_donustur(ad)
                 if row:
                     satirlar.append(row)
+
+            son_sayfa_dolu = len(ads) >= SAYFA_BOYUTU
+            if not son_sayfa_dolu:
+                break                # kısa sayfa = son sayfa → doğal bitiş (tavan değil)
+
             if (i + 1) % 10 == 0:
                 print(f"  … {i+1} sayfa, {len(satirlar)} İHALE toplandı")
+        else:
+            # for range() break olmadan tükendi → max-pages TAVANINA dayandık.
+            # Son sayfa TAM ise tavan ötesinde ilan kalmış olabilir (sessiz kayıp riski);
+            # doğal bitiş (boş/kısa sayfa) DEĞİL, ayrı uyarı bas.
+            if son_sayfa_dolu:
+                print(f"  ⚠ max-pages tavanı ({args.max_pages}) doldu ve son sayfa TAM "
+                      f"(≥{SAYFA_BOYUTU}) — tavan ötesinde ilan KALMIŞ olabilir; "
+                      f"gerekirse --max-pages artırın.")
 
     # Aynı ekap_id tekrarını (sayfa örtüşmesi) temizle
     benzersiz = {}
@@ -154,6 +211,10 @@ def main():
         benzersiz[s["ekap_id"]] = s
     satirlar = list(benzersiz.values())
     print(f"→ {len(satirlar)} benzersiz İHALE duyurusu toplandı (ilan.gov.tr).")
+
+    if atlanan_sayfa:
+        print(f"  ⚠ {atlanan_sayfa} sayfa geçici hata nedeniyle çekilemedi — "
+              f"veri EKSİK, sonraki gece turunda yeniden denenecek.")
 
     if args.dry_run:
         for s in satirlar[:10]:
@@ -163,6 +224,7 @@ def main():
 
     # Upsert (ignore_duplicates → EKAP'ta zaten olan IKN'ler atlanır)
     yazilan = 0
+    yazma_hata = 0
     with httpx.Client(timeout=60) as client:
         for i in range(0, len(satirlar), 200):
             batch = satirlar[i:i + 200]
@@ -172,9 +234,24 @@ def main():
                             headers={**_headers(), "Prefer": "resolution=ignore-duplicates,return=minimal"})
             if r.status_code >= 300:
                 print(f"   ✗ upsert hata: {r.status_code} {r.text[:150]}")
+                yazma_hata += 1
             else:
                 yazilan += len(batch)
-    print(f"✓ ilan.gov.tr: {yazilan} kayıt upsert edildi (mevcut EKAP IKN'leri atlandı).")
+
+    # Özet GERÇEK durumu yansıtsın: sayfa atlandıysa / kaynak erişilemezse / yazma
+    # partisi düştüyse "✓ Bitti" DEME — aksi hâlde eksik tur başarılı sanılır.
+    if atlanan_sayfa or erisilemez or yazma_hata:
+        eksik = []
+        if atlanan_sayfa:
+            eksik.append(f"{atlanan_sayfa} sayfa çekilemedi")
+        if erisilemez:
+            eksik.append("kaynak erişilemez olduğu için tur erken kesildi")
+        if yazma_hata:
+            eksik.append(f"{yazma_hata} yazma partisi başarısız")
+        print(f"⚠ ilan.gov.tr: {yazilan} kayıt upsert edildi ama TUR EKSİK "
+              f"({'; '.join(eksik)}). 'Bitti/✓' değil — sonraki tur tamamlar.")
+    else:
+        print(f"✓ ilan.gov.tr: {yazilan} kayıt upsert edildi (mevcut EKAP IKN'leri atlandı).")
 
 
 if __name__ == "__main__":
