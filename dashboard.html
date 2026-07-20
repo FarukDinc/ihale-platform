@@ -1313,6 +1313,25 @@
 
   let yukluIlanlar = [];
 
+  // Türkçe karakter katlama — SQL tr_fold() ile BİREBİR aynı
+  // (backend/migration_dt_arama.sql). Ham ILIKE Türkçe ı/İ'yi katlamadığı için
+  // "kirtasiye" yazan kullanıcı "kırtasiye" başlıklı DT ilanlarını SESSİZCE
+  // kaçırıyordu; terim katlanıp katlanmış kolonla eşleştiriliyor.
+  function dtTrFold(s) {
+    return (s || '')
+      .replace(/İ/g, 'i').replace(/I/g, 'i').replace(/ı/g, 'i')
+      .replace(/Ş/g, 's').replace(/ş/g, 's')
+      .replace(/Ğ/g, 'g').replace(/ğ/g, 'g')
+      .replace(/Ü/g, 'u').replace(/ü/g, 'u')
+      .replace(/Ö/g, 'o').replace(/ö/g, 'o')
+      .replace(/Ç/g, 'c').replace(/ç/g, 'c')
+      .toLowerCase();
+  }
+
+  // migration_dt_arama.sql uygulanmadan deploy edilirse baslik_fold yoktur ve
+  // sorgu 42703 döner → bayrak inip eski ham ILIKE aramasına dönülür.
+  let dtFoldVar = true;
+
   // Alt tablo — mod-farkındalıklı (YAPILACAKLAR #7): 'ihale' ve 'tumu' → ilanlar
   // (mevcut davranış — 'tumu'da tablo BİLİNÇLİ ihale kalır, iki kaynağın kolonları
   // hizalanamıyor ve karışık listeyi üstteki "Son Eklenenler" widget'ı zaten veriyor),
@@ -1354,8 +1373,12 @@
       if (il) query = query.eq('il', il);
       // Arama yalnız başlıkta: idare maskeli (üstteki not), dogrudan-temin.html ile aynı
       // temizleme (PostgREST ilike sözdizimini bozan karakterler ayıklanır).
+      // baslik_fold = tr_fold(baslik), trigram indeksli ve anon'a AÇIK — bu sorgu
+      // misafirde de koştuğu için arama_fold (idare içerir, anon'a kapalı) KULLANILAMAZ.
       const aramaDt = arama.replace(/[,()*%\\]/g, ' ').trim();
-      if (aramaDt) query = query.ilike('baslik', `%${aramaDt}%`);
+      if (aramaDt) query = dtFoldVar
+        ? query.ilike('baslik_fold', `%${dtTrFold(aramaDt)}%`)
+        : query.ilike('baslik', `%${aramaDt}%`);
       query = query.order('tarih', { ascending: false });
     } else {
       // Misafirde ekap_id/idare select'ten ÇIKAR — anon'a kapalı kolonlar; biri kalırsa
@@ -1387,6 +1410,14 @@
 
     // Yanıt gelene kadar mod değiştiyse bayat sonucu basma (hızlı mod tıklamaları)
     if (mod !== aktifDashMod) return;
+
+    // baslik_fold yoksa (migration henüz uygulanmadı) 42703 gelir → bayrağı indir,
+    // eski aramayla TEK KEZ tekrar dene; kullanıcı "Bağlantı hatası" görmesin.
+    if (error && dtFoldVar && /baslik_fold/.test(error.message || '')) {
+      console.info('baslik_fold kolonu yok, eski aramaya dönülüyor:', error.message);
+      dtFoldVar = false;
+      return ilanlariYukle(mod);
+    }
 
     if (error || !data || data.length === 0) {
       tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:32px; color:var(--muted);">

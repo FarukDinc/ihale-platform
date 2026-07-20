@@ -58,7 +58,7 @@
 --      UÇAR ve rekabet-analizi aralıklı 3s timeout'a geri döner (o hata bir kez
 --      yaşandı). Bu yüzden ALTER FUNCTION en sonda TEKRAR uygulanıyor.
 --   B) Orijinal dosyalar `GRANT EXECUTE ... TO anon` içeriyor. O satırlar BURAYA
---      KOPYALANMADI: migration_anon_maske.sql:89-96 her iki fonksiyonu anon'dan
+--      KOPYALANMADI: migration_anon_maske.sql:140-147 her iki fonksiyonu anon'dan
 --      REVOKE edip yalnız authenticated+service_role'e vermişti (isim/kurum
 --      döndürdükleri için). Kopyalansaydı MASKE GERİ AÇILIRDI.
 --      CREATE OR REPLACE aynı OID'yi koruduğu için mevcut ACL zaten korunur;

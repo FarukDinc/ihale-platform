@@ -497,7 +497,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/sidebar-user.js?v=3"></script>
 <script src="js/bildirim-sayaci.js?v=rot1"></script>
-<script src="js/kategoriler.js?v=1"></script>
+<script src="js/kategoriler.js"></script>
 <script src="js/takip.js?v=2"></script>
 <script>
 (() => {
@@ -578,6 +578,27 @@
   // PostgREST or()/ilike sözdizimini bozmamak için arama terimini temizle
   function aramaTemizle(q) { return (q || '').replace(/[,()*%\\]/g, ' ').trim(); }
 
+  // Türkçe karakter katlama — SQL tr_fold() ile BİREBİR aynı
+  // (backend/migration_dt_arama.sql; ihaleler.html'deki trFold'un kopyası).
+  // Arama terimini normalize edip DB'nin katlanmış kolonuyla eşleştirir: ham ILIKE
+  // "kirtasiye" yazınca "kırtasiye" başlıklı ilanları SESSİZCE kaçırıyordu.
+  function trFold(s) {
+    return (s || '')
+      .replace(/İ/g, 'i').replace(/I/g, 'i').replace(/ı/g, 'i')
+      .replace(/Ş/g, 's').replace(/ş/g, 's')
+      .replace(/Ğ/g, 'g').replace(/ğ/g, 'g')
+      .replace(/Ü/g, 'u').replace(/ü/g, 'u')
+      .replace(/Ö/g, 'o').replace(/ö/g, 'o')
+      .replace(/Ç/g, 'c').replace(/ç/g, 'c')
+      .toLowerCase();
+  }
+
+  // migration_dt_arama.sql uygulanmadan frontend deploy edilirse (ya da migration
+  // geri alınırsa) katlanmış kolonlar yoktur ve sorgu 42703 ile düşer. Bayrak
+  // false'a dönünce sayfa eski ham-ILIKE aramasına iner: Türkçe katlamaz ama
+  // ÇALIŞIR — sayfa hiçbir senaryoda "Veri yüklenemedi" göstermez.
+  let foldKolonVar = true;
+
   // Aktif filtreleri (tür/il/arama) bir PostgREST sorgusuna uygula
   // Durum grupları — EKAP'ın 5 ham durumu iki anlamlı gruba indirgenir
   const DURUM_GRUP = {
@@ -643,21 +664,31 @@
     if (d.dokuman) query = query.eq('dokuman_var', true);
     // idare YALNIZ üyeye: kolon anon'a kapalı ve WHERE de SELECT yetkisi ister —
     // misafirde eklenirse tüm sorgu 42501 ile düşer.
-    // ⚠️ TR KATLAMA (20 Tem): dogrudan_temin_ilanlari'nda arama_fold kolonu YOK, arama ham
-    // kolonda ILIKE ile koşuyor. ILIKE ASCII i/I'yı katlar ama İ(U+0130)/ı'yı ve ü/ğ/ş/ç
-    // diakritiğini KATLAMAZ. 1,49M satırda ölçüldü: baslik ilike "istanbul"=41 iken
-    // "İstanbul"=3.654 (89x); "mudurlugu"=72 iken "müdürlüğü"=126.777 (1760x). Liste dolu
-    // görünüp sonuçların binde biri geldiği için hata fark edilmiyordu.
-    // trAramaKalibi (js/main.js) çift varyantlı harfleri tek-karakter jokerle değiştirir.
-    // KALICI ÇÖZÜM: ilanlar'daki gibi arama_fold generated kolonu + trigram indeksi
-    // (backlog #15) — o gelince burası trFold'a döner.
-    const dIdare = (d.idare && uyeMi) ? (window.trAramaKalibi ? window.trAramaKalibi(d.idare) : d.idare) : null;
-    if (dIdare) query = query.ilike('idare', `*${dIdare}*`);
+    if (d.idare && uyeMi) query = query.ilike('idare', `*${d.idare}*`);
 
-    const qk = q ? (window.trAramaKalibi ? window.trAramaKalibi(q) : q) : '';
-    if (qk) query = uyeMi
-      ? query.or(`baslik.ilike.*${qk}*,idare.ilike.*${qk}*`)
-      : query.ilike('baslik', `*${qk}*`);   // idare kolonu anon'a kapalı (WHERE de yetki ister)
+    // ── Serbest metin arama ─────────────────────────────────────────────────
+    // Katlanmış kolonlar (migration_dt_arama.sql) + trigram GIN indeksi:
+    //   üye     → arama_fold  = tr_fold(baslik || ' ' || idare)   [anon'a KAPALI]
+    //   misafir → baslik_fold = tr_fold(baslik)                   [anon'a AÇIK]
+    // arama_fold içinde idare geçtiği için misafire verilemez (verilseydi maskeli
+    // idare adı trigram aramasıyla harf harf geri okunabilirdi). Misafir dalı
+    // baslik_fold kullandığından artık O DA Türkçe katlıyor.
+    if (q) {
+      if (foldKolonVar) {
+        const qf = trFold(q);
+        query = query.ilike(uyeMi ? 'arama_fold' : 'baslik_fold', `*${qf}*`);
+      } else {
+        // Migration henüz uygulanmadı. Eski davranış TR KATLAMIYORDU ve bu sessiz veri
+        // kaybıydı — 1,49M satırda ölçüldü: baslik "mudurlugu"=72 vs "müdürlüğü"=126.777
+        // (1760x), "istanbul"=41 vs "İstanbul"=3.654. Yedek yol aktifken bile kayıp
+        // olmasın diye trAramaKalibi (js/main.js) uygulanıyor: çift varyantlı harfleri
+        // tek-karakter jokerle değiştirir, indeks/migration gerektirmez.
+        const qj = window.trAramaKalibi ? window.trAramaKalibi(q) : q;
+        if (qj) query = uyeMi
+          ? query.or(`baslik.ilike.*${qj}*,idare.ilike.*${qj}*`)
+          : query.ilike('baslik', `*${qj}*`);   // idare anon'a kapalı (WHERE de yetki ister)
+      }
+    }
     return query;
   }
 
@@ -684,7 +715,12 @@
   function sayimYapilabilirMi() {
     const aramaVar = !!aramaTemizle(document.getElementById('f-ara').value);
     const d = dtDetayDegerleri();
-    if (aramaVar) return false;              // baslik/idare ILIKE → seq-scan
+    // Arama artık trigram indeksli (migration_dt_arama.sql) → LİSTE sorgusu hızlı.
+    // Ama tam SAYIM hâlâ kapalı, bilinçli: indeks sayfayı hızlandırır, count(*)
+    // yine EŞLEŞEN TÜM satırlara dokunur ve "mal"/"alım" gibi geniş terimlerde
+    // yüz binlerce satır eşleşip 57014'e döner. Sayaç boş kalır (zaten görünmez);
+    // liste "25+ duyuru" hilesiyle sayfalanır.
+    if (aramaVar) return false;
     if (d.idare) return false;               // idare ILIKE %v% → btree kullanılamaz
     if (d.dokuman && !indeksliFiltreVar()) return false;  // dokuman_var indekssiz, %16,7 seçicilik
     return true;
@@ -779,9 +815,10 @@
     // (bkz. sayimYapilabilirMi). Değişken adı da onu yansıtsın diye aramaVar → sayilmaz.
     const sayilmaz = !sayimYapilabilirMi();
     const bas = (sayfa - 1) * PER_PAGE;
-    // Arama yokken exact count hızlı (index'li eq / tam sayım). Arama varken baslik/idare ILIKE
-    // 616K satırda seq-scan → exact count statement-timeout eder (kod 57014, doğrulandı). Bu yüzden
-    // arama modunda sayım yapmayıp bir FAZLA satır çekeriz; PER_PAGE+1 dönerse sonraki sayfa var.
+    // Arama yokken exact count hızlı (index'li eq / tam sayım). Arama varken trigram
+    // indeksi listeyi hızlandırsa da tam sayım geniş terimlerde 57014 eder (bkz.
+    // sayimYapilabilirMi) → sayım yapmayıp bir FAZLA satır çekeriz; PER_PAGE+1
+    // dönerse sonraki sayfa var.
     // Taban: kurum hiyerarşi filtresi aktifse RPC, değilse tablo (dtSorguTabani)
     let query = dtSorguTabani(
       `dt_no,baslik,${uyeMi ? 'idare,' : ''}tur,il,tarih,yayin_tarihi,durum,kategori,dokuman_var,duyuru_var`,
@@ -792,6 +829,15 @@
     query = query.range(bas, sayilmaz ? bas + PER_PAGE : bas + PER_PAGE - 1);
     const { data, count, error } = await query;
     if (error) {
+      // Katlanmış kolonlar yoksa (migration_dt_arama.sql henüz uygulanmadı ya da
+      // geri alındı) PostgREST 42703 döner. Bayrağı indirip TEK KEZ eski aramayla
+      // tekrar dene — sayfa hata ekranı göstermesin.
+      if (foldKolonVar && /arama_fold|baslik_fold/.test(error.message || '')) {
+        console.info('katlanmış arama kolonu yok, eski aramaya dönülüyor:', error.message);
+        foldKolonVar = false;
+        sayacImza = null;              // sayaç imzası bayatladı, yeniden hesaplansın
+        return veriYukle(false);
+      }
       document.getElementById('liste-container').innerHTML = `<div class="empty-wrap">
         <div class="empty-icon">⚠️</div>
         <div class="empty-baslik">Veri yüklenemedi</div>
@@ -1160,16 +1206,12 @@
       const { data: rpcData, error } = await sb.rpc('dt_il_sayim');
       if (error) throw error;
       iller = (rpcData || []).map(r => r.il).filter(Boolean);
-    } catch (rpcHata) {
-      // ⚠️ ESKİ YEDEK YOL `.select('il').limit(5000)` idi ve D1 tuzağına düşüyordu:
-      // PostgREST db-max-rows=1000 sunucuda kesiyor, `.limit(5000)` İŞE YARAMIYOR.
-      // Ölçüldü (20 Tem): 81 il yerine 69 dönüyordu; kaybolanlar tam da düşük hacimli
-      // iller (BAYBURT 2.139 duyuru, ARTVİN, KİLİS, IĞDIR…) → kullanıcı "bu ilde DT yok"
-      // sanıyordu. Üstelik hata da yutuluyordu. 1,49M satırı sayfalamak yüzlerce istek
-      // demek olduğundan statik kanonik listeye geçildi (js/main.js: TR_ILLER_BUYUK,
-      // DB'deki yazımla birebir büyük harf — .eq('il', …) tam eşleşme arıyor).
-      console.warn('dt_il_sayim RPC başarısız, statik il listesine düşülüyor:', rpcHata && rpcHata.message);
-      iller = window.TR_ILLER_BUYUK || [];
+    } catch (_) {
+      // RPC yoksa/başarısızsa eski örneklem yöntemine düş — dropdown boş kalmasın.
+      const { data } = await sb.from('dogrudan_temin_ilanlari')
+        .select('il').not('il', 'is', null)
+        .order('tarih', { ascending: false }).limit(5000);
+      iller = (data || []).map(k => k.il).filter(Boolean);
     }
     iller = [...new Set(iller)].sort((a, b) => a.localeCompare(b, 'tr'));
     const sel = document.getElementById('f-il');
@@ -1326,6 +1368,6 @@
   })();
 })();
 </script>
-<script src="js/main.js?v=trf2"></script>
+<script src="js/main.js"></script>
 </body>
 </html>
