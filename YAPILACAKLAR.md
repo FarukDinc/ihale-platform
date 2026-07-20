@@ -261,26 +261,37 @@
 >   ekranına ULAŞILAMIYORDU. Fix: Supabase `getSession()` (expiry dahil); oturum yoksa bayat ihale_token
 >   temizlenip form gösteriliyor. Canlıda reprodüce edilip doğrulandı.
 > - **⏳ Onay e-postası İngilizce:** Türkçe şablonlar hazır+deploy (`email/onay.html`, `email/sifirlama.html`;
->   ham HTML servis ediliyor). GoTrue'da özel subject/template YOK → varsayılan İngilizce. Prod-config yazımı
->   classifier'a takıldı → **VDS'te KULLANICI çalıştıracak.** Çalıştırılacak komut (mevcut `studio` bloğunu
->   koruyor — Studio 127.0.0.1'de kapalı kalır; `.bak` yedeği alır):
+>   ham HTML servis ediliyor). GoTrue'da özel subject/template YOK → varsayılan İngilizce.
+>   **🛑 20 TEM DÜZELTME — ÖNCEKİ KOMUT YIKICIYDI, ÇALIŞTIRMAYIN.** Buraya yazdığım ilk blok yalnız
+>   `studio` bloğunu koruyordu; oysa canlı `docker-compose.override.yml` içinde **Google OAuth ayarları**
+>   da varmış (`GOTRUE_EXTERNAL_GOOGLE_ENABLED/CLIENT_ID/SECRET/REDIRECT_URI`). O komut çalıştırılsaydı
+>   Google ile giriş çalışmayı bırakacaktı. **DERS: `cat > dosya` ile prod config yazmadan ÖNCE dosyayı
+>   OKU** — "override küçüktür, içinde ne olabilir ki" varsayımı bir kimlik doğrulama sağlayıcısını silerdi.
+>   Yedek alındı: `docker-compose.override.yml.bak.1784543819`. DOĞRU komut (Google bloğu korunur):
 >   ```bash
->   cd /opt/supabase/docker && cp docker-compose.override.yml docker-compose.override.yml.bak && cat > docker-compose.override.yml <<'EOF'
+>   cd /opt/supabase/docker && cp docker-compose.override.yml docker-compose.override.yml.bak.$(date +%s) && cat > docker-compose.override.yml <<'EOF'
 >   services:
 >     studio:
 >       ports:
 >         - "127.0.0.1:3000:3000"
 >     auth:
 >       environment:
+>         GOTRUE_EXTERNAL_GOOGLE_ENABLED: "true"
+>         GOTRUE_EXTERNAL_GOOGLE_CLIENT_ID: ${GOTRUE_EXTERNAL_GOOGLE_CLIENT_ID}
+>         GOTRUE_EXTERNAL_GOOGLE_SECRET: ${GOTRUE_EXTERNAL_GOOGLE_SECRET}
+>         GOTRUE_EXTERNAL_GOOGLE_REDIRECT_URI: https://ihaleglobal.com/auth/v1/callback
 >         GOTRUE_MAILER_SUBJECTS_CONFIRMATION: "E-posta adresinizi doğrulayın · İhaleGlobal"
 >         GOTRUE_MAILER_SUBJECTS_RECOVERY: "Şifre sıfırlama · İhaleGlobal"
+>         GOTRUE_MAILER_SUBJECTS_MAGIC_LINK: "Giriş bağlantınız · İhaleGlobal"
+>         GOTRUE_MAILER_SUBJECTS_EMAIL_CHANGE: "E-posta değişikliğini onaylayın · İhaleGlobal"
 >         GOTRUE_MAILER_TEMPLATES_CONFIRMATION: "https://ihaleglobal.com/email/onay.html"
 >         GOTRUE_MAILER_TEMPLATES_RECOVERY: "https://ihaleglobal.com/email/sifirlama.html"
 >   EOF
 >   docker compose up -d auth
 >   ```
->   Doğrulama: yeni kayıt denemesi → gelen mail Türkçe olmalı. Geri alma: `cp docker-compose.override.yml.bak
->   docker-compose.override.yml && docker compose up -d auth`.
+>   Doğrulama: (1) yeni kayıt denemesi → mail Türkçe; (2) **Google ile giriş de test edilmeli** (bu blok
+>   riske girdi). Geri alma: `cp docker-compose.override.yml.bak.1784543819 docker-compose.override.yml
+>   && docker compose up -d auth`.
 > - **❓ "Boş çıkan link":** anon reprodüksiyon yapılamadı (üye linkleri maskeli); sayfadaki tüm href'ler
 >   geçerli göründü. Kullanıcıdan hangi link/URL olduğu soruldu.
 
