@@ -1,5 +1,87 @@
 # İhalePlatform — Yapılacaklar Listesi
 
+> # 📋 18–20 TEMMUZ OTURUM ÖZETİ — YAPILANLAR ve SIRADAKİLER
+> Bu blok tek oturuma dönebilmek için yazıldı. Detaylar aşağıdaki tarihli kayıtlarda.
+>
+> ## ✅ TAMAMLANDI (canlıda, doğrulandı)
+>
+> **Dashboard & DT arayüzü**
+> - Tek global mod seçici (Tümü/İhaleler/Doğrudan Temin) — tüm widget'lar tek noktadan
+> - 9 bağlantının tamamı mod-farkındalıklı (`modLinkKur`): bir taraf 0 → doğrudan git,
+>   ikisi de dolu → seçim popup'ı. `kurumlar-link` hiç atanmıyordu, o da düzeldi
+> - **DT Detaylı Ara paneli**: idare (üyeye özel) / durum / tarih aralığı / dokümanlı +
+>   hızlı tarih çipleri + aktif filtre çipleri + "neden bazı filtreler yok" notu
+> - DT takip mekanizması (☆/★) + `takipte.html`'e DT bölümü
+> - `dogrudan-temin.html` URL parametreleri: `sekme, ara, tur, durum, dokuman, detayli,
+>   tarihBas, tarihBit, idare, il, kategori, dt_no`
+>
+> **Güvenlik — anon maskeleme denetimi (61 nesne, çok-ajanlı)**
+> - **İKİ KÖK NEDEN**: (A) varsayılan ayrıcalık → yeni tablo/MV doğuştan anon-açık,
+>   REVOKE şart; (B) view'lar sahip-yetkisiyle çalışır → taban tablo maskesi uygulanmaz
+> - Kapatılanlar: `ilanlar_sonuc` (**KRİTİK, 356.904 satırda idare/ekap_id/ikn açıktı**),
+>   `dt_idare_ozet_mv` (38.105 idare adı), `kamu_ihaleleri`, `kik_kararlar.ham_veri`,
+>   `dogrudan_temin_sonuclari`, `dt_takipler`
+>
+> **Performans**
+> - DT `kategori`/`tur` filtreleri **20-38 sn → indeksli** (`migration_dt_index.sql`)
+> - `ilanlar_sonuc` view'ının bozuk LEFT JOIN'i tespit edildi (356K satırın tamamında NULL)
+>
+> **Proxy havuzu (`proxy_havuz.py` — YENİ)**
+> - İstek başına IP rotasyonu (eskiden script başına TEK IP, 99'u boşta) → **2,65x hız**
+> - IP başına soğuma, küresel hız tavanı, otomatik karantina, sağlayıcı-arızasında
+>   erken durma, log seli kesme, `PROXY_AZAMI_UC` ile soket bütçesi
+> - Direkt yedek **varsayılan KAPALI** ("VDS IP'si yasak" talimatı)
+> - **6 scraper bağlandı**: dt_kazanan, ekap_dogrudan_temin, kik_backfill,
+>   ekap_sonuc_backfill, ekap_sonuc_scraper, ilan_metni_backfill
+> - `ekap_scraper.post()` iki tipi de kabul eder (AsyncClient | havuz) — çalışma-anı ayrımı
+>
+> **İdare hiyerarşisi (YENİ, uçtan uca çalışıyor)**
+> - `idare_hiyerarsi` (87.528 düğüm) + `idare_ata_torun` kapanış tablosu (312.259 satır)
+>   + `idare_hiyerarsi_sayim_mv` + 4 RPC
+> - Kullanıcının örneği birebir doğrulandı:
+>   `ADANA İL EMNİYET (kendi 5 / toplam 12) → EMNİYET GENEL MD (1.203) → İÇİŞLERİ (4.010)`
+>   DT tarafı: EGM **26.835**, İçişleri **49.106**
+> - `run_scraper.sh`'e 3 eksik adım eklendi (`ilan_detsis_esle`, `idare_kapanis_uret`,
+>   MV refresh) — hiçbiri cron'da yoktu, her gece kapsama eriyordu
+>
+> ## 🔜 SIRADAKİLER (öncelik sırasıyla)
+>
+> 1. **Eşleştirme kapsamı %32 → ~%90.** Kök neden KANITLANDI: `ekap_detsis_cek.py`
+>    `paginationTake=1` kullanıyor, EKAP idare adını her ihaleye farklı yazıyor;
+>    tek yazım o kurumun ihalelerinin %33,5'ini kapsıyor (gözlenen %32,3).
+>    → `paginationTake=300` + her farklı yazımı ayrı `idare_tur` satırı (~15 satır kod).
+>    Kalıcı çözüm: `idareIdHash` (ada bakmayan kararlı anahtar, 14/14 test edildi).
+> 2. **Backfill'leri SIRALI koştur.** Ölçüm: tek scraper 100 uçla **22.000 kayıt/saat**,
+>    iki scraper 40'ar uçla **2.000/saat**. Paralel çalıştırmak eşzamanlı bağlantı
+>    bütçesini doldurup ters teper. Kuyruk 485K → sıralı koşuda ~22 saat.
+> 3. **`idareler.html` ağaç arayüzü** — RPC'ler hazır (`idare_agac_dallar/yol/ara/
+>    alt_agac_detsis`). Ağaçta "Bağlantısız Kurumlar" (%20) AYRI DAL olarak gösterilmeli,
+>    gizlenirse veri eksik sanılır. Kapsama oranı her düğümde yazılmalı.
+> 4. **İhale/DT aramasına hiyerarşi filtresi** — "bu kurum ve altındakiler".
+> 5. **`ekap_scraper` havuza bağlanması** — yol açık ama hız tavanı ayarı gerek
+>    (şu an 8 paralel × 2-3 istek ≈ 20-60 istek/sn, havuz tavanı 600/dk = 10/sn).
+> 6. `stat-kazanim` sayı/hedef evreni uyuşmuyor (78K vs 1,39M).
+> 7. Dashboard alt yarısı mod-farkındalıksız (`ilanlariYukle`, `sonGorulenlerYukle`,
+>    `enIyiEslesmelerYukle`).
+> 8. `satinalma_talepleri.olusturan_user_id` — `ozel-ihale-detay.html:265` ile BİRLİKTE
+>    düzeltilmeli, tek başına REVOKE sayfayı kırar.
+> 9. `ilanlar_sonuc` view'ının bozuk LEFT JOIN'i (`i.ekap_id = s.ekap_id` hiç eşleşmiyor).
+> 10. **Ürün kararı bekliyor:** `kamu_ihaleleri.idare` misafire açık bırakıldı
+>     (`ozel-ihaleler.html` onu hem gösterip hem aratıyor). Politikaya uyum istenirse
+>     REVOKE değil, sayfaya uyeMi dalı + dar select.
+> 11. **Açık risk:** Webshare 100 IP'nin 100'ü tek `166.88.110.0/24` bloğunda.
+>     Paket büyütme gerekirse gerekçe IP *sayısı* değil **çeşitliliği**.
+> 12. VDS'te çekirdek güncellemesi bekliyor (`System restart required`). Restart sonrası
+>     **kong'u da yeniden başlat** (bayat upstream = 502).
+>
+> ## ⚠️ ÖLÇÜM TUZAKLARI (bu oturumda 4 yanlış teşhise yol açtı)
+> - `kuyruk_say()` 1,49M satırda `count=exact` → **ilk çıktı ~100 sn sonra**
+> - Scraper 200'lük partiler → **parti başına ~260 sn**; 90 sn'lik pencere "0 ilerleme" gösterir
+> - Python çıktı tamponu → `-u` olmadan log yanıltır
+> - `olusturulma` yalnız YENİ satırda değişir; hafta sonu 0 ilan **normaldir**
+> - Süreç başlatma: **`setsid --fork` şart**; `nohup setsid &` ssh kapanınca sessizce ölür
+
+
 > ## 🔧 20 TEMMUZ — PROXY TEŞHİS TURU: 4 YANLIŞ TEŞHİS, 3 GERÇEK BULGU
 > Webshare 402'si çözüldükten sonra backfill'ler yine yazmadı. Teşhis uzun sürdü ve
 > bu turda **dört kez yanlış yöne saptım**; kayda geçiyorum çünkü desen tekrar edebilir.
