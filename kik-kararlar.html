@@ -378,8 +378,26 @@
   const PER_PAGE = 20;
   let tumVeri = [];
   let filtreliVeri = [];
+  let toplamKayit = 0;   // sunucudaki gerçek satır sayısı (tumVeri kırpılmış olabilir)
   let sayfa = 1;
   let aktifSonucFiltre = '';
+  let foldYok = false;   // arama_fold migration'ı uygulanmamış → arama TR katlamıyor (uyarı basılır)
+
+  // Türkçe karakter katlama — SQL tr_fold() ile BİREBİR aynı
+  // (migration_kik_kararlar_arama_fold.sql). Arama terimini normalize edip DB'nin
+  // arama_fold (generated, katlanmış) kolonuyla eşleştirir; böylece "belediye"
+  // yazınca "BELEDİYE" içeren kararlar da bulunur. Düz ILIKE bunları GÖREMEZ:
+  // PostgreSQL lower('İ') = 'i̇' (i + birleşen nokta), yani asla 'i'ye eşit olmaz.
+  function trFold(s) {
+    return (s || '')
+      .replace(/İ/g, 'i').replace(/I/g, 'i').replace(/ı/g, 'i')
+      .replace(/Ş/g, 's').replace(/ş/g, 's')
+      .replace(/Ğ/g, 'g').replace(/ğ/g, 'g')
+      .replace(/Ü/g, 'u').replace(/ü/g, 'u')
+      .replace(/Ö/g, 'o').replace(/ö/g, 'o')
+      .replace(/Ç/g, 'c').replace(/ç/g, 'c')
+      .toLowerCase();
+  }
 
   // --- Kullanıcı sidebar ---
   async function kullaniciyiYukle() {
@@ -432,26 +450,74 @@
     document.getElementById('toolbar').style.display = 'none';
     document.getElementById('pager').style.display = 'none';
 
-    let q = sb.from('kik_kararlar').select(
-      'id,karar_no,karar_tarihi,karar_turu,sonuc,baslik,idare,ihale_konusu,kaynak_url,ozet'
-    ).order('karar_tarihi', { ascending: false }).limit(500);
+    // or() gramerini bozan karakterleri temizle (virgül or-listesini, parantez grubu kapatır → 400)
+    const k = kelime.replace(/[,()*\\]/g, ' ').trim();
 
-    if (kelime) {
-      // trAramaKalibi (js/main.js): or() gramerini bozan karakterleri temizler VE Türkçe
-      // İ/ı·ü·ğ·ş·ç·ö harflerini tek-karakter jokerle değiştirir. ILIKE bu harfleri ASCII
-      // karşılıklarıyla KATLAMAZ; düz arama "istanbul"da 0, "mudurlugu"da 0 dönüyordu
-      // (gerçek evren 61/97). Canlı doğrulama 20 Tem.
-      const k = window.trAramaKalibi(kelime);
-      if (k) q = q.or(`baslik.ilike.%${k}%,idare.ilike.%${k}%,ihale_konusu.ilike.%${k}%,ozet.ilike.%${k}%`);
+    // Sorgu FABRİKA: aynı filtre setini iki arama kipiyle kurabilmek için. 'fold'
+    // kipi arama_fold kolonunu ister; migration henüz uygulanmamış bir ortamda
+    // PostgREST 42703 döner ve 'legacy' kipiyle bir kez daha denenir (bkz. aynı
+    // desen ihaleler.html). Filtreleri iki yere elle kopyalamak, birini
+    // güncelleyip diğerini unutma hatasını davet ederdi.
+    //
+    // DAR SELECT: misafir maskesi nedeniyle `olusturulma`/`ham_veri` anon'a KAPALI —
+    // bu listeye girerlerse PostgREST sorgunun TAMAMINI 42501 ile reddeder.
+    //
+    // limit 1000: sayfalama CLIENT tarafında (tumVeri dilimleniyor). 20 Tem'e kadar
+    // tablo 97 satırdaydı ve tavan görünmüyordu; kik_backfill'in penceresi 3 günden
+    // 90 güne çıkınca tablo binlerce satıra büyüyor. PostgREST zaten ~1000'de kesiyor,
+    // daha yükseği anlamsız — bunun yerine GERÇEK toplamı count ile ayrıca sorup
+    // kırpma olduğunda kullanıcıya söylüyoruz (sessizce eksik liste göstermek YOK).
+    const sorguKur = (aramaKipi) => {
+      let q = sb.from('kik_kararlar').select(
+        'id,karar_no,karar_tarihi,karar_turu,sonuc,baslik,idare,ihale_konusu,kaynak_url,ozet',
+        { count: 'exact' }
+      ).order('karar_tarihi', { ascending: false }).limit(1000);
+
+      if (k) {
+        // TÜRKÇE KATLAMA — düz ILIKE burada SESSİZ VERİ KAYBI demek: lower('İ') != 'i'
+        // olduğu için 'belediye' araması 'BELEDİYE' yazan satırları hiç görmez
+        // (ölçüm: idare ILIKE %BELED% → 19, %belediye% → 2). Terim de kolon da
+        // aynı normal forma indiriliyor. Bkz. migration_kik_kararlar_arama_fold.sql.
+        if (aramaKipi === 'fold') q = q.ilike('arama_fold', `%${trFold(k)}%`);
+        else {
+          // LEGACY kip de ham ILIKE ile veri kaybediyordu (ölçüm: "mudurlugu" → 0 sonuç,
+          // gerçek evren 97 satırın 61'i). Yedek yol devreye girdiğinde arama tamamen
+          // çuvallamasın diye trAramaKalibi (js/main.js) uygulanıyor: Türkçe'de çift
+          // varyantlı harfleri tek-karakter jokerle değiştirir, migration yokken bile
+          // sonuç getirir. Kullanıcı zaten foldYok şeridiyle kipin düştüğünü görüyor.
+          const kj = window.trAramaKalibi ? window.trAramaKalibi(k) : k;
+          if (kj) q = q.or(`baslik.ilike.%${kj}%,idare.ilike.%${kj}%,ihale_konusu.ilike.%${kj}%,ozet.ilike.%${kj}%`);
+        }
+      }
+      if (kararNo) q = q.ilike('karar_no', `%${kararNo}%`);   // '2026/UH.II-…' saf ASCII, katlama gerekmez
+      if (tur) q = q.eq('karar_turu', tur);
+      if (sonuc) q = q.eq('sonuc', sonuc);
+      if (bas) q = q.gte('karar_tarihi', bas);
+      if (bit) q = q.lte('karar_tarihi', bit);
+      return q;
+    };
+
+    let { data, error, count } = await sorguKur('fold');
+
+    // arama_fold okunamıyorsa çökme: legacy ILIKE ile devam et. AMA sessizce değil —
+    // o kipte sonuçlar ve count yine eksik kalacağı için goster() uyarı şeridi basar.
+    //
+    // İKİ ayrı başarısızlık yakalanıyor ve ikincisi sinsi olan:
+    //   42703 — migration henüz uygulanmamış, kolon yok ("...arama_fold does not exist")
+    //   42501 — kolon VAR ama anon'a GRANT edilmemiş. kik_kararlar tablo-geneli
+    //           SELECT'i anon'dan revoke edilip 10 kolonluk kolon-grant'a çevrildi;
+    //           sonradan eklenen kolon o listeye kendiliğinden girmez ve PostgreSQL
+    //           WHERE'de kullanmak için de SELECT yetkisi ister → misafirde sorgunun
+    //           TAMAMI reddedilir. Mesajı jenerik ("permission denied for table"),
+    //           yani kolon adıyla yakalanamaz; kod ile yakalıyoruz.
+    // Yalnız `k` doluyken denenir: kelime yoksa arama_fold sorguya hiç girmemiştir,
+    // o hâldeki bir 42501 başka bir kolondan gelir ve maskelenmemeli.
+    foldYok = false;
+    if (error && k && (/arama_fold/.test(error.message || '') || error.code === '42501')) {
+      console.info('arama_fold okunamadı, legacy arama ile tekrar deneniyor:', error.code, error.message);
+      foldYok = true;
+      ({ data, error, count } = await sorguKur('legacy'));
     }
-    // karar_no alfanümerik (Türkçe harf içermez) → düz temizlik yeterli.
-    if (kararNo) q = q.ilike('karar_no', `%${kararNo.replace(/[,()*\\%_]/g, ' ').trim()}%`);
-    if (tur) q = q.eq('karar_turu', tur);
-    if (sonuc) q = q.eq('sonuc', sonuc);
-    if (bas) q = q.gte('karar_tarihi', bas);
-    if (bit) q = q.lte('karar_tarihi', bit);
-
-    const { data, error } = await q;
 
     if (error) {
       if (error.code === '42P01') {
@@ -469,6 +535,8 @@
     }
 
     tumVeri = data || [];
+    // Sunucudaki gerçek toplam (filtreler uygulanmış hali). data kırpılmış olabilir.
+    toplamKayit = (typeof count === 'number') ? count : tumVeri.length;
     goster();
   };
 
@@ -494,15 +562,30 @@
     const iptalSay = tumVeri.filter(k => k.sonuc === 'iptal').length;
     const kabulSay = tumVeri.filter(k => k.sonuc === 'kabul').length;
     const redSay   = tumVeri.filter(k => k.sonuc === 'red').length;
-    document.getElementById('st-toplam').textContent = tumVeri.length.toLocaleString('tr');
+    // Toplam sayacı SUNUCUDAKİ gerçek sayıyı gösterir — indirilen diliminkini değil.
+    document.getElementById('st-toplam').textContent = toplamKayit.toLocaleString('tr');
     document.getElementById('st-iptal').textContent = iptalSay.toLocaleString('tr');
     document.getElementById('st-kabul').textContent = kabulSay.toLocaleString('tr');
     document.getElementById('st-red').textContent   = redSay.toLocaleString('tr');
     document.getElementById('stats-bar').style.display = tumVeri.length ? 'grid' : 'none';
     document.getElementById('toolbar').style.display   = tumVeri.length ? 'flex' : 'none';
 
+    const seritStil = `margin-bottom:12px;padding:10px 14px;border-radius:8px;
+                       background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.35);
+                       font-size:13px;line-height:1.5;text-align:left;`;
+
+    // Katlama uyarısı: arama_fold kolonu yoksa arama Türkçe İ/ı'yı katlamaz ve hem
+    // liste hem sayaç eksik kalır. Bunu söylemeden "N karar" basmak, kullanıcıya
+    // kendinden emin ve YANLIŞ bir toplam göstermek olur.
+    const foldUyariHTML = foldYok ? `
+      <div style="${seritStil}">
+        ⚠️ Türkçe karakter katlaması devre dışı (<code>arama_fold</code> henüz
+        oluşturulmamış). Arama şu an <b>İ/ı</b> ayrımına takılıyor; “belediye” yazınca
+        “BELEDİYE” geçen kararlar listeye ve sayaca girmeyebilir.
+      </div>` : '';
+
     if (!filtreliVeri.length) {
-      document.getElementById('liste-container').innerHTML = `
+      document.getElementById('liste-container').innerHTML = foldUyariHTML + `
         <div class="empty-wrap">
           <div class="empty-icon">🔍</div>
           <div class="empty-baslik">Karar Bulunamadı</div>
@@ -522,7 +605,17 @@
     document.getElementById('liste-sayi').textContent = `${filtreliVeri.length.toLocaleString('tr')} karar`;
     document.getElementById('results-label').textContent = `${filtreliVeri.length.toLocaleString('tr')} karar`;
 
-    document.getElementById('liste-container').innerHTML = dilim.map(k => kartHTML(k)).join('');
+    // Sunucu tarafı kırpma uyarısı: sessizce eksik liste göstermek yasak.
+    const kirpildi = toplamKayit > tumVeri.length;
+    const kirpmaHTML = kirpildi ? `
+      <div style="${seritStil}">
+        ⚠️ Bu aramaya uyan <b>${toplamKayit.toLocaleString('tr')}</b> karar var; en yeni
+        <b>${tumVeri.length.toLocaleString('tr')}</b> tanesi listeleniyor.
+        Tümünü görmek için tarih aralığı veya kelime filtresi ekleyin.
+      </div>` : '';
+
+    document.getElementById('liste-container').innerHTML =
+      foldUyariHTML + kirpmaHTML + dilim.map(k => kartHTML(k)).join('');
 
     // Pager
     const pager = document.getElementById('pager');
@@ -604,6 +697,6 @@
     document.getElementById(id).addEventListener('keydown', e => { if (e.key === 'Enter') ara(1); });
   });
 </script>
-<script src="js/main.js?v=trf2"></script>
+<script src="js/main.js"></script>
 </body>
 </html>
