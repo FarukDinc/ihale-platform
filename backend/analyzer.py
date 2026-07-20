@@ -7,10 +7,13 @@
 - Güvenli JSON parse
 
 Kurulum:
-    pip install google-generativeai pdfplumber requests python-dotenv
+    pip install google-genai pdfplumber requests python-dotenv
 
 Kullanım:
     GEMINI_API_KEY=xxx python analyzer.py
+
+SDK: google-genai (Backlog #34). Eski google.generativeai bırakıldı — "support ended"
+durumdaydı ve File API'si canlıda kırıktı (bkz. taranmis_pdf_analiz_et notu).
 """
 
 import os
@@ -21,16 +24,20 @@ import tempfile
 import zipfile
 import requests
 import pdfplumber
-import google.generativeai as genai
 from pathlib import Path
 from dotenv import load_dotenv
+from google.genai import types
+
+from gemini_ortak import VARSAYILAN_MODEL, gemini_hata_logla, istemci_al, yanit_metni
 
 load_dotenv()
 
 # ── Yapılandırma ──────────────────────────────────────────
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "xxxgeminikeyxxx")
-genai.configure(api_key=GEMINI_API_KEY)
-model = genai.GenerativeModel("gemini-2.5-flash")
+MODEL = VARSAYILAN_MODEL
+# İstemci gemini_ortak.istemci_al() ile TEMBEL kurulur: worker.py bu modülü top-level
+# import ediyor, anahtar yokken modül seviyesinde Client() kurmak worker'ı import
+# anında çökertirdi (eski SDK'nın genai.configure'ı sessizce geçiyordu).
 
 # Sayfa başına minimum karakter — altındaysa taranmış say
 TARANMIS_ESIGI = 50
@@ -237,11 +244,14 @@ MÜŞTERİ PROFİLİ:
 def metin_pdf_analiz_et(metin: str, sirket_profili: dict) -> dict:
     try:
         prompt = prompt_olustur(sirket_profili, metin)
-        response = model.generate_content(prompt)
-        return json_parse_et(response.text)
+        response = istemci_al().models.generate_content(model=MODEL, contents=prompt)
+        yanit, bos_neden = yanit_metni(response)
+        if not yanit:
+            # Boş yanıt json_parse_et'e girip sessizce boş/None analize dönüşmesin.
+            return {"hata": gemini_hata_logla("metin_pdf_analiz/boş yanıt", bos_neden)}
+        return json_parse_et(yanit)
     except Exception as e:
-        print(f"  ✗ Gemini metin analiz hatası: {e}")
-        return {"hata": str(e)}
+        return {"hata": gemini_hata_logla("metin_pdf_analiz", e)}
 
 
 # ── Gemini Analiz — Taranmış PDF (Vision) ────────────────
@@ -250,12 +260,13 @@ INLINE_LIMIT_BYTES = 18 * 1024 * 1024  # ~18MB ham dosya (base64 + prompt ile 20
 def taranmis_pdf_analiz_et(dosya_yolu: str, sirket_profili: dict) -> dict:
     """
     Taranmış/görsel PDF'i Gemini Vision'a verir.
-    ÖNCELİK: inline veri (generate_content'e ham bayt) — deprecated google-generativeai
-    SDK'sının File API upload_file() akışı artık $discovery/rest uç noktasında "API key
-    not valid" hatası veriyor (canlıda doğrulandı — normal generate_content/list_files
-    AYNI key ile çalışıyor, sadece upload_file'ın kullandığı ayrı discovery-tabanlı yol
-    kırık — SDK "support ended" uyarısıyla tutarlı). Dosya inline sınırın altındaysa bu
-    kırık yolu tamamen atlıyoruz. Üstündeyse File API'yi son çare olarak dener.
+    ÖNCELİK: inline veri (generate_content'e ham bayt). Bu sıralama ESKİ SDK'da zorunluydu:
+    google.generativeai'nin upload_file() akışı $discovery/rest uç noktasında "API key not
+    valid" veriyordu (canlıda doğrulandı — aynı anahtarla generate_content çalışıyordu).
+    google-genai'ye geçişle (Backlog #34) File API standart uç noktayı kullanıyor, yani o
+    hatanın ORTADAN KALKMASI bekleniyor — ANCAK canlıda henüz doğrulanmadı (migrasyon ağ
+    çağrısı yapmadan yürütüldü). İnline yolu yine de önce deniyoruz: sınır altındaki
+    dosyalar için tek istek daha hızlı ve yükleme/silme turunu tamamen atlar.
     """
     boyut = os.path.getsize(dosya_yolu)
     prompt = prompt_olustur(sirket_profili)
@@ -265,40 +276,66 @@ def taranmis_pdf_analiz_et(dosya_yolu: str, sirket_profili: dict) -> dict:
             print(f"  → Gemini Vision'a inline gönderiliyor ({boyut//1024}KB)...")
             with open(dosya_yolu, "rb") as f:
                 pdf_bytes = f.read()
-            response = model.generate_content([
-                prompt,
-                {"mime_type": "application/pdf", "data": pdf_bytes},
-            ])
-            return json_parse_et(response.text)
+            response = istemci_al().models.generate_content(
+                model=MODEL,
+                contents=[prompt, types.Part.from_bytes(data=pdf_bytes, mime_type="application/pdf")],
+            )
+            yanit, bos_neden = yanit_metni(response)
+            if not yanit:
+                return {"hata": gemini_hata_logla("vision_inline/boş yanıt", bos_neden)}
+            return json_parse_et(yanit)
         except Exception as e:
-            print(f"  ✗ Gemini Vision (inline) hatası: {e}")
-            return {"hata": str(e)}
+            return {"hata": gemini_hata_logla("vision_inline", e)}
 
-    # Büyük dosya — File API dene (şu an kırık olabilir, bkz. yukarıdaki not)
+    # Büyük dosya — File API
     yuklenen_dosya = None
     try:
         print(f"  → Dosya inline sınırını aşıyor ({boyut//1024//1024}MB) — Gemini File API'ye yükleniyor...")
-        yuklenen_dosya = genai.upload_file(dosya_yolu, mime_type="application/pdf")
+        yuklenen_dosya = istemci_al().files.upload(
+            file=dosya_yolu,
+            config=types.UploadFileConfig(mime_type="application/pdf"),
+        )
 
+        # İşlenene kadar bekle. Eski kod durum ne olursa olsun döngü bitince devam ediyordu:
+        # FAILED dosyada 60sn boşuna bekleyip sonra anlamsız bir API hatası veriyordu. Artık
+        # FAILED anında kesiliyor, zaman aşımı da AÇIKÇA raporlanıyor (sessiz geçiş yok).
+        durum_adi = None
         for _ in range(30):
-            dosya_durumu = genai.get_file(yuklenen_dosya.name)
-            if dosya_durumu.state.name == "ACTIVE":
+            dosya_durumu = istemci_al().files.get(name=yuklenen_dosya.name)
+            durum = getattr(dosya_durumu, "state", None)
+            durum_adi = getattr(durum, "name", None) or str(durum)
+            if durum_adi == "ACTIVE":
                 break
+            if durum_adi == "FAILED":
+                hata_detay = getattr(dosya_durumu, "error", None)
+                return {"hata": gemini_hata_logla(
+                    "vision_file_api", f"dosya işlenemedi (state=FAILED, detay={hata_detay})")}
             time.sleep(2)
+        else:
+            return {"hata": gemini_hata_logla(
+                "vision_file_api", f"dosya 60sn içinde ACTIVE olmadı (son state={durum_adi})")}
 
-        response = model.generate_content([prompt, yuklenen_dosya])
-        return json_parse_et(response.text)
+        response = istemci_al().models.generate_content(
+            model=MODEL,
+            contents=[prompt, types.Part.from_uri(
+                file_uri=yuklenen_dosya.uri, mime_type="application/pdf")],
+        )
+        yanit, bos_neden = yanit_metni(response)
+        if not yanit:
+            return {"hata": gemini_hata_logla("vision_file_api/boş yanıt", bos_neden)}
+        return json_parse_et(yanit)
 
     except Exception as e:
-        print(f"  ✗ Gemini Vision (File API) hatası: {e}")
-        return {"hata": str(e)}
+        return {"hata": gemini_hata_logla("vision_file_api", e)}
 
     finally:
         if yuklenen_dosya:
             try:
-                genai.delete_file(yuklenen_dosya.name)
-            except Exception:
-                pass
+                istemci_al().files.delete(name=yuklenen_dosya.name)
+            except Exception as e:
+                # Silme hatası analizi bozmaz (dosya 48 saatte kendiliğinden düşer) ama
+                # sessiz kalmasın: kota sızıntısı buradan başlar.
+                print(f"  ⚠ Gemini File API temizliği başarısız ({yuklenen_dosya.name}): {e}", flush=True)
 
 
 # ── Ana Pipeline ──────────────────────────────────────────

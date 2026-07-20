@@ -12,19 +12,22 @@ Kullanım (api.py içinden):
     sonuc = teklif_taslak_uret(ilan=ilan_dict, firma_profil=profil_dict, piyasa_baglami=[...])
 
 Env: GEMINI_API_KEY (backend/.env) — analyzer.py ile aynı konfigürasyon.
+
+SDK: google-genai (Backlog #34). Eski google.generativeai bırakıldı. İstemci gemini_ortak
+üzerinden TEMBEL kurulur — api.py bu modülü top-level import ettiği için, anahtar yokken
+modül seviyesinde Client() kurmak tüm API'yi import anında çökertirdi.
 """
 
 import json
 import os
 
-import google.generativeai as genai
 from dotenv import load_dotenv
+
+from gemini_ortak import VARSAYILAN_MODEL, gemini_hata_logla, istemci_al, yanit_metni
 
 load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), ".env"))
 
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
-genai.configure(api_key=GEMINI_API_KEY)
-_model = genai.GenerativeModel("gemini-2.5-flash")
 
 
 def _prompt_olustur(ilan: dict, firma_profil: dict, piyasa_baglami: list) -> str:
@@ -90,10 +93,13 @@ def teklif_taslak_uret(ilan: dict, firma_profil: dict, piyasa_baglami: list) -> 
         return {"basari": False, "hata": "İhale bilgisi eksik.", "kapsam": None, "neden": None, "yontem": None}
     try:
         prompt = _prompt_olustur(ilan, firma_profil or {}, piyasa_baglami or [])
-        response = _model.generate_content(prompt)
-        metin = (response.text or "").strip()
+        response = istemci_al().models.generate_content(model=VARSAYILAN_MODEL, contents=prompt)
+        # Boş yanıtı sessizce "veri yok" saymıyoruz: güvenlik bloğu/token limiti nedeni log'a düşsün.
+        metin, bos_neden = yanit_metni(response)
         if not metin:
-            return {"basari": False, "hata": "Gemini boş yanıt döndü.", "kapsam": None, "neden": None, "yontem": None}
+            gemini_hata_logla("teklif_taslak_uret/boş yanıt", bos_neden)
+            return {"basari": False, "hata": f"Gemini boş yanıt döndü ({bos_neden}).",
+                    "kapsam": None, "neden": None, "yontem": None}
 
         bolumler = {"kapsam": "", "neden": "", "yontem": ""}
         for parca in metin.split("###"):
@@ -107,4 +113,6 @@ def teklif_taslak_uret(ilan: dict, firma_profil: dict, piyasa_baglami: list) -> 
 
         return {"basari": True, "hata": None, **bolumler}
     except Exception as e:
-        return {"basari": False, "hata": str(e), "kapsam": None, "neden": None, "yontem": None}
+        # google.genai.errors.APIError de Exception türevi — mevcut yakalama korunuyor.
+        return {"basari": False, "hata": gemini_hata_logla("teklif_taslak_uret", e),
+                "kapsam": None, "neden": None, "yontem": None}
