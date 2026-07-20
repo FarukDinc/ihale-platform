@@ -840,10 +840,13 @@
             <div style="font-size:22px;font-weight:800;color:var(--amber);" id="gs-sonteklif">—</div>
           </div>
         </a>
-        <a class="stat-card" id="stat-kazanim" href="ihaleler?sekme=sonuc" title="Sonuçlanmış (kazanım kaydı olan) ihaleleri gör">
+        <!-- Etiket + tooltip mod'a göre JS'te güncellenir (kazanimEtiketGuncelle) —
+             ihale tarafı kısım bazlı sonuç KAYDI, DT tarafı sonuçlanmış DUYURU sayar;
+             ikisini tek sabit "Kazanım Kaydı" başlığıyla sunmak yanıltıcıydı. -->
+        <a class="stat-card" id="stat-kazanim" href="ihaleler?sekme=sonuc" title="Sonuçlanan ihale ve doğrudan teminleri gör">
           <span style="font-size:22px;">🏆</span>
           <div>
-            <div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;">Toplam Kazanım Kaydı</div>
+            <div style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;" id="gs-kazanim-etiket">Sonuçlanan İhale + DT</div>
             <div style="font-size:22px;font-weight:800;color:#4ade80;" id="gs-kazanim">—</div>
           </div>
         </a>
@@ -1085,6 +1088,11 @@
   // ayrı <script> etiketinden window.aktifDashMod'u okuyup ilk çizimde doğru modla başlayabilsin diye.
   window.aktifDashMod = 'tumu';
   const DT_DURUM_ACIK = ['Doğrudan Temin Duyurusu Yayımlanmış', 'Teklifler Değerlendiriliyor'];
+  // dogrudan-temin.html DURUM_GRUP.sonuc ile BİREBİR — kazanım kartının DT sayacı bu
+  // gruptan sayılır ki kartın rakamı, tıklayınca açılan "Sonuç" sekmesinin evreniyle
+  // aynı olsun (eskiden dogrudan_temin_sonuclari'ndan sayılıyordu: 79K derlenmiş kayıt
+  // gösterip 1,39M kayıtlık listeye götürüyordu — elma/armut).
+  const DT_DURUM_SONUC = ['Sonuç Duyurusu Yayımlanmış', 'Doğrudan Temin Sonuçlandırıldı', 'Sonuç Bilgileri Gönderildi'];
   const dashFmt = (n) => (n ?? 0).toLocaleString('tr');
 
   // ── Tarih formatlama ─────────────────────────────────
@@ -1355,17 +1363,16 @@
       eklendi: `dogrudan-temin?tarihBas=${gunTarih}&tarihBit=${gunTarih}`,
       aktif:   'dogrudan-temin',
       buyuk:   'dogrudan-temin',
-      // ?sekme=sonuc yeni eklendi (dogrudan-temin.html). Kartın SAYISI hâlâ
-      // dogrudan_temin_sonuclari'ndan (kazanan/bedel derlenmiş kayıtlar, kapsam ~%1,3)
-      // gelirken hedef durum-bazlı sonuç listesi — ikisi henüz aynı evren DEĞİL.
-      // Backfill kapsamı yükselince yeniden değerlendirilecek; şimdilik en azından
-      // 'dt' modunda ihaleler sayfasına gitme hatası kapatıldı.
+      // Kartın DT sayısı da artık durum-bazlı sonuç grubundan sayılıyor (kpiYukle,
+      // DT_DURUM_SONUC) — rakam ile bu hedef listenin evreni AYNI (20 Tem düzeltmesi;
+      // eskiden rakam dogrudan_temin_sonuclari'ndan gelirken 79K vs 1,39M uyumsuzdu).
       kazanim: 'dogrudan-temin?sekme=sonuc',
     };
 
     const kur = (id, ihHref, dtHref, nIh, nDt) =>
       modLinkKur(document.getElementById(id), ihHref, dtHref, nIh, nDt, mod);
 
+    kazanimEtiketGuncelle(mod);
     kur('stat-eklendi',      IH.eklendi,  DT.eklendi, sIh.eklenen, sDt.eklenen);
     kur('kpi-card-aktif',    IH.aktif,    DT.aktif,   sIh.aktif,   sDt.aktif);
     kur('kpi-card-buyuk',    IH.buyuk,    DT.buyuk,   sIh.buyuk,   sDt.buyuk);
@@ -1380,6 +1387,27 @@
     };
     soloIh('stat-sonteklif',     IH.sonteklif);
     soloIh('kpi-card-yaklasan',  IH.yaklasan);
+  }
+
+  // Kazanım kartının etiketi/tooltip'i mod'a göre değişir — iki tarafın SAYDIĞI ŞEY
+  // farklı: ihale tarafı kısım bazlı sonuç KAYDI (ihale_sonuclari; bir ihalede birden
+  // çok kısım olabilir, ihaleler.html Sonuç sekmesinin rozetiyle aynı sayı), DT tarafı
+  // EKAP durumuna göre SONUÇLANMIŞ alım duyurusu (dogrudan-temin.html Sonuç sekmesiyle
+  // aynı sayı). Sabit tek başlık bu farkı gizliyordu; etiket saydığını söylesin.
+  function kazanimEtiketGuncelle(mod) {
+    const etiket = document.getElementById('gs-kazanim-etiket');
+    const kart = document.getElementById('stat-kazanim');
+    const M = {
+      tumu:  { e: 'Sonuçlanan İhale + DT',
+               t: 'İhale sonuç kayıtları (kısım bazlı) + sonuçlanmış doğrudan temin duyuruları — tıklayıp kaynağı seçin' },
+      ihale: { e: 'İhale Sonuç Kaydı',
+               t: 'EKAP\'tan derlenen kısım bazlı ihale sonuç kayıtları — bir ihalede birden çok kısım olabilir' },
+      dt:    { e: 'Sonuçlanan Doğrudan Temin',
+               t: 'EKAP durumuna göre sonuçlanmış doğrudan temin duyuruları' },
+    };
+    const m = M[mod] || M.tumu;
+    if (etiket) etiket.textContent = m.e;
+    if (kart) kart.title = m.t;
   }
 
   // Tek bağlantı için mod-farkındalıklı hedef ataması. KPI kartları da, bölüm
@@ -1503,11 +1531,15 @@
           sb.from('dogrudan_temin_ilanlari').select('id', { count: 'exact', head: true })
             .gte('tarih', bugunBaslangic.toISOString()).lte('tarih', bugunBitis.toISOString()),
           sb.from('dogrudan_temin_sonuclari').select('dt_no', { count: 'exact', head: true }).gte('kazanan_bedel', 43142132),
-          // kazanan_firma DEĞİL kazanan_bedel: kazanan_firma anon'a kapalı (kimlik) ve
-          // WHERE de SELECT yetkisi istediği için misafirde 42501 dönüyordu — sayaç
-          // sessizce 0 kalıyor, kart DT katkısını hiç göstermiyordu. kazanan_bedel
-          // anon'a açık ve aynı kaydı işaret ediyor (sonucu derlenmiş DT).
-          sb.from('dogrudan_temin_sonuclari').select('id', { count: 'exact', head: true }).not('kazanan_bedel', 'is', null),
+          // kazanan_firma DEĞİL kazanan_bedel (yukarıdaki dtBuyuk): kazanan_firma anon'a
+          // kapalı (kimlik) ve WHERE de SELECT yetkisi istediği için misafirde 42501
+          // dönüyordu — sayaç sessizce 0 kalıyor, kart DT katkısını hiç göstermiyordu.
+          // Kazanım sayacı SONUÇLANMIŞ DT DUYURUSU sayar (durum-bazlı), kartın hedefi
+          // olan dogrudan-temin?sekme=sonuc listesiyle AYNI evren ve AYNI sorgu (o
+          // sayfanın sekme sayacı da bunu koşuyor; idx_dt_ilanlari_durum ile ~0,7 sn).
+          // ESKİ HALİ dogrudan_temin_sonuclari (kazanan/bedel DERLENMİŞ kayıtlar,
+          // kapsam ~%5,7) idi: kart 79K gösterip 1,39M kayıtlık listeye götürüyordu.
+          sb.from('dogrudan_temin_ilanlari').select('dt_no', { count: 'exact', head: true }).in('durum', DT_DURUM_SONUC),
         ]);
         aktifT += dtAktif.count || 0; eklenenT += dtEklenen.count || 0;
         buyukT += dtBuyuk.count || 0; kazanimT += dtKazanim.count || 0;
