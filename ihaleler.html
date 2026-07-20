@@ -1288,6 +1288,17 @@
   // no güncel değilse HİÇBİR ŞEY basılmaz.
   let listeIstekNo = 0;
 
+  // PostgREST mantık ağacı (or=/and=) değerleri VİRGÜL ve PARANTEZLE ayrıştırılır. Kullanıcı
+  // metnini ağaca HAM enterpole etmek, metinde bu karakterler geçtiği anda ayrıştırmayı bozar:
+  // CANLI ÖLÇÜM (20 Tem, anon, /rest/v1/ilanlar), arama metni: kalem, kagit
+  //   or=(baslik.ilike.%kalem, kagit%,...)      → http 400  PGRST100 "failed to parse logic tree"
+  //   or=(baslik.ilike."%kalem, kagit%",...)    → http 200
+  // Çift tırnak içine alınan değer tek parça okunur; içindeki \ ve " kaçışlanmalıdır.
+  // Tırnak JOKERİ BOZMAZ: aynı aramanın tırnaklı/tırnaksız hali (%kalem%) birebir aynı
+  // satırları döndürdü — PostgREST tırnağı soyduktan sonra değeri ILIKE'a olduğu gibi verir.
+  // Tek .ilike() çağrılarında gerek YOK (ayrı query parametresi, mantık ağacı yok).
+  const prDeger = (v) => `"${String(v).replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`;
+
   async function ilanlariYukle(sayfa = 1) {
     const benim = ++listeIstekNo;
     mevcutSayfa = sayfa;
@@ -1324,11 +1335,16 @@
     // DB kolon-yetkisi 42501 verir (migration_anon_maske.sql); kart bunları '***' çizer.
     const uyeKolon  = uyeMi ? 'ekap_id,idare,' : '';
     const uyeSonucK = uyeMi ? 'kazanan_firma,' : '';
-    // Sonuç sekmesi ihale_sonuclari!inner + count(*) OVER() (count:exact) → planlayıcı TÜM sonuç
-    // tablosunu tarayan hash-join seçip 8s authenticated timeout'unu aşıyor (soğuk cache ~2GB).
-    // Bu sekmede planlı (tahmini) sayım → count(*) OVER() kalkar, sorgu trigram+nested-loop'a düşer
-    // (EXPLAIN: 2.2GB→~200MB, <2.5s). Diğer sekmeler küçük/join'siz → tam sayım kalır.
-    const sayimModu = aktifSekme === 'sonuc' ? 'planned' : 'exact';
+    // AĞIR sekmelerde tam sayım (count:exact = count(*) OVER()) statement timeout'a takılıyor:
+    //   • Sonuç: ihale_sonuclari!inner + count(*) OVER() → planlayıcı TÜM sonuç tablosunu tarayan
+    //     hash-join seçip 8s authenticated timeout'unu aşıyor (soğuk cache ~2GB).
+    //   • Geçmiş: etkin_tarih < now() tabanı ~340K satır; ILIKE ile birlikte count=exact ölçüldü →
+    //     http 500 / 3,49 sn / 57014 "canceling statement due to statement timeout";
+    //     AYNI sorgu count=planned → http 206 / 0,78 sn. Debounce bunu ÇÖZMEZ, sadece geciktirir.
+    // Planlı (tahmini) sayımda count(*) OVER() kalkar, sorgu trigram+nested-loop'a düşer.
+    // Güncel sekmesi küçük (yalnız gelecek tarihli) ve join'siz → tam sayım orada kalır.
+    const PLANLI_SAYIM_SEKMELERI = ['sonuc', 'gecmis'];
+    const sayimModu = PLANLI_SAYIM_SEKMELERI.includes(aktifSekme) ? 'planned' : 'exact';
     // Taban ilanTaban'dan: kurum hiyerarşi filtresi aktifse ilanlar_hiyerarsi
     // RPC'si, değilse ilanlar tablosu — aşağıdaki filtre/sıralama/range/embed
     // her iki tabana da aynen uygulanır (PostgREST fonksiyona tablo gibi davranır).
@@ -1349,7 +1365,7 @@
     // idare filtresi atlanır (kartta zaten *** — filtre oracle'ı da böylece kapalı).
     if (arama) {
       if (uyeMi) query = query.ilike('arama_fold', `%${trFold(arama)}%`);
-      else       query = query.or(`baslik.ilike.%${arama}%,aciklama.ilike.%${arama}%`);
+      else       query = query.or(`baslik.ilike.${prDeger(`%${arama}%`)},aciklama.ilike.${prDeger(`%${arama}%`)}`);
     }
     if (okas)     query = query.ilike('okas', `%${okas}%`);
     if (urlDurumFiltresi) query = query.eq('durum', urlDurumFiltresi);
@@ -1401,9 +1417,12 @@
       );
       if      (aktifSekme === 'guncel') fallback = fallback.gte('son_teklif_tarihi', simdiISO);
       else if (aktifSekme === 'gecmis') fallback = fallback.lt('etkin_tarih', simdiISO);
-      if (arama)    fallback = uyeMi
-        ? fallback.or(`baslik.ilike.%${arama}%,idare.ilike.%${arama}%,okas.ilike.%${arama}%,isin_yapilacagi_yer.ilike.%${arama}%,ilan_metni.ilike.%${arama}%`)
-        : fallback.or(`baslik.ilike.%${arama}%,aciklama.ilike.%${arama}%`);
+      if (arama) {
+        const d = prDeger(`%${arama}%`);
+        fallback = uyeMi
+          ? fallback.or(`baslik.ilike.${d},idare.ilike.${d},okas.ilike.${d},isin_yapilacagi_yer.ilike.${d},ilan_metni.ilike.${d}`)
+          : fallback.or(`baslik.ilike.${d},aciklama.ilike.${d}`);
+      }
       if (okas)     fallback = fallback.ilike('okas', `%${okas}%`);
       if (urlDurumFiltresi) fallback = fallback.eq('durum', urlDurumFiltresi);
       if (il)       fallback = fallback.eq('il', il);
@@ -1485,7 +1504,9 @@
 
     const baslangicNo = (sayfa - 1) * SAYFA_BOYUTU + 1;
     const bitisNo = Math.min((sayfa - 1) * SAYFA_BOYUTU + ilanlar.length, toplamKayit);
-    const sayimTahmini = (aktifSekme === 'sonuc' && !uyumModu);   // Sonuç'ta count planlı-tahmini → "~" göster
+    // "~" rozeti DOĞRUDAN sayimModu'ndan türetilir. Sekme koşulunu burada tekrar yazmak,
+    // ağır sekme listesi büyüdüğünde planlayıcı tahminini kesin sayı gibi göstermeye yol açıyordu.
+    const sayimTahmini = (sayimModu === 'planned' && !uyumModu);
     document.getElementById('result-count').innerHTML = `${sayimTahmini ? '~' : ''}<strong>${toplamKayit.toLocaleString('tr')}</strong> ihale bulundu — ${baslangicNo}-${bitisNo} gösteriliyor`;
     document.getElementById('pag-info').textContent = `${baslangicNo}–${bitisNo} / ${toplamKayit}`;
     document.getElementById('sb-count').textContent = toplamKayit > 999 ? Math.round(toplamKayit/1000*10)/10+'K' : toplamKayit;
@@ -1599,12 +1620,18 @@
   //   Kapsamsız (tüm tablo) + ILIKE + count=exact .... 3,5-4,6 sn     HTTP 500 / 57014 TIMEOUT
   //   Aynı ILIKE, count YOK, limit=25 ................ 0,48 sn        HTTP 200
   // Yani maliyeti yaratan ILIKE değil, ILIKE + count=exact bileşimi; ve 3 harfin altında
-  // trigram indeksi devre dışı kaldığı için sorgu 3 katına çıkıyor. Bu yüzden metin
-  // alanlarında düz 350 ms debounce KULLANILMIYOR — her tuş vuruşu Geçmiş sekmesinde
-  // doğrudan timeout dalgası demek olurdu. İki savunma:
-  //   (a) ILIKE tetikleyen alanlarda debounce 800 ms (Geçmiş/Sonuç sekmesinde 1200 ms),
+  // trigram indeksi devre dışı kaldığı için sorgu 3 katına çıkıyor.
+  //
+  // ⚠️ DEBOUNCE BİR TIMEOUT ÇARESİ DEĞİLDİR. Gecikme TEK bir sorguyu hızlandırmaz, yalnızca
+  // erteler: 4. satırdaki 500/57014 debounce ne kadar uzun olursa olsun aynen döner, sadece
+  // "her tuşta bir timeout" yerine "her aramada bir timeout" olur. Timeout'un GERÇEK çaresi
+  // ağır sekmelerde count=exact'i bırakmaktır → ilanlariYukle() içindeki PLANLI_SAYIM_SEKMELERI.
+  // Debounce'un işi ayrı ve dar: gereksiz istek/sunucu yükünü kısmak.
+  // Üç savunma:
+  //   (a) ILIKE tetikleyen alanlarda debounce 800 ms (Geçmiş/Sonuç sekmesinde 1200 ms) — yük,
   //   (b) 1-2 harflik girdide otomatik sorgu ATILMAZ; kullanıcı Enter'a ya da "Filtrele"
-  //       düğmesine basarak yine de zorlayabilir (açık niyet).
+  //       düğmesine basarak yine de zorlayabilir (açık niyet),
+  //   (c) Geçmiş/Sonuç'ta count=planned — timeout'u fiilen kaldıran madde budur.
   // Hafif alanlar (sayısal bedel aralığı, indeksli) istenen 350 ms'de kalır.
   const GECIKME_KISA       = 350;    // sayısal/indeksli alanlar
   const GECIKME_ILIKE      = 800;    // çift-joker ILIKE tetikleyen metin alanları
