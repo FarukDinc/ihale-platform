@@ -253,6 +253,48 @@ async def ekap_detay_cek(havuz, ihale_id: str) -> dict | None:
     return await post(havuz, "/b_ihalearama/api/IhaleDetay/GetByIhaleIdIhaleDetay", {"ihaleId": ihale_id})
 
 
+TUM_TEKLIFLER_AZAMI = 15000
+
+
+def tum_teklifler_paketle(sozlesme: dict, teklif_info: dict) -> str:
+    """
+    `tum_teklifler` yükünü SERİLEŞTİRİLMİŞ ama HER ZAMAN GEÇERLİ JSON olarak üretir.
+
+    ⚠️ ESKİ HALİ `json.dumps(...)[:15000]` idi ve bu bir VERİ BOZMA hatasıydı: dize
+    sınırda ortadan kesiliyor, geriye kapanmamış bir JSON kalıyordu. Kolon `jsonb`
+    olduğu için normalde Postgres bunu reddederdi — ama yük buraya *nesne* değil
+    *dize* olarak yazıldığından (jsonb_typeof = 'string', çift kodlama) Postgres
+    içeriği hiç ayrıştırmıyor ve bozuk metin SESSİZCE kaydediliyor.
+    20 Tem ölçümü: 538.064 satırın **720'si** tam 15000 karakterde kopmuş, ayrıştırılamaz.
+
+    ÇÖZÜM: dizeyi değil VERİYİ küçült — sınırı aşarsak hacimli alanları düşürüp
+    yeniden serileştiririz, böylece çıktı her koşulda ayrıştırılabilir kalır ve
+    neyin atıldığı `_kirpildi` alanında görünür.
+    """
+    def uret(veri):
+        return json.dumps(veri, ensure_ascii=False, default=str)
+
+    tam = uret({"sozlesme_bilgi": sozlesme, "teklif_sayilari": teklif_info})
+    if len(tam) <= TUM_TEKLIFLER_AZAMI:
+        return tam
+
+    # 1. kademe: sözleşmedeki hacimli listeleri at (kisimList vb. uzunluğu buradan gelir).
+    kirpik = {k: v for k, v in (sozlesme or {}).items() if not isinstance(v, (list, dict))}
+    aday = uret({
+        "sozlesme_bilgi": kirpik,
+        "teklif_sayilari": teklif_info,
+        "_kirpildi": {"neden": "boyut", "atilan": "sozlesme_bilgi icindeki liste/nesne alanlari"},
+    })
+    if len(aday) <= TUM_TEKLIFLER_AZAMI:
+        return aday
+
+    # 2. kademe: yalnız teklif sayıları + kimlik alanları. Bu her zaman küçüktür.
+    return uret({
+        "teklif_sayilari": teklif_info,
+        "_kirpildi": {"neden": "boyut", "atilan": "sozlesme_bilgi tamamen"},
+    })
+
+
 def sonuc_kayitlari_olustur(ilan: dict, detay: dict) -> list[dict]:
     """
     detay (GetByIhaleIdIhaleDetay yanıtı) → ihale_sonuclari satır listesi.
@@ -313,10 +355,7 @@ def sonuc_kayitlari_olustur(ilan: dict, detay: dict) -> list[dict]:
             "kazanan_firma": kazanan_firma,
             "kazanan_teklif": kazanan_teklif,
             "kazanan_teklif_farki_yuzde": tenzilat,
-            "tum_teklifler": json.dumps({
-                "sozlesme_bilgi": sozlesme,
-                "teklif_sayilari": teklif_info,
-            }, ensure_ascii=False, default=str)[:15000],
+            "tum_teklifler": tum_teklifler_paketle(sozlesme, teklif_info),
             "toplam_teklif_sayisi": teklif_info.get("toplam_teklif") or teklif_info.get("gecerli_teklif"),
             "en_dusuk_teklif": en_dusuk,
             "en_yuksek_teklif": en_yuksek,
