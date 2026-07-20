@@ -213,8 +213,12 @@ def main():
             if tur == "bilinmiyor":
                 cozulemeyen.append((adet, ad))
                 continue
+            # KAYNAK KORUNUR: --detsis-yeniden'de var olan satırın türü yeniden
+            # hesaplanır ama kaynak='ekap-detsis' etiketi DURUR. O etiket "bu ad
+            # resmî DETSİS kaydından geldi" demek; tür hesabının düzeltilmesi
+            # kaydın kökenini değiştirmez. Ezersek otorite bilgisi kaybolur.
             kayitlar.append({"idare_norm": norm, "idare_ad": ad, "tur": tur,
-                             "kaynak": "kural", "guven": guven})
+                             "kaynak": var or "kural", "guven": guven})
         sure = time.time() - t0
         print(f"  {len(toplam_ad):,} ad {sure:.1f}sn'de sınıflandı "
               f"({len(toplam_ad)/max(sure,0.01):,.0f} ad/sn)")

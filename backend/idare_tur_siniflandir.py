@@ -117,6 +117,23 @@ def _tasra_ezmesi(tur, m):
     return tur
 
 
+# ── ÜST KURUM ZİNCİRİ ANAHTAR SÖZCÜKTEN GÜÇLÜDÜR (20 Tem) ───────────────────
+# EKAP adları "ÜST KURUM ... ALT BİRİM" biçiminde gelir. Alt birimin ÖZEL ADI
+# başka bir kurumu andırabilir; bu ad, TÜR değil ANMA/BAĞIŞ bilgisidir:
+#   "NİLÜFER İLÇE MEM ... ŞEHİT JANDARMA ER EYÜP GÜRSOY ORTAOKULU"  → okul (jandarma DEĞİL)
+#   "DÜZCE İL MEM ... BAŞKENT ÜNİVERSİTESİ ... ANAOKULU"            → okul (üniversite DEĞİL)
+#   "BARTIN İL MEM ... İL ÖZEL İDARESİ ... ANAOKULU"                → okul (İÖİ DEĞİL)
+#   "BOZÜYÜK İLÇE MEM ... DEVLET HASTANESİ ANAOKULU"                → okul (hastane DEĞİL)
+# Ölçüldü (20 Tem, 813K satırlık sınıfsız küme): 67 ad / 287 satır yanlış türe gidiyordu.
+#
+# Zincir işaretçisi tartışmasız üst kurum bildirir: MEB'e bağlı bir birim asla
+# emniyet/jandarma teşkilatı olamaz. Bu yüzden EN YÜKSEK öncelikte kontrol edilir.
+_UST_ZINCIR = (
+    ("milli egitim mudurlugu", "milli_egitim"),
+    ("il saglik mudurlugu",    "saglik"),
+)
+
+
 def _kurallari_yukle():
     """Ajan envanterini yükle (yanında idare_kurallar.json varsa oradan)."""
     yol = os.path.join(os.path.dirname(__file__), "idare_kurallar.json")
@@ -184,6 +201,11 @@ def idare_tur_belirle(ad):
     m = fold(ad)
     if not m:
         return ("bilinmiyor", 0)
+
+    # 0) Üst kurum zinciri — alt birimin özel adı yanıltıcı olabilir, zincir olamaz
+    for anahtar, tur in _UST_ZINCIR:
+        if anahtar in m:
+            return (tur, 95)
 
     # Şirket eki varsa ve belediye bağlamı da varsa → belediye şirketi (en yüksek öncelik)
     if _SIRKET_EK.search(m) and ("belediye" in m or "buyuksehir" in m):
