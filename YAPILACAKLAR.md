@@ -105,6 +105,37 @@
 > NOT: `claude/happy-gauss-ce4605` dalında 1 birleşmemiş commit görünür — içeriği yeni
 > koda UYARLANARAK uygulandı, dal yalnızca kayıt olarak duruyor.
 >
+> ## 🧹 SESSİZ HATA SÜPÜRGESİ (20 Tem gece) — 25 sayfa, 5 desen, çok-ajanlı
+> Kullanıcının kendi bulduğu 3 hatanın (DT kartları, il dropdown, misafir dashboard) ait
+> olduğu desenler tüm sayfalarda arandı; her bulgu **canlı anon API ile** doğrulandı.
+> **20 doğrulanmış bulgu**; 9'u düzeltilip yayına alındı.
+>
+> **DESENLER (yeni sayfa yazarken kontrol listesi):**
+> D1 1000-satır tavanı · D2 maskeli kolon misafir yolunda · D3 mod kavram karışması ·
+> D4 Türkçe ILIKE · D5 yutulan hata / asılı "Yükleniyor..."
+>
+> ### ✅ Düzeltilip canlıya alındı
+> - **`ihaleler.html` SAYFALAMA TAMAMEN ÖLÜYDÜ (`711fe1b`)** — repoda olmayan `#sb-count`
+>   elemanına yazım TypeError fırlatıyor, async fonksiyonda kimse catch etmediği için
+>   sessizce yutuluyor ve **bir alt satırdaki `paginasyonOlustur()` hiç çalışmıyordu.**
+>   1,6M kayıtta kullanıcı 2. sayfaya geçemiyordu. Canlı: 0 → **11 sayfa butonu**.
+> - **TR arama kaybı 4 yüzeyde** — `ihaleler` misafir dalı (0→166), `dogrudan-temin`
+>   (72→7.075; ölçüm: "müdürlüğü" 126.777 vs "mudurlugu" 72 = **1760x**), `kik-kararlar`
+>   (0→61), `uluslararasi` (89→207). Çözüm: `js/main.js` → `trAramaKalibi()`.
+> - **`dokumanlar.html` misafirde tamamen ölüydü** — `ekap_id`+`idare` select'te → 42501.
+> - **1000-satır tavanı** — `uluslararasi` dropdown 33→34; `dogrudan-temin` il yedek yolu
+>   69→81 (`js/main.js` → `TR_ILLER_BUYUK` kanonik liste).
+> - `takipte.html` asılı "Yükleniyor..." · `bildirimler.html` yutulan hata.
+>
+> ### ⏭ Düzeltilmeyi bekleyen (backlog turu 2 aynı dosyalara dokunduğu için beklemede)
+> - `ihale-detay.html:673` misafire "AI analizi yapılmadı" diyor — oysa analiz VAR, kolon
+>   maskeli (satır 808'de aynı tuzak için doğru mesaj yazılmış, burada unutulmuş).
+> - `ihale-detay.html:824` `uygunFirmalarYukle` misafirde koşulsuz çağrılıyor → garanti 42501.
+> - `ozel-ihaleler.html` 275/276/383/397 — geo RPC misafirde ölüyor + hata/boş aynı dala
+>   düşüyor + 2 yerde TR ILIKE.
+> - `rekabet-analizi.html` 356/613 · `firma-analiz.html:1080` · `kurum-analiz.html:1528` —
+>   hata "kayıt yok" gibi gösteriliyor, 4 panel kalıcı "Yükleniyor..."da kalabiliyor.
+>
 > ## 🔴 GÜVENLİK
 > 1. **Secret rotasyonu (satır 809):** JWT_SECRET + Google client secret + Resend SMTP
 >    key sohbette ifşa oldu. 17 Tem rotasyonu ESKİ ifşayı kapattı — bunlar SONRAKİ.
