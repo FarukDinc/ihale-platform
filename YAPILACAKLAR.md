@@ -46,11 +46,15 @@
 >
 > ## 🔜 SIRADAKİLER (öncelik sırasıyla)
 >
-> 1. **Eşleştirme kapsamı %32 → ~%90.** Kök neden KANITLANDI: `ekap_detsis_cek.py`
->    `paginationTake=1` kullanıyor, EKAP idare adını her ihaleye farklı yazıyor;
->    tek yazım o kurumun ihalelerinin %33,5'ini kapsıyor (gözlenen %32,3).
->    → `paginationTake=300` + her farklı yazımı ayrı `idare_tur` satırı (~15 satır kod).
->    Kalıcı çözüm: `idareIdHash` (ada bakmayan kararlı anahtar, 14/14 test edildi).
+> 1. **Eşleştirme kapsamı %32 → ~%90.** ✅ KOD DÜZELTİLDİ + TARAMA KOŞUYOR (20 Tem
+>    akşam, commit `edbca81`): `paginationTake=300`, her farklı yazım ayrı satır,
+>    jenerik yazım çakışmasında en çok kullanan kurum kazanır. 200'lük deneme:
+>    264 eşleşme / 59 kurumda çoklu yazım — beklenen davranış birebir doğrulandı.
+>    VDS'te tam zincir arka planda: tara → yaz → ilan_detsis_esle → kapanış → MV
+>    refresh → dt_kazanan otomatik yeniden başlar (`logs/detsis_tarama.log`,
+>    bitiş işareti `logs/detsis_zincir_tamam`). ESKİ take=1 checkpoint SİLİNDİ
+>    (uyumsuz). Bitince kapsama %'si DOĞRULANMALI (ilanlar.detsis_no dolu oranı).
+>    Kalıcı çözüm hâlâ açık: `idareIdHash` (ada bakmayan kararlı anahtar, 14/14 test).
 > 2. **Backfill'leri SIRALI koştur.** Ölçüm: tek scraper 100 uçla **22.000 kayıt/saat**,
 >    iki scraper 40'ar uçla **2.000/saat**. Paralel çalıştırmak eşzamanlı bağlantı
 >    bütçesini doldurup ters teper. Kuyruk 485K → sıralı koşuda ~22 saat.
@@ -138,12 +142,14 @@
 >   ilan yayımlanmadığı için "iki gündür sıfır" **normaldi** — gece hattı hiç bozulmamıştı.
 >
 > ### ⏭ AÇIK
-> - [ ] Sürdürülebilir verimin ölçülmesi: iki scraper 40 uçlu havuzla koşuyor, ilk
->       partilerini bekliyor. Sayaçlar (`denendi`/`sonuc`/`token`) 10-15 dk aralıkla
->       kontrol edilmeli — 90 sn'lik pencere YANILTIR.
+> - [x] ~~Sürdürülebilir verim ölçümü~~ → 20 Tem akşam durumu: `dt_token` sayfa 4966
+>       duvarında dönüyordu (derin sayfalama, EKAP tarafı) → DURDURULDU, boşa soket
+>       yiyordu. `dt_kazanan` sağlıklıydı (800 dt_no/~15dk) → DETSİS taraması için
+>       DURDURULDU, zincir sonunda otomatik yeniden başlar. `ekap_ihale_backfill`
+>       sayfa=1000 ile ~0,1 istek/sn — soket yükü ihmal edilebilir, KOŞMAYA DEVAM
+>       (2026→2010, toplam 1,96M; 20 Tem 12:15 itibarıyla 2017'de, ~110 kayıt/sn).
 > - [ ] `ilan_metni_backfill` havuza bağlandı ama 402 döneminden beri hiç koşmadı, teyit yok.
-> - [ ] Eşleştirme ara çözümü (`paginationTake=1` → `300`): kapsama %32 → ~%90.
->       Kök neden kanıtlandı (take=1 adı, o kurumun ihalelerinin %33,5'ini kapsıyor).
+> - [x] Eşleştirme ara çözümü (`paginationTake=1` → `300`) UYGULANDI — bkz. SIRADAKİLER #1.
 > - [ ] `ekap_scraper` hâlâ havuza bağlı değil (post() artık iki tipi de kabul ediyor,
 >       yolu açık).
 
