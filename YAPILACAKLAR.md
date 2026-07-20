@@ -1,5 +1,74 @@
 # İhalePlatform — Yapılacaklar Listesi
 
+> ## ✅ 20 TEM — İDARE TÜRÜ: 813K SINIFSIZ SATIR KURALLA KAPATILDI (AI'sız)
+> **Ölçülen durum:** ilanlar 241.508 (%68) + DT 571.424 (%38) = **812.932 satır**
+> `idare_tur IS NULL`. Sebep ad yokluğu DEĞİL — 241.508'in yalnız **1**'inde ad boş.
+>
+> **Kök neden:** `idare_tur` tablosu SADECE DETSİS'ten dolduruldu (28.566 kayıt) ve
+> `idare_tur_tazele()` TAM EŞİTLİK ile join ediyor:
+> `WHERE t.idare_norm = public.idare_normalize(i.idare)`. DETSİS'te olmayan ad
+> eşleşemez — **belediye şirketleri (A.Ş./Ltd.Şti.) DETSİS'te zaten YOK**, onlar
+> devlet organizasyonu değil sermaye şirketi.
+>
+> `migration_idare_tur.sql` bunu öngörmüştü: `kaynak` kolonunda `'kural'` hazır
+> duruyordu ("Boşluk asla sınıfsız kalmaz: kural/AI ile GEÇİCİ sınıflanır").
+>
+> ### Kural motorunda bulunan 3 GERÇEK hata (ölçülerek)
+> 1. **Sözcük sınırı yok** — `_eslesir()` ham alt-dize arıyordu:
+>    `'a s'` → "satın **ALMA S**ube" içinde eşleşti → `belediye_sirket`
+>    (ONCELIK'te BİRİNCİ olduğu için güçlü kalıba düşmeyen HER adı çalıyordu;
+>    "ankara su" bile eşleşir). `'il mudurlugu'` → "s**İCİL MÜDÜRLÜĞÜ**".
+>    Kod zaten `_KISALTMA_TUZAK` için `\b` kullanıyordu → tümüne yayıldı.
+> 2. **Taşra eki merkezi ezmeli** — "KARAYOLLARI GM **5. BÖLGE MÜDÜRLÜĞÜ**" →
+>    `bakanlik_merkez` idi. Taşranın karşılığı `'karayollari n bolge mudurlugu'`,
+>    literal "n" yer tutucusu — "5" ile asla eşleşmez. `_tasra_ezmesi()` eklendi.
+>    ⚠️ KİT'e UYGULANMAZ (TCDD 3. Bölge hâlâ KİT'tir).
+> 3. **Üst kurum zinciri anahtar sözcükten güçlü** — "NİLÜFER İLÇE MEM ... **ŞEHİT
+>    JANDARMA ER** EYÜP GÜRSOY ORTAOKULU" → `guvenlik` idi. Şehit/bağışçı adı TÜR
+>    değil ANMA bilgisi. 67 ad · 287 satır etkilenmişti. `_UST_ZINCIR` eklendi.
+>
+> Regresyon paketi 20/20 (gerçek jandarma/ceza infaz/üniversite kayıtları çalınmıyor).
+>
+> ### `backend/idare_tur_kural_backfill.py` (yeni)
+> Eşleşmeyen adları kuralla sınıflar, `kaynak='kural'` ile yazar, tazeler.
+> - **Önuçuş**: `fold()` ≡ SQL `idare_normalize()` değilse DURDURUR. Bu kontrol
+>   olmadan 40K satır yazılır, tazele 0 döner, sebebi anlaşılmaz. (300 örnek, 0 sapma.)
+> - `kaynak='elle'` satırlara DOKUNMAZ (insan düzeltmesi korunur).
+> - `--detsis-yeniden` var olan satırın türünü yeniden hesaplar ama **kaynak
+>   etiketini KORUR** — tür hesabının düzeltilmesi kaydın kökenini değiştirmez.
+> - Normalize çakışması (`'TİC.A.Ş.'` ↔ `'TİC. A.Ş.'`) norm bazında tekilleştirilir;
+>   yoksa PostgreSQL 21000 "ON CONFLICT DO UPDATE cannot affect row a second time".
+>
+> ### Sonuç
+> ```
+> 40.828 tekil ad · 813.000 satır sınıfsız
+> ÇÖZÜLEN: 40.027 ad · 783.297 satır (%96,3)  ← AI'sız, yalnız kurallarla
+> KALAN  :    801 ad ·  29.703 satır (%3,7)
+> idare_tur tablosu: 28.566 → 68.595 eşleme
+> ```
+>
+> ### `migration_idare_tur_tazele_fix.sql`
+> Backfill eşlemeleri YAZDI ama `idare_tur_tazele()` **57014 statement timeout**
+> yedi → kolonlar boş kaldı. İki sebep: (a) `dogrudan_temin_ilanlari`'nda ifade
+> indeksi YOK (migration yalnız `ilanlar`'a koymuş, 1,49M satırda satır-başı
+> fonksiyon), (b) fonksiyonun kendi timeout'u yok. İkisi de düzeltildi
+> (`SET statement_timeout = '1800s'`, SECURITY DEFINER + service_role kısıtlı
+> olduğu için güvenli).
+>
+> ### Kalan 801 ad — AI'a GEREK YOK, hedefli kural yeter
+> Tanımlanabilir kümeler: TCMB şubeleri, TTK, İSTON, ESHOT, `KONYA B.B. SU KANAL
+> İDARESİ` (B.B. kısaltması tanınmıyor), Gıda Kontrol Laboratuvarları, Veteriner
+> Kontrol Enstitüleri, Sulama Birlikleri, Liman İşletme Müdürlükleri, Milli Emlak
+> Şeflikleri. Gerçekten çözülemeyen tek grup jenerik alt birim adları
+> (`DESTEK HİZMETLERİ SERVİSİ-2`, `MARMARA BÖLGE KOORDİNATÖRLÜĞÜ`) — bunlar ad'dan
+> çıkarılamaz, hiyerarşi gerekir; kod zaten BİLİNÇLİ olarak `bilinmiyor` dönüyor.
+>
+> - [ ] Migration sonrası doğrula: `ilanlar` NULL ~0, DT NULL ~29K
+> - [ ] Kalan 801 ada hedefli kural yaz, `--detsis-yeniden` ile bir kez koş
+>       (kural motoru 3 kez düzeldi → DETSİS satırlarının türü de bayat)
+> - [ ] Arayüzde `kaynak` ayrımı: 'kural' türü çıkarımdır, 'ekap-detsis' resmî.
+>       Filtre için yeterli ama "kesin" diye sunulmamalı.
+
 > # 🎯 İŞ KUYRUĞU — TEK KAYNAK (20 Tem 2026)
 > **Kullanıcı kararı:** *"eksikleri not al yapılacaklar md ye, oradan ilerleriz.
 > çift taraftan ilerlemek doğru olmuyor çünkü."* → Yeni iş talebi geldiğinde ÖNCE
