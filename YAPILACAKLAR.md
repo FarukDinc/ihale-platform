@@ -105,6 +105,40 @@
 > NOT: `claude/happy-gauss-ce4605` dalında 1 birleşmemiş commit görünür — içeriği yeni
 > koda UYARLANARAK uygulandı, dal yalnızca kayıt olarak duruyor.
 >
+> ## ⏸️ TEK BEKLEYEN MIGRATION: `migration_dt_arama.sql` — BAKIM PENCERESİ İSTER
+> DT'ye `baslik_fold` + `arama_fold` generated kolonları + trigram GIN indeksleri ekliyor.
+> **MALİYET (dosyanın kendi notu):** 1,49M satırda `ADD COLUMN GENERATED` tabloyu yeniden
+> yazar → **3-8 dk ACCESS EXCLUSIVE kilit**, o süre boyunca DT'ye dokunan HER sorgu bekler;
+> ardından kolon başına 8-20 dk `CREATE INDEX CONCURRENTLY` (o kısım kilitlemez).
+> Yani gündüz uygulanırsa DT yüzeyleri birkaç dakika donar. **Düşük trafikli saatte
+> koşulmalı.** O zamana kadar DT araması `trAramaKalibi` joker yedeğiyle çalışıyor
+> (kayıp yok, sadece indeks yerine seq-scan).
+> Migration kendi GRANT'larını doğru yönetiyor: `baslik_fold` anon+üye, `arama_fold`
+> YALNIZ üye (içinde `idare` geçtiği için misafire verilirse maskeli kurum adı trigram
+> aramasıyla harf harf geri okunabilirdi) — doğrulama bloğunda negatif test var.
+>
+> ## ✅ BACKLOG TURU 2 — 8 İŞ BİRLEŞTİ (20 Tem gece)
+> 8 iş izole worktree'de üretildi, adversarial incelendi, `main`'e birleştirildi, deploy
+> edildi. **5 çakışma elle çözüldü** — hepsi "iki taraf da haklı" tipiydi:
+> - `ihaleler.html`: benim `trAramaKalibi` (TR katlama) + onların `prDeger` (PostgREST
+>   or() gramerine enjeksiyon kaçışı) → **ikisi birleştirildi**, sıra: önce katla sonra kaçır.
+> - `ted_scraper.py`: iki dal da `gemini_cevir`'i değiştirmiş (biri yeni SDK'ya taşımış,
+>   diğeri tuple sözleşmesi + backoff eklemiş) → yeni SDK gövdesi tuple dönecek şekilde
+>   birleştirildi; çağrı yeri `cevrilmis, basarili = ...` bekliyordu, kontrol edildi.
+> - `kik-kararlar` / `dogrudan-temin` / `uluslararasi`: onların sunucu-taraflı çözümü
+>   (fold kolonu / RPC) benim istemci geçici çözümümden üstündü → **onlarınki alındı**,
+>   ama **yedek yollarına benim TR katlamam eklendi** (migration uygulanmadan da kayıp olmasın).
+>
+> **Ek olarak bulunan gerçek hatalar (ajanlar kapsam dışında yakaladı):**
+> - `ihaleler.html` Geçmiş sekmesinde `count=exact` + ILIKE → **57014 timeout, HTTP 500**
+>   (ölçüldü: 3,4-4,6 sn). `PLANLI_SAYIM_SEKMELERI` ile Geçmiş de `count=planned`'a alındı.
+> - `ihaleler.html`'de **11 filtre alanının handler'ı yokmuş** — kullanıcı filtreyi
+>   değiştiriyor, liste değişmiyordu (yalnız "Filtrele" düğmesiyle uygulanıyordu).
+> - `genai` SDK migrasyonu **yarım kalmışmış** — 4 dosya hâlâ eski SDK'daymış, taşındı.
+> - TED'de iki kök neden: `--max-pages 6` sert tavanı + tarih penceresi eksikliği.
+> - KİK teşhisi: backlog'daki "302/401/406 IP-bloklu" tanısı **BAYAT** — o URL'ler
+>   12 Tem'de terk edilmiş, satır güncellenmemiş.
+>
 > ## ✅ MIGRATION'LAR UYGULANDI (20 Tem gece, kullanıcı onayıyla — 8 dosya)
 > Hepsi `ON_ERROR_STOP=1` ile, tek tek, nesne-bazlı doğrulanarak koşuldu.
 >
