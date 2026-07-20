@@ -18,6 +18,22 @@
 >   kullanıcı onayı): `migration_dt_kazanan_kurtarma.sql` (yanlış damgalıları yeniden kuyruğa),
 >   `migration_sonuc_checkpoint_kurtarma.sql`.
 >
+> ## ▶️ TOKEN BACKFILL KOŞUYOR + KURTARMA UYGULANDI (20 Tem gece)
+> - **İfade indeksi UYGULANDI:** `idx_ilanlar_idare_norm_expr` + DT'si CONCURRENTLY kuruldu.
+>   `idare_tur_tazele` ölçüldü: **25 dk → 3m40s** (~7x). Gece cron'u artık dakikalar sürer.
+> - **Backfill sonrası zincir doğrulandı:** detsis kapsaması `ilanlar` **%92,7 → %97,1**
+>   (340K yeni backfill ilanı da eşleşti), `idare_tur` **%99,8 dolu**.
+> - **DT kazanan kurtarma UYGULANDI:** 16.719 yanlış-damgalı satır geri açıldı →
+>   token'lı+sonuçlanmış+denenmemiş kuyruk **464.581**.
+> - **Sonuç-checkpoint kurtarma UYGULANMADI:** NO-OP (scrape_log boş) + bozuk ekap_id join;
+>   ABORT guard'landı.
+> - **▶️ TOKEN BACKFILL BAŞLADI:** `ekap_dogrudan_temin --backfill --max-pages 7000`,
+>   checkpoint 4965'ten devam. **4966 duvarı AŞILDI** (düzeltilmiş scraper zehirli kaydı
+>   izole edip geçti — 4966/4967/4968 sorunsuz). ~6.700 sayfa, birkaç saat. 860K token'sız
+>   DT'nin E10/E11'ini dolduracak. Monitörlü (`logs/dt_token_bf.log`, işaret `dt_token_bf_tamam`).
+> - ⏭ SIRADAKİ (token bf bitince): `dt_kazanan_scraper --limit 500000 --rpm 300` — 464K+
+>   token'lı kuyruğu işler, DT kazanan %7,9'dan yükselir.
+>
 > ## 🎯 DT KAZANAN DARBOĞAZI — TAM ANATOMİ (20 Tem gece, canlı ölçüm)
 > "DT kazanan neden %7,9?" sorusunun kesin cevabı. `dogrudan_temin_ilanlari` = 1.490.644:
 >
