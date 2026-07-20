@@ -1,5 +1,101 @@
 # İhalePlatform — Yapılacaklar Listesi
 
+> # 📌 OTURUM DEVRİ — 20 TEM (tek oturuma dönüş)
+> Kullanıcı paralel oturumları kapatıp tek oturuma dönüyor. **Bu blok, dağınık
+> oturumların birleşik durumudur — yeni oturum İLK BUNU okusun.**
+>
+> ## 🟢 ŞU AN CANLI DURUM (ölçüldü, tahmin değil)
+> | | |
+> |---|---|
+> | `ilanlar` | **554.884** (backfill akıyor, saatlik büyüyor) |
+> | `durum='aktif'` | 13.444 |
+> | gerçekten açık (`son_teklif_tarihi > now()`) | **4.765** |
+> | `dogrudan_temin_ilanlari` | 1.490.644 |
+> | VDS HEAD | `e38ae4e` (yerel = origin = VDS, senkron) |
+>
+> ## ⚙️ ŞU AN KOŞAN İŞ — DOKUNMA
+> `ekap_ihale_backfill.py` — nohup, PID canlı, **2021 yılında %50**, ~143 kayıt/sn.
+> Kalan yıllar: 2021 → 2011. Checkpoint: `backend/ihale_backfill_checkpoint.json`
+> (yıl bazında `skip`). Durdurup başlatmak güvenli, kaldığı yerden devam eder.
+> Log: `/opt/ihale-platform/logs/ihale_backfill.log`
+>
+> **Bittiğinde İLK İŞ** — eşleşmeyen EKAP durum metinlerini oku:
+> ```bash
+> ssh ihale "grep -A25 'ESLESMEYEN DURUM METINLERI' /opt/ihale-platform/logs/ihale_backfill.log | tail -30"
+> ssh ihale "docker exec -i supabase-db psql -U postgres -d postgres -c 'SELECT public.ilan_durum_bayatlat();'"
+> ```
+>
+> ## ✅ BU OTURUMDA YAPILANLAR
+>
+> **Doğrudan Temin (kullanıcının bildirdiği 5 hata) — hepsi canlıda**
+> - Haritadan `?il=` ile gelince **Güncel** sekmesi açılıyor (Tümü değil)
+> - Sekme sayaçları **filtreye duyarlı** (Ankara 96K → 6K; imza cache'i: sekme
+>   değişimi 0 sorgu, filtre değişimi 3)
+> - Kartlar tıklanabilir → **yeni `dt-detay.html`** (stretched-link; maskeleme korundu)
+> - Filtre paneli ihaleler.html ölçüleriyle eşlendi
+> - Sıralama etiketi düzeltildi (*sıralama zaten vardı, etiket yanlıştı*)
+> - `yayin_tarihi` etiketi: sonuçlananlarda "Sonuç duyurusu" (E8 o anki duyurunun tarihi)
+>
+> **İhaleler kategori filtresi (`fea35b3`)** — 48 seçeneğin **43'ü sıfır kayıt**
+> döndürüyordu (`<option>`larda `value` yoktu → tarayıcı metni gönderiyordu).
+> `js/kategoriler.js`'ten runtime dolduruluyor; kanonik-dışı değerler "(eski)"
+> etiketiyle korunuyor (kayıtlı aramalar sessizce boşalmasın).
+>
+> **Güvenlik (`e9bc6e1`)** — `dogrudan_temin_ilanlari` üzerinde `authenticated`
+> tablo-geneli SELECT'i vardı → her üye `dt_ihale_token`/`dt_idare_token` çekebiliyordu.
+> 18 kolon GRANT, 2 token kapalı. `has_column_privilege` ile doğrulandı (`f | t`).
+>
+> **Analiz ekseni (`2556169`)** — `rekabet_ozet`+`kurum_ozet` trend ekseni
+> `ilan_tarihi` (%4,27 dolu) → `etkin_tarih`. 24 ay penceresinde **110.548 → 185.408 (+%68)**.
+> Etiketler "Trend" → "Hareket" (335K kayıtta bu SONUÇ tarihi, "ilan trendi" demek yanlıştı).
+>
+> **Sahte "aktif" ihaleler (`9d14ef6`, `790618c`)** — `durum='aktif'` **183.677 → 13.444**.
+> Kök neden `durum_donustur()`'un blanket `return "aktif"`i; artık tanınmayan durumda
+> tarihten türetiliyor. 178.906 satır bayatlatıldı, MV tazelendi, backfill düzeltilmiş
+> kodla yeniden başlatıldı ve kanıtlandı (yeni kayıtlar `kapali` düşüyor, `aktif` sabit).
+>
+> **Cron (`c021157`)** — `idare_tur_tazele()` + `lot_sayisi` gece işine bağlandı
+> (ikisi de migration'da bir kez doldurulup unutulmuştu → kapsam azalıyordu).
+>
+> ## 🔜 SIRADAKİ İŞ — kuyruk (gerekçeli sıra)
+> Detaylar için aşağıdaki **"İKİNCİ TUR KARARLARI"** bloğuna bak; her madde
+> dosya/satır seviyesinde oturtuldu ve adversaryal doğrulamadan geçti.
+> | # | İş | Not |
+> |---|---|---|
+> | 1 | **Arama Commit 1** | `js/api.js:98,111` tanımsız `UI.bildirim_goster()` çağırıyor (o sayfalar `ui.js` yüklemiyor) + **7 ölü dosya sil** (1.164 satır). Sıfır görsel risk. |
+> | 2 | **RFQ köprüsü** | 16 Tem kararı BOZULMAYACAK; e-Satınalma → `harita?katman=rfq` linki + rozet + bayatlama filtresi. ⚠️ Çıplak `>= now()` YAZMA (kolon nullable). |
+> | 3 | **Analiz Faz A** | Parasal kartlara "yalnız ihaleler" rozeti + payda. DT parasal birleştirme **REDDEDİLDİ** (kapsama %5,24 + `yaklasik_maliyet` kolonu YOK). |
+> | 4 | **Arama Commit 2** | `ihaleler.html`'in 3 handler'sız alanı. Önce ILIKE gecikmesini ölç. |
+> | 5 | **İdare ağacı** | **Proxy'siz başlanabilir** — loader EKAP'a hiç istek atmıyor. ⚠️ Adım 1 ve 2 aynı işlemde: `--kapanis` + `REFRESH ... idare_hiyerarsi_sayim_mv` (yoksa boş ağaç render eder). |
+> | 6 | **Ticaret** | Canlı tabloya PK takası YAPMA → ayrı `dis_ticaret_dunya` tablosu. |
+> | 7 | **Analiz Faz B** | `ihale_butce_mv` (`ilan_id` DISTINCT). ⚠️ `ihale_sonuclari.yaklasik_maliyet` kısım bazlı değil, SUM 35x şişiyor. |
+>
+> ## ❓ SENİN KARARINI BEKLEYENLER (veriyle çözülemeyen 5 madde)
+> 1. **"Tümü" varsayılan mı?** DT (1,49M) ihaleyi (555K) ~3:1 eziyor → varsayılan
+>    "Tümü" olursa kırılım grafikleri fiilen DT grafiğine döner.
+> 2. **"Tümü"de ortak tarih penceresi?** DT pratikte 2025-26, ihale 2011'e uzanıyor.
+> 3. **RFQ'lar `ihaleler.html`'de de görünsün mü?** (kamu ilanı + özel RFQ tek listede)
+> 4. **RFQ bayatlatma: RPC filtresi mi, cron adımı mı?** İkincisi daha doğru, prod cron değişikliği.
+> 5. **Ticaret "her ülke" ne demek?** (a) her ülke × DÜNYA — planlanan; (b) tam ikili
+>    matris ≈ 4,8 milyar satır, uygulanamaz.
+>
+> ## ⚠️ TEK OTURUMA DÖNERKEN — TEMİZLİK
+> - **3 worktree açık**: `.claude/worktrees/` altında `awesome-jang`, `brave-knuth`,
+>   `great-blackburn`. `git worktree list` ile gör, gereksizleri `git worktree remove`.
+> - **1 stash var**: `stash@{0} "onceki oturumdan kalan yerel degisiklikler"` —
+>   başka bir oturumun `usul_donustur` i18n işi. İçeriğine bak, gerekmiyorsa `git stash drop`.
+> - Bugün **iki kez** paralel oturum çakışması yaşandı (biri `ekap_scraper.py`'de merge
+>   conflict, biri commit'in başka oturuma süpürülmesi). Tek oturuma dönmek doğru karar.
+>
+> ## 🧭 BU OTURUMUN İKİ DERSİ (tekrarlanmasın)
+> 1. **Bayat migration dosyası okumak canlıyı bozdu.** `migration_uygun_firmalar_v3_1.sql`
+>    `'kapandi'` diyor ama `v3_3` onu `'kapali'`ya düzeltmiş; ben v3_1'e dayanınca
+>    CHECK constraint reddetti ve backfill çöktü. **Migration okurken aynı nesnenin daha
+>    yeni sürümü var mı diye bak; canlı tanımı `pg_proc`'tan doğrula.**
+> 2. **Adversaryal doğrulama iki kez canlı hatayı önledi.** `kpi.aktif`'i
+>    `durum='aktif'`e çevirecektim → 34x şişerdi. Ticaret'te canlı tabloya PK takası
+>    önerilmişti → sessiz veri kaybı. Riskli değişikliklerde "çürüt" turu şart.
+
 > ## ✅ 20 TEM — ÇÖZÜLDÜ: SAHTE "AKTİF" İHALELER (kök neden + temizlik + doğrulama)
 > **Sonuç:** `durum='aktif'` **183.677 → 13.444**; gerçekten açık 4.765.
 > Bayatlatma 178.906 satır kapattı, `idare_ozet_mv` tazelendi.
