@@ -676,7 +676,17 @@
 
   async function kurumFirmaTakipleriniYukle() {
     const { data: { user } } = await sb.auth.getUser();
-    if (!user) return;
+    if (!user) {
+      // Erken dönüş, panellerin başlangıçtaki "Yükleniyor..." yer tutucusunu TEMİZLEMEZDİ →
+      // misafirde iki panel sonsuza dek yükleniyor görünüyor, kullanıcı "site bozuk" sanıyordu
+      // (20 Tem bulundu). Yer tutucuyu üyelik çağrısıyla değiştir.
+      const misafirMesaj = 'Kurum ve firma takibi üyelere özeldir. <a href="login" style="color:var(--amber);">Giriş yapın</a> ya da ücretsiz hesap oluşturun.';
+      const kEl = document.getElementById('kurum-takip-liste');
+      const fEl = document.getElementById('firma-takip-liste');
+      if (kEl) kEl.innerHTML = misafirMesaj;
+      if (fEl) fEl.innerHTML = misafirMesaj;
+      return;
+    }
 
     try {
       const { data: kurumlar } = await sb.from('takip_idareler').select('idare_ad').eq('kullanici_id', user.id);

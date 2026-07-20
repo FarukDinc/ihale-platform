@@ -140,3 +140,41 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
 });
+
+/**
+ * trAramaKalibi — PostgREST `ilike` için Türkçe-güvenli desen üretir.
+ *
+ * SORUN: ILIKE yalnız ASCII harflerde büyük/küçük katlaması yapar. Türkçe'de
+ * İ(U+0130)↔i ve I↔ı(U+0131) çiftleri KATLANMAZ, ayrıca ü/ğ/ş/ç/ö gibi harfler
+ * ASCII karşılıklarıyla eşleşmez. Sonuç: kullanıcı "istanbul" yazınca SIFIR kayıt
+ * döner, hata da olmadığı için ekranda "kayıt bulunamadı" yazar ve veri yok sanılır.
+ * 20 Tem canlı ölçümü (kik_kararlar, 97 satır): "istanbul" → 0 / "İSTANBUL" → 3;
+ * "mudurlugu" → 0 iken gerçek evren 61 satır.
+ *
+ * ÇÖZÜM: çift varyantı olan her harfi tek-karakter joker `_` ile değiştir. Böylece
+ * hangi varyant yazılırsa yazılsın hepsi eşleşir. Doğrulandı: "m_d_rl___" → 61
+ * (gerçek evrenin tamamı), "_stanb_l" → 2.
+ *
+ * TAKAS: `_` herhangi bir karakteri tuttuğu için hafif fazla-eşleşme olabilir
+ * (ör. "_stanb_l" teorik olarak "astanbol"u da tutar). Arama kutusunda birkaç fazla
+ * sonuç, sıfır sonuçtan kıyaslanamayacak kadar iyidir.
+ *
+ * NOT: tr_fold()'lu bir kolon/RPC üzerinden arıyorsan buna GEREK YOKTUR — orada
+ * katlama zaten sunucuda yapılıyor. Bu yardımcı, ham kolonda ilike yapmak zorunda
+ * olan sayfalar içindir.
+ */
+function trAramaKalibi(metin) {
+  if (!metin) return '';
+  return String(metin)
+    // or() gramerini bozan karakterler (virgül listeyi böler, parantez grubu kapatır → 400)
+    .replace(/[,()*\%_]/g, ' ')
+    .trim()
+    // Türkçe'de ASCII karşılığıyla karışan harfler → tek karakter joker
+    .replace(/[iıIİ]/g, '_')
+    .replace(/[uüUÜ]/g, '_')
+    .replace(/[gğGĞ]/g, '_')
+    .replace(/[sşSŞ]/g, '_')
+    .replace(/[cçCÇ]/g, '_')
+    .replace(/[oöOÖ]/g, '_');
+}
+window.trAramaKalibi = trAramaKalibi;

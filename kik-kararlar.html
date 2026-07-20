@@ -437,11 +437,15 @@
     ).order('karar_tarihi', { ascending: false }).limit(500);
 
     if (kelime) {
-      // or() gramerini bozan karakterleri temizle (virgül or-listesini, parantez grubu kapatır → 400)
-      const k = kelime.replace(/[,()*\\]/g, ' ').trim();
+      // trAramaKalibi (js/main.js): or() gramerini bozan karakterleri temizler VE Türkçe
+      // İ/ı·ü·ğ·ş·ç·ö harflerini tek-karakter jokerle değiştirir. ILIKE bu harfleri ASCII
+      // karşılıklarıyla KATLAMAZ; düz arama "istanbul"da 0, "mudurlugu"da 0 dönüyordu
+      // (gerçek evren 61/97). Canlı doğrulama 20 Tem.
+      const k = window.trAramaKalibi(kelime);
       if (k) q = q.or(`baslik.ilike.%${k}%,idare.ilike.%${k}%,ihale_konusu.ilike.%${k}%,ozet.ilike.%${k}%`);
     }
-    if (kararNo) q = q.ilike('karar_no', `%${kararNo}%`);
+    // karar_no alfanümerik (Türkçe harf içermez) → düz temizlik yeterli.
+    if (kararNo) q = q.ilike('karar_no', `%${kararNo.replace(/[,()*\\%_]/g, ' ').trim()}%`);
     if (tur) q = q.eq('karar_turu', tur);
     if (sonuc) q = q.eq('sonuc', sonuc);
     if (bas) q = q.gte('karar_tarihi', bas);

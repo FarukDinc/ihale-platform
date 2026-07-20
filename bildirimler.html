@@ -759,9 +759,13 @@
 
     let uye1 = false;
     try { const { data: s1 } = await sb.auth.getSession(); uye1 = !!(s1 && s1.session); } catch (_) {}
-    const { data } = await sb.from('ilanlar')
+    // error OKUNMALI: yutulursa data null kalıyor ve aşağıda "ihale bulunamadı" basılıyor —
+    // gerçek sebep (ör. bayat oturumda uye1=true olup maskeli kolon 42501 yemesi) hiçbir
+    // yerde görünmüyordu. Sessiz "veri yok" bu projede tekrar eden hata sınıfı.
+    const { data, error: ilanErr } = await sb.from('ilanlar')
       .select(uye1 ? 'id,baslik,idare,il,tur,son_teklif_tarihi,durum' : 'id,baslik,il,tur,son_teklif_tarihi,durum')
       .in('id', ids.slice(-50));
+    if (ilanErr) console.warn('son görülen ihaleler alınamadı:', ilanErr.message, ilanErr.code);
 
     const ilanMap = {};
     (data || []).forEach(x => ilanMap[x.id] = x);

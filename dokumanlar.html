@@ -208,6 +208,11 @@
   const sb = window.supabase.createClient(SB_URL, SB_KEY);
 
   let tumVeriler = []; // [{ihale, belgeler}]
+  // Misafir maskeleme bayrağı — İLK sorgudan ÖNCE kesinleşmeli (bkz. yukle çağrısı,
+  // sayfa sonunda getSession ile set ediliyor). Varsayılan false: bilinmiyorken dar
+  // select kullanmak güvenli taraf, aksi 42501 ile sayfayı öldürüyordu.
+  let uyeMi = false;
+  const MASKE_ROZET = '<a href="login" style="color:var(--amber);text-decoration:none;" title="Üyelere özel — giriş yapın">🔒 ***</a>';
 
   function sekmeAc(id, el) {
     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
@@ -232,12 +237,16 @@
   function ihaleDokRender(item) {
     const { ihale, belgeler } = item;
     const liste = Array.isArray(belgeler) ? belgeler : [];
+    // ekap_id misafirde select'e girmiyor (anon'a kapalı) → undefined gelir.
+    // EKAP linki zaten arama sayfasına gidiyor, ekap_id'yi yalnızca "link gösterilsin mi"
+    // koşulu olarak kullanıyordu; misafirde linki gizlemek doğru davranış (üyelik teşviki
+    // MASKE_ROZET ile veriliyor), yanlış link üretmekten iyi.
     const ekap_id = ihale.ekap_id;
 
     // Doğrudan Temin EKAP'ta ayrı bir modül (ekap-dt/search) — normal ihale arama
     // sayfasına (ekap/search) girmiyor, o yüzden usul'e göre ayırıyoruz.
     const dt = (ihale.usul || '').toLocaleLowerCase('tr').includes('doğrudan temin');
-    const ekapUrl = ekap_id
+    const ekapUrl = (uyeMi && ekap_id)
       ? (dt ? 'https://ekapv2.kik.gov.tr/ekap-dt/search' : 'https://ekapv2.kik.gov.tr/ekap/search')
       : null;
 
@@ -269,7 +278,7 @@
       <div class="kart-header" onclick="toggle('${id}')">
         <div>
           <div class="kart-baslik">${ihale.baslik||'—'}</div>
-          <div class="kart-meta">${ihale.idare||''}${ihale.il?' — '+ihale.il:''} &nbsp;·&nbsp; ${liste.length} döküman</div>
+          <div class="kart-meta">${uyeMi ? (ihale.idare||'') : MASKE_ROZET}${ihale.il?' — '+ihale.il:''} &nbsp;·&nbsp; ${liste.length} döküman</div>
         </div>
         <span class="kart-toggle" id="tog-${id}">›</span>
       </div>
@@ -305,9 +314,17 @@
       return;
     }
 
+    // MİSAFİR MASKELEME (bkz. backend/migration_anon_maske.sql): ilanlar.ekap_id ve
+    // ilanlar.idare anon'a KAPALI. Biri select'te kalırsa PostgREST tek kolonu atlamaz —
+    // SORGUNUN TAMAMINI 42501 ile reddeder ve aşağıdaki error dalı sayfayı tamamen
+    // "Hata: permission denied for table ilanlar" ekranına çevirir. Takip listesi
+    // localStorage tabanlı olduğu için misafirin de dolu listesi olabiliyor; yani bu
+    // sayfa misafirde TAMAMEN ölüydü (20 Tem, canlı anon curl ile doğrulandı).
+    // belgeler/usul/baslik/il anon'a zaten açık — dar select yeterli.
+    const uyeKolon = uyeMi ? 'ekap_id,idare,' : '';
     const { data, error } = await sb
       .from('ilanlar')
-      .select('id,ekap_id,baslik,idare,il,belgeler,usul')
+      .select(`id,${uyeKolon}baslik,il,belgeler,usul`)
       .in('id', ids);
 
     if (error) {
@@ -377,7 +394,12 @@
     }
   });
 
-  yukle();
+  // SIRA ÖNEMLİ: uyeMi, anon'a kapalı kolona dokunan sorgudan ÖNCE set edilmeli.
+  // getSession() yerel token'dan okur (ağ turu yok), ucuz bir kapı.
+  (async () => {
+    try { const { data: { session } } = await sb.auth.getSession(); uyeMi = !!session; } catch (_) {}
+    yukle();
+  })();
 </script>
 </body>
 </html>

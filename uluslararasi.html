@@ -329,7 +329,14 @@
     if (ulke) query = query.eq('ulke', ulke);
     if (kat) query = query.eq('kategori', kat);
     if (tur) query = query.eq('tur', tur);
-    if (q) query = query.or(`baslik.ilike.*${q}*,idare.ilike.*${q}*`);
+    // trAramaKalibi (js/main.js): Türkçe İ/ı·ü·ğ·ş·ç·ö harflerini tek-karakter jokerle
+    // değiştirir. Başlıklar Türkçeye çevrilmiş olduğu için düz ilike sessizce kaybediyordu —
+    // 20 Tem canlı ölçümü: "insaat" 89 sonuç verirken gerçek evren 207; "italya"/"irlanda"
+    // ise SIFIR dönüp "ihale bulunamadı" bastırıyordu.
+    if (q) {
+      const k = window.trAramaKalibi(q);
+      if (k) query = query.or(`baslik.ilike.*${k}*,idare.ilike.*${k}*`);
+    }
     return query;
   }
 
@@ -441,8 +448,27 @@
     el('st-toplam').textContent = toplamS.toLocaleString('tr');
     el('st-yapim').textContent = yapim.toLocaleString('tr');
     el('st-hizmet').textContent = hizmet.toLocaleString('tr');
-    // Ülke + kategori dropdown + ülke sayısı (örneklemden)
-    const { data } = await sb.from('uluslararasi_ihaleler').select('ulke,kategori').limit(5000);
+    // Ülke + kategori dropdown + ülke sayısı.
+    // ⚠️ ESKİ HALİ `.select('ulke,kategori').limit(5000)` idi ve SESSİZCE eksik veri
+    // veriyordu: PostgREST sunucu tarafında db-max-rows=1000 uyguluyor, `.limit(5000)`
+    // bunu AŞMIYOR. Tablo 1.249 satır olduğu için ~%20 düşüyordu; 20 Tem ölçümü:
+    // dropdown'da 34 ülkeden 33'ü görünüyor, 'GRL' hiç listelenmiyordu (KPI da yanlıştı).
+    // Üstelik .order() da yoktu → hangi 1000 satırın geleceği fiziksel sıraya bağlıydı.
+    // ÇÖZÜM: 1000'lik dilimlerle sayfala, dilim dolmayınca dur.
+    // (Tablo ~10K'yı geçerse bu döngü yerine distinct dönen bir RPC'ye taşınmalı.)
+    const satirlar = [];
+    for (let off = 0; off < 20000; off += 1000) {
+      const { data: dilim, error: dErr } = await sb
+        .from('uluslararasi_ihaleler')
+        .select('ulke,kategori')
+        .order('id', { ascending: true })
+        .range(off, off + 999);
+      if (dErr) { console.warn('ülke/kategori dilimi alınamadı:', dErr.message); break; }
+      if (!dilim || !dilim.length) break;
+      satirlar.push(...dilim);
+      if (dilim.length < 1000) break;   // son dilim
+    }
+    const data = satirlar;
     const ulkeler = [...new Set((data || []).map(x => x.ulke).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'tr'));
     const kats = [...new Set((data || []).map(x => x.kategori).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'tr'));
     el('st-ulke').textContent = ulkeler.length;
