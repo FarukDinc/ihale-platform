@@ -428,19 +428,26 @@ def yuklenici_upsert(sb, yuklenici_ad: str, il: str | None, kategori: str | None
         return None
 
 
-def sonuc_yaz(sb, kayitlar: list):
-    """ihale_sonuclari tablosuna upsert."""
+def sonuc_yaz(sb, kayitlar: list) -> list:
+    """ihale_sonuclari tablosuna upsert. GERÇEKTEN yazılan kayıtları döndürür.
+
+    Dönen listeyi çağıran, checkpoint'i (scrape_log basarili=True) SADECE yazılmış
+    kayıtlar için yazmak üzere kullanır: batch başarısız olursa o kayıtlar
+    checkpoint'lenmez → sonraki tur tekrar denenir (sessiz kayıp olmaz)."""
+    yazilan = []
     if not kayitlar:
-        return
+        return yazilan
     for i in range(0, len(kayitlar), 20):
         batch = kayitlar[i:i+20]
         try:
             sb.table("ihale_sonuclari").upsert(
                 batch, on_conflict="ekap_id"
             ).execute()
+            yazilan.extend(batch)
             print(f"  ✓ {i + len(batch)}/{len(kayitlar)} sonuç yazıldı")
         except Exception as e:
-            print(f"  ✗ Yazma hatası: {e}")
+            print(f"  ✗ Yazma hatası (batch {i}–{i + len(batch)}): {e}")
+    return yazilan
 
 
 def scrape_log_yaz(sb, ekap_id: str, ihale_id: str, basarili: bool, hata: str = None):
@@ -536,12 +543,21 @@ async def main(args):
 
     # Sonuçları çek
     sem = asyncio.Semaphore(ESZAMANLI)
-    kayitlar = []
-    hata_sayisi = 0
-    bos_sayisi  = 0
 
-    async def isle(ihale: dict):
-        nonlocal hata_sayisi, bos_sayisi
+    async def isle(ihale: dict) -> dict | None:
+        """Tek ihaleyi işler ve parse edilmiş kaydı DÖNDÜRÜR — checkpoint'i BURADA
+        YAZMAZ.
+
+        KRİTİK: scrape_log(basarili=True) yalnızca veri ihale_sonuclari'na
+        flush EDİLDİKTEN SONRA (main'de) yazılır. Eskiden kayıt in-memory
+        listeye eklenir eklenmez True damgalanıyor, veri ise gather sonrası tek
+        seferde yazılıyordu; arada kesinti/kill VEYA başka bir task'ın istisnası
+        (return_exceptions=False → tur düşer) olursa in-memory kayıt uçar ama
+        'başarılı' checkpoint KALICI kalır → islenmemis_ihaleler o ihaleyi bir
+        daha çekmez (sessiz kayıp).
+
+        Veri yoksa None döner; istisna fırlarsa gather (return_exceptions=True)
+        yakalar ve main sayar — o ihale checkpoint'lenmez, sonraki tur denenir."""
         ihale_id = str(ihale.get("id") or "")
         ekap_id  = str(ihale.get("ekap_id") or "")
         ikn_     = ihale.get("ikn", "?")
@@ -554,9 +570,10 @@ async def main(args):
             await asyncio.sleep(0.2)
 
         if not ham_sonuc:
-            bos_sayisi += 1
+            # Veri yok — checkpoint'i İLERLETME (True yazma). False yaz ki durum
+            # bilinsin ama sonraki tur / --retry-failed yeniden denesin.
             scrape_log_yaz(sb, ekap_id, ihale_id, False, "endpoint yanıt vermedi")
-            return
+            return None
 
         kayit = sonuc_parse(ihale_id, ekap_id, ham_sonuc)
 
@@ -568,27 +585,70 @@ async def main(args):
             )
             kayit["yuklenici_id"] = yid
 
-        kayitlar.append(kayit)
-        scrape_log_yaz(sb, ekap_id, ihale_id, True)
+        return kayit
 
     # DİKKAT: isle() `client`i closure ile kullanıyordu (parametre almıyor). Bu blok
     # değişirken sonuc_cek çağrısı da AYNI düzenlemede havuza çevrildi — biri unutulsaydı
     # her ihalede NameError olurdu ve gather altında sessizce yutulup tur 0 kayıtla biterdi.
     havuz = async_havuz_al(ssl_baglami=ekap_ssl_baglami())
-    if True:
-        await asyncio.gather(*(isle(i) for i in ihaleler))
+    # return_exceptions=True: TEK bir task'ın istisnası (NameError, ağ, parse…)
+    # TÜM turu düşürüp diğer ihalelerin verisini uçurmasın. Hata alan ihale
+    # checkpoint'lenmez → sonraki tur tekrar denenir; hiçbir hata sessizce yutulmaz.
+    sonuclar = await asyncio.gather(
+        *(isle(i) for i in ihaleler), return_exceptions=True
+    )
     havuz.ozet_yaz()
 
-    print(f"\n{'='*55}")
-    print(f"Toplam: {len(ihaleler)} | Sonuç bulundu: {len(kayitlar)} | Boş: {bos_sayisi}")
+    # Sonuçları ayrıştır: kayıt / boş / işleme hatası (task order korunur)
+    kayitlar    = []
+    bos_sayisi  = 0
+    hata_sayisi = 0
+    for ihale, sonuc in zip(ihaleler, sonuclar):
+        if isinstance(sonuc, Exception):
+            hata_sayisi += 1
+            print(f"  ✗ İşleme hatası {ihale.get('ikn', '?')}: {sonuc!r}")
+            # checkpoint YOK → bir sonraki turda tekrar denenir
+        elif sonuc:
+            kayitlar.append(sonuc)
+        else:
+            bos_sayisi += 1
 
+    print(f"\n{'='*55}")
+    print(f"Toplam: {len(ihaleler)} | Sonuç bulundu: {len(kayitlar)} | "
+          f"Boş: {bos_sayisi} | İşleme hatası: {hata_sayisi}")
+
+    # ── KRİTİK SIRA: ÖNCE veriyi yaz, SONRA checkpoint ────────────────
+    # Batch flush → yalnızca GERÇEKTEN yazılan kayıtları scrape_log(True) ile
+    # damgala. Yazılamayanlar checkpoint'lenmez (sonraki tur denenir); bilgi
+    # amaçlı False yazılır ki --retry-failed de yakalasın.
+    yazilamayan = []
     if kayitlar:
-        sonuc_yaz(sb, kayitlar)
-        veri_olan = [k for k in kayitlar if k.get("yuklenici_ad")]
-        print(f"✅ {len(kayitlar)} sonuç işlendi, {len(veri_olan)}'inde yüklenici var")
+        yazilan     = sonuc_yaz(sb, kayitlar)
+        yazilan_ids = {k["ekap_id"] for k in yazilan}
+        for k in yazilan:
+            scrape_log_yaz(sb, k["ekap_id"], k["ihale_id"], True)
+        yazilamayan = [k for k in kayitlar if k["ekap_id"] not in yazilan_ids]
+        for k in yazilamayan:
+            scrape_log_yaz(sb, k["ekap_id"], k["ihale_id"], False,
+                           "ihale_sonuclari yazma hatası")
+
+        veri_olan = [k for k in yazilan if k.get("yuklenici_ad")]
+        if yazilamayan:
+            print(f"⚠️  {len(yazilan)}/{len(kayitlar)} sonuç yazıldı + checkpoint'lendi, "
+                  f"{len(yazilamayan)} yazılamadı (sonraki tur tekrar denenecek), "
+                  f"{len(veri_olan)}'inde yüklenici var")
+        else:
+            print(f"✅ {len(yazilan)} sonuç yazıldı + checkpoint'lendi, "
+                  f"{len(veri_olan)}'inde yüklenici var")
     else:
         print("⚠️  Hiçbir ihale için sonuç verisi bulunamadı.")
         print("   → Önce '--probe' çalıştırarak hangi endpoint'lerin aktif olduğunu kontrol et.")
+
+    # Gerçek durumu yansıt: her şey yazıldı/checkpoint'lendi mi?
+    cekilemeyen = hata_sayisi + len(yazilamayan)
+    if cekilemeyen:
+        print(f"⚠️  {cekilemeyen} ihale bu turda çekilemedi/yazılamadı — "
+              f"checkpoint ilerletilmedi, sonraki tur tekrar denenecek.")
 
 
 if __name__ == "__main__":
