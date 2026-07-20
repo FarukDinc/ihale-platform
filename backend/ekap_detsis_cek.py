@@ -18,6 +18,10 @@ zincirini içerir: "… SAĞLIK BAKANLIĞI TÜRKİYE KAMU HASTANELERİ") — kı
    - "idareKod" DETSİS No DEĞİL, **idareId**'dir (detsisNo/id → 0 sonuç).
    - 0 sonuç "filtre çalıştı" demek DEĞİL; eşleşmeyen değer de 0 döner.
 
+⚠️ 20 Tem: paginationTake 1→300 (her farklı idare yazımı ayrı satır; tek yazım
+   kapsamayı %32'de bırakıyordu). ESKİ take=1 checkpoint'iyle --devam ETME —
+   kapsama eksik kalır; VDS'te checkpoint'i silip sıfırdan tara.
+
 AĞ POLİTİKASI: tüm istekler proxy havuzundan (backend/proxy_havuz.py) geçer —
 VDS'in kendi IP'si EKAP'a yüklenmez. Havuz IP başına soğuma + küresel hız tavanı
 uygular, bloklanan IP'yi karantinaya alır. EKAP zayıf TLS kullandığı için
@@ -151,7 +155,10 @@ async def _tara_async(hedefler, kurumlar, sonuc, baslangic):
 
     async def isle(iid):
         kayit = kurumlar[iid]
-        yuk = {"searchText": "", "paginationSkip": 0, "paginationTake": 1,
+        # take=300: EKAP idare adını her ihalede farklı yazar; tek yazım kurumun
+        # ihalelerinin ~%33,5'ini kapsıyordu (kapsama %32'de takıldı). 300 ihalede
+        # geçen HER farklı yazım ayrı idare_tur satırı olur → kapsama ~%90.
+        yuk = {"searchText": "", "paginationSkip": 0, "paginationTake": 300,
                "searchType": "GirdigimGibi", "idareKodList": [iid]}
         d = None
         async with havuz.istek() as ist:
@@ -172,19 +179,32 @@ async def _tara_async(hedefler, kurumlar, sonuc, baslangic):
                 n = d.get("totalCount") or 0
                 liste = d.get("list") or []
                 if n > 0 and liste:
-                    idare_adi = (liste[0].get("idareAdi") or "").strip()
-                    if idare_adi:
-                        # TÜR: DETSİS'in UZUN adından (üst kurum zincirini içerir)
-                        tur, guven = idare_tur_belirle(kayit.get("ad") or "")
-                        if tur == "bilinmiyor":      # uzun ad da çözemediyse kısa adı dene
-                            tur, guven = idare_tur_belirle(idare_adi)
-                        anahtar = fold(idare_adi)
+                    # her farklı yazımı topla: fold-anahtarı başına görülme sayısı
+                    yazimlar = {}
+                    for kalem in liste:
+                        ad = (kalem.get("idareAdi") or "").strip()
+                        if not ad:
+                            continue
+                        a = fold(ad)
+                        if a in yazimlar:
+                            yazimlar[a]["gorulme"] += 1
+                        else:
+                            yazimlar[a] = {"ad": ad, "gorulme": 1}
+                    # TÜR: DETSİS'in UZUN adından (üst kurum zincirini içerir)
+                    tur0, guven0 = idare_tur_belirle(kayit.get("ad") or "")
+                    for anahtar, y in yazimlar.items():
+                        tur, guven = tur0, guven0
+                        if tur == "bilinmiyor":      # uzun ad çözemediyse yazımı dene
+                            tur, guven = idare_tur_belirle(y["ad"])
                         onceki = sonuc.get(anahtar)
-                        if onceki is None or n > onceki.get("ihale_sayisi", 0):
+                        # jenerik yazımlar ("BİLGİ İŞLEM DAİRE BAŞKANLIĞI") birden çok
+                        # kurumda görünür → yazımı EN ÇOK kullanan kurum kazanır
+                        if onceki is None or y["gorulme"] > onceki.get("gorulme", 0):
                             sonuc[anahtar] = {
-                                "idare_ad": idare_adi, "tur": tur, "guven": guven,
+                                "idare_ad": y["ad"], "tur": tur, "guven": guven,
                                 "detsis_no": kayit.get("detsisNo"), "idare_id": iid,
                                 "detsis_ad": kayit.get("ad"), "ihale_sayisi": n,
+                                "gorulme": y["gorulme"],
                             }
             if i % 250 == 0:
                 gecen = time.time() - t0
@@ -192,6 +212,9 @@ async def _tara_async(hedefler, kurumlar, sonuc, baslangic):
                 kalan = (len(hedefler) - i) / hiz / 60 if hiz else 0
                 print(f"  {i:,}/{len(hedefler):,} · eşleşme {len(sonuc):,} · "
                       f"{hiz:.1f} istek/sn · ~{kalan:.0f} dk kaldı", flush=True)
+            # sonuc artık yazım-bazlı (kurum başına çok satır) → dosya büyük,
+            # her 250'de yazmak IO israfı; 1000'de bir yeter
+            if i % 1000 == 0:
                 with open(CHECKPOINT, "w", encoding="utf-8") as f:
                     json.dump({"indeks": baslangic + i, "sonuc": sonuc}, f, ensure_ascii=False)
 
