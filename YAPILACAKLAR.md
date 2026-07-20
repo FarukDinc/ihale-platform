@@ -69,6 +69,23 @@
 > oturumuyla doğrulandı: yeni select 200 / eski select 401, tablo 10 satır doluyor.
 > Ayrıca `boot sırası` düzeltildi: `uyeMi` artık maskeli kolona dokunan HER sorgudan önce set ediliyor.
 >
+> ⚠️ **AÇIK — DEPLOY EDİLMEDİ (20 Tem, doğrulandı):** `d2d8f98` `origin/main`'e push'landı ama
+> **VDS hâlâ eski dosyayı servis ediyor**, yani canlıda misafir dashboard'u HÂLÂ bozuk.
+> Kanıt (anon curl, kimlik gerekmez):
+> ```
+> curl -s https://ihaleglobal.com/dashboard.html | grep -n "uyeKolon\|idare.ilike"
+> # canlı 1265: select'te kosulsuz "ekap_id, ..., idare"   → misafirde 42501
+> # canlı 1271: kosulsuz .or(...idare.ilike...)            → misafirde 42501
+> # "uyeMi = !!session" → 0 eslesme (boot sirasi duzeltmesi de yok)
+> ```
+> Kalan tek adım (VDS'te, SSH sınıflandırıcı bizi blokluyor → **kullanıcı koşmalı**):
+> ```
+> ssh ihale "cd /opt/ihale-platform && git pull origin main"
+> ```
+> Deploy sonrası aynı curl `uyeKolon`'u görmeli; ardından girişsiz tarayıcıda alt tablo
+> hatasız dolmalı. **DERS:** "tarayıcıda doğrulandı" ≠ "canlıda düzeldi" — commit'in
+> kendisi frontend'i deploy ETMEZ, ayrı `git pull` şart (bkz. migration-uygulandi-mi-denetimi).
+>
 > **Temizlik:** 8 workflow worktree'si + 3 eski worktree kaldırıldı, `git worktree list`
 > artık yalnız `main`. Ölü `api.js` script tag'i 2 sayfadan silindi (`af2b895`).
 > NOT: `claude/happy-gauss-ce4605` dalında 1 birleşmemiş commit görünür — içeriği yeni
