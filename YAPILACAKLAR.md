@@ -11,6 +11,28 @@
 > 10 Tem'in üstünde). Managed-Supabase dönemi maddeleri ("SQL Editor'dan koş") toptan
 > geçersiz. → 2500 altını `YAPILACAKLAR_ARSIV.md`'ye taşı.
 >
+> ## 🎯 EŞLEŞTİRME KAPSAMI — ÖLÇÜLDÜ VE KAPANDI (20 Tem gece)
+> `paginationTake` 1→300 değişikliğinin sonucu **canlı DB'de doğrulandı**:
+>
+> | Tablo | Toplam | detsis_no dolu | Kapsama |
+> |---|---|---|---|
+> | `ilanlar` | 1.618.303 | 1.500.896 | **%92,7** (önce ~%32) |
+> | `dogrudan_temin_ilanlari` | 1.490.644 | 982.046 | **%65,9** |
+>
+> Zincir çıktısı: **39.333** idare eşleşmesi yazıldı (`kaynak='ekap-detsis'`),
+> `ilan_detsis_esle` 1.406.872 ihale + 72.681 DT satırı güncelledi, kapanış tablosu
+> 312.259 satır, MV tazelendi, `dt_kazanan` otomatik yeniden başladı (yazıyor:
+> 1.000 dt_no → 1.032 sözleşme).
+>
+> Hiyerarşi sayaçları da buna paralel büyüdü (eski değerler → yeni):
+> `İÇİŞLERİ BAKANLIĞI` ihale 4.010 → **49.313**, DT 49.106 → **54.251**;
+> `EMNİYET GENEL MÜDÜRLÜĞÜ` ihale 1.203 → **15.148**, DT 26.835 → **30.138**.
+>
+> **⏭ KALAN:** DT kapsaması %65,9 — ihaleye göre 27 puan geride. Sebep incelenmeli
+> (DT idare adları ayrı yazım havuzu mu, yoksa DT'de idare adı hiç yok mu?).
+> Kalıcı çözüm hâlâ `idareIdHash` (bkz. backlog #30) — ad tabanlı eşleşme, idare adı
+> değişince yine kırılır.
+>
 > ## ✅ 20 TEM AKŞAM — BU OTURUMDA KAPANANLAR (8 iş paralel worktree'de üretildi,
 > ## adversarial incelemeden geçti, `main`'e birleştirildi, push edildi)
 > Tamamı **kodda hazır**; migration'lar VDS'te UYGULANMADI (DB yazma onayı gerekiyor).
