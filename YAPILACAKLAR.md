@@ -125,12 +125,23 @@
 >    kalan ~827 sınıfsız ada **hedefli kural — AI ÖNERME**.
 > 8. `ilan_metni_backfill` 402 krizinden beri hiç koşmadı, teyit yok (kapsama %4,5;
 >    artırmak eşleştirme için en değerli veri işi).
-> 9. `ekap_sonuc_backfill.py:310` `json.dumps(...)[:15000]` kırpması **725 satırda JSON'u
->    bozuyor**; kırpma düzeltilip o satırlar yeniden çekilmeli.
+> 9. ✅ **KIRPMA DÜZELTİLDİ (`6e40794`)** — dize yerine VERİ küçültülüyor, çıktı her koşulda
+>    geçerli JSON (`tum_teklifler_paketle`, 3 yükte test edildi).
+>    **Neden sessiz kalmıştı:** kolon `jsonb` ama yük *nesne* değil *dize* olarak yazılıyor
+>    (`jsonb_typeof='string'`, çift kodlama) → Postgres içeriği hiç ayrıştırmıyor, bozuk
+>    metni kabul ediyor. Nesne yazılsaydı insert ilk gün hata verirdi.
+>    ⏭ KALAN: canlıda **720** bozuk satır (725 değil, ölçüldü) yeniden çekilmeli:
+>    `SELECT ilan_id, kisim_no FROM ihale_sonuclari WHERE jsonb_typeof(tum_teklifler)='string'
+>    AND right(btrim(tum_teklifler #>> '{}'),1) <> '}';`
+>    ⏭ AYRICA: çift kodlamanın kendisi ayrı bir borç — 538K satır *dize* tutuyor, ileride
+>    firma olayı madenlemek için `#>>'{}'`+parse gerekecek. Tüketici olmadığı için
+>    tek migration'la nesneye çevrilebilir (karar gerek).
 > 10. Kirlenen 1.297 `ilanlar.usul` satırı (ham i18n anahtarı) — Accept-Language düzeldi,
 >     yeniden çekilmeli/NULL'lanmalı.
-> 11. `il` mojibake (AĞRI→'A?RI') — **önce SELECT ile güncel sayıyı ölç**, sonraki
->     turlarda sessizce düzelmiş olabilir.
+> 11. ✅ **`il` MOJIBAKE KAPANDI — ölçüldü, sorun YOK.** Canlı: `il ~ '[?]'` → **0 satır**,
+>     küçük harfli → 0, 83 tekil değer (81 il + `''` + tekil bozuk `İZMIR`). Sonraki scraper
+>     turları sessizce düzeltmiş. Sentezin "önce ölç" şüphesi haklı çıktı — `mojibake_fix.py`
+>     KOŞULMAMALI, koşulacak veri yok.
 > 12. Kategori kalanları: 17.502 kanonik-dışı satır + 67K OKAS'sız "Diğer" + K1 AI
 >     kuyruğunun (153K) bitişi doğrulanmadı.
 > 13. DT→`yukleniciler` `normalize_firma` eşleme turu — firma-analiz DT kapsamının önkoşulu.
