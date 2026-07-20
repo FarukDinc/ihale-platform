@@ -154,7 +154,7 @@
       <div class="stat-row">
         <div class="stat"><div class="l">Toplam Firma</div><div class="v" id="st-firma">—</div><div class="s" id="st-firma-s">kamu ihalesi kazanan</div></div>
         <div class="stat"><div class="l">En Yoğun İl</div><div class="v" id="st-yogun">—</div><div class="s" id="st-yogun-s">—</div></div>
-        <div class="stat"><div class="l">Açık RFQ</div><div class="v" id="st-rfq">—</div><div class="s">e-Satınalma talebi</div></div>
+        <div class="stat"><div class="l">Açık RFQ</div><div class="v" id="st-rfq">—</div><div class="s">teklif süresi devam eden</div></div>
         <div class="stat"><div class="l">Kapsanan İl</div><div class="v" id="st-il">—</div><div class="s">81 ilden</div></div>
       </div>
 
@@ -455,10 +455,22 @@
     }
 
     // Açık RFQ listesi (sektör seçiliyse kategoriyle daraltılır)
+    // ⚠️ BAYATLATMA (#23): durum='acik' TEK BAŞINA yetmez — kolon manuel, alıcı kazanan
+    // seçmedikçe 'acik' kalır; süresi geçmiş talep sonsuza dek açık görünüyordu. Filtre
+    // il_rfq_dagilimi RPC'siyle birebir aynı: son_teklif_tarihi NULL (süresiz) VEYA gelecek.
+    // Çıplak .gte() YAZMA — NULL satırları sessizce eler, tarihsiz RFQ'lar kaybolur.
+    // Ayrıca il eşleşmesi ilike'daydı → eq-listesine (ilVeriAdlari) çevrildi. NOT: bu sorguda
+    // ilike BUGÜN doğru çalışıyor (canlı anon curl ile ölçüldü: il=ilike.İstanbul ve
+    // il=ilike.İSTANBUL ikisi de kaydı buluyor) — yani gözlenmiş bir hata DEĞİL, önlem:
+    // proje kuralı Türkçe metinde ilike yasaklıyor (İ/ı katlaması collation'a bağlı) ve
+    // aynı dosya yukleniciler.il'i zaten bu eq-listesi deseniyle sorguluyor. Daraltma riski
+    // yok: satinalma_talepleri.il profildeki kanonik <select>'ten gelir (title-case ILLER).
     try {
       let q = sb.from('satinalma_talepleri')
         .select('id,baslik,kategori,tahmini_bedel')
-        .eq('durum', 'acik').ilike('il', ad);
+        .eq('durum', 'acik')
+        .in('il', ilVeriAdlari(key, ad))
+        .or(`son_teklif_tarihi.gte.${new Date().toISOString()},son_teklif_tarihi.is.null`);
       if (sektorSecili) q = q.eq('kategori', sektorSecili);
       const { data } = await q.order('olusturulma', { ascending: false }).limit(10);
       const el = document.getElementById('panel-rfqlar');
@@ -619,8 +631,10 @@
     esikleriHesapla();
     istatistikGuncelle();
     boya();
-    // Derin bağlantı: ?sektor=<kanonik kategori>
-    const pSektor = new URLSearchParams(location.search).get('sektor');
+    // Derin bağlantı: ?katman=rfq (e-Satınalma köprüsü) + ?sektor=<kanonik kategori>
+    const qs = new URLSearchParams(location.search);
+    if (qs.get('katman') === 'rfq') katmanSec('rfq');
+    const pSektor = qs.get('sektor');
     if (pSektor && (window.KATEGORILER || []).some(k => k.kod === pSektor)) {
       document.getElementById('sektor-sec').value = pSektor;
       sektorSec(pSektor);
