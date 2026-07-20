@@ -618,21 +618,23 @@
         <!-- TARİH ARALIKLARI: eskiden "Detaylı Ara" panelinde gömülüydü, kullanıcı bulamıyordu.
              ID'ler AYNEN korundu (filtreleriUygula/Sifirla/mevcutFiltreleriOku/urlFiltreleriUygula
              bu id'lere bakıyor) — yalnız DOM konumu değişti. -->
+        <!-- Handler'lar inline DEĞİL, filtreAlanlariniBagla() içinde tek yerden bağlanır
+             (Backlog #20). Inline onchange bırakılsaydı bu dört alan iki kez tetiklenirdi. -->
         <div class="filter-group">
           <label>Yayın Tarihi (Baş.)</label>
-          <input type="date" class="filter-input" id="f-yayin-bas" style="width:150px;" onchange="filtreUygula()" />
+          <input type="date" class="filter-input" id="f-yayin-bas" style="width:150px;" />
         </div>
         <div class="filter-group">
           <label>Yayın Tarihi (Bitiş)</label>
-          <input type="date" class="filter-input" id="f-yayin-bit" style="width:150px;" onchange="filtreUygula()" />
+          <input type="date" class="filter-input" id="f-yayin-bit" style="width:150px;" />
         </div>
         <div class="filter-group">
           <label>Son Teklif (Baş.)</label>
-          <input type="date" class="filter-input" id="f-teklif-bas" style="width:150px;" onchange="filtreUygula()" />
+          <input type="date" class="filter-input" id="f-teklif-bas" style="width:150px;" />
         </div>
         <div class="filter-group">
           <label>Son Teklif (Bitiş)</label>
-          <input type="date" class="filter-input" id="f-teklif-bit" style="width:150px;" onchange="filtreUygula()" />
+          <input type="date" class="filter-input" id="f-teklif-bit" style="width:150px;" />
         </div>
         <button class="btn-filtrele" onclick="filtreUygula()">Filtrele</button>
         <button class="btn-sifirla" onclick="filtreleriSifirla()">Sıfırla</button>
@@ -700,8 +702,8 @@
         </div>
         <div class="filter-group">
           <label>OKAS / CPV Kodu</label>
-          <input type="text" class="filter-input" id="f-okas" placeholder="örn. 38651000 veya 3865" style="width:190px;"
-            onkeydown="if(event.key==='Enter') filtreUygula()" />
+          <!-- Enter + debounce handler'ı filtreAlanlariniBagla() içinde (Backlog #20). -->
+          <input type="text" class="filter-input" id="f-okas" placeholder="örn. 38651000 veya 3865" style="width:190px;" />
         </div>
       </div>
 
@@ -938,7 +940,7 @@
     document.getElementById('gelismis-panel').classList.toggle('acik', sekme === 'detayli');
     kapsamiOlmayanFiltreler(sekme);
     sonucOzetGuncelle();
-    ilanlariYukle(1);
+    filtreUygula();   // ilanlariYukle(1) değil: bekleyen metin debounce'u da iptal olsun
   }
 
   // ── Geçmiş sekmesinde veri kapsamı olmayan filtreler ────────────────────────
@@ -1278,7 +1280,27 @@
     if (!e.target.closest('#kurum-filtre-grubu')) kurumSonucGoster([]);
   });
 
+  // Yarış koruması (Backlog #20) — kurumAraIstekNo ile AYNI desen.
+  // Aynı sayfada ölçülen sorgu süreleri 0,4 sn ile 3,5 sn arasında değişiyor
+  // (aşağıdaki ölçüm bloğuna bak), yani art arda filtre değiştiren kullanıcıda
+  // yanıtların sırasının bozulması istisna değil KURAL: eski/geniş sorgu geç dönüp
+  // yeni/dar sorgunun sonucunu eziyordu. Her istek artan bir no alır; yanıt geldiğinde
+  // no güncel değilse HİÇBİR ŞEY basılmaz.
+  let listeIstekNo = 0;
+
+  // PostgREST mantık ağacı (or=/and=) değerleri VİRGÜL ve PARANTEZLE ayrıştırılır. Kullanıcı
+  // metnini ağaca HAM enterpole etmek, metinde bu karakterler geçtiği anda ayrıştırmayı bozar:
+  // CANLI ÖLÇÜM (20 Tem, anon, /rest/v1/ilanlar), arama metni: kalem, kagit
+  //   or=(baslik.ilike.%kalem, kagit%,...)      → http 400  PGRST100 "failed to parse logic tree"
+  //   or=(baslik.ilike."%kalem, kagit%",...)    → http 200
+  // Çift tırnak içine alınan değer tek parça okunur; içindeki \ ve " kaçışlanmalıdır.
+  // Tırnak JOKERİ BOZMAZ: aynı aramanın tırnaklı/tırnaksız hali (%kalem%) birebir aynı
+  // satırları döndürdü — PostgREST tırnağı soyduktan sonra değeri ILIKE'a olduğu gibi verir.
+  // Tek .ilike() çağrılarında gerek YOK (ayrı query parametresi, mantık ağacı yok).
+  const prDeger = (v) => `"${String(v).replace(/\\/g, '\\\\').replace(/"/g, '\\"')}"`;
+
   async function ilanlariYukle(sayfa = 1) {
+    const benim = ++listeIstekNo;
     mevcutSayfa = sayfa;
     const liste = document.getElementById('ihale-liste');
     liste.innerHTML = `<div class="liste-state"><div class="loading-spinner"></div>Yükleniyor...</div>`;
@@ -1313,11 +1335,16 @@
     // DB kolon-yetkisi 42501 verir (migration_anon_maske.sql); kart bunları '***' çizer.
     const uyeKolon  = uyeMi ? 'ekap_id,idare,' : '';
     const uyeSonucK = uyeMi ? 'kazanan_firma,' : '';
-    // Sonuç sekmesi ihale_sonuclari!inner + count(*) OVER() (count:exact) → planlayıcı TÜM sonuç
-    // tablosunu tarayan hash-join seçip 8s authenticated timeout'unu aşıyor (soğuk cache ~2GB).
-    // Bu sekmede planlı (tahmini) sayım → count(*) OVER() kalkar, sorgu trigram+nested-loop'a düşer
-    // (EXPLAIN: 2.2GB→~200MB, <2.5s). Diğer sekmeler küçük/join'siz → tam sayım kalır.
-    const sayimModu = aktifSekme === 'sonuc' ? 'planned' : 'exact';
+    // AĞIR sekmelerde tam sayım (count:exact = count(*) OVER()) statement timeout'a takılıyor:
+    //   • Sonuç: ihale_sonuclari!inner + count(*) OVER() → planlayıcı TÜM sonuç tablosunu tarayan
+    //     hash-join seçip 8s authenticated timeout'unu aşıyor (soğuk cache ~2GB).
+    //   • Geçmiş: etkin_tarih < now() tabanı ~340K satır; ILIKE ile birlikte count=exact ölçüldü →
+    //     http 500 / 3,49 sn / 57014 "canceling statement due to statement timeout";
+    //     AYNI sorgu count=planned → http 206 / 0,78 sn. Debounce bunu ÇÖZMEZ, sadece geciktirir.
+    // Planlı (tahmini) sayımda count(*) OVER() kalkar, sorgu trigram+nested-loop'a düşer.
+    // Güncel sekmesi küçük (yalnız gelecek tarihli) ve join'siz → tam sayım orada kalır.
+    const PLANLI_SAYIM_SEKMELERI = ['sonuc', 'gecmis'];
+    const sayimModu = PLANLI_SAYIM_SEKMELERI.includes(aktifSekme) ? 'planned' : 'exact';
     // Taban ilanTaban'dan: kurum hiyerarşi filtresi aktifse ilanlar_hiyerarsi
     // RPC'si, değilse ilanlar tablosu — aşağıdaki filtre/sıralama/range/embed
     // her iki tabana da aynen uygulanır (PostgREST fonksiyona tablo gibi davranır).
@@ -1345,8 +1372,15 @@
     if (arama) {
       if (uyeMi) query = query.ilike('arama_fold', `%${trFold(arama)}%`);
       else {
+        // İKİ koruma birlikte: trAramaKalibi Türkçe İ/ı·ü·ğ·ş·ç·ö'yü tek-karakter jokerle
+        // değiştirir (düz ILIKE bunları katlamaz — misafirde "insaat" 0 sonuç veriyordu,
+        // gerçek evren 166); prDeger ise değeri tırnaklayıp or() mantık ağacını bozacak
+        // karakterleri kaçırır. Sıra önemli: önce katla, sonra kaçır.
         const k = window.trAramaKalibi ? window.trAramaKalibi(arama) : arama;
-        if (k) query = query.or(`baslik.ilike.%${k}%,aciklama.ilike.%${k}%`);
+        if (k) {
+          const d = prDeger(`%${k}%`);
+          query = query.or(`baslik.ilike.${d},aciklama.ilike.${d}`);
+        }
       }
     }
     if (okas)     query = query.ilike('okas', `%${okas}%`);
@@ -1386,6 +1420,7 @@
     }
 
     let { data, error, count } = await query;
+    if (benim !== listeIstekNo) return;   // bayat yanıt — yeni istek yolda, hiçbir şey basma
 
     // esik_katsayi migration henüz uygulanmamışsa (kolon yok) — sessizce o alan olmadan tekrar dene.
     // Kolon henüz yoksa (esik_katsayi VEYA arama_fold migration'ı uygulanmamışsa)
@@ -1398,13 +1433,14 @@
       );
       if      (aktifSekme === 'guncel') fallback = fallback.gte('son_teklif_tarihi', simdiISO);
       else if (aktifSekme === 'gecmis') fallback = fallback.lt('etkin_tarih', simdiISO);
-      // Yedek yol da ham ILIKE kullanıyor (arama_fold yok varsayımıyla) → TR katlaması
-      // burada da şart, yoksa fallback devreye girdiği anda arama sessizce sonuç kaybeder.
+      // Yedek yolda da İKİ koruma: TR katlaması (yoksa fallback devreye girdiği anda
+      // arama sessizce sonuç kaybeder) + prDeger kaçışı (or() gramerini bozan karakterler).
       if (arama) {
         const kf = window.trAramaKalibi ? window.trAramaKalibi(arama) : arama;
-        if (kf) fallback = uyeMi
-          ? fallback.or(`baslik.ilike.%${kf}%,idare.ilike.%${kf}%,okas.ilike.%${kf}%,isin_yapilacagi_yer.ilike.%${kf}%,ilan_metni.ilike.%${kf}%`)
-          : fallback.or(`baslik.ilike.%${kf}%,aciklama.ilike.%${kf}%`);
+        const d = prDeger(`%${kf}%`);
+        fallback = uyeMi
+          ? fallback.or(`baslik.ilike.${d},idare.ilike.${d},okas.ilike.${d},isin_yapilacagi_yer.ilike.${d},ilan_metni.ilike.${d}`)
+          : fallback.or(`baslik.ilike.${d},aciklama.ilike.${d}`);
       }
       if (okas)     fallback = fallback.ilike('okas', `%${okas}%`);
       if (urlDurumFiltresi) fallback = fallback.eq('durum', urlDurumFiltresi);
@@ -1428,6 +1464,7 @@
       if (uyumModu) { fallback = fallback.limit(200); }
       else { const baslangic = (sayfa - 1) * SAYFA_BOYUTU; fallback = fallback.range(baslangic, baslangic + SAYFA_BOYUTU - 1); }
       ({ data, error, count } = await fallback);
+      if (benim !== listeIstekNo) return;   // bayat yanıt (toast'ı da bastırır)
       // Bu yol esik_katsayi filtresini UYGULAYAMIYOR (kolon yok) — kullanıcı seçtiyse
       // sessizce yoksayıp "filtrelenmiş" izlenimi vermemek için açıkça uyar.
       if (esikKatsayi) {
@@ -1460,6 +1497,7 @@
         }
       }
     } catch (e) { /* semantik eşleşme opsiyonel, sessizce geç */ }
+    if (benim !== listeIstekNo) return;   // semantik RPC de bir await — burada da bayatlayabilir
 
     yukluIlanlar = ilanlar;
 
@@ -1485,7 +1523,9 @@
 
     const baslangicNo = (sayfa - 1) * SAYFA_BOYUTU + 1;
     const bitisNo = Math.min((sayfa - 1) * SAYFA_BOYUTU + ilanlar.length, toplamKayit);
-    const sayimTahmini = (aktifSekme === 'sonuc' && !uyumModu);   // Sonuç'ta count planlı-tahmini → "~" göster
+    // "~" rozeti DOĞRUDAN sayimModu'ndan türetilir. Sekme koşulunu burada tekrar yazmak,
+    // ağır sekme listesi büyüdüğünde planlayıcı tahminini kesin sayı gibi göstermeye yol açıyordu.
+    const sayimTahmini = (sayimModu === 'planned' && !uyumModu);
     document.getElementById('result-count').innerHTML = `${sayimTahmini ? '~' : ''}<strong>${toplamKayit.toLocaleString('tr')}</strong> ihale bulundu — ${baslangicNo}-${bitisNo} gösteriliyor`;
     document.getElementById('pag-info').textContent = `${baslangicNo}–${bitisNo} / ${toplamKayit}`;
     // ⚠️ 'sb-count' elemanı bu sayfada (ve tüm repoda) YOK — kaldırılmış bir kenar çubuğu
@@ -1515,7 +1555,11 @@
     pag.innerHTML = html;
   }
 
-  function filtreUygula() { ilanlariYukle(1); }
+  // Bekleyen debounce'u BURADA iptal ediyoruz ki tek bir yerde toplansın: "Filtrele"
+  // düğmesi, Enter, sekme değişimi, hızlı tarih çipleri ve Sıfırla hepsi buradan geçiyor.
+  // Aksi halde geciken metin sorgusu, kullanıcı düğmeye bastıktan hemen SONRA ikinci
+  // kez tetiklenirdi (Backlog #20).
+  function filtreUygula() { clearTimeout(filtreTimer); ilanlariYukle(1); }
 
 
   function filtreleriSifirla() {
@@ -1528,7 +1572,7 @@
     document.getElementById('f-min-uyum').value = '0';
     document.getElementById('sort-select').value = 'uyum_desc';
     document.querySelectorAll('.hizli-chip').forEach(c => c.classList.toggle('active', c.dataset.mod === ''));
-    ilanlariYukle(1);
+    filtreUygula();   // bekleyen debounce iptal olsun, yoksa sıfırlamadan sonra tekrar sorgu atardı
   }
 
   function hizliTarihFiltre(mod) {
@@ -1571,16 +1615,114 @@
     }
   }
 
-  // Topbar arama — 400ms debounce
-  let searchTimer;
+  // Topbar arama — f-arama'yı besler. Kendi 400 ms'lik AYRI zamanlayıcısı vardı;
+  // artık aşağıdaki ortak filtreTimer'ı kullanıyor, yoksa iki zamanlayıcı birbirini
+  // iptal edemeden aynı anda sorgu atabiliyordu (Backlog #20).
+  // NOT: .value programatik atandığı için f-arama'nın kendi 'input' handler'ı TETİKLENMEZ,
+  // bu yüzden kısa-girdi ve gecikme kuralları burada elle uygulanıyor.
   document.getElementById('topbar-search').addEventListener('input', e => {
-    clearTimeout(searchTimer);
-    document.getElementById('f-arama').value = e.target.value;
-    searchTimer = setTimeout(() => filtreUygula(), 400);
+    const deger = e.target.value;
+    document.getElementById('f-arama').value = deger;
+    const uz = deger.trim().length;
+    if (uz > 0 && uz < METIN_MIN_HARF) { clearTimeout(filtreTimer); kisaGirdiUyar(uz); return; }
+    filtreGecikmeli(ilikeGecikmesi());
+  });
+  document.getElementById('topbar-search').addEventListener('keydown', e => {
+    if (e.key === 'Enter') filtreHemen();
   });
 
-  // Enter ile filtrele
-  document.getElementById('f-arama').addEventListener('keydown', e => { if (e.key === 'Enter') filtreUygula(); });
+  // ── Filtre alanı handler'ları (Backlog #20) ───────────────────────────────
+  // ÖNCESİ: yalnız 4 tarih alanının (inline onchange), f-arama'nın (yalnız Enter) ve
+  // f-okas'ın (yalnız Enter) handler'ı vardı. f-il, f-kategori, f-tur, f-usul, f-kaynak,
+  // f-idare-tur, f-min-uyum, f-esik-katsayi, f-min-bedel, f-max-bedel ve f-idare
+  // HİÇ dinlenmiyordu: kullanıcı seçimi değiştiriyor, liste aynı kalıyordu — filtre
+  // ancak "Filtrele" düğmesine basılınca uygulanıyordu. Select'te bu özellikle sinsi,
+  // çünkü seçim görsel olarak değişmiş görünüyor.
+  //
+  // CANLI ÖLÇÜM (20 Tem, anon, curl -w "%{time_total}", /rest/v1/ilanlar):
+  //   Güncel kapsam + 3 harf ILIKE + count=exact ..... 0,53 sn        HTTP 206
+  //   Güncel kapsam + 1 harf ILIKE + count=exact ..... 1,62 sn        HTTP 206
+  //   Geçmiş kapsam, ILIKE YOK,      count=exact ..... 3,47 sn        HTTP 206 (timeout kenarı)
+  //   Geçmiş kapsam + ILIKE +        count=exact ..... 3,4-4,6 sn     HTTP 500 / 57014 TIMEOUT
+  //   Kapsamsız (tüm tablo) + ILIKE + count=exact .... 3,5-4,6 sn     HTTP 500 / 57014 TIMEOUT
+  //   Aynı ILIKE, count YOK, limit=25 ................ 0,48 sn        HTTP 200
+  // Yani maliyeti yaratan ILIKE değil, ILIKE + count=exact bileşimi; ve 3 harfin altında
+  // trigram indeksi devre dışı kaldığı için sorgu 3 katına çıkıyor.
+  //
+  // ⚠️ DEBOUNCE BİR TIMEOUT ÇARESİ DEĞİLDİR. Gecikme TEK bir sorguyu hızlandırmaz, yalnızca
+  // erteler: 4. satırdaki 500/57014 debounce ne kadar uzun olursa olsun aynen döner, sadece
+  // "her tuşta bir timeout" yerine "her aramada bir timeout" olur. Timeout'un GERÇEK çaresi
+  // ağır sekmelerde count=exact'i bırakmaktır → ilanlariYukle() içindeki PLANLI_SAYIM_SEKMELERI.
+  // Debounce'un işi ayrı ve dar: gereksiz istek/sunucu yükünü kısmak.
+  // Üç savunma:
+  //   (a) ILIKE tetikleyen alanlarda debounce 800 ms (Geçmiş/Sonuç sekmesinde 1200 ms) — yük,
+  //   (b) 1-2 harflik girdide otomatik sorgu ATILMAZ; kullanıcı Enter'a ya da "Filtrele"
+  //       düğmesine basarak yine de zorlayabilir (açık niyet),
+  //   (c) Geçmiş/Sonuç'ta count=planned — timeout'u fiilen kaldıran madde budur.
+  // Hafif alanlar (sayısal bedel aralığı, indeksli) istenen 350 ms'de kalır.
+  const GECIKME_KISA       = 350;    // sayısal/indeksli alanlar
+  const GECIKME_ILIKE      = 800;    // çift-joker ILIKE tetikleyen metin alanları
+  const GECIKME_ILIKE_AGIR = 1200;   // Geçmiş/Sonuç: taban tarama ZATEN ~3,5 sn
+  const METIN_MIN_HARF     = 3;      // pg_trgm 3-gram üretir; altı = seq scan
+
+  let filtreTimer = null;
+
+  function filtreGecikmeli(ms) {
+    clearTimeout(filtreTimer);
+    filtreTimer = setTimeout(() => filtreUygula(), ms);
+  }
+
+  // Anında çalıştır. Bekleyen debounce'un iptali filtreUygula() içinde — o yüzden
+  // buradan ayrıca clearTimeout etmeye gerek yok.
+  const filtreHemen = () => filtreUygula();
+
+  const ilikeGecikmesi = () =>
+    (aktifSekme === 'gecmis' || aktifSekme === 'sonuc') ? GECIKME_ILIKE_AGIR : GECIKME_ILIKE;
+
+  // 1-2 harfte sorgu atmadığımızı kullanıcıya söyle — yoksa liste eski sonucu
+  // gösterirken kutuda başka metin durur ve bu "filtre bozuk" gibi okunur.
+  function kisaGirdiUyar(uzunluk) {
+    const el = document.getElementById('result-count');
+    if (el) el.innerHTML = `Aramak için en az <strong>${METIN_MIN_HARF}</strong> harf yazın (${uzunluk} harf girildi) — ya da Enter'a basın.`;
+  }
+
+  function filtreAlanlariniBagla() {
+    // (1) select + date → ANINDA. Tek bir kullanıcı hareketi = tek değer, debounce anlamsız.
+    ['f-il','f-kategori','f-tur','f-usul','f-kaynak','f-idare-tur','f-min-uyum','f-esik-katsayi',
+     'f-yayin-bas','f-yayin-bit','f-teklif-bas','f-teklif-bit'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.addEventListener('change', filtreHemen);
+    });
+
+    // (2) sayısal alanlar → 350 ms. yaklasik_maliyet_min/max indeksli aralık sorgusu, ILIKE yok.
+    ['f-min-bedel','f-max-bedel'].forEach(id => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.addEventListener('input', () => filtreGecikmeli(GECIKME_KISA));
+      el.addEventListener('keydown', e => { if (e.key === 'Enter') filtreHemen(); });
+    });
+
+    // (3) ILIKE'lı metin alanları → uzun debounce + en az 3 harf.
+    // f-idare MİSAFİRDE boot'ta disabled ediliyor (ilanlar.idare anon'a kapalı; WHERE'e
+    // girmesi bile PostgREST'in sorgunun TAMAMINI 42501 ile reddetmesine yeter).
+    // disabled input zaten olay üretmez — aşağıdaki uyeMi kontrolü ikinci savunma katmanı.
+    ['f-arama','f-idare','f-okas'].forEach(id => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      const kilitli = () => (id === 'f-idare' && !uyeMi);
+      el.addEventListener('input', () => {
+        if (kilitli()) return;
+        const uz = el.value.trim().length;
+        if (uz > 0 && uz < METIN_MIN_HARF) { clearTimeout(filtreTimer); kisaGirdiUyar(uz); return; }
+        filtreGecikmeli(ilikeGecikmesi());   // boşaltma (uz === 0) da tetikler: filtre kalkmalı
+      });
+      el.addEventListener('keydown', e => {
+        if (e.key !== 'Enter' || kilitli()) return;
+        filtreHemen();                       // kısa girdiyi de zorlar — kullanıcının açık niyeti
+      });
+    });
+  }
+  filtreAlanlariniBagla();
 
   // Türkiye 81 il (statik). PostgREST 1000 satır limiti nedeniyle distinct
   // sorgu güvenilir değil; tam liste statik veriliyor.
@@ -1849,7 +1991,7 @@
     kurumCipGuncelle();
     if (p.sekme) sekmeDegistir(p.sekme);
     kayitliPanelKapat();
-    ilanlariYukle(1);
+    filtreUygula();   // bekleyen debounce, uygulanan kayıtlı aramayı ezmesin
     toastGoster(`"${item.ad}" uygulandı`);
   }
 
