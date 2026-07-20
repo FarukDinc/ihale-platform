@@ -1,5 +1,110 @@
 # İhalePlatform — Yapılacaklar Listesi
 
+> # 🧭 GÜNCEL BACKLOG (20 Tem akşam — TAM TARAMA + CANLI DOĞRULAMA SONRASI)
+> Bu blok, 5.195 satırın tamamının 6 paralel okuyucuyla taranıp çıkan **227 aday açık
+> maddenin 232 kapanış kanıtıyla çapraz-elenmesi** sonucudur. Aşağıdakiler **gerçekten
+> açık** olanlar; kalanı canlıda kapanmış ama dosyada işaretlenmemiş kayıtlardı.
+>
+> **⚠️ DOSYA HİJYENİ — bir sonraki oturum bunu yapsın:** en sık bayatlama kalıbı
+> "migration X VDS'e uygulanmalı" (deploy edilince eski satır [x] yapılmıyor; 6 örnek).
+> Satır ~2500'ün altı **%80 bayat** ve orada ters-kronoloji kuralı da bozuk (8 Tem bloğu
+> 10 Tem'in üstünde). Managed-Supabase dönemi maddeleri ("SQL Editor'dan koş") toptan
+> geçersiz. → 2500 altını `YAPILACAKLAR_ARSIV.md`'ye taşı.
+>
+> ## 🔴 GÜVENLİK
+> 1. **Secret rotasyonu (satır 809):** JWT_SECRET + Google client secret + Resend SMTP
+>    key sohbette ifşa oldu. 17 Tem rotasyonu ESKİ ifşayı kapattı — bunlar SONRAKİ.
+> 2. **`authenticated` rolü hâlâ tablo-geneli SELECT (806).** anon'da 3 kez yaşanan
+>    "sonradan eklenen kolon" delik sınıfının üye-rolü versiyonu; hiç denetlenmedi.
+> 3. **API_EXTERNAL_URL hâlâ `http://195.85.207.126:8000` (810)** — GoTrue e-posta
+>    linkleri çıplak IP'ye gidiyor (kırık UX + phishing görünümü). Restart paketine dahil.
+> 4. `satinalma_talepleri.olusturan_user_id` misafire GERÇEK UUID döndürüyor (curl ile
+>    ölçüldü). Frontend + REVOKE **birlikte**; ters sıra sayfayı kırar.
+>
+> ## 🟠 VERİ / SCRAPER
+> 5. **DT geçmiş backfill paketi:** checkpoint'i 11.600-12.500 arası sondajla doğru
+>    sayfaya al, sonra `--backfill`. Scraper'a "X yeni / Y güncellendi" log ayrımı ekle
+>    (yanıltıcı log 17 sayfalık boş turu "başarılı" göstermişti). **SIRALI koş.**
+> 6. `ekap_ihale_backfill` bitince: eşleşmeyen durum metinleri loglarını oku →
+>    `ilan_durum_bayatlat()`. "iptal" durumu eklenmeden ÖNCE arayüz sekmeleri hazır olmalı.
+> 7. Backfill sonrası idare_tur turu (`--detsis-yeniden --tazele-atla` + `idare_tur_tazele()`);
+>    kalan ~827 sınıfsız ada **hedefli kural — AI ÖNERME**.
+> 8. `ilan_metni_backfill` 402 krizinden beri hiç koşmadı, teyit yok (kapsama %4,5;
+>    artırmak eşleştirme için en değerli veri işi).
+> 9. `ekap_sonuc_backfill.py:310` `json.dumps(...)[:15000]` kırpması **725 satırda JSON'u
+>    bozuyor**; kırpma düzeltilip o satırlar yeniden çekilmeli.
+> 10. Kirlenen 1.297 `ilanlar.usul` satırı (ham i18n anahtarı) — Accept-Language düzeldi,
+>     yeniden çekilmeli/NULL'lanmalı.
+> 11. `il` mojibake (AĞRI→'A?RI') — **önce SELECT ile güncel sayıyı ölç**, sonraki
+>     turlarda sessizce düzelmiş olabilir.
+> 12. Kategori kalanları: 17.502 kanonik-dışı satır + 67K OKAS'sız "Diğer" + K1 AI
+>     kuyruğunun (153K) bitişi doğrulanmadı.
+> 13. DT→`yukleniciler` `normalize_firma` eşleme turu — firma-analiz DT kapsamının önkoşulu.
+>     **DT cirosunu İHALE cirosuna KARIŞTIRMA** kararı korunacak.
+> 14. **KİK karar akışı bloke** (302/401/406, cron her gece 0) — sayfa 97 kararla donmuş.
+> 15. DT aramasında Türkçe İ/ı katlaması yok + `dogrudan_temin_ilanlari.baslik` trigram
+>     indeksi eksik (1,48M satırda seq-scan). Tek migration'da çözülür.
+> 16. Çok kısımlı sonuçlarda yalnız `sozlesmeBilgiList[0]` kaydediliyor — `lot_sayisi`
+>     kuralı semptomu maskeledi, **veri hâlâ eksik** (düşük aciliyet, büyük iş).
+> 17. **21 Tem sabahı:** `scraper.log`'da "=== Idare turu tazeleme ===" ve
+>     "=== Lot sayisi tazeleme ===" satırları görülmeli (c021157, henüz hiç koşmadı).
+> 18. EKAP firma kazıma hattı (roster/VKN/yasaklı/olay) — EKAP'sız kısmı şimdi yapılabilir.
+> 19. Uluslararası: TED 300-kayıt limit şüphesi, Gürcistan pagination, CPV-50 fallback artefaktı.
+>
+> ## 🟡 ARAYÜZ
+> 20. **Arama Commit 2:** `ihaleler.html`'in 3 handler'sız filtre alanı + `sayacIstekNo`
+>     yarış koruması. ÖNCE `f-idare` ILIKE gecikmesini ÖLÇ (57014 riski).
+> 21. **Analiz Faz A:** parasal kartlara "yalnız ihaleler" rozeti + "N ihale üzerinden"
+>     paydası. (DT parasal birleştirme **REDDEDİLDİ — tekrar önerme.**)
+> 22. **Analiz Faz B:** `ihale_butce_mv` (ilan_id bazında DISTINCT — `yaklasik_maliyet`
+>     kısım bazlı DEĞİL, düz SUM **35x şişirir**) + gece REFRESH + anon GRANT.
+>     En yüksek regresyon riskli iş.
+> 23. **RFQ köprüsü + bayatlatma:** süresi dolan RFQ'lar sonsuza dek "açık" görünüyor
+>     (doğrudan kullanıcı şikâyeti). `>= now()` çıplak YAZMA — kolon nullable.
+> 24. `idare_tur` kaynak rozeti ("kural"=çıkarım vs "ekap-detsis"=resmî).
+> 25. P1.5 idareler dizini tür bazlı gezinme — sert filtre %67,7 sessiz kayıp riski,
+>     kapsama rozeti ŞART.
+> 26. GoTrue Türkçe e-posta şablonu — **satır 1776'daki DÜZELTİLMİŞ komut** kullanılmalı
+>     (ilk yazılan komut Google OAuth bloğunu SİLİYORDU).
+> 27. Küçük UI borçları: OKAS linki kapalı ihalede boş sekme + `ozel-ihaleler` geo RPC
+>     hâlâ v2 (±%500 bant yok) + `theme.js` version parametresi yok.
+> 28. CSS birleştirme — **bilinçli EN SONA** (`.toolbar` 4 sayfada 3 farklı).
+> 29. `index.html` mini harita satır-içi kopyası `harita.js`'e taşınmalı.
+>
+> ## 🔵 ALTYAPI / EŞLEŞTİRME
+> 30. **`idareIdHash` kalıcı eşleştirme anahtarı** (14/14 test hazır) — `paginationTake=300`
+>     ara çözümdü, ad değişince yine kırılır.
+> 31. `idare_norm` iki tabloda STORED generated column — gece `idare_tur_tazele()` 10 dk
+>     CPU yiyor. Yeni kolona **GRANT SELECT ŞART** (yoksa misafirde 42501).
+> 32. Eşleştirme sıçraması: embedding-firma dalı + çevre-il komşuluk + `ilan_metni[:1200]`.
+> 33. Bildirim olgunlaştırma: günde ~50 bildirim riskine e-posta digest + günlük cap.
+> 34. Küçük borçlar: `proxy_config.py` emekliye, sayfa 1000→5000 değerlendirmesi,
+>     `google.genai` SDK migrasyonu (mevcut SDK "support ended").
+> 35. Temizlik: 3 eski worktree (awesome-jang, brave-knuth, great-blackburn) + `stash@{0}`.
+>     **`wf_*` worktree'lerine DOKUNMA** (çalışan workflow'a ait).
+> 36. Sidebar hâlâ her sayfada inline — nav değişikliği 20+ dosyaya dokunuyor.
+> 37. Düşük öncelik kuyruğu: `kazanan_teklif_farki` uç değerleri (-993%) AVG'yi bozuyor
+>     (içlerinde en değerlisi), run_scraper adım-timeout'u, i18n, OKAS dropdown, vb.
+>
+> ## ⏸️ SENİN KARARINI BEKLEYENLER (özet — tam liste ve seçenekler için oturum kaydına bak)
+> - **payment.py atomiklik paketi** — migration YAZILI ama **canlıda YOK** (doğrulandı):
+>   iyzico mükerrer webhook → çift kredi, kupon TOCTOU, lost-update. Migration inert.
+> - Analizlerde varsayılan mod "Tümü" mü "İhaleler" mi (DT 1,49M ihaleyi 555K eziyor).
+> - "Tümü" modunda ortak tarih penceresi (DT 2025-26, ihale 2011'e uzanıyor).
+> - `kamu_ihaleleri.idare` misafire açık kalsın mı.
+> - Ham tabloların anon SELECT'i (SEO ↔ veri koruma dengesi).
+> - Ticaret "her ülke" kapsamı + Comtrade API key kaydı (senin elinde).
+> - İyzico lisans + merchant credentials + hosted checkout (PCI: modal ham kart alıyor).
+> - Webshare tek /24 riski — panelden blok çeşitliliği talebi.
+> - SMS/WhatsApp/Telegram landing'de vaat edildi, backend yok.
+> - Firma kimlik doğrulama (ücretli API) — rozet doğrulamasız GÖSTERİLMEMELİ.
+> - B2B davet e-postası için KVKK/İYS avukat teyidi.
+> - Mimari/SEO: `app.` subdomain ayrımı + prerender.
+> - 24 Türkçe-harf mükerrer firma grubu birleştirme (reçete hazır).
+> - Embedding backfill hızı (300/gece ≈ 47+ gece).
+> - Senin el testlerin: ihale-detay girişli görünüm, "Kurumu Takip Et" e-posta ucu,
+>   bozuk link URL'si, `farukdinc890` geçici parolası (`GeciciTest123!`) değiştir.
+
 > # 📋 18–20 TEMMUZ OTURUM ÖZETİ — YAPILANLAR ve SIRADAKİLER
 > Bu blok tek oturuma dönebilmek için yazıldı. Detaylar aşağıdaki tarihli kayıtlarda.
 >
@@ -44,7 +149,7 @@
 > - `run_scraper.sh`'e 3 eksik adım eklendi (`ilan_detsis_esle`, `idare_kapanis_uret`,
 >   MV refresh) — hiçbiri cron'da yoktu, her gece kapsama eriyordu
 >
-> ## 🔜 SIRADAKİLER (öncelik sırasıyla)
+> ## 🔜 SIRADAKİLER (18-20 Tem oturumunun listesi — GÜNCELİ İÇİN EN ÜSTTEKİ BACKLOG'A BAK)
 >
 > 1. **Eşleştirme kapsamı %32 → ~%90.** ✅ KOD DÜZELTİLDİ + TARAMA KOŞUYOR (20 Tem
 >    akşam, commit `edbca81`): `paginationTake=300`, her farklı yazım ayrı satır,
@@ -89,6 +194,27 @@
 > | `idare_agac_dallar/yol/ara/alt_agac_detsis` RPC | ✅ |
 > | `idx_dt_ilanlari_kategori_tarih` | ✅ |
 > | `idx_dt_ilanlari_tur_tarih` | ✅ (**20 Tem sonunda fark edildi — EKSİKTİ**) |
+| `dt_il_sayim` + `idx_dogrudan_temin_ilanlari_il` | ✅ (kanıt aranıyordu — **var**, mini harita fallback'te DEĞİL) |
+| `kredi_yukle_atomik` / `kupon_kullan_atomik` | ❌ **YOK — ödeme atomikliği hiç uygulanmamış** |
+| `idx_ilanlar_analiz_tarihi` | ❌ yok |
+| `idx_ilanlar_olusturulma` | ❌ yok (`migration_temizlik_20tem.sql` bekliyor) |
+
+**20 Tem akşam TAM NESNE DENETİMİ:** 105 migration dosyasından 176 nesne çıkarıldı,
+canlı `pg_class`/`pg_proc` ile karşılaştırıldı → **165 var, 11 yok**. 11'in 8'i sahte
+alarm (dosyalar bayat: `takip`→`takipler`, `bildirimler_*_idx`→`idx_bildirim_okunmamis`,
+`idx_ilanlar_ai_kategori_kuyruk`→`_jenerik`). Yukarıdaki 3'ü gerçek.
+Yöntem tekrarlanabilir: migration'lardan `CREATE`'leri çıkar + canlı katalogla diff'le.
+
+**MASKELEME DENETİMİ (anon curl, 20 Tem akşam):** çekirdek sağlam — `ilanlar.idare`,
+`ilanlar_sonuc.idare`, DT kazanan, `dt_idare_ozet_mv`, `idare_hiyerarsi` hepsi 42501.
+Yeni `idare_hiyerarsi` tablosu doğru REVOKE edilmiş (ders uygulanmış).
+⚠️ **YENİ ÖLÇÜM TUZAĞI: HTTP 200 ≠ ifşa.** `idare_tur` tablosu 200 döndü ama RLS
+satırları kesip `[]` veriyor. Gerçek test **dönen veri**, durum kodu değil.
+Gerçekten veri sızdıran tek uç: `satinalma_talepleri.olusturan_user_id`.
+
+**DEPLOY MEKANİZMASI:** nginx frontend'i doğrudan git checkout'undan servis ediyor
+(`root /opt/ihale-platform`) → **deploy = VDS'te `git pull`**. 20 Tem akşam izlenen
+HTML/JS dosyalarında repo↔canlı sapması YOK.
 >
 > **DERS:** `migration_dt_index.sql`'i yazıp komutu verdim ama uygulandığını hiç
 > DOĞRULAMADIM. Kategori indeksi oluşmuş, tür indeksi oluşmamıştı — DT'de tür filtresi
