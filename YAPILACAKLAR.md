@@ -1,5 +1,43 @@
 # İhalePlatform — Yapılacaklar Listesi
 
+> ## ✅ 20 TEM — PROXY ÇALIŞIYOR, BLOKE İŞLER SERBEST
+> Kullanıcı teyit etti. Aşağıdaki üç iş 402 yüzünden duruyordu; komutlar hazır.
+> **Hepsi uzun sürer → `systemd-run` ile arka planda başlat, cron ile ÇAKIŞTIRMA**
+> (gece turu 03:00; `PROXY_KURESEL_RPM` süreç başına uygulanıyor, iki süreç toplam
+> yükü iki katına çıkarır — bkz. 18 Tem notu).
+>
+> ### 1) DT geçmiş yıllar — `yayin_tarihi` hâlâ kayıtların ~%1'inde dolu
+> ```bash
+> ssh ihale
+> cd /opt/ihale-platform/backend
+> systemctl reset-failed dt-yayin 2>/dev/null
+> systemd-run --unit=dt-yayin --working-directory=/opt/ihale-platform/backend \
+>   /opt/ihale-platform/backend/venv/bin/python ekap_dogrudan_temin_scraper.py \
+>   --backfill --max-pages 12000
+> # İlerleme:  journalctl -u dt-yayin -f
+> # Checkpoint'ten devam eder (--reset KOYMA, yoksa baştan tarar).
+> ```
+>
+> ### 2) DETSİS tam tarama — idare hiyerarşisi SAYAÇLARININ ön koşulu
+> ```bash
+> systemd-run --unit=detsis-tara --working-directory=/opt/ihale-platform/backend \
+>   /opt/ihale-platform/backend/venv/bin/python ekap_detsis_cek.py --tara --devam
+> # Bitince:  venv/bin/python ekap_detsis_cek.py --yaz
+> # 85.062 istek — uzun sürer. --devam checkpoint'ten devam eder.
+> ```
+> ⚠️ `--yaz` BİTMEDEN `ilan_detsis_esle()` çağırma (boş `detsis_no` üzerinde 1,85M
+> satır boşuna döner). Sıra: `--tara` → `--yaz` → `ilan_detsis_esle()` →
+> `REFRESH MATERIALIZED VIEW CONCURRENTLY public.idare_hiyerarsi_sayim_mv;`
+>
+> ### 3) 1,6M geçmiş ihale backfill — ÖNCE DOĞRULAMA gerekiyor
+> Düz sayfalama 1,9M kayıtta çöküyor; plan **81 il × 4 tür = 324 dilim**.
+> Başlatmadan önce `ihaleIlIdList` + `ihaleTuruIdList` alanlarının gerçekten
+> filtrelediğini **0 < sonuç < toplam** ölçütüyle doğrula.
+> ⚠️ "0 sonuç = filtre çalıştı" tuzağı — bkz. `ekap-detsis-idare-tur` hafıza notu.
+>
+> **Not:** İdare ağacı ARAYÜZ işi bu üçünü BEKLEMEZ — `idare_hiyerarsi_yukle.py`
+> EKAP'a hiç istek atmıyor, ağaç 15,42 MB olarak diskte hazır (bkz. İkinci Tur, madde 5).
+
 > ## ✅ 20 TEM — İDARE TÜRÜ: 813K SINIFSIZ SATIR KURALLA KAPATILDI (AI'sız)
 > **Ölçülen durum:** ilanlar 241.508 (%68) + DT 571.424 (%38) = **812.932 satır**
 > `idare_tur IS NULL`. Sebep ad yokluğu DEĞİL — 241.508'in yalnız **1**'inde ad boş.
