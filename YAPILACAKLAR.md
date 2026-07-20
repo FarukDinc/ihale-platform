@@ -39,13 +39,21 @@
 > - Normalize çakışması (`'TİC.A.Ş.'` ↔ `'TİC. A.Ş.'`) norm bazında tekilleştirilir;
 >   yoksa PostgreSQL 21000 "ON CONFLICT DO UPDATE cannot affect row a second time".
 >
-> ### Sonuç
+> ### Sonuç (3 turda, hepsi ölçüldü)
 > ```
-> 40.828 tekil ad · 813.000 satır sınıfsız
-> ÇÖZÜLEN: 40.027 ad · 783.297 satır (%96,3)  ← AI'sız, yalnız kurallarla
-> KALAN  :    801 ad ·  29.703 satır (%3,7)
-> idare_tur tablosu: 28.566 → 68.595 eşleme
+> başlangıç (yalnız DETSİS)     1.034.616 satır sınıflı · 812.932 sınıfsız
+> kural backfill #1             1.818.147 satır sınıflı ·  29.704 sınıfsız
+> kurallar düzeltilip genişletildi (--detsis-yeniden ile tam yenileme):
+>   54.305 tekil ad → 53.478 çözüldü · 1.832.259 satır
+>   KALAN: 827 ad · 15.591 satır (%0,84)
+> idare_tur tablosu: 28.566 → 53.478+ eşleme
 > ```
+> **AI'a hiç gerek olmadı.** Kalan 15.591 satırın tamamı jenerik alt birim adı
+> (`DESTEK HİZMETLERİ MÜDÜRLÜĞÜ` 2.309, `SATIN ALMA DAİRESİ BAŞKANLIĞI`,
+> `İŞLETME VE İŞTİRAKLER MÜDÜRLÜĞÜ`, `BÖLGE KOORDİNATÖRLÜĞÜ`). Bunlar addan
+> çıkarılamaz — hangi kuruma bağlı oldukları bilgisi adın İÇİNDE YOK. AI'a
+> sorulsa uydurmaktan başka bir şey yapamaz. Doğru çözüm DETSİS hiyerarşisi,
+> o da EKAP kazıması gerektiriyor (proxy 402 ile bloke). **AI ÖNERME.**
 >
 > ### `migration_idare_tur_tazele_fix.sql`
 > Backfill eşlemeleri YAZDI ama `idare_tur_tazele()` **57014 statement timeout**
@@ -55,7 +63,21 @@
 > (`SET statement_timeout = '1800s'`, SECURITY DEFINER + service_role kısıtlı
 > olduğu için güvenli).
 >
-> ### Kalan 801 ad — AI'a GEREK YOK, hedefli kural yeter
+> ### Bulunan 5 hata sınıfı (hepsi eşleştirme SEMANTİĞİ, kural içeriği değil)
+> 1. **Sözcük sınırı yok** — `'a s'` "satın **ALMA S**ube"de eşleşti; `belediye_sirket`
+>    ONCELIK'te birinci olduğu için güçlü kalıba düşmeyen HER adı çalıyordu
+> 2. **`'karayollari n bolge mudurlugu'`** — literal "n" yer tutucusu, hiçbir sayıyla eşleşmez
+> 3. **Şehit adı taşıyan okullar** `guvenlik`e gidiyordu (üst kurum zinciri ezildi)
+> 4. **Şapkalı harf sözcüğü kırıyor** — `MİLLÎ`→`mill`, `HÂKİMLER`→`h kimler`
+> 5. **Kural dosyasında düzyazı/liste kalıplar** — `'...ispark istac kiptas isbak
+>    belbim burulas...'` tek dize hâline gelmiş, hiçbiri eşleşmiyordu
+>
+> ⛔ **`fold()` SQL `tr_fold()` ile BAYT BAYT aynı kalmalı** — `idare_norm` join
+> anahtarını o üretiyor. Değişirse 53K eşlemenin anahtarı bayatlar ve tazele
+> SESSİZCE 0 döner. Eşleştirme iyileştirmesi ayrı `fold_kural()` katmanında yapıldı.
+> Backfill önuçuşu bu bağı her koşuda doğruluyor.
+>
+> ### Eski kalan-801 analizi (tarihsel — artık 827 ad / 15.591 satır)
 > Tanımlanabilir kümeler: TCMB şubeleri, TTK, İSTON, ESHOT, `KONYA B.B. SU KANAL
 > İDARESİ` (B.B. kısaltması tanınmıyor), Gıda Kontrol Laboratuvarları, Veteriner
 > Kontrol Enstitüleri, Sulama Birlikleri, Liman İşletme Müdürlükleri, Milli Emlak
