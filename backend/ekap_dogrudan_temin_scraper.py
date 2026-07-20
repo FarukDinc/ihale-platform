@@ -64,6 +64,14 @@ BASE = "https://ekap.kik.gov.tr"
 ARAMA_ENDPOINT = f"{BASE}/EKAP/Ortak/YeniIhaleAramaData.ashx"
 CHECKPOINT_FILE = os.path.join(os.path.dirname(__file__), ".dt_scraper_checkpoint.json")
 SAYFA_BOYUTU = 128  # test edildi (12 Tem 2026), sabit
+# Üst üste bu kadar sayfa Supabase'e YAZILAMAZSA (DB/ağ tümüyle erişilemez) tarama
+# durur — sonsuza dek başarısız upsert'le dönmek yerine checkpoint korunur, sonraki
+# tur kaldığı yerden devam eder (bkz. ekap_ihale_backfill.py ARDISIK_HATA_SINIRI).
+ARDISIK_UPSERT_HATA_SINIRI = 5
+# Bir turda bu kadar KALICI (4xx, retry'lanamaz) kayıt atlanırsa tarama durur: tek tük
+# zehirli kayıt normaldir ve atlanıp ilerlenir, ama bu kadar çoğu tekil bozukluk değil,
+# şema/veri kaynaklı sistemik bir sorundur (bkz. ekap_ihale_backfill.py 50 zehirli-kayıt sınırı).
+ZEHIRLI_KAYIT_SINIRI = 50
 
 
 def ssl_ctx():
@@ -179,16 +187,23 @@ def kayit_donustur(item: dict, haritalar: dict) -> dict:
     }
 
 
-def upsert(client: httpx.Client, kayitlar: list, deneme: int = 5) -> bool:
-    """Supabase'e upsert — AĞ HATASINA DAYANIKLI.
+def upsert(client: httpx.Client, kayitlar: list, deneme: int = 5) -> str:
+    """Supabase'e upsert — AĞ HATASINA DAYANIKLI. Döner: 'ok' | 'gecici' | 'kalici'.
 
     18 Tem: retry YOKTU ve çağrısı ana döngünün try'ının DIŞINDAydı → tek bir
     'ReadError: Connection reset by peer' tüm taramayı öldürüyordu (dt-yayin.service
     738. sayfada status=1 ile düştü). Origin'de /rest/v1 hız limiti var; uzun
     taramada reset/429 beklenen bir durum, ölümcül olmamalı.
+
+    21 Tem: dönüş bool→üç durumlu string. Çağıran (upsert_kurtar/ana döngü) GEÇİCİ
+    hatayı (429/5xx/ağ reset — retry'lanabilir; checkpoint'i DURDUR, sonraki tur aynı
+    sayfayı tekrar dene) KALICI hatadan (diğer 4xx, ör. zehirli kayıt/şema ihlali —
+    retry FAYDASIZ; o kaydı izole edip atla, İLERLE) ayırt edebilsin diye. Eskiden
+    ikisi de False dönüyor, ana döngü ikisini de checkpoint'i tur boyunca kilitleyip
+    aynı zehirli sayfada SONSUZ takılmaya çeviriyordu (liveness hatası).
     """
     if not kayitlar:
-        return True
+        return "ok"
     for i in range(deneme):
         try:
             r = client.post(
@@ -203,23 +218,66 @@ def upsert(client: httpx.Client, kayitlar: list, deneme: int = 5) -> bool:
                 json=kayitlar,
                 timeout=60.0,
             )
-            # 429 (hız limiti) / 5xx → geçici, bekleyip tekrar dene
+            # 429 (hız limiti) / 5xx → GEÇİCİ, bekleyip tekrar dene
             if r.status_code == 429 or r.status_code >= 500:
                 bekle = 5 * (i + 1)
                 print(f"    ⚠ upsert {r.status_code} — {bekle}sn bekleyip tekrar ({i+1}/{deneme})", flush=True)
                 time.sleep(bekle)
                 continue
+            # Diğer 4xx (400 zehirli kayıt/şema ihlali, 409 vb.) → KALICI: retry aynı
+            # sonucu verir, beklemenin faydası yok. Çağırana bildir; o partiyi bölüp
+            # zehirli kaydı izole etsin, kalanı yazsın (sonsuza kadar takılıp kalmasın).
             if r.status_code >= 300:
-                print(f"    ✗ upsert hatası: {r.status_code} {r.text[:200]}", flush=True)
-                return False
-            return True
+                print(f"    ✗ upsert KALICI hata: {r.status_code} {r.text[:200]}", flush=True)
+                return "kalici"
+            return "ok"
         except (httpx.HTTPError, OSError) as e:   # ReadError/ConnectError/Timeout/reset
             bekle = 5 * (i + 1)
             print(f"    ⚠ upsert ağ hatası ({type(e).__name__}) — {bekle}sn bekleyip tekrar ({i+1}/{deneme})", flush=True)
             time.sleep(bekle)
-    # Tüm denemeler tükendi: SÜRECİ ÖLDÜRME — sayfayı atla, tarama devam etsin.
-    print(f"    ✗ upsert {deneme} denemede de başarısız — bu sayfa atlandı ({len(kayitlar)} kayıt).", flush=True)
-    return False
+    # Tüm denemeler tükendi (hep GEÇİCİ hata): SÜRECİ ÖLDÜRME ve checkpoint'i İLERLETME —
+    # sonraki tur bu sayfayı tekrar denesin (idempotent, merge-duplicates).
+    print(f"    ✗ upsert {deneme} denemede de başarısız (geçici) — {len(kayitlar)} kayıt.", flush=True)
+    return "gecici"
+
+
+def upsert_kurtar(client: httpx.Client, kayitlar: list) -> tuple[str, int]:
+    """Zehirli-kayıt-dayanıklı upsert. Döner: (durum, atlanan_kayit).
+
+    upsert() bir partiyi KALICI reddederse (4xx — çoğunlukla partideki TEK bir zehirli
+    kayıt yüzünden), tüm partiyi çöpe atmak yerine partiyi ikiye bölerek zehirli kaydı
+    dar bir pencereye sıkıştırır ve KALAN SAĞLAM kayıtları yazar (kardeş betik
+    ekap_ihale_backfill.py'nin 'partiyi küçült, zehirli kaydı izole et' yaklaşımının
+    aynısı). Tek kayıta inildiğinde o da reddediliyorsa O kayıt gerçekten bozuktur →
+    sayılıp atlanır. Böylece 128'lik bir sayfa tek bozuk kayıt yüzünden komple kaybolmaz.
+
+    durum:
+      'ok'     → parti işlendi; 'atlanan' kadar zehirli kayıt KALICI atlandı (0 ise
+                 hepsi yazıldı). Çağıran bu sayfayı TAMAMLANMIŞ sayıp checkpoint'i
+                 İLERLETMELİ — aksi hâlde sonsuza dek aynı zehirli sayfada takılır.
+      'gecici' → araya geçici hata (DB erişilemez) girdi; hiç ilerleme garanti edilemez.
+                 Çağıran checkpoint'i DURDURMALI; sonraki tur idempotent olarak
+                 (merge-duplicates) tüm partiyi yeniden yazar/böler.
+    """
+    durum = upsert(client, kayitlar)
+    if durum == "ok":
+        return "ok", 0
+    if durum == "gecici":
+        return "gecici", 0
+    # durum == "kalici": parti 4xx ile reddedildi → zehirli kaydı böl-ve-izole et.
+    if len(kayitlar) <= 1:
+        # Tek kayıt ve hâlâ kalıcı hata → bu kaydın kendisi bozuk. Say ve atla.
+        if kayitlar:
+            print(f"      ↳ ZEHİRLİ KAYIT atlanıyor: dt_no={kayitlar[0].get('dt_no')}", flush=True)
+        return "ok", 1
+    orta = len(kayitlar) // 2
+    d1, a1 = upsert_kurtar(client, kayitlar[:orta])
+    if d1 == "gecici":
+        return "gecici", 0
+    d2, a2 = upsert_kurtar(client, kayitlar[orta:])
+    if d2 == "gecici":
+        return "gecici", 0
+    return "ok", a1 + a2
 
 
 def main():
@@ -258,7 +316,15 @@ def main():
         haritalar = enum_haritalari(havuz)
         print(f"✓ Enum haritaları çekildi: {len(haritalar['tur'])} tür, {len(haritalar['durum'])} durum, {len(haritalar['il'])} il")
 
-        toplam_kayit = 0
+        toplam_kayit = 0          # başarıyla YAZILAN kayıt sayısı (dürüst özet için)
+        atlanan_kayit = 0         # GEÇİCİ hata yüzünden bu turda yazılamayan (sonraki tur tekrar denenir)
+        zehirli_kayit = 0         # KALICI (4xx) hata yüzünden bir daha ASLA yazılamayacak, atlanan kayıt
+        basarisiz_sayfa = 0       # geçici hatayla hiç yazılamayan sayfa sayısı
+        ardisik_basarisiz = 0     # üst üste GEÇİCİ yazma hatası (DB down erken çıkış için)
+        checkpoint_kilit = False  # bir GEÇİCİ upsert hatası olunca True: checkpoint bu tur bir daha İLERLEMEZ
+        veri_bitti = False        # boş sayfa görüldü mü (normal, gerçek bitiş)
+        abort_edildi = False      # erken çıkış (DB erişilemez ya da sistemik zehirli kayıt)
+        son_ham_uzunluk = None    # son çekilen sayfanın kayıt sayısı (tavan tespiti için, B4)
         for i in range(args.max_pages):
             try:
                 ham = sayfa_cek(havuz, sayfa)
@@ -273,24 +339,104 @@ def main():
                 continue
             if not ham:
                 print(f"  Sayfa {sayfa}: boş — veri bitti.")
+                veri_bitti = True
                 break
 
+            son_ham_uzunluk = len(ham)
             kayitlar = [kayit_donustur(item, haritalar) for item in ham]
             if args.dry_run:
                 print(f"  [DRY-RUN] Sayfa {sayfa}: {len(kayitlar)} kayıt (örn: {kayitlar[0]['dt_no']} — {kayitlar[0]['baslik'][:50] if kayitlar[0]['baslik'] else ''})")
-            else:
-                upsert(client, kayitlar)
-                print(f"  Sayfa {sayfa}: {len(kayitlar)} kayıt upsert edildi.")
+                toplam_kayit += len(kayitlar)
+                if args.backfill:
+                    checkpoint_yaz(sayfa)
+                sayfa += 1
+                time.sleep(0.3)
+                continue
 
-            toplam_kayit += len(kayitlar)
-            if args.backfill:
-                checkpoint_yaz(sayfa)
+            # ── upsert: GEÇİCİ ile KALICI hatayı AYIR (yoksa zehirli sayfada sonsuz takılma) ──
+            # upsert_kurtar() zehirli-kayıt-dayanıklı:
+            #   'ok'     → parti işlendi (atlanan kadar zehirli kayıt KALICI düştü, kalanı yazıldı);
+            #              bu sayfa TAMAMLANDI, checkpoint ilerler.
+            #   'gecici' → DB erişilemedi (429/5xx/reset, retry tükendi); ilerleme yok, checkpoint
+            #              kilitlenir, sonraki tur AYNI sayfayı tekrar dener.
+            # Eskiden upsert bool dönüyor, KALICI (4xx zehirli kayıt) da GEÇİCİ gibi checkpoint'i
+            # tur boyunca kilitliyordu → --backfill her tur checkpoint_oku() ile aynı zehirli sayfaya
+            # dönüp yine 400 alıyor, o sayfanın ÖTESİNE HİÇ geçemiyordu (sonsuz takılma, sıfır ilerleme).
+            durum, atlanan = upsert_kurtar(client, kayitlar)
+            if durum == "ok":
+                yazilan = len(kayitlar) - atlanan
+                toplam_kayit += yazilan
+                ardisik_basarisiz = 0          # DB yanıt verdi (200 ya da 4xx) → erişilemezlik sayacı sıfırlanır
+                if atlanan:
+                    zehirli_kayit += atlanan
+                    print(f"  ⚠ Sayfa {sayfa}: {yazilan} kayıt yazıldı, {atlanan} ZEHİRLİ kayıt KALICI atlandı "
+                          f"(retry'lanamaz 4xx; bu turda toplam atlanan: {zehirli_kayit}).", flush=True)
+                else:
+                    print(f"  Sayfa {sayfa}: {len(kayitlar)} kayıt upsert edildi.")
+                # Zehirli kayıt atlanmış olsa bile bu sayfa TAMAMLANDI: sağlam kayıtlar yazıldı,
+                # zehirli olan bir daha ASLA yazılamaz. Checkpoint ilerler → aynı sayfada takılmayız.
+                # (Kilit varsa — bu turda daha önce GEÇİCİ hata oldu — ilerletmeyiz; o sayfa önce
+                # yeniden denenmeli, yoksa üstünden atlanıp kaybolurdu.)
+                if args.backfill and not checkpoint_kilit:
+                    checkpoint_yaz(sayfa)
+                # Sistemik bozulma freni: tek tük zehirli kayıt normaldir; çok sayısı şema/veri
+                # kaynaklı yaygın bir sorundur. Checkpoint zaten ilerledi (liveness korundu),
+                # burada durup insan müdahalesi istiyoruz — sessizce on binlerce kayıt atlamayalım.
+                if zehirli_kayit >= ZEHIRLI_KAYIT_SINIRI:
+                    print(f"  ✗ {zehirli_kayit} kayıt KALICI atlandı (>= {ZEHIRLI_KAYIT_SINIRI}) — bu kadarı "
+                          f"tekil bozukluk değil, sistemik bir sorun. Tarama durduruluyor; checkpoint "
+                          f"tamamlanan sayfalara kadar ilerledi (sonraki tur bunları tekrar denemez).", flush=True)
+                    abort_edildi = True
+                    break
+            else:  # 'gecici'
+                # Sahte "✓" BASMA, checkpoint'i İLERLETME, sayacı tut. Sonraki tur bu sayfayı
+                # (ve sonrasını) tekrar dener; upsert idempotent (merge-duplicates).
+                atlanan_kayit += len(kayitlar)
+                basarisiz_sayfa += 1
+                ardisik_basarisiz += 1
+                checkpoint_kilit = True
+                print(f"  ✗ Sayfa {sayfa}: {len(kayitlar)} kayıt YAZILAMADI (geçici) — checkpoint ilerletilmedi; "
+                      f"sonraki tur bu sayfayı tekrar deneyecek.", flush=True)
+                # Ardışık GEÇİCİ hata sınırı: DB/ağ tümüyle erişilemezse boşuna her sayfada
+                # 5'er retry'la tüm tavanı dolaşma; dur (checkpoint korunur), sonraki tur devam.
+                if ardisik_basarisiz >= ARDISIK_UPSERT_HATA_SINIRI:
+                    print(f"  ✗ {ardisik_basarisiz} sayfa üst üste yazılamadı — Supabase erişilemiyor "
+                          f"olabilir. Tarama durduruluyor, checkpoint korunuyor.", flush=True)
+                    abort_edildi = True
+                    break
+
             sayfa += 1
             time.sleep(0.3)
 
-        print(f"\n✓ dogrudan_temin_scraper: {toplam_kayit} kayıt tarandı.")
+        # ── Dürüst özet (rule 4): başarısızlık varsa sahte "✓" verme ─────────────
+        if basarisiz_sayfa or zehirli_kayit:
+            print(f"\n⚠ dogrudan_temin_scraper: {toplam_kayit} kayıt yazıldı.")
+            if basarisiz_sayfa:
+                print(f"   • {basarisiz_sayfa} sayfa ({atlanan_kayit} kayıt) GEÇİCİ hatayla yazılamadı "
+                      f"— sonraki turda tekrar denenecek (checkpoint ilerlemedi).")
+            if zehirli_kayit:
+                print(f"   • {zehirli_kayit} kayıt KALICI (retry'lanamaz 4xx) hatayla atlandı "
+                      f"— bir daha çekilmeyecek; EKAP/şema tarafında incelenmeli.")
+        else:
+            print(f"\n✓ dogrudan_temin_scraper: {toplam_kayit} kayıt tarandı.")
+
+        # ── B4: tavana mı çarptık yoksa veri mi bitti? ───────────────────────────
+        # Döngü boş sayfa görmeden (veri_bitti=False) ve DB hatasıyla durmadan
+        # (abort_edildi=False) bittiyse max-pages tavanına çarpmıştır. Son sayfa DOLUYSA
+        # (==SAYFA_BOYUTU) tavanın ötesinde çekilmemiş ilan kalmış olabilir; kısmi sayfa
+        # (<SAYFA_BOYUTU) ise zaten gerçek son sayfaydı, uyarma.
+        if not veri_bitti and not abort_edildi and son_ham_uzunluk == SAYFA_BOYUTU:
+            if args.backfill:
+                print(f"  ⚠ --max-pages ({args.max_pages}) tavanına ulaşıldı, veri bitmedi. "
+                      f"Checkpoint kaydedildi; --backfill ile tekrar çalıştırıp kaldığı yerden devam edin.")
+            else:
+                print(f"  ⚠ --max-pages ({args.max_pages}) tavanına ulaşıldı, veri bitmedi — tavan ötesinde "
+                      f"yeni ilan kalmış olabilir. Tümünü çekmek için --backfill ile çalıştırın.")
+
         if args.backfill:
-            print(f"  Sonraki --backfill çalıştırması sayfa {sayfa}'dan devam eder (checkpoint: {CHECKPOINT_FILE}).")
+            # Kilit varsa `sayfa` başarısız noktanın ötesine kaymış olabilir; sonraki turun
+            # gerçek başlangıcı checkpoint dosyasıdır (checkpoint_oku = son yazılan + 1).
+            print(f"  Sonraki --backfill çalıştırması sayfa {checkpoint_oku()}'dan devam eder (checkpoint: {CHECKPOINT_FILE}).")
 
 
 if __name__ == "__main__":
