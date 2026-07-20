@@ -594,6 +594,8 @@ async def tum_ihaleleri_cek(client) -> list:
 
 # ── Tüm detayları çek ─────────────────────────────────────
 async def tum_detaylari_cek(client, ham_liste: list) -> dict:
+    # main() zaten DETAY_LIMIT'e göre dilinmiş 'hedef'i geçirir; buradaki dilim
+    # o durumda no-op olur ve başka bir çağıran tam liste verirse güvence sağlar.
     hedef = ham_liste if DETAY_LIMIT <= 0 else ham_liste[:DETAY_LIMIT]
     print(f"\n  → {len(hedef)} ihale için detay çekiliyor (eşzamanlı={ESZAMANLI})...")
     sem     = asyncio.Semaphore(ESZAMANLI)
@@ -1030,16 +1032,28 @@ async def main():
         # 1) Liste
         ham_liste = await tum_ihaleleri_cek(client)
 
+        # DETAY_LIMIT boru hattının TAMAMINI sınırlar: detay + belge + işleme/yazma
+        # aşamalarının üçü de aynı 'hedef' diliminden gider. İşleme/yazma da dahil,
+        # ÇÜNKÜ detay çekilmeyen satır d={} ile işlenirse supabase_yaz'ın 2. upsert'i
+        # (on_conflict=ekap_id) mevcut kaydın itiraz_bedeli / yaklasik_maliyet_min-max /
+        # ilan_metni / ilan_html / belgeler / okas / isin_yapilacagi_yer kolonlarını
+        # NULL ile ezer — limitli bir test turu binlerce aktif ihalenin detayını
+        # gece cron'u tam turla onarana dek silerdi.
+        hedef = ham_liste if DETAY_LIMIT <= 0 else ham_liste[:DETAY_LIMIT]
+        if DETAY_LIMIT > 0:
+            print(f"  ⚠ EKAP_DETAY_LIMIT={DETAY_LIMIT} — {len(ham_liste)} kayıtlık liste "
+                  f"{len(hedef)} kayda daraltıldı (detay+belge+YAZMA bu dilimle sınırlı)")
+
         # 2) Detaylar
-        detaylar = await tum_detaylari_cek(client, ham_liste)
+        detaylar = await tum_detaylari_cek(client, hedef)
 
         # 3) Belge indirme
         if BELGE_INDIR and sb:
-            # DETAY_LIMIT belge indirmeyi de sınırlar (test + güvenli ilk tur için)
-            hedef_belge = ham_liste if DETAY_LIMIT <= 0 else ham_liste[:DETAY_LIMIT]
-            print(f"\n  → Belgeler indiriliyor ({len(hedef_belge)} ihale)...")
-            id_to_ekap = {i.get("id"): str(i.get("ikn") or i.get("id") or "") for i in ham_liste}
-            for ihale in hedef_belge:
+            # DETAY_LIMIT belge indirmeyi de sınırlar (test + güvenli ilk tur için);
+            # dilim yukarıda TEK yerde hesaplanan 'hedef' — aşamalar birbirinden kopamaz.
+            print(f"\n  → Belgeler indiriliyor ({len(hedef)} ihale)...")
+            id_to_ekap = {i.get("id"): str(i.get("ikn") or i.get("id") or "") for i in hedef}
+            for ihale in hedef:
                 ihale_id = ihale.get("id")
                 if not ihale_id: continue
                 ekap_id = id_to_ekap.get(ihale_id, ihale_id)
@@ -1066,8 +1080,9 @@ async def main():
         else:
             await client.aclose()
 
-    # 4) Dönüştür ve yaz
-    tum = tekilleştir(ihaleleri_isle(ham_liste, detaylar))
+    # 4) Dönüştür ve yaz — YALNIZ detay çekilen 'hedef' dilimi (ham_liste DEĞİL):
+    # limitli turda detaysız satırlar hiç işlenmez, mevcut kayıtlar ezilmez.
+    tum = tekilleştir(ihaleleri_isle(hedef, detaylar))
     print(f"\n✓ {len(tum)} tekil ihale")
     if tum:
         ozet(tum)
