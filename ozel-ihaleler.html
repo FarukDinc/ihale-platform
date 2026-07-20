@@ -237,6 +237,10 @@
 
   let user = null;
 
+  // Eşleştirme v3 ölçek bandı çarpanı: ±%500 → [bedel/5, bedel*5]
+  // (backend/migration_uygun_firmalar_v3.sql p_bant varsayılanıyla aynı tutulmalı).
+  const BANT = 5;
+
   function esc(s){ return (s||'').replace(/[<>&"']/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&#39;'}[c])); }
   function paraKisa(v){ v=Number(v)||0; if(v>=1e9)return '₺'+(v/1e9).toFixed(1)+' Mr'; if(v>=1e6)return '₺'+(v/1e6).toFixed(1)+' M'; if(v>=1e3)return '₺'+(v/1e3).toFixed(0)+' B'; return '₺'+v; }
   function tarihFmt(s){ if(!s)return '—'; return new Date(s).toLocaleDateString('tr-TR',{day:'2-digit',month:'short',year:'numeric'}); }
@@ -262,27 +266,59 @@
   // Firma ünvanı/VKN/adres artık PROFİLDEN gelir ve kilitli (readonly) — canlı VKN girişi/ipucu yok.
   // Profil bilgileri profilYukle() ile doldurulur; eksikse form kilitlenir (aşağıda).
 
+  // Kategori kanonik 41'den mi? Bu sayfadaki dropdown zaten KATEGORILER'den doluyor,
+  // yani normalde hep kanonik — ama profilden/eski kayıttan gelen kanonik-dışı bir değer
+  // RPC'ye konu sinyali diye girmesin (jenerik kova alakasız firma listeler).
+  function kanonikKategori(kat) { return (kat && KATEGORILER.includes(kat)) ? kat : null; }
+
   window.tedarikciBul = async function() {
     const kategori = document.getElementById('f-kategori').value;
     if (!kategori) { alert('Lütfen önce bir kategori seçin.'); return; }
+    const baslik = (document.getElementById('f-baslik').value || '').trim() || null;
     const il = document.getElementById('f-il').value || null;
     const bedel = parseFloat(document.getElementById('f-bedel').value) || null;
     const card = document.getElementById('tedarikci-card'), liste = document.getElementById('tedarikci-liste');
     card.style.display = 'block';
     liste.innerHTML = '<div class="loading-spinner"></div>';
-    document.getElementById('tedarikci-sub').textContent = `"${kategori}"${il ? ' · ' + il : ''}${bedel ? ' · ~' + paraKisa(bedel) : ''} için önerilen firmalar`;
+    const bantNot = bedel ? ` · ölçek bandı ~${paraKisa(bedel / BANT)}–${paraKisa(bedel * BANT)}` : '';
+    document.getElementById('tedarikci-sub').textContent =
+      `"${kategori}"${il ? ' · ' + il : ''}${bedel ? ' · ~' + paraKisa(bedel) : ''}${bantNot} için önerilen firmalar`;
+    // Firma ünvanı (kazanan_firma) anon'a DB'de KAPALI ve v3 RPC'si anon'dan REVOKE
+    // edilmiş — misafirde çağrı 42501/403 ile döner. Sessiz "sonuç yok" yerine açık mesaj.
+    if (!user) {
+      liste.innerHTML = '<div class="bos">Tedarikçi önerileri üyelere özeldir — <a href="login" style="color:var(--amber);">giriş yapın</a>.</div>';
+      return;
+    }
     try {
-      const { data, error } = await sb.rpc('ihaleye_uygun_firmalar_geo', { p_kategori: kategori, p_il: il, p_bedel: bedel, p_limit: 10 });
+      // v3 imzası (migration_uygun_firmalar_v3*.sql):
+      //   ihaleye_uygun_firmalar(p_kategori, p_il, p_bedel, p_limit, p_baslik, p_bant)
+      // KONU çapası (kanonik kategori VEYA başlık kelimeleri) + ÖLÇEK BANDI ŞART
+      // (±%500 → bedel/5..bedel*5). Eski _geo çağrısında bant yoktu; kapasite eşiği
+      // "bedelin %10'u kadar iş yapmış" gibi çok gevşekti ve dev firmaları yukarı taşıyordu.
+      let { data, error } = await sb.rpc('ihaleye_uygun_firmalar', {
+        p_kategori: kanonikKategori(kategori), p_il: il, p_bedel: bedel, p_limit: 10,
+        p_baslik: baslik, p_bant: BANT
+      });
+      if (error) {
+        // v3 migration yüklenmemişse (PGRST202: imza şema önbelleğinde yok) SAYFAYI KIRMA —
+        // eski geo RPC'sine nazikçe düş. Bant o dalda uygulanmaz, kullanıcıya not düşülür.
+        console.warn('uygun-firmalar v3 RPC hatası, geo imzasına düşülüyor:', error);
+        ({ data, error } = await sb.rpc('ihaleye_uygun_firmalar_geo', {
+          p_kategori: kategori, p_il: il, p_bedel: bedel, p_limit: 10
+        }));
+        if (!error && data && data.length) document.getElementById('tedarikci-sub').textContent += ' (ölçek bandı uygulanamadı)';
+      }
+      if (error) console.warn('uygun-firmalar RPC hatası:', error); // teşhis: yetki(42501)/timeout(57014)/imza(PGRST202)
       if (error || !data || !data.length) { liste.innerHTML = '<div class="bos">Bu kriterlere uygun geçmiş kazanımı olan firma bulunamadı.</div>'; return; }
       liste.innerHTML = data.map((f, i) => `
         <div class="firma-satir">
           <div class="firma-no">${i + 1}</div>
           <div style="flex:1;min-width:0;">
             <div class="firma-ad"><a href="firma-analiz?firma=${encodeURIComponent(f.kazanan_firma)}" target="_blank">${esc(f.kazanan_firma)}</a></div>
-            <div class="firma-meta">${f.firma_il ? '📍 ' + esc(f.firma_il) + ' · ' : ''}${f.mesafe_km != null ? '~' + f.mesafe_km + ' km · ' : ''}bu kategoride <b style="color:var(--off-white)">${f.kategori_kazanim}</b> kazanım · en büyük <b style="color:var(--off-white)">${paraKisa(f.max_kazanim)}</b></div>
+            <div class="firma-meta">${f.firma_il ? '📍 ' + esc(f.firma_il) + ' · ' : ''}${f.mesafe_km != null ? '~' + f.mesafe_km + ' km · ' : ''}bu konuda <b style="color:var(--off-white)">${f.kategori_kazanim}</b> kazanım · en büyük <b style="color:var(--off-white)">${paraKisa(f.max_kazanim)}</b></div>
           </div>
           ${f.ayni_il ? '<span class="rozet rozet-il">Aynı il</span>' : ''}
-          ${f.kapasite_uygun ? '<span class="rozet rozet-kap">Kapasite ✓</span>' : ''}
+          ${f.kapasite_uygun ? '<span class="rozet rozet-kap">Ölçek ✓</span>' : ''}
         </div>`).join('');
     } catch (e) { liste.innerHTML = '<div class="bos">Öneri alınamadı.</div>'; }
   };
@@ -522,6 +558,6 @@
   })();
 })();
 </script>
-<script src="js/main.js"></script>
+<script src="js/main.js?v=1"></script>
 </body>
 </html>

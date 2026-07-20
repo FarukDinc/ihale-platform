@@ -309,8 +309,8 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/sidebar-user.js?v=3"></script>
 <script src="js/bildirim-sayaci.js?v=rot1"></script>
-<script src="js/kategoriler.js"></script>
-<script src="js/uyum.js"></script>
+<script src="js/kategoriler.js?v=1"></script>
+<script src="js/uyum.js?v=1"></script>
 <script src="js/takip.js?v=2"></script>
 <script>
   const SUPABASE_URL = "https://ihaleglobal.com";
@@ -411,16 +411,35 @@
     return usul.length < 40 ? usul : 'Diğer';
   }
 
+  // Liste sayfasına (ihaleler.html) götüren OKAS/kategori linklerinin hedef SEKMESİ.
+  // Sorun: link her zaman varsayılan "Güncel" sekmesine düşüyordu; Güncel'in ölçütü
+  // son_teklif_tarihi >= now → kapalı/sonuçlanmış bir ihaleden tıklayan kullanıcı
+  // BOŞ liste görüyordu (backlog #27). Kaynak ihalenin durumuna göre sekme seç.
+  // ihaleler.html kabul ettiği değerler: guncel | gecmis | sonuc | detayli.
+  function listeSekmesi(d) {
+    if (!d) return 'guncel';
+    const durum = (d.durum || '').toLowerCase();
+    if (durum === 'sonuclandi') return 'sonuc';    // Sonuç sekmesi ihale_sonuclari!inner
+    if (durum === 'kapali' || durum === 'iptal') return 'gecmis';
+    // durum 'aktif' görünse bile teklif süresi dolmuşsa Güncel onu getirmez (bayatlama
+    // gecikebiliyor, bkz. ilan_durum_bayatlat) → tarihe bakıp Geçmiş'e yolla.
+    const st = d.son_teklif_tarihi ? new Date(d.son_teklif_tarihi) : null;
+    if (st && !isNaN(st.getTime()) && st.getTime() < Date.now()) return 'gecmis';
+    return 'guncel';
+  }
+
   // OKAS/CPV kodunu tıklanabilir yap → o koda sahip diğer ihaleler (ihaleler?okas=kod).
   // Format "38651000 - Kameralar" veya virgülle çoklu; her kod ayrı link olur.
-  function okasLinkle(okas) {
+  // sekme: listeSekmesi(d) — kapalı ihaleden gelen link boş listeye düşmesin.
+  function okasLinkle(okas, sekme) {
     if (!okas) return '—';
+    const sk = sekme || 'guncel';
     return okas.split(',').map(o => {
       const t = o.trim();
       if (!t) return '';
       const m = t.match(/\d{4,}/);
       const kod = m ? m[0] : t;
-      return `<a href="ihaleler?okas=${encodeURIComponent(kod)}" style="color:var(--amber);text-decoration:none;" title="Bu OKAS koduna sahip diğer ihaleleri gör">${t}</a>`;
+      return `<a href="ihaleler?okas=${encodeURIComponent(kod)}&sekme=${sk}" style="color:var(--amber);text-decoration:none;" title="Bu OKAS koduna sahip diğer ihaleleri gör">${t}</a>`;
     }).filter(Boolean).join('<br>');
   }
 
@@ -593,8 +612,8 @@
             <div class="info-row"><span class="info-label">İl</span><span class="info-value">${escHtml(d.il) || '—'}</span></div>
             <div class="info-row"><span class="info-label">İhale Türü</span><span class="info-value">${escHtml(d.tur) || '—'}</span></div>
             <div class="info-row"><span class="info-label">İhale Usulü</span><span class="info-value">${usulLabel(d.usul)}</span></div>
-            <div class="info-row"><span class="info-label">Kategori</span><span class="info-value">${d.kategori ? `<a href="ihaleler?kategori=${encodeURIComponent(d.kategori)}" style="color:var(--amber);text-decoration:none;">${d.kategori}</a>` : '—'}</span></div>
-            <div class="info-row"><span class="info-label">OKAS Kodu</span><span class="info-value">${okasLinkle(d.okas)}</span></div>
+            <div class="info-row"><span class="info-label">Kategori</span><span class="info-value">${d.kategori ? `<a href="ihaleler?kategori=${encodeURIComponent(d.kategori)}&sekme=${listeSekmesi(d)}" style="color:var(--amber);text-decoration:none;">${d.kategori}</a>` : '—'}</span></div>
+            <div class="info-row"><span class="info-label">OKAS Kodu</span><span class="info-value">${okasLinkle(d.okas, listeSekmesi(d))}</span></div>
             <div class="info-row"><span class="info-label">Kaynak</span><span class="info-value">${disK ? disK.ad : (d.kaynak ? d.kaynak.toUpperCase() : '—')}</span></div>
           </div>
 
@@ -1147,7 +1166,7 @@
 
   ihaleYukle();
 </script>
-<script src="js/main.js"></script>
+<script src="js/main.js?v=1"></script>
 </body>
 </html>
 
