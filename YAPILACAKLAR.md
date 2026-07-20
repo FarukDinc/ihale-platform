@@ -1,5 +1,60 @@
 # İhalePlatform — Yapılacaklar Listesi
 
+> ## 🔴 20 TEM — CANLI HATA: 163.464 GEÇMİŞ İHALE "AKTİF" GÖRÜNÜYOR
+> P0.3 migration'ı uygulanırken ortaya çıktı (migration'ın kendisi sağlam, bu AYRI bir hata).
+>
+> ### Ölçüm (canlı, backfill akarken — rakamlar büyüyor)
+> | | |
+> |---|---|
+> | `durum='aktif'` diyor | **168.322** |
+> | └ son teklif tarihi GEÇMİŞ | **163.464** ← yanlış |
+> | └ gerçekten açık | 4.856 |
+> | └ tarihi BOŞ (asla kapanmaz) | 2 |
+> | `kapandi` | **0** |
+>
+> ### Kök neden — İKİ parça
+> **1) `ekap_scraper.py:675 durum_donustur()` varsayılanı "aktif":**
+> ```python
+> if "açık" in d or "devam" in d or "katılım" in d: return "aktif"
+> if "sonuçland" in d or "tamamland" in d: return "sonuclandi"
+> return "aktif"        # ← eşleşmeyen HER durum aktif sayılıyor
+> ```
+> `ekap_ihale_backfill.py:142` bunu 1,6M geçmiş kayıtta çağırıyor. EKAP'ın
+> geçmiş ihaleler için döndürdüğü durum metinleri bu iki kalıba uymuyor →
+> 2011 tarihli ihale "aktif" yazılıyor. **Gerçek metinlerin ne olduğunu BİLMİYORUZ**
+> (loglanmıyor) — bu yüzden eşlemeyi tahminle genişletmek YANLIŞ olur.
+>
+> **2) `ilan_durum_bayatlat()` (migration_uygun_firmalar_v3_1.sql:119)** yalnız
+> `son_teklif_tarihi IS NOT NULL` olanları kapatıyor → tarihi olmayan kayıt
+> sonsuza dek 'aktif' kalır. Şu an bu yalnız **2 kayıt**, ihmal edilebilir.
+>
+> ### Etkilenen yüzeyler
+> `durum='aktif'` sayan her yer: `idare_ozet_mv` (idareler dizinindeki "aktif"
+> sütunu), `kurum_ozet`'in `durum` kırılım grafiği.
+> ✅ ETKİLENMEYEN: `kurum_ozet.kpi.aktif` ve `il_sayim_aktif()` — ikisi de tarih
+> tabanlı, doğru 4.856 gösteriyorlar. (P0.3'te kpi.aktif'i `durum='aktif'`e
+> çevirecektim, adversaryal doğrulama bunu çürüttü — çevirseydik 34x şişerdi.)
+>
+> ### ÇÖZÜM — sırayla
+> **a) ŞİMDİ (güvenli, kalıcı):** backfill upsert'i `resolution=ignore-duplicates`
+> kullanıyor, yani mevcut satırları EZMİYOR → bayatlatmanın kapattığı satırlar
+> geri açılmaz. 163.464 kaydı düzeltir:
+> ```bash
+> docker exec -i supabase-db psql -U postgres -d postgres -c "SELECT public.ilan_durum_bayatlat() AS kapatilan;"
+> docker exec -i supabase-db psql -U postgres -d postgres -c "REFRESH MATERIALIZED VIEW CONCURRENTLY public.idare_ozet_mv;"
+> ```
+> **b) BACKFILL BİTİNCE tekrar koştur** — yeni gelen satırlar yine 'aktif' olarak
+> düşüyor. (Gece cron'u zaten çağırıyor; backfill gece de sürüyorsa sabah tekrar.)
+>
+> **c) KALICI (ayrı iş, ÖNCE VERİ TOPLA):** `durum_donustur`'un blanket
+> `return "aktif"`i toplu geçmiş yüklemede yanlış yönde hata veriyor —
+> "fırsat var" demek, "yok" demekten daha zararlı. AMA varsayılanı körlemesine
+> `"kapandi"` yapmak da riskli: canlı scraper aynı fonksiyonu kullanıyor, tanınmayan
+> bir durum metni gerçek aktif ihaleyi gizler.
+> **Doğru sıra:** önce `ihaleDurumAciklama`'nın eşleşmeyen değerlerini LOGLA
+> (backfill'e birkaç satır), gerçek metinleri gör, sonra eşlemeyi tamamla.
+> Tahminle genişletme.
+
 > ## ✅ 20 TEM — PROXY ÇALIŞIYOR, BLOKE İŞLER SERBEST
 > Kullanıcı teyit etti. Aşağıdaki üç iş 402 yüzünden duruyordu; komutlar hazır.
 > **Hepsi uzun sürer → `systemd-run` ile arka planda başlat, cron ile ÇAKIŞTIRMA**
