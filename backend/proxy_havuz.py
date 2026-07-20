@@ -73,6 +73,13 @@ _LISTE_HAM      = os.environ.get("PROXY_LIST", "")
 IP_ARALIK_SN    = float(os.environ.get("PROXY_IP_ARALIK_SN", "3.0"))
 KURESEL_RPM     = int(os.environ.get("PROXY_KURESEL_RPM", "600"))
 
+# Tüm proxy IP'leri düştüğünde VDS'in kendi IP'sine geçilsin mi? VARSAYILAN: HAYIR.
+# 20 Tem: kullanıcı talimatı "VDS IP'sine düşmek YASAK" (proxy 402 krizinde verildi).
+# Bu başlıkta yedek mekanizması onaylanmıştı ama o onay 402 durumundan ÖNCEYDİ.
+# Çakışan iki talimatın güvenli kesişimi: mekanizma dursun, kendiliğinden devreye
+# GİRMESİN. Bilinçli açmak isteyen PROXY_DIREKT_YEDEK=1 verir.
+DIREKT_YEDEK_IZIN = os.environ.get("PROXY_DIREKT_YEDEK", "0").strip() in ("1", "true", "evet")
+
 # "Bu IP ile sorun var" diyen HTTP kodları — yalnızca bunlar ucu cezalandırır.
 #   403 Forbidden / 407 Proxy Auth / 429 Too Many Requests → doğrudan blok sinyali
 #   5xx                                                    → proxy ya da uç sunucu arızası
@@ -228,6 +235,14 @@ class ProxyHavuzu:
             #
             # Sessiz değil GÜRÜLTÜLÜ düşüyoruz: tüm trafiğin VDS IP'sine dönmesi
             # operatörün bilmesi gereken bir davranış değişikliği.
+            if not DIREKT_YEDEK_IZIN:
+                raise RuntimeError(
+                    "TÜM PROXY IP'LERİ DÜŞTÜ ve direkt yedek KAPALI.\n"
+                    "  Kazıma durduruldu — istekler VDS IP'sinden GİTMEYECEK (kullanıcı talimatı).\n"
+                    "  Muhtemel sebepler: Webshare 402/kota, suistimal bayrağı, subnet engeli.\n"
+                    "  Tek uçla teşhis: curl -x http://KULLANICI:SIFRE@IP:PORT https://api.ipify.org\n"
+                    "  Bilinçli olarak VDS IP'sine düşmek istiyorsanız: PROXY_DIREKT_YEDEK=1"
+                )
             if self._direkt_yedek is None:
                 self._direkt_yedek = _Uc(etiket="direkt-yedek", url=None)
                 print("\n" + "!" * 68, flush=True)
