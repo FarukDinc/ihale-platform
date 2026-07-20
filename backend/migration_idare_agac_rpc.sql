@@ -89,6 +89,13 @@ $$;
 --    Ad DEĞİL no döndürüyor: adlar uzun (ort. 60 karakter), 1.090 düğümlük bir
 --    dalda URL 65 KB'a çıkardı ve nginx/PostgREST sınırını aşardı. detsis_no
 --    ~8 karakter → aynı dal ~10 KB.
+--
+--    !! DÜZELTME (20 Tem inceleme): yukarıdaki "~10 KB sınır içinde" varsayımı
+--    YANLIŞTI — Kong/nginx varsayılan istek-satırı sınırı 8 KB ve bu stack'te
+--    in.() listeleri daha önce 414 verdi (kategori_backfill CHUNK=60 dersi).
+--    İstemci artık bu RPC'yi KULLANMIYOR; dal ihaleleri sunucu-taraflı JOIN'le
+--    dönüyor: migration_idare_dal_ihaleler.sql → idare_dal_son_ihaleler.
+--    Fonksiyon yerinde bırakıldı (bu dosya prod'a uygulanmış, tekrar koşulmaz).
 -- ---------------------------------------------------------------------------
 CREATE OR REPLACE FUNCTION public.idare_alt_agac_detsis(p_detsis text)
 RETURNS TABLE (detsis_no text)

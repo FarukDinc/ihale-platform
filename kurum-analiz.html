@@ -1278,8 +1278,10 @@
 
   // ══════════════ KURUM AĞACI (YAPILACAKLAR #3) ══════════════
   // DETSİS hiyerarşisi: idare_agac_dallar (tembel dallar) + idare_agac_ara +
-  // idare_agac_yol (arama sonucundan dal açma) + idare_alt_agac_detsis (dal ihaleleri).
-  // Hepsi anon'a KAPALI (migration_idare_agac_rpc.sql) → misafire giriş kapısı.
+  // idare_agac_yol (arama sonucundan dal açma) — migration_idare_agac_rpc.sql;
+  // dal ihaleleri modalı: idare_dal_son_ihaleler (migration_idare_dal_ihaleler.sql,
+  // sunucu-taraflı JOIN — istemcide in.() URL'i yok).
+  // Hepsi anon'a KAPALI → misafire giriş kapısı.
   // "Bağlantısız Kurumlar" dalı: idare_agac_bagsiz_ozet/liste
   // (migration_kurum_agaci_bagsiz.sql) — henüz uygulanmadıysa ağaç yine çalışır,
   // dal kibar bir "hazır değil" notu gösterir.
@@ -1569,9 +1571,13 @@
     // arama paneli AÇIK bırakılır: kullanıcı diğer sonuçlara da bakabilsin
   }
 
-  // Dalın son ihaleleri: idare_alt_agac_detsis → ilanlar.detsis_no in.(...)
-  // (migration notu: 1.090 düğümlük dal ~10 KB URL — sınır içinde; çok geniş
-  // dallarda istek denemek yerine kullanıcıyı alt dala yönlendiririz)
+  // Dalın son ihaleleri: idare_dal_son_ihaleler RPC'si sunucuda
+  // idare_ata_torun JOIN ilanlar kurar (migration_idare_dal_ihaleler.sql).
+  // Eski tasarım (idare_alt_agac_detsis → ilanlar.detsis_no in.(...)) dal
+  // listesini GET URL'üne yazıyordu: EGM dalı (1.090 düğüm) ~12 KB istek
+  // satırı → Kong/nginx 8 KB sınırında 414 (aynı sınıf: kategori_backfill
+  // CHUNK=60 dersi, YAPILACAKLAR.md). RPC POST gövdesiyle URL sabit; eşik ve
+  // "çok geniş dal — alt dal seçin" çıkmazı tamamen kalktı.
   async function dalIhaleleriAc(detsis, ad) {
     const fon = document.createElement('div');
     fon.className = 'ag-modal-fon';
@@ -1583,20 +1589,8 @@
     document.body.appendChild(fon);
     const govde = fon.querySelector('.ag-modal-govde');
     try {
-      const { data: alt, error: e1 } = await sb.rpc('idare_alt_agac_detsis', { p_detsis: detsis });
-      if (e1) throw e1;
-      const liste = (alt || []).map(r => r.detsis_no);
-      if (!liste.length) { govde.innerHTML = '<div class="ag-not" style="--derin:0; border:none; padding:20px 0;">Bu dala bağlı kurum bulunamadı.</div>'; return; }
-      if (liste.length > 1500) {
-        govde.innerHTML = `<div class="ag-not" style="--derin:0; border:none; padding:20px 0;">Bu dal çok geniş (${sayi(liste.length)} kurum) — istek sınırına takılmamak için lütfen ağaçtan bir alt dal seçip oradan bakın.</div>`;
-        return;
-      }
-      const { data: ihaleler, error: e2 } = await sb.from('ilanlar')
-        .select('id,baslik,il,tur,etkin_tarih,son_teklif_tarihi')
-        .in('detsis_no', liste)
-        .order('etkin_tarih', { ascending: false, nullsFirst: false })
-        .limit(20);
-      if (e2) throw e2;
+      const { data: ihaleler, error } = await sb.rpc('idare_dal_son_ihaleler', { p_detsis: detsis, p_limit: 20 });
+      if (error) throw error;
       if (!ihaleler || !ihaleler.length) {
         govde.innerHTML = '<div class="ag-not" style="--derin:0; border:none; padding:20px 0;">Bu dala bağlı ihale kaydı bulunamadı.</div>';
         return;
@@ -1617,7 +1611,11 @@
       }).join('') + '<div class="ag-not" style="--derin:0; border:none;">Dalın (kendisi + alt birimleri) en güncel 20 kaydı gösterilir.</div>';
     } catch (err) {
       console.error(err);
-      govde.innerHTML = '<div class="ag-not" style="--derin:0; border:none; padding:20px 0;">İhale listesi yüklenemedi, lütfen tekrar deneyin.</div>';
+      // PGRST202 = RPC henüz kurulmamış (migration bekliyor) — "tekrar deneyin"
+      // demek yanıltıcı olur (bagsizYukle ile aynı kibar-bekleme deseni)
+      govde.innerHTML = (err && err.code === 'PGRST202')
+        ? '<div class="ag-not" style="--derin:0; border:none; padding:20px 0;">Dal ihaleleri henüz hazırlanıyor — yakında burada.</div>'
+        : '<div class="ag-not" style="--derin:0; border:none; padding:20px 0;">İhale listesi yüklenemedi, lütfen tekrar deneyin.</div>';
     }
   }
 
