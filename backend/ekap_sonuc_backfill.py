@@ -114,10 +114,36 @@ def crypto_headers():
     }
 
 
+class GeciciHata(Exception):
+    """
+    GEÇİCİ (yeniden denenebilir) EKAP/ağ hatası: 403/407/429/5xx, timeout, TLS, ağ,
+    proxy düşmesi. KALICI durumdan (gerçek 404 = 'kayıt yok') AYIRT edilir.
+
+    Neden ayrı bir tip: post() eskiden hem gerçek 404'te hem geçici hatada None
+    dönüyordu; çağıran ikisini ayırt edemediği için geçici hata alan eşleşen ilanı
+    'kayıt yok' sanıp sayfayı KALICI atlıyor, checkpoint'i ilerletiyordu → eşleşen
+    ilan bir daha yazılmıyordu (SESSİZ KAYIP). Artık geçici hata bu istisnayı RAISE
+    eder; çağıran checkpoint'i İLERLETMEZ ve sonraki tur tekrar dener.
+
+    `blok=True` → 403/407/429 (IP kısıtlaması sinyali): tur bilinçli olarak durur.
+    """
+    def __init__(self, mesaj, *, blok=False, kod=None):
+        super().__init__(mesaj)
+        self.blok = blok
+        self.kod = kod
+
+
 async def post(havuz, endpoint: str, data: dict) -> dict | None:
     """İstek async proxy havuzundan çıkan sıradaki IP ile gider.
-    404 zaten None dönüyordu (kayıt yok) — ist.yanit() de onu blok sinyali SAYMAZ,
-    yalnız 403/407/429/5xx cezalandırır."""
+
+    DÖNÜŞ SÖZLEŞMESİ:
+      · Başarı                                        → JSON gövdesi (dict)
+      · Gerçek 404 (kayıt yok, KALICI)                → None
+      · Geçici hata (403/407/429/5xx/timeout/TLS/ağ)  → GeciciHata RAISE eder
+
+    404 bir blok sinyali DEĞİL — ist.yanit() de onu cezalandırmaz, yalnız
+    403/407/429/5xx ucu cezalandırır. Havuzun RuntimeError emniyet supapları
+    (tüm IP'ler düştü / sağlayıcı arızası) YUTULMAZ — üst seviyeye taşınır."""
     headers = {**BASE_HEADERS, **crypto_headers()}
     try:
         async with havuz.istek() as ist:
@@ -128,11 +154,17 @@ async def post(havuz, endpoint: str, data: dict) -> dict | None:
             r.raise_for_status()
             return r.json()
     except httpx.HTTPStatusError as e:
-        print(f"    ✗ HTTP {e.response.status_code} — {endpoint}")
-        return None
+        kod = e.response.status_code
+        print(f"    ✗ HTTP {kod} — {endpoint}")
+        # 403/407/429 = blok sinyali; 5xx = sunucu/proxy arızası. İkisi de GEÇİCİ.
+        raise GeciciHata(f"HTTP {kod} — {endpoint}", blok=(kod in (403, 407, 429)), kod=kod) from e
+    except RuntimeError:
+        # Havuzun emniyet supabı (tüm IP'ler düştü / sağlayıcı arızası) — YUTMA, üst seviyeye taşı.
+        raise
     except Exception as e:
+        # timeout / TLS / ağ / proxy düşmesi — hepsi geçici, yeniden denenebilir.
         print(f"    ✗ {endpoint}: {e}")
-        return None
+        raise GeciciHata(f"{type(e).__name__}: {e}") from e
 
 
 def mojibake_duzelt(s):
@@ -509,6 +541,81 @@ def ilan_kompakt_ekle(item: dict, dry_run: bool) -> dict | None:
 
 
 SAYFA_BOYUTU = 100
+LISTE_EP = "/b_ihalearama/api/Ihale/GetListByParameters"
+
+# ── Sessiz kayıp önleyici sınırlar (referans: ekap_ihale_backfill.py) ──
+LISTE_RETRY = 4            # boş/geçici liste sayfası için AYNI sayfayı yeniden deneme
+DETAY_RETRY = 3            # detay çekimi geçici (blok-dışı) hatada yeniden deneme
+BOS_DELIK_SINIRI = 20      # sona GELMEDEN art arda boş dönen sayfa (delik) → dur
+ARDISIK_DETAY_SINIRI = 8   # üst üste detay çekim hatası → dur (EKAP'ı dövme)
+CEKILEMEDI_SINIRI = 200    # toplam çekilemeyen eşleşme → sistemik say, dur
+
+
+async def liste_sayfa_getir(havuz, skip: int):
+    """
+    durum=5 sonuç listesinin tek sayfasını (SAYFA_BOYUTU kayıt) çeker.
+
+    Geçici hatada VE 'sona gelinmeden dönen boş sayfa' (delik) durumunda AYNI sayfayı
+    sınırlı kez yeniden dener — checkpoint'i İLERLETMEZ. Boş yanıtın 'veri bitti' mi
+    yoksa geçici 'delik' mi olduğunu totalCount ile TEYİT eder (B1 bulgusu).
+
+    Döner (liste, toplam_kayit, son_mu):
+      · dolu sayfa          → (list, totalCount, False)
+      · gerçekten son       → ([],   totalCount, True)   # skip >= totalCount, boş
+      · kurtarılamaz delik  → ([],   totalCount, False)  # retry'ler tükendi, sona da gelinmedi
+
+    GeciciHata(blok=True) ve RuntimeError (havuz emniyet supabı) YUTULMAZ — üst seviyeye taşınır.
+    """
+    toplam_kayit = 0
+    for deneme in range(LISTE_RETRY):
+        try:
+            veri = await post(havuz, LISTE_EP, {
+                "searchText": "", "paginationSkip": skip, "paginationTake": SAYFA_BOYUTU,
+                "ihaleDurumIdList": [5], "searchType": "GirdigimGibi",
+            })
+        except GeciciHata:
+            # Blok → hemen durdur (çağıran yakalar). Retry bütçesi bittiyse de çağırana taşı.
+            if deneme == LISTE_RETRY - 1:
+                raise
+            await asyncio.sleep(1.0 * (deneme + 1))
+            continue
+        if veri is None:
+            # Liste ucundan 404 OLAĞAN DEĞİL; geçici bir tuhaflık say, aynı sayfayı yeniden dene.
+            if deneme == LISTE_RETRY - 1:
+                return [], toplam_kayit, False
+            await asyncio.sleep(1.0 * (deneme + 1))
+            continue
+        toplam_kayit = int(veri.get("totalCount") or 0)
+        liste = veri.get("list") or []
+        if liste:
+            return liste, toplam_kayit, False
+        # Boş yanıt: SON MU (skip >= totalCount) yoksa geçici DELİK mi?
+        if toplam_kayit and skip >= toplam_kayit:
+            return [], toplam_kayit, True          # gerçekten sona gelindi
+        # Delik: sona gelinmedi ama boş. AYNI sayfayı yeniden dene (checkpoint ilerletme YOK).
+        await asyncio.sleep(1.0 * (deneme + 1))
+    return [], toplam_kayit, False
+
+
+async def detay_cek_retry(havuz, ihale_id: str):
+    """
+    Detay çekimini geçici (blok-dışı) hatalarda sınırlı kez yeniden dener (B6 bulgusu).
+
+    Döner:
+      · Başarı                 → detay dict
+      · Gerçek 404 (kayıt yok) → None (KALICI — bu ihalenin detayı EKAP'ta yok)
+    RAISE:
+      · GeciciHata(blok=True)  → 403/429: çağıran turu durdurur
+      · GeciciHata             → 5xx/timeout/ağ (retry'ler tükendi): çağıran sayar/atlar
+    RuntimeError (havuz emniyet supabı) YUTULMAZ.
+    """
+    for deneme in range(DETAY_RETRY):
+        try:
+            return await ekap_detay_cek(havuz, ihale_id)   # None = gerçek 404 (KALICI)
+        except GeciciHata as e:
+            if e.blok or deneme == DETAY_RETRY - 1:
+                raise
+            await asyncio.sleep(0.5 * (deneme + 1))
 
 
 async def calis(max_pages: int, dry_run: bool, start_skip: int | None, tum_kayitlar: bool = False,
@@ -541,57 +648,109 @@ async def calis(max_pages: int, dry_run: bool, start_skip: int | None, tum_kayit
     print(f"→ EKAP sonuçlanmış ihale listesi taranıyor (başlangıç skip={skip})…\n")
 
     taranan, eslesen, yazilan, hata = 0, 0, 0, 0
-    sayfa_basina_yeni = []  # son N sayfada yeni yazma oldu mu (plato tespiti için)
+    cekilemedi = 0            # GEÇİCİ hatayla çekilemeyen eşleşen ilan (SESSİZ değil — sayılır)
+    bos_delik = 0             # sona gelinmeden art arda dönen boş sayfa (delik) sayacı
+    ardisik_detay_hata = 0    # üst üste başarısız detay çekimi (EKAP'ı dövmeme güvenliği)
+    durduruldu = None         # None=normal akış; str=erken durma nedeni (dürüst özet için)
+    plato = False
+    sayfa_basina_yeni = []    # son N sayfada yeni yazma oldu mu (plato tespiti için)
 
     # Rekabetçi (ilanlar) derin backfill EKAP'ı yoğun tarıyor — IP kısıtlaması riskine karşı
-    # Webshare'in 100 IP'lik havuzundan rastgele biri seçilir (PROXY_LIST yapılandırılmamışsa
-    # None döner, direkt bağlantıya düşer). Bloklanırsa script'i yeniden başlatmak (checkpoint
-    # kaldığı yerden devam eder) farklı bir IP'ye düşürür.
-    # ESKİ: rastgele_proxy_url() tur başına TEK IP seçiyordu (havuzun 99'u boşta).
-    # YENİ: async havuz, istek başına rotasyon + IP soğuması + küresel tavan + karantina.
+    # Webshare'in 100 IP'lik havuzundan istek başına rotasyonla IP seçilir (PROXY_LIST
+    # yapılandırılmamışsa direkt bağlantıya düşer). Havuz istek başına rotasyon + IP soğuması
+    # + küresel tavan + karantina yönetir; tüm IP'ler düşerse RuntimeError ile üst seviyeye
+    # haber verir (burada YUTULMAZ — script bilinçli olarak durur).
     havuz = async_havuz_al(ssl_baglami=ekap_ssl_baglami())
-    if True:
-        for sayfa in range(max_pages):
-            veri = await post(havuz, "/b_ihalearama/api/Ihale/GetListByParameters", {
-                "searchText": "", "paginationSkip": skip, "paginationTake": SAYFA_BOYUTU,
-                "ihaleDurumIdList": [5], "searchType": "GirdigimGibi",
-            })
-            if veri is None:
-                # Geçici ağ/HTTP hatası olabilir — bir kez daha dene, olmazsa bu sayfayı atla (durma).
-                await asyncio.sleep(1.0)
-                veri = await post(havuz, "/b_ihalearama/api/Ihale/GetListByParameters", {
-                    "searchText": "", "paginationSkip": skip, "paginationTake": SAYFA_BOYUTU,
-                    "ihaleDurumIdList": [5], "searchType": "GirdigimGibi",
-                })
-            if not veri or not veri.get("list"):
-                print(f"  ⚠ sayfa atlandı (skip={skip}) — boş/hatalı yanıt")
-                skip += SAYFA_BOYUTU
+
+    sayfa = 0
+    while sayfa < max_pages:
+        # ── Liste sayfasını çek: geçici hatada + delikte AYNI sayfayı sınırlı retry, ──
+        #    checkpoint ilerletmeden; boş yanıtı totalCount ile 'son mu delik mi' ayır.
+        try:
+            liste, toplam_kayit, son_mu = await liste_sayfa_getir(havuz, skip)
+        except GeciciHata as e:
+            durduruldu = ("403/429 alındı (liste) — IP kısıtlanmış olabilir. PROXY GEREK."
+                          if e.blok else f"liste sayfası çekilemedi (skip={skip}) — {e}")
+            print(f"  ⏹ {durduruldu}")
+            break
+
+        if son_mu:
+            break                              # gerçekten sona gelindi (skip >= totalCount)
+
+        if not liste:
+            # Delik: sona GELİNMEDEN boş döndü ve retry'ler tükendi. Sessizce 'bitti' SAYMA.
+            bos_delik += 1
+            print(f"  ⚠ skip={skip}: BOŞ liste ama sona gelinmedi "
+                  f"({skip:,}/{toplam_kayit:,}) — delik atlanıyor ({bos_delik}. kez)")
+            if bos_delik >= BOS_DELIK_SINIRI:
+                durduruldu = (f"{bos_delik} art arda delik (skip={skip}) — kalan sonraki tura "
+                              "bırakıldı")
+                print(f"  ⏹ {durduruldu}")
+                break
+            skip += SAYFA_BOYUTU
+            if not no_checkpoint:
                 checkpoint_yaz(skip)
+            sayfa += 1
+            continue
+
+        bos_delik = 0                          # dolu sayfa → ardışık delik sayacını sıfırla
+        taranan += len(liste)
+        yazilan_once = yazilan
+
+        for item in liste:
+            ikn = item.get("ikn")
+            ilan = harita.get(ikn)
+            if not ilan and tum_kayitlar:
+                # Faz A3 — havuzdan bağımsız mod: bizim ilanlar tablomuzda olmasa bile
+                # kompakt bir satır oluşturup devam et (hacmi 1.68M'e doğru büyütür).
+                ilan = ilan_kompakt_ekle(item, dry_run)
+                if ilan and ilan.get("id"):
+                    harita[ikn] = ilan
+            if not ilan or (ilan.get("id") and ilan["id"] in mevcut):
+                continue
+            eslesen += 1
+            ihale_id = item.get("id")
+            if not ihale_id:
+                # id yoksa detay çekilemez — bu bir EKAP veri tuhaflığı, GEÇİCİ hata değil; atla.
                 continue
 
-            liste = veri["list"]
-            taranan += len(liste)
-            yazilan_once = yazilan
+            # ── Detay çek: GEÇİCİ hatayı (blok/timeout/5xx) KALICI 404'ten AYIR (B6) ──
+            try:
+                detay = await detay_cek_retry(havuz, ihale_id)
+            except GeciciHata as e:
+                if e.blok:
+                    # 403/429 → IP kısıtlaması. Bu sayfa checkpoint'LENMEZ (skip sayfa
+                    # başında kalır); sonraki tur tekrar dener. Faz A3: proxy beklenir.
+                    durduruldu = "403/429 alındı — IP kısıtlanmış olabilir. PROXY GEREK."
+                    print(f"  ⏹ {durduruldu} Durduruluyor (skip={skip}).")
+                    break
+                # Blok-dışı geçici hata (retry'ler tükendi): izole zehirli/geçici detay.
+                # Bu eşleşme YAZILAMADI — DAMGALANMAZ (mevcut'a eklenmez), SAYILIR ve loglanır.
+                hata += 1
+                cekilemedi += 1
+                ardisik_detay_hata += 1
+                print(f"  ✗ {ikn}: {e} — çekilemedi ({cekilemedi}. kez), sonraki tur tekrar denenecek")
+                if ardisik_detay_hata >= ARDISIK_DETAY_SINIRI:
+                    durduruldu = (f"üst üste {ardisik_detay_hata} detay çekim hatası — "
+                                  "EKAP baskı altında olabilir, durduruldu")
+                    print(f"  ⏹ {durduruldu}")
+                    break
+                if cekilemedi >= CEKILEMEDI_SINIRI:
+                    durduruldu = f"{cekilemedi} eşleşme çekilemedi — sistemik sorun kokusu, durduruldu"
+                    print(f"  ⏹ {durduruldu}")
+                    break
+                continue
 
-            for item in liste:
-                ikn = item.get("ikn")
-                ilan = harita.get(ikn)
-                if not ilan and tum_kayitlar:
-                    # Faz A3 — havuzdan bağımsız mod: bizim ilanlar tablomuzda olmasa bile
-                    # kompakt bir satır oluşturup devam et (hacmi 1.68M'e doğru büyütür).
-                    ilan = ilan_kompakt_ekle(item, dry_run)
-                    if ilan and ilan.get("id"):
-                        harita[ikn] = ilan
-                if not ilan or (ilan.get("id") and ilan["id"] in mevcut):
-                    continue
-                eslesen += 1
-                try:
-                    detay = await ekap_detay_cek(havuz, item["id"])
-                    if not detay:
-                        continue
-                    kayitlar = sonuc_kayitlari_olustur(ilan, detay)
-                    if not kayitlar:
-                        continue
+            ardisik_detay_hata = 0             # başarı (veya temiz 404) → ardışık hatayı sıfırla
+            if not detay:
+                # Gerçek 404 — bu ihalenin detayı EKAP'ta yok (KALICI). Atla; sayfa ilerleyebilir.
+                continue
+
+            # Kayıtları oluştur/yaz — burada AĞ çağrısı YOK; yalnız AYRIŞTIRMA hatasını say
+            # (havuzun RuntimeError emniyet supabı bu bloktan geçmez → yutulmaz).
+            try:
+                kayitlar = sonuc_kayitlari_olustur(ilan, detay)
+                if kayitlar:
                     for kayit in kayitlar:
                         sonuc_upsert(kayit, dry_run)
                         print(f"  ✓ {ikn} kısım {kayit['kisim_no']} → {kayit['kazanan_firma']} "
@@ -599,43 +758,62 @@ async def calis(max_pages: int, dry_run: bool, start_skip: int | None, tum_kayit
                     if ilan.get("id"):
                         mevcut.add(ilan["id"])
                     yazilan += 1
-                    await asyncio.sleep(0.15)
-                except Exception as e:
-                    hata += 1
-                    print(f"  ✗ {ikn}: {e}")
-                    # 403/429 → muhtemelen IP kısıtlaması; plan gereği (Faz A3) burada durup
-                    # kullanıcının proxy doldurmasını beklemek daha güvenli.
-                    if "403" in str(e) or "429" in str(e):
-                        print("  ⏹ 403/429 alındı — IP kısıtlanmış olabilir. PROXY GEREK. Durduruluyor.")
-                        if not no_checkpoint:
-                            checkpoint_yaz(skip)
-                        return
+            except Exception as e:
+                hata += 1
+                print(f"  ✗ {ikn} (kayıt oluşturma/yazma): {e}")
+            await asyncio.sleep(0.15)
 
-            skip += SAYFA_BOYUTU
-            # no_checkpoint: gecelik en-yeniden-tara modu paylaşılan checkpoint'i İLERLETMEZ
-            # (aksi halde deep --backfill'in derin skip'ini ezerdi ve gecelik tur her gece daha
-            # eskiye kayıp yeni sonuçları hiç görmezdi). Deep backfill checkpoint'i kullanmaya devam eder.
-            if not no_checkpoint:
-                checkpoint_yaz(skip)
-            if (sayfa + 1) % 10 == 0:
-                print(f"  … {taranan} kayıt tarandı, {eslesen} eşleşme, {yazilan} yazıldı (skip={skip})")
+        # ── Sayfa sonu ──
+        if durduruldu:
+            # Erken durma: checkpoint İLERLETİLMEZ. skip sayfa başında kalır → sonraki tur
+            # bu sayfayı tekrar dener (yazılanlar 'mevcut' ile atlanır, idempotent).
+            break
 
-            # Plato tespiti: EKAP'ın sonuç listesi büyük ihtimalle belirli bir sıralamayla geliyor ve
-            # bizim ilanlar tablomuzla kesişim sadece belirli bir aralıkta yoğunlaşıyor (canlı testte
-            # skip~16000'den sonra binlerce kayıtta tek yeni eşleşme çıkmadığı gözlemlendi). Uzun süre
-            # yeni kayıt yazılmazsa boşuna taramaya devam etmek yerine erken dur.
-            sayfa_basina_yeni.append(1 if yazilan > yazilan_once else 0)
-            if len(sayfa_basina_yeni) >= 100 and sum(sayfa_basina_yeni[-100:]) == 0:
-                print(f"\n  ⏹ Son 100 sayfada (10.000 kayıt) hiç yeni sonuç bulunamadı — plato tespit edildi, durduruluyor.")
-                print(f"     (İleride farklı bir skip aralığından denemek isterseniz --start-skip kullanın.)")
-                break
+        skip += SAYFA_BOYUTU
+        # no_checkpoint: gecelik en-yeniden-tara modu paylaşılan checkpoint'i İLERLETMEZ
+        # (aksi halde deep --backfill'in derin skip'ini ezerdi ve gecelik tur her gece daha
+        # eskiye kayıp yeni sonuçları hiç görmezdi). Deep backfill checkpoint'i kullanmaya devam eder.
+        if not no_checkpoint:
+            checkpoint_yaz(skip)
+        sayfa += 1
+        if sayfa % 10 == 0:
+            print(f"  … {taranan} kayıt tarandı, {eslesen} eşleşme, {yazilan} yazıldı, "
+                  f"{cekilemedi} çekilemedi (skip={skip})")
 
-            await asyncio.sleep(0.25)
+        # Plato tespiti: EKAP'ın sonuç listesi büyük ihtimalle belirli bir sıralamayla geliyor ve
+        # bizim ilanlar tablomuzla kesişim sadece belirli bir aralıkta yoğunlaşıyor (canlı testte
+        # skip~16000'den sonra binlerce kayıtta tek yeni eşleşme çıkmadığı gözlemlendi). Uzun süre
+        # yeni kayıt yazılmazsa boşuna taramaya devam etmek yerine erken dur.
+        sayfa_basina_yeni.append(1 if yazilan > yazilan_once else 0)
+        if len(sayfa_basina_yeni) >= 100 and sum(sayfa_basina_yeni[-100:]) == 0:
+            plato = True
+            print(f"\n  ⏹ Son 100 sayfada (10.000 kayıt) hiç yeni sonuç bulunamadı — plato tespit edildi, durduruluyor.")
+            print(f"     (İleride farklı bir skip aralığından denemek isterseniz --start-skip kullanın.)")
+            break
+
+        await asyncio.sleep(0.25)
+
+    # Erken durmada (blok/sistemik/delik) checkpoint'i sayfa başına sabitle → sonraki tur tam
+    # bu sayfadan devam eder. Plato/normal bitişte checkpoint zaten son tamamlanan sayfada.
+    if durduruldu and not no_checkpoint:
+        checkpoint_yaz(skip)
 
     print(f"\n{'='*55}")
-    print(f"Tamamlandı: {taranan} kayıt tarandı, {eslesen} bizim DB'de eşleşti, "
-          f"{yazilan} sonuç yazıldı, {hata} hata")
-    print(f"Son skip={skip} → .sonuc_backfill_checkpoint.json'a kaydedildi (bir sonraki çalıştırma buradan devam eder)")
+    if durduruldu:
+        print(f"DURDURULDU — {durduruldu}")
+    elif plato:
+        print("PLATO — yeni sonuç bölgesi bitti (yukarıda ayrıntı)")
+    else:
+        print("Tamamlandı (liste sonuna gelindi)")
+    print(f"  {taranan} kayıt tarandı, {eslesen} bizim DB'de eşleşti, {yazilan} sonuç yazıldı")
+    if cekilemedi:
+        print(f"  ⚠ {cekilemedi} eşleşen ilan GEÇİCİ hatayla ÇEKİLEMEDİ — sessiz kayıp DEĞİL, "
+              "sonraki turda tekrar denenecek")
+    if bos_delik:
+        print(f"  ⚠ {bos_delik} art arda boş sayfa (delik) görüldü")
+    print(f"  {hata} hata")
+    print(f"  Son skip={skip}"
+          + ("" if no_checkpoint else " → .sonuc_backfill_checkpoint.json'a kaydedildi"))
     print(f"{'='*55}")
 
 
