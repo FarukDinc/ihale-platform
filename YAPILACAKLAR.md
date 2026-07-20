@@ -685,8 +685,19 @@
 > 5. **Ticaret "her ülke" ne demek?** (a) her ülke × DÜNYA (partner=0) — planlanan;
 >    (b) tam ikili matris ≈ **4,8 milyar satır**, uygulanamaz.
 
-> ## 🛑 20 TEM — PROXY HAVUZU DÜŞTÜ (402), KAZIMA İŞLERİ BLOKE
-> Webshare uçlarının **tamamı `402 Payment Required`** dönüyor (httpx CONNECT
+> ## ~~🛑 20 TEM — PROXY HAVUZU DÜŞTÜ (402)~~ → ÇÖZÜLDÜ, tarihsel kayıt
+> **Bu blok ARTIK GEÇERSİZ** — proxy'ler aynı gün geri geldi (100/100 canlı, 0 hata),
+> güncel durum için yukarıdaki "✅ PROXY ÇALIŞIYOR" bloğuna bak. Aşağısı yalnız
+> teşhis reçetesi olarak duruyor.
+>
+> ⚠️ **Kalıcı ders (ayrı, hâlâ geçerli):** havuz düştüğünde scraper VDS IP'sine
+> geri çekiliyordu — 19 Tem gecesi + 20 Tem 02:00 koşusunda **her seferinde ~1.100
+> istek üretim IP'sinden** gitti (havuz özetindeki "⚠ DİREKT YEDEK" satırı).
+> Bu, kullanıcının açık talimatını ihlal ediyordu. `PROXY_DIREKT_YEDEK` koruması
+> 20 Tem 10:25'te eklendi, **varsayılan KAPALI** — artık havuz düşerse kazıma
+> durur, VDS IP'sine düşmez. Bu davranışı geri açma.
+>
+> Webshare uçlarının **tamamı `402 Payment Required`** dönüyordu (httpx CONNECT
 > aşamasında; `curl -x` de bağlanamıyor → exit 56). 19 Tem'deki "government sites"
 > doğrulaması ayrı bir olaydı ve çözülmüştü — bu **kota/ödeme** kaynaklı yeni bir durum.
 >
