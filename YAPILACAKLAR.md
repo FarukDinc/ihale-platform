@@ -74,6 +74,31 @@
 > 12. VDS'te çekirdek güncellemesi bekliyor (`System restart required`). Restart sonrası
 >     **kong'u da yeniden başlat** (bayat upstream = 502).
 >
+> ## 🗄 CANLI DAĞITIM DURUMU (20 Tem sonu, doğrulandı)
+> Sonraki oturum "acaba uygulandı mı?" diye zaman kaybetmesin diye tek tek sorgulandı:
+>
+> | Nesne | Canlı |
+> |---|---|
+> | `idare_hiyerarsi` (87.528 düğüm) | ✅ |
+> | `idare_ata_torun` (312.259 satır) | ✅ |
+> | `idare_hiyerarsi_sayim_mv` | ✅ |
+> | `idare_agac_dallar/yol/ara/alt_agac_detsis` RPC | ✅ |
+> | `idx_dt_ilanlari_kategori_tarih` | ✅ |
+> | `idx_dt_ilanlari_tur_tarih` | ✅ (**20 Tem sonunda fark edildi — EKSİKTİ**) |
+>
+> **DERS:** `migration_dt_index.sql`'i yazıp komutu verdim ama uygulandığını hiç
+> DOĞRULAMADIM. Kategori indeksi oluşmuş, tür indeksi oluşmamıştı — DT'de tür filtresi
+> günlerce 38 saniye sürdü. Elle kurulunca **38 sn → 1,35 sn**.
+> Kural: migration yazmak ≠ uygulanmış olmak. `to_regclass`/`to_regprocedure` ile
+> nesne bazında teyit et, "komutu verdim" yeterli değil.
+>
+> ## 🧹 TEMİZLİK
+> - VDS'te bırakılan teşhis dosyaları silindi: `backend/havuz_test.py`, `backend/detay_test.py`
+> - **Paralel oturum çakışması:** `proxy_havuz.py`'deki bağlantı-sınırı değişikliğim,
+>   paralel oturumun `e38ae4e fix(usul): stash çatışması çözüldü` commit'inin içine
+>   karıştı. Kod canlıda ve doğru, sadece commit atfı yanlış — geçmiş yeniden yazılmadı
+>   (push edilmişti, üstüne inşa edilmiş olabilir). Bkz. hafıza `parallel-sessions-same-tree`.
+>
 > ## ⚠️ ÖLÇÜM TUZAKLARI (bu oturumda 4 yanlış teşhise yol açtı)
 > - `kuyruk_say()` 1,49M satırda `count=exact` → **ilk çıktı ~100 sn sonra**
 > - Scraper 200'lük partiler → **parti başına ~260 sn**; 90 sn'lik pencere "0 ilerleme" gösterir
