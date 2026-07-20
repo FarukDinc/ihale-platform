@@ -1809,6 +1809,10 @@
     if (kurum) kurumUrlParam = kurum;
     const sekme = p.get('sekme');
     if (sekme && ['guncel','gecmis','sonuc','detayli'].includes(sekme)) sekmeDegistir(sekme);
+    // sekmeDegistir gelişmiş paneli 'detayli' dışındaki her sekmede KAPATIR. İhale
+    // detayından gelen "ihaleler?okas=...&sekme=gecmis" linkinde filtre uygulanmış
+    // ama kullanıcı NEDENİNİ göremiyordu (panel kapalı) → OKAS varsa paneli geri aç.
+    if (okas) document.getElementById('gelismis-panel').classList.add('acik');
   }
 
   // ── Kayıtlı Arama modülü ─────────────────────────────────
