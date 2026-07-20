@@ -86,6 +86,14 @@
     .talep-kart.doldu { opacity: .72; }
     .talep-meta { font-size: 12px; color: var(--muted); display: flex; gap: 14px; flex-wrap: wrap; }
     .durum-acik { color: #4ade80; }
+    .durum-kapali { color: #94a3b8; font-weight: 600; }
+    /* Harita köprüsü — açık RFQ'ların coğrafi katmanına geçiş */
+    .harita-koprusu { display: inline-flex; align-items: center; gap: 7px; margin-top: 10px; padding: 7px 13px;
+      background: rgba(74,222,128,.08); border: 1px solid rgba(74,222,128,.28); border-radius: 8px;
+      color: #4ade80; font-size: 12.5px; font-weight: 600; text-decoration: none; transition: all .15s; }
+    .harita-koprusu:hover { background: rgba(74,222,128,.15); border-color: #4ade80; }
+    .harita-koprusu .rozet-sayi { background: #4ade80; color: var(--navy); font-size: 11px; font-weight: 800;
+      min-width: 18px; padding: 1px 6px; border-radius: 9px; text-align: center; }
 
     .giris-uyari { background: var(--navy-mid); border: 1px dashed var(--border); border-radius: 12px; padding: 40px; text-align: center; }
     .giris-uyari a { color: var(--amber); font-weight: 700; text-decoration: none; }
@@ -201,6 +209,13 @@
         <div class="card-sub">Firmaların açtığı özel ihaleler (RFQ) <b>ve</b> Kalkınma Ajansı hibe ihaleleri (ka.gov.tr) tek listede.
           Her ilanda kaynağı rozetle görünür. Güncel = teklif süresi devam eden; geçmiş = süresi dolan.
           <span style="color:var(--muted)">Filtreler her iki kaynağa uygulanır; sektör filtresi yalnız platform RFQ'larını süzer (KA'da sektör verisi yok).</span></div>
+
+        <!-- Harita köprüsü: açık RFQ'ları coğrafi katmanda göster. Rozet sayısı haritanın
+             kendi kaynağından (il_rfq_dagilimi) gelir → iki yüzey birebir aynı sayıyı basar. -->
+        <a class="harita-koprusu" href="harita?katman=rfq" title="Açık RFQ'ları Türkiye haritasında il il görün">
+          🗺️ Açık RFQ'ları haritada gör
+          <span class="rozet-sayi" id="harita-rfq-sayi" style="display:none;"></span>
+        </a>
 
         <div class="rfq-durum-sekme" id="rfq-durum-sekme">
           <button class="rfq-sekme aktif" data-durum="guncel" onclick="rfqDurumSec('guncel',this)">🟢 Güncel</button>
@@ -382,7 +397,10 @@
       if (tsIso) q = q.lte('son_teklif_tarihi', tsIso);
       if (ara) q = q.or(`baslik.ilike.*${ara}*,olusturan_firma.ilike.*${ara}*,aciklama.ilike.*${ara}*`);
       const { data } = await q.order('son_teklif_tarihi', { ascending: true, nullsFirst: false }).limit(200);
-      return (data || []).map(t => ({ tip:'rfq', url:'ozel-ihale-detay?id='+t.id, baslik:t.baslik, kategori:t.kategori, il:t.il, ek:t.miktar, bedel:t.tahmini_bedel, firma:t.olusturan_firma, son:t.son_teklif_tarihi }));
+      // durum taşınıyor: kazanan seçilip 'kapali'ya düşmüş ama son teklif tarihi HENÜZ
+      // geçmemiş RFQ, tarihe bakan rozetle "● Açık" görünüyordu (#23). Rozet artık
+      // durum'u da hesaba katıyor — ozel-ihale-detay.html'deki kuralla aynı sıra.
+      return (data || []).map(t => ({ tip:'rfq', url:'ozel-ihale-detay?id='+t.id, baslik:t.baslik, kategori:t.kategori, il:t.il, ek:t.miktar, bedel:t.tahmini_bedel, firma:t.olusturan_firma, son:t.son_teklif_tarihi, durum:t.durum }));
     }
     async function kaCek() {
       if (kat) return [];   // KA'da sektör taksonomisi yok → sektör filtresi seçiliyse KA hariç
@@ -437,7 +455,10 @@
         </div>
         <div class="talep-meta">
           ${t.firma ? `<span>🏢 ${esc(t.firma)}</span>` : ''}
-          ${doldu ? '<span class="durum-doldu">⏹ Süresi doldu</span>' : (t.tip === 'ka' ? '<span class="durum-acik">● Yayında</span>' : '<span class="durum-acik">● Açık</span>')}
+          ${doldu ? '<span class="durum-doldu">⏹ Süresi doldu</span>'
+             : (t.tip === 'ka' ? '<span class="durum-acik">● Yayında</span>'
+             : (t.durum && t.durum !== 'acik' ? '<span class="durum-kapali">● Kapandı</span>'
+             : '<span class="durum-acik">● Açık</span>'))}
           ${t.son ? `<span>⏰ Son teklif: ${tarihFmt(t.son)}</span>` : ''}
           ${t.tip === 'ka' ? '<span style="color:var(--muted);">↗ ka.gov.tr</span>' : ''}
         </div>
@@ -508,9 +529,29 @@
       <div style="font-size:12px;color:var(--muted);margin-top:10px;">Eksik: ${eksik.join(', ')}</div>`);
   }
 
+  // ── Harita köprüsü rozeti ────────────────────────────────────────────
+  // Sayı, haritanın kullandığı RPC'nin TA KENDİSİNDEN gelir (il_rfq_dagilimi) —
+  // böylece rozetteki N ile haritadaki pin toplamı ayrışamaz. RPC bayat kayıtları
+  // (son_teklif_tarihi geçmiş) zaten dışlar; tarihsiz talepler dahildir.
+  // Anon-güvenli: yalnız (il, adet) döner, maskeli kolon yok. RPC yoksa sessiz geç —
+  // link yine çalışır, sadece rozet çıkmaz.
+  async function haritaKoprusuKur() {
+    try {
+      const { data, error } = await sb.rpc('il_rfq_dagilimi', {});
+      if (error) throw error;
+      const n = (data || []).reduce((t, r) => t + (Number(r.adet) || 0), 0);
+      if (n > 0) {
+        const b = document.getElementById('harita-rfq-sayi');
+        b.textContent = n.toLocaleString('tr');
+        b.style.display = '';
+      }
+    } catch (e) { console.error('il_rfq_dagilimi', e); }
+  }
+
   (async () => {
     try { const { data } = await sb.auth.getUser(); user = data.user; } catch {}
     taleplerYukle();   // RFQ + Kalkınma Ajansı birleşik liste
+    haritaKoprusuKur();
     // Kurumsal değilse yayınla butonunu kilitli göster (tıklama yine upsell'e götürür; RLS asıl kapı).
     try {
       const canCheck = user && window.Plan && typeof Plan.isKurumsal === 'function';

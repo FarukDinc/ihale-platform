@@ -46,6 +46,7 @@
     .etiket.kat { background: rgba(240,165,0,.1); color: var(--amber); }
     .etiket.acik { background: rgba(34,197,94,.12); color:#4ade80; }
     .etiket.kapali { background: rgba(148,163,184,.12); color:#94a3b8; }
+    .etiket.doldu { background: rgba(248,113,113,.14); color:#f87171; }
     .etiket.kazandi { background: rgba(34,197,94,.16); color:#4ade80; }
     .etiket.teklif { background: rgba(59,130,246,.14); color:#60a5fa; }
     .kart-meta { font-size: 12px; color: var(--muted); display: flex; gap: 14px; flex-wrap: wrap; align-items: center; }
@@ -142,12 +143,19 @@
     if (!data || !data.length) { el.innerHTML = '<div class="bos">Henüz ihale açmadınız. <a href="ozel-ihaleler">İlk ihaleni aç →</a></div>'; return; }
     el.innerHTML = data.map(t => {
       const teklifSay = (t.tedarikci_teklifleri && t.tedarikci_teklifleri[0] && t.tedarikci_teklifleri[0].count) || 0;
+      // #23: durum='acik' manuel bir kolon — son teklif tarihi geçse de değişmiyordu, kart
+      // sonsuza dek "● Açık" basıyordu. Tarih varsa ve geçmişse "Süresi doldu" göster.
+      // (son_teklif_tarihi NULL = süresiz talep → açık kalmalı, bayat SAYILMAZ.)
+      const doldu = t.son_teklif_tarihi && new Date(t.son_teklif_tarihi).getTime() < Date.now();
+      const durumEt = t.durum !== 'acik' ? '<span class="etiket kapali">● Kapandı</span>'
+        : (doldu ? '<span class="etiket doldu">⏹ Süresi doldu</span>'
+                 : '<span class="etiket acik">● Açık</span>');
       return `<div class="kart" onclick="location.href='ozel-ihale-detay?id=${t.id}'">
         <div class="kart-ust"><div class="kart-baslik">${esc(t.baslik)}</div>${t.tahmini_bedel?`<div class="bedel">${para(t.tahmini_bedel)}</div>`:''}</div>
         <div class="kart-badges">
           ${t.kategori?`<span class="etiket kat">${esc(t.kategori)}</span>`:''}
           ${t.il?`<span class="etiket">📍 ${esc(t.il)}</span>`:''}
-          <span class="etiket ${t.durum==='acik'?'acik':'kapali'}">● ${t.durum==='acik'?'Açık':'Kapandı'}</span>
+          ${durumEt}
         </div>
         <div class="kart-meta"><span>📥 ${teklifSay} teklif</span>${t.son_teklif_tarihi?`<span>⏰ ${tarih(t.son_teklif_tarihi)}</span>`:''}</div>
       </div>`;
