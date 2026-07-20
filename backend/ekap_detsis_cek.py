@@ -140,17 +140,50 @@ def agac_yukle():
 
 
 # ── 2a) Eşzamanlı tarama çekirdeği ────────────────────────────────────────
-async def _tara_async(hedefler, kurumlar, sonuc, baslangic):
+# İlk geçişte GEÇİCİ hata (timeout/TLS/ağ/proxy/5xx ya da 200 dışı muğlak yanıt)
+# alan kurumlar bir "yeniden dene" kümesine düşer ve tur sonunda bu kadar kez daha
+# denenir. KESİN yanıt (HTTP 200 + JSON) alınmadıkça kurum "işlendi" SAYILMAZ →
+# checkpoint'e yazılmaz → sonraki koşuda yeniden denenir (sessiz kayıp yok).
+RETRY_TUR = 2
+
+
+def _checkpoint_yaz(islenen, sonuc):
+    """
+    Checkpoint'i ATOMİK yaz (yarıda kesilirse bozuk dosya kalmasın; eski sürüm
+    doğrudan open(..,'w') yapıyordu → çökme anında yarım JSON --devam'ı kırardı).
+
+    `islenen_idler` = KESİN yanıt alınmış idareId KÜMESİ (liste olarak). Eski sürüm
+    `indeks` = tamamlanma SAYISI yazıyordu; 24 eşzamanlı işçide tamamlanma sırası
+    hedef sırasına EŞİT DEĞİL → indeks resume'da hâlâ uçuşta olan erken idareId'leri
+    ATLIYORDU (sessiz kayıp). Küme ile hangi idareId'in bittiği kesin.
+    """
+    tmp = CHECKPOINT + ".tmp"
+    with open(tmp, "w", encoding="utf-8") as f:
+        json.dump({"islenen_idler": sorted(islenen), "sonuc": sonuc},
+                  f, ensure_ascii=False)
+    os.replace(tmp, CHECKPOINT)
+
+
+async def _tara_async(hedefler, kurumlar, sonuc, islenen_onceki):
     """
     ESZAMANLI işçiyle tara. Sıralı sürüm 1.6 istek/sn veriyordu (tek akış ×
     ~600ms gecikme) → 85K kurum ≈ 15 saat. Gerçek sınır havuzun küresel
     tavanı (600/dk); işçiler onu doldurur, ~2,5 saate iner.
     Havuz zaten IP soğuması + küresel tavan + karantina uyguluyor; burada
     ek bir hız kısıtı GEREKMEZ (iki kat sınırlama işi yavaşlatırdı).
+
+    GEÇİCİ ↔ KESİN AYRIMI (sessiz kayba karşı): yalnız HTTP 200 + geçerli JSON
+    "işlendi" sayılır (totalCount=0 olsa bile — kurumun gerçekten ihalesi yok).
+    Timeout/TLS/ağ/proxy düşüşü/5xx ve 200 dışı muğlak yanıtlar GEÇİCİ kabul edilir:
+    kurum işlenmedi sayılır, checkpoint'e YAZILMAZ, tur sonunda yeniden denenir;
+    hâlâ başarısızsa sayılıp raporlanır ("X çekilemedi") ve bir sonraki koşuya kalır.
+    Dönüş: (islenen_kume, kalici_basarisiz_liste).
     """
     havuz = async_havuz_al(ssl_baglami=ekap_ssl_baglami())
     kilit = asyncio.Lock()
-    sayac = {"islenen": 0}
+    sayac = {"islenen": 0, "hata": 0}
+    islenen = set(islenen_onceki)     # KESİN yanıt alınan idareId'ler (checkpoint'e yazılır)
+    toplam_hedef = len(hedefler)
     t0 = time.time()
 
     async def isle(iid):
@@ -175,7 +208,10 @@ async def _tara_async(hedefler, kurumlar, sonuc, baslangic):
         async with kilit:
             sayac["islenen"] += 1
             i = sayac["islenen"]
-            if d:
+            if d is not None:
+                # KESİN yanıt (HTTP 200 + JSON): bu kurum işlendi — ihalesi olsa da
+                # olmasa da (totalCount=0 geçerli "ihalesi yok" yanıtıdır).
+                islenen.add(iid)
                 n = d.get("totalCount") or 0
                 liste = d.get("list") or []
                 if n > 0 and liste:
@@ -206,28 +242,59 @@ async def _tara_async(hedefler, kurumlar, sonuc, baslangic):
                                 "detsis_ad": kayit.get("ad"), "ihale_sayisi": n,
                                 "gorulme": y["gorulme"],
                             }
+            else:
+                # GEÇİCİ hata (timeout/TLS/ağ/proxy/5xx ya da 200 dışı muğlak yanıt):
+                # damgalama YOK — islenen'e eklenmez, checkpoint'e girmez, yeniden denenir.
+                sayac["hata"] += 1
             if i % 250 == 0:
                 gecen = time.time() - t0
                 hiz = i / gecen if gecen else 0
-                kalan = (len(hedefler) - i) / hiz / 60 if hiz else 0
-                print(f"  {i:,}/{len(hedefler):,} · eşleşme {len(sonuc):,} · "
-                      f"{hiz:.1f} istek/sn · ~{kalan:.0f} dk kaldı", flush=True)
+                kalan = max(0, toplam_hedef - i) / hiz / 60 if hiz else 0
+                print(f"  {i:,}/{toplam_hedef:,} · eşleşme {len(sonuc):,} · "
+                      f"hata {sayac['hata']:,} · {hiz:.1f} istek/sn · ~{kalan:.0f} dk kaldı",
+                      flush=True)
             # sonuc artık yazım-bazlı (kurum başına çok satır) → dosya büyük,
-            # her 250'de yazmak IO israfı; 1000'de bir yeter
+            # her 250'de yazmak IO israfı; 1000'de bir yeter. VERİ İŞLENDİKTEN
+            # SONRA ve işlenen-KÜMESİYLE yazılır (indeks değil — bkz. _checkpoint_yaz).
             if i % 1000 == 0:
-                with open(CHECKPOINT, "w", encoding="utf-8") as f:
-                    json.dump({"indeks": baslangic + i, "sonuc": sonuc}, f, ensure_ascii=False)
+                _checkpoint_yaz(islenen, sonuc)
+        return d is not None
 
     sem = asyncio.Semaphore(ESZAMANLI)
 
     async def sinirli(iid):
         async with sem:
-            await isle(iid)
+            return await isle(iid)
 
     print(f"→ {ESZAMANLI} eşzamanlı işçi ile taranıyor…")
-    await asyncio.gather(*(sinirli(x) for x in hedefler))
+    sonuclar = await asyncio.gather(*(sinirli(x) for x in hedefler))
+    # asyncio.gather girdi SIRASINI korur → zip hizalı. Geçici hata alanları topla.
+    basarisiz = [iid for iid, ok in zip(hedefler, sonuclar) if not ok]
+
+    # ── Sınırlı yeniden deneme turları (yalnız GEÇİCİ hata alanlar) ──────────
+    # Geri dönülemez takılmaya karşı: tur SAYISI sınırlı; bir tur hiç ilerleme
+    # sağlamıyorsa (sistemik sorun) daha fazla deneyip EKAP'ı dövmeyiz.
+    for tur in range(1, RETRY_TUR + 1):
+        if not basarisiz:
+            break
+        onceki_sayi = len(basarisiz)
+        print(f"→ yeniden deneme turu {tur}/{RETRY_TUR}: {onceki_sayi:,} kurum tekrar deneniyor…",
+              flush=True)
+        sonuclar = await asyncio.gather(*(sinirli(x) for x in basarisiz))
+        basarisiz = [iid for iid, ok in zip(basarisiz, sonuclar) if not ok]
+        if len(basarisiz) >= onceki_sayi:
+            print(f"    ↳ ilerleme yok ({len(basarisiz):,} hâlâ hatalı) — sistemik olabilir, "
+                  f"yeniden deneme durduruldu", flush=True)
+            break
+
+    _checkpoint_yaz(islenen, sonuc)       # son durum diske insin
     await havuz.kapat()
     havuz.ozet_yaz()
+
+    if basarisiz:
+        print(f"\n⚠ {len(basarisiz):,} kurum GEÇİCİ hatayla çekilemedi — checkpoint'e "
+              f"İŞLENDİ yazılmadı, sonraki '--devam' koşusunda tekrar denenir.", flush=True)
+    return islenen, basarisiz
 
 
 # ── 2) Tam tarama: her idareId için ihale var mı, varsa idareAdi ne? ───────
@@ -250,24 +317,47 @@ def tara(havuz, limit=0, devam=False):
     hedefler = sorted(kurumlar)
     print(f"→ {len(hedefler):,} tekil idareId (87K satırdan)")
 
-    sonuc, baslangic = {}, 0
+    sonuc = {}
+    islenen_onceki = set()
     if devam and os.path.exists(CHECKPOINT):
-        with open(CHECKPOINT, encoding="utf-8") as f:
-            ck = json.load(f)
-        sonuc = ck.get("sonuc", {})
-        baslangic = ck.get("indeks", 0)
-        print(f"→ checkpoint'ten devam: {baslangic:,}. sıradan, {len(sonuc):,} eşleşme mevcut")
+        try:
+            with open(CHECKPOINT, encoding="utf-8") as f:
+                ck = json.load(f)
+        except (json.JSONDecodeError, OSError) as e:
+            ck = {}
+            print(f"⚠ checkpoint okunamadı ({type(e).__name__}) — baştan taranıyor")
+        sonuc = ck.get("sonuc", {}) or {}
+        idler = ck.get("islenen_idler")
+        if idler is not None:
+            # YENİ biçim: kesin yanıt alınmış idareId kümesi → resume'da bunları atla.
+            islenen_onceki = set(idler)
+            print(f"→ checkpoint'ten devam: {len(islenen_onceki):,} kurum işlenmiş, "
+                  f"{len(sonuc):,} eşleşme mevcut")
+        elif "indeks" in ck:
+            # ESKİ biçim: yalnız tamamlanma SAYISI vardı — hangi idareId'in bittiği
+            # bilinemiyor (eşzamanlı tamamlanma sırası ≠ hedef sırası). Güvenilir değil;
+            # tümünü yeniden tara. sonuc korunur, tekrar yazımlar --yaz'daki
+            # merge-duplicates ile zararsızdır.
+            print(f"→ eski (indeks tabanlı) checkpoint — güvenilir değil, tüm kurumlar "
+                  f"yeniden taranıyor; {len(sonuc):,} eşleşme korunuyor")
+
+    # İşlenmiş (kesin yanıt alınmış) idareId'leri hedeften çıkar; geçici hata alanlar
+    # islenen'e girmediği için burada KALIR → yeniden denenir.
+    if islenen_onceki:
+        hedefler = [x for x in hedefler if x not in islenen_onceki]
 
     if limit:
-        hedefler = hedefler[baslangic:baslangic + limit]
-    else:
-        hedefler = hedefler[baslangic:]
+        hedefler = hedefler[:limit]
 
-    asyncio.run(_tara_async(hedefler, kurumlar, sonuc, baslangic))
+    _islenen, basarisiz = asyncio.run(_tara_async(hedefler, kurumlar, sonuc, islenen_onceki))
 
     with open(SONUC_DOSYA, "w", encoding="utf-8") as f:
         json.dump(sonuc, f, ensure_ascii=False, indent=1)
-    print(f"\n✓ tarama bitti — {len(sonuc):,} idare eşleşmesi → {SONUC_DOSYA}")
+    if basarisiz:
+        print(f"\n⚠ tarama bitti ama {len(basarisiz):,} kurum GEÇİCİ hatayla çekilemedi — "
+              f"{len(sonuc):,} idare eşleşmesi → {SONUC_DOSYA}")
+    else:
+        print(f"\n✓ tarama bitti — {len(sonuc):,} idare eşleşmesi → {SONUC_DOSYA}")
 
     from collections import Counter
     dag = Counter(v["tur"] for v in sonuc.values())
