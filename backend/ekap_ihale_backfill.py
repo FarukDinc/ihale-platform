@@ -181,23 +181,57 @@ def yil_cek(havuz, client, yil, toplam, sayfa_boyutu, cp):
 
     gonderilen = ardisik_hata = 0
     t0 = time.time()
+    # Uyarlamalı sayfa boyutu — bkz. aşağıdaki "ZEHİRLİ KAYIT" notu.
+    aktif_boyut = sayfa_boyutu
+    atlanan_kayit = 0
     while skip < toplam:
         try:
             d = ekap_post(havuz, LISTE_EP, {
                 "searchText": "", "searchType": "GirdigimGibi",
-                "paginationSkip": skip, "paginationTake": sayfa_boyutu,
+                "paginationSkip": skip, "paginationTake": aktif_boyut,
                 "iknYili": yil,
             })
             ardisik_hata = 0
+            # Başarıdan sonra kademeli olarak normal boyuta dön (hız kaybı kalıcı olmasın).
+            if aktif_boyut < sayfa_boyutu:
+                aktif_boyut = min(sayfa_boyutu, aktif_boyut * 2)
         except Exception as e:
             ardisik_hata += 1
-            print(f"    ! {yil} skip={skip}: {type(e).__name__} {str(e)[:90]}", flush=True)
-            if ardisik_hata >= ARDISIK_HATA_SINIRI:
+            print(f"    ! {yil} skip={skip} take={aktif_boyut}: {type(e).__name__} {str(e)[:80]}", flush=True)
+            # ── ZEHİRLİ KAYIT (20 Tem, sondajla kanıtlandı) ────────────────────
+            # 2012'de skip≈47.000 sabit HTTP 500 veriyordu ve backfill 8 ardışık
+            # hatada duruyordu. Sondaj: aynı offset take=200 ile SORUNSUZ, take=500
+            # ve 1000 ile HATA; buna karşılık skip=100.000 take=1000 ile SORUNSUZ.
+            # Yani sorun ne offset derinliği ne sayfa boyutu — o aralıktaki TEK BİR
+            # kayıt EKAP'ın yanıtını bozuyor ve onu kapsayan her parti 500 alıyor.
+            # Çare: partiyi küçült, zehirli kaydı dar bir pencereye sıkıştır; take=1'de
+            # bile patlıyorsa O KAYDI ATLA (kaybı say ve logla, sessizce geçme).
+            # Gerçek ağ/servis arızasında sonsuza kadar küçültmeyelim: en küçük partide
+            # bile üst üste ARDISIK_HATA_SINIRI kadar hata alıyorsak EKAP'ı dövmeyi bırak.
+            if ardisik_hata >= ARDISIK_HATA_SINIRI and aktif_boyut <= 1:
                 raise RuntimeError(
-                    f"{yil} yılında üst üste {ardisik_hata} hata — DURDURULDU. "
-                    "EKAP'ı dövmemek için bilinçli davranış; checkpoint korundu."
+                    f"{yil} yılında en küçük partide bile üst üste {ardisik_hata} hata — "
+                    "DURDURULDU. EKAP'ı dövmemek için bilinçli davranış; checkpoint korundu."
                 )
-            time.sleep(5 * ardisik_hata)
+            if aktif_boyut > 1:
+                aktif_boyut = max(1, aktif_boyut // 4)
+                print(f"      ↳ parti küçültülüyor: take={aktif_boyut}", flush=True)
+                ardisik_hata = 0          # boyut değişti; bu yeni bir deneme sayılır
+                time.sleep(2)
+                continue
+            # take=1 ve hâlâ hata → bu tek kayıt gerçekten bozuk, atla.
+            print(f"      ↳ ZEHİRLİ KAYIT atlanıyor: {yil} offset={skip}", flush=True)
+            atlanan_kayit += 1
+            skip += 1
+            cp[anahtar] = {"skip": skip, "toplam": toplam}
+            cp_yaz(cp)
+            aktif_boyut = sayfa_boyutu    # normale dön
+            if atlanan_kayit >= 50:
+                raise RuntimeError(
+                    f"{yil} yılında 50 zehirli kayıt atlandı — DURDURULDU. "
+                    "Bu kadar çoğu tekil bozukluk değil, EKAP tarafında sistemik bir sorun demek."
+                )
+            time.sleep(1)
             continue
 
         lst = d.get("list") or []
