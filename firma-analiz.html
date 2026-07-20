@@ -619,7 +619,37 @@
   const SB_URL = "https://ihaleglobal.com";
   const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzg0MzA3MTU4LCJleHAiOjE5NDE5ODcxNTh9.CjNKulvirotDD_y2oO2QKgo0kbqYvL0jUSV1RiDMoso";
   const sb = window.supabase.createClient(SB_URL, SB_KEY);
+
+  // ihale_sonuclari çekimi SONUC_LIMIT ile kesilir (ağır sorgu). Kesme olduğunda ekrandaki
+  // sayı ve paydalar firmanın TAMAMI değil, son N kayıtlık ÖRNEKLEMDİR: canlı veride 32
+  // firmanın sözleşme sayısı 500'ü, 8'inin 1000'i aşıyor (en büyük firma 1.493). Bu iki
+  // değişken olmadan "N ihale üzerinden" yazan payda, aynı sayfanın dizininde ve
+  // karşılaştırma tablosunda gösterilen resmî toplamla (yukleniciler.toplam_sozlesme_sayisi)
+  // açıkça çelişiyordu — belirsiz "toplam" yerine SAYISAL ve YANLIŞ bir iddia oluyordu.
+  const SONUC_LIMIT = 500;
   let sonucVeri = [];
+  let RESMI_SOZLESME = null;    // yukleniciler.toplam_sozlesme_sayisi — kesilmemiş gerçek toplam
+  let ORNEKLEM_KESIK = false;   // sonucVeri limite dayandı mı → payda "örneklem" diye yazılmalı
+
+  // Tenzilatın TEK KAYNAĞI. Firma KPI'ı, ihale kartı ve karşılaştırma tablosu üç ayrı formül
+  // kullandığı için aynı firma iki yüzeyde farklı oran gösteriyordu; üçü de artık burayı çağırır.
+  // Çok kısımlı ihalede EKAP kısım bazlı yaklaşık maliyet yayımlamaz, ihalenin TOPLAM maliyeti
+  // her kısma kopyalanır → satır tenzilatı sahte %95+ çıkar (canlı ölçüm: lot_sayisi>1 ve
+  // tenzilatı dolu 246.973 satır, lot_sayisi=1 olan 283.368). Proje kuralı: lot_sayisi=1
+  // değilse GÖSTERME ve ortalamaya KATMA.
+  function tenzilatDegeri(s) {
+    if (!s || Number(s.lot_sayisi) !== 1) return null;
+    const v = (s.tenzilat_yuzde != null) ? s.tenzilat_yuzde : s.kazanan_teklif_farki_yuzde;
+    return v != null ? Number(v) : null;
+  }
+
+  // Payda etiketi: kesme varsa sayının neyin üzerinden hesaplandığını açıkça söyler.
+  function ornekEtiketi(adet) {
+    const n = Number(adet) || 0;
+    return ORNEKLEM_KESIK
+      ? `son ${n.toLocaleString('tr')} kayıtlık örneklem${RESMI_SOZLESME ? ` · firmanın toplamı ${RESMI_SOZLESME.toLocaleString('tr')} sözleşme` : ''}`
+      : `${n.toLocaleString('tr')} ihale sonucu üzerinden`;
+  }
 
   // Misafir maskeleme (migration_anon_maske.sql): yukleniciler.ad/normalize_ad/arama_fold +
   // ihale_sonuclari.kazanan_firma + analiz_pivot anon'a kapalı. Misafir: dizin satırları '***'
@@ -825,34 +855,38 @@
       return;
     }
     const toplamBedel = sonucVeri.reduce((a, s) => a + (s.kazanan_teklif || 0), 0);
-    // Tenzilat YALNIZ tek kısımlı ihalede geçerli: EKAP kısım bazlı yaklaşık maliyet
-    // yayımlamadığından çok kısımlıda ihalenin TOPLAM maliyeti her kısma kopyalanıyor →
-    // satır tenzilatı sahte %95+ çıkıyor. Ortalamaya yalnız lot_sayisi=1 katılır.
-    const tenzList = sonucVeri.filter(s => s.kazanan_teklif_farki_yuzde != null && s.lot_sayisi === 1);
+    // Tenzilat YALNIZ tek kısımlı ihalede geçerli (bkz. tenzilatDegeri) — kart, KPI ve
+    // karşılaştırma tablosu aynı fonksiyonu kullanır ki aynı firma iki yerde aynı oranı göstersin.
+    const tenzList = sonucVeri.map(tenzilatDegeri).filter(v => v != null);
     const ortTenz = tenzList.length
-      ? tenzList.reduce((a, s) => a + Number(s.kazanan_teklif_farki_yuzde), 0) / tenzList.length
+      ? tenzList.reduce((a, v) => a + v, 0) / tenzList.length
       : null;
-    const kisimliAdet = sonucVeri.filter(s => s.lot_sayisi > 1).length;
+    const kisimliAdet = sonucVeri.filter(s => Number(s.lot_sayisi) > 1).length;
+    // Ekrandaki adet: kesme varsa sonucVeri.length firmanın gerçek sözleşme sayısı DEĞİL,
+    // limit değeridir → resmî toplamı bas, incelenen küme alt satırda örneklem olarak yazılsın.
+    const kayitSayisi = sonucVeri.length;
+    const gosterAdet = (ORNEKLEM_KESIK && RESMI_SOZLESME) ? RESMI_SOZLESME : kayitSayisi;
     cont.innerHTML = `
       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px;">
         <div class="kpi-card">
           <div class="kpi-label">Katıldığı / Kazandığı İhale</div>
-          <div class="kpi-value amber">${sonucVeri.length}</div>
-          <div class="kpi-sub">EKAP ihale sonuç kaydı</div>
+          <div class="kpi-value amber">${gosterAdet.toLocaleString('tr')}</div>
+          <div class="kpi-sub">${ORNEKLEM_KESIK ? `EKAP kaydı · aşağıdaki analizler son ${kayitSayisi.toLocaleString('tr')} kayıttan` : 'EKAP ihale sonuç kaydı'}</div>
         </div>
         <div class="kpi-card">
           <div class="kpi-label">Toplam Sözleşme <span class="kapsam-rozet" title="Yalnız ihaleler — bu firmanın doğrudan temin kazanımları toplama dahil DEĞİL">yalnız ihaleler</span></div>
           <div class="kpi-value" style="font-size:17px;">${paraTam(toplamBedel)}</div>
-          <!-- Payda görünür: tutar kaç sonuç kaydının toplamı? "toplam" tek başına
-               firmanın tüm kamu cirosu sanılıyordu — DT kazanımları burada YOK. -->
-          <div class="kpi-sub" title="Doğrudan temin kazanımları bu tutara dahil değildir.">${sonucVeri.length.toLocaleString('tr')} ihale sonucu üzerinden</div>
+          <!-- Payda görünür: tutar kaç sonuç kaydının toplamı? "toplam" tek başına firmanın
+               tüm kamu cirosu sanılıyordu — DT kazanımları burada YOK. Kesme varsa tutar
+               firmanın tamamı değil, son SONUC_LIMIT kaydın toplamı: payda bunu söylemeli. -->
+          <div class="kpi-sub" title="Doğrudan temin kazanımları bu tutara dahil değildir.">${ornekEtiketi(kayitSayisi)}</div>
         </div>
         <div class="kpi-card">
-          <div class="kpi-label">Ort. Tenzilat <span class="kapsam-rozet" title="Yalnız ihaleler — doğrudan teminde yaklaşık maliyet ilan edilmediği için tenzilat kavramı yoktur">yalnız ihaleler</span></div>
+          <div class="kpi-label">Ort. Tenzilat <span class="kapsam-rozet" title="Yalnız tek kısımlı ihaleler — doğrudan teminde yaklaşık maliyet ilan edilmez, çok kısımlı ihalede ise kısım bazlı maliyet yayımlanmadığı için tenzilat hesaplanamaz">yalnız tek kısımlı ihale</span></div>
           <div class="kpi-value amber">${ortTenz != null ? '%' + ortTenz.toFixed(1) : '—'}</div>
           <div class="kpi-sub" title="Kısımlı ihalelerde EKAP kısım bazlı yaklaşık maliyet yayımlamadığından tenzilat hesaplanamaz; ortalamaya katılmaz.">${
             ortTenz != null
-              ? `${tenzList.length} / ${sonucVeri.length} ihale üzerinden (tek kısımlı)${kisimliAdet ? ` · ${kisimliAdet} kısımlı hariç` : ''}`
+              ? `${tenzList.length.toLocaleString('tr')} / ${kayitSayisi.toLocaleString('tr')} ${ORNEKLEM_KESIK ? 'örneklem kaydı' : 'ihale'} (tek kısımlı)${kisimliAdet ? ` · ${kisimliAdet} kısımlı hariç` : ''}`
               : (kisimliAdet ? `${kisimliAdet} kısımlı ihale — hesaplanamaz` : 'sözleşme indirimi')
           }</div>
         </div>
@@ -865,9 +899,9 @@
 
   function sonucKartHtml(s) {
     const ilan = s.ilan || {};
-    // Çok kısımlı ihalede satır tenzilatı bilinemez (bkz. sonuclariGoster notu) → rozet yerine kısım bilgisi
-    const tenzVal = s.tenzilat_yuzde != null ? s.tenzilat_yuzde : s.kazanan_teklif_farki_yuzde;
-    const tenz = s.lot_sayisi > 1
+    // Çok kısımlı ihalede satır tenzilatı bilinemez (bkz. tenzilatDegeri) → rozet yerine kısım bilgisi
+    const tenzVal = tenzilatDegeri(s);
+    const tenz = Number(s.lot_sayisi) > 1
       ? `<span class="ik-durum" title="Kısımlı ihale — EKAP kısım bazlı yaklaşık maliyet yayımlamadığından tenzilat hesaplanamaz">${s.lot_sayisi} kısımlı</span>`
       : (tenzVal != null
           ? `<span class="ik-durum durum-acik">%${Number(tenzVal).toFixed(1)} tenz.</span>`
@@ -1175,6 +1209,10 @@
       return;
     }
     AKTIF_YID = yid;
+    // Önceki firmanın kapsam bilgisi sızmasın: küçük firmaya geçildiğinde bayat "örneklem"
+    // etiketi ya da bayat resmî toplam, paydayı yine yanlış yapardı.
+    RESMI_SOZLESME = null;
+    ORNEKLEM_KESIK = false;
     _pivotYuklendi = false;
     document.getElementById('pivot-kirilim-container').innerHTML = '';
     document.getElementById('ai-yorum-container').innerHTML = '';
@@ -1215,9 +1253,12 @@
       .select('ilan_id,ikn,kazanan_firma,kazanan_teklif,sozlesme_bedeli,kazanan_teklif_farki_yuzde,tenzilat_yuzde,toplam_teklif_sayisi,katilimci_sayisi,sonuc_tarihi,sozlesme_tarihi,kisim_no,lot_sayisi,ilanlar(id,ekap_id,baslik,idare,il,tur,kategori,ilan_tarihi,son_teklif_tarihi)')
       .eq('yuklenici_id', yid)
       .order('sonuc_tarihi', { ascending: false })
-      .limit(500);
+      .limit(SONUC_LIMIT);
 
     sonucVeri = (sonucRaw || []).map(s => ({ ...s, ilan: s.ilanlar || null }));
+    // Kapsam bayrakları: buradan sonraki HER payda bunlara bakar (bkz. ornekEtiketi).
+    RESMI_SOZLESME = (y && y.toplam_sozlesme_sayisi != null) ? Number(y.toplam_sozlesme_sayisi) : null;
+    ORNEKLEM_KESIK = sonucVeri.length >= SONUC_LIMIT;
     // "Katıldığı İhaleler" = kazandığı ihalelerin kendisi (EKAP kaybedeni yayınlamaz)
     tumIhaleler = sonucVeri.map(s => s.ilan).filter(Boolean);
 
@@ -1225,17 +1266,25 @@
     const katlar = new Set(tumIhaleler.map(i => i.kategori).filter(Boolean));
     const toplamBedel = sonucVeri.reduce((a, s) => a + (s.sozlesme_bedeli || s.kazanan_teklif || 0), 0);
 
-    document.getElementById('kpi-katilan').textContent  = sonucVeri.length.toLocaleString('tr');
-    document.getElementById('kpi-kazanilan').textContent = sonucVeri.length.toLocaleString('tr');
+    // Adet KPI'ları resmî toplamdan (kesilmemiş); tutar/il/sektör örneklemden hesaplandığı
+    // için kesme varsa alt satırda örneklem olduğu yazılır. Aksi halde bu kart "500" derken
+    // dizin aynı firma için "1.493" diyordu.
+    const kayitSayisi = sonucVeri.length;
+    const gosterAdet = (ORNEKLEM_KESIK && RESMI_SOZLESME) ? RESMI_SOZLESME : kayitSayisi;
+    document.getElementById('kpi-katilan').textContent  = gosterAdet.toLocaleString('tr');
+    document.getElementById('kpi-kazanilan').textContent = gosterAdet.toLocaleString('tr');
     document.getElementById('kpi-sozlesme').textContent  = iller.size;
     document.getElementById('kpi-tenzilat').textContent  = katlar.size;
     const sub = document.getElementById('kpi-kazanilan-sub');
-    if (sub) sub.textContent = toplamBedel ? paraTam(toplamBedel) + ' (yalnız ihaleler)' : 'EKAP ihale sonuç kaydı';
+    if (sub) sub.textContent = toplamBedel
+      ? paraTam(toplamBedel) + (ORNEKLEM_KESIK ? ` (son ${kayitSayisi.toLocaleString('tr')} kayıt, yalnız ihaleler)` : ' (yalnız ihaleler)')
+      : 'EKAP ihale sonuç kaydı';
 
     // Başlık altı özet: tutarın kapsamı burada da yazılı olmalı — kullanıcı sayfanın en
     // üstündeki bu satırı "firmanın kamu cirosu" diye okuyor, oysa DT kazanımları yok.
-    document.getElementById('firma-meta').textContent = sonucVeri.length
-      ? `${sonucVeri.length} kazanılan ihale · ${paraTam(toplamBedel)} · ${iller.size} il${y && y.son_sozlesme_tarihi ? ' · son: ' + tarihFormat(y.son_sozlesme_tarihi) : ''} · yalnız ihaleler (doğrudan temin hariç)`
+    // Adet resmî toplamdan; tutar/il örneklemden → kesme varsa açıkça belirtilir.
+    document.getElementById('firma-meta').textContent = kayitSayisi
+      ? `${gosterAdet.toLocaleString('tr')} kazanılan ihale · ${paraTam(toplamBedel)} · ${iller.size} il${y && y.son_sozlesme_tarihi ? ' · son: ' + tarihFormat(y.son_sozlesme_tarihi) : ''} · yalnız ihaleler (doğrudan temin hariç)${ORNEKLEM_KESIK ? ` · tutar ve dağılımlar son ${kayitSayisi.toLocaleString('tr')} kayıtlık örneklemden` : ''}`
       : 'Bu firma için henüz kazanım kaydı toplanmadı (geçmiş veri arka planda çekiliyor).';
     if (tumIhaleler.length) firmaIstatistikGoster(tumIhaleler);
 
@@ -1346,25 +1395,34 @@
   function _firmaKarsVeri(yid) {
     return Promise.all([
       sb.from('yukleniciler').select('id,ad,il,toplam_sozlesme_sayisi,toplam_ciro,ilk_sozlesme_tarihi,son_sozlesme_tarihi').eq('id', yid).limit(1),
-      sb.from('ihale_sonuclari').select('kazanan_teklif,sozlesme_bedeli,tenzilat_yuzde,kazanan_teklif_farki_yuzde,ilanlar(idare,il,kategori)').eq('yuklenici_id', yid).limit(500),
+      // lot_sayisi ŞART: onsuz tenzilat ortalamasına çok kısımlı ihalelerin sahte %95'leri
+      // karışıyordu (canlı: kirli taraf 246.973 satır) ve aynı firma detay KPI'ında başka,
+      // burada başka oran gösteriyordu.
+      sb.from('ihale_sonuclari').select('kazanan_teklif,sozlesme_bedeli,tenzilat_yuzde,kazanan_teklif_farki_yuzde,lot_sayisi,ilanlar(idare,il,kategori)').eq('yuklenici_id', yid).limit(SONUC_LIMIT),
     ]).then(([a, b]) => ({ y: (a.data && a.data[0]) || null, sonuc: b.data || [] }));
   }
   function _firmaKarsOzet(v) {
     const kat = {}, il = {}, idare = new Set();
-    let tzTop = 0, tzAd = 0;
+    let tzTop = 0, tzAd = 0, kisimli = 0;
     (v.sonuc || []).forEach(r => {
       const ln = r.ilanlar || {};
       if (ln.kategori) kat[ln.kategori] = (kat[ln.kategori] || 0) + 1;
       if (ln.il) il[ln.il] = (il[ln.il] || 0) + 1;
       if (ln.idare) idare.add(ln.idare);
-      const tz = (r.tenzilat_yuzde != null) ? r.tenzilat_yuzde : r.kazanan_teklif_farki_yuzde;
-      if (tz != null) { tzTop += Number(tz); tzAd++; }
+      if (Number(r.lot_sayisi) > 1) kisimli++;
+      // Firma detayı KPI'ıyla BİREBİR aynı fonksiyon → aynı firma iki yüzeyde aynı oran.
+      const tz = tenzilatDegeri(r);
+      if (tz != null) { tzTop += tz; tzAd++; }
     });
-    // tenzAdet: ortalamanın GERÇEK paydası. Örneklem zaten .limit(500) ile kısıtlı ve
-    // tenzilatı boş satırlar ortalamaya girmiyor → payda yazılmazsa oran "firmanın tüm
-    // işlerinin ortalaması" sanılıyor. Karşılaştırma tablosunda açıkça gösteriliyor.
-    return { kat, il, idare, ortTenz: tzAd ? tzTop / tzAd : null, tenzAdet: tzAd,
-             ilSayi: Object.keys(il).length, katSayi: Object.keys(kat).length, ornek: (v.sonuc || []).length };
+    // tenzAdet: ortalamanın GERÇEK paydası (tenzilatı dolu VE tek kısımlı kayıt sayısı).
+    // ornek: incelenen kayıt sayısı; kesik=true ise bu sayı veri değil LİMİT değeridir —
+    // "N / 500 ihale üzerinden" yazmak firmanın 500 işi varmış izlenimi veriyordu, oysa
+    // tablonun iki satır üstünde aynı firma için resmî 1.493 sözleşme yazıyor.
+    const ornek = (v.sonuc || []).length;
+    return { kat, il, idare, ortTenz: tzAd ? tzTop / tzAd : null, tenzAdet: tzAd, kisimli,
+             ilSayi: Object.keys(il).length, katSayi: Object.keys(kat).length,
+             ornek, kesik: ornek >= SONUC_LIMIT,
+             resmiAdet: (v.y && v.y.toplam_sozlesme_sayisi != null) ? Number(v.y.toplam_sozlesme_sayisi) : null };
   }
 
   window.karsilastirAc = function() {
@@ -1415,17 +1473,30 @@
     const oA = _firmaKarsOzet(vA), oB = _firmaKarsOzet(vB);
     const num = n => (Number(n) || 0);
     // Parasal/oransal satırlara kapsam rozeti + payda (altA/altB) eklendi: ciro ve
-    // tenzilat YALNIZ ihale sonuçlarından gelir, DT kazanımları yoktur; tenzilat
-    // ortalamasının paydası da örneklem içindeki tenzilatı dolu kayıt sayısıdır.
+    // tenzilat YALNIZ ihale sonuçlarından gelir, DT kazanımları yoktur; tenzilat ortalamasının
+    // paydası ise örneklem içindeki tenzilatı dolu VE TEK KISIMLI kayıt sayısıdır. Adet/ciro
+    // satırları yukleniciler resmî toplamlarından geldiği için, örneklemden türeyen satırlar
+    // kesme durumunda bunu açıkça yazar — aksi halde tablo kendi içinde çelişiyordu
+    // (üstte 1.493 sözleşme, altta "310 / 500 ihale üzerinden").
     const rozet = '<span class="kapsam-rozet" title="Yalnız ihaleler — doğrudan temin kazanımları dahil değil">yalnız ihaleler</span>';
+    const tenzRozet = '<span class="kapsam-rozet" title="Yalnız tek kısımlı ihaleler — çok kısımlı ihalede EKAP kısım bazlı yaklaşık maliyet yayımlamadığından tenzilat hesaplanamaz, ortalamaya katılmaz">yalnız tek kısımlı ihale</span>';
+    // İl/sektör kapsamı örneklemden sayılır: kesme varsa gerçek kapsam bundan BÜYÜK olabilir.
+    const ornekNotu = o => (o.kesik ? `son ${o.ornek.toLocaleString('tr')} kayıttan` : '');
+    // Tenzilat paydası: kesme varsa "N / 500" YAZILMAZ — 500 veri değil limit değeridir.
+    const tenzPayda = o => {
+      if (o.ortTenz == null) return '';
+      const haric = o.kisimli ? ` · ${o.kisimli.toLocaleString('tr')} kısımlı hariç` : '';
+      return o.kesik
+        ? `${o.tenzAdet.toLocaleString('tr')} tek kısımlı ihale · son ${o.ornek.toLocaleString('tr')} kayıtlık örneklemden${haric}`
+        : `${o.tenzAdet.toLocaleString('tr')} / ${o.ornek.toLocaleString('tr')} ihale üzerinden (tek kısımlı)${haric}`;
+    };
     const kpiler = [
       ['Toplam sözleşme', num(vA.y.toplam_sozlesme_sayisi), num(vB.y.toplam_sozlesme_sayisi), v => v.toLocaleString('tr'), true, rozet, '', ''],
       ['Toplam ciro',     num(vA.y.toplam_ciro),            num(vB.y.toplam_ciro),            v => paraTam(v),           true, rozet, '', ''],
-      ['Kapsanan il',     oA.ilSayi,  oB.ilSayi,  v => String(v), true, '', '', ''],
-      ['Kapsanan sektör', oA.katSayi, oB.katSayi, v => String(v), true, '', '', ''],
-      ['Ort. tenzilat',   oA.ortTenz, oB.ortTenz, v => (v == null ? '—' : '%' + v.toFixed(1)), null, rozet,
-        oA.ortTenz != null ? `${oA.tenzAdet} / ${oA.ornek} ihale üzerinden` : '',
-        oB.ortTenz != null ? `${oB.tenzAdet} / ${oB.ornek} ihale üzerinden` : ''],
+      ['Kapsanan il',     oA.ilSayi,  oB.ilSayi,  v => String(v), true, '', ornekNotu(oA), ornekNotu(oB)],
+      ['Kapsanan sektör', oA.katSayi, oB.katSayi, v => String(v), true, '', ornekNotu(oA), ornekNotu(oB)],
+      ['Ort. tenzilat',   oA.ortTenz, oB.ortTenz, v => (v == null ? '—' : '%' + v.toFixed(1)), null, tenzRozet,
+        tenzPayda(oA), tenzPayda(oB)],
     ];
     const altHtml = t => t ? `<div style="font-size:10.5px;color:var(--muted);font-weight:400;margin-top:2px;">${t}</div>` : '';
     const kpiSatir = kpiler.map(([et, a, b, fmt, yuksek, rz, altA, altB]) => {
@@ -1443,7 +1514,7 @@
         <div style="display:flex;justify-content:space-between;color:var(--white);"><span>${escapeHtml(k)}</span><span style="color:var(--muted);">${n}</span></div>
         <div style="height:5px;background:rgba(var(--overlay-rgb),.06);border-radius:3px;margin-top:3px;"><div style="height:100%;width:${Math.round(n / katMax * 100)}%;background:${renk};border-radius:3px;"></div></div>
       </div>`).join('') || '<div style="color:var(--muted);font-size:12px;">Veri yok</div>';
-    const orn = o => (o.ornek >= 500 ? ` <span style="color:var(--muted);font-weight:400;">· son 500</span>` : '');
+    const orn = o => (o.kesik ? ` <span style="color:var(--muted);font-weight:400;">· son ${o.ornek.toLocaleString('tr')} kayıt${o.resmiAdet ? ` / ${o.resmiAdet.toLocaleString('tr')} sözleşme` : ''}</span>` : '');
 
     document.getElementById('kars-icerik').innerHTML = `
       <div class="kars-basliklar">
@@ -1452,7 +1523,7 @@
         <div class="kars-firma-ad" style="color:#60a5fa;">${escapeHtml(vB.y.ad)}</div>
       </div>
       <div class="kars-tablo">${kpiSatir}</div>
-      <div style="font-size:11px;color:var(--muted);text-align:center;margin-top:6px;">Yeşil = daha yüksek değer. Tenzilat "iyi/kötü" değil, teklif agresifliği göstergesidir.<br>Tüm parasal değerler <b style="color:var(--amber);font-weight:600;">yalnız ihale</b> kazanımlarından; doğrudan temin dahil değildir.</div>
+      <div style="font-size:11px;color:var(--muted);text-align:center;margin-top:6px;">Yeşil = daha yüksek değer. Tenzilat "iyi/kötü" değil, teklif agresifliği göstergesidir; yalnız <b style="color:var(--amber);font-weight:600;">tek kısımlı</b> ihalelerden hesaplanır (çok kısımlıda kısım bazlı yaklaşık maliyet yayımlanmaz).<br>Tüm parasal değerler <b style="color:var(--amber);font-weight:600;">yalnız ihale</b> kazanımlarından; doğrudan temin dahil değildir.</div>
 
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:20px;">
         <div class="kpi-card" style="text-align:left;"><div class="kpi-label" style="margin-bottom:10px;color:var(--amber);">🏭 Sektör dağılımı${orn(oA)}</div>${katBar(katList(oA), 'var(--amber)')}</div>
