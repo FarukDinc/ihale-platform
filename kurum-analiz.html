@@ -206,6 +206,29 @@
     .et-tur { background: rgba(99,102,241,.12); color: #a5b4fc; }
     .et-il { background: rgba(var(--overlay-rgb),.06); color: var(--muted); }
 
+    /* KAPSAM ROZETİ — bu sayfadaki parasal rakamların evrenini açıkça söyler.
+       kurum_ozet RPC'si YALNIZ `ilanlar` tablosunu okur; aynı kurumun doğrudan temin
+       kayıtları başka tablodadır (dogrudan_temin_ilanlari) ve buradaki hiçbir sayıya
+       girmez — üstteki "⚡ Doğrudan Temin Kayıtları" butonu o evrene ayrı kapıdır.
+       ⛔ İki evren BİLİNÇLİ olarak toplanmaz: DT'de yaklaşık maliyet kavramı yok ve
+       ölçek bambaşka (DT medyanı ₺37.424). Yapılan tek şey kapsamı dürüstçe etiketlemek. */
+    .kapsam-rozet {
+      display: inline-flex; align-items: center; gap: 4px; vertical-align: middle;
+      font-size: 10px; font-weight: 700; letter-spacing: .02em; line-height: 1.6;
+      padding: 1px 7px; border-radius: 20px; white-space: nowrap; cursor: help;
+      background: rgba(240,165,0,0.10); color: var(--amber); border: 1px solid rgba(240,165,0,0.22);
+      text-transform: none;
+    }
+    .kapsam-not {
+      display: flex; gap: 8px; align-items: flex-start;
+      background: rgba(240,165,0,0.05); border: 1px solid rgba(240,165,0,0.18);
+      border-radius: 10px; padding: 11px 14px; margin-bottom: 20px;
+      font-size: 12px; color: var(--muted); line-height: 1.65;
+    }
+    .kapsam-not b { color: var(--white); font-weight: 700; }
+    .kapsam-not a { color: var(--amber); text-decoration: none; }
+    .kapsam-not a:hover { text-decoration: underline; }
+
     .no-data { text-align: center; padding: 60px; color: var(--muted); font-size: 14px; }
     .pager { display: flex; justify-content: center; gap: 8px; margin-top: 20px; }
     .pager-btn {
@@ -557,15 +580,33 @@
             <div class="kpi-sub">teklif süresi dolmamış</div>
           </div>
           <div class="kpi-card">
-            <div class="kpi-label">Toplam Bütçe</div>
+            <div class="kpi-label">Toplam Bütçe <span class="kapsam-rozet" title="Yalnız ihaleler — bu kurumun doğrudan temin harcamaları bu toplama dahil DEĞİL">yalnız ihaleler</span></div>
             <div class="kpi-value amber" id="kpi-butce">—</div>
-            <div class="kpi-sub">yaklaşık maliyet toplamı</div>
+            <!-- Payda görünür: toplam bütçe = sum(yaklasik_maliyet_min) ve maliyeti ilan
+                 EDİLMEMİŞ kayıtlar bu toplama 0 katkı verir. Kaç ihale üzerinden toplandığı
+                 yazılmazsa kullanıcı rakamı "kurumun tüm harcaması" sanıyor. -->
+            <div class="kpi-sub" id="kpi-butce-sub" title="Yaklaşık maliyeti ilan edilmemiş ihaleler bu toplama katkı vermez; doğrudan temin kayıtları hiç girmez.">yaklaşık maliyet toplamı</div>
           </div>
           <div class="kpi-card">
             <div class="kpi-label">Kapsanan İl</div>
             <div class="kpi-value" id="kpi-il">—</div>
             <div class="kpi-sub">farklı şehir</div>
           </div>
+        </div>
+
+        <!-- KAPSAM NOTU: kurum_ozet yalnız `ilanlar`ı okur → yukarıdaki 4 KPI ve
+             aşağıdaki tüm grafikler ihale evrenidir. Bu sayfada ihale/DT modu seçici
+             YOKTUR; DT evrenine geçiş üstteki "⚡ Doğrudan Temin Kayıtları" butonuyla olur. -->
+        <div class="kapsam-not">
+          <span style="flex-shrink:0;">📋</span>
+          <span>
+            <b>Kapsam: yalnız ihaleler.</b> Yukarıdaki sayılar, parasal toplam ve aşağıdaki tüm grafikler
+            bu kurumun 4734 sayılı Kanun ihale usulleriyle yaptığı alımlardan hesaplanır.
+            <b>Doğrudan temin kayıtları dahil değildir</b> — doğrudan teminde yaklaşık maliyet ilan edilmez ve
+            ölçek bambaşkadır (DT medyanı ≈ ₺37 bin), bu yüzden iki evren bilinçli olarak toplanmaz.
+            Kurumun doğrudan temin kayıtları için yukarıdaki
+            <b>⚡ Doğrudan Temin Kayıtları</b> butonunu kullanın. Bu sayfada ihale/DT modu seçici yoktur.
+          </span>
         </div>
 
         <!-- TABS -->
@@ -993,12 +1034,20 @@
     const ilSayisi    = Number(kpi.il_sayisi) || 0;
     topSayfa = Math.max(1, Math.ceil(toplam / PER_PAGE));
 
+    // "toplam bütçe" ifadesi tek başına "kurumun tüm harcaması" gibi okunuyordu →
+    // parantezle kapsam yazılı. DT kayıtları bu satıra GİRMEZ (ayrı tablo, ayrı buton).
     document.getElementById('kurum-meta').textContent =
-      `${toplam} ihale kaydı · ${ilSayisi} il · toplam bütçe: ${paraFormat(toplamButce)}`;
+      `${toplam} ihale kaydı · ${ilSayisi} il · toplam bütçe: ${paraFormat(toplamButce)} (yalnız ihaleler, doğrudan temin hariç)`;
     document.getElementById('kpi-toplam').textContent = toplam.toLocaleString('tr');
     document.getElementById('kpi-aktif').textContent = aktifSay.toLocaleString('tr');
     document.getElementById('kpi-butce').textContent = paraFormat(toplamButce);
     document.getElementById('kpi-il').textContent = ilSayisi;
+    // Paydayı yaz: rakam kaç ihale kaydı üzerinden toplandı? (kurum_ozet ayrıca
+    // "maliyeti dolu kayıt" saymadığı için ondan fazlası SQL değişikliği ister —
+    // burada en azından toplam payda ve maliyetsiz kayıt uyarısı görünür.)
+    const butceSub = document.getElementById('kpi-butce-sub');
+    if (butceSub) butceSub.textContent =
+      `${toplam.toLocaleString('tr')} ihale üzerinden · maliyeti ilan edilmeyen kayıtlar 0 sayılır`;
 
     aylikTrendChart(ozet?.aylik_trend || {});
     yillikChart(ozet?.yillik || []);

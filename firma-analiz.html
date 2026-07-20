@@ -159,6 +159,30 @@
       color: var(--amber); font-size: 12px; font-weight: 700; padding: 4px 14px; border-radius: 20px;
     }
 
+    /* KAPSAM ROZETİ — parasal alanların hangi evrenden geldiğini açıkça söyler.
+       Bu sayfadaki TÜM ciro/sözleşme/tenzilat rakamları `ihale_sonuclari` zincirinden
+       gelir (yukleniciler.toplam_ciro = SUM(ihale_sonuclari.kazanan_teklif), bkz.
+       backend/migration_yuklenici_agg.sql) → firmanın DOĞRUDAN TEMİN kazanımları
+       (dogrudan_temin_sonuclari) bu rakamların HİÇBİRİNE dahil değildir.
+       ⛔ İki evren BİLİNÇLİ olarak toplanmaz: DT'de yaklaşık maliyet/tenzilat kavramı
+       yok ve ölçek bambaşka (DT medyanı ₺37.424). Yalnız kapsam etiketlenir. */
+    .kapsam-rozet {
+      display: inline-flex; align-items: center; gap: 4px; vertical-align: middle;
+      font-size: 10px; font-weight: 700; letter-spacing: .02em; line-height: 1.6;
+      padding: 1px 7px; border-radius: 20px; white-space: nowrap; cursor: help;
+      background: rgba(240,165,0,0.10); color: var(--amber); border: 1px solid rgba(240,165,0,0.22);
+      text-transform: none;
+    }
+    .kapsam-not {
+      display: flex; gap: 8px; align-items: flex-start;
+      background: rgba(240,165,0,0.05); border: 1px solid rgba(240,165,0,0.18);
+      border-radius: 10px; padding: 11px 14px; margin-bottom: 16px;
+      font-size: 12px; color: var(--muted); line-height: 1.65;
+    }
+    .kapsam-not b { color: var(--white); font-weight: 700; }
+    .kapsam-not a { color: var(--amber); text-decoration: none; }
+    .kapsam-not a:hover { text-decoration: underline; }
+
     /* İHALE KART */
     .ihale-kart {
       background: var(--navy-mid); border: 1px solid var(--border);
@@ -358,11 +382,25 @@
           <div class="firma-liste-baslik" style="font-size:22px;">Firma Dizini & Analizi</div>
           <div class="firma-liste-alt">İhale kazanmış firmaları sırala/ara, birine tıklayınca aynı ekranda derin analiz + karşılaştırma açılır.</div>
         </div>
+        <!-- KAPSAM NOTU (dizin): dizin de detay da `yukleniciler`/`ihale_sonuclari`
+             zincirinden beslenir → firmaların doğrudan temin kazanımları bu ciro
+             rakamlarında YOKTUR. Bu sayfada ihale/DT modu seçici de yoktur. -->
+        <div class="kapsam-not">
+          <span style="flex-shrink:0;">🏢</span>
+          <span>
+            <b>Kapsam: yalnız ihaleler.</b> Buradaki sözleşme sayıları ve ciro tutarları, firmaların
+            4734 sayılı Kanun ihale usulleriyle kazandığı işlerin EKAP sonuç ilanlarından hesaplanır.
+            <b>Doğrudan temin kazanımları dahil değildir</b> — doğrudan teminde yaklaşık maliyet/tenzilat kavramı
+            bulunmadığı ve ölçek bambaşka olduğu için (DT medyanı ≈ ₺37 bin) iki evren bilinçli olarak toplanmaz.
+            Bir firmanın gerçek kamu cirosu, buradaki tutardan yüksek olabilir.
+            Doğrudan temin kayıtları için <a href="dogrudan-temin">Doğrudan Temin sayfasına</a> bakın.
+          </span>
+        </div>
         <div class="kpi-grid" style="margin-bottom:16px;">
-          <div class="kpi-card"><div class="kpi-label">Toplam Firma</div><div class="kpi-value amber" id="dz-st-firma">—</div></div>
-          <div class="kpi-card"><div class="kpi-label">Toplam Sözleşme</div><div class="kpi-value" id="dz-st-soz">—</div></div>
-          <div class="kpi-card"><div class="kpi-label">Toplam Ciro</div><div class="kpi-value" id="dz-st-ciro">—</div></div>
-          <div class="kpi-card"><div class="kpi-label">İş Ortaklığı</div><div class="kpi-value" id="dz-st-ortak">—</div></div>
+          <div class="kpi-card"><div class="kpi-label">Toplam Firma</div><div class="kpi-value amber" id="dz-st-firma">—</div><div class="kpi-sub">ihale kazanmış</div></div>
+          <div class="kpi-card"><div class="kpi-label">Toplam Sözleşme <span class="kapsam-rozet" title="Yalnız ihaleler — doğrudan temin sözleşmeleri dahil değil">yalnız ihaleler</span></div><div class="kpi-value" id="dz-st-soz">—</div><div class="kpi-sub">EKAP ihale sonuç kaydı</div></div>
+          <div class="kpi-card"><div class="kpi-label">Toplam Ciro <span class="kapsam-rozet" title="Yalnız ihaleler — firmaların doğrudan temin kazanımları bu toplama girmez">yalnız ihaleler</span></div><div class="kpi-value" id="dz-st-ciro">—</div><div class="kpi-sub" id="dz-st-ciro-sub">kazanılan ihale bedelleri toplamı</div></div>
+          <div class="kpi-card"><div class="kpi-label">İş Ortaklığı</div><div class="kpi-value" id="dz-st-ortak">—</div><div class="kpi-sub">ortak girişimli firma</div></div>
         </div>
         <!-- GÖRÜNÜM SEÇİMİ: Liste (dizin tablosu) / Harita (il yoğunluğu — RFQ katmanı BİLİNÇLİ yok,
              o e-Satınalma'daki harita sayfasında; buradaki görünüm yalnız firma yoğunluğu + sektör) -->
@@ -383,6 +421,11 @@
               </div>
               <div class="fah-svg-wrap" id="fah-svg-wrap"><div class="fah-mini-spin"></div></div>
               <div class="fah-lejant" id="fah-lejant"></div>
+              <!-- Harita katmanının ciro/bedel değerleri de ihale sonuçlarından türer (il_firma_dagilimi
+                   → yukleniciler.toplam_ciro). DT kazanımları burada da yok. -->
+              <div style="font-size:11px;color:var(--muted);margin-top:8px;line-height:1.5;">
+                Ciro ve bedel değerleri <b style="color:var(--amber);font-weight:600;">yalnız ihale</b> kazanımlarından hesaplanır — doğrudan temin dahil değildir.
+              </div>
             </div>
             <div class="fah-panel" id="fah-panel">
               <div class="fah-panel-bos">Bir ile tıklayın<br><span style="font-size:11px;">o ilde en çok iş kazanan firmaları görün</span></div>
@@ -405,8 +448,8 @@
           <div class="dz-head">
             <div>FİRMA ADI</div>
             <div class="c-il">İL</div>
-            <div class="srt" id="dz-srt-sayi" onclick="dzSirala('sayi_desc')">SÖZLEŞME</div>
-            <div class="srt on" id="dz-srt-ciro" onclick="dzSirala('ciro_desc')">TOPLAM CİRO</div>
+            <div class="srt" id="dz-srt-sayi" onclick="dzSirala('sayi_desc')" title="Kazanılan ihale sözleşmesi sayısı — doğrudan temin dahil değil">SÖZLEŞME</div>
+            <div class="srt on" id="dz-srt-ciro" onclick="dzSirala('ciro_desc')" title="Yalnız ihaleler: kazanılan ihale bedellerinin toplamı. Firmanın doğrudan temin kazanımları bu tutara dahil DEĞİLDİR.">TOPLAM CİRO (İHALE)</div>
             <div class="c-tarih">SON İŞ</div>
             <div class="c-analiz"></div>
           </div>
@@ -469,9 +512,9 @@
             <div class="kpi-sub">eşleşen ihale sayısı</div>
           </div>
           <div class="kpi-card">
-            <div class="kpi-label">Kazanılan İhale</div>
+            <div class="kpi-label">Kazanılan İhale <span class="kapsam-rozet" title="Yalnız ihaleler — bu firmanın doğrudan temin kazanımları burada sayılmaz/toplanmaz">yalnız ihaleler</span></div>
             <div class="kpi-value" id="kpi-kazanilan">—</div>
-            <div class="kpi-sub" id="kpi-kazanilan-sub">EKAP sonuç kaydı</div>
+            <div class="kpi-sub" id="kpi-kazanilan-sub">EKAP ihale sonuç kaydı</div>
           </div>
           <div class="kpi-card">
             <div class="kpi-label">Kapsanan İl</div>
@@ -795,19 +838,21 @@
         <div class="kpi-card">
           <div class="kpi-label">Katıldığı / Kazandığı İhale</div>
           <div class="kpi-value amber">${sonucVeri.length}</div>
-          <div class="kpi-sub">EKAP sonuç kaydı</div>
+          <div class="kpi-sub">EKAP ihale sonuç kaydı</div>
         </div>
         <div class="kpi-card">
-          <div class="kpi-label">Toplam Sözleşme</div>
+          <div class="kpi-label">Toplam Sözleşme <span class="kapsam-rozet" title="Yalnız ihaleler — bu firmanın doğrudan temin kazanımları toplama dahil DEĞİL">yalnız ihaleler</span></div>
           <div class="kpi-value" style="font-size:17px;">${paraTam(toplamBedel)}</div>
-          <div class="kpi-sub">toplam</div>
+          <!-- Payda görünür: tutar kaç sonuç kaydının toplamı? "toplam" tek başına
+               firmanın tüm kamu cirosu sanılıyordu — DT kazanımları burada YOK. -->
+          <div class="kpi-sub" title="Doğrudan temin kazanımları bu tutara dahil değildir.">${sonucVeri.length.toLocaleString('tr')} ihale sonucu üzerinden</div>
         </div>
         <div class="kpi-card">
-          <div class="kpi-label">Ort. Tenzilat</div>
+          <div class="kpi-label">Ort. Tenzilat <span class="kapsam-rozet" title="Yalnız ihaleler — doğrudan teminde yaklaşık maliyet ilan edilmediği için tenzilat kavramı yoktur">yalnız ihaleler</span></div>
           <div class="kpi-value amber">${ortTenz != null ? '%' + ortTenz.toFixed(1) : '—'}</div>
           <div class="kpi-sub" title="Kısımlı ihalelerde EKAP kısım bazlı yaklaşık maliyet yayımlamadığından tenzilat hesaplanamaz; ortalamaya katılmaz.">${
             ortTenz != null
-              ? `${tenzList.length} tek kısımlı ihaleden${kisimliAdet ? ` (${kisimliAdet} kısımlı hariç)` : ''}`
+              ? `${tenzList.length} / ${sonucVeri.length} ihale üzerinden (tek kısımlı)${kisimliAdet ? ` · ${kisimliAdet} kısımlı hariç` : ''}`
               : (kisimliAdet ? `${kisimliAdet} kısımlı ihale — hesaplanamaz` : 'sözleşme indirimi')
           }</div>
         </div>
@@ -959,6 +1004,11 @@
       document.getElementById('dz-st-soz').textContent   = Number(r.toplam_sozlesme||0).toLocaleString('tr-TR');
       document.getElementById('dz-st-ciro').textContent  = formatBedel(Number(r.toplam_ciro)||0);
       document.getElementById('dz-st-ortak').textContent = Number(r.ortak_sayisi||0).toLocaleString('tr-TR');
+      // Paydayı görünür kıl: bu ciro kaç sözleşme / kaç firma üzerinden toplandı?
+      // (Rakam tek başına "kamu alım hacmi" gibi okunuyordu — oysa yalnız ihale tarafı.)
+      const ciroSub = document.getElementById('dz-st-ciro-sub');
+      if (ciroSub) ciroSub.textContent =
+        `${Number(r.toplam_sozlesme||0).toLocaleString('tr-TR')} ihale sözleşmesi · ${Number(r.toplam||0).toLocaleString('tr-TR')} firma üzerinden`;
     } catch(e) {}
   }
   async function dzIlDoldur() {
@@ -1100,7 +1150,7 @@
     // Tek eşleşme → doğrudan detaya atla (dizinden "Analiz" gibi)
     if (liste.length === 1) { firmaDetayYukle(liste[0].id, true); return; }
 
-    document.getElementById('liste-ozet').textContent = `${liste.length}${liste.length === 100 ? '+' : ''} firma bulundu · cirosu en yüksekten sıralı`;
+    document.getElementById('liste-ozet').textContent = `${liste.length}${liste.length === 100 ? '+' : ''} firma bulundu · cirosu en yüksekten sıralı · ciro yalnız ihale kazanımlarından (doğrudan temin hariç)`;
     cont.innerHTML = liste.map(f => `
       <div class="firma-liste-item" onclick="firmaSec('${escapeHtml(f.id)}')">
         <div>
@@ -1180,10 +1230,12 @@
     document.getElementById('kpi-sozlesme').textContent  = iller.size;
     document.getElementById('kpi-tenzilat').textContent  = katlar.size;
     const sub = document.getElementById('kpi-kazanilan-sub');
-    if (sub) sub.textContent = toplamBedel ? paraTam(toplamBedel) + ' toplam' : 'EKAP sonuç kaydı';
+    if (sub) sub.textContent = toplamBedel ? paraTam(toplamBedel) + ' (yalnız ihaleler)' : 'EKAP ihale sonuç kaydı';
 
+    // Başlık altı özet: tutarın kapsamı burada da yazılı olmalı — kullanıcı sayfanın en
+    // üstündeki bu satırı "firmanın kamu cirosu" diye okuyor, oysa DT kazanımları yok.
     document.getElementById('firma-meta').textContent = sonucVeri.length
-      ? `${sonucVeri.length} kazanılan ihale · ${paraTam(toplamBedel)} · ${iller.size} il${y && y.son_sozlesme_tarihi ? ' · son: ' + tarihFormat(y.son_sozlesme_tarihi) : ''}`
+      ? `${sonucVeri.length} kazanılan ihale · ${paraTam(toplamBedel)} · ${iller.size} il${y && y.son_sozlesme_tarihi ? ' · son: ' + tarihFormat(y.son_sozlesme_tarihi) : ''} · yalnız ihaleler (doğrudan temin hariç)`
       : 'Bu firma için henüz kazanım kaydı toplanmadı (geçmiş veri arka planda çekiliyor).';
     if (tumIhaleler.length) firmaIstatistikGoster(tumIhaleler);
 
@@ -1308,7 +1360,11 @@
       const tz = (r.tenzilat_yuzde != null) ? r.tenzilat_yuzde : r.kazanan_teklif_farki_yuzde;
       if (tz != null) { tzTop += Number(tz); tzAd++; }
     });
-    return { kat, il, idare, ortTenz: tzAd ? tzTop / tzAd : null, ilSayi: Object.keys(il).length, katSayi: Object.keys(kat).length, ornek: (v.sonuc || []).length };
+    // tenzAdet: ortalamanın GERÇEK paydası. Örneklem zaten .limit(500) ile kısıtlı ve
+    // tenzilatı boş satırlar ortalamaya girmiyor → payda yazılmazsa oran "firmanın tüm
+    // işlerinin ortalaması" sanılıyor. Karşılaştırma tablosunda açıkça gösteriliyor.
+    return { kat, il, idare, ortTenz: tzAd ? tzTop / tzAd : null, tenzAdet: tzAd,
+             ilSayi: Object.keys(il).length, katSayi: Object.keys(kat).length, ornek: (v.sonuc || []).length };
   }
 
   window.karsilastirAc = function() {
@@ -1358,17 +1414,24 @@
   function _karsRender(vA, vB) {
     const oA = _firmaKarsOzet(vA), oB = _firmaKarsOzet(vB);
     const num = n => (Number(n) || 0);
+    // Parasal/oransal satırlara kapsam rozeti + payda (altA/altB) eklendi: ciro ve
+    // tenzilat YALNIZ ihale sonuçlarından gelir, DT kazanımları yoktur; tenzilat
+    // ortalamasının paydası da örneklem içindeki tenzilatı dolu kayıt sayısıdır.
+    const rozet = '<span class="kapsam-rozet" title="Yalnız ihaleler — doğrudan temin kazanımları dahil değil">yalnız ihaleler</span>';
     const kpiler = [
-      ['Toplam sözleşme', num(vA.y.toplam_sozlesme_sayisi), num(vB.y.toplam_sozlesme_sayisi), v => v.toLocaleString('tr'), true],
-      ['Toplam ciro',     num(vA.y.toplam_ciro),            num(vB.y.toplam_ciro),            v => paraTam(v),           true],
-      ['Kapsanan il',     oA.ilSayi,  oB.ilSayi,  v => String(v), true],
-      ['Kapsanan sektör', oA.katSayi, oB.katSayi, v => String(v), true],
-      ['Ort. tenzilat',   oA.ortTenz, oB.ortTenz, v => (v == null ? '—' : '%' + v.toFixed(1)), null],
+      ['Toplam sözleşme', num(vA.y.toplam_sozlesme_sayisi), num(vB.y.toplam_sozlesme_sayisi), v => v.toLocaleString('tr'), true, rozet, '', ''],
+      ['Toplam ciro',     num(vA.y.toplam_ciro),            num(vB.y.toplam_ciro),            v => paraTam(v),           true, rozet, '', ''],
+      ['Kapsanan il',     oA.ilSayi,  oB.ilSayi,  v => String(v), true, '', '', ''],
+      ['Kapsanan sektör', oA.katSayi, oB.katSayi, v => String(v), true, '', '', ''],
+      ['Ort. tenzilat',   oA.ortTenz, oB.ortTenz, v => (v == null ? '—' : '%' + v.toFixed(1)), null, rozet,
+        oA.ortTenz != null ? `${oA.tenzAdet} / ${oA.ornek} ihale üzerinden` : '',
+        oB.ortTenz != null ? `${oB.tenzAdet} / ${oB.ornek} ihale üzerinden` : ''],
     ];
-    const kpiSatir = kpiler.map(([et, a, b, fmt, yuksek]) => {
+    const altHtml = t => t ? `<div style="font-size:10.5px;color:var(--muted);font-weight:400;margin-top:2px;">${t}</div>` : '';
+    const kpiSatir = kpiler.map(([et, a, b, fmt, yuksek, rz, altA, altB]) => {
       let aCls = '', bCls = '';
       if (yuksek === true && a !== b) { if (a > b) aCls = 'kars-kazanan'; else bCls = 'kars-kazanan'; }
-      return `<div class="kars-row"><div class="kars-cell ${aCls}">${fmt(a)}</div><div class="kars-label">${et}</div><div class="kars-cell ${bCls}">${fmt(b)}</div></div>`;
+      return `<div class="kars-row"><div class="kars-cell ${aCls}">${fmt(a)}${altHtml(altA)}</div><div class="kars-label">${et}${rz ? '<br>' + rz : ''}</div><div class="kars-cell ${bCls}">${fmt(b)}${altHtml(altB)}</div></div>`;
     }).join('');
 
     const ortakIdare = [...oA.idare].filter(x => oB.idare.has(x));
@@ -1389,7 +1452,7 @@
         <div class="kars-firma-ad" style="color:#60a5fa;">${escapeHtml(vB.y.ad)}</div>
       </div>
       <div class="kars-tablo">${kpiSatir}</div>
-      <div style="font-size:11px;color:var(--muted);text-align:center;margin-top:6px;">Yeşil = daha yüksek değer. Tenzilat "iyi/kötü" değil, teklif agresifliği göstergesidir.</div>
+      <div style="font-size:11px;color:var(--muted);text-align:center;margin-top:6px;">Yeşil = daha yüksek değer. Tenzilat "iyi/kötü" değil, teklif agresifliği göstergesidir.<br>Tüm parasal değerler <b style="color:var(--amber);font-weight:600;">yalnız ihale</b> kazanımlarından; doğrudan temin dahil değildir.</div>
 
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:20px;">
         <div class="kpi-card" style="text-align:left;"><div class="kpi-label" style="margin-bottom:10px;color:var(--amber);">🏭 Sektör dağılımı${orn(oA)}</div>${katBar(katList(oA), 'var(--amber)')}</div>
@@ -1570,7 +1633,7 @@
         <div class="fah-panel-kpi">
           <div class="k"><div class="kl">Firma</div><div class="kv">${(d.firma || 0).toLocaleString('tr')}</div></div>
           <div class="k"><div class="kl">Sözleşme</div><div class="kv">${(d.soz || 0).toLocaleString('tr')}</div></div>
-          <div class="k"><div class="kl">Toplam Bedel</div><div class="kv">${paraKisa(d.bedel || 0)}</div></div>
+          <div class="k"><div class="kl" title="Yalnız ihaleler — doğrudan temin dahil değil">Toplam Bedel (ihale)</div><div class="kv">${paraKisa(d.bedel || 0)}</div></div>
           <div class="k"><div class="kl">Sektör Payı</div><div class="kv">${sektorTopSoz ? ((d.soz || 0) / sektorTopSoz * 100).toFixed(1) + '%' : '—'}</div></div>
         </div>
         <div class="fah-panel-sec-baslik">Bu ilde bu sektörde öne çıkan firmalar</div>`;
@@ -1579,7 +1642,7 @@
       kpi = `<div class="fah-panel-il">📍 ${esc(ad)}</div>
         <div class="fah-panel-kpi">
           <div class="k"><div class="kl">Firma</div><div class="kv">${(f.adet || 0).toLocaleString('tr')}</div></div>
-          <div class="k"><div class="kl">Toplam Ciro</div><div class="kv">${paraKisa(f.ciro || 0)}</div></div>
+          <div class="k"><div class="kl" title="Yalnız ihaleler — firmaların doğrudan temin kazanımları bu ciroya girmez">Toplam Ciro (ihale)</div><div class="kv">${paraKisa(f.ciro || 0)}</div></div>
           <div class="k"><div class="kl">Türkiye Payı</div><div class="kv">${toplamFirma ? ((f.adet || 0) / toplamFirma * 100).toFixed(1) + '%' : '—'}</div></div>
           <div class="k"><div class="kl">Sıralama Ölçütü</div><div class="kv" style="font-size:12px;">Sözleşme bedeli</div></div>
         </div>

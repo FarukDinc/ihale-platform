@@ -102,6 +102,29 @@
     .badge { display: inline-block; font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 20px; background: rgba(var(--overlay-rgb),0.07); color: var(--muted); }
     .badge.open { background: rgba(76,175,80,0.12); color: #4CAF50; }
 
+    /* KAPSAM ROZETİ — parasal kart/tabloların hangi evrenden beslendiğini açıkça söyler.
+       Bu sayfanın TAMAMI rekabet_ozet RPC'sinden, o da yalnız `ilanlar` tablosundan
+       beslenir → doğrudan temin (DT) kayıtları HİÇBİR rakama dahil değildir.
+       ⛔ DT parasal verisi buraya EKLENMEYECEK (bilinçli, kullanıcı kararı): DT'de
+       "yaklaşık maliyet"/"tenzilat" kavramı yoktur ve ölçek bambaşkadır (DT medyanı
+       ₺37.424) — iki evreni toplamak kategori hatası olurdu. Yapılan tek şey kapsamı
+       dürüstçe etiketlemek. */
+    .kapsam-rozet {
+      display: inline-flex; align-items: center; gap: 4px; vertical-align: middle;
+      font-size: 10px; font-weight: 700; letter-spacing: .02em; line-height: 1.6;
+      padding: 1px 7px; border-radius: 20px; white-space: nowrap; cursor: help;
+      background: rgba(240,165,0,0.10); color: var(--amber); border: 1px solid rgba(240,165,0,0.22);
+    }
+    .kapsam-not {
+      display: flex; gap: 8px; align-items: flex-start;
+      background: rgba(240,165,0,0.05); border: 1px solid rgba(240,165,0,0.18);
+      border-radius: var(--radius-md); padding: 11px 14px; margin-top: 14px;
+      font-size: 12px; color: var(--muted); line-height: 1.65;
+    }
+    .kapsam-not b { color: var(--white); font-weight: 700; }
+    .kapsam-not a { color: var(--amber); text-decoration: none; }
+    .kapsam-not a:hover { text-decoration: underline; }
+
     /* ACTION BTN */
     .action-btn { padding: 7px 16px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; border: 1px solid var(--border); background: var(--card-bg); color: var(--white); text-decoration: none; display: inline-flex; align-items: center; transition: all .15s; }
     .action-btn:hover { border-color: rgba(var(--overlay-rgb),.2); }
@@ -177,12 +200,27 @@
       <div class="page-header">
         <h1>Rekabet Analizi</h1>
         <p>İhale türü, bölge ve bütçe bazında pazar dağılımı — hangi sektörde kaç ihale açık, rakip yoğunluğu nerede yüksek?</p>
+        <!-- KAPSAM DÜRÜSTLÜĞÜ: sayfadaki her sayı `ilanlar` tablosundan gelir; doğrudan
+             temin kayıtları YOK. Üstteki "Aktif/Tüm İhaleler" seçici bir ihale/DT modu
+             DEĞİLDİR — yalnız ihale evreninin içini süzer. Bu cümle olmadan kullanıcı
+             rakamları "tüm kamu alımları" sanıyordu. -->
+        <div class="kapsam-not">
+          <span style="flex-shrink:0;">📋</span>
+          <span>
+            <b>Kapsam: yalnız ihaleler.</b> Bu sayfadaki tüm sayılar ve parasal tutarlar 4734 sayılı Kanun'un
+            ihale usulleriyle yapılan alımlardan hesaplanır. <b>Doğrudan temin kayıtları dahil değildir</b> —
+            doğrudan teminde yaklaşık maliyet ilan edilmediği ve ölçek bambaşka olduğu için (DT medyanı ≈ ₺37 bin)
+            iki evren bilinçli olarak toplanmaz. Doğrudan temin verisi için
+            <a href="dogrudan-temin">Doğrudan Temin sayfasına</a> bakın.
+            Yukarıdaki durum/il/kategori seçicileri ihale/DT modu değil, yalnız ihale evreninin süzgeçleridir.
+          </span>
+        </div>
       </div>
 
       <!-- KPI KARTLAR -->
       <div class="kpi-grid" id="kpi-grid">
         <div class="kpi-card"><div class="kpi-label">Aktif İhale</div><div class="kpi-value skeleton" style="width:80px;height:32px;"></div></div>
-        <div class="kpi-card"><div class="kpi-label">Ort. Yaklaşık Maliyet</div><div class="kpi-value skeleton" style="width:120px;height:32px;"></div></div>
+        <div class="kpi-card"><div class="kpi-label">Ort. Yaklaşık Maliyet <span class="kapsam-rozet" title="Yalnız ihaleler — doğrudan temin dahil değil">yalnız ihaleler</span></div><div class="kpi-value skeleton" style="width:120px;height:32px;"></div></div>
         <div class="kpi-card"><div class="kpi-label">En Yoğun Sektör</div><div class="kpi-value skeleton" style="width:140px;height:32px;"></div></div>
         <div class="kpi-card"><div class="kpi-label">En Aktif İl</div><div class="kpi-value skeleton" style="width:100px;height:32px;"></div></div>
       </div>
@@ -229,8 +267,8 @@
 
       <!-- BÜTÇE DAĞILIMI -->
       <div class="chart-card-wide">
-        <div class="chart-title">Bütçe Aralığı Dağılımı</div>
-        <div class="chart-sub">Yaklaşık maliyete göre ihale sayısı dağılımı</div>
+        <div class="chart-title">Bütçe Aralığı Dağılımı <span class="kapsam-rozet" title="Yalnız ihaleler — doğrudan teminde yaklaşık maliyet ilan edilmez, bu dağılıma girmez">yalnız ihaleler</span></div>
+        <div class="chart-sub">Yaklaşık maliyete göre ihale sayısı dağılımı — doğrudan temin kayıtları bu dağılımda yer almaz</div>
         <div id="budget-bars" class="budget-bars" style="padding-top:8px;">
           <div style="color:var(--muted);font-size:13px;">Yükleniyor...</div>
         </div>
@@ -250,11 +288,15 @@
         </div>
         <div class="table-card">
           <div class="table-card-header">
-            <div class="chart-title">Türe Göre Ortalama Maliyet</div>
-            <div class="chart-sub" style="margin:0;">En yüksek bütçeli 10 ihale türü</div>
+            <div class="chart-title">Türe Göre Ortalama Maliyet <span class="kapsam-rozet" title="Yalnız ihaleler — doğrudan temin dahil değil">yalnız ihaleler</span></div>
+            <!-- PAYDA UYARISI (dürüstlük): RPC'de `sayi` = count(*) yani o türdeki TÜM ihaleler,
+                 `ort` ise round(avg(m) FILTER (WHERE m > 0)) yani YALNIZ yaklaşık maliyeti ilan
+                 edilmiş kayıtların ortalaması. İkisi aynı payda DEĞİL; "İhale" sütunundaki sayı
+                 ortalamanın paydası sanılmasın diye açıkça yazıldı (SQL değişmeden çözüm budur). -->
+            <div class="chart-sub" style="margin:0;">En yüksek bütçeli 10 ihale türü · ortalama yalnız <b style="color:var(--off-white);font-weight:600;">yaklaşık maliyeti ilan edilmiş</b> kayıtlardan hesaplanır</div>
           </div>
           <table>
-            <thead><tr><th>Tür</th><th style="text-align:right;">İhale</th><th style="text-align:right;">Ort. Maliyet</th></tr></thead>
+            <thead><tr><th>Tür</th><th style="text-align:right;" title="Bu türdeki toplam ihale sayısı — ortalamanın paydası değildir; maliyeti ilan edilmemiş kayıtlar ortalamaya girmez">İhale ⓘ</th><th style="text-align:right;">Ort. Maliyet</th></tr></thead>
           <tbody id="tbody-tur-maliyet"><tr><td colspan="3" style="padding:20px;color:var(--muted);text-align:center;">Yükleniyor...</td></tr></tbody>
           </table>
         </div>
@@ -372,9 +414,15 @@
         <div class="kpi-sub">veri setinde</div>
       </div>
       <div class="kpi-card">
-        <div class="kpi-label">Ort. Yaklaşık Maliyet</div>
+        <div class="kpi-label">Ort. Yaklaşık Maliyet <span class="kapsam-rozet" title="Yalnız ihaleler — doğrudan temin kayıtları bu ortalamaya girmez (DT'de yaklaşık maliyet ilan edilmez)">yalnız ihaleler</span></div>
         <div class="kpi-value">${paraCevir(Math.round(ortMaliyet))}</div>
-        <div class="kpi-sub">${maliyetler.length.toLocaleString('tr')} ihalenin ortalaması</div>
+        <!-- PAYDA GÖRÜNÜR: eskiden yalnız "N ihalenin ortalaması" yazıyordu; N'in toplamın
+             neresi olduğu belli değildi. Artık "N / toplam" ve eksik kayıt sayısı da yazılı. -->
+        <div class="kpi-sub" title="Yaklaşık maliyeti ilan edilmemiş ihaleler ortalamaya katılmaz.">
+          <span class="hi">${maliyetler.length.toLocaleString('tr')}</span> / ${toplam.toLocaleString('tr')} ihale üzerinden${
+            toplam > maliyetler.length ? ` · ${(toplam - maliyetler.length).toLocaleString('tr')} kayıtta maliyet yok` : ''
+          }
+        </div>
       </div>
       <div class="kpi-card">
         <div class="kpi-label">En Yoğun Sektör</div>
@@ -604,7 +652,7 @@
     // KPI'ları skeleton'a döndür
     document.getElementById('kpi-grid').innerHTML = `
       <div class="kpi-card"><div class="kpi-label">Aktif İhale</div><div class="kpi-value skeleton" style="width:80px;height:32px;margin-top:4px;"></div></div>
-      <div class="kpi-card"><div class="kpi-label">Ort. Yaklaşık Maliyet</div><div class="kpi-value skeleton" style="width:120px;height:32px;margin-top:4px;"></div></div>
+      <div class="kpi-card"><div class="kpi-label">Ort. Yaklaşık Maliyet <span class="kapsam-rozet" title="Yalnız ihaleler — doğrudan temin dahil değil">yalnız ihaleler</span></div><div class="kpi-value skeleton" style="width:120px;height:32px;margin-top:4px;"></div></div>
       <div class="kpi-card"><div class="kpi-label">En Yoğun Sektör</div><div class="kpi-value skeleton" style="width:140px;height:32px;margin-top:4px;"></div></div>
       <div class="kpi-card"><div class="kpi-label">En Aktif İl</div><div class="kpi-value skeleton" style="width:100px;height:32px;margin-top:4px;"></div></div>
     `;
