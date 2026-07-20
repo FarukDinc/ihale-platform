@@ -3,7 +3,7 @@
 Scraper + Analyzer + Supabase entegrasyonu
 
 Kurulum:
-    pip install playwright pdfplumber google-generativeai
+    pip install playwright pdfplumber google-genai
     pip install supabase requests python-dotenv
     playwright install chromium
 

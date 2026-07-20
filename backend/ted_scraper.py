@@ -107,26 +107,38 @@ def ted_cek(client, page, limit):
 
 def gemini_cevir(basliklar):
     """İngilizce başlık listesini Türkçe'ye çevirir (TOPLU, tek Gemini çağrısı). Hata → orijinali döner."""
-    if not GEMINI_API_KEY or not basliklar:
+    if not basliklar:
+        return basliklar
+    if not GEMINI_API_KEY:
+        # Sessiz geçme: anahtar yoksa TÜM başlıklar İngilizce kalır, bu tabloda gözle fark edilmez.
+        print("  ⚠ GEMINI_API_KEY yok — TED başlıkları çevrilmeden İngilizce kaydedilecek", flush=True)
         return basliklar
     try:
-        import google.generativeai as genai
-        genai.configure(api_key=GEMINI_API_KEY)
-        model = genai.GenerativeModel("gemini-2.5-flash")
+        # SDK: google-genai (Backlog #34). Import fonksiyon içinde: çeviri opsiyonel bir adım,
+        # SDK kurulu değilse scraper'ın tamamı düşmemeli (ekap_scraper.py'deki aynı desen).
+        from gemini_ortak import VARSAYILAN_MODEL, gemini_hata_logla, istemci_al, yanit_metni
         prompt = (
             "Aşağıdaki kamu ihalesi başlıklarını Türkçe'ye çevir. Başlıklar 'Ülke – Kategori – "
             "Proje adı' biçiminde olabilir; anlamı koru, kısa/doğal Türkçe kullan. SADECE bir JSON "
             "dizisi döndür (girişle aynı sıra, aynı sayıda eleman), başka hiçbir şey yazma.\n\n"
             + json.dumps(basliklar, ensure_ascii=False)
         )
-        resp = model.generate_content(prompt)
-        metin = (resp.text or "").strip()
+        resp = istemci_al().models.generate_content(model=VARSAYILAN_MODEL, contents=prompt)
+        metin, bos_neden = yanit_metni(resp)
+        if not metin:
+            gemini_hata_logla("ted_cevir/boş yanıt", bos_neden)
+            return basliklar
         metin = re.sub(r"^```(?:json)?|```$", "", metin, flags=re.MULTILINE).strip()
         cevrilmis = json.loads(metin)
         if isinstance(cevrilmis, list) and len(cevrilmis) == len(basliklar):
             return [str(x) for x in cevrilmis]
+        # Eskiden bu dal SESSİZCE orijinali döndürüyordu: model eksik/fazla eleman verince
+        # çeviri tamamen atlanır ama log'a hiçbir şey düşmezdi. Artık gürültülü.
+        print(f"  ⚠ çeviri şekli hatalı (beklenen {len(basliklar)} elemanlı liste, gelen "
+              f"{type(cevrilmis).__name__}/{len(cevrilmis) if isinstance(cevrilmis, list) else '-'}) "
+              f"— orijinal başlıklar kullanılacak", flush=True)
     except Exception as e:
-        print(f"  ⚠ çeviri hatası (orijinal başlık kullanılacak): {e}")
+        print(f"  ⚠ çeviri hatası (orijinal başlık kullanılacak): {type(e).__name__}: {e}", flush=True)
     return basliklar
 
 

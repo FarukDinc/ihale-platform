@@ -16,19 +16,22 @@ Kullanım (api.py içinden):
     metin = firma_yorum_uret(firma_adi="ABC İNŞAAT", kirilimlar={"idare": [...], "kategori": [...], ...})
 
 Env: GEMINI_API_KEY (backend/.env) — analyzer.py ile aynı konfigürasyon.
+
+SDK: google-genai (Backlog #34). Eski google.generativeai bırakıldı. İstemci gemini_ortak
+üzerinden TEMBEL kurulur — api.py bu modülü top-level import ettiği için, anahtar yokken
+modül seviyesinde Client() kurmak tüm API'yi import anında çökertirdi.
 """
 
 import json
 import os
 
-import google.generativeai as genai
 from dotenv import load_dotenv
+
+from gemini_ortak import VARSAYILAN_MODEL, gemini_hata_logla, istemci_al, yanit_metni
 
 load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), ".env"))
 
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
-genai.configure(api_key=GEMINI_API_KEY)
-_model = genai.GenerativeModel("gemini-2.5-flash")
 
 AI_YORUM_GECERLILIK_GUN = 7  # bkz. plan: "7 gün geçerli" cache
 
@@ -65,10 +68,13 @@ def firma_yorum_uret(firma_adi: str, kirilimlar: dict) -> dict:
         return {"basari": False, "metin": None, "hata": "Yeterli veri yok (kırılımlar boş)."}
     try:
         prompt = _prompt_olustur(firma_adi, kirilimlar)
-        response = _model.generate_content(prompt)
-        metin = (response.text or "").strip()
+        response = istemci_al().models.generate_content(model=VARSAYILAN_MODEL, contents=prompt)
+        # Boş yanıtı sessizce "veri yok" saymıyoruz: güvenlik bloğu/token limiti nedeni log'a düşsün.
+        metin, bos_neden = yanit_metni(response)
         if not metin:
-            return {"basari": False, "metin": None, "hata": "Gemini boş yanıt döndü."}
+            gemini_hata_logla("firma_yorum_uret/boş yanıt", bos_neden)
+            return {"basari": False, "metin": None, "hata": f"Gemini boş yanıt döndü ({bos_neden})."}
         return {"basari": True, "metin": metin, "hata": None}
     except Exception as e:
-        return {"basari": False, "metin": None, "hata": str(e)}
+        # google.genai.errors.APIError de Exception türevi — mevcut yakalama korunuyor.
+        return {"basari": False, "metin": None, "hata": gemini_hata_logla("firma_yorum_uret", e)}

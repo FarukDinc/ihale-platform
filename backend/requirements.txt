@@ -1,12 +1,38 @@
+# ── httpx ÜÇGENİ — sürümleri BİRLİKTE değiştirin ─────────────────────────────
+# google-genai / supabase / httpx birbirine kilitli. Üçünden birini tek başına
+# oynatırsanız pip ya ResolutionImpossible verir ya da SESSİZCE google-genai'yi
+# eski bir sürüme düşürür. Kanıtlanmış çakışma (20 Tem):
+#
+#   google-genai >= 1.3.0  →  httpx >= 0.28.1  ister
+#   supabase     == 2.5.0  →  httpx <  0.28    ister   (2.11.0'dan itibaren <0.29)
+#
+# Eskiden burada `supabase==2.5.0` + `httpx==0.27.0` + `google-genai>=1.0.0` vardı.
+# Bu üçlü ÇÖZÜLEMEZ: pip google-genai sürümlerini geriye tarayıp httpx şartı hiç
+# OLMAYAN son sürüme, yani 1.2.0'a iniyordu (1.2.0 metadata'sında httpx yok).
+# 1.2.0'da ThinkingConfig'in tek alanı `include_thoughts`; ai_kategori_backfill.py:77
+# MODÜL SEVİYESİNDE ThinkingConfig(thinking_budget=0) kuruyor → pydantic
+# extra_forbidden ValidationError → gece AI kategori adımı import anında ölürdü.
+# Üstelik Backlog #34'ten sonra api.py'ın TOP-LEVEL import zinciri de google-genai'ye
+# bağlı (api.py → worker → analyzer → gemini_ortak → `from google import genai`),
+# yani bozuk sürüm çözümü sadece AI uçlarını değil ihale-api servisinin TAMAMINI
+# düşürürdü. Bu yüzden google-genai artık AÇIKÇA sabitli, `>=` ile serbest değil.
+#
+# Sürüm yükseltirken: önce `venv/bin/pip install --dry-run -r requirements.txt`
+# ile çözümü doğrulayın; çıplak `pip install -r` ile canlıda denemeyin.
+#
+# NOT: backend/supabase/__init__.py yerel bir taklit paket ve sys.path[0] backend
+# olduğu için PyPI supabase'ini GÖLGELİYOR — yani aşağıdaki supabase pini pratikte
+# çalışmıyor, sadece httpx tavanıyla çözümü etkiliyordu. Taklit paket yalnızca
+# httpx.Client(timeout=...) kullanıyor, 0.28.1 ile uyumlu.
+supabase==2.11.0
+google-genai==2.10.0
+httpx==0.28.1
+# ─────────────────────────────────────────────────────────────────────────────
 playwright==1.44.0
 pycryptodome==3.20.0
-supabase==2.5.0
 pdfplumber==0.11.0
-google-generativeai==0.7.0
-google-genai>=1.0.0
 requests==2.32.3
 python-dotenv==1.0.1
 fastapi==0.111.0
 uvicorn==0.30.0
 iyzipay==1.0.46
-httpx==0.27.0
