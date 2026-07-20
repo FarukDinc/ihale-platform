@@ -16,6 +16,10 @@ Env:
     EKAP_BELGE_INDIR=1    (belge indirme aktif)
     EKAP_DETAY_LIMIT      (test: kaç ihale için detay çekilsin, 0=hepsi)
     GEMINI_API_KEY        (CAPTCHA çözme için, zorunlu)
+    EKAP_HAVUZ=0          (KAÇIŞ KAPISI: proxy havuzunu kapat, eski tek-client
+                           davranışına dön — gece cron'u havuz yüzünden kırılırsa)
+    EKAP_ESZAMANLI        (detay çekme eşzamanlılığı; boşsa havuzda 4, havuzsuz 8)
+    PROXY_LIST vb.        (istek başına IP rotasyonu — bkz. proxy_havuz.py)
 """
 
 import asyncio
@@ -45,7 +49,21 @@ BELGE_INDIR   = os.environ.get("EKAP_BELGE_INDIR", "0") == "1"   # ağır: indir
 BELGE_LINK    = os.environ.get("EKAP_BELGE_LINK",  "1") == "1"   # hafif: sadece EKAP indirme linkini sakla (varsayılan)
 DETAY_LIMIT   = int(os.environ.get("EKAP_DETAY_LIMIT", "0"))
 GEMINI_KEY    = os.environ.get("GEMINI_API_KEY", "")
-ESZAMANLI     = 8
+
+# Proxy havuzu (istek başına IP rotasyonu) VARSAYILAN AÇIK.
+# EKAP_HAVUZ=0 → kaçış kapısı: eski tek-AsyncClient davranışı (VDS IP'sinden).
+# Gece cron'u (run_scraper.sh) havuz yüzünden kırılırsa .env'e EKAP_HAVUZ=0
+# yazmak yeterli — run_scraper.sh'e DOKUNMADAN eski davranışa dönülür.
+HAVUZ_AKTIF   = os.environ.get("EKAP_HAVUZ", "1").strip().lower() not in ("0", "hayir", "false")
+
+# Eşzamanlılık havuz tavanına uydurulur: havuzun küresel tavanı 600 istek/dk
+# (=10/sn), IP başına soğuma 3sn. Eski sabit 8 görev × ihale başına 2-3 istek
+# tavanın üstünde üretim yapar; havuz bekleterek frenler ama async yolda
+# küresel bekleme yarışa açık (eşzamanlı görevler bayat _son_kuresel görüp aynı
+# anda ateşleyebilir → anlık patlama ≈ görev sayısı). Fazla üretimi kaynağında
+# kısıyoruz: havuz modunda 4 görev (~3-4 istek/sn, patlama ≤4 — tavanın güvenli
+# altında), havuzsuz eski davranış 8.
+ESZAMANLI     = int(os.environ.get("EKAP_ESZAMANLI", "") or ("4" if HAVUZ_AKTIF else "8"))
 SAYFA_BOYUTU  = 100
 STORAGE_BUCKET = "belgeler"
 
@@ -375,11 +393,22 @@ async def post(baglanti, endpoint: str, data: dict) -> dict:
                 r = await ist.client.post(f"{BASE}{endpoint}", json=data,
                                           headers=headers, timeout=30.0)
                 ist.yanit(r)      # yalnız 403/407/429/5xx ucu cezalandırır
-                r.raise_for_status()
-                return r.json()
+            # raise_for_status BLOĞUN DIŞINDA: içeride atılsaydı context manager
+            # HER 4xx'i (404 dahil) istisna sayıp ucu cezalandırırdı. Oysa 404
+            # bir uygulama yanıtı ("kayıt yok"); ceza kararını yalnız ist.yanit()
+            # verir — aksi halde havuz kendi kendini yer (bkz. proxy_havuz
+            # _Kiralama.yanit docstring'i).
+            r.raise_for_status()
+            return r.json()
         r = await baglanti.post(f"{BASE}{endpoint}", json=data, headers=headers, timeout=30.0)
         r.raise_for_status()
         return r.json()
+    except RuntimeError:
+        # Havuz arızası ("TÜM PROXY IP'LERİ DÜŞTÜ" vb.) RuntimeError ile gelir.
+        # YUTMA — yutulursa her istek sessizce {} döner, cron 0 kayıtla biter ve
+        # arıza log selinde kaybolur (geçmişte sessiz cron arızası yaşandı).
+        # Gürültülü ölüm doğru: main() çöker, run_scraper.sh exit≠0 görür.
+        raise
     except httpx.HTTPStatusError as e:
         print(f"    ✗ HTTP {e.response.status_code} — {endpoint}")
     except Exception as e:
@@ -461,7 +490,8 @@ def belge_isle(b: dict) -> dict:
 
 
 # ── İhale detayı çek ─────────────────────────────────────
-async def detay_cek(client: httpx.AsyncClient, ihale_id: str, dokuman_sayisi: int = 0) -> dict:
+async def detay_cek(client, ihale_id: str, dokuman_sayisi: int = 0) -> dict:
+    # client: httpx.AsyncClient | AsyncProxyHavuzu — post() ikisini de kabul eder
     sonuc = {
         "itiraz_bedeli": None, "yaklasik_maliyet_min": None, "yaklasik_maliyet_max": None,
         "isin_yapilacagi_yer": None, "ihale_yeri": None, "okas": None,
@@ -529,20 +559,20 @@ async def detay_cek(client: httpx.AsyncClient, ihale_id: str, dokuman_sayisi: in
 
 
 # ── Doküman URL'si al (EkapDokumanYonlendirme) ───────────
-async def dokuman_url_al(client: httpx.AsyncClient, ihale_id: str, islem_id: str = "1") -> str | None:
+async def dokuman_url_al(client, ihale_id: str, islem_id: str = "1") -> str | None:
     """GetDokumanUrl endpoint → belge indirme linki döndürür."""
     veri = await post(client, ENDPOINTS["dok_url"], {"islemId": islem_id, "ihaleId": ihale_id})
     return (veri or {}).get("url")
 
 
 # ── İhale listesi çek ─────────────────────────────────────
-async def sayfa_cek(client: httpx.AsyncClient, skip: int = 0) -> dict:
+async def sayfa_cek(client, skip: int = 0) -> dict:
     return await post(client, ENDPOINTS["liste"], {
         "searchText": "", "paginationSkip": skip, "paginationTake": SAYFA_BOYUTU,
         "ihaleDurumIdList": [2], "searchType": "GirdigimGibi",
     }) or {}
 
-async def tum_ihaleleri_cek(client: httpx.AsyncClient) -> list:
+async def tum_ihaleleri_cek(client) -> list:
     print("\n  → Aktif ihaleler çekiliyor...")
     ilk    = await sayfa_cek(client, 0)
     toplam = ilk.get("totalCount", 0)
@@ -563,7 +593,7 @@ async def tum_ihaleleri_cek(client: httpx.AsyncClient) -> list:
 
 
 # ── Tüm detayları çek ─────────────────────────────────────
-async def tum_detaylari_cek(client: httpx.AsyncClient, ham_liste: list) -> dict:
+async def tum_detaylari_cek(client, ham_liste: list) -> dict:
     hedef = ham_liste if DETAY_LIMIT <= 0 else ham_liste[:DETAY_LIMIT]
     print(f"\n  → {len(hedef)} ihale için detay çekiliyor (eşzamanlı={ESZAMANLI})...")
     sem     = asyncio.Semaphore(ESZAMANLI)
@@ -596,14 +626,20 @@ def dosya_adi_temizle(s):
     s = (s or "belge").translate(_TR_ASCII)
     return re.sub(r"[^A-Za-z0-9\-.]", "_", s)[:80]
 
-async def belge_indir_yukle(client: httpx.AsyncClient, ekap_id: str, ihale_id: str, sb) -> list:
+async def belge_indir_yukle(client, ekap_id: str, ihale_id: str, sb) -> list:
     """
     1. GetDokumanUrl ile EKAP yönlendirme URL'sini al
     2. Eski EKAP VatandasIlanGoruntuleme.aspx CAPTCHA'sını Gemini ile çöz
     3. Dosya içeriğini indir
     4. Supabase Storage'a yükle
     Returns: güncellenmiş belgeler listesi
+
+    client: httpx.AsyncClient | AsyncProxyHavuzu.
+    NOT: CAPTCHA akışı (ekap_captcha_indir) BİLEREK havuzdan geçmez — 3 adımlı
+    ViewState/çerez oturumu tek bağlantıya bağlı; adımlar farklı IP'lerden
+    giderse eski EKAP oturumu tanımaz.
     """
+    havuz_mu = hasattr(client, "istek")
     TUR_ADLARI = {
         "1": "İhale Dokümanı",
         "2": "İdari Şartname",
@@ -628,8 +664,15 @@ async def belge_indir_yukle(client: httpx.AsyncClient, ekap_id: str, ihale_id: s
         else:
             # Direkt indirilebilir URL (nadiren)
             try:
-                r = await client.get(ekap_url, timeout=60.0, follow_redirects=True)
+                if havuz_mu:
+                    async with client.istek() as ist:
+                        r = await ist.client.get(ekap_url, timeout=60.0, follow_redirects=True)
+                        ist.yanit(r)
+                else:
+                    r = await client.get(ekap_url, timeout=60.0, follow_redirects=True)
                 icerik = r.content if r.is_success and len(r.content) > 200 else None
+            except RuntimeError:
+                raise  # havuz arızası — sessizce belge atlamak yerine gürültüyle dur
             except Exception as e:
                 print(f"      ✗ Direkt GET hatası: {e}")
                 icerik = None
@@ -960,13 +1003,30 @@ async def main():
     print("EKAP SCRAPER v2 — httpx / Playwrightsiz")
     print(f"Zaman: {datetime.now().strftime('%d.%m.%Y %H:%M:%S')}")
     print(f"Belge indirme: {'EVET' if BELGE_INDIR else 'HAYIR'}")
+    print(f"Proxy havuzu: {'AKTİF' if HAVUZ_AKTIF else 'KAPALI (EKAP_HAVUZ=0)'} | Eşzamanlı: {ESZAMANLI}")
     print("=" * 55)
 
     sb = create_client(SUPABASE_URL, SUPABASE_KEY) if SUPABASE_KEY else None
     if sb and BELGE_INDIR:
         storage_hazirla(sb)
 
-    async with httpx.AsyncClient(verify=ssl_ctx(), http2=False, timeout=30.0) as client:
+    # Bağlantı seçimi:
+    #   VARSAYILAN → proxy havuzu (istek başına IP rotasyonu + soğuma + küresel
+    #                tavan + karantina; PROXY_LIST boşsa havuz kendi "direkt
+    #                mod"una düşer — davranış yine eskiyle eşdeğer).
+    #   EKAP_HAVUZ=0 → eski tek AsyncClient (kaçış kapısı; run_scraper.sh'e
+    #                dokunmadan .env ile geri dönüş).
+    # Import BİLEREK burada: EKAP_HAVUZ=0 iken proxy_havuz hiç yüklenmez, yani
+    # kaçış kapısı havuz modülündeki olası bir hatadan bile etkilenmez. Ayrıca
+    # worker.py bu modülü import ediyor — top-level import onu da havuza bağlardı.
+    if HAVUZ_AKTIF:
+        from proxy_havuz import async_havuz_al, ekap_ssl_baglami
+        client = async_havuz_al(ssl_baglami=ekap_ssl_baglami())
+    else:
+        print("⚠ EKAP_HAVUZ=0 — proxy havuzu devre dışı, tüm istekler tek bağlantıdan (VDS IP).")
+        client = httpx.AsyncClient(verify=ssl_ctx(), http2=False, timeout=30.0)
+
+    try:
         # 1) Liste
         ham_liste = await tum_ihaleleri_cek(client)
 
@@ -998,6 +1058,13 @@ async def main():
                         if ihale_id not in detaylar:
                             detaylar[ihale_id] = {}
                         detaylar[ihale_id]["belgeler"] = yeni_belgeler
+    finally:
+        # Havuz arızasıyla çökerken bile özet basılsın — teşhis için son görüntü.
+        if HAVUZ_AKTIF:
+            client.ozet_yaz()
+            await client.kapat()
+        else:
+            await client.aclose()
 
     # 4) Dönüştür ve yaz
     tum = tekilleştir(ihaleleri_isle(ham_liste, detaylar))
