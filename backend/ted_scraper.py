@@ -102,6 +102,11 @@ FIELDS = ["publication-number", "notice-title", "buyer-country",
 
 # TED API'nin tek istekte döndürdüğü azami kayıt (20 Tem 2026'da test edildi: limit=250 → 250 notice).
 TED_AZAMI_LIMIT = 250
+# Bir günü çekerken art arda kaç GEÇİCİ hataya (exception / boş-ama-son-değil) kadar AYNI sayfa
+# yeniden denenir. Aşılınca o gün EKSİK sayılır; checkpoint İLERLETİLMEZ (sonraki koşu baştan dener).
+# Sınırlı retry: aynı zehirli sayfada tek koşu içinde sonsuza kadar takılmayı önler (referans:
+# ekap_ihale_backfill.py ARDISIK_HATA_SINIRI deseni).
+TED_HATA_TAVANI = 5
 CHECKPOINT_FILE = os.path.join(os.path.dirname(__file__), ".ted_scraper_checkpoint.json")
 
 # ISO 3166 alpha-3 → Türkçe ülke adı (TED kapsamı: AB + EEA + aday ülkeler)
@@ -176,7 +181,7 @@ def checkpoint_yaz(gun):
         json.dump({"son_gun": gun.isoformat()}, f)
 
 
-def checkpoint_ilerlet(args, gunler):
+def checkpoint_ilerlet(args, gunler, tum_tam=True):
     """--backfill checkpoint'ini EN ESKİ işlenen güne kaydırır (sonraki koşu bir gün öncesinden devam eder).
 
     HER ÇIKIŞ YOLUNDA çağrılmalıdır — pencerede hiç ilan bulunmasa bile. Eskiden bu blok
@@ -187,8 +192,22 @@ def checkpoint_ilerlet(args, gunler):
 
     Sıfır ilanlı gün "işlendi" sayılır: TED o gün yayın yapmamıştır, yeniden taramanın anlamı yok.
     --dry-run checkpoint'e DOKUNMAZ (eski davranış korundu: kuru koşu durum bırakmamalı).
+
+    `tum_tam`: penceredeki TÜM günler eksiksiz çekildiyse True. Bir gün GEÇİCİ hata
+    (403/407/429/5xx, timeout, TLS, ağ, proxy düşüşü, boş-ama-son-değil) yüzünden EKSİK
+    kaldıysa çağıran False geçer → checkpoint İLERLETİLMEZ, çünkü ilerletmek o eksik günü
+    checkpoint'in gerisinde bırakıp bir daha ASLA ziyaret etmemek (= sessiz veri kaybı)
+    demektir. Aynı pencere sonraki koşuda yeniden denenir; geçici hata düzelince ilerler.
+    NOT: operatörün koyduğu --max-pages tavanına takılmak GEÇİCİ hata SAYILMAZ (bilinçli,
+    gürültülü loglanan bir sınır); o durumda tum_tam True kalır ki backfill dev bir günde
+    sonsuza kadar tıkanmasın (bkz. ted_gun_cek).
     """
     if not args.backfill or args.dry_run or not gunler:
+        return
+    if not tum_tam:
+        print("  ⚠ Bu penceredeki en az bir gün GEÇİCİ hata yüzünden EKSİK çekildi — checkpoint "
+              "İLERLETİLMEDİ; sonraki --backfill koşusu aynı pencereyi yeniden deneyecek "
+              f"(checkpoint: {CHECKPOINT_FILE}).")
         return
     checkpoint_yaz(gunler[-1])
     print(f"  Sonraki --backfill koşusu {gunler[-1] - timedelta(days=1)} gününden geriye devam eder "
@@ -222,35 +241,86 @@ def ted_gun_cek(client, gun, limit, max_sayfa):
     """Bir yayın gününün TAMAMINI çeker (totalNoticeCount'a ulaşana kadar sayfalar).
 
     Eskiden sabit 6 sayfa dönülüyordu → günün ilk 300 kaydından ötesi kayboluyordu.
+
+    Döner: **(toplanan, tam)**. `tam` bu günün checkpoint'i güvenle geçilebilecek kadar
+    eksiksiz çekilip çekilmediğini söyler:
+      * tam=True  → gün EKSİKSİZ: ya tüm ilanlar çekildi, ya TED o gün yayın yapmadı
+                    (totalNoticeCount==0), ya da operatörün koyduğu --max-pages tavanına
+                    GÜRÜLTÜLÜ biçimde takıldı (bilinçli, loglanan sınır — geçici hata değil).
+      * tam=False → GEÇİCİ/beklenmedik bir hata (403/407/429/5xx, timeout, TLS, ağ, proxy
+                    düşüşü, boş-ama-son-değil) çekimi yarıda kesti; gün EKSİK. Çağıran bu
+                    günü checkpoint'lememeli, sonraki koşu yeniden denemeli.
+
+    Eskiden yalnız LİSTE dönüyordu; günün tam mı eksik mi olduğu sinyali YOKTU:
+      · İlk sayfa exception fırlatırsa `toplam` None kalıyor, sondaki `if toplam and …` False
+        oluyor, "✓ 0 ilan çekildi" yazılıyordu → GERÇEK yayın-yok gününden (toplam==0) ayırt
+        EDİLEMİYORDU; boş liste dönüyor, --backfill checkpoint'i o günü GEÇİYOR ve gün bir
+        daha DENENMİYORDU (sessiz veri kaybı).
+      · Ortadaki bir sayfa hata alsa bile checkpoint yine ilerliyor, eksik gün kayboluyordu.
+    Çare: geçici hatada AYNI sayfayı sınırlı kez yeniden dene (üstel backoff); tükenince günü
+    EKSİK işaretle ve `tam=False` dön. Sınırlı retry, aynı zehirli sayfada tek koşu içinde
+    sonsuza kadar takılmayı önler (referans: ekap_ihale_backfill.py).
     """
     toplanan, toplam, sayfa = [], None, 1
+    ardisik_hata = 0
+    hata_ile_bitti = False
     while sayfa <= max_sayfa:
         try:
             notices, total = ted_cek(client, gun, sayfa, limit)
         except Exception as e:
-            print(f"  ⚠ TED {gun} sayfa {sayfa} hata: {e}")
-            break
+            ardisik_hata += 1
+            print(f"  ⚠ TED {gun} sayfa {sayfa} hata (deneme {ardisik_hata}/{TED_HATA_TAVANI}): "
+                  f"{type(e).__name__}: {str(e)[:120]}")
+            if ardisik_hata >= TED_HATA_TAVANI:
+                hata_ile_bitti = True
+                break
+            time.sleep(min(2 ** (ardisik_hata - 1) * 2, 30))
+            continue  # AYNI sayfayı yeniden dene — sayfa/checkpoint ilerletme
+
         if toplam is None:
             toplam = total
             if toplam == 0:
-                # Hafta sonu / resmi tatil: TED yayın yapmaz, 0 normaldir.
+                # Hafta sonu / resmi tatil: TED yayın yapmaz, 0 normaldir (GERÇEK bitiş).
                 print(f"  · {gun}: yayın yok (0 ilan)")
-                return []
+                return [], True
             print(f"  · {gun}: TED'de {toplam} ilan var, çekiliyor…")
+
         if not notices:
-            break
+            # Boş sayfa. Gerçekten sona geldiysek (skip>=toplam) normal bitiş; değilsek bu
+            # "boş-ama-son-değil" GEÇİCİ bir durumdur (rate-limit/pagination hıçkırığı) →
+            # aynı sayfayı sınırlı kez yeniden dene, tükenirse günü EKSİK say.
+            if len(toplanan) >= (toplam or 0):
+                break
+            ardisik_hata += 1
+            print(f"  ⚠ TED {gun} sayfa {sayfa} BOŞ geldi ama sona gelinmedi "
+                  f"({len(toplanan)}/{toplam}) (deneme {ardisik_hata}/{TED_HATA_TAVANI})")
+            if ardisik_hata >= TED_HATA_TAVANI:
+                hata_ile_bitti = True
+                break
+            time.sleep(min(2 ** (ardisik_hata - 1) * 2, 30))
+            continue  # AYNI sayfayı yeniden dene
+
+        ardisik_hata = 0  # başarılı, dolu sayfa → ardışık hata sayacı sıfırlanır
         toplanan.extend(notices)
         if len(toplanan) >= toplam:
             break
         sayfa += 1
         time.sleep(0.3)  # TED'e nazik ol
 
+    if hata_ile_bitti:
+        # GEÇİCİ hata çekimi kesti → gün EKSİK. Sahte "✓" verme; checkpoint ilerlemesin.
+        tv = toplam if toplam is not None else "?"
+        print(f"  ✗ {gun}: GEÇİCİ hata nedeniyle EKSİK çekildi ({len(toplanan)}/{tv}) — "
+              f"checkpoint ilerletilmeyecek, sonraki koşuda yeniden denenecek")
+        return toplanan, False
     if toplam and len(toplanan) < toplam:
+        # Operatör tavanı (--max-pages): geçici hata DEĞİL; gürültülü logla ama checkpoint
+        # geçebilsin (aksi hâlde >10.000 ilanlık dev bir gün backfill'i sonsuza dek tıkardı).
         print(f"  ⚠ {gun}: {toplam} ilandan {len(toplanan)} çekilebildi "
               f"(--max-pages {max_sayfa} × --limit {limit} tavanı yetmedi, --max-pages'i artır)")
-    else:
-        print(f"  ✓ {gun}: {len(toplanan)} ilan çekildi")
-    return toplanan
+        return toplanan, True
+    print(f"  ✓ {gun}: {len(toplanan)} ilan çekildi")
+    return toplanan, True
 
 
 # ---------------------------------------------------------------- Gemini çeviri
@@ -449,9 +519,12 @@ def main():
           f"gün başına tavan {args.max_pages} × {args.limit}")
 
     satirlar = []
+    tum_tam = True  # penceredeki TÜM günler eksiksiz çekildi mi (checkpoint yalnız o zaman ilerler)
     with httpx.Client(timeout=90) as client:
         for gun in gunler:
-            notices = ted_gun_cek(client, gun, args.limit, args.max_pages)
+            notices, tam = ted_gun_cek(client, gun, args.limit, args.max_pages)
+            if not tam:
+                tum_tam = False
             for n in notices:
                 row = notice_donustur(n)
                 if row:
@@ -472,7 +545,10 @@ def main():
 
     print(f"→ {len(satirlar)} benzersiz TED ihalesi toplandı.")
     if not satirlar:
-        checkpoint_ilerlet(args, gunler)   # sıfır ilanlı pencere de "işlendi" sayılır
+        # Sıfır ilanlı pencere: TÜM günler eksiksiz (gerçekten yayın yok) ise "işlendi" say ve
+        # ilerlet; ama günler GEÇİCİ hata yüzünden boş döndüyse checkpoint ilerLETİLMEZ (tum_tam
+        # False), yoksa çekilemeyen günler checkpoint'in gerisinde kalıp bir daha denenmezdi.
+        checkpoint_ilerlet(args, gunler, tum_tam)
         return
 
     # DB'de başlığı ZATEN ÇEVRİLMİŞ olan kayıtlar. İki yerde kullanılır:
@@ -557,7 +633,8 @@ def main():
                     yazilan += len(batch)
     print(f"✓ TED: {yazilan} uluslararası ihale upsert edildi (kaynak='ted').")
 
-    checkpoint_ilerlet(args, gunler)
+    # Checkpoint VERİ YAZILDIKTAN SONRA ilerler; yalnız penceredeki tüm günler eksiksizse.
+    checkpoint_ilerlet(args, gunler, tum_tam)
 
 
 if __name__ == "__main__":
