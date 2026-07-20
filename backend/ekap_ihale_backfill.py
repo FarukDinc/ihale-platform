@@ -184,6 +184,7 @@ def yil_cek(havuz, client, yil, toplam, sayfa_boyutu, cp):
     # Uyarlamalı sayfa boyutu — bkz. aşağıdaki "ZEHİRLİ KAYIT" notu.
     aktif_boyut = sayfa_boyutu
     atlanan_kayit = 0
+    bos_delik = 0
     while skip < toplam:
         try:
             d = ekap_post(havuz, LISTE_EP, {
@@ -236,7 +237,26 @@ def yil_cek(havuz, client, yil, toplam, sayfa_boyutu, cp):
 
         lst = d.get("list") or []
         if not lst:
-            break
+            # ⚠️ ESKİDEN burada koşulsuz `break` vardı ve bu SESSİZ VERİ KAYBIYDI:
+            # EKAP zehirli kayıt bölgesinde 500 yerine BOŞ LİSTE de dönebiliyor; o an
+            # yıl "bitti" sayılıp bir sonrakine geçiliyordu. 20 Tem'de yaşandı — 2012
+            # checkpoint'i 47.062/166.242'de kaldı ama scraper 2011'e geçti,
+            # 119.180 kayıt sessizce düştü.
+            # Artık: sona gerçekten geldiysek (skip >= toplam) normal bitiş; değilsek
+            # bu bir DELİK, atlayıp devam ediyoruz ve gürültülü sayıyoruz.
+            if skip >= toplam:
+                break
+            bos_delik += 1
+            print(f"    ! {yil} skip={skip}: BOŞ liste ama sona gelinmedi "
+                  f"({skip:,}/{toplam:,}) — delik atlanıyor ({bos_delik}. kez)", flush=True)
+            if bos_delik >= 20:
+                print(f"    ✗ {yil}: 20 boş delik — bu yıl eksik bırakılıyor "
+                      f"({skip:,}/{toplam:,}). Sonraki koşuda checkpoint'ten devam eder.", flush=True)
+                break
+            skip += max(1, aktif_boyut)
+            cp[anahtar] = {"skip": skip, "toplam": toplam}
+            cp_yaz(cp)
+            continue
 
         satirlar = [s for s in (satir_uret(x) for x in lst) if s]
         # Aynı gövdede yinelenen ekap_id → ON CONFLICT ikinci kez vuramaz (21000)
