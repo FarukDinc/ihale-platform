@@ -11,6 +11,47 @@
 > 10 Tem'in üstünde). Managed-Supabase dönemi maddeleri ("SQL Editor'dan koş") toptan
 > geçersiz. → 2500 altını `YAPILACAKLAR_ARSIV.md`'ye taşı.
 >
+> ## ✅ 20 TEM AKŞAM — BU OTURUMDA KAPANANLAR (8 iş paralel worktree'de üretildi,
+> ## adversarial incelemeden geçti, `main`'e birleştirildi, push edildi)
+> Tamamı **kodda hazır**; migration'lar VDS'te UYGULANMADI (DB yazma onayı gerekiyor).
+> - #3 **Kurum Ağacı UI** → `kurum-analiz.html` (idareler.html zaten oraya redirect'miş).
+>   Tembel dallar, kendi/toplam ihale+DT rozetleri, kapsama şeridi, **Bağlantısız
+>   Kurumlar ayrı dal**, arama+yol açma. İnceleme 414-riski buldu (`in.()` URL'i) →
+>   kök nedenden çözüldü: sunucu-taraflı `idare_dal_son_ihaleler` RPC'si.
+> - #4 **Hiyerarşi filtresi** (ihale+DT) — `SETOF` dönen RPC'ler; PostgREST fonksiyona
+>   tablo gibi davrandığı için mevcut filtre/sıralama/sayfalama kodu DEĞİŞMEDİ.
+>   Filtre seçilmedikçe eski sorgu yolu korunur → migration'sız da sayfa kırılmaz.
+> - #5 **`ekap_scraper` → proxy havuzu**, `EKAP_HAVUZ=0` kaçış kapısıyla. İnceleme
+>   ayrı bir hata yakaladı: `EKAP_DETAY_LIMIT` yalnız detay çekimini sınırlıyordu ama
+>   yazma tüm listeyi kapsıyordu → limitli tur mevcut kayıtları NULL'la eziyordu.
+> - #6 **`stat-kazanim` teşhisi:** kart DT sayısını `dogrudan_temin_sonuclari`'ndan
+>   (79.337 derlenmiş kayıt) alıp 1,39M'lik listeye götürüyordu. Sayaç artık kartın
+>   tıklama hedefiyle AYNI evrenden (`DT_DURUM_SONUC`) sayıyor.
+> - #7 **Dashboard alt yarısı mod-farkındalıklı** (`ilanlariYukle`/`enIyiEslesmeler`/
+>   `sonGorulenler`); DT'de olmayan alanlar (bedel filtresi, maliyet sıralaması)
+>   dürüstçe devre dışı.
+> - #8 **`satinalma_talepleri.olusturan_user_id`** — kolon anon select'inden çıkarıldı
+>   (yalnız `isOwner` için kullanılıyormuş, misafirde zaten işlevsiz) + REVOKE migration'ı.
+>   **SIRA: önce frontend deploy, sonra REVOKE.**
+> - #9 **`ilanlar_sonuc` ölü JOIN kök nedeni KESİNLEŞTİ:** `ihale_sonuclari`'nı dolduran
+>   tek yazar `ekap_sonuc_backfill.py` `ekap_id`'yi HİÇ yazmıyor; gerçek anahtar
+>   `(ilan_id, kisim_no)` ve `ilan_id = ilanlar.id` UUID FK. Teşhis + düzeltme SQL'i yazıldı.
+> - **`lot_sayisi` gece adımı:** görev tarifi bayatmış (c021157 ile eklenmiş) ama satır-içi
+>   TAM TABLO GROUP BY'dı — her gece ~538K satır yeniden sayılıyordu; hedefli fonksiyona taşındı.
+>
+> **+ Plandışı ama canlıyı etkileyen GERÇEK HATA düzeltildi (`d2d8f98`):** misafirde
+> dashboard'un iki widget'ı SESSİZCE boş kalıyordu (`ilanlar.idare`/`ekap_id` anon'a kapalı;
+> biri select'e VEYA WHERE'e girince PostgREST tüm sorguyu 42501 ile reddediyor, try/catch
+> hatayı yutuyordu). Düzeltme 18 Tem'de yapılmış ama **hiç birleştirilmemiş** eski bir
+> worktree'de kalmıştı — paralel-oturum kaybının somut örneği. Tarayıcıda gerçek misafir
+> oturumuyla doğrulandı: yeni select 200 / eski select 401, tablo 10 satır doluyor.
+> Ayrıca `boot sırası` düzeltildi: `uyeMi` artık maskeli kolona dokunan HER sorgudan önce set ediliyor.
+>
+> **Temizlik:** 8 workflow worktree'si + 3 eski worktree kaldırıldı, `git worktree list`
+> artık yalnız `main`. Ölü `api.js` script tag'i 2 sayfadan silindi (`af2b895`).
+> NOT: `claude/happy-gauss-ce4605` dalında 1 birleşmemiş commit görünür — içeriği yeni
+> koda UYARLANARAK uygulandı, dal yalnızca kayıt olarak duruyor.
+>
 > ## 🔴 GÜVENLİK
 > 1. **Secret rotasyonu (satır 809):** JWT_SECRET + Google client secret + Resend SMTP
 >    key sohbette ifşa oldu. 17 Tem rotasyonu ESKİ ifşayı kapattı — bunlar SONRAKİ.
