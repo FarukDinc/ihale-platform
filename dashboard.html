@@ -808,7 +808,7 @@
       <div class="page-header">
         <div>
           <h1>Merhaba, <span id="greeting-name">—</span> 👋</h1>
-          <p>Bugün <strong style="color:var(--white);" id="hdr-bugun">—</strong> yeni ihale eklendi. Bugün son gün olan <strong style="color:var(--amber);" id="hdr-songun">—</strong> ihale var.</p>
+          <p>Bugün <strong style="color:var(--white);" id="hdr-bugun">—</strong> yeni ihale eklendi.<span id="hdr-songun-cumle"> Bugün son gün olan <strong style="color:var(--amber);" id="hdr-songun">—</strong> ihale var.</span></p>
         </div>
         <div style="display:flex; gap:8px;">
           <a href="ihaleler" class="btn btn-ghost" style="font-size:13px; padding:9px 16px;">Tüm İhaleler →</a>
@@ -870,9 +870,9 @@
           <div class="kpi-delta" style="color:var(--muted);">Teklif süresi yaklaşıyor</div>
         </a>
         <a class="kpi-card" id="kpi-card-buyuk" href="ihaleler?sekme=detayli&amp;durum=aktif&amp;minBedel=43142132" title="Yüksek yaklaşık maliyetli ihaleleri gör">
-          <div class="kpi-label">Büyük İhale (₺43M+)</div>
+          <div class="kpi-label" id="kpi-buyuk-label">Büyük İhale (₺43M+)</div>
           <div class="kpi-value" style="color:#4CAF50;" id="kpi-buyuk">—</div>
-          <div class="kpi-delta" style="color:var(--muted);">Yüksek yaklaşık maliyet</div>
+          <div class="kpi-delta" style="color:var(--muted);" id="kpi-buyuk-alt">Yüksek yaklaşık maliyet</div>
         </a>
       </div>
 
@@ -1096,6 +1096,13 @@
   // ayrı <script> etiketinden window.aktifDashMod'u okuyup ilk çizimde doğru modla başlayabilsin diye.
   window.aktifDashMod = 'tumu';
   const DT_DURUM_ACIK = ['Doğrudan Temin Duyurusu Yayımlanmış', 'Teklifler Değerlendiriliyor'];
+  // DT için "yüksek bedel" eşiği. İHALE eşiği (43.142.132) BURAYA UYGULANMAZ — doğrudan
+  // temin limitli bir usuldür ve ölçeği bambaşkadır (medyan ₺37.424). Bu eşiğin üstündeki
+  // kayıtlar ya 4734/22'nin parasal sınırı olmayan istisna bentleri (22/b tek kaynak vb.)
+  // ya da veri hatasıdır; ikisi de incelenmeye değer, "büyük ihale" değil.
+  // NOT: bu sayı 22/d yasal limiti DEĞİL, ondan güvenli biçimde yüksek bir "dikkat çekici"
+  // eşiktir. Yıllık 22/d limiti netleşince burayı ve etiketi güncelle.
+  const DT_YUKSEK_BEDEL = 1500000;
   // dogrudan-temin.html DURUM_GRUP.sonuc ile BİREBİR (DT'nin "kapandı" karşılığı —
   // alt tablo listesi de bu filtreyi kullanır). Kazanım kartının DT sayacı da bu
   // gruptan sayılır ki kartın rakamı, tıklayınca açılan "Sonuç" sekmesinin evreniyle
@@ -1597,6 +1604,14 @@
 
     const setVal = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = dashFmt(v); };
     const setYok = (id) => { const el = document.getElementById(id); if (el) el.textContent = '—'; };
+    // DT'de KARŞILIĞI OLMAYAN kartı gizle. Eskiden '—' basılıyordu ama kullanıcı bunu
+    // "veri çekilemedi" diye okuyor (haklı olarak) — oysa dogrudan_temin_ilanlari'nda
+    // teklif bitiş tarihi KOLONU YOK, kavram DT'de mevcut değil. Yok olan şeyi boş
+    // göstermek yerine hiç göstermemek dürüst olan.
+    const kartGoster = (id, gorunur) => {
+      const el = document.getElementById(id);
+      if (el) el.style.display = gorunur ? '' : 'none';
+    };
 
     try {
       let aktifT = 0, yaklasanT = 0, buyukT = 0, eklenenT = 0, sonGunT = 0, kazanimT = 0;
@@ -1631,7 +1646,12 @@
           sb.from('dogrudan_temin_ilanlari').select('id', { count: 'exact', head: true }).in('durum', DT_DURUM_ACIK),
           sb.from('dogrudan_temin_ilanlari').select('id', { count: 'exact', head: true })
             .gte('tarih', bugunBaslangic.toISOString()).lte('tarih', bugunBitis.toISOString()),
-          sb.from('dogrudan_temin_sonuclari').select('dt_no', { count: 'exact', head: true }).gte('kazanan_bedel', 43142132),
+          // ⚠️ ESKİDEN İHALE eşiği (43.142.132 = 2026 yasal eşik değer) DT'ye uygulanıyordu.
+          // KATEGORİ HATASI: DT'nin ölçeği bambaşka — medyan ₺37.424, ortalama ₺182.215.
+          // O eşiğin üstünde yalnız 14 kayıt var ve "Büyük İhale (₺43M+)" etiketiyle
+          // gösterilmeleri anlamsızdı (doğrudan temin zaten limitli bir usul; limit üstü
+          // olanlar ya 4734/22 istisna bentleri ya da veri hatası — ikisi de "büyük ihale" DEĞİL).
+          sb.from('dogrudan_temin_sonuclari').select('dt_no', { count: 'exact', head: true }).gte('kazanan_bedel', DT_YUKSEK_BEDEL),
           // kazanan_firma DEĞİL kazanan_bedel (yukarıdaki dtBuyuk): kazanan_firma anon'a
           // kapalı (kimlik) ve WHERE de SELECT yetkisi istediği için misafirde 42501
           // dönüyordu — sayaç sessizce 0 kalıyor, kart DT katkısını hiç göstermiyordu.
@@ -1656,6 +1676,25 @@
       setVal('gs-kazanim', kazanimT);
       if (modIhale) { setVal('kpi-yaklasan', yaklasanT); setVal('hdr-songun', sonGunT); setVal('gs-sonteklif', sonGunT); }
       else { setYok('kpi-yaklasan'); setYok('hdr-songun'); setYok('gs-sonteklif'); }
+      // DT'de teklif-bitiş kavramı yok → kartları GİZLE (boş '—' "bozuk" izlenimi veriyordu).
+      kartGoster('kpi-card-yaklasan', modIhale);
+      kartGoster('stat-sonteklif',    modIhale);
+
+      // "Büyük İhale" kartı DT'de farklı bir şeyi ölçüyor → etiketi de farklı olmalı.
+      // Aynı etiketle farklı evren göstermek (43M eşiğini DT'ye uygulamak) kullanıcıyı
+      // yanılttı; mod DT iken kart açıkça "yüksek bedelli DT" diyor.
+      const bLabel = document.getElementById('kpi-buyuk-label');
+      const bAlt   = document.getElementById('kpi-buyuk-alt');
+      const bKart  = document.getElementById('kpi-card-buyuk');
+      const dtTek  = (mod === 'dt');
+      if (bLabel) bLabel.textContent = dtTek ? 'Yüksek Bedelli DT (₺1,5M+)' : 'Büyük İhale (₺43M+)';
+      if (bAlt)   bAlt.textContent   = dtTek ? 'Limit üstü — istisna bendi veya veri hatası'
+                                             : 'Yüksek yaklaşık maliyet';
+      if (bKart)  bKart.title        = dtTek ? 'Olağandışı yüksek bedelli doğrudan teminler'
+                                             : 'Yüksek yaklaşık maliyetli ihaleleri gör';
+      // Başlık cümlesi de DT'de "son gün olan — ihale var" diyordu; o cümleyi mod'a göre kur.
+      const sgCumle = document.getElementById('hdr-songun-cumle');
+      if (sgCumle) sgCumle.style.display = modIhale ? '' : 'none';
 
       // Sayımlar hazır — kart bağlantılarını ancak şimdi doğru hedefe kurabiliriz.
       kartLinkleriKur(mod, sIh, sDt, gununTarihi, yediGunSonraTarihi);
