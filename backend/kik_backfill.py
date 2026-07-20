@@ -71,6 +71,8 @@ BASE_HEADERS = {
     "Accept": "application/json",
     "Content-Type": "application/json",
     "api-version": "v1",
+    # ŞART: yoksa açıklama alanları i18n anahtarı/İngilizce döner (bkz. ekap_scraper.py)
+    "Accept-Language": "tr-TR,tr;q=0.9",
     "Origin": BASE,
     "User-Agent": (
         "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "

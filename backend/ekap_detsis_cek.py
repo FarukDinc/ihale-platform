@@ -94,6 +94,8 @@ def crypto_headers():
         "X-Custom-Request-Ts": enc(ts),
         "Content-Type": "application/json",
         "Accept": "application/json",
+        # ŞART: yoksa açıklama alanları i18n anahtarı/İngilizce döner (bkz. ekap_scraper.py)
+        "Accept-Language": "tr-TR,tr;q=0.9",
         "Origin": BASE,
         "Referer": f"{BASE}/ekap/search",
     }

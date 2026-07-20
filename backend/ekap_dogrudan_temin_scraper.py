@@ -76,6 +76,8 @@ def ssl_ctx():
     return ctx
 
 BASE_HEADERS = {
+    # ŞART: yoksa açıklama alanları i18n anahtarı/İngilizce döner (bkz. ekap_scraper.py)
+    "Accept-Language": "tr-TR,tr;q=0.9",
     "User-Agent": (
         "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
         "AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36"

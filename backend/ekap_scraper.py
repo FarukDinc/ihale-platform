@@ -65,6 +65,14 @@ BASE_HEADERS = {
     "Accept":       "application/json",
     "Content-Type": "application/json",
     "api-version":  "v1",
+    # ⚠️ ŞART — bu başlık yoksa EKAP açıklama alanlarını ÇEVİRMEDEN döndürür:
+    #   usul  -> 'TENDER_SEARCH.MAIN.PAGEITEM.TENDER_TYPE TENDER_SEARCH.ENUM'  (i18n anahtarı)
+    #   durum -> 'Tender Canceled'                                             (İngilizce)
+    # Başlıkla: 'İhale Usulü: Açık' / 'İhale İptal Edilmiş'.
+    # Ölçüldü 20 Tem: bu eksiklik yüzünden ilanlar.usul'de 1.297 satır ham
+    # i18n anahtarıyla dolmuş. YALNIZ Accept-Language işe yarıyor — lang,
+    # culture, X-Culture denendi, hiçbiri etkilemiyor.
+    "Accept-Language": "tr-TR,tr;q=0.9",
     "Origin":       BASE,
     "User-Agent":   (
         "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
