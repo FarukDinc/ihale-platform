@@ -50,6 +50,9 @@ EKAP_BASE = "https://ekap.kik.gov.tr"
 ARAMA_ENDPOINT = f"{EKAP_BASE}/EKAP/Ortak/YeniIhaleAramaData.ashx"
 BATCH_VARSAYILAN = 200
 CHUNK = 60  # tek PATCH/POST'ta kaç kayıt (dt_no ~11 char, UUID'lerden çok daha kısa — geniş marj)
+# Üst üste bu kadar dt_no GEÇİCİ hatayla çekilemezse turu durdur: EKAP'ı dövme, blok/kesinti
+# olasılığında kibarca çekil. Çekilemeyen satırlar damgalanmadığı için sonraki gece tekrar denenir.
+ARDISIK_HATA_SINIRI = 8
 
 # dogrudan-temin.html DURUM_GRUP.sonuc ile BİREBİR — kazanan/bedel bekleyebileceğimiz TEK durum grubu.
 DURUM_SONUC = ["Sonuç Duyurusu Yayımlanmış", "Doğrudan Temin Sonuçlandırıldı", "Sonuç Bilgileri Gönderildi"]
@@ -91,26 +94,43 @@ def kuyruk_say(client):
         return -1
 
 
-def secim_cek(client, n):
-    """Sıradaki n adet denenmemiş dt_no (+ token'ları). İşaretlenen satırlar sorgudan
-    düştüğü için her çağrı offset'siz SONRAKİ grubu döndürür (ai_kategori_backfill.py deseni)."""
+def secim_cek(client, n, offset=0):
+    """Sıradaki n adet denenmemiş dt_no (+ token'ları). Damgalanan satırlar sorgudan
+    düştüğü için ilerleme kısmen kendiliğinden olur (ai_kategori_backfill.py deseni);
+    ancak GEÇİCİ hata alıp DAMGALANMAYAN satırlar NULL kalır ve offset'siz sorguda aynı
+    tur içinde tekrar tekrar seçilir (poison satırda TAKILMA). Bu yüzden çağıran taraf,
+    o tur damgalanmayan satır sayısını `offset` ile geçirir → pencere ileri kayar,
+    çekilemeyen satırlar bu turda atlanır (bir sonraki gece yeniden denenir)."""
     r = client.get(f"{SUPABASE_URL}/rest/v1/dogrudan_temin_ilanlari",
                    params={"select": "dt_no,dt_ihale_token,dt_idare_token", "dt_ihale_token": "not.is.null",
                            "kazanan_denendi": "is.null", "durum": _durum_filtre(),
-                           "order": "dt_no", "limit": str(n)},
+                           "order": "dt_no", "limit": str(n), "offset": str(offset)},
                    headers=_headers())
     r.raise_for_status()
     return r.json()
 
 
 def dt_detay_getir(havuz, dt_ihale_token, dt_idare_token):
-    """dtDetayGetir çağırır. Hata/beklenmeyen yanıtta None (satır yine de 'denendi'
-    işaretlenir — EKAP'ın kalıcı biçimde veri sunmadığı satırları sonsuza dek tekrar
-    denemeyelim; gerçek ağ hatalarında script zaten üst seviyede duracak).
+    """dtDetayGetir çağırır. Dönüş: (veri, damgalanabilir).
+
+      · 200 + JSON  → (json, True)   : detay geldi (0..N sözleşme); satır işlendi,
+                                        artık 'denendi' damgalanabilir.
+      · gerçek 404  → (None, True)   : EKAP bu DT için detay SUNMUYOR (kalıcı yok);
+                                        boşuna tekrar denememek için damgalanabilir.
+      · GEÇİCİ hata → (None, False)  : blok/kesinti (403/407/429/5xx), ağ/TLS/timeout,
+                                        proxy düşüşü, 200-ama-JSON-değil. DAMGALAMA —
+                                        satır NULL kalsın, sonraki tur tekrar denesin.
+
+    KRİTİK (eski hata): önceki sürüm HER non-200 ve HER istisnada None döndürüp çağıran
+    tarafın satırı yine de damgalamasına yol açıyordu; geçici bir 403/timeout ile
+    damgalanan satır bir daha SEÇİLMEDİĞİ için KALICI kayboluyordu. Artık gerçek 404 ile
+    geçici hatayı ayırıyoruz; yalnız gerçek 404 damgalanabilir.
 
     İstek proxy havuzundan çıkan sıradaki IP ile gider (istek başına rotasyon).
-    Başarısızlık havuza bildirilir ki bozuk/bloklu IP karantinaya alınsın —
-    aksi halde ölü bir IP tüm turu sessizce boşa çıkarırdı."""
+    Blok kodları ist.yanit() ile, ağ/TLS istisnaları `with` bloğundan sızarak havuza
+    bildirilir ki bozuk/bloklu IP karantinaya alınsın. httpx DIŞI istisnalar (özellikle
+    havuzun 'TÜM IP DÜŞTÜ' / 'SAĞLAYICI ARIZASI' RuntimeError emniyet supapları) BİLEREK
+    yakalanmaz — üst seviyeye çıkıp turu durdurmalılar."""
     try:
         with havuz.istek() as ist:
             r = ist.client.get(ARAMA_ENDPOINT, params={
@@ -120,12 +140,23 @@ def dt_detay_getir(havuz, dt_ihale_token, dt_idare_token):
             # ist.yanit() yalnız gerçek blok kodlarında (403/407/429/5xx) cezalandırır;
             # düz `!= 200 → basarisiz()` havuzu 404 seliyle kendi kendine öldürüyordu.
             ist.yanit(r)
-            if r.status_code != 200:
-                return None
-            return r.json()
-    except Exception:
-        # Ağ/TLS hatası: havuz zaten istisnayı görüp ucu cezalandırdı
-        return None
+            if r.status_code == 200:
+                try:
+                    return r.json(), True
+                except ValueError:
+                    # 200 ama gövde JSON değil → EKAP ara-katman/hata sayfası olabilir.
+                    # IP sağlıklı olabilir (ucu cezalandırma), ama veriyi güvenilir sayma:
+                    # geçici kabul et, DAMGALAMA.
+                    return None, False
+            if r.status_code == 404:
+                return None, True  # gerçekten detay yok — kalıcı, damgalanabilir
+            # 403/407/429/5xx ve diğer beklenmeyen kodlar → geçici, DAMGALAMA.
+            return None, False
+    except httpx.HTTPError:
+        # Ağ/TLS/timeout/proxy düşüşü: havuz istisnayı `with`ten görüp ucu cezalandırdı.
+        # Geçici say, DAMGALAMA. (RuntimeError'ı YUTMUYORUZ — bilinçli olarak yalnız
+        # httpx.HTTPError yakalanır ki havuzun emniyet supapları üste çıksın.)
+        return None, False
 
 
 def sozlesmeleri_cikar(dt_no, veri):
@@ -218,43 +249,76 @@ def main():
                 print("  Kuyruk boş — dt_ihale_token dolu satır yok (retrofit sonrası ilk scrape turunu bekleyin).")
                 return
             for row in batch:
-                veri = dt_detay_getir(havuz, row["dt_ihale_token"], row["dt_idare_token"])
+                veri, damgalanabilir = dt_detay_getir(havuz, row["dt_ihale_token"], row["dt_idare_token"])
                 satirlar = sozlesmeleri_cikar(row["dt_no"], veri)
                 if satirlar:
                     for s in satirlar:
                         print(f"   {row['dt_no']}: {s['kazanan_firma']!r} — {s['kazanan_bedel']} TL ({s['sozlesme_tarihi']})")
+                elif not damgalanabilir:
+                    print(f"   {row['dt_no']}: GEÇİCİ HATA (çekilemedi — canlıda damgalanmaz, tekrar denenir)")
                 else:
-                    print(f"   {row['dt_no']}: sözleşme verisi yok/boş (veri={('yok' if veri is None else 'boş liste')})")
+                    print(f"   {row['dt_no']}: sözleşme verisi yok/boş (veri={('yok/404' if veri is None else 'boş liste')})")
             print("\n(dry-run — yazma/işaretleme yapılmadı)")
             return
 
         kalan = args.limit
-        islenen = kazanim_sayisi = istek = 0
-        while kalan > 0:
-            batch = secim_cek(client, min(args.batch, kalan))
+        # damgalanan  : gerçekten işlenip 'denendi' damgalanan dt_no (200 veya gerçek 404)
+        # cekilemeyen : GEÇİCİ hatayla çekilemeyen dt_no — DAMGALANMADI, sonraki turda denenir
+        # offset      : damgalanmayan satırlar NULL kaldığı için sorgudan düşmez; onları bu tur
+        #               tekrar seçmemek için pencereyi bu kadar ileri kaydırırız (TAKILMA önleme)
+        # ardisik_hata: üst üste kaç dt_no geçici hata aldı (başarı sıfırlar) — tavanı aşınca dur
+        damgalanan = kazanim_sayisi = istek = cekilemeyen = 0
+        offset = ardisik_hata = 0
+        dur = False
+        while kalan > 0 and not dur:
+            batch = secim_cek(client, min(args.batch, kalan), offset)
             if not batch:
                 break
             tum_satirlar, dt_no_listesi = [], []
             for row in batch:
-                veri = dt_detay_getir(havuz, row["dt_ihale_token"], row["dt_idare_token"])
+                veri, damgalanabilir = dt_detay_getir(havuz, row["dt_ihale_token"], row["dt_idare_token"])
                 istek += 1
+                if not damgalanabilir:
+                    # GEÇİCİ hata (blok/ağ/TLS/timeout/proxy/200-ama-JSON-değil): DAMGALAMA.
+                    # Satır NULL kalır; offset ile bu tur atlanır, sonraki gece tekrar denenir.
+                    cekilemeyen += 1
+                    ardisik_hata += 1
+                    if ardisik_hata >= ARDISIK_HATA_SINIRI:
+                        dur = True   # o ana dek toplananları yaz, sonra turu durdur
+                        break
+                    continue
+                ardisik_hata = 0
                 tum_satirlar.extend(sozlesmeleri_cikar(row["dt_no"], veri))
                 dt_no_listesi.append(row["dt_no"])
                 # Elle sleep YOK: hız sınırı artık havuzda (IP başına soğuma +
                 # küresel tavan). Burada ayrıca beklemek ikisini üst üste bindirirdi.
             try:
+                # Checkpoint (isaretle) YALNIZ veri yazıldıktan SONRA: yazma patlarsa
+                # damgalama da atlanır, satırlar sonraki turda yeniden denenir.
                 yaz_sonuclar(client, tum_satirlar)
                 isaretle(client, dt_no_listesi, zaman)
             except httpx.HTTPError as e:
                 print(f"  ✗ Yazma hatası ({str(e)[:120]}) — tur durduruluyor (işaretlenmeyenler sonraki turda).")
                 break
-            islenen += len(batch)
+            damgalanan += len(dt_no_listesi)
             kazanim_sayisi += len(tum_satirlar)
+            if dur:
+                print(f"  ✗ {ardisik_hata} ardışık dt_no çekilemedi (geçici hata) — EKAP'ı dövmemek için "
+                      f"tur durduruldu; damgalanmayanlar sonraki gece tekrar denenecek.")
+                break
+            # Bu partide damgalanmayan (geçici hata) satır sayısı kadar pencereyi ilerlet.
+            offset += len(batch) - len(dt_no_listesi)
             kalan -= len(batch)
-            print(f"   … {islenen} dt_no işlendi, {kazanim_sayisi} sözleşme kaydı yazıldı ({istek} EKAP isteği)")
+            print(f"   … {damgalanan} dt_no damgalandı, {kazanim_sayisi} sözleşme kaydı yazıldı, "
+                  f"{cekilemeyen} çekilemedi ({istek} EKAP isteği)")
 
-        print(f"\n✓ Bitti: {islenen} dt_no işlendi, {kazanim_sayisi} sözleşme kaydı (kazanan+bedel) yazıldı, "
-              f"{istek} EKAP isteği (CAPTCHA/Gemini kullanılmadı).")
+        if cekilemeyen:
+            print(f"\n⚠ Tur bitti (EKSİK): {damgalanan} dt_no damgalandı, {kazanim_sayisi} sözleşme kaydı "
+                  f"(kazanan+bedel) yazıldı, {cekilemeyen} dt_no ÇEKİLEMEDİ (geçici hata — damgalanmadı, "
+                  f"sonraki turda tekrar denenecek), {istek} EKAP isteği.")
+        else:
+            print(f"\n✓ Bitti: {damgalanan} dt_no işlendi, {kazanim_sayisi} sözleşme kaydı (kazanan+bedel) "
+                  f"yazıldı, {istek} EKAP isteği (CAPTCHA/Gemini kullanılmadı).")
 
     # Hangi IP'ler kullanıldı, kaçı düştü, ne kadar hız sınırı beklendi —
     # blok yiyip yemediğimizi buradan görüyoruz.
