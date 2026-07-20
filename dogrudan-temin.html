@@ -303,6 +303,21 @@
           line-height:1; padding:0; opacity:.7;
         }
         .dt-cip button:hover { opacity:1; }
+        /* ── Kurum hiyerarşi seçici (canlı arama açılır listesi) ── */
+        .dt-kurum-sonuclar {
+          position:absolute; top:100%; left:0; right:0; z-index:30; margin-top:4px;
+          background:var(--navy); border:1px solid var(--border); border-radius:8px;
+          max-height:280px; overflow-y:auto; box-shadow:0 8px 24px rgba(0,0,0,.35);
+        }
+        .dt-kurum-sonuc {
+          display:block; width:100%; text-align:left; background:none; border:none;
+          border-bottom:1px solid var(--border); padding:8px 12px; cursor:pointer;
+          font-family:var(--font-body);
+        }
+        .dt-kurum-sonuc:last-child { border-bottom:none; }
+        .dt-kurum-sonuc:hover { background:rgba(240,165,0,.08); }
+        .dt-kurum-sonuc-ad { font-size:12.5px; font-weight:600; color:var(--white); display:block; }
+        .dt-kurum-sonuc-alt { font-size:11px; color:var(--muted); display:block; margin-top:2px; }
       </style>
       <div class="dt-tab-bar">
         <button class="dt-tab active" data-sekme="guncel" onclick="sekmeDegistir('guncel')">Güncel <span class="cnt" id="dt-cnt-guncel"></span></button>
@@ -377,6 +392,18 @@
             <input type="text" id="f-dt-idare" placeholder="Kurum / idare adında ara…" style="min-width:240px;"
                    oninput="aramaDegisti()" onkeydown="if(event.key==='Enter'){event.preventDefault();filtreDegisti();}" />
             <span class="dt-alan-not" id="f-dt-idare-not"></span>
+          </label>
+
+          <!-- KURUM HİYERARŞİSİ — "bu kurum ve altındaki TÜM birimler" (DETSİS alt-ağacı).
+               İdare Adı'ndan farkı: metin eşleşmesi değil, idare_ata_torun kapanış tablosu
+               üzerinden SUNUCU TARAFI süzgeç (backend/migration_hiyerarsifiltre.sql).
+               Üyelere özel: idare kimliği anon'a maskeli, hiyerarşi RPC'leri de anon'a kapalı. -->
+          <label class="dt-alan" id="dt-kurum-alan" style="position:relative;min-width:280px;">
+            <span class="dt-alan-etiket">KURUM HİYERARŞİSİ (VE ALTINDAKİLER)</span>
+            <input type="text" id="f-dt-kurum-ara" placeholder="Kurum ara — örn. Emniyet Genel Müdürlüğü" autocomplete="off"
+                   oninput="dtKurumAraDegisti()" onkeydown="if(event.key==='Enter'){event.preventDefault();}" />
+            <div id="dt-kurum-sonuclar" class="dt-kurum-sonuclar" style="display:none;"></div>
+            <span class="dt-alan-not" id="f-dt-kurum-not">Seçilen kurum + TÜM alt birimleri. DETSİS eşleşmesi olmayan duyurular dahil değildir.</span>
           </label>
 
           <label class="dt-alan">
@@ -558,6 +585,25 @@
     sonuc: ['Sonuç Duyurusu Yayımlanmış', 'Doğrudan Temin Sonuçlandırıldı', 'Sonuç Bilgileri Gönderildi'],
   };
 
+  // ── Kurum hiyerarşi filtresi ("bu kurum ve altındakiler") — üyelere özel ───
+  // Seçili kurum + DETSİS alt-ağacındaki TÜM birimler. Süzme SUNUCUDA:
+  // binlerce detsis_no'yu client'a indirip in.(...) kurmak yasak (URL patlar,
+  // client-load-all sınıfı hata). Bunun yerine taban sorgu değişir (dtSorguTabani).
+  let kurumFiltre = null;        // null | {detsis, ad, altSayi}
+  let kurumAraTimer = null;
+  let kurumAraIstekNo = 0;       // yarış koruması (sekme sayaçlarındaki desenle aynı)
+
+  // Sorgu tabanı: kurum filtresi aktifken taban tablo yerine
+  // dogrudan_temin_hiyerarsi RPC'si kullanılır (satır-kümesi döner; PostgREST
+  // fonksiyon sonucuna da aynı filtre/sıralama/range/count'u uygular — yani
+  // filtreleriUygula ve sayfalama DEĞİŞMEDEN çalışır).
+  // bkz. backend/migration_hiyerarsifiltre.sql
+  function dtSorguTabani(kolonlar, secenekler) {
+    return (kurumFiltre && uyeMi)
+      ? sb.rpc('dogrudan_temin_hiyerarsi', { p_kok: kurumFiltre.detsis }, secenekler).select(kolonlar)
+      : sb.from('dogrudan_temin_ilanlari').select(kolonlar, secenekler);
+  }
+
   // sekmeUygula=false → sekmenin durum kapsamı ATLANIR, diğer tüm filtreler uygulanır.
   // Sekme sayaçları bunu kullanır: her sayaç kendi durum grubunu kendisi ekler,
   // aktif sekmeninkini değil.
@@ -641,6 +687,7 @@
            || document.getElementById('f-kategori').value  // idx_dt_ilanlari_kategori_tarih
            || document.getElementById('f-tur').value       // idx_dt_ilanlari_tur_tarih
            || d.durum || d.tarihBas || d.tarihBit          // idx_dt_ilanlari_durum / _tarih
+           || (kurumFiltre && uyeMi)                       // idx_dt_ilanlari_detsis (alt-ağaç semijoin)
            || dtNoParam);
   }
 
@@ -670,7 +717,8 @@
     const v = (id) => { const e = document.getElementById(id); return e ? e.value : ''; };
     const d = dtDetayDegerleri();
     return JSON.stringify([v('f-ara'), v('f-tur'), v('f-kategori'), v('f-il'), v('f-idare-tur'),
-                           dtNoParam, d.idare, d.durum, d.tarihBas, d.tarihBit, d.dokuman, uyeMi]);
+                           dtNoParam, d.idare, d.durum, d.tarihBas, d.tarihBit, d.dokuman, uyeMi,
+                           kurumFiltre ? kurumFiltre.detsis : null]);
   }
 
   async function sekmeSayaclariYukle() {
@@ -681,8 +729,10 @@
     const benim = ++sayacIstekNo;
 
     // Her sayaç kendi durum grubunu ekler; aktif sekmenin kapsamı devre dışı.
+    // Taban dtSorguTabani'ndan: kurum hiyerarşi filtresi sayaçlara da yansımalı,
+    // yoksa sekmede filtresiz rakam yazar (sayaç-liste tutarlılığı buranın asıl derdi).
     const say = (grup) => {
-      let q = sb.from('dogrudan_temin_ilanlari').select('dt_no', { count: 'exact', head: true });
+      let q = dtSorguTabani('dt_no', { count: 'exact', head: true });
       q = filtreleriUygula(q, { sekmeUygula: false });
       if (grup) q = q.in('durum', DURUM_GRUP[grup]);
       return q;
@@ -722,9 +772,10 @@
     // Arama yokken exact count hızlı (index'li eq / tam sayım). Arama varken baslik/idare ILIKE
     // 616K satırda seq-scan → exact count statement-timeout eder (kod 57014, doğrulandı). Bu yüzden
     // arama modunda sayım yapmayıp bir FAZLA satır çekeriz; PER_PAGE+1 dönerse sonraki sayfa var.
-    let query = sb.from('dogrudan_temin_ilanlari')
-      .select(`dt_no,baslik,${uyeMi ? 'idare,' : ''}tur,il,tarih,yayin_tarihi,durum,kategori,dokuman_var,duyuru_var`,
-              sayilmaz ? {} : { count: 'exact' });
+    // Taban: kurum hiyerarşi filtresi aktifse RPC, değilse tablo (dtSorguTabani)
+    let query = dtSorguTabani(
+      `dt_no,baslik,${uyeMi ? 'idare,' : ''}tur,il,tarih,yayin_tarihi,durum,kategori,dokuman_var,duyuru_var`,
+      sayilmaz ? {} : { count: 'exact' });
     query = filtreleriUygula(query);
     const idareSirala = siralamaAlan === 'idare' && uyeMi;   // idare sıralaması üyelik ister (kolon kapalı)
     query = query.order(idareSirala ? 'idare' : 'tarih', { ascending: idareSirala });
@@ -822,9 +873,11 @@
   };
 
   window.dtFiltreleriSifirla = function() {
-    ['f-dt-idare', 'f-dt-durum', 'f-dt-tarih-bas', 'f-dt-tarih-bit'].forEach(id => {
+    ['f-dt-idare', 'f-dt-durum', 'f-dt-tarih-bas', 'f-dt-tarih-bit', 'f-dt-kurum-ara'].forEach(id => {
       const el = document.getElementById(id); if (el) el.value = '';
     });
+    kurumFiltre = null;
+    dtKurumSonucGoster([]);
     const dok = document.getElementById('f-dt-dokuman'); if (dok) dok.checked = false;
     ['f-ara', 'f-tur', 'f-kategori', 'f-il'].forEach(id => {
       const el = document.getElementById(id); if (el) el.value = '';
@@ -851,6 +904,13 @@
     if (document.getElementById('f-kategori').value)  ek('Kategori', document.getElementById('f-kategori').value, () => { document.getElementById('f-kategori').value = ''; });
     if (document.getElementById('f-il').value)        ek('İl', document.getElementById('f-il').value, () => { document.getElementById('f-il').value = ''; });
     if (d.idare && uyeMi)  ek('İdare', d.idare, () => { document.getElementById('f-dt-idare').value = ''; });
+    // "X ve altındaki N kurum" — N (alt kurum sayısı) ayrı RPC'den asenkron gelir,
+    // gelene kadar çip sayısız yazar.
+    if (kurumFiltre && uyeMi) ek('Kurum',
+      kurumFiltre.altSayi != null
+        ? `${kurumFiltre.ad} ve altındaki ${kurumFiltre.altSayi.toLocaleString('tr')} kurum`
+        : `${kurumFiltre.ad} ve altındakiler`,
+      () => { kurumFiltre = null; });
     if (d.durum)           ek('Durum', d.durum, () => { document.getElementById('f-dt-durum').value = ''; });
     if (d.tarihBas)        ek('Tarih ≥', d.tarihBas, () => { document.getElementById('f-dt-tarih-bas').value = ''; });
     if (d.tarihBit)        ek('Tarih ≤', d.tarihBit, () => { document.getElementById('f-dt-tarih-bit').value = ''; });
@@ -865,7 +925,75 @@
     kap.querySelectorAll('button[data-i]').forEach(b => {
       b.onclick = () => { cipler[Number(b.dataset.i)].temizle(); veriYukle(true); };
     });
+    // Kapsama dürüstlüğü: hiyerarşi süzgeci yalnız DETSİS'e eşleşmiş kayıtları
+    // görebilir (detsis_no NULL satırlar elenir) — kullanıcı bunu bilmeli.
+    if (kurumFiltre && uyeMi) {
+      kap.insertAdjacentHTML('beforeend',
+        '<span style="font-size:10.5px;color:var(--muted);">ⓘ DETSİS eşleşmesi olmayan duyurular bu filtreye dahil değildir.</span>');
+    }
   }
+
+  // ── Kurum hiyerarşi seçici (canlı arama + seçim) ───────────────────────────
+  window.dtKurumAraDegisti = function() {
+    clearTimeout(kurumAraTimer);
+    const q = document.getElementById('f-dt-kurum-ara').value.trim();
+    if (q.length < 2) { dtKurumSonucGoster([]); return; }
+    kurumAraTimer = setTimeout(async () => {
+      if (!uyeMi) return;    // alan misafirde zaten kilitli — savunma katmanı
+      const benim = ++kurumAraIstekNo;
+      try {
+        const { data, error } = await sb.rpc('idare_agac_ara', { p_q: q, p_limit: 8 });
+        if (error) throw error;
+        if (benim !== kurumAraIstekNo) return;   // bayat sonucu basma
+        dtKurumSonucGoster(data || []);
+      } catch (e) { console.info('kurum arama atlandı:', e && e.message); }
+    }, 300);
+  };
+
+  function dtKurumSonucGoster(satirlar) {
+    const kap = document.getElementById('dt-kurum-sonuclar');
+    if (!kap) return;
+    if (!satirlar.length) { kap.style.display = 'none'; kap.innerHTML = ''; return; }
+    kap.innerHTML = satirlar.map((r, i) => `
+      <button type="button" class="dt-kurum-sonuc" data-i="${i}">
+        <span class="dt-kurum-sonuc-ad">${esc(r.ad)}</span>
+        <span class="dt-kurum-sonuc-alt">${r.ust_ad ? '↳ ' + esc(r.ust_ad) + ' · ' : ''}${Number(r.toplam_dt || 0).toLocaleString('tr')} DT (alt birimler dahil)</span>
+      </button>`).join('');
+    kap.style.display = '';
+    kap.querySelectorAll('button[data-i]').forEach(b => {
+      b.onclick = () => {
+        const r = satirlar[Number(b.dataset.i)];
+        dtKurumSec(r.detsis_no, r.ad);
+      };
+    });
+  }
+
+  function dtKurumSec(detsis, ad) {
+    kurumFiltre = { detsis, ad, altSayi: null };
+    const el = document.getElementById('f-dt-kurum-ara');
+    if (el) el.value = '';
+    dtKurumSonucGoster([]);
+    veriYukle(true);
+    dtKurumAltSayiYukle(detsis);
+  }
+
+  // Çipteki N (alt kurum sayısı) — kapanış tablosunda PK önek sayımı, anlık.
+  // Başarısız olursa çip "ve altındakiler" der; sayı süs, filtre değil.
+  function dtKurumAltSayiYukle(detsis) {
+    sb.rpc('idare_alt_kurum_sayisi', { p_detsis: detsis })
+      .then(({ data }) => {
+        if (kurumFiltre && kurumFiltre.detsis === detsis) {
+          kurumFiltre.altSayi = Number(data) || 0;
+          dtCipleriGuncelle();
+        }
+      })
+      .catch(() => {});
+  }
+
+  // Açılır liste, alan dışına tıklanınca kapansın (seçim yapılmadan kalmasın)
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('#dt-kurum-alan')) dtKurumSonucGoster([]);
+  });
 
   // İdare filtresi üyeye özel: kolon anon'a kapalı, misafirde alan devre dışı.
   function dtUyelikUygula() {
@@ -879,6 +1007,18 @@
       if (not) not.textContent = '🔒 İdare adına göre arama üyelere özeldir.';
     } else if (not) {
       not.textContent = '';
+    }
+    // Kurum hiyerarşi filtresi de üyeye özel (aynı gerekçe: idare kimliği
+    // misafire maskeli; hiyerarşi RPC'leri DB'de anon'a kapalı).
+    const kel = document.getElementById('f-dt-kurum-ara');
+    const knot = document.getElementById('f-dt-kurum-not');
+    if (kel) {
+      kel.disabled = !uyeMi;
+      if (!uyeMi) {
+        kel.value = '';
+        kel.placeholder = 'Üyelere özel';
+        if (knot) knot.textContent = '🔒 Kurum hiyerarşi filtresi üyelere özeldir.';
+      }
     }
   }
 
@@ -1065,6 +1205,29 @@
       }
       aktifSekme = 'tumu';   // kurumdan gelindiyse TÜM DT geçmişi görünsün (Güncel/aktif'te az çıkar)
       document.querySelectorAll('.dt-tab').forEach(b => b.classList.toggle('active', b.dataset.sekme === 'tumu'));
+    }
+    // ?kurum=<detsis_no> — "bu kurum ve altındakiler" derin linki (üyelere özel).
+    // Ad URL'de taşınmaz (uzun + kirlenir); detsis_no'dan idare_agac_yol ile çözülür
+    // (mesafe 0 = düğümün kendisi, listenin SONUNDA). Geçersiz no → filtre sessizce uygulanmaz.
+    const kurumParam = params.get('kurum');
+    if (kurumParam) {
+      if (uyeMi) {
+        try {
+          const { data: yol, error: yolHata } = await sb.rpc('idare_agac_yol', { p_detsis: kurumParam });
+          if (!yolHata && yol && yol.length) {
+            const dugum = yol[yol.length - 1];
+            kurumFiltre = { detsis: dugum.detsis_no, ad: dugum.ad, altSayi: null };
+            dtKurumAltSayiYukle(dugum.detsis_no);
+            const panel = document.getElementById('dt-detay-panel');
+            if (panel && panel.style.display === 'none') detayPaneliAcKapa();   // filtrenin nereden geldiği görünsün
+          }
+        } catch (_) { /* çözülemedi — filtresiz devam */ }
+        aktifSekme = 'tumu';   // idare deseniyle aynı: kurumdan gelindiyse tüm geçmiş görünsün
+        document.querySelectorAll('.dt-tab').forEach(b => b.classList.toggle('active', b.dataset.sekme === 'tumu'));
+      } else {
+        const knot = document.getElementById('f-dt-kurum-not');
+        if (knot) knot.textContent = '🔒 Kurum hiyerarşi filtresi üyelere özeldir — bu bağlantı uygulanmadı.';
+      }
     }
     const ilParam = params.get('il');
     if (ilParam) {
