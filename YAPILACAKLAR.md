@@ -155,17 +155,21 @@
 > ## 🟢 ŞU AN CANLI DURUM (ölçüldü, tahmin değil)
 > | | |
 > |---|---|
-> | `ilanlar` | **554.884** (backfill akıyor, saatlik büyüyor) |
-> | `durum='aktif'` | 13.444 |
-> | gerçekten açık (`son_teklif_tarihi > now()`) | **4.765** |
+> | `ilanlar` | **795.173** (backfill akıyor, saatlik büyüyor) |
+> | `durum='aktif'` | 13.444 (sabit — düzeltme tutuyor) |
+> | gerçekten açık (`son_teklif_tarihi > now()`) | **4.676** |
 > | `dogrudan_temin_ilanlari` | 1.490.644 |
-> | VDS HEAD | `e38ae4e` (yerel = origin = VDS, senkron) |
+> | VDS HEAD | `e2bdff4` (yerel = origin = VDS, senkron) |
 >
 > ## ⚙️ ŞU AN KOŞAN İŞ — DOKUNMA
-> `ekap_ihale_backfill.py` — nohup, PID canlı, **2021 yılında %50**, ~143 kayıt/sn.
-> Kalan yıllar: 2021 → 2011. Checkpoint: `backend/ihale_backfill_checkpoint.json`
+> `ekap_ihale_backfill.py` — nohup, PID canlı, **2018 yılında %66**, ~112 kayıt/sn.
+> Kalan yıllar: 2018 → 2011. Checkpoint: `backend/ihale_backfill_checkpoint.json`
 > (yıl bazında `skip`). Durdurup başlatmak güvenli, kaldığı yerden devam eder.
 > Log: `/opt/ihale-platform/logs/ihale_backfill.log`
+>
+> ⚠️ **SSH ile başlatırken `nohup ... &` YETMEZ** — stdin yönlendirilmezse ssh
+> kanalı kapanmaz ve yerel görev saatlerce "running" görünür (bu oturumda oldu).
+> `ssh -f` veya `nohup ... </dev/null >log 2>&1 &` ya da `systemd-run` kullan.
 >
 > **Bittiğinde İLK İŞ** — eşleşmeyen EKAP durum metinlerini oku:
 > ```bash
@@ -205,12 +209,26 @@
 > **Cron (`c021157`)** — `idare_tur_tazele()` + `lot_sayisi` gece işine bağlandı
 > (ikisi de migration'da bir kez doldurulup unutulmuştu → kapsam azalıyordu).
 >
+> **Arama Commit 1 (`e2bdff4`)** — `js/api.js:98,111` tanımsız `UI.bildirim_goster()`
+> çağırıyordu (UI yalnız `js/ui.js`'te, api.js yükleyen 6 sayfanın hiçbiri onu
+> yüklemiyordu) → **çalışma anında ReferenceError**. Somut zarar: firma-analiz'de
+> 402 "kredi bitti" uyarısı kullanıcıya hiç ulaşmıyor, yerine catch dalı yanıltıcı
+> "Bu özellik yakında aktif olacak" gösteriyordu. Bağımsız `bildirimGoster()` eklendi.
+> **7 ölü dosya silindi** (1.164 satır) — 4 mercekten doğrulandı, çelişki yok;
+> `git log -S` gösterdi ki HTML'den kaldırılmamışlar, HİÇ eklenmemişler.
+> İki tuzak yakalandı: (a) sınıf adı `toast` olsaydı iki sayfanın kendi
+> `.toast{opacity:0}` kuralı mesajı **görünmez** yapardı → `ig-api-toast`;
+> (b) giriş animasyonu `requestAnimationFrame`'e bağlıydı, arka plan sekmesinde
+> askıya alınıp bildirim opacity:0'da takılıyordu → animasyon kaldırıldı.
+> `api.js?v=goog1 → ?v=bldr1` (6 sayfa) — bumplanmasa düzeltme önbellek yüzünden
+> kullanıcıya ULAŞMAZDI, yerel testte bizzat yaşandı.
+>
 > ## 🔜 SIRADAKİ İŞ — kuyruk (gerekçeli sıra)
 > Detaylar için aşağıdaki **"İKİNCİ TUR KARARLARI"** bloğuna bak; her madde
 > dosya/satır seviyesinde oturtuldu ve adversaryal doğrulamadan geçti.
 > | # | İş | Not |
 > |---|---|---|
-> | 1 | **Arama Commit 1** | `js/api.js:98,111` tanımsız `UI.bildirim_goster()` çağırıyor (o sayfalar `ui.js` yüklemiyor) + **7 ölü dosya sil** (1.164 satır). Sıfır görsel risk. |
+> | ~~1~~ | ~~**Arama Commit 1**~~ | ✅ **YAPILDI** (`e2bdff4`) — yukarı bak |
 > | 2 | **RFQ köprüsü** | 16 Tem kararı BOZULMAYACAK; e-Satınalma → `harita?katman=rfq` linki + rozet + bayatlama filtresi. ⚠️ Çıplak `>= now()` YAZMA (kolon nullable). |
 > | 3 | **Analiz Faz A** | Parasal kartlara "yalnız ihaleler" rozeti + payda. DT parasal birleştirme **REDDEDİLDİ** (kapsama %5,24 + `yaklasik_maliyet` kolonu YOK). |
 > | 4 | **Arama Commit 2** | `ihaleler.html`'in 3 handler'sız alanı. Önce ILIKE gecikmesini ölç. |
