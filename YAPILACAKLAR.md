@@ -13,6 +13,22 @@
 >
 > ## 🔴 P0 — CANLI HATALAR (kullanıcı şu an görüyor)
 >
+> ### ✅ P0.1 ÇÖZÜLDÜ (20 Tem, commit `fea35b3`) — ihaleler.html kategori filtresi
+> 49 hardcode `<option>` kaldırıldı, dropdown `js/kategoriler.js`'ten runtime
+> dolduruluyor (`kategoriDropdownDoldur`). `js/kategoriler.js` bu sayfaya İLK KEZ
+> eklendi (yüklü değildi). Geri uyum: `kategoriSecimGarantiEt()` — kanonik-dışı
+> değer gelirse "(eski)" etiketiyle seçenek eklenip korunuyor; iki çağrı noktası
+> (`?kategori=` URL parametresi + kayıtlı arama yükleyicisi), yoksa kullanıcının
+> kayıtlı filtresi sessizce "tüm kategoriler"e dönerdi.
+> **Ek ölçüm:** kanonik olmayan 17.502 satırın **aktif kaydı SIFIR** (hepsi geçmişte)
+> → Güncel sekmesi için kanonik liste %100 yeterli.
+> Doğrulama: tümü 4.952 / Sağlık 265 / İnşaat 1.145 / Odun-Kömür 43 (birbirinden
+> farklı gerçek sonuçlar), konsol temiz.
+> 🔵 Kalan küçük iş: o 17.502 geçmiş satırın kanonik adlara taşınması
+> (`ai_kategori_backfill.py` yalnız 'Diğer'i hedefliyor, bunlara dokunmuyor).
+>
+> <details><summary>Orijinal hata kaydı (referans)</summary>
+>
 > ### P0.1 · ihaleler.html kategori filtresinin %90'ı ölü — ÖLÇÜLDÜ
 > `#f-kategori` (ihaleler.html:520) **48 seçenek** hardcode ediyor ve `<option>`larda
 > **`value` attribute'u YOK** → tarayıcı seçenek METNİNİ gönderiyor. Canlı
@@ -25,6 +41,8 @@
 > `kategorileriYukle()` bunu ZATEN doğru yapıyor — deseni oradan al).
 > **DİKKAT:** kayıtlı aramalarda/URL'de eski kategori değerleri kalmış olabilir; geçiş
 > eşlemesi düşünülmeli yoksa kullanıcının kayıtlı filtresi sessizce boşalır.
+>
+> </details>
 >
 > ### P0.2 · Süresi dolan RFQ'lar sonsuza dek "açık" kalıyor
 > `ilan_durum_bayatlat()` YALNIZ `public.ilanlar`'ı günceller; `satinalma_talepleri`'ne
