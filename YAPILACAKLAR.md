@@ -309,6 +309,146 @@
 > - **`idx_ilanlar_olusturulma`** — "Sisteme Yeni Düşen" sıralamasının ön koşulu; indeks yok.
 > - **Gece koşusu doğrulaması** — `=== Idare turu tazeleme ===` + `=== Lot sayisi tazeleme ===`
 >   satırları logda görülmeli (20 Tem'de eklendi, henüz koşmadı).
+>
+> ---
+>
+> # 🔬 İKİNCİ TUR KARARLARI (20 Tem) — P1 maddelerinin NİHAİ hâli
+> Yukarıdaki P1.1–P1.5 **ilk turdur**. Her tavsiye ayrı bir ajana *çürütülmek üzere*
+> verildi ve **üçü düzeltildi**. Çelişmede düzeltilen bir tavsiyeyi savunma — aşağısı geçerli.
+> Ayrıca açık kalan iki karar **veriyle çözüldü**, kullanıcıya sorulmasına gerek kalmadı.
+>
+> ## 🔴 YENİ P0.3 — ANALİZ RPC'LERİ VERİNİN %4'ÜNÜ GÖRÜYOR (canlıda YANLIŞ)
+> `rekabet_ozet` ve `kurum_ozet` trend eksenini `ilan_tarihi` ile kuruyor.
+> **Bağımsız ölçüldü (canlı REST):** `ilan_tarihi` 15.245/357.207 = **%4,27** dolu ·
+> `etkin_tarih` 351.883 = **%98,51** · `son_teklif_tarihi` 16.669 = %4,67 ·
+> `durum='aktif'` = **4.954**.
+> Yani trend/KPI grafikleri verinin yirmide birine dayanıyor ve `kpi.aktif` yanlış tabanda.
+> **Bu, 5 maddenin hepsinden önce gelir** — yeni özellik değil, mevcut yanlışın düzeltmesi.
+> Düzeltme: iki RPC'nin eksenini `etkin_tarih`'e taşı, `kpi.aktif`'i `durum='aktif'` tabanına al.
+>
+> ## 1) Analiz "Tümü / İhaleler / DT" — parasal birleştirme REDDEDİLDİ
+> **VERİYLE ÇÖZÜLDÜ:** DT bedel kapsaması **78.109/1.490.644 = %5,24** (yıl kırılımı:
+> 2026 %9,17 · 2025 %0,30 → birleştirme yapay sıçrama üretirdi). Ayrıca
+> `dogrudan_temin_sonuclari.yaklasik_maliyet` → **42703 (kolon YOK)**; elde yalnız
+> `kazanan_bedel` = *sözleşme bedeli* var → yaklaşık maliyetle toplamak **kategori hatası**.
+> Kazıma ilerlese bile bu gerekçe kalıcı. → **DT parasal kartlara KATILMAYACAK**,
+> kartlar "yalnızca ihaleler" rozeti + "N ihale üzerinden" paydası taşıyacak.
+>
+> **⚠️ ÇELİŞMEDE ÇIKAN YENİ HATA:** `ihale_sonuclari.yaklasik_maliyet` %98,6 dolu AMA
+> **kısım bazlı değil** — çok kısımlı ihalede aynı değer her satıra kopyalanmış.
+> Kanıt: `ilan_id 56e4dc72` → 35 kısım, SUM 808.746.995 vs gerçek 23.107.057 = **35,0x şişme**.
+> `lot_sayisi=1` filtresiyle çözmek de YANLIŞ: 530.440 → 283.438 (**%46 kayıp**, en büyük
+> ihaleler düşer; ym≥10M bandı 139.634 → 43.545 = ~3,2x sapma).
+> **Doğru yol: `ilan_id` bazında DISTINCT** (ayrı `ihale_butce_mv`, Faz B).
+>
+> **Faz A (SQL yok, bir oturum):** rozet + payda + `etkin_tarih` ekseni + `kpi.aktif`.
+> Mod anahtarında sayım/kırılım kartları DT'yi kapsar; **idare kırılımı misafirde DT
+> dalını DIŞLAR** (`dogrudan_temin_ilanlari.idare` anonda 42501); `usul` ve `durum`
+> kartları "Tümü"de gizlenir (DT'de usul kolonu yok, durum değerleri ayrık).
+> **Faz B (ayrı commit):** `ihale_butce_mv` + gece REFRESH + anon GRANT.
+> ⚠️ Faz B'yi doğrudan `ihale_sonuclari`'na bağlama: `rekabet_ozet` düz `LANGUAGE sql
+> STABLE` (çağıran yetkisiyle koşar) → misafirde rekabet-analizi **komple 42501** olur.
+> `kurum_ozet` SECURITY DEFINER olduğu için etkilenmez — bu asimetri tuzak.
+>
+> ## 2) RFQ — 16 Tem kararı BOZULMAYACAK, bu keşfedilebilirlik hatası
+> **VERİYLE ÇÖZÜLDÜ:** veri/RPC sağlam, `harita.html`'de doğru çiziliyor.
+> `satinalma_talepleri` 3 kayıt, üçü `durum='acik'`, en yakını **26 gün sonra** bayatlıyor.
+> `ozel-ihaleler.html`'de kullanıcıya harita vaadi verilmiyor (tek referans satır 313'teki
+> "İl zorunludur" notu) → şikâyetin çekirdeği **köprü yokluğu**.
+> **İlk adım (bir oturum):**
+> 1. `ozel-ihaleler.html:337` başarı mesajına + liste başlığına
+>    `🗺️ Açık talepleri haritada gör (N)` → `harita?katman=rfq`
+> 2. `harita.html`: `?katman=rfq` + `?il=` derin linkini kabul et (mevcut `?sektor=` bloğu yanına).
+>    **`aktifKatman='firma'` varsayılanı KALSIN** (53.897 firma vs 3 RFQ)
+> 3. RFQ butonuna rozet — **yalnız sayı > 0 iken** (41 kategori × 3 RFQ → çoğu sektörde "0" yazardı)
+> 4. `il_rfq_dagilimi`'ye bayatlama filtresi — **ÇIPLAK `>= now()` YAZMA**:
+>    `AND (son_teklif_tarihi IS NULL OR son_teklif_tarihi >= now())`. Kolon nullable ve
+>    `ozel-ihaleler.html:377` listesi tarihsizleri gösteriyor; çıplak filtre haritayla listeyi
+>    ters yönde ayırırdı. `durum` ekseni de hizalanmalı (RPC `='acik'`, liste `!='iptal'`).
+> 5. Yorum düş: `acik_adres`, `olusturan_vkn`, `ilce` anonda **42501** — RFQ kartını bu
+>    kolonlarla zenginleştiren misafirde sayfayı öldürür.
+>
+> ## 3) Ticaret — canlı tabloya PK TAKASI YAPILMAYACAK
+> **ÇELİŞME BUNU TERSİNE ÇEVİRDİ.** İlk tur "raportor kolonu + PK değiştir" diyordu;
+> canlı `dis_ticaret_hs` (780.386 satır) üzerinde PK/indeks takası, `CREATE OR REPLACE`
+> ile yeni imza eklemenin **PGRST203** üretmesi, yeni imzada GRANT olmaması (**42883**) ve
+> `DROP INDEX CONCURRENTLY`nin virgüllü liste kabul etmemesi yüzünden riskli.
+> → **Diğer raportörler AYRI tabloya: `public.dis_ticaret_dunya`.** Canlı tabloya sıfır dokunuş.
+>
+> **Ölçülen fırsat:** Comtrade `reporterCode` **virgüllü liste kabul ediyor** (5 raportör
+> tek çağrıda doğrulandı) ve `flowCode=X,M` çalışıyor — mevcut 4 script X ve M'yi ayrı
+> çekiyor, yani **çağrıların %50'si israf**. `netWgt` 500/500, `qty` 498/500 dolu geliyor
+> ama kod atıyor → konşimento kıyası için **şimdi alınmalı**, sonradan çekmek kotayı ikinci kez yakar.
+> **⏰ `ticaret_hs_fasil`'ın yıl penceresi WHERE'siz** (`max(yil)` tüm tablodan) — ikinci
+> raportörün 2025 satırı girerse TR fasıl tablosu boşalır. Ayrı tablo bu tuzağı da atlatıyor.
+> **26 yıl backfill YAPILMAYACAK**; önce tek-yıl pilotu, sonuç görülünce karar.
+>
+> ## 4) Arama/filtre — SIRA TERSİNE ÇEVRİLDİ: önce davranış, CSS en son
+> **ÇELİŞME DÜZELTTİ.** Ölçüm CSS birleştirmenin şikâyete dokunmadığını gösterdi:
+> 8 sayfa inline CSS **91.206 B**, ortak kabuk yalnız %21, **%79'u sayfaya özel** —
+> filtre CSS'i zaten hiçbir sayfada ortak değil.
+> Asıl şikâyet **davranış tutarsızlığı**: `ihaleler.html` tek başına 4 model barındırıyor
+> (5 kontrol anında · topbar 400ms · `f-arama` Enter · `f-idare`/`f-esik-katsayi`/`f-okas`
+> **hiç handler'ı yok**, yalnız butonla).
+> **Commit 1 (sıfır görsel risk):** `js/api.js:98,111` `UI.bildirim_goster()` çağırıyor ama
+> `UI` yalnız `js/ui.js`'te ve api.js yükleyen 6 sayfanın hiçbiri onu yüklemiyor →
+> yerel `bildirimGoster()` koy. **7 ölü dosya sil** (1.164 satır / 48.777 B: ui.js,
+> dashboard.js, ihale-detay.js, ihaleler.js, fiyatlandirma.js, profil.js, auth.js —
+> HTML referansı 0, dinamik import 0). `ihale-detay.html` + `profil.html`'den gereksiz
+> api.js script tag'ini kaldır.
+> **Commit 2:** `ihaleler.html`'in 3 handler'sız alanına handler ekle (metin 350ms debounce,
+> select/date anında, Enter debounce atlar) + `sayacIstekNo` yarış koruması.
+> ⚠️ Önce ILIKE gecikmesini ÖLÇ — `f-idare` her tuşta sunucu ILIKE'ı, 57014 baskısı var.
+> **CSS en sona:** `css/kabuk.css` ayrı, `css/arama.css` yalnız filtre kuralları, `.ara-*`
+> ad alanı. `.toolbar` 4 sayfada 3 farklı değer taşıyor — naif taşıma **harita.html'i bozar**.
+> Pilot sırası: uluslararasi → sektorler → kik-kararlar → … → ihaleler (en son).
+>
+> ## 5) İdare ağacı — PROXY OLMADAN BAŞLANABİLİR
+> **VERİYLE ÇÖZÜLDÜ:** `idare_hiyerarsi_yukle.py` EKAP'a **0 istek** atıyor
+> (`httpx` yalnız SUPABASE_URL'e; `proxy_havuz` importu bile yok) →
+> `detsis_agaci.json` **15,42 MB / 87.528 kayıt** diskte hazır. **Proxy yalnız SAYAÇLARI blokluyor.**
+> **⚠️ ÇELİŞMENİN YAKALADIĞI ZORUNLU ADIM:** `idare_kapanis_uret()` MV'yi **REFRESH ETMİYOR**,
+> loader da etmiyor; `idare_agac_dallar` **yalnızca** `idare_hiyerarsi_sayim_mv`'den okuyor →
+> REFRESH atlanırsa arayüz **boş ağaç** render eder. Adım 1 ve 2 aynı işlemde olmalı.
+> **⚠️ TEŞHİS KURALI DÜZELTMESİ:** boş gövdeyle çağrılan `idare_agac_yol`/`_ara`/
+> `idare_alt_agac_detsis` **PGRST202** dönüyor (zorunlu parametreleri var) — bu
+> "fonksiyon yok" DEMEK DEĞİL. Yanlış alarm üretmesin.
+> **Sıra:** loader `--kapanis` → **MV REFRESH CONCURRENTLY** → `kurum-analiz.html:378`'e
+> "Liste | Ağaç" sekmesi (mevcut liste bloğuna DOKUNMA, kardeş div) → sayaç sütunlarını
+> **bayrakla KAPALI başlat** (0 göstermek "bu kurumun hiç ihalesi yok" yalanı) →
+> `LIMIT 500` kırpmasını yüzeye çıkar → "Bağlantısız Kurumlar" (%20, 17.329 düğüm) **ayrı
+> dal olarak göster, gizleme** → `run_scraper.sh`'e `idare_kapanis_uret()` + MV REFRESH.
+> `ilan_detsis_esle()`'yi cron'a **EKLEME** (boş `detsis_no` üzerinde 1,85M satır boşuna döner).
+> ⛔ `migration_idare_agac_rpc.sql`'i **TEKRAR KOŞMA** — içinde ALTER TABLE var,
+> 19 Tem'de ACCESS EXCLUSIVE canlı `ilanlar` okumalarını tıkadı. Şema zaten uygulanmış.
+>
+> ---
+>
+> ## 📋 UYGULAMA SIRASI (gerekçeli)
+> | # | İş | Neden bu sırada |
+> |---|---|---|
+> | 1 | **P0.3 Analiz ekseni** (`etkin_tarih` + `kpi.aktif`) | Canlıda YANLIŞ olan tek şey; %4,27 → %98,51 |
+> | 2 | **Arama Commit 1** (api.js + 7 ölü dosya) | Gerçek kusur, sıfır görsel risk, bağımsız |
+> | 3 | **RFQ köprüsü** (4 adım) | Kullanıcı şikâyeti doğrudan bu; 26 gün sonra bayatlama aynı sürümde kapanmalı |
+> | 4 | **Analiz Faz A** (rozet + payda + mod anahtarı) | Saf frontend, SQL riski yok |
+> | 5 | **Arama Commit 2** (ihaleler 3 handler) | "Çok karışık"ın merkezi; önce ILIKE ölçümü |
+> | 6 | **İdare ağacı** 1-7 | En büyük ürün kazancı, proxy'siz biter; ama en çok yeni kod |
+> | 7 | **Ticaret** ayrı tablo + script | Canlıya sıfır dokunuş; ürün değeri onay bekliyor |
+> | 8 | **Analiz Faz B** (`ihale_butce_mv`) | En yüksek regresyon riski (misafir 42501 + timeout) |
+> | 9 | İdare sayaçları / Ticaret pilot | Proxy 402'ye + onaya bağlı, takvime konamaz |
+>
+> Mantık: **canlı hata → ucuz kullanıcı değeri → doğruluk → yeni yüzey → riskli altyapı → bloke iş.**
+> CSS birleştirme bilinçli olarak sonda: ölçüm, kullanıcının şikâyetine dokunmadığını gösterdi.
+>
+> ## ❓ GERÇEKTEN KULLANICI KARARI OLANLAR (veriyle çözülemeyenler)
+> 1. **"Tümü" varsayılan mı olacak?** DT (1.490.644) ihaleyi (357.207) **4:1** eziyor →
+>    varsayılan "Tümü" olursa tüm kırılım grafikleri fiilen DT grafiğine döner.
+> 2. **"Tümü"de ortak tarih penceresi?** DT pratikte 2025-2026, ihale 2010'a uzanıyor.
+> 3. **RFQ'lar `ihaleler.html`'de de görünsün mü?** Kamu ilanı + özel RFQ tek listede karışsın mı?
+> 4. **RFQ bayatlatma: RPC filtresi mi, cron adımı mı?** İkincisi daha doğru (listeleri de
+>    düzeltir) ama **prod cron değişikliği** → ayrı onay.
+> 5. **Ticaret "her ülke" ne demek?** (a) her ülke × DÜNYA (partner=0) — planlanan;
+>    (b) tam ikili matris ≈ **4,8 milyar satır**, uygulanamaz.
 
 > ## 🛑 20 TEM — PROXY HAVUZU DÜŞTÜ (402), KAZIMA İŞLERİ BLOKE
 > Webshare uçlarının **tamamı `402 Payment Required`** dönüyor (httpx CONNECT
