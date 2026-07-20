@@ -68,6 +68,25 @@
 >       (kural motoru 3 kez düzeldi → DETSİS satırlarının türü de bayat)
 > - [ ] Arayüzde `kaynak` ayrımı: 'kural' türü çıkarımdır, 'ekap-detsis' resmî.
 >       Filtre için yeterli ama "kesin" diye sunulmamalı.
+>
+> ### ⚠️ PERFORMANS BULGUSU: gece tazelemesi ~10 dk sürüyor
+> `idare_tur_tazele()` ölçüldü: postgres %124 CPU'da **7+ dakika** işlemci zamanı.
+> Sebep join koşulunun satır başına fonksiyon çağırması —
+> `t.idare_norm = public.idare_normalize(d.idare)` → 1,49M satırda tr_fold +
+> 2 regexp_replace. İfade indeksi bunu KURTARMIYOR: `IS DISTINCT FROM` koşulu her
+> satırın okunmasını gerektirdiği için planlayıcı seq scan + hash join seçiyor.
+> `run_scraper.sh` bunu HER GECE çağırıyor → her gece ~10 dk boşa CPU.
+>
+> **Çözüm (yapılmadı):** `idare_norm`'u iki tabloda da STORED generated column
+> yapmak → join düz eşitliğe döner, fonksiyon çağrısı sıfırlanır.
+> ```sql
+> ALTER TABLE public.ilanlar ADD COLUMN idare_norm text
+>   GENERATED ALWAYS AS (public.idare_normalize(idare)) STORED;
+> CREATE INDEX ON public.ilanlar (idare_norm);
+> ```
+> ⚠️ 1,85M satıra kolon eklemek tabloyu yeniden yazar — bakım penceresi ister.
+> ⚠️ `idare_normalize` IMMUTABLE olmak zorunda (öyle) yoksa generated column reddedilir.
+> ⚠️ Yeni kolon kolon-GRANT'a GİRMEZ → misafirde 42501, `GRANT SELECT (idare_norm)` şart.
 
 > # 🎯 İŞ KUYRUĞU — TEK KAYNAK (20 Tem 2026)
 > **Kullanıcı kararı:** *"eksikleri not al yapılacaklar md ye, oradan ilerleriz.
