@@ -293,6 +293,96 @@
       .iz-row { grid-template-columns: 1fr 80px 60px; }
       .iz-il, .iz-actions { display: none; }
     }
+
+    /* ── KURUM AĞACI (ag-*) — dizin hub'ına ek görünüm (YAPILACAKLAR #3) ── */
+    .dz-gorunum { display: flex; gap: 8px; margin-bottom: 18px; }
+    .dz-gorunum-btn {
+      padding: 9px 18px; border-radius: 7px; font-size: 13px; font-weight: 600;
+      background: var(--navy-mid); border: 1px solid var(--border); color: var(--muted);
+      cursor: pointer; font-family: var(--font-body); transition: all .15s;
+    }
+    .dz-gorunum-btn:hover { color: var(--white); }
+    .dz-gorunum-btn.active { background: rgba(240,165,0,.12); border-color: var(--amber); color: var(--amber); }
+
+    .ag-kapsama {
+      background: var(--navy-mid); border: 1px solid var(--border);
+      border-radius: 10px; padding: 16px 18px; margin-bottom: 14px;
+    }
+    .ag-kapsama-baslik {
+      font-size: 11px; font-weight: 700; color: var(--muted);
+      text-transform: uppercase; letter-spacing: .06em; margin-bottom: 10px;
+    }
+    .ag-bar { height: 8px; border-radius: 4px; background: var(--border); overflow: hidden; margin: 6px 0 10px; }
+    .ag-bar-esli { background: var(--amber); height: 100%; border-radius: 4px; }
+    .ag-kapsama-sat { font-size: 12px; color: var(--muted); display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+    .ag-kapsama-sat b { color: var(--white); }
+
+    .ag-panel { background: var(--navy-mid); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .ag-satir {
+      display: flex; align-items: center; gap: 8px; min-width: 0;
+      padding: 8px 14px 8px calc(14px + var(--derin, 0) * 22px);
+      border-bottom: 1px solid rgba(var(--overlay-rgb),.04); transition: background .12s;
+    }
+    .ag-satir:hover { background: rgba(var(--overlay-rgb),.03); }
+    .ag-ok {
+      width: 22px; height: 22px; flex-shrink: 0; background: none; border: none;
+      color: var(--muted); cursor: pointer; font-size: 11px; border-radius: 4px;
+      transition: transform .15s, color .15s; font-family: var(--font-body);
+    }
+    .ag-ok:hover { color: var(--amber); }
+    .ag-ok.acik { transform: rotate(90deg); }
+    .ag-ok.yok { visibility: hidden; cursor: default; }
+    .ag-ad {
+      font-size: 13px; font-weight: 600; color: var(--white); cursor: pointer;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; flex: 1;
+    }
+    .ag-ad:hover { color: var(--amber); }
+    .ag-rozet { font-size: 11px; font-weight: 600; padding: 2px 8px; border-radius: 10px; white-space: nowrap; flex-shrink: 0; }
+    .ag-rozet.ihale { background: rgba(240,165,0,.1); color: var(--amber); }
+    .ag-rozet.dt { background: rgba(99,102,241,.12); color: #a5b4fc; }
+    .ag-rozet.bos { background: rgba(var(--overlay-rgb),.05); color: var(--muted); }
+    .ag-pay { font-size: 11px; color: var(--muted); white-space: nowrap; flex-shrink: 0; width: 52px; text-align: right; }
+    .ag-cocuklar { display: none; }
+    .ag-cocuklar.acik { display: block; }
+    .ag-vurgu { animation: agVurgu 2.4s ease; }
+    @keyframes agVurgu { 0%, 60% { background: rgba(240,165,0,.14); } 100% { background: transparent; } }
+    .ag-not {
+      font-size: 12px; color: var(--muted);
+      padding: 8px 14px 10px calc(14px + var(--derin, 0) * 22px);
+      border-bottom: 1px solid rgba(var(--overlay-rgb),.04);
+    }
+    .ag-daha { padding: 8px 14px 12px calc(14px + var(--derin, 0) * 22px); }
+
+    .ag-sonuc { background: var(--navy-mid); border: 1px solid var(--border); border-radius: 10px; margin-bottom: 14px; overflow: hidden; }
+    .ag-sonuc-baslik {
+      font-size: 11px; font-weight: 700; color: var(--muted); text-transform: uppercase;
+      letter-spacing: .06em; padding: 10px 14px; border-bottom: 1px solid var(--border);
+    }
+    .ag-sonuc-satir {
+      display: flex; align-items: center; gap: 10px; padding: 9px 14px;
+      border-bottom: 1px solid rgba(var(--overlay-rgb),.04); cursor: pointer; min-width: 0;
+    }
+    .ag-sonuc-satir:last-child { border-bottom: none; }
+    .ag-sonuc-satir:hover { background: rgba(var(--overlay-rgb),.03); }
+    .ag-sonuc-satir:hover .ag-sonuc-ad { color: var(--amber); }
+    .ag-sonuc-ad { font-size: 13px; font-weight: 600; color: var(--white); flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .ag-sonuc-ust { font-size: 11px; color: var(--muted); white-space: nowrap; max-width: 34%; overflow: hidden; text-overflow: ellipsis; }
+
+    /* dal ihaleleri modalı */
+    .ag-modal-fon {
+      position: fixed; inset: 0; background: rgba(0,0,0,.55); z-index: 60;
+      display: flex; align-items: center; justify-content: center; padding: 20px;
+    }
+    .ag-modal {
+      background: var(--navy-mid); border: 1px solid var(--border); border-radius: 12px;
+      max-width: 640px; width: 100%; max-height: 80vh; display: flex; flex-direction: column;
+    }
+    .ag-modal-baslik { padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+    .ag-modal-baslik b { font-size: 14px; color: var(--white); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .ag-modal-kapat { background: none; border: none; color: var(--muted); font-size: 18px; cursor: pointer; flex-shrink: 0; }
+    .ag-modal-kapat:hover { color: var(--white); }
+    .ag-modal-govde { overflow-y: auto; padding: 10px 20px 16px; }
+    @media (max-width: 900px) { .ag-rozet.dt, .ag-pay, .ag-sonuc-ust { display: none; } }
   </style>
 </head>
 <body>
@@ -365,6 +455,16 @@
           <div class="kurum-ad" style="font-size:20px;">İdare Dizini</div>
           <div class="kurum-meta">İhale açan kamu idarelerinin karnesi — idareye tıklayın, analizi aynı ekranda açılsın.</div>
         </div>
+
+        <!-- Görünüm anahtarı: Liste (mevcut, dokunulmadı) / Kurum Ağacı (YAPILACAKLAR #3).
+             .tab-btn KULLANILMADI: sekmeAc() sayfadaki TÜM .tab-btn'lerin active'ini siler,
+             analiz görünümüne geçince buradaki seçim bozulurdu. -->
+        <div class="dz-gorunum">
+          <button class="dz-gorunum-btn active" id="dz-btn-liste" onclick="dizinGorunum('liste')">📋 Dizin Listesi</button>
+          <button class="dz-gorunum-btn" id="dz-btn-agac" onclick="dizinGorunum('agac')">🌳 Kurum Ağacı</button>
+        </div>
+
+        <div id="liste-gorunum">
         <div class="kpi-grid">
           <div class="kpi-card"><div class="kpi-label">Toplam İdare</div><div class="kpi-value amber" id="iz-st-idare">—</div></div>
           <div class="kpi-card"><div class="kpi-label">Aktif İdareler</div><div class="kpi-value" id="iz-st-aktif-idare">—</div></div>
@@ -405,6 +505,25 @@
             </div>
           </div>
         </div>
+        </div><!-- /liste-gorunum -->
+
+        <!-- KURUM AĞACI (YAPILACAKLAR #3) — DETSİS hiyerarşisi, tembel dallar.
+             Kökler + kapsama sekmeye ilk geçişte yüklenir; dallar tıklanınca RPC ile gelir. -->
+        <div id="agac-gorunum" style="display:none;">
+          <div id="ag-yukleniyor" class="loading-state">
+            <div class="loading-spinner"></div>
+            <p>Kurum ağacı yükleniyor…</p>
+          </div>
+          <div id="ag-icerik" style="display:none;">
+            <div class="ag-kapsama" id="ag-kapsama" style="display:none;"></div>
+            <div class="iz-bar">
+              <div class="iz-ara"><span style="color:var(--muted);">🔍</span><input type="text" id="ag-arama" placeholder="Ağaçta kurum ara (ör. emniyet)…" autocomplete="off"></div>
+              <span class="iz-say" id="ag-sayac">dal açmak için ▸ okuna tıklayın</span>
+            </div>
+            <div id="ag-arama-sonuc" style="display:none;"></div>
+            <div class="ag-panel" id="ag-kokler"></div>
+          </div>
+        </div><!-- /agac-gorunum -->
       </div><!-- /dizin-view -->
 
       <div id="root-loading" class="loading-state" style="display:none;">
@@ -1157,6 +1276,349 @@
       '<div style="color:#f87171; padding:40px; text-align:center;">Dizin yüklenemedi. Lütfen sayfayı yenileyin.</div>';
   }
 
+  // ══════════════ KURUM AĞACI (YAPILACAKLAR #3) ══════════════
+  // DETSİS hiyerarşisi: idare_agac_dallar (tembel dallar) + idare_agac_ara +
+  // idare_agac_yol (arama sonucundan dal açma) — migration_idare_agac_rpc.sql;
+  // dal ihaleleri modalı: idare_dal_son_ihaleler (migration_idare_dal_ihaleler.sql,
+  // sunucu-taraflı JOIN — istemcide in.() URL'i yok).
+  // Hepsi anon'a KAPALI → misafire giriş kapısı.
+  // "Bağlantısız Kurumlar" dalı: idare_agac_bagsiz_ozet/liste
+  // (migration_kurum_agaci_bagsiz.sql) — henüz uygulanmadıysa ağaç yine çalışır,
+  // dal kibar bir "hazır değil" notu gösterir.
+  const AG_BAGSIZ = '__bagsiz';
+  let agKuruldu = false, agAraIstek = 0, agBagsizOffset = 0;
+  let agTumIhale = 0, agTumDt = 0, agOzet = null;
+  const agCocukYuklendi = new Set();   // detsis → çocukları çekildi (tekrar RPC yok)
+
+  window.dizinGorunum = function(g) {
+    document.getElementById('dz-btn-liste').classList.toggle('active', g === 'liste');
+    document.getElementById('dz-btn-agac').classList.toggle('active', g === 'agac');
+    document.getElementById('liste-gorunum').style.display = g === 'liste' ? '' : 'none';
+    document.getElementById('agac-gorunum').style.display = g === 'agac' ? '' : 'none';
+    if (g === 'agac' && !agKuruldu) { agKuruldu = true; agacBaslat().catch(agacHata); }
+  };
+
+  function sayi(n) { return Number(n || 0).toLocaleString('tr-TR'); }
+
+  // Kapsama payı: dalın toplamı / TÜM kayıtlar (bağlantısızlar dahil payda)
+  function payYuzde(top, payda) {
+    if (!payda || !top || top <= 0) return '';
+    const p = top / payda * 100;
+    return p >= 0.1 ? '%' + p.toLocaleString('tr-TR', { maximumFractionDigits: 1 }) : '&lt;%0,1';
+  }
+
+  function agacGirisKapisi() {
+    document.getElementById('ag-yukleniyor').innerHTML = `
+      <div style="max-width:420px; margin:20px auto; text-align:center; background:var(--navy-mid); border:1px solid var(--border); border-radius:14px; padding:36px 28px;">
+        <div style="font-size:34px; margin-bottom:10px;">🔒</div>
+        <div style="font-size:16px; font-weight:800; color:var(--white); font-family:var(--font-display); margin-bottom:8px;">Kurum Ağacı üyelere özel</div>
+        <div style="font-size:13px; color:var(--muted); line-height:1.6; margin-bottom:20px;">Bakanlıktan il müdürlüğüne 87.000+ kurumun hiyerarşisini ve ihale sayılarını görmek için ücretsiz hesabınızla giriş yapın.</div>
+        <div style="display:flex; gap:10px; justify-content:center;">
+          <a href="login" style="background:var(--amber); color:var(--navy); font-weight:700; font-size:13px; padding:9px 20px; border-radius:7px; text-decoration:none;">Giriş Yap</a>
+          <a href="login?panel=kayit" style="background:var(--card-bg); color:var(--white); border:1px solid var(--border); font-weight:600; font-size:13px; padding:9px 20px; border-radius:7px; text-decoration:none;">Ücretsiz Kayıt</a>
+        </div>
+      </div>`;
+  }
+
+  async function agacHata(e) {
+    console.error(e);
+    let oturumsuz = false;
+    try { const { data: { session } } = await sb.auth.getSession(); oturumsuz = !session; } catch (_) {}
+    if (oturumsuz || (e && (e.code === '42501' || e.code === 'PGRST301'))) { agacGirisKapisi(); return; }
+    document.getElementById('ag-yukleniyor').innerHTML =
+      '<div style="color:#f87171; padding:40px; text-align:center;">Kurum ağacı yüklenemedi. Lütfen sayfayı yenileyin.</div>';
+  }
+
+  async function agacBaslat() {
+    let oturum = null;
+    try { const { data } = await sb.auth.getSession(); oturum = data && data.session; } catch (_) {}
+    if (!oturum) { agacGirisKapisi(); return; }
+
+    // 30 dk önbellek: kökler + kapsama özeti (RPC'ler seyrek kalsın — 2 istek/sn limiti)
+    const CK = 'kurum_agac_v1', TTL = 30 * 60 * 1000;
+    let kokler = null, ozet = null;
+    try {
+      const ham = sessionStorage.getItem(CK);
+      if (ham) {
+        const p = JSON.parse(ham);
+        if (p && p.t && (Date.now() - p.t) < TTL && Array.isArray(p.k)) { kokler = p.k; ozet = p.o; }
+      }
+    } catch (_) { /* önbellek okunamadı → normal fetch */ }
+
+    if (!kokler) {
+      const [kokRes, ozetRes] = await Promise.all([
+        sb.rpc('idare_agac_dallar', { p_ust: null }),
+        sb.rpc('idare_agac_bagsiz_ozet'),
+      ]);
+      if (kokRes.error) throw kokRes.error;
+      kokler = kokRes.data || [];
+      // bağlantısız özeti migration bekliyor olabilir → hatası ağacı düşürmesin
+      ozet = ozetRes.error ? null : ozetRes.data;
+      if (ozetRes.error) console.info('idare_agac_bagsiz_ozet henüz kullanılamıyor (migration bekliyor):', ozetRes.error.message);
+      try { sessionStorage.setItem(CK, JSON.stringify({ t: Date.now(), k: kokler, o: ozet })); } catch (_) { /* kota */ }
+    }
+
+    agOzet = ozet;
+    agTumIhale = Number(ozet?.tum_ihale) || 0;
+    agTumDt    = Number(ozet?.tum_dt) || 0;
+    // özet yoksa pay paydası: köklerin toplamı (yalnız ağaca bağlı kısım)
+    if (!agTumIhale) agTumIhale = kokler.reduce((s, r) => s + (Number(r.toplam_ihale) || 0), 0);
+    if (!agTumDt)    agTumDt    = kokler.reduce((s, r) => s + (Number(r.toplam_dt) || 0), 0);
+
+    kapsamaCiz(ozet);
+
+    const kokEl = document.getElementById('ag-kokler');
+    kokEl.innerHTML = kokler.map(d => dugumHtml(d, 0)).join('') + bagsizKokHtml(ozet);
+    document.getElementById('ag-sayac').textContent = `${sayi(kokler.length)} kök kurum · dalları ▸ ile açın`;
+    document.getElementById('ag-yukleniyor').style.display = 'none';
+    document.getElementById('ag-icerik').style.display = 'block';
+
+    // İnline onclick YOK — kurum adlarındaki tırnak kırardı (iz-govde deseni): delegasyon
+    kokEl.addEventListener('click', agacTikla);
+    document.getElementById('ag-arama-sonuc').addEventListener('click', e => {
+      const a = e.target.closest('.ag-sonuc-agac');
+      if (a) { agacYoluAc(a.dataset.detsis); return; }
+      const b = e.target.closest('.ag-sonuc-bagsiz');
+      if (b) kurumAc(b.dataset.ad);
+    });
+    let t;
+    document.getElementById('ag-arama').addEventListener('input', () => { clearTimeout(t); t = setTimeout(agacAra, 350); });
+  }
+
+  function kapsamaCiz(ozet) {
+    if (!ozet) return;   // migration henüz uygulanmadıysa şerit çizilmez
+    const tumI = Number(ozet.tum_ihale) || 0, esliI = Number(ozet.esli_ihale) || 0;
+    const tumD = Number(ozet.tum_dt) || 0,   esliD = Number(ozet.esli_dt) || 0;
+    const pI = tumI ? esliI / tumI * 100 : 0;
+    const pD = tumD ? esliD / tumD * 100 : 0;
+    const el = document.getElementById('ag-kapsama');
+    el.innerHTML = `
+      <div class="ag-kapsama-baslik">Ağaç kapsaması — kayıtların DETSİS hiyerarşisine bağlanma oranı (her gece güncellenir)</div>
+      <div class="ag-kapsama-sat"><span>📋 İhale: <b>${sayi(esliI)}</b> / ${sayi(tumI)} kayıt ağaca bağlı</span><span><b>%${pI.toLocaleString('tr-TR', { maximumFractionDigits: 1 })}</b></span></div>
+      <div class="ag-bar"><div class="ag-bar-esli" style="width:${Math.min(100, pI).toFixed(1)}%"></div></div>
+      <div class="ag-kapsama-sat"><span>⚡ Doğrudan temin: <b>${sayi(esliD)}</b> / ${sayi(tumD)} kayıt ağaca bağlı</span><span><b>%${pD.toLocaleString('tr-TR', { maximumFractionDigits: 1 })}</b></span></div>
+      <div class="ag-bar"><div class="ag-bar-esli" style="width:${Math.min(100, pD).toFixed(1)}%"></div></div>
+      <div class="ag-kapsama-sat" style="margin-top:2px;"><span>Ağaca bağlanamayan kayıtlar aşağıda <b>🔗 Bağlantısız Kurumlar</b> dalında ayrıca listelenir — veri gizlenmez.</span></div>`;
+    el.style.display = 'block';
+  }
+
+  // Düğüm satırı: kendi/toplam sayılar AYRI (ihale 📋, DT ⚡) + tüm kayıtlar içindeki pay
+  function dugumHtml(d, derin) {
+    const acilir = Number(d.cocuk_sayisi) > 0;
+    return `<div class="ag-dugum" data-detsis="${esc(d.detsis_no)}" data-derin="${derin}">
+      <div class="ag-satir" style="--derin:${derin}">
+        <button class="ag-ok ${acilir ? '' : 'yok'}" title="${acilir ? sayi(d.cocuk_sayisi) + ' alt birim' : ''}">▸</button>
+        <span class="ag-ad" title="${esc(d.ad)}">${esc(d.ad)}${acilir ? ` <span style="color:var(--muted);font-weight:500;font-size:11px;">(${sayi(d.cocuk_sayisi)})</span>` : ''}</span>
+        <span class="ag-rozet ${Number(d.toplam_ihale) ? 'ihale' : 'bos'}" title="İhale — kendi: ${sayi(d.kendi_ihale)}, dal toplamı (kendisi + tüm alt birimler): ${sayi(d.toplam_ihale)}">📋 ${sayi(d.kendi_ihale)} / ${sayi(d.toplam_ihale)}</span>
+        <span class="ag-rozet ${Number(d.toplam_dt) ? 'dt' : 'bos'}" title="Doğrudan temin — kendi: ${sayi(d.kendi_dt)}, dal toplamı: ${sayi(d.toplam_dt)}">⚡ ${sayi(d.kendi_dt)} / ${sayi(d.toplam_dt)}</span>
+        <span class="ag-pay" title="Tüm ihale kayıtları içindeki pay">${payYuzde(Number(d.toplam_ihale), agTumIhale)}</span>
+        ${Number(d.toplam_ihale) > 0 ? '<button class="iz-btn iz-btn-ghost ag-dal-ihale" title="Bu dalın (kendisi + alt birimleri) en güncel ihaleleri">📋 Son ihaleler</button>' : ''}
+      </div>
+      <div class="ag-cocuklar"></div>
+    </div>`;
+  }
+
+  // "Bağlantısız Kurumlar" — DETSİS'e eşlenemeyen idareler AYRI DAL olarak gösterilir;
+  // gizlenirse kullanıcı ağaç toplamlarını "tüm veri" sanır (kapsama ~%90 hedefte bile %10 dışarıda).
+  function bagsizKokHtml(ozet) {
+    const kurum = ozet ? sayi(ozet.kurum_sayisi) : '—';
+    const ih = ozet ? sayi(ozet.bagsiz_ihale) : '—';
+    const dt = ozet ? sayi(ozet.bagsiz_dt) : '—';
+    return `<div class="ag-dugum" data-detsis="${AG_BAGSIZ}" data-derin="0">
+      <div class="ag-satir" style="--derin:0; border-top:1px dashed var(--border);">
+        <button class="ag-ok" title="Bağlantısız kurumları listele">▸</button>
+        <span class="ag-ad" title="DETSİS ağacına henüz bağlanamayan idareler — eşleme her gece iyileşir">🔗 Bağlantısız Kurumlar <span style="color:var(--muted);font-weight:500;font-size:11px;">(${kurum} kurum — ağaca eşlenemedi)</span></span>
+        <span class="ag-rozet ${ozet && Number(ozet.bagsiz_ihale) ? 'ihale' : 'bos'}" title="Ağaca bağlanamayan ihale kayıtları">📋 ${ih}</span>
+        <span class="ag-rozet ${ozet && Number(ozet.bagsiz_dt) ? 'dt' : 'bos'}" title="Ağaca bağlanamayan doğrudan temin kayıtları">⚡ ${dt}</span>
+        <span class="ag-pay" title="Tüm ihale kayıtları içindeki pay">${ozet ? payYuzde(Number(ozet.bagsiz_ihale), agTumIhale) : ''}</span>
+      </div>
+      <div class="ag-cocuklar"></div>
+    </div>`;
+  }
+
+  function agacTikla(e) {
+    const dugum = e.target.closest('.ag-dugum');
+    if (!dugum) return;
+    if (e.target.closest('.ag-dal-ihale')) {
+      const adEl = dugum.querySelector(':scope > .ag-satir > .ag-ad');
+      dalIhaleleriAc(dugum.dataset.detsis, adEl ? adEl.title : '');
+      return;
+    }
+    if (e.target.closest('.ag-bagsiz-daha')) {
+      bagsizYukle(dugum, Number(dugum.dataset.derin) + 1, agBagsizOffset);
+      return;
+    }
+    const analiz = e.target.closest('.ag-bagsiz-analiz');
+    if (analiz) { kurumAc(analiz.dataset.ad); return; }
+    if (e.target.closest('.ag-ok') || e.target.closest('.ag-ad')) dugumAcKapa(dugum);
+  }
+
+  // Tembel dal açılımı: çocuklar İLK açılışta RPC ile gelir, sonrası DOM'da kalır
+  async function dugumAcKapa(dugum) {
+    const ok = dugum.querySelector(':scope > .ag-satir > .ag-ok');
+    if (!ok || ok.classList.contains('yok')) return;
+    const cocuklar = dugum.querySelector(':scope > .ag-cocuklar');
+    if (cocuklar.classList.contains('acik')) {
+      cocuklar.classList.remove('acik'); ok.classList.remove('acik');
+      return;
+    }
+    cocuklar.classList.add('acik'); ok.classList.add('acik');
+    const detsis = dugum.dataset.detsis;
+    if (agCocukYuklendi.has(detsis)) return;
+    agCocukYuklendi.add(detsis);
+    const derin = Number(dugum.dataset.derin) + 1;
+    cocuklar.innerHTML = `<div class="ag-not" style="--derin:${derin}">Yükleniyor…</div>`;
+    if (detsis === AG_BAGSIZ) { agBagsizOffset = 0; await bagsizYukle(dugum, derin, 0); return; }
+    const { data, error } = await sb.rpc('idare_agac_dallar', { p_ust: detsis });
+    if (error) {
+      console.error(error);
+      cocuklar.innerHTML = `<div class="ag-not" style="--derin:${derin}">Dallar yüklenemedi, tekrar deneyin.</div>`;
+      agCocukYuklendi.delete(detsis);
+      return;
+    }
+    const dallar = data || [];
+    cocuklar.innerHTML = dallar.map(d => dugumHtml(d, derin)).join('')
+      + (dallar.length >= 500 ? `<div class="ag-not" style="--derin:${derin}">İlk 500 dal gösteriliyor (ihale sayısına göre sıralı).</div>` : '')
+      + (!dallar.length ? `<div class="ag-not" style="--derin:${derin}">Alt birim bulunamadı.</div>` : '');
+  }
+
+  // Bağlantısız dal: 50'şerli sayfalarla iner ("Daha fazla" ile offset artar)
+  async function bagsizYukle(dugum, derin, offset) {
+    const cocuklar = dugum.querySelector(':scope > .ag-cocuklar');
+    const { data, error } = await sb.rpc('idare_agac_bagsiz_liste', { p_q: null, p_limit: 50, p_offset: offset });
+    if (error) {
+      console.info('idare_agac_bagsiz_liste henüz kullanılamıyor (migration bekliyor):', error.message);
+      cocuklar.innerHTML = `<div class="ag-not" style="--derin:${derin}">Bağlantısız kurum listesi henüz hazırlanıyor — yakında burada.</div>`;
+      agCocukYuklendi.delete(AG_BAGSIZ);
+      return;
+    }
+    const satirlar = data || [];
+    const html = satirlar.map(r => `
+      <div class="ag-satir" style="--derin:${derin}">
+        <button class="ag-ok yok">▸</button>
+        <span class="ag-ad ag-bagsiz-analiz" data-ad="${esc(r.idare)}" title="${esc(r.idare)} — analizi aç">${esc(r.idare)}</span>
+        <span class="ag-rozet ${Number(r.ihale_sayisi) ? 'ihale' : 'bos'}" title="Bu idarenin ağaca bağlanamayan ihale kayıtları">📋 ${sayi(r.ihale_sayisi)}</span>
+        <span class="ag-rozet ${Number(r.dt_sayisi) ? 'dt' : 'bos'}" title="Bu idarenin ağaca bağlanamayan DT kayıtları">⚡ ${sayi(r.dt_sayisi)}</span>
+        <span class="ag-pay"></span>
+        <button class="iz-btn iz-btn-amber ag-bagsiz-analiz" data-ad="${esc(r.idare)}">Analiz</button>
+      </div>`).join('');
+    const daha = satirlar.length >= 50
+      ? `<div class="ag-daha" style="--derin:${derin}"><button class="pager-btn ag-bagsiz-daha">Daha fazla göster</button></div>` : '';
+    if (offset === 0) {
+      cocuklar.innerHTML = (html || `<div class="ag-not" style="--derin:${derin}">Bağlantısız kurum kalmadı — tüm idareler ağaca eşlendi. 🎉</div>`) + daha;
+    } else {
+      const eski = cocuklar.querySelector('.ag-daha');
+      if (eski) eski.remove();
+      cocuklar.insertAdjacentHTML('beforeend', html + daha);
+    }
+    agBagsizOffset = offset + satirlar.length;
+  }
+
+  // Ağaçta arama: idare_agac_ara (ağaç) + idare_agac_bagsiz_liste (bağlantısız) paralel
+  async function agacAra() {
+    const q = document.getElementById('ag-arama').value.trim();
+    const panel = document.getElementById('ag-arama-sonuc');
+    if (q.length < 2) { panel.style.display = 'none'; panel.innerHTML = ''; return; }
+    const istek = ++agAraIstek;
+    const [agacRes, bagsizRes] = await Promise.all([
+      sb.rpc('idare_agac_ara', { p_q: q, p_limit: 20 }),
+      sb.rpc('idare_agac_bagsiz_liste', { p_q: q, p_limit: 10, p_offset: 0 }),
+    ]);
+    if (istek !== agAraIstek) return;   // araya yeni arama girdi
+    const agaclar   = agacRes.error ? [] : (agacRes.data || []);
+    const bagsizlar = bagsizRes.error ? [] : (bagsizRes.data || []);
+    if (!agaclar.length && !bagsizlar.length) {
+      panel.innerHTML = '<div class="ag-sonuc"><div class="ag-not" style="--derin:0; border:none;">Eşleşen kurum bulunamadı.</div></div>';
+      panel.style.display = 'block';
+      return;
+    }
+    panel.innerHTML =
+      (agaclar.length ? `<div class="ag-sonuc"><div class="ag-sonuc-baslik">Ağaçta eşleşenler — tıklayınca dal açılır</div>`
+        + agaclar.map(r => `
+          <div class="ag-sonuc-satir ag-sonuc-agac" data-detsis="${esc(r.detsis_no)}">
+            <span class="ag-sonuc-ad" title="${esc(r.ad)}">${esc(r.ad)}</span>
+            ${r.ust_ad ? `<span class="ag-sonuc-ust" title="${esc(r.ust_ad)}">↳ ${esc(r.ust_ad)}</span>` : ''}
+            <span class="ag-rozet ${Number(r.toplam_ihale) ? 'ihale' : 'bos'}">📋 ${sayi(r.toplam_ihale)}</span>
+            <span class="ag-rozet ${Number(r.toplam_dt) ? 'dt' : 'bos'}">⚡ ${sayi(r.toplam_dt)}</span>
+          </div>`).join('') + '</div>' : '')
+      + (bagsizlar.length ? `<div class="ag-sonuc"><div class="ag-sonuc-baslik">Bağlantısız kurumlarda eşleşenler — tıklayınca analiz açılır</div>`
+        + bagsizlar.map(r => `
+          <div class="ag-sonuc-satir ag-sonuc-bagsiz" data-ad="${esc(r.idare)}">
+            <span class="ag-sonuc-ad" title="${esc(r.idare)}">${esc(r.idare)}</span>
+            <span class="ag-rozet ${Number(r.ihale_sayisi) ? 'ihale' : 'bos'}">📋 ${sayi(r.ihale_sayisi)}</span>
+            <span class="ag-rozet ${Number(r.dt_sayisi) ? 'dt' : 'bos'}">⚡ ${sayi(r.dt_sayisi)}</span>
+          </div>`).join('') + '</div>' : '');
+    panel.style.display = 'block';
+  }
+
+  // Arama sonucundan dala in: idare_agac_yol kırıntısını (kök → düğüm) sırayla açar
+  async function agacYoluAc(detsis) {
+    const { data, error } = await sb.rpc('idare_agac_yol', { p_detsis: detsis });
+    if (error || !data || !data.length) { console.error(error); return; }
+    // mesafe DESC geldi: kök önce, düğümün kendisi (mesafe 0) sonda → ataları sırayla aç
+    for (const adim of data.slice(0, -1)) {
+      const el = document.querySelector(`.ag-dugum[data-detsis="${CSS.escape(adim.detsis_no)}"]`);
+      if (!el) break;   // 500-dal sınırına takılan ara düğüm — inebildiğimiz yerde dururuz
+      const cocuklar = el.querySelector(':scope > .ag-cocuklar');
+      if (!cocuklar.classList.contains('acik')) await dugumAcKapa(el);
+    }
+    const hedef = document.querySelector(`.ag-dugum[data-detsis="${CSS.escape(detsis)}"]`);
+    if (hedef) {
+      hedef.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      const satir = hedef.querySelector(':scope > .ag-satir');
+      satir.classList.remove('ag-vurgu'); void satir.offsetWidth; satir.classList.add('ag-vurgu');
+    }
+    // arama paneli AÇIK bırakılır: kullanıcı diğer sonuçlara da bakabilsin
+  }
+
+  // Dalın son ihaleleri: idare_dal_son_ihaleler RPC'si sunucuda
+  // idare_ata_torun JOIN ilanlar kurar (migration_idare_dal_ihaleler.sql).
+  // Eski tasarım (idare_alt_agac_detsis → ilanlar.detsis_no in.(...)) dal
+  // listesini GET URL'üne yazıyordu: EGM dalı (1.090 düğüm) ~12 KB istek
+  // satırı → Kong/nginx 8 KB sınırında 414 (aynı sınıf: kategori_backfill
+  // CHUNK=60 dersi, YAPILACAKLAR.md). RPC POST gövdesiyle URL sabit; eşik ve
+  // "çok geniş dal — alt dal seçin" çıkmazı tamamen kalktı.
+  async function dalIhaleleriAc(detsis, ad) {
+    const fon = document.createElement('div');
+    fon.className = 'ag-modal-fon';
+    fon.innerHTML = `<div class="ag-modal">
+      <div class="ag-modal-baslik"><b>📋 ${esc(ad)}</b><button class="ag-modal-kapat" title="Kapat">✕</button></div>
+      <div class="ag-modal-govde"><div class="loading-state" style="padding:30px;"><div class="loading-spinner"></div><p>Dalın ihaleleri yükleniyor…</p></div></div>
+    </div>`;
+    fon.addEventListener('click', e => { if (e.target === fon || e.target.closest('.ag-modal-kapat')) fon.remove(); });
+    document.body.appendChild(fon);
+    const govde = fon.querySelector('.ag-modal-govde');
+    try {
+      const { data: ihaleler, error } = await sb.rpc('idare_dal_son_ihaleler', { p_detsis: detsis, p_limit: 20 });
+      if (error) throw error;
+      if (!ihaleler || !ihaleler.length) {
+        govde.innerHTML = '<div class="ag-not" style="--derin:0; border:none; padding:20px 0;">Bu dala bağlı ihale kaydı bulunamadı.</div>';
+        return;
+      }
+      govde.innerHTML = ihaleler.map(i => {
+        const d = durumSec(i.son_teklif_tarihi);
+        return `<div class="ihale-kart" style="padding:12px 14px; margin-bottom:8px;">
+          <div class="ik-ust">
+            <a class="ik-baslik" style="font-size:13px;" href="ihale-detay?id=${i.id}">${esc(i.baslik) || '—'}</a>
+            <span class="ik-durum ${d.cls}">${d.etiket}</span>
+          </div>
+          <div class="ik-meta">
+            ${i.tur ? `<span>${esc(i.tur)}</span>` : ''}
+            ${i.il ? `<span>📍 ${esc(i.il)}</span>` : ''}
+            ${i.etkin_tarih ? `<span>📅 ${tarihFormat(i.etkin_tarih)}</span>` : ''}
+          </div>
+        </div>`;
+      }).join('') + '<div class="ag-not" style="--derin:0; border:none;">Dalın (kendisi + alt birimleri) en güncel 20 kaydı gösterilir.</div>';
+    } catch (err) {
+      console.error(err);
+      // PGRST202 = RPC henüz kurulmamış (migration bekliyor) — "tekrar deneyin"
+      // demek yanıltıcı olur (bagsizYukle ile aynı kibar-bekleme deseni)
+      govde.innerHTML = (err && err.code === 'PGRST202')
+        ? '<div class="ag-not" style="--derin:0; border:none; padding:20px 0;">Dal ihaleleri henüz hazırlanıyor — yakında burada.</div>'
+        : '<div class="ag-not" style="--derin:0; border:none; padding:20px 0;">İhale listesi yüklenemedi, lütfen tekrar deneyin.</div>';
+    }
+  }
+
   // ── Rota / tarayıcı geçmişi ─────────────────────────────
   function analizAc(kurum) {
     document.getElementById('root-loading').innerHTML =
@@ -1181,6 +1643,8 @@
 
   // Açılış rotası: ?kurum= → analiz (deep-link, 7 sayfadan gelir), yoksa dizin
   if (KURUM) analizAc(KURUM); else dizinGoster();
+  // Derin bağlantı: kurum-analiz?gorunum=agac → Kurum Ağacı sekmesiyle açılır
+  if (!KURUM && params.get('gorunum') === 'agac') dizinGorunum('agac');
 })();
 </script>
 <script src="js/main.js"></script>

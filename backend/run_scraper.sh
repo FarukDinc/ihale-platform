@@ -137,6 +137,12 @@ docker exec -i supabase-db psql -U postgres -d postgres   -c "SELECT public.etki
 echo "[$(date +'%Y-%m-%d %H:%M:%S')] === Idare hiyerarsisi ===" >> /opt/ihale-platform/logs/scraper.log
 docker exec -i supabase-db psql -U postgres -d postgres   -c "SELECT * FROM public.ilan_detsis_esle();"   -c "SELECT public.idare_kapanis_uret() AS kapanis_satiri;" >> /opt/ihale-platform/logs/scraper.log 2>&1
 docker exec -i supabase-db psql -U postgres -d postgres   -c "REFRESH MATERIALIZED VIEW CONCURRENTLY public.idare_hiyerarsi_sayim_mv;" >> /opt/ihale-platform/logs/scraper.log 2>&1
+#   4) idare_bagsiz_mv     : Kurum Ağacı'nın "Bağlantısız Kurumlar" dalı (detsis_no'su
+#                            NULL kalan idareler) — (1)'den SONRA gelmeli ki gece
+#                            eşlenen idareler bağlantısız listesinden düşsün.
+#                            (migration_kurum_agaci_bagsiz.sql uygulanana kadar bu
+#                            satır log'a "does not exist" yazar, zincir etkilenmez)
+docker exec -i supabase-db psql -U postgres -d postgres   -c "REFRESH MATERIALIZED VIEW CONCURRENTLY public.idare_bagsiz_mv;" >> /opt/ihale-platform/logs/scraper.log 2>&1
 
 # ── İdare türü boşluk alarmı ───────────────────────────────────────────────────────
 # İhalede görünüp idare_tur eşlemesinde KARŞILIĞI OLMAYAN idareler = yeni açılan/ad
