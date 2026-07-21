@@ -61,7 +61,13 @@ BATCH_VARSAYILAN = 200
 CHUNK = 60  # tek PATCH/POST'ta kaç kayıt (dt_no ~11 char, UUID'lerden çok daha kısa — geniş marj)
 # Üst üste bu kadar dt_no GEÇİCİ hatayla çekilemezse turu durdur: EKAP'ı dövme, blok/kesinti
 # olasılığında kibarca çekil. Çekilemeyen satırlar damgalanmadığı için sonraki gece tekrar denenir.
-ARDISIK_HATA_SINIRI = 8
+# ⚠️ ROTATING GATEWAY (21 Tem): sabit-IP mantığında 8 ardışık hata "sistemik sorun" demekti.
+# Ama rotating gateway'de her istek FARKLI çıkış IP → ara sıra kötü IP (429/timeout) NORMAL,
+# 8 ardışık kötü IP yalnız ŞANSSIZLIK (sistemik değil). Düşük eşik turu erken durduruyordu
+# (385 istekte "EKSİK bitti"). Env ile ayarlanabilir; rotating'de 40+ önerilir. Async'te
+# devre kesici zaten istek-öncesi gate ediyor (blok anında EKAP'a fazladan istek gitmez),
+# o yüzden yüksek eşik EKAP'ı dövmez — yalnız geçici IP dalgalanmasına tolerans verir.
+ARDISIK_HATA_SINIRI = int(os.environ.get("DT_KAZANAN_ARDISIK_HATA", "8"))
 # Eşzamanlı EKAP işçisi. Rotating gateway (istek başına farklı IP) + ~1,1s gecikmede
 # tek akış ~20-55 istek/dk veriyordu → 674K kuyruk haftalar sürüyordu. asyncio.gather +
 # Semaphore(ESZAMANLI) ile N istek paralel uçuşur; asıl tavan havuzun küresel hızıdır
