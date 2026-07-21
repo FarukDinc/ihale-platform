@@ -219,6 +219,7 @@ class ProxyHavuzu:
         self._direkt_yedek: _Uc | None = None   # tüm IP'ler düşerse buraya çekiliriz
         self._ardisik_hata = 0        # arka arkaya HİÇ başarı olmadan kaç hata
         self._karantina_log = 0       # kaç karantina satırı basıldı (log boğulmasın)
+        self.rotating_gateway = False  # rotating modda cezalandırma uç öldürmez (bkz. _cezalandir)
 
         liste = [p.strip() for p in _LISTE_HAM.split(",") if p.strip()]
         yapilandirilmis = bool(liste and PROXY_KULLANICI and PROXY_SIFRE)
@@ -239,6 +240,7 @@ class ProxyHavuzu:
             ]
             self.ip_aralik_sn = 0.0        # rotating → per-IP soğuma anlamsız
             self.direkt_mod = False
+            self.rotating_gateway = True
         elif yapilandirilmis:
             random.shuffle(liste)          # her koşuda farklı sırayla başla
             # AZAMI_UC ile kırp: karışık sıradan alındığı için her koşu farklı bir
@@ -371,6 +373,15 @@ class ProxyHavuzu:
         with self._kilit:
             uc.hata += 1
             self._toplam_hata += 1
+            # ROTATING GATEWAY: sanal uç = aynı endpoint, her istek FARKLI çıkış IP. Bir
+            # isteğin başarısızlığı çıkış IP'nin kötülüğü, GATEWAY'in değil. Uç'u karantinaya
+            # alıp öldürmek YANLIŞ: 21 Tem'de 40 sanal uç zamanla ölüp tükendi, dt_kazanan
+            # "40 ardışık hata → devre kesici" ile durdu (35K işledikten sonra). Rotating'de
+            # uç ne karantinaya girer ne ÖLÜR — bir sonraki isteği farklı IP'yle zaten dener.
+            # Sistemik arıza (gateway auth/kota) HAVUZ SEVİYESİ _ardisik_hata ile yakalanır
+            # (istek() finally, satır ~337) — o koruma sürüyor.
+            if self.rotating_gateway:
+                return
             uc.ardisik_hata += 1
             if uc.ardisik_hata >= KARANTINA_ESIGI:
                 uc.karantina_sayisi += 1
