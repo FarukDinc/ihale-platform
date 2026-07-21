@@ -201,6 +201,9 @@ def main():
                 )
                 bildirim = {
                     "kullanici_id": kid,
+                    # baslik NOT NULL — rakip_bildirim.py ile aynı eksiklik (23502); dict'e
+                    # hiç eklenmiyordu. Bu script çalışırsa aynı hatayı verirdi.
+                    "baslik": (f"📢 {idare} yeni ihale")[:120],
                     "tur": "kurum_takip",
                     "icerik": icerik,
                     "aksiyon_url": f"/kurum-analiz?kurum={quote(idare, safe='')}",

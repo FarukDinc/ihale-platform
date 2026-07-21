@@ -235,6 +235,10 @@ def main():
                 )
                 bildirim = {
                     "kullanici_id": kid,
+                    # baslik NOT NULL — eskiden dict'e HİÇ eklenmiyordu (yalnız icerik içinde
+                    # kullanılıyordu) → her yazımda 23502 NOT NULL ihlali, bildirim düşüyordu
+                    # (21 Tem gece cron'unda yakalandı; nadir tetiklendiği için gözden kaçmış).
+                    "baslik": (f"🏆 {kazanan} ihale kazandı")[:120],
                     "tur": "rakip_hareketi",
                     "icerik": icerik,
                     "aksiyon_url": f"/firma-analiz?firma={quote(kazanan, safe='')}",

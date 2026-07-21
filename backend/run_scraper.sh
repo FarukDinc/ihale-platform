@@ -40,7 +40,12 @@ echo "[$(date +'%Y-%m-%d %H:%M:%S')] === Sonuc backfill ===" >> /opt/ihale-platf
 # --no-checkpoint ile paylaşılan checkpoint'i ilerletmez (deep --backfill onu kullanmaya devam eder).
 $VENV/python ekap_sonuc_backfill.py --tum-kayitlar --max-pages 50 --start-skip 0 --no-checkpoint >> /opt/ihale-platform/logs/scraper.log 2>&1
 echo "[$(date +'%Y-%m-%d %H:%M:%S')] === Yuklenici tazeleme ===" >> /opt/ihale-platform/logs/scraper.log
-$VENV/python yuklenici_yenile_calistir.py >> /opt/ihale-platform/logs/scraper.log 2>&1
+# yuklenici_yenile() ~3,5 dk sürüyor (82K yüklenici agregasyonu + UPDATE). HTTP RPC ile
+# çağrılınca gateway (Kong/nginx) ~60s'de 504 döndürüyordu — fonksiyonun kendi 5 dk
+# statement_timeout'u işe yaramaz, çünkü HTTP katmanı o kadar beklemez (21 Tem gecesi 504).
+# Diğer tazelemeler (idare_tur_tazele, MV refresh) gibi DOĞRUDAN psql: gateway yok, yalnız
+# fonksiyonun statement_timeout'u geçerli. yuklenici_yenile_calistir.py artık kullanılmıyor.
+docker exec -i supabase-db psql -U postgres -d postgres -c "SELECT public.yuklenici_yenile();" >> /opt/ihale-platform/logs/scraper.log 2>&1
 $VENV/python rakip_bildirim.py >> /opt/ihale-platform/logs/scraper.log 2>&1
 $VENV/python ilan_embed_uret.py --max 300 >> /opt/ihale-platform/logs/scraper.log 2>&1
 echo "[$(date +'%Y-%m-%d %H:%M:%S')] === Dogrudan Temin listesi ===" >> /opt/ihale-platform/logs/scraper.log
@@ -53,8 +58,12 @@ $VENV/python ekap_dogrudan_temin_scraper.py --max-pages 20 >> /opt/ihale-platfor
 echo "[$(date +'%Y-%m-%d %H:%M:%S')] === DT kazanan/bedel backfill ===" >> /opt/ihale-platform/logs/scraper.log
 $VENV/python dt_kazanan_scraper.py --limit 2000 --rpm 300 >> /opt/ihale-platform/logs/scraper.log 2>&1
 # ilan.gov.tr (Basın İlan Kurumu) gazete İHALE ilanları — EKAP'ta olmayan (2886 satış/kira vb.) eklenir
+# 40 → 100 (21 Tem): eski tavan günlük hacmi kaçırıyordu (B4 uyarısı tetikleniyordu).
+# API İHALE/İCRA/TEBLİGAT karışık döner, ~%27'si İHALE; 100 sayfa = 2000 karışık ≈ 540 İHALE,
+# günlük yeni İHALE'yi (~70) rahat kapsar. Arşiv derin (~900 benzersiz İHALE tabanı); tam
+# derinlik için tek seferlik `ilan_gov_scraper.py --max-pages 800` (azalan getiri).
 echo "[$(date +'%Y-%m-%d %H:%M:%S')] === ilan.gov.tr ===" >> /opt/ihale-platform/logs/scraper.log
-$VENV/python ilan_gov_scraper.py --max-pages 40 >> /opt/ihale-platform/logs/scraper.log 2>&1
+$VENV/python ilan_gov_scraper.py --max-pages 100 >> /opt/ihale-platform/logs/scraper.log 2>&1
 # TED Europa uluslararası ihaleler (ayrı tablo, Türkçe'ye çevrilerek)
 # 20 Tem düzeltmesi (Backlog #19): eski satır `--max-pages 6 --limit 50` idi = koşu başına 300
 # kayıt tavanı. TED tek günde ~1.545 cn-standard ilan yayımlıyor (16 Tem ölçümü), yani günün
