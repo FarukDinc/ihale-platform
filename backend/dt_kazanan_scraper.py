@@ -21,14 +21,23 @@ dolu. Tarihsel ~1.48M satırın E10/E11'ini almak için önce TAM yeniden-tarama
     python ekap_dogrudan_temin_scraper.py --reset --max-pages <büyük>
 (CAPTCHA yok, yalnız zaman alır — ~11.6K sayfa × 128 kayıt.)
 
+HIZ (20 Tem retrofit → 21 Tem async): rotating ISP proxy her istek için farklı IP
+verir (~1,1s gecikme). SENKRON sürüm istekleri ARDIŞIK atıyordu → ~20-55 istek/dk →
+674K kuyruk için HAFTALAR. Artık dtDetayGetir çağrıları ASYNC PARALEL (ESZAMANLI eşzamanlı
+işçi, ekap_detsis_cek.py deseni: async_havuz_al + asyncio.Semaphore + asyncio.gather) →
+havuzun küresel tavanı doluncaya kadar ~40x hız → saatler. DB yazma (secim_cek/yaz_sonuclar/
+isaretle) senkron REST kalır, asyncio.to_thread ile çağrılır (parti başına bir kez, hızlı;
+asıl darboğaz EKAP isteğiydi, yalnız o paralelleştirildi). CLI sözleşmesi DEĞİŞMEZ.
+
 Kullanım:
   python dt_kazanan_scraper.py --dry-run              # birkaç dt_no çek, YAZMA, örnek göster
   python dt_kazanan_scraper.py --limit 500             # 500 dt_no işle (nightly cron için tipik)
   python dt_kazanan_scraper.py --limit 100000          # büyük backfill turu
 
-Env: SUPABASE_URL, SUPABASE_SERVICE_KEY (backend/.env)
+Env: SUPABASE_URL, SUPABASE_SERVICE_KEY (backend/.env); DT_KAZANAN_ESZAMANLI (öntanım 24)
 """
 import argparse
+import asyncio
 import os
 import ssl
 import sys
@@ -36,7 +45,7 @@ import time
 from datetime import datetime, timezone
 
 import httpx
-from proxy_havuz import havuz_al, ekap_ssl_baglami
+from proxy_havuz import havuz_al, async_havuz_al, ekap_ssl_baglami
 from dotenv import load_dotenv
 
 sys.path.insert(0, os.path.dirname(__file__))
@@ -53,6 +62,12 @@ CHUNK = 60  # tek PATCH/POST'ta kaç kayıt (dt_no ~11 char, UUID'lerden çok da
 # Üst üste bu kadar dt_no GEÇİCİ hatayla çekilemezse turu durdur: EKAP'ı dövme, blok/kesinti
 # olasılığında kibarca çekil. Çekilemeyen satırlar damgalanmadığı için sonraki gece tekrar denenir.
 ARDISIK_HATA_SINIRI = 8
+# Eşzamanlı EKAP işçisi. Rotating gateway (istek başına farklı IP) + ~1,1s gecikmede
+# tek akış ~20-55 istek/dk veriyordu → 674K kuyruk haftalar sürüyordu. asyncio.gather +
+# Semaphore(ESZAMANLI) ile N istek paralel uçuşur; asıl tavan havuzun küresel hızıdır
+# (--rpm), 24 işçi onu doldurmaya fazlasıyla yeter (ekap_detsis_cek.py ile aynı seçim).
+# Rotating havuz + latency için 20-40 arası uygun.
+ESZAMANLI = int(os.environ.get("DT_KAZANAN_ESZAMANLI", "24"))
 
 # dogrudan-temin.html DURUM_GRUP.sonuc ile BİREBİR — kazanan/bedel bekleyebileceğimiz TEK durum grubu.
 DURUM_SONUC = ["Sonuç Duyurusu Yayımlanmış", "Doğrudan Temin Sonuçlandırıldı", "Sonuç Bilgileri Gönderildi"]
@@ -110,8 +125,8 @@ def secim_cek(client, n, offset=0):
     return r.json()
 
 
-def dt_detay_getir(havuz, dt_ihale_token, dt_idare_token):
-    """dtDetayGetir çağırır. Dönüş: (veri, damgalanabilir).
+async def dt_detay_getir(havuz, dt_ihale_token, dt_idare_token):
+    """dtDetayGetir çağırır (ASYNC). Dönüş: (veri, damgalanabilir).
 
       · 200 + JSON  → (json, True)   : detay geldi (0..N sözleşme); satır işlendi,
                                         artık 'denendi' damgalanabilir.
@@ -130,10 +145,13 @@ def dt_detay_getir(havuz, dt_ihale_token, dt_idare_token):
     Blok kodları ist.yanit() ile, ağ/TLS istisnaları `with` bloğundan sızarak havuza
     bildirilir ki bozuk/bloklu IP karantinaya alınsın. httpx DIŞI istisnalar (özellikle
     havuzun 'TÜM IP DÜŞTÜ' / 'SAĞLAYICI ARIZASI' RuntimeError emniyet supapları) BİLEREK
-    yakalanmaz — üst seviyeye çıkıp turu durdurmalılar."""
+    yakalanmaz — üst seviyeye çıkıp (gather ile ana döngüye) turu durdurmalılar.
+
+    ASYNC: havuz async (AsyncProxyHavuzu), ist.client bir httpx.AsyncClient — istek
+    `await ist.client.get(...)` ile atılır. ist.yanit()/ist.basarisiz() senkron kalır."""
     try:
-        with havuz.istek() as ist:
-            r = ist.client.get(ARAMA_ENDPOINT, params={
+        async with havuz.istek() as ist:
+            r = await ist.client.get(ARAMA_ENDPOINT, params={
                 "metot": "dtDetayGetir", "idareId": dt_idare_token, "dogrudanTeminId": dt_ihale_token,
             })
             # 404 = "bu DT için detay yok" (uygulama yanıtı), IP sorunu DEĞİL.
@@ -208,6 +226,51 @@ def isaretle(client, dt_no_listesi, zaman):
         r.raise_for_status()
 
 
+async def _parti_cek(havuz, batch, sem, kesici):
+    """Bir batch dt_no'yu ESZAMANLI eşzamanlılıkla PARALEL çeker; devre kesici EKAP'a
+    GİDEN istek sayısını gerçekten sınırlar.
+
+    KRİTİK (eski hata — 21 Tem): önceki sürüm ardışık-hata değerlendirmesini ANA DÖNGÜYE
+    bırakıyordu; ama gather ancak partinin TAMAMI uçtuktan SONRA döndüğü için devre kesici
+    yalnız BİR SONRAKİ partiyi durduruyordu — bu parti (öntanım 200 istek) throttle sırasında
+    baştan sona EKAP'a çoktan gitmiş oluyordu. Senkron sürüm 8. hatada döngüyü kırıp istek
+    atmayı durduruyordu (~8 istek); async'te ~25x (bir tam parti) gidiyordu → /24 throttle'ı
+    derinleştirip turu boşa harcıyordu. Artık ardışık-hata durumu PAYLAŞILAN `kesici`de tutulur
+    ve her işçi EKAP isteğini ATMADAN ÖNCE, semaphore'u tutarken kontrol eder: kesici açıksa
+    istek EKAP'a HİÇ gitmez (row, None, False, atlandi=True döner). Böylece blok anında uçuşa
+    çıkan istek sayısı en çok ESZAMANLI (o an semaphore'u tutan işçiler) ile sınırlı kalır —
+    tüm parti DEĞİL — ve devre kesici gerçekten EKAP'a giden istek sayısını kısıtlar.
+
+    `kesici` = {"ardisik": int, "dur": bool} (partiler arası kalıcı, main_async'te bir kez
+    oluşturulur). Sayaç TAMAMLANMA sırasına göre işletilir (canlı throttle sezgisi): bir istek
+    geçici hata alırsa 'ardisik' artar, başarı/gerçek-404 sıfırlar; ARDISIK_HATA_SINIRI'na
+    ulaşınca 'dur' set edilir. Tek iş parçacıklı asyncio → 'ardisik += 1' ile eşik kontrolü
+    arasında await YOK, yarış yok.
+
+    Dönüş elemanı (row, veri, damgalanabilir, atlandi) dörtlüsüdür. Semaphore uçuştaki istek
+    sayısını ESZAMANLI ile sınırlar; küresel hız tavanı havuzda uygulanır (elle sleep YOK).
+    dt_detay_getir yalnız httpx.HTTPError'ı yutar → havuzun RuntimeError emniyet supapları
+    gather üzerinden ana döngüye sızıp turu durdurur (BİLEREK yakalanmaz)."""
+    async def bir(row):
+        async with sem:
+            if kesici["dur"]:
+                # Devre kesici zaten açık — bu satır için EKAP'a istek ATMA (throttle koruması).
+                # Damgalanabilir değil (atlandi=True); satır NULL kalır, sonraki gece denenir.
+                return row, None, False, True
+            veri, damgalanabilir = await dt_detay_getir(
+                havuz, row["dt_ihale_token"], row["dt_idare_token"])
+            # Tamamlanma sırasına göre ardışık-hata sayacı; eşiği aşınca kesiciyi aç ki
+            # semaphore'da bekleyen sonraki işçiler istek atmadan çekilsin.
+            if damgalanabilir:
+                kesici["ardisik"] = 0
+            else:
+                kesici["ardisik"] += 1
+                if kesici["ardisik"] >= ARDISIK_HATA_SINIRI:
+                    kesici["dur"] = True
+        return row, veri, damgalanabilir, False
+    return await asyncio.gather(*(bir(r) for r in batch))
+
+
 def main():
     ap = argparse.ArgumentParser(description="DT kazanan/bedel backfill (dtDetayGetir — CAPTCHA gerekmez)")
     ap.add_argument("--limit", type=int, default=500, help="Bu turda işlenecek azami dt_no (öntanım 500)")
@@ -223,107 +286,133 @@ def main():
         print("✗ SUPABASE_URL / SUPABASE_SERVICE_KEY eksik (.env — VDS'te çalıştırın, yerel .env ölü)")
         sys.exit(1)
 
+    # main() yalnız argparse + doğrulama yapar; asıl iş async (asyncio.run). CLI
+    # sözleşmesi (--limit --batch --rpm --dry-run) DEĞİŞMEZ.
+    asyncio.run(main_async(args))
+
+
+async def main_async(args):
     zaman = datetime.now(timezone.utc).isoformat()
 
-    # EKAP istekleri proxy havuzundan (istek başına IP rotasyonu + hız sınırı);
+    # EKAP istekleri ASYNC proxy havuzundan (istek başına IP rotasyonu + hız sınırı);
     # Supabase istekleri doğrudan gider — kendi sunucumuz, proxy'ye sokmanın anlamı yok.
     # --rpm havuzun KÜRESEL tavanını belirler; IP başına soğuma .env'den gelir
     # (PROXY_IP_ARALIK_SN). PROXY_LIST boşsa havuz direkt moda düşer ve yalnız
     # hız sınırı uygulanır — scraper kodu iki durumda da aynı.
-    havuz = havuz_al(kuresel_rpm=(args.rpm if args.rpm > 0 else None),
-                     ssl_baglami=ekap_ssl_baglami())
+    havuz = async_havuz_al(kuresel_rpm=(args.rpm if args.rpm > 0 else None),
+                           ssl_baglami=ekap_ssl_baglami())
+    sem = asyncio.Semaphore(ESZAMANLI)
 
-    with httpx.Client(timeout=60) as client:
+    # DB yazma/okuma senkron httpx.Client kalır (parti başına bir kez, hızlı) ve
+    # asyncio.to_thread ile çağrılır — event loop'u bloklamaz. Async main içinde
+    # sıralı kullanılırlar (partiler arası), tek Client güvenli.
+    try:
+        with httpx.Client(timeout=60) as client:
 
-        kuyruk = kuyruk_say(client)
-        if kuyruk < 0:
-            print("✗ Kuyruk sayımı başarısız — muhtemelen migration_dt_kazanan.sql uygulanmamış.\n"
-                  "  Önce çalıştırın: docker exec -i supabase-db psql -U postgres -d postgres "
-                  "< backend/migration_dt_kazanan.sql")
-            sys.exit(1)
-        print(f"→ Kuyruk (token'lı + denenmemiş + sonuç durumunda): {kuyruk} dt_no")
+            kuyruk = await asyncio.to_thread(kuyruk_say, client)
+            if kuyruk < 0:
+                print("✗ Kuyruk sayımı başarısız — muhtemelen migration_dt_kazanan.sql uygulanmamış.\n"
+                      "  Önce çalıştırın: docker exec -i supabase-db psql -U postgres -d postgres "
+                      "< backend/migration_dt_kazanan.sql")
+                sys.exit(1)
+            print(f"→ Kuyruk (token'lı + denenmemiş + sonuç durumunda): {kuyruk} dt_no")
+            print(f"→ {ESZAMANLI} eşzamanlı işçi ile paralel çekiliyor "
+                  f"(küresel tavan: {'sınırsız' if args.rpm <= 0 else str(args.rpm) + '/dk'})")
 
-        if args.dry_run:
-            batch = secim_cek(client, min(args.batch, 5))
-            if not batch:
-                print("  Kuyruk boş — dt_ihale_token dolu satır yok (retrofit sonrası ilk scrape turunu bekleyin).")
+            if args.dry_run:
+                batch = await asyncio.to_thread(secim_cek, client, min(args.batch, 5))
+                if not batch:
+                    print("  Kuyruk boş — dt_ihale_token dolu satır yok (retrofit sonrası ilk scrape turunu bekleyin).")
+                    return
+                sonuclar = await _parti_cek(havuz, batch, sem, {"ardisik": 0, "dur": False})
+                for row, veri, damgalanabilir, _atlandi in sonuclar:
+                    satirlar = sozlesmeleri_cikar(row["dt_no"], veri)
+                    if satirlar:
+                        for s in satirlar:
+                            print(f"   {row['dt_no']}: {s['kazanan_firma']!r} — {s['kazanan_bedel']} TL ({s['sozlesme_tarihi']})")
+                    elif not damgalanabilir:
+                        print(f"   {row['dt_no']}: GEÇİCİ HATA (çekilemedi — canlıda damgalanmaz, tekrar denenir)")
+                    else:
+                        print(f"   {row['dt_no']}: sözleşme verisi yok/boş (veri={('yok/404' if veri is None else 'boş liste')})")
+                print("\n(dry-run — yazma/işaretleme yapılmadı)")
                 return
-            for row in batch:
-                veri, damgalanabilir = dt_detay_getir(havuz, row["dt_ihale_token"], row["dt_idare_token"])
-                satirlar = sozlesmeleri_cikar(row["dt_no"], veri)
-                if satirlar:
-                    for s in satirlar:
-                        print(f"   {row['dt_no']}: {s['kazanan_firma']!r} — {s['kazanan_bedel']} TL ({s['sozlesme_tarihi']})")
-                elif not damgalanabilir:
-                    print(f"   {row['dt_no']}: GEÇİCİ HATA (çekilemedi — canlıda damgalanmaz, tekrar denenir)")
-                else:
-                    print(f"   {row['dt_no']}: sözleşme verisi yok/boş (veri={('yok/404' if veri is None else 'boş liste')})")
-            print("\n(dry-run — yazma/işaretleme yapılmadı)")
-            return
 
-        kalan = args.limit
-        # damgalanan  : gerçekten işlenip 'denendi' damgalanan dt_no (200 veya gerçek 404)
-        # cekilemeyen : GEÇİCİ hatayla çekilemeyen dt_no — DAMGALANMADI, sonraki turda denenir
-        # offset      : damgalanmayan satırlar NULL kaldığı için sorgudan düşmez; onları bu tur
-        #               tekrar seçmemek için pencereyi bu kadar ileri kaydırırız (TAKILMA önleme)
-        # ardisik_hata: üst üste kaç dt_no geçici hata aldı (başarı sıfırlar) — tavanı aşınca dur
-        damgalanan = kazanim_sayisi = istek = cekilemeyen = 0
-        offset = ardisik_hata = 0
-        dur = False
-        while kalan > 0 and not dur:
-            batch = secim_cek(client, min(args.batch, kalan), offset)
-            if not batch:
-                break
-            tum_satirlar, dt_no_listesi = [], []
-            for row in batch:
-                veri, damgalanabilir = dt_detay_getir(havuz, row["dt_ihale_token"], row["dt_idare_token"])
-                istek += 1
-                if not damgalanabilir:
-                    # GEÇİCİ hata (blok/ağ/TLS/timeout/proxy/200-ama-JSON-değil): DAMGALAMA.
-                    # Satır NULL kalır; offset ile bu tur atlanır, sonraki gece tekrar denenir.
-                    cekilemeyen += 1
-                    ardisik_hata += 1
-                    if ardisik_hata >= ARDISIK_HATA_SINIRI:
-                        dur = True   # o ana dek toplananları yaz, sonra turu durdur
-                        break
-                    continue
-                ardisik_hata = 0
-                tum_satirlar.extend(sozlesmeleri_cikar(row["dt_no"], veri))
-                dt_no_listesi.append(row["dt_no"])
-                # Elle sleep YOK: hız sınırı artık havuzda (IP başına soğuma +
-                # küresel tavan). Burada ayrıca beklemek ikisini üst üste bindirirdi.
-            try:
-                # Checkpoint (isaretle) YALNIZ veri yazıldıktan SONRA: yazma patlarsa
-                # damgalama da atlanır, satırlar sonraki turda yeniden denenir.
-                yaz_sonuclar(client, tum_satirlar)
-                isaretle(client, dt_no_listesi, zaman)
-            except httpx.HTTPError as e:
-                print(f"  ✗ Yazma hatası ({str(e)[:120]}) — tur durduruluyor (işaretlenmeyenler sonraki turda).")
-                break
-            damgalanan += len(dt_no_listesi)
-            kazanim_sayisi += len(tum_satirlar)
-            if dur:
-                print(f"  ✗ {ardisik_hata} ardışık dt_no çekilemedi (geçici hata) — EKAP'ı dövmemek için "
-                      f"tur durduruldu; damgalanmayanlar sonraki gece tekrar denenecek.")
-                break
-            # Bu partide damgalanmayan (geçici hata) satır sayısı kadar pencereyi ilerlet.
-            offset += len(batch) - len(dt_no_listesi)
-            kalan -= len(batch)
-            print(f"   … {damgalanan} dt_no damgalandı, {kazanim_sayisi} sözleşme kaydı yazıldı, "
-                  f"{cekilemeyen} çekilemedi ({istek} EKAP isteği)")
+            kalan = args.limit
+            # damgalanan  : gerçekten işlenip 'denendi' damgalanan dt_no (200 veya gerçek 404)
+            # cekilemeyen : GEÇİCİ hatayla çekilemeyen dt_no — DAMGALANMADI, sonraki turda denenir
+            # istek       : EKAP'a FİİLEN gönderilen istek (devre kesici açıkken ATLANANLAR sayılmaz)
+            # offset      : damgalanmayan satırlar NULL kaldığı için sorgudan düşmez; onları bu tur
+            #               tekrar seçmemek için pencereyi bu kadar ileri kaydırırız (TAKILMA önleme)
+            # kesici      : PAYLAŞILAN devre kesici {"ardisik": int, "dur": bool}, partiler arası
+            #   kalıcı. ardışık-hata sayacı ve durdur bayrağı artık _parti_cek İÇİNDE, işçi EKAP
+            #   isteğini atmadan ÖNCE işletilir → kesici açılınca uçuştaki istekler dışında yeni
+            #   istek EKAP'a GİTMEZ (eskiden tüm parti gidiyordu; bkz. _parti_cek docstring).
+            #   Bu, EKAP /24 throttle'ını derinleştirmeyi ve poison satırda sonsuz döngüyü önler.
+            damgalanan = kazanim_sayisi = istek = cekilemeyen = 0
+            offset = 0
+            kesici = {"ardisik": 0, "dur": False}
+            while kalan > 0 and not kesici["dur"]:
+                batch = await asyncio.to_thread(secim_cek, client, min(args.batch, kalan), offset)
+                if not batch:
+                    break
+                # Partiyi ESZAMANLI eşzamanlılıkla PARALEL çek (asıl hızlanma burada). Devre kesici
+                # _parti_cek içinde, istek atılmadan önce kontrol edilir → blok anında EKAP'a giden
+                # istek en çok ESZAMANLI ile sınırlı. Havuzun RuntimeError emniyet supapları
+                # gather'dan sızarsa BİLEREK yakalanmaz → main_async'ten çıkıp turu durdurur.
+                sonuclar = await _parti_cek(havuz, batch, sem, kesici)
+                tum_satirlar, dt_no_listesi = [], []
+                for row, veri, damgalanabilir, atlandi in sonuclar:
+                    if atlandi:
+                        # Devre kesici açıkken bu satıra EKAP isteği ATILMADI; damgalanmadı,
+                        # sonraki gece yeniden denenir. istek/cekilemeyen sayaçlarına GİRMEZ.
+                        continue
+                    istek += 1
+                    if not damgalanabilir:
+                        # GEÇİCİ hata (blok/ağ/TLS/timeout/proxy/200-ama-JSON-değil): DAMGALAMA.
+                        # Satır NULL kalır; offset ile bu tur atlanır, sonraki gece tekrar denenir.
+                        cekilemeyen += 1
+                        continue
+                    tum_satirlar.extend(sozlesmeleri_cikar(row["dt_no"], veri))
+                    dt_no_listesi.append(row["dt_no"])
+                    # Elle sleep YOK: hız sınırı artık havuzda (IP başına soğuma +
+                    # küresel tavan). Burada ayrıca beklemek ikisini üst üste bindirirdi.
+                try:
+                    # Checkpoint (isaretle) YALNIZ veri yazıldıktan SONRA: yazma patlarsa
+                    # damgalama da atlanır, satırlar sonraki turda yeniden denenir.
+                    # to_thread: senkron REST çağrıları event loop'u bloklamasın.
+                    await asyncio.to_thread(yaz_sonuclar, client, tum_satirlar)
+                    await asyncio.to_thread(isaretle, client, dt_no_listesi, zaman)
+                except httpx.HTTPError as e:
+                    print(f"  ✗ Yazma hatası ({str(e)[:120]}) — tur durduruluyor (işaretlenmeyenler sonraki turda).")
+                    break
+                damgalanan += len(dt_no_listesi)
+                kazanim_sayisi += len(tum_satirlar)
+                if kesici["dur"]:
+                    # Kesici bu partide açıldı: başarılı olanlar yukarıda yazıldı/damgalandı,
+                    # kalan (atlanan + geçici hata) satırlar sonraki gece yeniden denenecek.
+                    print(f"  ✗ Ardışık {ARDISIK_HATA_SINIRI} dt_no çekilemedi (geçici hata) — EKAP'ı dövmemek "
+                          f"için devre kesici açıldı; uçuştaki istekler dışında yeni istek atılmadan tur "
+                          f"durduruldu; damgalanmayanlar sonraki gece tekrar denenecek.")
+                    break
+                # Bu partide damgalanmayan (geçici hata) satır sayısı kadar pencereyi ilerlet.
+                offset += len(batch) - len(dt_no_listesi)
+                kalan -= len(batch)
+                print(f"   … {damgalanan} dt_no damgalandı, {kazanim_sayisi} sözleşme kaydı yazıldı, "
+                      f"{cekilemeyen} çekilemedi ({istek} EKAP isteği)")
 
-        if cekilemeyen:
-            print(f"\n⚠ Tur bitti (EKSİK): {damgalanan} dt_no damgalandı, {kazanim_sayisi} sözleşme kaydı "
-                  f"(kazanan+bedel) yazıldı, {cekilemeyen} dt_no ÇEKİLEMEDİ (geçici hata — damgalanmadı, "
-                  f"sonraki turda tekrar denenecek), {istek} EKAP isteği.")
-        else:
-            print(f"\n✓ Bitti: {damgalanan} dt_no işlendi, {kazanim_sayisi} sözleşme kaydı (kazanan+bedel) "
-                  f"yazıldı, {istek} EKAP isteği (CAPTCHA/Gemini kullanılmadı).")
-
-    # Hangi IP'ler kullanıldı, kaçı düştü, ne kadar hız sınırı beklendi —
-    # blok yiyip yemediğimizi buradan görüyoruz.
-    havuz.ozet_yaz()
-    havuz.kapat()
+            if cekilemeyen:
+                print(f"\n⚠ Tur bitti (EKSİK): {damgalanan} dt_no damgalandı, {kazanim_sayisi} sözleşme kaydı "
+                      f"(kazanan+bedel) yazıldı, {cekilemeyen} dt_no ÇEKİLEMEDİ (geçici hata — damgalanmadı, "
+                      f"sonraki turda tekrar denenecek), {istek} EKAP isteği.")
+            else:
+                print(f"\n✓ Bitti: {damgalanan} dt_no işlendi, {kazanim_sayisi} sözleşme kaydı (kazanan+bedel) "
+                      f"yazıldı, {istek} EKAP isteği (CAPTCHA/Gemini kullanılmadı).")
+    finally:
+        # Hangi IP'ler kullanıldı, kaçı düştü, ne kadar hız sınırı beklendi —
+        # blok yiyip yemediğimizi buradan görüyoruz. RuntimeError'la erken çıksak
+        # bile havuz temizlenir (AsyncClient'lar kapatılır).
+        havuz.ozet_yaz()
+        await havuz.kapat()
 
 
 if __name__ == "__main__":
