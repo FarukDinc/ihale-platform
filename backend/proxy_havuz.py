@@ -79,6 +79,11 @@ _LISTE_HAM      = os.environ.get("PROXY_LIST", "")
 AZAMI_UC        = int(os.environ.get("PROXY_AZAMI_UC", "40"))
 IP_ARALIK_SN    = float(os.environ.get("PROXY_IP_ARALIK_SN", "3.0"))
 KURESEL_RPM     = int(os.environ.get("PROXY_KURESEL_RPM", "600"))
+# ROTATING GATEWAY modu (ISP proxy, 21 Tem): PROXY_LIST'teki TEK endpoint her istekte
+# farklı çıkış IP'si döndürür. Datacenter IP-listesi mantığı yerine tek endpoint AZAMI_UC
+# sanal uca çoğaltılır ve IP-soğuması kapatılır (bkz. __init__). VARSAYILAN kapalı → eski
+# datacenter davranışı korunur.
+ROTATING_GATEWAY = os.environ.get("PROXY_ROTATING_GATEWAY", "0").strip() in ("1", "true", "evet")
 
 # Tüm proxy IP'leri düştüğünde VDS'in kendi IP'sine geçilsin mi? VARSAYILAN: HAYIR.
 # 20 Tem: kullanıcı talimatı "VDS IP'sine düşmek YASAK" (proxy 402 krizinde verildi).
@@ -218,7 +223,23 @@ class ProxyHavuzu:
         liste = [p.strip() for p in _LISTE_HAM.split(",") if p.strip()]
         yapilandirilmis = bool(liste and PROXY_KULLANICI and PROXY_SIFRE)
 
-        if yapilandirilmis:
+        if yapilandirilmis and ROTATING_GATEWAY:
+            # ROTATING GATEWAY (ISP proxy): PROXY_LIST'teki TEK endpoint her istekte farklı
+            # çıkış IP döndürür (test: 3 istek → 3 farklı IP, farklı /8 blokları → /24 riski
+            # yok). Datacenter mantığı burada YANLIŞ olurdu: tek endpoint'i tek IP sanıp 3sn
+            # soğutmak hızı ~20 istek/dk'ya düşürürdü. Endpoint'i AZAMI_UC SANAL uca çoğaltıp
+            # (paralellik) IP-soğumasını KAPATIYORUZ. Cezalandırma rotating'le uyumlu: kötü bir
+            # çıkış IP sanal ucu öldürmez — aynı ucun sonraki isteği farklı IP alıp başarır ve
+            # ardışık-hata sıfırlanır; kalıcı ölüm ancak gerçek gateway arızasında (auth/kota).
+            gw = liste[0]
+            n_sanal = AZAMI_UC if AZAMI_UC > 0 else 40
+            self.uclar = [
+                _Uc(etiket=f"{gw}#gw{i}", url=f"http://{PROXY_KULLANICI}:{PROXY_SIFRE}@{gw}")
+                for i in range(n_sanal)
+            ]
+            self.ip_aralik_sn = 0.0        # rotating → per-IP soğuma anlamsız
+            self.direkt_mod = False
+        elif yapilandirilmis:
             random.shuffle(liste)          # her koşuda farklı sırayla başla
             # AZAMI_UC ile kırp: karışık sıradan alındığı için her koşu farklı bir
             # alt küme kullanır, yani 100 IP zamanla yine dönüşüme girer.
