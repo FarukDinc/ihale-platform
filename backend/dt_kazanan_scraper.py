@@ -226,23 +226,48 @@ def isaretle(client, dt_no_listesi, zaman):
         r.raise_for_status()
 
 
-async def _parti_cek(havuz, batch, sem):
-    """Bir batch dt_no'yu ESZAMANLI eşzamanlılıkla PARALEL çeker.
+async def _parti_cek(havuz, batch, sem, kesici):
+    """Bir batch dt_no'yu ESZAMANLI eşzamanlılıkla PARALEL çeker; devre kesici EKAP'a
+    GİDEN istek sayısını gerçekten sınırlar.
 
-    asyncio.gather GİRDİ SIRASINI korur → dönen liste batch ile birebir hizalı;
-    böylece ana döngü sonuçları SIRAYLA değerlendirip ardışık-hata sayacını (offset/
-    ARDISIK_HATA_SINIRI) senkron sürümle aynı mantıkla işletebilir. Her eleman
-    (row, veri, damgalanabilir) üçlüsüdür.
+    KRİTİK (eski hata — 21 Tem): önceki sürüm ardışık-hata değerlendirmesini ANA DÖNGÜYE
+    bırakıyordu; ama gather ancak partinin TAMAMI uçtuktan SONRA döndüğü için devre kesici
+    yalnız BİR SONRAKİ partiyi durduruyordu — bu parti (öntanım 200 istek) throttle sırasında
+    baştan sona EKAP'a çoktan gitmiş oluyordu. Senkron sürüm 8. hatada döngüyü kırıp istek
+    atmayı durduruyordu (~8 istek); async'te ~25x (bir tam parti) gidiyordu → /24 throttle'ı
+    derinleştirip turu boşa harcıyordu. Artık ardışık-hata durumu PAYLAŞILAN `kesici`de tutulur
+    ve her işçi EKAP isteğini ATMADAN ÖNCE, semaphore'u tutarken kontrol eder: kesici açıksa
+    istek EKAP'a HİÇ gitmez (row, None, False, atlandi=True döner). Böylece blok anında uçuşa
+    çıkan istek sayısı en çok ESZAMANLI (o an semaphore'u tutan işçiler) ile sınırlı kalır —
+    tüm parti DEĞİL — ve devre kesici gerçekten EKAP'a giden istek sayısını kısıtlar.
 
-    Semaphore uçuştaki istek sayısını ESZAMANLI ile sınırlar; küresel hız tavanı
-    havuzda uygulanır (elle sleep YOK). dt_detay_getir yalnız httpx.HTTPError'ı yutar
-    → havuzun RuntimeError emniyet supapları gather üzerinden ana döngüye sızıp turu
-    durdurur (BİLEREK yakalanmaz)."""
+    `kesici` = {"ardisik": int, "dur": bool} (partiler arası kalıcı, main_async'te bir kez
+    oluşturulur). Sayaç TAMAMLANMA sırasına göre işletilir (canlı throttle sezgisi): bir istek
+    geçici hata alırsa 'ardisik' artar, başarı/gerçek-404 sıfırlar; ARDISIK_HATA_SINIRI'na
+    ulaşınca 'dur' set edilir. Tek iş parçacıklı asyncio → 'ardisik += 1' ile eşik kontrolü
+    arasında await YOK, yarış yok.
+
+    Dönüş elemanı (row, veri, damgalanabilir, atlandi) dörtlüsüdür. Semaphore uçuştaki istek
+    sayısını ESZAMANLI ile sınırlar; küresel hız tavanı havuzda uygulanır (elle sleep YOK).
+    dt_detay_getir yalnız httpx.HTTPError'ı yutar → havuzun RuntimeError emniyet supapları
+    gather üzerinden ana döngüye sızıp turu durdurur (BİLEREK yakalanmaz)."""
     async def bir(row):
         async with sem:
+            if kesici["dur"]:
+                # Devre kesici zaten açık — bu satır için EKAP'a istek ATMA (throttle koruması).
+                # Damgalanabilir değil (atlandi=True); satır NULL kalır, sonraki gece denenir.
+                return row, None, False, True
             veri, damgalanabilir = await dt_detay_getir(
                 havuz, row["dt_ihale_token"], row["dt_idare_token"])
-        return row, veri, damgalanabilir
+            # Tamamlanma sırasına göre ardışık-hata sayacı; eşiği aşınca kesiciyi aç ki
+            # semaphore'da bekleyen sonraki işçiler istek atmadan çekilsin.
+            if damgalanabilir:
+                kesici["ardisik"] = 0
+            else:
+                kesici["ardisik"] += 1
+                if kesici["ardisik"] >= ARDISIK_HATA_SINIRI:
+                    kesici["dur"] = True
+        return row, veri, damgalanabilir, False
     return await asyncio.gather(*(bir(r) for r in batch))
 
 
@@ -299,8 +324,8 @@ async def main_async(args):
                 if not batch:
                     print("  Kuyruk boş — dt_ihale_token dolu satır yok (retrofit sonrası ilk scrape turunu bekleyin).")
                     return
-                sonuclar = await _parti_cek(havuz, batch, sem)
-                for row, veri, damgalanabilir in sonuclar:
+                sonuclar = await _parti_cek(havuz, batch, sem, {"ardisik": 0, "dur": False})
+                for row, veri, damgalanabilir, _atlandi in sonuclar:
                     satirlar = sozlesmeleri_cikar(row["dt_no"], veri)
                     if satirlar:
                         for s in satirlar:
@@ -315,36 +340,38 @@ async def main_async(args):
             kalan = args.limit
             # damgalanan  : gerçekten işlenip 'denendi' damgalanan dt_no (200 veya gerçek 404)
             # cekilemeyen : GEÇİCİ hatayla çekilemeyen dt_no — DAMGALANMADI, sonraki turda denenir
+            # istek       : EKAP'a FİİLEN gönderilen istek (devre kesici açıkken ATLANANLAR sayılmaz)
             # offset      : damgalanmayan satırlar NULL kaldığı için sorgudan düşmez; onları bu tur
             #               tekrar seçmemek için pencereyi bu kadar ileri kaydırırız (TAKILMA önleme)
-            # ardisik_hata: üst üste kaç dt_no geçici hata aldı (başarı sıfırlar) — tavanı aşınca dur.
-            #   ASYNC NOT: parti PARALEL çekilir ama sonuçlar gather'ın koruduğu SIRAYLA
-            #   değerlendirilir → ardışık-hata/offset mantığı senkron sürümle birebir aynı;
-            #   bir sonraki partiyi durdurup EKAP'ı dövmeyi ve poison'da sonsuz döngüyü önler.
+            # kesici      : PAYLAŞILAN devre kesici {"ardisik": int, "dur": bool}, partiler arası
+            #   kalıcı. ardışık-hata sayacı ve durdur bayrağı artık _parti_cek İÇİNDE, işçi EKAP
+            #   isteğini atmadan ÖNCE işletilir → kesici açılınca uçuştaki istekler dışında yeni
+            #   istek EKAP'a GİTMEZ (eskiden tüm parti gidiyordu; bkz. _parti_cek docstring).
+            #   Bu, EKAP /24 throttle'ını derinleştirmeyi ve poison satırda sonsuz döngüyü önler.
             damgalanan = kazanim_sayisi = istek = cekilemeyen = 0
-            offset = ardisik_hata = 0
-            dur = False
-            while kalan > 0 and not dur:
+            offset = 0
+            kesici = {"ardisik": 0, "dur": False}
+            while kalan > 0 and not kesici["dur"]:
                 batch = await asyncio.to_thread(secim_cek, client, min(args.batch, kalan), offset)
                 if not batch:
                     break
-                # Partiyi ESZAMANLI eşzamanlılıkla PARALEL çek (asıl hızlanma burada).
-                # Havuzun RuntimeError emniyet supapları gather'dan sızarsa BİLEREK
-                # yakalanmaz → main_async'ten çıkıp turu durdurur (finally temizler).
-                sonuclar = await _parti_cek(havuz, batch, sem)
+                # Partiyi ESZAMANLI eşzamanlılıkla PARALEL çek (asıl hızlanma burada). Devre kesici
+                # _parti_cek içinde, istek atılmadan önce kontrol edilir → blok anında EKAP'a giden
+                # istek en çok ESZAMANLI ile sınırlı. Havuzun RuntimeError emniyet supapları
+                # gather'dan sızarsa BİLEREK yakalanmaz → main_async'ten çıkıp turu durdurur.
+                sonuclar = await _parti_cek(havuz, batch, sem, kesici)
                 tum_satirlar, dt_no_listesi = [], []
-                for row, veri, damgalanabilir in sonuclar:
+                for row, veri, damgalanabilir, atlandi in sonuclar:
+                    if atlandi:
+                        # Devre kesici açıkken bu satıra EKAP isteği ATILMADI; damgalanmadı,
+                        # sonraki gece yeniden denenir. istek/cekilemeyen sayaçlarına GİRMEZ.
+                        continue
                     istek += 1
                     if not damgalanabilir:
                         # GEÇİCİ hata (blok/ağ/TLS/timeout/proxy/200-ama-JSON-değil): DAMGALAMA.
                         # Satır NULL kalır; offset ile bu tur atlanır, sonraki gece tekrar denenir.
                         cekilemeyen += 1
-                        ardisik_hata += 1
-                        if ardisik_hata >= ARDISIK_HATA_SINIRI:
-                            dur = True   # o ana dek toplananları yaz, sonra turu durdur
-                            break
                         continue
-                    ardisik_hata = 0
                     tum_satirlar.extend(sozlesmeleri_cikar(row["dt_no"], veri))
                     dt_no_listesi.append(row["dt_no"])
                     # Elle sleep YOK: hız sınırı artık havuzda (IP başına soğuma +
@@ -360,9 +387,12 @@ async def main_async(args):
                     break
                 damgalanan += len(dt_no_listesi)
                 kazanim_sayisi += len(tum_satirlar)
-                if dur:
-                    print(f"  ✗ {ardisik_hata} ardışık dt_no çekilemedi (geçici hata) — EKAP'ı dövmemek için "
-                          f"tur durduruldu; damgalanmayanlar sonraki gece tekrar denenecek.")
+                if kesici["dur"]:
+                    # Kesici bu partide açıldı: başarılı olanlar yukarıda yazıldı/damgalandı,
+                    # kalan (atlanan + geçici hata) satırlar sonraki gece yeniden denenecek.
+                    print(f"  ✗ Ardışık {ARDISIK_HATA_SINIRI} dt_no çekilemedi (geçici hata) — EKAP'ı dövmemek "
+                          f"için devre kesici açıldı; uçuştaki istekler dışında yeni istek atılmadan tur "
+                          f"durduruldu; damgalanmayanlar sonraki gece tekrar denenecek.")
                     break
                 # Bu partide damgalanmayan (geçici hata) satır sayısı kadar pencereyi ilerlet.
                 offset += len(batch) - len(dt_no_listesi)
