@@ -229,6 +229,10 @@
           <select id="rfq-kategori" onchange="rfqFiltreDegisti()"><option value="">Tüm Sektörler</option></select>
           <input type="date" id="rfq-tarih-bas" title="Son teklif tarihi — başlangıç" onchange="rfqFiltreDegisti()" />
           <input type="date" id="rfq-tarih-son" title="Son teklif tarihi — bitiş" onchange="rfqFiltreDegisti()" />
+          <select id="rfq-sirala" onchange="rfqSiralaDegisti()" title="Sıralama">
+            <option value="yeni">🆕 En yeni</option>
+            <option value="teklif">⏰ Son teklife göre</option>
+          </select>
           <span class="rfq-sayi" id="rfq-sayi"></span>
         </div>
         <div id="talepler-liste"><div class="loading-spinner"></div></div>
@@ -396,6 +400,7 @@
 
   // ── RFQ liste + filtre + süre-doldu ────────────────────────
   let rfqDurum = 'guncel';   // guncel | gecmis | tumu
+  let rfqSirala = 'yeni';    // yeni (olusturulma DESC = en yeni eklenen) | teklif (son teklif tarihine göre)
   let rfqAramaTimer = null;
 
   window.rfqDurumSec = function(d, btn) {
@@ -404,6 +409,7 @@
     taleplerYukle();
   };
   window.rfqFiltreDegisti = () => taleplerYukle();
+  window.rfqSiralaDegisti = () => { rfqSirala = document.getElementById('rfq-sirala').value; taleplerYukle(); };
   window.rfqAramaDegisti = function() { clearTimeout(rfqAramaTimer); rfqAramaTimer = setTimeout(taleplerYukle, 350); };
 
   // TEK LİSTE: platform RFQ'ları (satinalma_talepleri) + Kalkınma Ajansı (kamu_ihaleleri kaynak='ka')
@@ -423,7 +429,7 @@
 
     async function rfqCek() {
       let q = sb.from('satinalma_talepleri')
-        .select('id,baslik,kategori,il,miktar,tahmini_bedel,son_teklif_tarihi,durum,olusturan_firma')
+        .select('id,baslik,kategori,il,miktar,tahmini_bedel,son_teklif_tarihi,durum,olusturan_firma,olusturulma')
         .neq('durum', 'iptal');
       if (rfqDurum === 'guncel') q = q.or(`son_teklif_tarihi.gte.${nowIso},son_teklif_tarihi.is.null`);
       else if (rfqDurum === 'gecmis') q = q.lt('son_teklif_tarihi', nowIso);
@@ -432,16 +438,21 @@
       if (tbIso) q = q.gte('son_teklif_tarihi', tbIso);
       if (tsIso) q = q.lte('son_teklif_tarihi', tsIso);
       if (ara) q = q.or(`baslik.ilike.*${ara}*,olusturan_firma.ilike.*${ara}*,aciklama.ilike.*${ara}*`);
-      const { data } = await q.order('son_teklif_tarihi', { ascending: true, nullsFirst: false }).limit(200);
+      // DB .order client sort ile AYNI eksende olmalı: yoksa .limit(200) penceresi yanlış eksende
+      // seçilir → kayıt >200 olunca en yeni kayıtlar pencereden düşer (sinsi regresyon).
+      q = rfqSirala === 'yeni'
+        ? q.order('olusturulma', { ascending: false, nullsFirst: false })
+        : q.order('son_teklif_tarihi', { ascending: true, nullsFirst: false });
+      const { data } = await q.limit(200);
       // durum taşınıyor: kazanan seçilip 'kapali'ya düşmüş ama son teklif tarihi HENÜZ
       // geçmemiş RFQ, tarihe bakan rozetle "● Açık" görünüyordu (#23). Rozet artık
       // durum'u da hesaba katıyor — ozel-ihale-detay.html'deki kuralla aynı sıra.
-      return (data || []).map(t => ({ tip:'rfq', url:'ozel-ihale-detay?id='+t.id, baslik:t.baslik, kategori:t.kategori, il:t.il, ek:t.miktar, bedel:t.tahmini_bedel, firma:t.olusturan_firma, son:t.son_teklif_tarihi, durum:t.durum }));
+      return (data || []).map(t => ({ tip:'rfq', url:'ozel-ihale-detay?id='+t.id, baslik:t.baslik, kategori:t.kategori, il:t.il, ek:t.miktar, bedel:t.tahmini_bedel, firma:t.olusturan_firma, son:t.son_teklif_tarihi, durum:t.durum, olus:t.olusturulma }));
     }
     async function kaCek() {
       if (kat) return [];   // KA'da sektör taksonomisi yok → sektör filtresi seçiliyse KA hariç
       let q = sb.from('kamu_ihaleleri')
-        .select('baslik,idare,il,alt_kaynak,tur,son_teklif_tarihi,orijinal_url')
+        .select('baslik,idare,il,alt_kaynak,tur,son_teklif_tarihi,orijinal_url,olusturulma')
         .eq('kaynak', 'ka');
       if (rfqDurum === 'guncel') q = q.gte('son_teklif_tarihi', nowIso);
       else if (rfqDurum === 'gecmis') q = q.lt('son_teklif_tarihi', nowIso);
@@ -449,8 +460,11 @@
       if (tbIso) q = q.gte('son_teklif_tarihi', tbIso);
       if (tsIso) q = q.lte('son_teklif_tarihi', tsIso);
       if (ara) q = q.or(`baslik.ilike.*${ara}*,idare.ilike.*${ara}*`);
-      const { data } = await q.order('son_teklif_tarihi', { ascending: true }).limit(200);
-      return (data || []).map(k => ({ tip:'ka', url:k.orijinal_url, ajans:k.alt_kaynak, baslik:k.baslik, kategori:k.tur, il:k.il, ek:null, bedel:null, firma:k.idare, son:k.son_teklif_tarihi }));
+      q = rfqSirala === 'yeni'
+        ? q.order('olusturulma', { ascending: false, nullsFirst: false })
+        : q.order('son_teklif_tarihi', { ascending: true });
+      const { data } = await q.limit(200);
+      return (data || []).map(k => ({ tip:'ka', url:k.orijinal_url, ajans:k.alt_kaynak, baslik:k.baslik, kategori:k.tur, il:k.il, ek:null, bedel:null, firma:k.idare, son:k.son_teklif_tarihi, olus:k.olusturulma }));
     }
 
     const [rfqlar, kalar] = await Promise.all([
@@ -458,11 +472,16 @@
       kaynak === 'rfq' ? [] : kaCek().catch(() => []),
     ]);
     let hepsi = [...rfqlar, ...kalar];
-    hepsi.sort((a, b) => {
-      const av = a.son ? new Date(a.son).getTime() : (rfqDurum === 'gecmis' ? -Infinity : Infinity);
-      const bv = b.son ? new Date(b.son).getTime() : (rfqDurum === 'gecmis' ? -Infinity : Infinity);
-      return rfqDurum === 'gecmis' ? bv - av : av - bv;
-    });
+    if (rfqSirala === 'yeni') {
+      // Yeniden eskiye: en son eklenen (olusturulma DESC) üstte — RFQ ve KA tek eksende.
+      hepsi.sort((a, b) => (b.olus ? new Date(b.olus).getTime() : 0) - (a.olus ? new Date(a.olus).getTime() : 0));
+    } else {
+      hepsi.sort((a, b) => {
+        const av = a.son ? new Date(a.son).getTime() : (rfqDurum === 'gecmis' ? -Infinity : Infinity);
+        const bv = b.son ? new Date(b.son).getTime() : (rfqDurum === 'gecmis' ? -Infinity : Infinity);
+        return rfqDurum === 'gecmis' ? bv - av : av - bv;
+      });
+    }
     hepsi = hepsi.slice(0, 100);
 
     document.getElementById('rfq-sayi').textContent = `${hepsi.length.toLocaleString('tr')} ihale`;

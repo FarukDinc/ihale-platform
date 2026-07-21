@@ -402,6 +402,11 @@ def notice_donustur(n):
         tahmini = float(tahmini) if tahmini else None
     except (ValueError, TypeError):
         tahmini = None
+    # TED çerçeve/indirim anlaşmalarında toplam bedel açıklanmaz; API zorunlu alana nominal 1 EUR
+    # (bazen 0.01) placeholder yazar → gerçek bedel değil. AB-eşiği-üstü ilanlarda birkaç yüz EUR
+    # altı gerçek değer olmadığından <100'ü NULL'a çevir (frontend GECERLI_BEDEL_ESIK=100 ile aynı).
+    if tahmini is not None and tahmini < 100:
+        tahmini = None
     return {
         "kaynak": "ted",
         "publication_no": str(pub),

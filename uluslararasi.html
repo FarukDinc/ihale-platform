@@ -275,6 +275,16 @@
           <option value="Hizmet">Hizmet</option>
           <option value="Yapım">Yapım</option>
         </select>
+        <select id="f-sirala" onchange="siralamaDegisti()" title="Sıralama">
+          <option value="ilan_tarihi">📅 İlan tarihi (yeni→eski)</option>
+          <option value="son_teklif_tarihi">⏰ Son teklif (yakın→uzak)</option>
+          <option value="tahmini_bedel">💶 Tahmini bedel (yüksek→düşük)</option>
+        </select>
+        <span title="İlan tarihine göre aralık filtresi" style="font-size:13px;color:var(--muted);white-space:nowrap;">📅 İlan tarihi:</span>
+        <input type="date" id="f-tarih-bas" onchange="tarihDegisti()" title="Başlangıç (ilan tarihi)" style="flex:none;min-width:auto;" />
+        <span style="color:var(--muted);">–</span>
+        <input type="date" id="f-tarih-son" onchange="tarihDegisti()" title="Bitiş (ilan tarihi)" style="flex:none;min-width:auto;" />
+        <button type="button" id="f-tarih-temizle" onclick="tarihTemizle()" title="Tarih filtresini temizle" style="display:none;background:none;border:none;color:var(--muted);cursor:pointer;font-size:13px;">✕ temizle</button>
         <span class="results-count" id="liste-sayi"></span>
       </div>
 
@@ -306,14 +316,18 @@
   const sb = window.supabase.createClient(SB_URL, SB_KEY);
 
   const PER_PAGE = 25;
-  let sayfa = 1, topSayfa = 1, toplam = 0, siralamaAlan = 'son_teklif_tarihi';
+  // TED "çerçeve/indirim anlaşması" ilanlarında toplam bedel açıklanmaz; API zorunlu alana
+  // nominal 1 EUR (bazen 0.01) placeholder koyar. Bunlar gerçek bedel DEĞİL → eşiğin altını
+  // "belirtilmemiş" say (canlı: bedel=1 → 41 ilan, <100 → ~63; ilk gerçekçi değer 149,93).
+  const GECERLI_BEDEL_ESIK = 100;
+  let sayfa = 1, topSayfa = 1, toplam = 0, siralamaAlan = 'ilan_tarihi';
   let aramaTimer = null;
   let sonSatirlar = [];
 
   function esc(s) { return (s || '').replace(/[<>&"]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c])); }
   function tarihFormat(s) { if (!s) return '—'; return new Date(s).toLocaleDateString('tr-TR', { day:'2-digit', month:'short', year:'numeric' }); }
   function bedelFormat(v, pb) {
-    if (!v) return '';
+    if (!v || v < GECERLI_BEDEL_ESIK) return '';  // placeholder (1 EUR / 0.01) = bedel yok
     const p = pb || 'EUR'; const sembol = p === 'EUR' ? '€' : (p === 'USD' ? '$' : p + ' ');
     if (v >= 1e6) return `${sembol}${(v/1e6).toFixed(1)}M`;
     if (v >= 1e3) return `${sembol}${(v/1e3).toFixed(0)}K`;
@@ -329,6 +343,12 @@
     if (ulke) query = query.eq('ulke', ulke);
     if (kat) query = query.eq('kategori', kat);
     if (tur) query = query.eq('tur', tur);
+    // Tarih aralığı — DAİMA ilan_tarihi'ye uygulanır (yayın tarihi, hiç NULL yok). son_teklif_tarihi
+    // 1073 NULL içerdiği için ona uygulansaydı o satırlar sessizce düşerdi. Bitiş günü dahil (gün sonu).
+    const tb = document.getElementById('f-tarih-bas').value;
+    const ts = document.getElementById('f-tarih-son').value;
+    if (tb) query = query.gte('ilan_tarihi', tb);
+    if (ts) query = query.lte('ilan_tarihi', ts + 'T23:59:59');
     // trAramaKalibi (js/main.js): Türkçe İ/ı·ü·ğ·ş·ç·ö harflerini tek-karakter jokerle
     // değiştirir. Başlıklar Türkçeye çevrilmiş olduğu için düz ilike sessizce kaybediyordu —
     // 20 Tem canlı ölçümü: "insaat" 89 sonuç verirken gerçek evren 207; "italya"/"irlanda"
@@ -345,8 +365,11 @@
     let query = sb.from('uluslararasi_ihaleler')
       .select('publication_no,kaynak,baslik,orijinal_baslik,ulke,ulke_kodu,idare,kategori,tur,tahmini_bedel,para_birimi,son_teklif_tarihi,ilan_tarihi,orijinal_url', { count: 'exact' });
     query = filtreleriUygula(query);
-    // son_teklif_tarihi olanlar önce (nulls last), sonra en yeni ilan
+    siralamaAlan = document.getElementById('f-sirala').value || 'ilan_tarihi';
     query = query.order(siralamaAlan, { ascending: false, nullsFirst: false });
+    // İkincil benzersiz anahtar: günlük ~1280 ilan AYNI ilan_tarihi ile geldiğinden tek-kolon
+    // sıralamada .range() sayfaları arası satır tekrarı/atlaması olur; publication_no stabilize eder.
+    if (siralamaAlan !== 'publication_no') query = query.order('publication_no', { ascending: false });
     const bas = (sayfa - 1) * PER_PAGE;
     query = query.range(bas, bas + PER_PAGE - 1);
     const { data, count, error } = await query;
@@ -399,7 +422,7 @@
     cont.innerHTML = sonSatirlar.map(k => `<div class="ui-kart">
       <div class="ui-ust">
         <div class="ui-baslik"><a href="${esc(k.orijinal_url)}" target="_blank" rel="noopener">${esc(k.baslik) || '(başlık yok)'}</a></div>
-        ${k.tahmini_bedel ? `<div class="ui-bedel">${bedelFormat(k.tahmini_bedel, k.para_birimi)}</div>` : ''}
+        ${(k.tahmini_bedel && k.tahmini_bedel >= GECERLI_BEDEL_ESIK) ? `<div class="ui-bedel">${bedelFormat(k.tahmini_bedel, k.para_birimi)}</div>` : ''}
       </div>
       ${k.publication_no ? `<div class="ui-no" title="Bu numarayı ${esc(kaynakPortal(k.kaynak))} üzerinde aratabilirsiniz — kopyalamak için tıklayın" onclick="noKopyala(this, '${esc(k.publication_no)}')">📋 ${esc(duyuruEtiket(k.kaynak))}: <b>${esc(k.publication_no)}</b><span class="ui-no-kopya">⧉ kopyala</span></div>` : ''}
       <div class="ui-badges">
@@ -425,6 +448,18 @@
 
   window.filtreDegisti = () => { haritaSecimYansit(); veriYukle(true); };
   window.aramaDegisti = function() { clearTimeout(aramaTimer); aramaTimer = setTimeout(() => veriYukle(true), 350); };
+  window.siralamaDegisti = () => veriYukle(true);
+  function tarihTemizleGoster() {
+    const v = document.getElementById('f-tarih-bas').value || document.getElementById('f-tarih-son').value;
+    document.getElementById('f-tarih-temizle').style.display = v ? '' : 'none';
+  }
+  window.tarihDegisti = () => { tarihTemizleGoster(); veriYukle(true); };
+  window.tarihTemizle = () => {
+    document.getElementById('f-tarih-bas').value = '';
+    document.getElementById('f-tarih-son').value = '';
+    tarihTemizleGoster();
+    veriYukle(true);
+  };
   window.sayfaGit = function(yon) {
     let h = sayfa;
     if (yon === 'ilk') h = 1; else if (yon === 'prev') h = sayfa - 1;
