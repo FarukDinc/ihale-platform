@@ -426,8 +426,15 @@
       }
     });
 
+    // "Diğer" jenerik kova (OKAS/CPV'den sınıflandırılamayan ilanlar, ~%58) GERÇEK sektör değil —
+    // en büyük hacim olduğu için sıralamada #1 çıkıp 🥇 altın madalyayı alıyor ve dizini yanıltıyordu.
+    // Her sıralamada listenin SONUNA al: madalyalar gerçek sektörlere gitsin, kova en sonda kalsın.
+    const digerIdx = filtrelenmis.findIndex(s => s.ad === 'Diğer');
+    if (digerIdx > -1) filtrelenmis.push(filtrelenmis.splice(digerIdx, 1)[0]);
+
     document.getElementById('sayac-label').textContent = filtrelenmis.length + ' sektör';
-    const maxToplam = filtrelenmis[0]?.toplam || 1;
+    // maxToplam TÜM listeden (Diğer sona alındığı için [0] artık en büyük değil) → bar %'leri ≤100 kalır.
+    const maxToplam = Math.max(...filtrelenmis.map(s => s.toplam), 1);
 
     const grid = document.getElementById('sektor-grid');
     if (!filtrelenmis.length) {
