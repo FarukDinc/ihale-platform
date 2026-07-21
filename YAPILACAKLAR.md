@@ -24,14 +24,14 @@
 > 0 kalıcı kayıp). Hız 36 → ~2-3 sayfa/dk düştü. Kalan ~4.900 sayfa bu tempoda 2-3 GÜN.
 > Kök neden bizim tarafımız değil — EKAP `GetListByParameters` derin offset'te (skip>~865K)
 > yavaşlıyor (hafıza: [[dt-kazanan-captcha]] / derin sayfalama dersi).
-> **KARAR GEREK — 3 seçenek:**
-> (a) Bırak yavaşça dönsün (2-3 gün, dayanıklı, müdahale yok).
-> (b) Alternatif strateji: DT listeleme API'si tarih/filtre parametresi kabul ediyorsa
->     (ekap_dogrudan_temin gece modu tarih filtresi kullanıyor olabilir — incelenmeli), derin
->     offset yerine dilim dilim çek. Ama token'sızların `yayin_tarihi` NULL → hedefleme zor.
-> (c) 464K token'lı kuyruk ZATEN hazır (kurtarma sonrası) — token backfill'i BEKLETMEDEN
->     `dt_kazanan_scraper --limit 500000` şimdi koşulabilir; DT kazananı %7,9'dan hemen
->     yükseltir. Token backfill kalan token'sızları paralel/sonra doldurur.
+> **KARAR VERİLDİ (21 Tem): seçenek (c) — dt_kazanan öne alındı.** Token backfill DURAKLATILDI
+> (checkpoint **6778**'de güvende, `.dt_scraper_checkpoint.json`), sıralı-koşma dersine uyularak
+> dt_kazanan'a temiz EKAP erişimi verildi. `dt_kazanan_scraper --limit 500000 --rpm 500` koşuyor;
+> kuyruk **675.571** (464K kurtarma + token backfill'in eklediği yeni token'lılar). dtDetayGetir
+> tekil çağrı → derin-offset yavaşlaması YOK. ~22 saat, DT kazananı %7,9'dan yükseltecek.
+> Monitörlü (`dt_kazanan_tur.log`, işaret `dt_kazanan_tur_tamam`).
+> ⏭ dt_kazanan bitince → token backfill'e DÖN (checkpoint 6778'den devam, kalan token'sızları
+>    doldur) VEYA (b) alternatif strateji araştır (derin offset hâlâ yavaşsa).
 >
 > ## ▶️ TOKEN BACKFILL KOŞUYOR + KURTARMA UYGULANDI (20 Tem gece)
 > - **İfade indeksi UYGULANDI:** `idx_ilanlar_idare_norm_expr` + DT'si CONCURRENTLY kuruldu.
