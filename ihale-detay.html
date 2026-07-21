@@ -4,8 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>İhale Detay — İhaleGlobal</title>
-  <link rel="stylesheet" href="css/style.css" />
-  <script src="js/theme.js?v=5"></script>
+  <link rel="stylesheet" href="css/style.css?v=mob1" />
+  <script src="js/theme.js?v=6"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
   <style>
@@ -229,6 +229,15 @@
     .benzer-baslik { font-size: 13px; font-weight: 600; color: var(--white); margin-bottom: 3px; }
     .benzer-meta { font-size: 11px; color: var(--muted); }
     .benzer-bedel { font-size: 13px; font-weight: 700; color: var(--amber); white-space: nowrap; }
+
+    @media (max-width:900px){
+      .kpi-grid{ grid-template-columns:1fr 1fr; }
+      .detay-grid{ grid-template-columns:1fr; }
+      .detay-actions{ flex-wrap:wrap; }
+      .breadcrumb{ display:none; }
+      .page-body{ padding:20px 16px; }
+      .ilan-metni{ overflow-x:auto; }
+    }
   </style>
 </head>
 <body>

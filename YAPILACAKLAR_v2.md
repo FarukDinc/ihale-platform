@@ -105,6 +105,27 @@
 
 ---
 
+## V2-7 · Mobil/telefon uyumu + tema denetimi (tüm sayfalar)  `[~]`
+
+**İstek (22 Tem):** Platform telefon/mobil için uygun mu, görüntü/temada sıkıntı var mı — tek tek araştır ve düzelt.
+
+**DENETİM SONUCU (7 ajan, 25 sayfa):** Temel altyapı sağlam — tüm sayfalarda viewport meta var, `js/main.js` mobilde hamburger (☰) enjekte ediyor (900px), `js/theme.js` açık/koyu tema. Ama sistematik + sayfa-özel kırılımlar bulundu:
+- **KRİTİK (mobil kullanılamaz):** `profil` + `teklif-olustur` + `ihale-detay` sidebar'ı mobilde gizlemiyordu (240px sabit kalıp .main'i eziyordu) · `takipte` + `uyumluluk` 6-kolon tabloyu `overflow:hidden` ile kırpıyordu · `kik-kararlar` (tarih kutuları min-width:160px + flex-wrap yok) · `bildirimler` (7 sekme wrap yok) · `index` (harita sekme şeridi wrap yok) yatay taşma.
+- **ORTA (tema):** `rekabet-analizi` + `dt-analiz` grafik y-ekseni etiketleri sabit `#F5F6F8` → açık temada BEYAZ ÜSTÜNE BEYAZ (görünmez) · `uluslararasi` + `ticaret-analiz` `.dunya-tooltip` metni açık temada görünmez · `harita` sabit koyu il dolguları · `login` style.css/theme.js yüklemiyor (hep koyu) · `fiyatlandirma` kupon mesajı koyu-koyu.
+- **ORTA (grid/topbar):** dashboard/ihaleler/firma inline grid'ler mobilde collapse etmiyor · birçok topbar sabit 56px + flex-wrap yok.
+
+**GLOBAL DÜZELTMELER (yapıldı):**
+- `css/style.css` — mobil (900px) global blok: `.app>.sidebar{display:none}` (specificity ile, !important YOK → hamburger overlay bozulmaz), `.app .table-wrap` yatay scroll + `min-width:560px`, `.app .topbar` height:auto+flex-wrap. → sidebar/tablo/topbar sorunlarının çoğunu tek yerden çözer.
+- `js/theme.js` — tema değişince `tema-degisti` CustomEvent dispatch (grafik sayfaları dinleyip yeniden çizsin).
+
+**SAYFA-ÖZEL DÜZELTMELER (7 ajan paralel, devam ediyor):** grid collapse (auto-fit), grafik cssVar tema renkleri + tema-degisti listener, tooltip/oner-kutu tema, kik/bildirimler/index kritik taşmalar, login açık tema bloğu, fiyatlandirma kupon renkleri.
+
+**CACHE-BUST (deploy'da):** theme.js?v=5→v6 + style.css?v=mob1 (26+30 sayfa) — değişen CSS/JS anında görünsün (HTML DYNAMIC, CSS/JS 4h cache).
+
+**Yöntem doğrulaması:** canlı 375px probe'ları (dashboard/ihaleler/uluslararasi/harita/ozel-ihaleler) → hamburger çalışıyor, sayfa-seviyesi taşma yok, açık tema uygulanıyor. Kalan görsel doğrulama deploy sonrası.
+
+---
+
 ### Durum: V2-1..V2-4 + V2-6 TAMAM ✅ · V2-5 doğrulandı (opsiyonel iyileştirmeler açık)
 Tek kalan opsiyonel iş: **V2-5 Gürcistan kapsam artışı** (tek POST→sayfalama) + silent-zero guard. Veri zaten geliyor (20 satır), acil değil.
 

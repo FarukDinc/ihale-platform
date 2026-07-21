@@ -4,8 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Bildirimler — İhaleGlobal</title>
-  <link rel="stylesheet" href="css/style.css" />
-  <script src="js/theme.js?v=5"></script>
+  <link rel="stylesheet" href="css/style.css?v=mob1" />
+  <script src="js/theme.js?v=6"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
   <style>
@@ -42,7 +42,7 @@
     .page-header p { font-size: 14px; color: var(--muted); }
 
     .notif-toolbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; flex-wrap: wrap; gap: 10px; }
-    .notif-tabs { display: flex; gap: 4px; }
+    .notif-tabs { display: flex; gap: 4px; flex-wrap: wrap; }
     .notif-tab { padding: 6px 14px; border-radius: 6px; font-size: 13px; font-weight: 500; cursor: pointer; border: 1px solid var(--border); background: none; color: var(--muted); transition: all .15s; }
     .notif-tab.active { background: rgba(240,165,0,0.1); color: var(--amber); border-color: rgba(240,165,0,0.3); }
     .btn-tumunu-oku { padding: 6px 14px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; border: 1px solid var(--border); background: var(--card-bg); color: var(--muted); transition: all .15s; }
@@ -261,7 +261,7 @@
         <!-- YENİ BÜLTEN FORMU -->
         <div id="bulten-form" style="display:none;background:var(--navy-mid);border:1px solid var(--border);border-radius:10px;padding:18px 20px;margin-bottom:16px;">
           <div style="font-size:14px;font-weight:700;color:var(--white);margin-bottom:14px;">Yeni Bülten Oluştur</div>
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:12px;">
             <div style="grid-column:1/-1;">
               <label style="font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.07em;display:block;margin-bottom:4px;">Bülten Adı *</label>
               <input id="bf-ad" type="text" placeholder="örn. İstanbul Yapım İhaleleri" style="width:100%;box-sizing:border-box;background:var(--navy);border:1px solid var(--border);color:var(--white);padding:8px 12px;border-radius:7px;font-size:13px;font-family:var(--font-body);outline:none;" />

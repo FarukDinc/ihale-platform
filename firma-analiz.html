@@ -4,8 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Firma Analizi — İhaleGlobal</title>
-  <link rel="stylesheet" href="css/style.css" />
-  <script src="js/theme.js?v=5"></script>
+  <link rel="stylesheet" href="css/style.css?v=mob1" />
+  <script src="js/theme.js?v=6"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
   <style>
@@ -52,7 +52,7 @@
       padding: 0 24px; height: 56px; display: flex; align-items: center;
       justify-content: space-between; position: sticky; top: 0; z-index: 10;
     }
-    .topbar-left { display: flex; align-items: center; gap: 12px; }
+    .topbar-left { display: flex; align-items: center; gap: 12px; min-width: 0; flex: 1; }
     .back-btn {
       display: inline-flex; align-items: center; gap: 6px; color: var(--off-white, #e6e6e6);
       text-decoration: none; font-size: 13px; font-weight: 600; cursor: pointer;
@@ -60,7 +60,7 @@
       padding: 7px 14px; border-radius: 7px; transition: all .15s;
     }
     .back-btn:hover { color: var(--white); border-color: var(--amber, #f0a500); background: rgba(240,165,0,.08); }
-    .breadcrumb { font-size: 13px; color: var(--muted); }
+    .breadcrumb { font-size: 13px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
     .breadcrumb span { color: var(--white); }
 
     .page-body { padding: 28px; }
@@ -539,7 +539,7 @@
 
         <!-- GENEL BAKIŞ -->
         <div id="tab-genel" class="tab-panel active">
-          <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px;">
+          <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:16px; margin-bottom:16px;">
             <!-- Yıllık trend -->
             <div class="veri-yok-card" style="text-align:left; padding:20px 24px;">
               <div style="font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.08em; margin-bottom:14px; padding-bottom:10px; border-bottom:1px solid var(--border);">Yıllara Göre İhale Sayısı</div>
@@ -551,7 +551,7 @@
               <div id="tur-list" style="display:flex;flex-direction:column;gap:10px;"></div>
             </div>
           </div>
-          <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:16px;">
+          <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:16px; margin-bottom:16px;">
             <!-- İl dağılımı -->
             <div class="veri-yok-card" style="text-align:left; padding:20px 24px;">
               <div style="font-size:12px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.08em; margin-bottom:14px; padding-bottom:10px; border-bottom:1px solid var(--border);">İl Bazlı Dağılım</div>
@@ -1381,8 +1381,8 @@
           responsive: true, maintainAspectRatio: false,
           plugins: { legend: { display: false } },
           scales: {
-            x: { ticks: { color: '#94a3b8', font: { size: 11 } }, grid: { display: false } },
-            y: { ticks: { color: '#94a3b8', font: { size: 11 } }, grid: { color: 'rgba(var(--overlay-rgb),.05)' }, beginAtZero: true }
+            x: { ticks: { color: cssVar('--muted','#94a3b8'), font: { size: 11 } }, grid: { display: false } },
+            y: { ticks: { color: cssVar('--muted','#94a3b8'), font: { size: 11 } }, grid: { color: 'rgba(var(--overlay-rgb),.05)' }, beginAtZero: true }
           }
         }
       });
@@ -1574,6 +1574,7 @@
   let sbH = null;
 
   const esc = s => (s || '').replace(/[<>&"']/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&#39;'}[c]));
+  function cssVar(n,f){const v=getComputedStyle(document.documentElement).getPropertyValue(n).trim();return v||f;}
   // tr-harita.js key üretimiyle AYNI fold (bkz. harita.html)
   function fold(s){
     const m = {'İ':'i','I':'i','ı':'i','Ş':'s','ş':'s','Ğ':'g','ğ':'g','Ü':'u','ü':'u','Ö':'o','ö':'o','Ç':'c','ç':'c'};

@@ -4,8 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Harita — İhaleGlobal</title>
-  <link rel="stylesheet" href="css/style.css" />
-  <script src="js/theme.js?v=5"></script>
+  <link rel="stylesheet" href="css/style.css?v=mob1" />
+  <script src="js/theme.js?v=6"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
   <style>
@@ -232,8 +232,12 @@
     if (!vals.length) return;
     for (let i = 1; i <= 5; i++) esikler.push(vals[Math.floor(vals.length * i / 6)]);
   }
+  // Açık temada koyu il dolgusu ("#1a2130"/"#161c28") sayfada leke gibi durur → tema-duyarlı "veri yok" rengi.
+  function cssVar2(dark){ return document.documentElement.getAttribute('data-theme') === 'light' ? '#d9dee6' : dark; }
+  // Canlı tema değişiminde harita dolguları + lejant yeniden çizilsin (theme.js 'tema-degisti' dispatch eder).
+  window.addEventListener('tema-degisti', () => { try { boya(); } catch (_) {} });
   function renkAl(adet){
-    if (!adet) return '#1a2130';           // veri yok/0 → nötr
+    if (!adet) return cssVar2('#1a2130');           // veri yok/0 → nötr
     let idx = 0;
     for (let i = 0; i < esikler.length; i++) if (adet >= esikler[i]) idx = i + 1;
     return RENKLER[Math.min(idx, RENKLER.length - 1)];
@@ -275,7 +279,7 @@
     let pins = '';
     H.iller.forEach(il => {
       ilAdMap[il.key] = il.ad;
-      paths += `<path class="il" data-key="${il.key}" data-ad="${esc(il.ad)}" data-cx="${il.cx}" data-cy="${il.cy}" d="${il.d}" fill="#1a2130"></path>`;
+      paths += `<path class="il" data-key="${il.key}" data-ad="${esc(il.ad)}" data-cx="${il.cx}" data-cy="${il.cy}" d="${il.d}" fill="${cssVar2('#1a2130')}"></path>`;
     });
     const svg = `<svg class="tr-harita" viewBox="${H.viewBox}" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">
       <g id="g-iller">${paths}</g><g id="g-pins">${pins}</g></svg>`;
@@ -303,7 +307,7 @@
       } else {
         // RFQ katmanı: choropleth'i soluk göster, RFQ olan illeri vurgula + pin
         const has = (rfqMap[k] || 0) > 0;
-        p.setAttribute('fill', has ? 'rgba(74,222,128,.28)' : '#161c28');
+        p.setAttribute('fill', has ? 'rgba(74,222,128,.28)' : cssVar2('#161c28'));
       }
     });
     if (aktifKatman === 'rfq') {
@@ -334,14 +338,14 @@
         ? `Renkler <b style="color:var(--amber);">${esc(sektorSecili)}</b> sektöründe ildeki kazanan firma yoğunluğunu gösterir:`
         : 'Renkler ildeki kayıtlı firma yoğunluğunu gösterir:';
       el.innerHTML = `<span style="margin-right:4px;color:var(--white);font-weight:600;">${kapsam}</span>` +
-        '<span class="box" style="background:#1a2130"></span><span style="margin-right:8px;">Firma yok</span>' + et +
+        `<span class="box" style="background:${cssVar2('#1a2130')}"></span><span style="margin-right:8px;">Firma yok</span>` + et +
         `<span style="display:inline-flex;align-items:center;gap:5px;">Az <span style="width:56px;height:8px;border-radius:4px;display:inline-block;background:linear-gradient(90deg,${RENKLER.join(',')});"></span> Çok</span>`;
     } else {
       const rfqKapsam = sektorSecili
         ? `Renkler <b style="color:#4ade80;">${esc(sektorSecili)}</b> kategorisindeki açık satınalma talebi (RFQ) durumunu gösterir:`
         : 'Renkler ildeki açık satınalma talebi (RFQ) durumunu gösterir:';
       el.innerHTML = `<span style="margin-right:4px;color:var(--white);font-weight:600;">${rfqKapsam}</span>` +
-        '<span class="box" style="background:#161c28"></span><span style="margin-right:8px;">Talep yok</span>' +
+        `<span class="box" style="background:${cssVar2('#161c28')}"></span><span style="margin-right:8px;">Talep yok</span>` +
         '<span class="box" style="background:rgba(74,222,128,.28);border:1px solid #4ade80"></span><span style="margin-right:8px;">Açık RFQ olan il</span>' +
         '<span style="color:var(--muted)">Yeşil pin = talep noktası (tıklayınca detay)</span>';
     }

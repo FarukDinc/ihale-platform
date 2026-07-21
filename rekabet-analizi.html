@@ -4,8 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Rekabet Analizi — İhaleGlobal</title>
-  <link rel="stylesheet" href="css/style.css" />
-  <script src="js/theme.js?v=5"></script>
+  <link rel="stylesheet" href="css/style.css?v=mob1" />
+  <script src="js/theme.js?v=6"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
   <style>
@@ -319,7 +319,8 @@
   const sb = window.supabase.createClient(SB_URL, SB_KEY);
   const esc = s => (s == null ? '' : String(s)).replace(/[<>&"']/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&#39;'}[c]));
 
-  Chart.defaults.color = '#8A96A8';
+  function cssVar(n,f){const v=getComputedStyle(document.documentElement).getPropertyValue(n).trim();return v||f;}
+  Chart.defaults.color = cssVar('--muted','#8A96A8');
   Chart.defaults.font.family = 'Inter, sans-serif';
 
   let turChart = null;
@@ -363,8 +364,8 @@
         responsive: true, maintainAspectRatio: false,
         plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ` ${ctx.raw.toLocaleString('tr')} ihale` } } },
         scales: {
-          x: { grid: { display: false }, ticks: { color: '#8A96A8', font: { size: 10 }, maxTicksLimit: 12 } },
-          y: { grid: { color: 'rgba(var(--overlay-rgb),.05)' }, ticks: { color: '#8A96A8', font: { size: 11 } }, beginAtZero: true }
+          x: { grid: { display: false }, ticks: { color: cssVar('--muted','#8A96A8'), font: { size: 10 }, maxTicksLimit: 12 } },
+          y: { grid: { color: 'rgba(var(--overlay-rgb),.05)' }, ticks: { color: cssVar('--muted','#8A96A8'), font: { size: 11 } }, beginAtZero: true }
         }
       }
     });
@@ -461,8 +462,8 @@
         maintainAspectRatio: false,
         plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ` ${ctx.raw} ihale` } } },
         scales: {
-          x: { grid: { color: 'rgba(var(--overlay-rgb),0.05)' }, ticks: { color: '#8A96A8', font: { size: 11 } } },
-          y: { grid: { display: false }, ticks: { color: '#F5F6F8', font: { size: 11 }, maxTicksLimit: 10 } }
+          x: { grid: { color: 'rgba(var(--overlay-rgb),0.05)' }, ticks: { color: cssVar('--muted','#8A96A8'), font: { size: 11 } } },
+          y: { grid: { display: false }, ticks: { color: cssVar('--off-white','#F5F6F8'), font: { size: 11 }, maxTicksLimit: 10 } }
         }
       }
     });
@@ -491,8 +492,8 @@
         maintainAspectRatio: false,
         plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ` ${ctx.raw} ihale` } } },
         scales: {
-          x: { grid: { color: 'rgba(var(--overlay-rgb),0.05)' }, ticks: { color: '#8A96A8', font: { size: 11 } } },
-          y: { grid: { display: false }, ticks: { color: '#F5F6F8', font: { size: 11 } } }
+          x: { grid: { color: 'rgba(var(--overlay-rgb),0.05)' }, ticks: { color: cssVar('--muted','#8A96A8'), font: { size: 11 } } },
+          y: { grid: { display: false }, ticks: { color: cssVar('--off-white','#F5F6F8'), font: { size: 11 } } }
         }
       }
     });
@@ -516,8 +517,8 @@
         maintainAspectRatio: false,
         plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ` ${ctx.raw.toLocaleString('tr')} ihale` } } },
         scales: {
-          x: { grid: { color: 'rgba(var(--overlay-rgb),0.05)' }, ticks: { color: '#8A96A8', font: { size: 11 } } },
-          y: { grid: { display: false }, ticks: { color: '#F5F6F8', font: { size: 11 } } }
+          x: { grid: { color: 'rgba(var(--overlay-rgb),0.05)' }, ticks: { color: cssVar('--muted','#8A96A8'), font: { size: 11 } } },
+          y: { grid: { display: false }, ticks: { color: cssVar('--off-white','#F5F6F8'), font: { size: 11 } } }
         }
       }
     });
@@ -691,6 +692,8 @@
     if (params.get('durum')) document.getElementById('f-durum').value = params.get('durum');
     yenile();
   }
+
+  window.addEventListener('tema-degisti', () => yenile());
 
   baslat();
 </script>

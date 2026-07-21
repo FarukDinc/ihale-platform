@@ -13,6 +13,7 @@
         + location.pathname + location.search + location.hash);
     }
   </script>
+  <script src="js/theme.js?v=6"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
@@ -27,6 +28,15 @@
       --overlay-rgb: 255,255,255;
       --border: rgba(var(--overlay-rgb),0.08);
       --font: 'Plus Jakarta Sans', sans-serif;
+    }
+    :root[data-theme="light"] {
+      --navy: #FFFFFF;
+      --navy-mid: #F3F5F8;
+      --navy-soft: #E7EBF0;
+      --white: #0A1628;
+      --muted: #64748B;
+      --overlay-rgb: 10,22,40;
+      --border: rgba(10,22,40,0.10);
     }
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     body {
@@ -133,6 +143,7 @@
     /* Toast */
     #toast {
       position: fixed; bottom: 24px; right: 24px;
+      max-width: min(360px, calc(100vw - 48px)); left: auto;
       padding: 12px 20px; border-radius: 8px;
       font-size: 14px; font-weight: 600;
       opacity: 0; transform: translateY(10px);

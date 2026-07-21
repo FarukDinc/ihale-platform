@@ -4,8 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Anasayfa — İhaleGlobal</title>
-  <link rel="stylesheet" href="css/style.css" />
-  <script src="js/theme.js?v=5"></script>
+  <link rel="stylesheet" href="css/style.css?v=mob1" />
+  <script src="js/theme.js?v=6"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
@@ -826,7 +826,7 @@
       </div>
 
       <!-- GÜNLÜK CANLI SAYAÇ -->
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px;" id="gunluk-strip">
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:16px;" id="gunluk-strip">
         <a class="stat-card" id="stat-eklendi" href="ihaleler" title="Bugün eklenen ihaleleri gör">
           <span style="font-size:22px;">📅</span>
           <div>
@@ -915,7 +915,7 @@
       </div>
 
       <!-- WIDGET ROW: Top Kurumlar + Son İhaleler -->
-      <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:20px;">
+      <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:16px; margin-bottom:20px;">
 
         <!-- Top Kurumlar -->
         <div class="table-wrap" style="padding:0; margin-bottom:0;">
@@ -942,7 +942,7 @@
       </div>
 
       <!-- WIDGET ROW: Yaklaşan Bitiş + Kayıtlı Aramalar -->
-      <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-bottom:20px;">
+      <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:16px; margin-bottom:20px;">
 
         <!-- Takip Listesi — Yaklaşan Bitiş -->
         <div class="table-wrap" style="padding:0; margin-bottom:0;">
@@ -1952,7 +1952,7 @@
             const bedelStr = bedel ? ` · <span style="color:var(--amber);font-weight:600;">${paraCevir(bedel)}</span>` : '';
             return `<a href="ihale-detay?id=${d.id}" style="display:block; padding:9px 18px; text-decoration:none; border-bottom:1px solid var(--border); transition:background .15s;" onmouseover="this.style.background='var(--card-bg)'" onmouseout="this.style.background=''">
               <div style="display:flex; align-items:center; gap:10px;">
-                <div style="min-width:44px; text-align:center; background:rgba(0,0,0,.25); border-radius:6px; padding:4px 6px; flex-shrink:0;">
+                <div style="min-width:44px; text-align:center; background:rgba(var(--overlay-rgb),.06); border-radius:6px; padding:4px 6px; flex-shrink:0;">
                   <div style="font-size:16px; font-weight:800; color:${aciliyor}; line-height:1;">${kalan}</div>
                   <div style="font-size:9px; color:var(--muted); text-transform:uppercase; letter-spacing:.04em;">GÜN</div>
                 </div>
@@ -2328,7 +2328,7 @@
       }
 
       const renk = (s) => s >= 80 ? '#4ade80' : s >= 60 ? 'var(--amber)' : '#94a3b8';
-      el.innerHTML = `<div style="display:grid; grid-template-columns:repeat(3,1fr); gap:0;">
+      el.innerHTML = `<div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:0;">
         ${skorlu.map(({ ilan, skor }) => {
           const href = dtMod ? `dt-detay?dt_no=${encodeURIComponent(ilan.dt_no)}` : `ihale-detay?id=${ilan.id}`;
           const bedel = !dtMod && ilan.tahmini_bedel ? '₺' + (ilan.tahmini_bedel / 1e6).toFixed(1) + 'M' : dtMod ? null : '—';

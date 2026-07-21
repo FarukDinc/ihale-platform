@@ -4,8 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>KİK Kararlar — İhaleGlobal</title>
-  <link rel="stylesheet" href="css/style.css" />
-  <script src="js/theme.js?v=5"></script>
+  <link rel="stylesheet" href="css/style.css?v=mob1" />
+  <script src="js/theme.js?v=6"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
   <style>
@@ -71,7 +71,7 @@
     }
     .form-grp input:focus, .form-grp select:focus { border-color: var(--amber); }
     .form-grp select option { background: var(--navy); }
-    .arama-btn-row { display: flex; gap: 8px; margin-top: 12px; align-items: center; }
+    .arama-btn-row { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; align-items: center; }
     .btn-primary {
       background: var(--amber); color: var(--navy); font-weight: 700;
       border: none; padding: 9px 20px; border-radius: 7px; font-size: 13px;
@@ -297,11 +297,11 @@
           </div>
         </div>
         <div class="arama-btn-row">
-          <div class="form-grp" style="min-width:160px;">
+          <div class="form-grp" style="flex:1 1 140px;min-width:140px;">
             <label>Başlangıç Tarihi</label>
             <input type="date" id="f-bas" />
           </div>
-          <div class="form-grp" style="min-width:160px;">
+          <div class="form-grp" style="flex:1 1 140px;min-width:140px;">
             <label>Bitiş Tarihi</label>
             <input type="date" id="f-bit" />
           </div>

@@ -8,8 +8,8 @@
        ?kurum= yoksa açılış = İdare Dizini (iz-*); idareye tıkla → aynı sayfada analiz (pushState).
        idareler.html artık buraya redirect. -->
 
-  <link rel="stylesheet" href="css/style.css" />
-  <script src="js/theme.js?v=5"></script>
+  <link rel="stylesheet" href="css/style.css?v=mob1" />
+  <script src="js/theme.js?v=6"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
   <style>
@@ -64,13 +64,13 @@
       padding: 0 24px; height: 56px; display: flex; align-items: center;
       justify-content: space-between; position: sticky; top: 0; z-index: 10;
     }
-    .topbar-left { display: flex; align-items: center; gap: 12px; }
+    .topbar-left { display: flex; align-items: center; gap: 12px; min-width: 0; flex: 1; }
     .back-btn {
       display: flex; align-items: center; gap: 6px; color: var(--muted);
       text-decoration: none; font-size: 13px; font-weight: 500; transition: color .15s;
     }
     .back-btn:hover { color: var(--white); }
-    .breadcrumb { font-size: 13px; color: var(--muted); }
+    .breadcrumb { font-size: 13px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
     .breadcrumb span { color: var(--white); }
 
     /* PAGE BODY */
@@ -133,12 +133,13 @@
     /* TABS */
     .tabs {
       display: flex; gap: 0; border-bottom: 1px solid var(--border);
-      margin-bottom: 20px;
+      margin-bottom: 20px; overflow-x: auto;
     }
     .tab-btn {
       padding: 12px 20px; font-size: 14px; font-weight: 600; color: var(--muted);
       background: none; border: none; border-bottom: 2px solid transparent;
       cursor: pointer; transition: all .15s; margin-bottom: -1px; font-family: var(--font-body);
+      white-space: nowrap; flex-shrink: 0;
     }
     .tab-btn:hover { color: var(--white); }
     .tab-btn.active { color: var(--amber); border-bottom-color: var(--amber); }
@@ -696,6 +697,7 @@
   const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzg0MzA3MTU4LCJleHAiOjE5NDE5ODcxNTh9.CjNKulvirotDD_y2oO2QKgo0kbqYvL0jUSV1RiDMoso";
   const sb = window.supabase.createClient(SB_URL, SB_KEY);
   const esc = s => (s == null ? '' : String(s)).replace(/[<>&"']/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&#39;'}[c]));
+  function cssVar(n,f){const v=getComputedStyle(document.documentElement).getPropertyValue(n).trim();return v||f;}
 
   const params = new URLSearchParams(window.location.search);
   let KURUM = params.get('kurum') || '';   // birleşik hub: pushState ile sayfa içinde değişir
@@ -867,8 +869,8 @@
         responsive: true, maintainAspectRatio: false,
         plugins: { legend: { display: false } },
         scales: {
-          x: { ticks: { color: '#94a3b8', font: { size: 10 }, maxRotation: 45 }, grid: { display: false } },
-          y: { ticks: { color: '#94a3b8', font: { size: 11 } }, grid: { color: 'rgba(var(--overlay-rgb),.05)' }, beginAtZero: true }
+          x: { ticks: { color: cssVar('--muted','#94a3b8'), font: { size: 10 }, maxRotation: 45 }, grid: { display: false } },
+          y: { ticks: { color: cssVar('--muted','#94a3b8'), font: { size: 11 } }, grid: { color: 'rgba(var(--overlay-rgb),.05)' }, beginAtZero: true }
         }
       }
     });
@@ -895,8 +897,8 @@
         responsive: true, maintainAspectRatio: false,
         plugins: { legend: { display: false } },
         scales: {
-          x: { ticks: { color: '#94a3b8', font: { size: 11 } }, grid: { display: false } },
-          y: { ticks: { color: '#94a3b8', font: { size: 11 } }, grid: { color: 'rgba(var(--overlay-rgb),.05)' }, beginAtZero: true }
+          x: { ticks: { color: cssVar('--muted','#94a3b8'), font: { size: 11 } }, grid: { display: false } },
+          y: { ticks: { color: cssVar('--muted','#94a3b8'), font: { size: 11 } }, grid: { color: 'rgba(var(--overlay-rgb),.05)' }, beginAtZero: true }
         }
       }
     });
@@ -964,7 +966,7 @@
       options: {
         responsive: true, maintainAspectRatio: false,
         plugins: {
-          legend: { position: 'right', labels: { color: '#94a3b8', font: { size: 12 }, padding: 14 } },
+          legend: { position: 'right', labels: { color: cssVar('--muted','#94a3b8'), font: { size: 12 }, padding: 14 } },
           tooltip: { callbacks: { label: ctx => ` ${ctx.label}: ${ctx.raw} ihale` } }
         },
         cutout: '62%'

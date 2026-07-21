@@ -4,8 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Takip Listesi — İhaleGlobal</title>
-  <link rel="stylesheet" href="css/style.css" />
-  <script src="js/theme.js?v=5"></script>
+  <link rel="stylesheet" href="css/style.css?v=mob1" />
+  <script src="js/theme.js?v=6"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
   <style>
@@ -222,6 +222,7 @@
       .sidebar { display: none; }
       .stat-row { gap: 10px; }
       .stat-card { min-width: 140px; padding: 12px 16px; }
+      .topbar-search { flex: 1 1 100%; order: 3; max-width: none; }
     }
   </style>
 </head>
@@ -305,7 +306,7 @@
           <h1>Takip Listesi</h1>
           <p>Takibe aldığınız ihaleler burada listelenir. Veriler tarayıcınızda saklanır.</p>
         </div>
-        <div style="display:flex; gap:8px;">
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
           <button class="btn btn-ghost" style="font-size:13px; padding:9px 16px;" onclick="gecmisleriTemizle()" title="Teklif tarihi geçmiş ihaleleri kaldır">↩ Bittileri Kaldır</button>
           <button class="btn btn-ghost" style="font-size:13px; padding:9px 16px;" onclick="tumunuTemizle()">Listeyi Temizle</button>
           <a href="ihaleler" class="btn btn-primary" style="font-size:13px; padding:9px 16px;">+ İhale Ekle</a>

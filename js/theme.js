@@ -27,6 +27,8 @@
     }
     localStorage.setItem(KEY, tema);
     etiketle(tema);
+    // Grafik sayfalari dinleyip renkleri tazeler (Chart.js CSS degiskenlerini otomatik okumaz).
+    try { window.dispatchEvent(new CustomEvent('tema-degisti', { detail: tema })); } catch (_) {}
   }
 
   function ekle() {

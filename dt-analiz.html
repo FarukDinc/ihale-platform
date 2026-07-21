@@ -4,8 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Doğrudan Temin Analizi — İhaleGlobal</title>
-  <link rel="stylesheet" href="css/style.css" />
-  <script src="js/theme.js?v=5"></script>
+  <link rel="stylesheet" href="css/style.css?v=mob1" />
+  <script src="js/theme.js?v=6"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
   <style>
@@ -120,7 +120,7 @@
 
   <div class="main">
     <div class="topbar">
-      <span style="font-size:15px;font-weight:600;">Doğrudan Temin Analizi</span>
+      <span style="font-size:15px;font-weight:600;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Doğrudan Temin Analizi</span>
       <div class="topbar-actions">
         <a href="dogrudan-temin" class="action-btn">⚡ DT Listesi</a>
         <a href="fiyatlandirma_odeme_bolumu" class="action-btn primary">Pro'ya Geç ↑</a>
@@ -207,13 +207,15 @@
 <script src="js/sidebar-user.js?v=3"></script>
 <script src="js/bildirim-sayaci.js?v=rot1"></script>
 <script src="js/plan.js?v=rot1"></script>
+<script src="js/main.js?v=trf2"></script>
 <script>
   const SB_URL = "https://ihaleglobal.com";
   const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzg0MzA3MTU4LCJleHAiOjE5NDE5ODcxNTh9.CjNKulvirotDD_y2oO2QKgo0kbqYvL0jUSV1RiDMoso";
   const sb = window.supabase.createClient(SB_URL, SB_KEY);
   const esc = s => (s == null ? '' : String(s)).replace(/[<>&"']/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&#39;'}[c]));
 
-  Chart.defaults.color = '#8A96A8';
+  function cssVar(n,f){const v=getComputedStyle(document.documentElement).getPropertyValue(n).trim();return v||f;}
+  Chart.defaults.color = cssVar('--muted','#8A96A8');
   Chart.defaults.font.family = 'Inter, sans-serif';
 
   // idare_tur slug → okunur Türkçe etiket (DB'de sınıflandırıcı slug'ları tutuluyor)
@@ -226,6 +228,7 @@
   const idareTurEtiket = k => IDARE_TUR_ETIKET[k] || (k ? k.replace(/_/g,' ') : '—');
 
   let turChart = null, ilChart = null, kategoriChart = null, trendChart = null;
+  let sonVeri = null;   // canlı tema değişiminde yeniden çizim için son veriyi sakla
 
   function paraCevir(v) {
     if (!v) return '—';
@@ -287,7 +290,7 @@
       type: 'line',
       data: { labels, datasets: [{ label:'DT Sayısı', data: Object.values(ayMap), borderColor:'rgba(240,165,0,0.9)', backgroundColor:'rgba(240,165,0,0.08)', borderWidth:2, pointRadius:3, pointBackgroundColor:'rgba(240,165,0,1)', fill:true, tension:0.3 }] },
       options: { responsive:true, maintainAspectRatio:false, plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label: ctx => ` ${ctx.raw.toLocaleString('tr')} DT` } } },
-        scales:{ x:{ grid:{display:false}, ticks:{ color:'#8A96A8', font:{size:10}, maxTicksLimit:12 } }, y:{ grid:{ color:'rgba(var(--overlay-rgb),.05)' }, ticks:{ color:'#8A96A8', font:{size:11} }, beginAtZero:true } } }
+        scales:{ x:{ grid:{display:false}, ticks:{ color:cssVar('--muted','#8A96A8'), font:{size:10}, maxTicksLimit:12 } }, y:{ grid:{ color:'rgba(var(--overlay-rgb),.05)' }, ticks:{ color:cssVar('--muted','#8A96A8'), font:{size:11} }, beginAtZero:true } } }
     });
   }
 
@@ -298,7 +301,7 @@
       data: { labels, datasets: [{ data: values, backgroundColor: renkTek || chartRenkleri(labels.length), borderRadius:4, borderSkipped:false }] },
       options: { indexAxis:'y', responsive:true, maintainAspectRatio:false,
         plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label: ctx => ` ${ctx.raw.toLocaleString('tr')} DT` } } },
-        scales:{ x:{ grid:{ color:'rgba(var(--overlay-rgb),0.05)' }, ticks:{ color:'#8A96A8', font:{size:11} } }, y:{ grid:{display:false}, ticks:{ color:'#F5F6F8', font:{size:11}, maxTicksLimit:15 } } } }
+        scales:{ x:{ grid:{ color:'rgba(var(--overlay-rgb),0.05)' }, ticks:{ color:cssVar('--muted','#8A96A8'), font:{size:11} } }, y:{ grid:{display:false}, ticks:{ color:cssVar('--off-white','#F5F6F8'), font:{size:11}, maxTicksLimit:15 } } } }
     });
   }
 
@@ -360,8 +363,11 @@
     }
     const data = await yukleData();
     if (!data) { document.getElementById('kpi-grid').innerHTML = '<div class="kpi-card" style="grid-column:1/-1;color:var(--muted);text-align:center;">Veri yüklenemedi. Lütfen tekrar deneyin.</div>'; return; }
+    sonVeri = data;
     render(data);
   }
+
+  window.addEventListener('tema-degisti', () => { if (sonVeri) render(sonVeri); });
 
   baslat();
 </script>

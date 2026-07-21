@@ -821,6 +821,24 @@ footer {
   .footer-inner { grid-template-columns: 1fr; }
 }
 
+/* ─── Mobil app düzeni — GLOBAL (YAPILACAKLAR_v2 V2-7, 22 Tem) ────────────────────
+   Tüm app sayfalarında tekrar eden mobil kırılımları tek yerden düzeltir. `.app` öneki
+   ile sayfa-içi inline <style> kurallarını SPECIFICITY ile ezer (!important gerekmez).
+   ⚠️ Sidebar-gizlemede !important KULLANILMAZ: main.js hamburger overlay'i sidebar'a
+   inline `display:flex` yazar; !important olsaydı overlay hiç açılmazdı. `.app > .sidebar`
+   (0,2,0) sayfaların `.sidebar` (0,1,0) kuralını zaten yener, inline ise mine yener → doğru. */
+@media (max-width: 900px) {
+  /* Sidebar mobilde gizli; ☰ (main.js) navigasyonu sağlar. profil/teklif-olustur/
+     ihale-detay kendi @media'larında bu kuralı unutmuştu — global güvence. */
+  .app > .sidebar { display: none; }
+  /* Veri tabloları kırpılmak yerine yatay kaysın (dashboard/takipte/uyumluluk
+     .table-wrap overflow:hidden ile sağ kolonları kesiyordu). */
+  .app .table-wrap { overflow-x: auto; overflow-y: hidden; -webkit-overflow-scrolling: touch; }
+  .app .table-wrap table { min-width: 560px; }
+  /* Sabit 56px topbar içerik sarınca kırpıyordu → mobilde büyü + sar. */
+  .app .topbar { height: auto; min-height: 56px; flex-wrap: wrap; row-gap: 8px; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   * { animation: none !important; transition: none !important; }
 }
