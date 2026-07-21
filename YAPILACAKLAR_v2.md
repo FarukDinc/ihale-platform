@@ -105,7 +105,7 @@
 
 ---
 
-## V2-7 · Mobil/telefon uyumu + tema denetimi (tüm sayfalar)  `[~]`
+## V2-7 · Mobil/telefon uyumu + tema denetimi (tüm sayfalar)  `[x]` ✅ (commit 8ac030f, canlı doğrulandı: kik/login/index 375px temiz, global blok+theme event canlıda)
 
 **İstek (22 Tem):** Platform telefon/mobil için uygun mu, görüntü/temada sıkıntı var mı — tek tek araştır ve düzelt.
 
