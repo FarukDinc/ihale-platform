@@ -18,7 +18,24 @@
 >   kullanıcı onayı): `migration_dt_kazanan_kurtarma.sql` (yanlış damgalıları yeniden kuyruğa),
 >   `migration_sonuc_checkpoint_kurtarma.sql`.
 >
-> ## 🔴 EKAP /24 THROTTLE — BÜYÜK BACKFILL'LER TIKANDI (21 Tem, teşhis edildi)
+> ## ✅ ROTATING ISP PROXY + ASYNC dt_kazanan — /24 THROTTLE ÇÖZÜLDÜ (21 Tem)
+> **Kullanıcı Türkiye ISP proxy aldı (10 GB), /24 throttle'ı kökten çözdü.**
+> - **`proxy_havuz.py` rotating gateway modu** (`PROXY_ROTATING_GATEWAY=1`): tek endpoint
+>   (`152.232.134.118:2810`) her istekte farklı çıkış IP döndürüyor (test: 60 istek → 44
+>   benzersiz IP, 12 farklı /8 bloğu). Endpoint AZAMI_UC sanal uca çoğaltılır, IP-soğuması
+>   kapatılır. Geriye uyumlu (varsayılan kapalı). `.env` güncellendi (eski Webshare yedeklendi).
+> - **`dt_kazanan_scraper.py` SENKRON→ASYNC** (`ekap_detsis` deseni: Semaphore + gather):
+>   senkron ~20/dk → **async ~483/dk (~24×)**. 5 sessiz-kayıp mantığı korundu (adversarial
+>   inceleme async yarış hatası yakaladı → istek-öncesi devre-kesici gate ile düzeltildi).
+>   `DT_KAZANAN_ESZAMANLI` (öntanım 24) + `DT_KAZANAN_ARDISIK_HATA` (öntanım 8, rotating için
+>   40 — sabit-IP mantığı rotating'de turu erken durduruyordu) env'e alındı.
+> - **▶️ KOŞUYOR:** `--limit 500000 --rpm 2000`, 40 işçi, ARDISIK 40. 672K kuyruk **~23 saat**.
+>   Monitörlü. Bandwidth tahmini ~4-5 GB (10 GB kota içinde — İZLE).
+> - ⏭ dt_kazanan bitince → token backfill'e dön (rotating proxy ile, checkpoint 6778, kalan %42).
+> - ⚠️ AÇIK: rotating modda cezalandırma sanal uçları öldürebiliyor (gw16 düştü) — ideal
+>   değil ama 40'tan birkaçı ölse 30+ kalır. Gerekirse rotating'de cezalandırmayı kapat.
+>
+> ## 🔴 EKAP /24 THROTTLE — BÜYÜK BACKFILL'LER TIKANDI (21 Tem, teşhis edildi — YUKARIDA ÇÖZÜLDÜ)
 > **KÖK NEDEN: hafızadaki "tek /24 proxy" riski GERÇEKLEŞTİ.** Tüm 100 Webshare IP'si tek
 > `166.88.110.0/24` bloğunda. Bugün saatlerce süren token backfill + dt_kazanan `--rpm 500`
 > burst'ü EKAP'ı bloğu rate-limit'e almaya itti. Kanıt: dt_kazanan ilk 1.200 isteği hızlı
