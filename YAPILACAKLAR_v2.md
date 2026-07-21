@@ -105,9 +105,9 @@
 
 ---
 
-### Öncelik sırası (öneri)
-1. **V2-2** €1 fix ✅ → 2. **V2-1** uluslararası sıralama/filtre ✅ → 3. **V2-3** e-satınalma sıralama ✅ → 4. **V2-4** RFQ harita (panel + KA) ✅ → 5. **V2-6** analiz DT sayfası (SIRADA) → 6. **V2-5** Gürcistan opsiyonel.
+### Durum: V2-1..V2-4 + V2-6 TAMAM ✅ · V2-5 doğrulandı (opsiyonel iyileştirmeler açık)
+Tek kalan opsiyonel iş: **V2-5 Gürcistan kapsam artışı** (tek POST→sayfalama) + silent-zero guard. Veri zaten geliyor (20 satır), acil değil.
 
 ### DEPLOY GEÇMİŞİ
-- **21 Tem, commit 3448bc2** → VDS pull (5ef29a3→3448bc2), migration_rfq_ka_dahil.sql canlıya uygulandı.
-  V2-1/2/3/4 CANLI ve doğrulandı (uluslararası sort+filtre+€1, e-satınalma selector, harita 3→13 + mod-duyarlı panel). HTML cf-cache DYNAMIC → anında görünür.
+- **21 Tem, commit 3448bc2** → VDS pull, migration_rfq_ka_dahil.sql uygulandı. V2-1/2/3/4 CANLI+doğrulandı.
+- **21 Tem, commit 6013860** → VDS pull, migration_dt_analiz.sql uygulandı (dt_analiz_mv CONCURRENTLY refresh test edildi). V2-6 CANLI: dt-analiz.html Pro-lock guest'te doğru, render pipeline (4 chart + KPI + bant + tablo) gerçek veriyle test edildi, RPC anon'a 42501. run_scraper.sh gece refresh'e dt_analiz_mv eklendi.
