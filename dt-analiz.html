@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Doğrudan Temin Analizi — İhaleGlobal</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <script src="js/theme.js?v=5"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+    body { background: var(--navy); }
+    .app { display: flex; min-height: 100vh; }
+    .sidebar { background: var(--navy-mid); border-right: 1px solid var(--border); width: 240px; flex-shrink: 0; position: sticky; top: 0; height: 100vh; display: flex; flex-direction: column; overflow-y: auto; }
+    .sidebar-logo { padding: 20px 20px 16px; border-bottom: 1px solid var(--border); }
+    .sidebar-logo a { font-family: var(--font-display); font-size: 18px; font-weight: 800; color: var(--white); text-decoration: none; display: flex; align-items: center; gap: 8px; }
+    .sidebar-logo span { color: var(--amber); }
+    .sidebar-nav { flex: 1; padding: 16px 12px; overflow-y: auto; }
+    .nav-section-label { font-size: 10px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--muted); padding: 12px 8px 6px; }
+    .nav-item { display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 6px; color: var(--muted); text-decoration: none; font-size: 13px; font-weight: 500; transition: all .15s; margin-bottom: 2px; }
+    .nav-item:hover { background: var(--card-bg); color: var(--white); }
+    .nav-item.active { background: rgba(240,165,0,0.12); color: var(--amber); }
+    .nav-item .icon { font-size: 16px; width: 20px; text-align: center; }
+    .sidebar-footer { padding: 16px; border-top: 1px solid var(--border); }
+    .user-row { display: flex; align-items: center; gap: 10px; }
+    .user-avatar { width: 32px; height: 32px; border-radius: 50%; background: var(--amber); color: var(--navy); font-size: 12px; font-weight: 800; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .user-name { font-size: 13px; font-weight: 600; color: var(--white); }
+    .user-plan { font-size: 11px; color: var(--muted); }
+    .main { display: flex; flex-direction: column; flex: 1; min-width: 0; height: 100vh; overflow-y: auto; }
+    .topbar { background: var(--navy-mid); border-bottom: 1px solid var(--border); padding: 0 24px; height: 56px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 10; }
+    .topbar-actions { display: flex; align-items: center; gap: 12px; }
+    .page-body { padding: 28px; flex: 1; }
+    .page-header { margin-bottom: 24px; }
+    .page-header h1 { font-size: 24px; font-weight: 700; margin-bottom: 4px; }
+    .page-header p { font-size: 14px; color: var(--muted); }
+    .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+    .kpi-card { background: var(--navy-mid); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 20px; }
+    .kpi-label { font-size: 12px; color: var(--muted); font-weight: 500; margin-bottom: 8px; }
+    .kpi-value { font-family: var(--font-display); font-size: 28px; font-weight: 700; line-height: 1; margin-bottom: 6px; }
+    .kpi-sub { font-size: 12px; color: var(--muted); }
+    .kpi-sub .hi { color: var(--amber); }
+    .chart-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 24px; }
+    .chart-card { background: var(--navy-mid); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 20px; }
+    .chart-card-wide { background: var(--navy-mid); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 20px; margin-bottom: 24px; }
+    .chart-title { font-size: 13px; font-weight: 700; color: var(--white); margin-bottom: 4px; }
+    .chart-sub { font-size: 12px; color: var(--muted); margin-bottom: 16px; }
+    .chart-wrap { position: relative; height: 240px; }
+    .chart-wrap-tall { position: relative; height: 360px; }
+    .table-card { background: var(--navy-mid); border: 1px solid var(--border); border-radius: var(--radius-md); overflow: hidden; margin-bottom: 24px; }
+    .table-card-header { padding: 16px 20px 12px; border-bottom: 1px solid var(--border); }
+    table { width: 100%; border-collapse: collapse; }
+    thead th { background: rgba(var(--overlay-rgb),0.03); padding: 10px 16px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); border-bottom: 1px solid var(--border); text-align: left; white-space: nowrap; }
+    tbody tr { border-bottom: 1px solid var(--border); }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: rgba(var(--overlay-rgb),0.02); }
+    tbody td { padding: 11px 16px; font-size: 13px; color: var(--off-white); vertical-align: middle; }
+    .rank-num { font-size: 11px; color: var(--muted); font-weight: 600; width: 24px; }
+    .idare-link { color: inherit; text-decoration: none; }
+    .idare-link:hover { color: var(--amber); text-decoration: underline; }
+    .count-cell { text-align: right; font-weight: 700; color: var(--amber); font-family: var(--font-display); font-size: 15px; }
+    .budget-bars { display: flex; flex-direction: column; gap: 10px; }
+    .budget-row { display: flex; align-items: center; gap: 12px; }
+    .budget-label { font-size: 12px; color: var(--muted); width: 150px; flex-shrink: 0; text-align: right; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .budget-track { flex: 1; background: rgba(var(--overlay-rgb),0.06); border-radius: 4px; height: 22px; position: relative; overflow: hidden; }
+    .budget-fill { height: 100%; background: linear-gradient(90deg, var(--amber-dim), var(--amber)); border-radius: 4px; transition: width 0.6s ease; display: flex; align-items: center; padding-left: 8px; min-width: 0; }
+    .budget-fill-text { font-size: 11px; font-weight: 700; color: var(--navy); white-space: nowrap; }
+    .budget-count { font-size: 12px; color: var(--muted); width: 60px; flex-shrink: 0; text-align: right; }
+    .skeleton { background: rgba(var(--overlay-rgb),0.07); border-radius: 4px; animation: shimmer 1.5s infinite; }
+    @keyframes shimmer { 0%,100%{opacity:.6} 50%{opacity:1} }
+    .kapsam-not { display: flex; gap: 8px; align-items: flex-start; background: rgba(240,165,0,0.05); border: 1px solid rgba(240,165,0,0.18); border-radius: var(--radius-md); padding: 11px 14px; margin-top: 14px; font-size: 12px; color: var(--muted); line-height: 1.65; }
+    .kapsam-not b { color: var(--white); font-weight: 700; }
+    .kapsam-not a { color: var(--amber); text-decoration: none; }
+    .kapsam-not a:hover { text-decoration: underline; }
+    .action-btn { padding: 7px 16px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; border: 1px solid var(--border); background: var(--card-bg); color: var(--white); text-decoration: none; display: inline-flex; align-items: center; transition: all .15s; }
+    .action-btn.primary { background: var(--amber); color: var(--navy); border-color: transparent; }
+    @media (max-width: 1100px) { .kpi-grid { grid-template-columns: repeat(2, 1fr); } .chart-grid { grid-template-columns: 1fr; } }
+    @media (max-width: 900px) { .sidebar { display: none; } .kpi-grid { grid-template-columns: repeat(2, 1fr); } }
+  </style>
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <a href="/"><span style="width:6px;height:6px;background:var(--amber);border-radius:50%;display:inline-block;animation:pulse 2s infinite;"></span>İhale<span>Global</span></a>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">Kamu İhaleleri</div>
+      <a href="dashboard" class="nav-item"><span class="icon">◉</span> Anasayfa</a>
+      <a href="ihaleler" class="nav-item"><span class="icon">⊞</span> İhaleler</a>
+      <a href="dogrudan-temin" class="nav-item"><span class="icon">⚡</span> Doğrudan Temin</a>
+      <div class="nav-section-label" style="padding-left:16px;opacity:.85;">— Analiz —</div>
+      <a href="rekabet-analizi" class="nav-item"><span class="icon">📊</span> Rekabet Analizi</a>
+      <a href="dt-analiz" class="nav-item active"><span class="icon">⚡</span> Doğrudan Temin Analizi</a>
+      <a href="kurum-analiz" class="nav-item"><span class="icon">🏛️</span> İdareler</a>
+      <a href="firma-analiz" class="nav-item"><span class="icon">🏢</span> Firmalar</a>
+      <a href="sektorler" class="nav-item"><span class="icon">🏭</span> Sektörler Dizini</a>
+      <a href="kik-kararlar" class="nav-item"><span class="icon">⚖️</span> KİK Kararlar</a>
+      <div class="nav-section-label">Uluslararası</div>
+      <a href="uluslararasi" class="nav-item"><span class="icon">🌍</span> Uluslararası İhaleler</a>
+      <a href="ticaret-analiz" class="nav-item"><span class="icon">📈</span> Ticaret Analizi</a>
+      <div class="nav-section-label">Özel İhaleler</div>
+      <a href="ozel-ihaleler" class="nav-item"><span class="icon">🤝</span> e-Satınalma</a>
+      <a href="harita" class="nav-item"><span class="icon">🗺️</span> Harita</a>
+      <div class="nav-section-label">Firmam</div>
+      <a href="ihalelerim" class="nav-item"><span class="icon">📑</span> İhalelerim</a>
+      <a href="takipte" class="nav-item"><span class="icon">☆</span> Takibim</a>
+      <a href="bildirimler" class="nav-item"><span class="icon">🔔</span> Bildirimler</a>
+      <a href="uyumluluk" class="nav-item"><span class="icon">✓</span> Uyumluluk</a>
+      <a href="dokumanlar" class="nav-item"><span class="icon">📁</span> Dökümanlar</a>
+      <a href="profil" class="nav-item"><span class="icon">⚙</span> Profil & Filtreler</a>
+      <a href="fiyatlandirma_odeme_bolumu" class="nav-item"><span class="icon">💳</span> Abonelik</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-row">
+        <div class="user-avatar">—</div>
+        <div><div class="user-name">Yükleniyor...</div><div class="user-plan">—</div></div>
+      </div>
+    </div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <span style="font-size:15px;font-weight:600;">Doğrudan Temin Analizi</span>
+      <div class="topbar-actions">
+        <a href="dogrudan-temin" class="action-btn">⚡ DT Listesi</a>
+        <a href="fiyatlandirma_odeme_bolumu" class="action-btn primary">Pro'ya Geç ↑</a>
+      </div>
+    </div>
+
+    <div class="page-body">
+      <div class="page-header">
+        <h1>Doğrudan Temin Analizi</h1>
+        <p>4734/22 doğrudan temin alımlarının pazar dağılımı — tür, sektör, bölge, kurum türü ve kazanan bedel bazında.</p>
+        <div class="kapsam-not">
+          <span style="flex-shrink:0;">⚡</span>
+          <span>
+            <b>Kapsam: yalnız doğrudan temin.</b> Bu sayfadaki tüm sayılar 4734 sayılı Kanun'un 22. maddesi kapsamındaki
+            <b>doğrudan temin</b> kayıtlarından hesaplanır — ihale usulleriyle yapılan alımlar (açık ihale, pazarlık vb.)
+            <b>dahil değildir</b>. İki evren bilinçli olarak ayrıdır: DT'de yaklaşık maliyet/tenzilat kavramı yoktur ve ölçek
+            bambaşkadır (DT medyanı ≈ ₺37 bin). İhale analizi için <a href="rekabet-analizi">Rekabet Analizi sayfasına</a> bakın.
+            Bedel istatistikleri yalnız <b>sonuçlanmış (kazanan bedeli açıklanmış)</b> DT kayıtlarından hesaplanır.
+          </span>
+        </div>
+      </div>
+
+      <div class="kpi-grid" id="kpi-grid">
+        <div class="kpi-card"><div class="kpi-label">Toplam DT</div><div class="kpi-value skeleton" style="width:100px;height:32px;"></div></div>
+        <div class="kpi-card"><div class="kpi-label">Sonuçlanan</div><div class="kpi-value skeleton" style="width:100px;height:32px;"></div></div>
+        <div class="kpi-card"><div class="kpi-label">Ort. Kazanan Bedel</div><div class="kpi-value skeleton" style="width:120px;height:32px;"></div></div>
+        <div class="kpi-card"><div class="kpi-label">Medyan Kazanan Bedel</div><div class="kpi-value skeleton" style="width:120px;height:32px;"></div></div>
+      </div>
+
+      <div class="chart-card-wide" style="margin-bottom:16px;">
+        <div class="chart-title">Aylık Doğrudan Temin Hareketi</div>
+        <div class="chart-sub">Son 24 ayda ilan tarihine göre DT sayısı</div>
+        <div class="chart-wrap" style="height:200px;"><canvas id="chart-trend"></canvas></div>
+      </div>
+
+      <div class="chart-grid">
+        <div class="chart-card">
+          <div class="chart-title">Tür Dağılımı</div>
+          <div class="chart-sub">Mal / Hizmet / Yapım / Danışmanlık</div>
+          <div class="chart-wrap"><canvas id="chart-tur"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">İl Bazlı Dağılım</div>
+          <div class="chart-sub">En fazla DT yapılan 15 il</div>
+          <div class="chart-wrap"><canvas id="chart-il"></canvas></div>
+        </div>
+      </div>
+
+      <div class="chart-card-wide">
+        <div class="chart-title">Kategori Dağılımı</div>
+        <div class="chart-sub">OKAS/CPV kodundan türetilen sektörler (Top 15)</div>
+        <div class="chart-wrap-tall"><canvas id="chart-kategori"></canvas></div>
+      </div>
+
+      <div class="chart-card-wide">
+        <div class="chart-title">Kurum Türü Dağılımı</div>
+        <div class="chart-sub">Doğrudan temini en çok kullanan kurum türleri</div>
+        <div id="idaretur-bars" class="budget-bars" style="padding-top:8px;"><div style="color:var(--muted);font-size:13px;">Yükleniyor...</div></div>
+      </div>
+
+      <div class="chart-card-wide">
+        <div class="chart-title">Kazanan Bedel Aralığı Dağılımı</div>
+        <div class="chart-sub">Sonuçlanmış DT'lerde kazanan sözleşme bedeline göre dağılım</div>
+        <div id="bedel-bars" class="budget-bars" style="padding-top:8px;"><div style="color:var(--muted);font-size:13px;">Yükleniyor...</div></div>
+      </div>
+
+      <div class="table-card">
+        <div class="table-card-header">
+          <div class="chart-title">En Çok Doğrudan Temin Yapan İdareler</div>
+          <div class="chart-sub" style="margin:0;">Top 12 kurum</div>
+        </div>
+        <table>
+          <thead><tr><th>#</th><th>İdare</th><th style="text-align:right;">DT Sayısı</th></tr></thead>
+          <tbody id="tbody-idare"><tr><td colspan="3" style="padding:20px;color:var(--muted);text-align:center;">Yükleniyor...</td></tr></tbody>
+        </table>
+      </div>
+
+    </div><!-- /page-body -->
+  </div><!-- /main -->
+</div><!-- /app -->
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+<script src="js/sidebar-user.js?v=3"></script>
+<script src="js/bildirim-sayaci.js?v=rot1"></script>
+<script src="js/plan.js?v=rot1"></script>
+<script>
+  const SB_URL = "https://ihaleglobal.com";
+  const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzg0MzA3MTU4LCJleHAiOjE5NDE5ODcxNTh9.CjNKulvirotDD_y2oO2QKgo0kbqYvL0jUSV1RiDMoso";
+  const sb = window.supabase.createClient(SB_URL, SB_KEY);
+  const esc = s => (s == null ? '' : String(s)).replace(/[<>&"']/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&#39;'}[c]));
+
+  Chart.defaults.color = '#8A96A8';
+  Chart.defaults.font.family = 'Inter, sans-serif';
+
+  // idare_tur slug → okunur Türkçe etiket (DB'de sınıflandırıcı slug'ları tutuluyor)
+  const IDARE_TUR_ETIKET = {
+    belediye:'Belediye', saglik:'Sağlık', bakanlik_tasra:'Bakanlık (Taşra)', milli_egitim:'Milli Eğitim',
+    universite:'Üniversite', yargi:'Yargı', belediye_sirket:'Belediye Şirketi', guvenlik:'Güvenlik',
+    kit:'KİT', buyuksehir_belediye:'Büyükşehir Belediyesi', diger_kamu:'Diğer Kamu',
+    bakanlik_merkez:'Bakanlık (Merkez)', ozel_butce:'Özel Bütçe', dce:'Düzenleyici/Denetleyici', tbmm:'TBMM'
+  };
+  const idareTurEtiket = k => IDARE_TUR_ETIKET[k] || (k ? k.replace(/_/g,' ') : '—');
+
+  let turChart = null, ilChart = null, kategoriChart = null, trendChart = null;
+
+  function paraCevir(v) {
+    if (!v) return '—';
+    if (v >= 1e9) return `₺${(v/1e9).toFixed(1)}Mr`;
+    if (v >= 1e6) return `₺${(v/1e6).toFixed(1)}M`;
+    if (v >= 1e3) return `₺${(v/1e3).toFixed(0)}K`;
+    return `₺${Math.round(v).toLocaleString('tr')}`;
+  }
+  function chartRenkleri(n) {
+    const base = ['#F0A500','#3B82F6','#10B981','#8B5CF6','#F43F5E','#06B6D4','#F59E0B','#84CC16','#EC4899','#6366F1'];
+    return Array.from({length: n}, (_, i) => base[i % base.length]);
+  }
+
+  async function yukleData() {
+    try {
+      const { data, error } = await sb.rpc('dt_analiz_ozet', {});
+      if (error || !data || !data.toplam) { console.error(error); return null; }
+      return data;   // { toplam, sonuclanan, ort_bedel, medyan_bedel, tur, il, kategori, idare, idare_tur, trend, bedel_bant }
+    } catch (e) { console.error(e); return null; }
+  }
+
+  function kpiGoster(d) {
+    const toplam = d.toplam || 0, sonuc = d.sonuclanan || 0;
+    const sonucPct = toplam ? (sonuc/toplam*100).toFixed(1) : '0';
+    document.getElementById('kpi-grid').innerHTML = `
+      <div class="kpi-card">
+        <div class="kpi-label">Toplam DT</div>
+        <div class="kpi-value">${toplam.toLocaleString('tr')}</div>
+        <div class="kpi-sub">doğrudan temin kaydı</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Sonuçlanan</div>
+        <div class="kpi-value">${sonuc.toLocaleString('tr')}</div>
+        <div class="kpi-sub"><span class="hi">%${sonucPct}</span> kazanan bedeli açıklanmış</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Ort. Kazanan Bedel</div>
+        <div class="kpi-value">${paraCevir(d.ort_bedel)}</div>
+        <div class="kpi-sub">sonuçlanan ${sonuc.toLocaleString('tr')} kayıt üzerinden</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-label">Medyan Kazanan Bedel</div>
+        <div class="kpi-value">${paraCevir(d.medyan_bedel)}</div>
+        <div class="kpi-sub">tipik DT büyüklüğü</div>
+      </div>`;
+  }
+
+  function trendGoster(d) {
+    const trend = d.trend || {};
+    const simdi = new Date(), ayMap = {};
+    for (let i = 23; i >= 0; i--) {
+      const dt = new Date(simdi.getFullYear(), simdi.getMonth() - i, 1);
+      const key = `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}`;
+      ayMap[key] = trend[key] || 0;
+    }
+    const labels = Object.keys(ayMap).map(k => { const [y,m]=k.split('-'); return new Date(+y,+m-1,1).toLocaleDateString('tr-TR',{month:'short',year:'2-digit'}); });
+    if (trendChart) trendChart.destroy();
+    trendChart = new Chart(document.getElementById('chart-trend'), {
+      type: 'line',
+      data: { labels, datasets: [{ label:'DT Sayısı', data: Object.values(ayMap), borderColor:'rgba(240,165,0,0.9)', backgroundColor:'rgba(240,165,0,0.08)', borderWidth:2, pointRadius:3, pointBackgroundColor:'rgba(240,165,0,1)', fill:true, tension:0.3 }] },
+      options: { responsive:true, maintainAspectRatio:false, plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label: ctx => ` ${ctx.raw.toLocaleString('tr')} DT` } } },
+        scales:{ x:{ grid:{display:false}, ticks:{ color:'#8A96A8', font:{size:10}, maxTicksLimit:12 } }, y:{ grid:{ color:'rgba(var(--overlay-rgb),.05)' }, ticks:{ color:'#8A96A8', font:{size:11} }, beginAtZero:true } } }
+    });
+  }
+
+  function barChart(canvasId, arr, renkTek) {
+    const labels = arr.map(x => x.k), values = arr.map(x => x.n);
+    return new Chart(document.getElementById(canvasId), {
+      type: 'bar',
+      data: { labels, datasets: [{ data: values, backgroundColor: renkTek || chartRenkleri(labels.length), borderRadius:4, borderSkipped:false }] },
+      options: { indexAxis:'y', responsive:true, maintainAspectRatio:false,
+        plugins:{ legend:{display:false}, tooltip:{ callbacks:{ label: ctx => ` ${ctx.raw.toLocaleString('tr')} DT` } } },
+        scales:{ x:{ grid:{ color:'rgba(var(--overlay-rgb),0.05)' }, ticks:{ color:'#8A96A8', font:{size:11} } }, y:{ grid:{display:false}, ticks:{ color:'#F5F6F8', font:{size:11}, maxTicksLimit:15 } } } }
+    });
+  }
+
+  function barsRender(elId, satirlar, renk) {
+    const max = Math.max(...satirlar.map(s => s.sayi), 1);
+    document.getElementById(elId).innerHTML = satirlar.map(s => {
+      const pct = Math.round((s.sayi / max) * 100);
+      return `<div class="budget-row">
+        <div class="budget-label" title="${esc(s.label)}">${esc(s.label)}</div>
+        <div class="budget-track"><div class="budget-fill" style="width:${pct}%${renk?`;background:${renk}`:''}">${pct>12?`<span class="budget-fill-text">${s.sayi.toLocaleString('tr')}</span>`:''}</div></div>
+        <div class="budget-count">${pct<=12?s.sayi.toLocaleString('tr'):''}</div>
+      </div>`;
+    }).join('');
+  }
+
+  function idareTbGoster(d) {
+    const arr = (d.idare || []).slice(0, 12);
+    if (!arr.length) { document.getElementById('tbody-idare').innerHTML = '<tr><td colspan="3" style="padding:20px;color:var(--muted);text-align:center;">Veri yok</td></tr>'; return; }
+    document.getElementById('tbody-idare').innerHTML = arr.map((x,i) => {
+      const kisa = x.k.length > 46 ? x.k.slice(0,46)+'…' : x.k;
+      return `<tr><td class="rank-num">${i+1}</td>
+        <td><a href="kurum-analiz?kurum=${encodeURIComponent(x.k)}" class="idare-link" title="${esc(x.k)}">${esc(kisa)}</a></td>
+        <td class="count-cell">${x.n.toLocaleString('tr')}</td></tr>`;
+    }).join('');
+  }
+
+  function render(d) {
+    kpiGoster(d);
+    trendGoster(d);
+    if (turChart) turChart.destroy();
+    turChart = barChart('chart-tur', (d.tur||[]).slice(0,10));
+    if (ilChart) ilChart.destroy();
+    ilChart = barChart('chart-il', (d.il||[]).slice(0,15), 'rgba(59,130,246,0.7)');
+    if (kategoriChart) kategoriChart.destroy();
+    kategoriChart = barChart('chart-kategori', (d.kategori||[]).slice(0,15));
+    // kurum türü
+    const itArr = (d.idare_tur||[]).slice(0,12).map(x => ({ label: idareTurEtiket(x.k), sayi: x.n }));
+    if (itArr.length) barsRender('idaretur-bars', itArr, '#8B5CF6');
+    else document.getElementById('idaretur-bars').innerHTML = '<div style="color:var(--muted);font-size:13px;">Veri yok.</div>';
+    // bedel bant
+    const b = d.bedel_bant || {};
+    const bantlar = [
+      { label:'< ₺50 bin', sayi: b.b0||0 },
+      { label:'₺50 bin – ₺200 bin', sayi: b.b1||0 },
+      { label:'₺200 bin – ₺1 milyon', sayi: b.b2||0 },
+      { label:'₺1 milyon – ₺5 milyon', sayi: b.b3||0 },
+      { label:'> ₺5 milyon', sayi: b.b4||0 },
+    ];
+    barsRender('bedel-bars', bantlar, '#10B981');
+    idareTbGoster(d);
+  }
+
+  async function baslat() {
+    const planTur = await Plan.getPlan();
+    if (planTur !== 'pro') {
+      Plan.lockPage(document.querySelector('.page-body'), 'Doğrudan Temin Analizi — Pro Özelliği',
+        'Doğrudan temin pazarının tür, sektör, bölge, kurum türü ve kazanan bedel analizi Pro plan kullanıcılarına özeldir.');
+      return;
+    }
+    const data = await yukleData();
+    if (!data) { document.getElementById('kpi-grid').innerHTML = '<div class="kpi-card" style="grid-column:1/-1;color:var(--muted);text-align:center;">Veri yüklenemedi. Lütfen tekrar deneyin.</div>'; return; }
+    render(data);
+  }
+
+  baslat();
+</script>
+</body>
+</html>

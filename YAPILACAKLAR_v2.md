@@ -62,7 +62,7 @@
 
 ---
 
-## V2-4 · Açık RFQ haritası — mod-duyarlı panel düzeltmesi  `[ ]`  ·  KA dahil?  `[?]`
+## V2-4 · Açık RFQ haritası — mod-duyarlı panel düzeltmesi  `[x]` ✅  ·  KA dahil ✅ (canlı: 3→13, RFQ modu firma yerine RFQ+KA gösteriyor)
 
 **İstek:** (1) "Açık RFQ" 3 gösteriyor, gerçek veriler girilmemiş. (2) Firma Yoğunluğu→Açık RFQ moduna geçip şehre tıklayınca sağda hâlâ **firmalar** çıkıyor; RFQ modunda **RFQ'lar** görünmeli.
 
@@ -89,7 +89,10 @@
 
 ---
 
-## V2-6 · Analiz tarafı — Doğrudan Temin / İhaleler ayrımı  `[ ]`  · KARAR: ayrı `dt-analiz.html` ✅
+## V2-6 · Analiz tarafı — Doğrudan Temin / İhaleler ayrımı  `[x]` ✅ (ayrı `dt-analiz.html` + `dt_analiz_ozet` RPC/MV canlıda)
+
+**Yapıldı (v1):** `dt-analiz.html` — DT pazarının genel analizi: KPI (toplam 1,49M / sonuçlanan / ort+medyan kazanan bedel ₺37K), aylık trend, tür/il/kategori dağılımı, kurum türü dağılımı, kazanan bedel aralığı, en çok DT yapan idareler. Pro-gated. `migration_dt_analiz.sql`: `_dt_ozet_json` (DRY) + `dt_analiz_mv` (filtresiz özet, gece CONCURRENTLY refresh — run_scraper.sh'e eklendi) + `dt_analiz_ozet` wrapper RPC (authenticated-only, anon 42501). Sidebar linki 23 sayfaya eklendi.
+**Mimari not:** DT 1,49M satır → filtresiz aggregate ~5s (timeout üstü) → **MV zorunlu**. Filtresiz view anında (MV); filtreli canlı yol RPC'de VAR ama tür='Mal' (1,06M) ~18s → **v1'de sayfa filtre GÖSTERMİYOR** (güvenli). AÇIK v2: filtreler için per-boyut MV (il/kategori/tür başına özet) gerekir.
 
 **Bulgu (kanıtlı):** Analiz sayfaları (rekabet/kurum/firma) **zaten yalnız İhale evrenini** okuyor; DT karışmıyor ("kapsam rozeti" ile UI'da yazılı). DT bilinçle ayrı tabloda (`dogrudan_temin_ilanlari`/`_sonuclari`), kazananı yüklenici cirosuna karıştırılmıyor. Yani istek = **DT için AYRI bir analiz yüzeyi EKLEMEK** ("karışıyor" değil, "DT analiz edilemiyor").
 - **DT veri olgunluğu (canlı):** `dogrudan_temin_sonuclari` = **247.207 satır, hepsinde kazanan_bedel dolu**; DT ilan toplam 1,49M. → Bedel-bazlı DT analizi (kategori/il/idare/tür/trend + bedel dağılımı) **fizibıl**. DT'de usul/tenzilat/katılımcı/yaklaşık-maliyet KAVRAMLARI YOK → o kartlar DT görünümünde gösterilmez.
@@ -103,4 +106,8 @@
 ---
 
 ### Öncelik sırası (öneri)
-1. **V2-2** €1 fix (hızlı, görünür, gelir/güven etkisi) → 2. **V2-1** uluslararası sıralama/filtre → 3. **V2-3** e-satınalma sıralama → 4. **V2-4A** RFQ harita panel bug → 5. **V2-6** analiz (karar sonrası) → 6. **V2-4B / V2-5** opsiyoneller.
+1. **V2-2** €1 fix ✅ → 2. **V2-1** uluslararası sıralama/filtre ✅ → 3. **V2-3** e-satınalma sıralama ✅ → 4. **V2-4** RFQ harita (panel + KA) ✅ → 5. **V2-6** analiz DT sayfası (SIRADA) → 6. **V2-5** Gürcistan opsiyonel.
+
+### DEPLOY GEÇMİŞİ
+- **21 Tem, commit 3448bc2** → VDS pull (5ef29a3→3448bc2), migration_rfq_ka_dahil.sql canlıya uygulandı.
+  V2-1/2/3/4 CANLI ve doğrulandı (uluslararası sort+filtre+€1, e-satınalma selector, harita 3→13 + mod-duyarlı panel). HTML cf-cache DYNAMIC → anında görünür.
