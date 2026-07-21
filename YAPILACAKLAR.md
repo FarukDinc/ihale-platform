@@ -18,6 +18,27 @@
 >   kullanıcı onayı): `migration_dt_kazanan_kurtarma.sql` (yanlış damgalıları yeniden kuyruğa),
 >   `migration_sonuc_checkpoint_kurtarma.sql`.
 >
+> ## 🔴 EKAP /24 THROTTLE — BÜYÜK BACKFILL'LER TIKANDI (21 Tem, teşhis edildi)
+> **KÖK NEDEN: hafızadaki "tek /24 proxy" riski GERÇEKLEŞTİ.** Tüm 100 Webshare IP'si tek
+> `166.88.110.0/24` bloğunda. Bugün saatlerce süren token backfill + dt_kazanan `--rpm 500`
+> burst'ü EKAP'ı bloğu rate-limit'e almaya itti. Kanıt: dt_kazanan ilk 1.200 isteği hızlı
+> attı, sonra sürünmeye başladı (`--rpm 200`'e düşürünce bile 100sn'de 0 sözleşme). Proxy
+> havuzu SAĞLAM (GetListByParameters sondajı 1,2s), ama dtDetayGetir'e yoğun istekten sonra
+> EKAP throttle uyguluyor.
+> **Bugün üretilen değer (throttle'a rağmen):** token %42,3→%57,5; DT sonuç 117.384→**120.725**
+> (+3.341). Backfill'ler DURDURULDU (EKAP'ı dövmek throttle'ı uzatır). Checkpoint'ler güvende:
+> token bf = sayfa 6778; dt_kazanan = kazanan_denendi damgası (1398 dt_no işlendi).
+> **KİLİT GÖZLEM:** gece cron dt_kazanan `--limit 2000 --rpm 300`'ü SORUNSUZ koşuyor (04:44,
+> 1877 sözleşme) — düşük hacim + kısa tur EKAP'ı yormuyor. Sorun BÜYÜK hacmin tek seferde
+> agresif çekilmesi.
+> **KARAR GEREK (kullanıcı):**
+> (A) **Proxy çeşitliliği** — Webshare panelinden farklı /24 bloklarından IP al (KALICI çözüm;
+>     /24 riski kalkar, büyük backfill'ler mümkün). Gerekçe IP *sayısı* değil ÇEŞİTLİLİĞİ.
+>     Kullanıcının hesabı gerekli.
+> (B) EKAP throttle'ının geçmesini bekle (saatler), sonra DÜŞÜK tempoda (--rpm 150, --limit
+>     parçalı) yeniden dene — yavaş ama proxysiz.
+> (C) Gece cron'un doğal temposuna bırak (her gece 2000) — ama 675K kuyruk için aylar.
+>
 > ## ⚠️ TOKEN BACKFILL — EKAP DERİN OFFSET YAVAŞLAMASI (21 Tem, ölçüldü)
 > Token backfill %42,3 → **%57,5** geldi (sayfa 6777, skip ~865K). Ama sayfa 6775+ EKAP
 > "read timeout" veriyor; scraper retry + 60sn bekleme ile geçiyor (dayanıklı, checkpoint'li,
