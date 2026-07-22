@@ -905,7 +905,7 @@
     // maliyeti kopyalanıyor (46.077/46.083 ihalede doğrulandı) → satır bazlı tenzilat
     // sahte %95'lere çıkıyor. Bu yüzden çok kısımlıda tenzilat yalnız İHALE GENELİNDE verilir.
     const { data } = await sb.from('ihale_sonuclari')
-      .select(`${uyeMi ? 'kazanan_firma,' : ''}kazanan_teklif,kazanan_teklif_farki_yuzde,yaklasik_maliyet,kisim_no,toplam_teklif_sayisi,sonuc_tarihi`)
+      .select(`${uyeMi ? 'kazanan_firma,' : ''}kazanan_teklif,kazanan_teklif_farki_yuzde,yaklasik_maliyet,kisim_no,toplam_teklif_sayisi,gecerli_teklif_sayisi,sonuc_tarihi`)
       .eq('ilan_id', ilanId).order('kisim_no', { ascending: true }).limit(500);
     if (!data || !data.length) return;
     const s = data[0];
@@ -930,7 +930,7 @@
           <div><span style="color:var(--muted);">Kazanan Firma:</span> ${firmaHtml}</div>
           ${topBedel ? `<div><span style="color:var(--muted);">${cokKisim ? 'Toplam Sözleşme Bedeli' : 'Sözleşme Bedeli'}:</span> <b style="color:var(--white);">${butceFormatla(topBedel)}</b></div>` : ''}
           ${tenz != null ? `<div><span style="color:var(--muted);">Tenzilat${cokKisim ? ' (ihale geneli)' : ''}:</span> <b style="color:var(--amber);">%${tenz.toFixed(1)}</b></div>` : ''}
-          ${!cokKisim && s.toplam_teklif_sayisi ? `<div><span style="color:var(--muted);">Toplam Teklif:</span> <b style="color:var(--white);">${s.toplam_teklif_sayisi}</b></div>` : ''}
+          ${!cokKisim && s.toplam_teklif_sayisi ? `<div><span style="color:var(--muted);">Katılımcı:</span> <b style="color:var(--white);">${s.toplam_teklif_sayisi}${s.gecerli_teklif_sayisi ? ` <span style="color:var(--muted);font-weight:400;">(${s.gecerli_teklif_sayisi} geçerli teklif)</span>` : ''}</b></div>` : ''}
           ${s.sonuc_tarihi ? `<div><span style="color:var(--muted);">Sözleşme Tarihi:</span> <b style="color:var(--white);">${tarihFormatla(s.sonuc_tarihi)}</b></div>` : ''}
         </div>
         ${cokKisim ? `<div style="font-size:11.5px;color:var(--muted);margin-top:8px;">Kısımlı ihale: EKAP kısım bazlı yaklaşık maliyet yayımlamadığından tenzilat kısım kısım değil, ihale geneli için hesaplanır.</div>` : ''}
