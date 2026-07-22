@@ -496,7 +496,7 @@ async def detay_cek(client, ihale_id: str, dokuman_sayisi: int = 0) -> dict:
         "itiraz_bedeli": None, "yaklasik_maliyet_min": None, "yaklasik_maliyet_max": None,
         "isin_yapilacagi_yer": None, "ihale_yeri": None, "okas": None,
         "ilan_metni": None, "ilan_html": None, "belgeler": None,
-        "ilan_tarihi": None, "esik_katsayi": None,
+        "ilan_tarihi": None, "esik_katsayi": None, "kalemler": None,
     }
 
     # 1) İtiraz bedeli → yaklaşık maliyet
@@ -514,6 +514,9 @@ async def detay_cek(client, ihale_id: str, dokuman_sayisi: int = 0) -> dict:
         sonuc["isin_yapilacagi_yer"] = (bilgi.get("isinYapilacagiYer") or "").strip() or None
         sonuc["ihale_yeri"]          = (bilgi.get("ihaleYeri") or "").strip() or None
         sonuc["okas"]                = (bilgi.get("okas") or "").strip() or None
+        # Malzeme/kalem listesi (rakip "Malzeme Listesi (N)") — [{adi,kodu,koduAdi}].
+        kl = item.get("ihtiyacKalemiOkasList")
+        sonuc["kalemler"]            = kl if kl else None
 
         ilanlar = item.get("ilanList") or []
         if ilanlar:
@@ -935,6 +938,7 @@ def ihaleleri_isle(ham_liste: list, detaylar: dict) -> list:
             "ilan_html":            d.get("ilan_html"),
             "esik_katsayi":         d.get("esik_katsayi"),
             "belgeler":             d.get("belgeler"),
+            "kalemler":             d.get("kalemler"),   # malzeme/kalem listesi (ihtiyacKalemiOkasList)
             "kaynak":               "ekap",
             "olusturulma":          now,
         })

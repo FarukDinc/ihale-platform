@@ -462,7 +462,7 @@
   // başlık/idare satırı '***' çizer. İlan metni bölümü misafirde aciklama'ya düşer (zaten fallback).
   let uyeMi = false;
   const MASKE_ROZET = '<a href="login" style="color:var(--amber);text-decoration:none;" title="Üyelere özel — giriş yapın">🔒 ***</a>';
-  const ANON_KOLONLAR = 'id,kaynak,baslik,aciklama,il,ulke,tur,usul,durum,ilan_tarihi,son_teklif_tarihi,ihale_tarihi,tahmini_bedel,para_birimi,hedef_sektorler,gizli_fiyat,goruntulenme,kategori,itiraz_bedeli,yaklasik_maliyet_min,yaklasik_maliyet_max,isin_yapilacagi_yer,ihale_yeri,okas,belgeler,ekler,pdf_url,esik_katsayi';
+  const ANON_KOLONLAR = 'id,kaynak,baslik,aciklama,il,ulke,tur,usul,durum,ilan_tarihi,son_teklif_tarihi,ihale_tarihi,tahmini_bedel,para_birimi,hedef_sektorler,gizli_fiyat,goruntulenme,kategori,itiraz_bedeli,yaklasik_maliyet_min,yaklasik_maliyet_max,isin_yapilacagi_yer,ihale_yeri,okas,belgeler,ekler,pdf_url,esik_katsayi,kalemler';
 
   async function ihaleYukle() {
     if (!ihaleId) {
@@ -524,6 +524,7 @@
     const uyum = Uyum.hesapla(d, kullaniciProfil);
     const gun = gunHesapla(d.son_teklif_tarihi);
     const belgeler = Array.isArray(d.belgeler) ? d.belgeler : [];
+    const kalemler = Array.isArray(d.kalemler) ? d.kalemler : [];
     const disK = DIS_KAYNAK[d.kaynak] || null;
 
     document.title = `${d.baslik} — İhaleGlobal`;
@@ -641,6 +642,14 @@
             <div class="card-title">Yer Bilgileri</div>
             ${d.isin_yapilacagi_yer ? `<div class="info-row"><span class="info-label">İşin Yapılacağı Yer</span><span class="info-value" style="max-width:70%;">${d.isin_yapilacagi_yer}</span></div>` : ''}
             ${d.ihale_yeri ? `<div class="info-row"><span class="info-label">İhale Yeri</span><span class="info-value" style="max-width:70%;">${d.ihale_yeri}</span></div>` : ''}
+          </div>` : ''}
+
+          ${kalemler.length ? `
+          <div class="detay-card full">
+            <div class="card-title">📦 Malzeme / Kalem Listesi (${kalemler.length})</div>
+            <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;">
+              ${kalemler.map((k) => `<span style="background:rgba(var(--overlay-rgb),.06);border:1px solid var(--border);border-radius:6px;padding:5px 10px;font-size:12px;color:var(--off-white);">${escHtml(k.adi || k.koduAdi || '—')}${k.kodu ? ` <span style="color:var(--muted);">(${escHtml(k.kodu)})</span>` : ''}</span>`).join('')}
+            </div>
           </div>` : ''}
         </div>
       </div>
