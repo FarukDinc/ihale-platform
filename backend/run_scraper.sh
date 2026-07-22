@@ -196,3 +196,9 @@ docker exec -i supabase-db psql -U postgres -d postgres -tAc   "SELECT 'eksik id
 # Kabaca 25-35 gecede tamamlanır. Blok görülmezse --max-pages artırılabilir.
 echo "[$(date +'%Y-%m-%d %H:%M:%S')] === ilan_metni backfill ===" >> /opt/ihale-platform/logs/scraper.log
 $VENV/python ilan_metni_backfill.py --max-pages 200 --eszamanli 2 >> /opt/ihale-platform/logs/scraper.log 2>&1
+
+# Teklif türü parse — ilan_metni'nden e-ihale/kısmi teklif/fiyat türü/istekli türü çıkarır (ihaleler.html
+# filtreleri bunları kullanır). ilan_metni backfill'den SONRA: aynı gece yeni dolan metinler işlenir.
+# Artımlı (WHERE guard: sadece işlenmemiş + ilan_metni dolu satırlar) → ilk turdan sonra hızlıdır.
+echo "[$(date +'%Y-%m-%d %H:%M:%S')] === Teklif türü parse ===" >> /opt/ihale-platform/logs/scraper.log
+docker exec -i supabase-db psql -U postgres -d postgres < /opt/ihale-platform/backend/teklif_turu_parse.sql >> /opt/ihale-platform/logs/scraper.log 2>&1

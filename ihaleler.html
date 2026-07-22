@@ -591,6 +591,39 @@
             <option value="diger_kamu">🏢 Diğer Kamu</option>
           </select>
         </div>
+        <!-- Teklif türü filtreleri — ilan metninden parse edilir (kısmi kapsama; verisi olan ilanlarda çalışır) -->
+        <div class="filter-group">
+          <label>Kısmi Teklif</label>
+          <select class="filter-select" id="f-teklif-kismi">
+            <option value="">Tümü</option>
+            <option value="evet">✅ Verilebilir</option>
+            <option value="hayir">⛔ Verilemez</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label>Fiyat Türü</label>
+          <select class="filter-select" id="f-teklif-fiyat">
+            <option value="">Tümü</option>
+            <option value="birim">Birim Fiyat</option>
+            <option value="goturu">Götürü Bedel</option>
+            <option value="karma">Karma</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label>İstekli</label>
+          <select class="filter-select" id="f-teklif-istekli">
+            <option value="">Tümü</option>
+            <option value="yerli">🇹🇷 Sadece Yerli</option>
+            <option value="yerli_yabanci">🌍 Yerli + Yabancı</option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label>E-İhale</label>
+          <select class="filter-select" id="f-teklif-elektronik">
+            <option value="">Tümü</option>
+            <option value="evet">💻 Sadece E-İhale</option>
+          </select>
+        </div>
         <!-- Geçmiş sekmesinde bedel/OKAS kapsamı dar (backfill kayıtlarında bu alanlar boş) -->
         <div id="kapsam-uyari" style="display:none;flex-basis:100%;font-size:11px;line-height:1.5;
              color:var(--muted);background:rgba(251,191,36,.07);border:1px solid rgba(251,191,36,.25);
@@ -1326,6 +1359,11 @@
     const teklifBit= document.getElementById('f-teklif-bit').value;
     const esikKatsayi = document.getElementById('f-esik-katsayi').value;
     const okas     = document.getElementById('f-okas').value.trim();
+    // Teklif türü filtreleri (ilan_metni'nden parse edildi — kısmi kapsama, dolduran ilanlarda çalışır)
+    const teklifKismi     = (document.getElementById('f-teklif-kismi')     || {}).value || '';
+    const teklifFiyat     = (document.getElementById('f-teklif-fiyat')     || {}).value || '';
+    const teklifIstekli   = (document.getElementById('f-teklif-istekli')   || {}).value || '';
+    const teklifElektronik= (document.getElementById('f-teklif-elektronik')|| {}).value || '';
 
     const uyumModu = sort === 'uyum_desc' || minUyum > 0;
     const simdiISO = new Date().toISOString();
@@ -1393,6 +1431,10 @@
     if (idareTur) query = query.eq('idare_tur', idareTur);   // EKAP/DETSİS türü (denormalize kolon)
     if (tur)      query = query.eq('tur', tur);
     if (usul)     query = query.ilike('usul', `%${usul}%`);
+    if (teklifKismi)      query = query.eq('teklif_kismi', teklifKismi === 'evet');
+    if (teklifFiyat)      query = query.eq('teklif_fiyat_turu', teklifFiyat);
+    if (teklifIstekli)    query = query.eq('teklif_istekli', teklifIstekli);
+    if (teklifElektronik) query = query.eq('teklif_elektronik', true);
     if (minBedel) query = query.gte('yaklasik_maliyet_min', minBedel);
     if (maxBedel) query = query.lte('yaklasik_maliyet_max', maxBedel);
     if (idare && uyeMi) query = query.ilike('idare', `%${idare}%`);
@@ -1566,8 +1608,9 @@
 
   function filtreleriSifirla() {
     ['f-arama','f-il','f-kategori','f-tur','f-usul','f-kaynak','f-idare-tur','f-min-bedel','f-max-bedel',
-     'f-idare','f-yayin-bas','f-yayin-bit','f-teklif-bas','f-teklif-bit','f-esik-katsayi','f-okas','f-kurum-ara']
-      .forEach(id => { document.getElementById(id).value = ''; });
+     'f-idare','f-yayin-bas','f-yayin-bit','f-teklif-bas','f-teklif-bit','f-esik-katsayi','f-okas','f-kurum-ara',
+     'f-teklif-kismi','f-teklif-fiyat','f-teklif-istekli','f-teklif-elektronik']
+      .forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
     kurumFiltre = null;
     kurumSonucGoster([]);
     kurumCipGuncelle();
