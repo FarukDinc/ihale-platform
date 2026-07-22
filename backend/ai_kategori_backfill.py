@@ -123,8 +123,10 @@ def secim_cek(client, n):
     return r.json()
 
 
-def _cagir_retry(client_ai, prompt, deneme=4):
-    """generate_content'i üstel backoff ile dener. Kalıcı hata (kota/anahtar) → None (tur durur)."""
+def _cagir_retry(client_ai, prompt, deneme=6):
+    """generate_content'i üstel backoff ile dener. 503 (model aşırı yük) GEÇİCİdir — daha çok/uzun
+    denenir (6 deneme, 120s'e kadar backoff) ki tek bir demand-spike koca turu öldürmesin.
+    Kalıcı hata (kota/anahtar) → None (tur durur)."""
     for k in range(deneme):
         try:
             return client_ai.models.generate_content(model=MODEL, contents=prompt, config=_URETIM_CONFIG)
@@ -132,7 +134,7 @@ def _cagir_retry(client_ai, prompt, deneme=4):
             if k == deneme - 1:
                 print(f"  ✗ Gemini kalıcı hata ({str(e)[:120]}) — tur durduruluyor.")
                 return None
-            bekle = min(2 ** k * 5, 60)
+            bekle = min(2 ** k * 5, 120)
             print(f"  ⚠ Gemini hata ({str(e)[:80]}); {bekle}s bekle (tekrar {k + 1}/{deneme - 1})")
             time.sleep(bekle)
     return None
