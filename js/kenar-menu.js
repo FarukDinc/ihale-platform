@@ -26,9 +26,11 @@
         { ad: 'Detaylı Arama', href: 'ihaleler?sekme=detayli' },
       ] },
     { id: 'sonuclar', ikon: '🚩', ad: 'Sonuçlar', alt: [
-        { ad: 'Tümü (Sonuçlanan)', href: 'ihaleler?sekme=sonuc' },
-        { ad: 'Sonuç Bekleyenler', href: 'ihaleler?sekme=sonuc&durum=bekleyen' },
-        { ad: 'İptal Edilenler', href: 'ihaleler?sekme=sonuc&durum=iptal' },
+        { ad: 'Sonuçlanan İhaleler', href: 'ihaleler?sekme=sonuc' },
+        // "Sonuç Bekleyenler" = süresi geçmiş ama sonuç yayınlanmamış (durum=kapali, 1,6M).
+        // "İptal Edilenler" EKAP'ta ayrı statü olarak GELMİYOR (durum yalnız aktif/kapali/sonuclandi)
+        // → veri kaynağı olmadığı için menüye konmadı (ölü link yerine dürüst eksik).
+        { ad: 'Sonuç Bekleyenler', href: 'ihaleler?sekme=gecmis&durum=kapali' },
       ] },
     { id: 'analiz', ikon: '📊', ad: 'Analiz', alt: [
         { ad: 'Rekabet Analizi', href: 'rekabet-analizi' },
