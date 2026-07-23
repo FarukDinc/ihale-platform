@@ -757,7 +757,10 @@
       <!-- SONUÇ BİLGİSİ -->
       <div class="result-info">
         <div class="result-count" id="result-count">Yükleniyor...</div>
-        <div style="display:flex;gap:8px;align-items:center;">
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+          <input id="listede-ara" type="text" placeholder="🔎 Listede ara…" oninput="listedeAra(this.value)"
+            title="Yüklü ihaleler içinde anlık ara (başlık / idare / kayıt no)"
+            style="background:var(--navy-mid);border:1px solid var(--border);color:var(--white);font-family:var(--font);font-size:12.5px;padding:6px 11px;border-radius:6px;outline:none;width:150px;" />
           <button class="btn-okundu-toggle" id="btn-okundu-toggle" onclick="okunduToggle()" title="Okunan ihaleleri gizle / göster">👁 Okunanları Gizle <span id="okundu-sayi" style="display:none;"></span></button>
           <button class="btn-ara-kaydet" onclick="aramaKaydetModal()" title="Mevcut filtreleri kaydet">⭐ Aramayı Kaydet</button>
           <button class="btn-okundu-toggle" onclick="aramayiAnalizEt()" title="Mevcut filtrelerle rekabet analizi aç">📊 Bu Aramayı Analiz Et</button>
@@ -1164,12 +1167,78 @@
               <span class="compat-num">${uyum}%</span>
             </div>` : `<a href="profil" class="compat-bar" style="text-decoration:none;color:var(--muted);font-size:11px;" title="Uyum skoru için profil oluşturun">⚙ Profil ekle</a>`}
             <button class="action-btn ${takipte ? 'takipte' : 'primary'}" onclick="takibeAl(this,'${ilan.id}')">${takipte ? '✓ Takipte' : '☆ Takibe Al'}</button>
+            ${ilan.son_teklif_tarihi ? `<button class="action-btn" title="Son teklif tarihini takvime ekle (.ics)" onclick="takvimeEkle('${ilan.id}','${ilan.son_teklif_tarihi}')">📅 Takvim</button>` : ''}
             <a class="action-btn" href="ihale-detay?id=${ilan.id}" onclick="kartOku('${ilan.id}')">Detay →</a>
           </div>
         </div>
         ${sonucBlok}
       </div>`;
   }
+
+  // ── Takvime Ekle (ICS) ───────────────────────────────────────────────────────
+  // İhalePro'da satır başına "takvime ekle" var; kullanıcı son teklif tarihini kendi
+  // takvimine hatırlatma olarak alır. Saf istemci: .ics üretip indirir (backend YOK).
+  // Etkinlik son teklif tarihinde; 1 gün önce hatırlatma (VALARM).
+  window.takvimeEkle = function (id, tarihISO) {
+    if (!tarihISO) { alert('Bu ihalenin son teklif tarihi yok.'); return; }
+    const d = new Date(tarihISO);
+    if (isNaN(d)) { alert('Tarih okunamadı.'); return; }
+    const pad = n => String(n).padStart(2, '0');
+    // ICS UTC damgası: YYYYMMDDTHHMMSSZ
+    const fmt = x => `${x.getUTCFullYear()}${pad(x.getUTCMonth()+1)}${pad(x.getUTCDate())}T${pad(x.getUTCHours())}${pad(x.getUTCMinutes())}00Z`;
+    const bit = new Date(d.getTime() + 60*60*1000);   // 1 saatlik blok
+    // Başlığı kart DOM'undan oku (onclick'te kaçırma derdi yok, XSS riski yok)
+    const kartEl = document.getElementById('kart-' + id);
+    const baslikRaw = kartEl?.querySelector('.kart-baslik')?.textContent || 'İhale';
+    const baslik = baslikRaw.replace(/\\/g,'').replace(/[\r\n,;]/g, ' ').slice(0, 200);
+    const ics = [
+      'BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//IhaleGlobal//TR','CALSCALE:GREGORIAN','METHOD:PUBLISH',
+      'BEGIN:VEVENT',
+      `UID:ihale-${id}@ihaleglobal.com`,
+      `DTSTAMP:${fmt(new Date(Date.now()))}`,
+      `DTSTART:${fmt(d)}`,
+      `DTEND:${fmt(bit)}`,
+      `SUMMARY:Son teklif: ${baslik}`,
+      `DESCRIPTION:İhale son teklif tarihi. Detay: https://ihaleglobal.com/ihale-detay?id=${id}`,
+      `URL:https://ihaleglobal.com/ihale-detay?id=${id}`,
+      'BEGIN:VALARM','TRIGGER:-P1D','ACTION:DISPLAY','DESCRIPTION:İhale son teklifine 1 gün kaldı','END:VALARM',
+      'END:VEVENT','END:VCALENDAR'
+    ].join('\r\n');
+    const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `ihale-${id}.ics`;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  };
+
+  // ── Listede Ara (istemci-taraflı, yüklü kartlar içinde anlık) ──────────────────
+  // Sunucu araması ayrı (arama_fold, tüm veri); bu SADECE ekrandaki kartları süzer —
+  // hızlı daraltma için. Başlık + idare + kayıt no metninde arar (TR-katlamalı).
+  function listedeAra(q) {
+    const konteyner = document.getElementById('ihale-liste');
+    const kartlar = konteyner.querySelectorAll('.ihale-kart');
+    const terim = (window.trFold ? trFold(q) : q).trim().toLowerCase();
+    let gorunen = 0;
+    kartlar.forEach(k => {
+      if (!terim) { k.style.removeProperty('display'); gorunen++; return; }
+      const metin = (window.trFold ? trFold(k.textContent) : k.textContent).toLowerCase();
+      const esles = metin.includes(terim);
+      k.style.display = esles ? '' : 'none';
+      if (esles) gorunen++;
+    });
+    // Boş durum notu
+    let not = document.getElementById('listede-ara-bos');
+    if (terim && gorunen === 0) {
+      if (!not) {
+        not = document.createElement('div');
+        not.id = 'listede-ara-bos'; not.className = 'liste-state';
+        not.textContent = '🔎 Yüklü ihaleler içinde eşleşme yok — sunucu araması için üstteki "İhale İçeriği" kutusunu kullanın.';
+        konteyner.appendChild(not);
+      }
+    } else if (not) { not.remove(); }
+  }
+  window.listedeAra = listedeAra;
 
   function kartOku(id) {
     if (Okundu.var(id)) return;
