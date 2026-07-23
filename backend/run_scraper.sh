@@ -135,6 +135,13 @@ docker exec -i supabase-db psql -U postgres -d postgres -c "SELECT public.idare_
 echo "[$(date +'%Y-%m-%d %H:%M:%S')] === Lot sayisi tazeleme ===" >> /opt/ihale-platform/logs/scraper.log
 docker exec -i supabase-db psql -U postgres -d postgres -c "SELECT public.lot_sayisi_tazele() AS lot_tazeleme;" >> /opt/ihale-platform/logs/scraper.log 2>&1
 
+# Fesih / tasfiye durumu — tum_teklifler içindeki fesihString/tasfiyeTransferString'ten
+# türetilir (migration_sonuc_fesih_tasfiye.sql). Artımlı: yalnız NULL satırlara bakar.
+# lot_sayisi ile AYNI GEREKÇE: türetilmiş kolon cron'a bağlanmazsa yeni kayıtlar NULL
+# gelir ve firma risk şeridi zamanla eksik gösterir.
+echo "[$(date +'%Y-%m-%d %H:%M:%S')] === Fesih/tasfiye tazeleme ===" >> /opt/ihale-platform/logs/scraper.log
+docker exec -i supabase-db psql -U postgres -d postgres -c "SELECT public.fesih_tasfiye_tazele() AS fesih_tazeleme;" >> /opt/ihale-platform/logs/scraper.log 2>&1
+
 # İdareler Dizini özeti — gece verisi değiştikten sonra MV tazele (idareler.html
 # idare_dizin_json() ile bunu okur; CONCURRENTLY = okumalar bloklanmaz).
 echo "[$(date +'%Y-%m-%d %H:%M:%S')] === Idare ozet MV ===" >> /opt/ihale-platform/logs/scraper.log

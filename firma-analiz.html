@@ -529,6 +529,20 @@
           </div>
         </div>
 
+        <!-- Sözleşme risk şeridi — YALNIZ fesih/tasfiye varsa gösterilir.
+             Firmaların %99,6'sında sıfır; herkese boş kart göstermek gürültü olurdu.
+             Sayı örneklemden DEĞİL tam sayımdan gelir (örneklem kesikse eksik gösterirdi). -->
+        <div id="risk-serit" style="display:none; background:rgba(239,68,68,.08); border:1px solid rgba(239,68,68,.3);
+             border-radius:10px; padding:14px 18px; margin-bottom:20px;">
+          <div style="font-size:12px; font-weight:700; color:#f87171; text-transform:uppercase; letter-spacing:.06em; margin-bottom:6px;">
+            ⚠ Sözleşme Riski
+          </div>
+          <div id="risk-metin" style="font-size:13px; color:var(--off-white);"></div>
+          <div style="font-size:11px; color:var(--muted); margin-top:6px;">
+            Kaynak: EKAP sözleşme kayıtları. Fesih/tasfiye tek başına kusur kanıtı değildir — idare kaynaklı da olabilir.
+          </div>
+        </div>
+
         <!-- "Sonuçlar" + "İhaleler" sekmeleri birleşti (17 Tem, kullanıcı kararı): ikisi de aynı
              veriden geliyordu (tumIhaleler = sonucVeri.map(s=>s.ilan) — EKAP kaybedeni yayınlamaz,
              katıldığı = kazandığı). Tek liste: sonuç kartı + tür rozeti + sayfalama. -->
@@ -1249,6 +1263,26 @@
     }
     sonAramaKaydet(FIRMA);
 
+    // Fesih / tasfiye tam sayımı (head:true → satır indirmez, yalnız count döner).
+    // Şerit YALNIZ sıfırdan büyükse açılır; temiz firmada hiç görünmez.
+    async function riskSeridiYukle(yukleniciId) {
+      try {
+        const [fesih, tasfiye] = await Promise.all([
+          sb.from('ihale_sonuclari').select('id', { count: 'exact', head: true })
+            .eq('yuklenici_id', yukleniciId).is('fesih_var', true),
+          sb.from('ihale_sonuclari').select('id', { count: 'exact', head: true })
+            .eq('yuklenici_id', yukleniciId).is('tasfiye_var', true),
+        ]);
+        const f = fesih.count || 0, t = tasfiye.count || 0;
+        if (!f && !t) return;                       // temiz firma → şerit hiç açılmaz
+        const parcalar = [];
+        if (f) parcalar.push(`<b style="color:#f87171;">${f.toLocaleString('tr')}</b> feshedilmiş sözleşme`);
+        if (t) parcalar.push(`<b style="color:#fbbf24;">${t.toLocaleString('tr')}</b> tasfiye / devir`);
+        document.getElementById('risk-metin').innerHTML = parcalar.join(' · ');
+        document.getElementById('risk-serit').style.display = 'block';
+      } catch (_) { /* kolon/yetki yoksa şerit hiç açılmaz — sayfa bozulmaz */ }
+    }
+
     // Kazandığı ihaleler — yuklenici_id ile kesin eşleşme + ilan başlık/idare embed'i
     const { data: sonucRaw } = await sb.from('ihale_sonuclari')
       .select('ilan_id,ikn,kazanan_firma,kazanan_teklif,sozlesme_bedeli,kazanan_teklif_farki_yuzde,tenzilat_yuzde,toplam_teklif_sayisi,katilimci_sayisi,sonuc_tarihi,sozlesme_tarihi,kisim_no,lot_sayisi,ilanlar(id,ekap_id,baslik,idare,il,tur,kategori,ilan_tarihi,son_teklif_tarihi)')
@@ -1276,6 +1310,10 @@
     document.getElementById('kpi-kazanilan').textContent = gosterAdet.toLocaleString('tr');
     document.getElementById('kpi-sozlesme').textContent  = iller.size;
     document.getElementById('kpi-tenzilat').textContent  = katlar.size;
+    // Sözleşme riski: fesih / tasfiye-devir. ⚠️ sonucVeri ÖRNEKLEMDİR (SONUC_LIMIT ile kesik)
+    // → sayıyı ondan türetmek eksik gösterir. Ayrı head:true sayımıyla TAM sayı alınıyor.
+    riskSeridiYukle(yid);
+
     const sub = document.getElementById('kpi-kazanilan-sub');
     if (sub) sub.textContent = toplamBedel
       ? paraTam(toplamBedel) + (ORNEKLEM_KESIK ? ` (son ${kayitSayisi.toLocaleString('tr')} kayıt, yalnız ihaleler)` : ' (yalnız ihaleler)')
