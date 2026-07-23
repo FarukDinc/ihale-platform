@@ -103,10 +103,22 @@ def main():
                     print(f"\n⏰ Durma saatine ulaşıldı — temiz çıkılıyor. {etiket} sayfa {sayfa-1}'de kaldı.")
                     durum_yaz(durum); return
 
-                try:
-                    ham = sayfa_cek(havuz, sayfa, bas=bas, bit=bit)
-                except Exception as e:
-                    print(f"    ✗ sayfa {sayfa} alınamadı ({type(e).__name__}) — ay bırakılıyor")
+                # sayfa_cek kendi içinde 3 kez deniyor; buna rağmen düşerse GEÇİCİ proxy
+                # dalgalanması olabilir (23 Tem: Eylül-Aralık 2024 tek ProxyError'da terk
+                # edilmişti, oysa dakikalar sonra proxy sağlamdı). Ayı bırakmadan önce
+                # artan beklemeyle 3 tur daha dene.
+                ham = None
+                for tur in range(3):
+                    try:
+                        ham = sayfa_cek(havuz, sayfa, bas=bas, bit=bit)
+                        break
+                    except Exception as e:
+                        bekle = 30 * (tur + 1)
+                        print(f"    ⚠ sayfa {sayfa} alınamadı ({type(e).__name__}) — {bekle}sn bekle, tur {tur+1}/3")
+                        durum_yaz(durum)
+                        time.sleep(bekle)
+                if ham is None:
+                    print(f"    ✗ sayfa {sayfa} 3 turda da alınamadı — {etiket} bırakılıyor (checkpoint korundu)")
                     break
                 if not ham:
                     durum[etiket] = "bitti"
