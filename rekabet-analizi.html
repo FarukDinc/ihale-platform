@@ -188,8 +188,10 @@
           <option>ADANA</option><option>ADIYAMAN</option><option>AFYONKARAHİSAR</option><option>AĞRI</option><option>AKSARAY</option><option>AMASYA</option><option>ANKARA</option><option>ANTALYA</option><option>ARDAHAN</option><option>ARTVİN</option><option>AYDIN</option><option>BALIKESİR</option><option>BARTIN</option><option>BATMAN</option><option>BAYBURT</option><option>BİLECİK</option><option>BİNGÖL</option><option>BİTLİS</option><option>BOLU</option><option>BURDUR</option><option>BURSA</option><option>ÇANAKKALE</option><option>ÇANKIRI</option><option>ÇORUM</option><option>DENİZLİ</option><option>DİYARBAKIR</option><option>DÜZCE</option><option>EDİRNE</option><option>ELAZIĞ</option><option>ERZİNCAN</option><option>ERZURUM</option><option>ESKİŞEHİR</option><option>GAZİANTEP</option><option>GİRESUN</option><option>GÜMÜŞHANE</option><option>HAKKARİ</option><option>HATAY</option><option>IĞDIR</option><option>ISPARTA</option><option>İSTANBUL</option><option>İZMİR</option><option>KAHRAMANMARAŞ</option><option>KARABÜK</option><option>KARAMAN</option><option>KARS</option><option>KASTAMONU</option><option>KAYSERİ</option><option>KIRIKKALE</option><option>KIRKLARELİ</option><option>KIRŞEHİR</option><option>KİLİS</option><option>KOCAELİ</option><option>KONYA</option><option>KÜTAHYA</option><option>MALATYA</option><option>MANİSA</option><option>MARDİN</option><option>MERSİN</option><option>MUĞLA</option><option>MUŞ</option><option>NEVŞEHİR</option><option>NİĞDE</option><option>ORDU</option><option>OSMANİYE</option><option>RİZE</option><option>SAKARYA</option><option>SAMSUN</option><option>SİİRT</option><option>SİNOP</option><option>SİVAS</option><option>ŞANLIURFA</option><option>ŞIRNAK</option><option>TEKİRDAĞ</option><option>TOKAT</option><option>TRABZON</option><option>TUNCELİ</option><option>UŞAK</option><option>VAN</option><option>YALOVA</option><option>YOZGAT</option><option>ZONGULDAK</option>
         </select>
         <select class="filtre-select" id="f-kategori" onchange="yenile()">
+          <!-- Seçenekler js/kategoriler.js'ten (41 kanonik) doldurulur.
+               ⚠️ Buradaki liste ESKİ taksonomiydi: 26 seçenekten yalnız 1'i veriyle eşleşiyordu
+               (1.345/1,96M), kalanı sessizce 0 döndürüyordu. Sabit liste yazma — tek kaynak js/kategoriler.js. -->
           <option value="">Tüm Kategoriler</option>
-          <option>İnşaat & Yapım</option><option>Bilişim Hizmetleri</option><option>Sağlık</option><option>Eğitim</option><option>Ulaşım Hizmetleri</option><option>Enerji</option><option>Su</option><option>Çevre Hizmetleri</option><option>Güvenlik</option><option>Kamu Hizmetleri</option><option>Mimarlık & Mühendislik</option><option>Tıbbi Cihazlar</option><option>BT Ekipmanları</option><option>Elektrik Malzemeleri</option><option>İletişim</option><option>Lojistik</option><option>Bakım & Onarım</option><option>Mobilya & Temizlik</option><option>Gıda & İçecek</option><option>Tarım & Ormancılık</option><option>İdari Hizmetler</option><option>Kültür & Medya</option><option>Sigorta & Finans</option><option>Mal Alımı</option><option>Hizmet Alımı</option><option>Danışmanlık</option>
         </select>
         <button onclick="filtreleriSifirla()" style="background:var(--card-bg);border:1px solid var(--border);color:var(--muted);padding:6px 13px;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;font-family:var(--font);" title="Filtreleri sıfırla">↺ Sıfırla</button>
         <button id="paylasBtn" onclick="linkPaylas(this)" style="background:var(--card-bg);border:1px solid var(--border);color:var(--muted);padding:6px 13px;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;font-family:var(--font);">🔗 Paylaş</button>
@@ -309,6 +311,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+<script src="js/kategoriler.js?v=1"></script>
 <script src="js/sidebar-user.js?v=3"></script>
 <script src="js/bildirim-sayaci.js?v=rot1"></script>
 <script src="js/plan.js?v=rot1"></script>
@@ -686,6 +689,19 @@
       );
       return;
     }
+    // Kategori seçeneklerini tek kaynaktan doldur (URL parametresi okunmadan ÖNCE —
+    // aksi hâlde .value ataması var olmayan seçeneğe düşer ve sessizce boşa çıkar).
+    const kSel = document.getElementById('f-kategori');
+    (window.KATEGORILER || []).forEach(k => {
+      const o = document.createElement('option');
+      o.value = k.kod; o.textContent = `${k.emoji || ''} ${k.kod}`.trim();
+      kSel.appendChild(o);
+    });
+    // Jenerik kova: kanonik listede yok ama veride 181K satır var, filtrelenebilmeli.
+    const oDiger = document.createElement('option');
+    oDiger.value = 'Diğer'; oDiger.textContent = '❓ Diğer';
+    kSel.appendChild(oDiger);
+
     const params = new URLSearchParams(location.search);
     if (params.get('kategori')) document.getElementById('f-kategori').value = params.get('kategori');
     if (params.get('il')) document.getElementById('f-il').value = params.get('il');

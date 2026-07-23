@@ -757,6 +757,7 @@
         <div style="display:flex;gap:8px;align-items:center;">
           <button class="btn-okundu-toggle" id="btn-okundu-toggle" onclick="okunduToggle()" title="Okunan ihaleleri gizle / göster">👁 Okunanları Gizle <span id="okundu-sayi" style="display:none;"></span></button>
           <button class="btn-ara-kaydet" onclick="aramaKaydetModal()" title="Mevcut filtreleri kaydet">⭐ Aramayı Kaydet</button>
+          <button class="btn-okundu-toggle" onclick="aramayiAnalizEt()" title="Mevcut filtrelerle rekabet analizi aç">📊 Bu Aramayı Analiz Et</button>
           <button class="btn-kayitli-ara" id="btn-kayitli-ara" onclick="kayitliPanelToggle()" title="Kayıtlı aramalar">
             📂 Kayıtlı <span class="kayitli-badge" id="kayitli-badge" style="display:none;"></span>
           </button>
@@ -1936,6 +1937,19 @@
     if (params.okas)     p.set('okas', params.okas);
     const str = p.toString();
     return str ? `ihaleler?${str}` : 'ihaleler';
+  }
+
+  // ── On-demand analiz (rakip yol haritası #7) ─────────────
+  // Rekabet analizi zaten il/kategori/durum parametreli (rekabet_ozet RPC) ve URL'den
+  // okuyor; eksik olan tek şey arama sayfasından oraya köprüydü.
+  function aramayiAnalizEt() {
+    const f = mevcutFiltreleriOku();
+    const p = new URLSearchParams();
+    if (f.il) p.set('il', f.il);
+    if (f.kategori) p.set('kategori', f.kategori);
+    // Sekme → analiz durumu: güncel sekmesi açık ihaleleri gösteriyor
+    if (f.sekme === 'guncel') p.set('durum', 'aktif');
+    location.href = 'rekabet-analizi' + (p.toString() ? '?' + p : '');
   }
 
   function aramaKaydetModal() {
