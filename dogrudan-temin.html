@@ -1124,6 +1124,7 @@
                   onclick="event.stopPropagation();dtTakibeAl(this,'${esc(k.dt_no)}')" title="Takibe al">
             ${window.TakipDT && TakipDT.var(k.dt_no) ? '★' : '☆'}
           </button>
+          ${k.tarih ? `<button class="dt-takip-btn" onclick="event.stopPropagation();takvimeEkleDT('${esc(k.dt_no)}','${k.tarih}')" title="Son teklif tarihini takvime ekle (.ics)">📅</button>` : ''}
           <div class="dt-no">${esc(k.dt_no)}</div>
         </div>
       </div>
@@ -1154,6 +1155,34 @@
     document.getElementById('pg-son').disabled = !sayimBiliniyor || sayfa >= topSayfa;
     document.getElementById('pg-son').style.display = sayimBiliniyor ? '' : 'none';
   }
+
+  // Takvime Ekle (ICS) — DT için. Başlık kart DOM'undan okunur; son teklif = k.tarih.
+  window.takvimeEkleDT = function (dtNo, tarihISO) {
+    if (!tarihISO) { alert('Bu duyurunun son teklif tarihi yok.'); return; }
+    const d = new Date(tarihISO);
+    if (isNaN(d)) { alert('Tarih okunamadı.'); return; }
+    const pad = n => String(n).padStart(2, '0');
+    const fmt = x => `${x.getUTCFullYear()}${pad(x.getUTCMonth()+1)}${pad(x.getUTCDate())}T${pad(x.getUTCHours())}${pad(x.getUTCMinutes())}00Z`;
+    const bit = new Date(d.getTime() + 60*60*1000);
+    const kartEl = document.getElementById('dt-kart-' + dtNo);
+    const baslikRaw = kartEl?.querySelector('.dt-baslik')?.textContent || 'Doğrudan Temin';
+    const baslik = baslikRaw.replace(/\\/g,'').replace(/[\r\n,;]/g, ' ').slice(0, 200);
+    const ics = [
+      'BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//IhaleGlobal//TR','CALSCALE:GREGORIAN','METHOD:PUBLISH',
+      'BEGIN:VEVENT', `UID:dt-${dtNo}@ihaleglobal.com`,
+      `DTSTAMP:${fmt(new Date(Date.now()))}`, `DTSTART:${fmt(d)}`, `DTEND:${fmt(bit)}`,
+      `SUMMARY:Son teklif (DT): ${baslik}`,
+      `DESCRIPTION:Doğrudan temin son teklif tarihi. https://ihaleglobal.com/dt-detay?dt_no=${encodeURIComponent(dtNo)}`,
+      `URL:https://ihaleglobal.com/dt-detay?dt_no=${encodeURIComponent(dtNo)}`,
+      'BEGIN:VALARM','TRIGGER:-P1D','ACTION:DISPLAY','DESCRIPTION:DT son teklifine 1 gün kaldı','END:VALARM',
+      'END:VEVENT','END:VCALENDAR'
+    ].join('\r\n');
+    const blob = new Blob([ics], { type: 'text/calendar;charset=utf-8' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob); a.download = `dt-${dtNo}.ics`;
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+  };
 
   // Takibe Al — Takip.js'in DT paralel nesnesi (window.TakipDT), ihaleler.html'deki
   // takibeAl() ile aynı basitlik: giriş şartı yok, misafir localStorage'da tutar.
