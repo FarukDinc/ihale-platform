@@ -132,19 +132,31 @@ def tarih_parse(s: str | None):
     return f"{y}-{int(a):02d}-{int(g):02d}T{int(sa or 0):02d}:{dk or '00'}:00"
 
 
-def sayfa_cek(havuz, sayfa: int, deneme: int = 3) -> list:
+def sayfa_cek(havuz, sayfa: int, deneme: int = 3, bas: str | None = None, bit: str | None = None) -> list:
     """Her deneme havuzdan çıkan SIRADAKİ IP ile gider — bir IP bloklanmışsa
     tekrar denemesi başka bir IP'ye düşer. Hız sınırı (IP başına soğuma + küresel
-    tavan) havuzda uygulanıyor; burada ayrıca beklemek gerekmiyor."""
+    tavan) havuzda uygulanıyor; burada ayrıca beklemek gerekmiyor.
+
+    bas/bit: "GG.AA.YYYY" biçiminde tarih aralığı (dtTarihiBaslangic/dtTarihiBitis).
+    23 Tem'de Angular bundle'ından bulundu (app.*.js → filtre alan adları). ÖNEMLİ:
+    filtresiz derin sayfalama ~3 dk/sayfaya kadar yavaşlıyor (EKAP N satır atlamak
+    zorunda); tarih dilimiyle her dilim 1. sayfadan başladığı için sayfa 80 bile
+    ~6 sn. Ölçülen fark ~30-100x. Doğrulandı: filtre KATI (dönen 128 kaydın hepsi
+    istenen ay içinde). ⚠️ `ihaleTarihiBaslangic`/`baslangicTarihi` İŞE YARAMAZ —
+    sessizce filtresiz sonuç döndürür (2026 kayıtları gelir), yanlış ada dikkat."""
     for i in range(deneme):
         try:
             with havuz.istek() as ist:
+                params = {
+                    "ES": "", "ihaleidListesi": "", "dtBilgiSecim": "1",
+                    "metot": "dtAra", "orderBy": "10", "pageIndex": sayfa,
+                }
+                if bas and bit:
+                    params["dtTarihiBaslangic"] = bas
+                    params["dtTarihiBitis"] = bit
                 r = ist.client.get(
                     ARAMA_ENDPOINT,
-                    params={
-                        "ES": "", "ihaleidListesi": "", "dtBilgiSecim": "1",
-                        "metot": "dtAra", "orderBy": "10", "pageIndex": sayfa,
-                    },
+                    params=params,
                     headers=BASE_HEADERS, timeout=30.0,
                 )
                 ist.yanit(r)   # yalnız 403/407/429/5xx cezalandırır (404 uygulama yanıtı)
