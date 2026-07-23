@@ -911,6 +911,9 @@ def ihaleleri_isle(ham_liste: list, detaylar: dict) -> list:
         kayitlar.append({
             "ekap_id":              str(i.get("ikn") or i.get("id") or ""),
             "ikn":                  str(i.get("ikn") or ""),
+            # EKAP iç hash'i: resmî doküman sayfası (VatandasIlanGoruntuleme.aspx?ihaleId=…) İKN ile
+            # değil bununla açılıyor. Liste yanıtında zaten var → saklamak ek istek maliyeti getirmez.
+            "ekap_ihale_id":        str(i.get("id") or "") or None,
             "baslik":               mojibake_duzelt((i.get("ihaleAdi") or "").strip()),
             "idare":                mojibake_duzelt((i.get("idareAdi") or "").strip()),
             "il":                   mojibake_duzelt((i.get("ihaleIlAdi") or "").strip()),

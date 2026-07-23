@@ -462,7 +462,7 @@
   // başlık/idare satırı '***' çizer. İlan metni bölümü misafirde aciklama'ya düşer (zaten fallback).
   let uyeMi = false;
   const MASKE_ROZET = '<a href="login" style="color:var(--amber);text-decoration:none;" title="Üyelere özel — giriş yapın">🔒 ***</a>';
-  const ANON_KOLONLAR = 'id,kaynak,baslik,aciklama,il,ulke,tur,usul,durum,ilan_tarihi,son_teklif_tarihi,ihale_tarihi,tahmini_bedel,para_birimi,hedef_sektorler,gizli_fiyat,goruntulenme,kategori,itiraz_bedeli,yaklasik_maliyet_min,yaklasik_maliyet_max,isin_yapilacagi_yer,ihale_yeri,okas,belgeler,ekler,pdf_url,esik_katsayi,kalemler';
+  const ANON_KOLONLAR = 'id,kaynak,baslik,aciklama,il,ulke,tur,usul,durum,ilan_tarihi,son_teklif_tarihi,ihale_tarihi,tahmini_bedel,para_birimi,hedef_sektorler,gizli_fiyat,goruntulenme,kategori,itiraz_bedeli,yaklasik_maliyet_min,yaklasik_maliyet_max,isin_yapilacagi_yer,ihale_yeri,okas,belgeler,ekler,pdf_url,esik_katsayi,kalemler,ekap_ihale_id';
 
   async function ihaleYukle() {
     if (!ihaleId) {
@@ -523,7 +523,17 @@
   function sayfaOlustur(d) {
     const uyum = Uyum.hesapla(d, kullaniciProfil);
     const gun = gunHesapla(d.son_teklif_tarihi);
-    const belgeler = Array.isArray(d.belgeler) ? d.belgeler : [];
+    const belgeler = Array.isArray(d.belgeler) ? d.belgeler.slice() : [];
+    // Belge listesi detay turunda dolmadıysa (1,96M ilanın çoğu) EKAP'ın resmî doküman
+    // sayfasına hash'ten link üret. İdari + Teknik şartname o sayfadan indiriliyor;
+    // bizde saklamıyoruz (indirme/CAPTCHA/Storage maliyeti yok).
+    if (!belgeler.length && d.ekap_ihale_id) {
+      belgeler.push({
+        ad: 'İhale Dokümanı (İdari + Teknik Şartname)',
+        tur: 'EKAP resmî doküman sayfası',
+        url: `https://ekap.kik.gov.tr/EKAP/Ortak/VatandasIlanGoruntuleme.aspx?ddac=true&aramaDownload=true&ihaleId=${encodeURIComponent(d.ekap_ihale_id)}&wots=false&Iszylnm=false`,
+      });
+    }
     const kalemler = Array.isArray(d.kalemler) ? d.kalemler : [];
     const disK = DIS_KAYNAK[d.kaynak] || null;
 
