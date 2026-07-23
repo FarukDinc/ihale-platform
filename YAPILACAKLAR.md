@@ -6207,3 +6207,21 @@ kaÃ§ vermen gerektiÄŸini sÃ¶yler."*
 
 ## Yapmayacaklarımız (bilinçli)
 - Excel/CSV export (kalıcı yasak) · doküman indirme sinyali ("ilgilendiği ihaleler" — EKAP bu veriyi bize vermiyor)
+
+## 🎨 SAYFA DESENİ DÖNÜŞÜMÜ (23 Tem — kullanıcı onayladı: "sayfaları da değiştireceğiz")
+> Hedef desen İhalePro'dan uyarlanır; ihaleler.html + dogrudan-temin.html + sonuç/sözleşme sayfaları ORTAK şablona geçer.
+- [ ] 🔴 **Sol filtre sütunu**: akordeon gruplu filtreler (bizde üst grid); altta yapışkan "Filtreyi Uygula" + "Aramayı Kaydet". Mobilde filtre çekmecesi (drawer).
+- [ ] 🔴 **Satır accordion önizleme**: satıra tıklayınca detaya gitmeden "Özet Bilgi" + butonlar (Detay · EKAP İlanı · Doküman · Takibe Al · Takvime Ekle ICS · Paylaş). İdare HİYERARŞİSİ özette gösterilir (detsis zincirimiz var).
+- [ ] 🔴 **Kolon başlığından sıralama** (tarih ⇅ / bedel ⇅ / il ⇅) — dropdown sort yerine.
+- [ ] 🟠 **"Listede Ara"**: mevcut sonuç kümesi içinde anlık ikinci arama kutusu.
+- [ ] 🟠 **Global arama çubuğu** (topbar): kapsam dropdown (İhale/DT/Firma/İdare/Sonuç) + tek kutu; Ctrl+K zaten var — kapsamlandır.
+- [ ] 🟠 **Kalan gün rozeti** satırda ("Son 47 gün", ≤3 gün kırmızı) — kısmen var, desene standartlaştır.
+- [ ] 🟠 Yeni filtreler: **Benzer İş (iş deneyim grubu)** · **Sözleşme Tipi** · **Düzeltme İlanı** · "AI önerilen" toggle (uyum% motorumuza bağlanır).
+- [ ] 🟡 Satır "Mail ile paylaş" (mailto:).
+
+## ✅ 23 Tem KULLANICI KARARLARI (AskUserQuestion)
+- [x] Karar: sonuç arşivi TÜM geçmiş çekilecek (kullanıcı 2003 istedi; API'nin en eskisi ~2010 — 2010'a kadar çekilecek, 2003-2009 için kaynak yok)
+- [ ] 🔴 Tam arşiv backfill zinciri (2024 penceresi bu gece; kalan ~1,5M kayıt sonraki gecelere bölünecek, skip-pencere yöntemiyle)
+- [ ] 🔴 Firma segmentleri MV + analiz kartları (Parlayan/Sönen/İlk Kez/150Mn+ — SQL türetme)
+- [ ] 🔴 Bugünkü-değer TL (TÜFE çarpan tablosu; sözleşme bedeli yanında "bugünkü ₺X")
+- [ ] 🔴 Yasaklı firmalar: kaynak araştır (EKAP yasaklı sorgusu / Resmî Gazete) → firma karnesine rozet
