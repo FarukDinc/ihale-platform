@@ -94,6 +94,18 @@ $VENV/python idare_bildirim.py >> /opt/ihale-platform/logs/scraper.log 2>&1
 # oturtur. Her satır YALNIZCA BİR KEZ (ai_kategori_denendi damgası) → idempotent, token israfı yok.
 # --limit 400 + --rpm 15: günlük yeni Diğer'leri + birikmiş kuyruktan biraz karşılar, free tier'a sığar.
 # MV tazelemeden ÖNCE koşar ki harita/sektör/kategori MV'leri yeni kategorileri aynı gece yansıtsın.
+# LOKAL kategori sınıflandırıcı — ÖNCE bu koşar (API'siz, $0). 1,39M etiketli örnekle eğitilmiş
+# TF-IDF+SGD modeli; eşik 0.70'te zor 'Diğer' popülasyonunda Gemini ile %89 uyum, %88 kapsama.
+# Gemini'den ÖNCE olması kritik: ucuz model çoğunu halleder, Gemini yalnız kalan azınlığa bakar
+# → süregelen AI maliyeti neredeyse sıfıra iner. Model yoksa sessizce atlanır (cron kırılmaz).
+echo "[$(date +'%Y-%m-%d %H:%M:%S')] === Lokal kategori sınıflandırıcı ===" >> /opt/ihale-platform/logs/scraper.log
+if [ -f /opt/ihale-platform/backend/kategori_model.joblib ]; then
+  $VENV/python kategori_model_uygula.py --tablo ilanlar --esik 0.70 >> /opt/ihale-platform/logs/scraper.log 2>&1
+  $VENV/python kategori_model_uygula.py --tablo dogrudan_temin_ilanlari --esik 0.70 >> /opt/ihale-platform/logs/scraper.log 2>&1
+else
+  echo "  (model yok — kategori_model_egit.py ile eğitilmeli, atlanıyor)" >> /opt/ihale-platform/logs/scraper.log
+fi
+
 echo "[$(date +'%Y-%m-%d %H:%M:%S')] === AI kategori backfill ===" >> /opt/ihale-platform/logs/scraper.log
 $VENV/python ai_kategori_backfill.py --limit 400 --rpm 15 >> /opt/ihale-platform/logs/scraper.log 2>&1
 # Sektör-bazlı bildirim: günün yeni ilan/RFQ'ları → sektörü eşleşen firmalara (taksonomi hizalı, dedup'lı).
