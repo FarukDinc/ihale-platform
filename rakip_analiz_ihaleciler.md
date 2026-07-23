@@ -88,9 +88,9 @@ Chrome üzerinden girişli olarak sayfa sayfa incelendi. Karşılaştırma: **ih
 | 4 | **Şartname/ilan belge erişimi** (İdari+Teknik) | 🟠 | Orta | ✅ **BİTTİ** — EKAP doküman sayfası İKN ile değil iç hash ile açılıyordu; hash liste yanıtında zaten geliyordu → `ekap_ihale_id` kolonu (ek istek maliyeti YOK). İndirme/CAPTCHA/Storage'a gerek kalmadı. Geçmiş satırlar için ucuz liste-turu backfill'i açık |
 | 5 | **Serbest kayıtlı aramalar + hızlı aksiyonlar** | 🟠 | Düşük-Orta | ✅ **BİTTİ** — `kayitli_aramalar` tablosu + `js/kullanici-veri.js` senkronu (localStorage birincil, DB senkron) |
 | 6 | **Okundu takibi** | 🟠 | Düşük | ✅ **BİTTİ** — `ilan_okundu` tablosu, aynı senkron katmanı; artık cihazlar arası |
-| 7 | **On-demand analiz** (aramaya bağlı) | 🟠 | Orta | Mevcut RPC'leri filtre-parametreli yap |
+| 7 | **On-demand analiz** (aramaya bağlı) | 🟠 | Orta | ✅ **BİTTİ** — ihaleler'de "📊 Bu Aramayı Analiz Et" → filtreler URL ile rekabet-analizi'ne taşınıyor. Yol boyunca **sessiz hata bulundu ve düzeltildi**: rekabet-analizi kategori dropdown'ı eski taksonomiydi, 26 seçenekten 25'i `toplam:0` döndürüyordu |
 | 8 | **Gazete + İstihbarat kaynakları** | 🟠 | Yüksek | Yeni scraper'lar (yerel gazete + ihbar); veri edinimi zor |
-| 9 | Devam eden/tamamlanan ayrımı, TL+EUR, iş-grubu | 🟡 | Düşük | firma-analiz'e sütun eklemeleri |
+| 9 | Devam eden/tamamlanan ayrımı, TL+EUR, iş-grubu | 🟡 | ~~Düşük~~ **Orta** | ⛔ **VERİ ENGELİ (23 Tem ölçüldü)** — arayüz işi DEĞİL. `ihale_sonuclari`'nda `is_baslama_tarihi` / `is_bitis_tarihi` / `is_suresi_gun` **539.203 satırın hepsinde NULL**, `ham_json` da %100 boş → ayrım türetilemez. Önce scraper'ın sonuç detayından bu alanları çekmesi gerek. Boş/uydurma sütun EKLENMEDİ. TL+EUR: sözleşmelerde para birimi kolonu yok (hepsi TL) — rakiptekinin karşılığı bizde yok |
 
 ---
 
