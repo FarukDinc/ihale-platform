@@ -1457,6 +1457,13 @@
     else if (sort === 'ilan_tarihi') query = query.order('ilan_tarihi', { ascending: false });
     // Geçmiş'te son_teklif_tarihi'ye göre sıralamak 340K NULL'u bir uca yığar → etkin_tarih DESC (en yeni önce)
     else if (aktifSekme === 'gecmis') query = query.order('etkin_tarih', { ascending: false, nullsFirst: false });
+    // Sonuç sekmesi ARTAN sıralanırsa 8 SANİYEDE TIMEOUT'a giriyordu (23 Tem ölçümü):
+    // en eski son_teklif_tarihi'li ilanların çoğunun sonucu YOK, motor !inner join'i
+    // doyurmak için 1,6 MİLYON satır tarayıp ancak 24 eşleşme buluyordu.
+    // etkin_tarih DESC hem indeksle örtüşüyor (8000ms → 62ms) hem de anlamlı:
+    // sonuç listesi en yeni sonuçlanandan başlamalı, 2004'ten değil.
+    else if (aktifSekme === 'sonuc') query = query.order('etkin_tarih', { ascending: false, nullsFirst: false });
+    // Güncel: en yakın teklif tarihi önce — burada ARTAN doğru olan.
     else query = query.order('son_teklif_tarihi', { ascending: true });
 
     if (uyumModu) {
