@@ -47,5 +47,9 @@ REVOKE ALL ON public.kayitli_aramalar FROM anon;
 REVOKE ALL ON public.ilan_okundu      FROM anon;
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.kayitli_aramalar TO authenticated;
 GRANT SELECT, INSERT, UPDATE, DELETE ON public.ilan_okundu      TO authenticated;
+-- service_role da ŞART: backend işleri (bülten üretimi, hesap silme temizliği, destek) bu
+-- tablolara erişemezse sessizce 42501 yer. RLS'i zaten baypas eder, kısıtlayan tek şey GRANT'tı.
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.kayitli_aramalar TO service_role;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.ilan_okundu      TO service_role;
 
 NOTIFY pgrst, 'reload schema';
