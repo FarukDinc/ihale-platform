@@ -126,6 +126,27 @@
 
 ---
 
+## V2-9 · DT tarihsel veri eksiği (2,6M vs 1,5M)  `[~]`
+
+**Tespit (22 Tem, kullanıcı rakip ihaleciler.com'u gösterdi):** ihaleciler.com sözleşmeli DT = **2.629.472**, bizde 1.495.674. Fark ~1,1M.
+**Kök neden:** DT scraping ancak **~2025 Eylül'de tam devreye girmiş**. Aylık kapsama: 2024 tüm yıl ~8K (gerçek ~1M+), 2025 Oca-Ağu 5-18K/ay (gerçek ~120K/ay), 2025 Eyl 60K, Eki→ tam (150-200K/ay). Yani 2024 + 2025 ilk 8 ay çok eksik. DT list scraper tarih filtresi YOK; dtAra'yı yeniden→eskiye sayfalıyor (128/sayfa) → geçmişe inmek için derin sayfalama şart.
+**Aksiyon:** 🟢 `ekap_dogrudan_temin_scraper.py --backfill --reset --max-pages 25000` başlatıldı (PID 3606521, log dt_list_backfill.log) → ~20.500 sayfayı baştan tarayıp eksik geçmişi yakalar (~30-60 dk, list endpoint verimli). Watcher: bpxr62e2c. Sonra kazanan/bedel bunları zenginleştirir.
+**Not:** Proxy DOĞRULANDI — Türk ISP GB proxy (152.232.134.118:2810) kullanılıyor, Webshare DEĞİL; .env'de ölü Webshare satırları var (rotating modda yok sayılıyor).
+
+---
+
+## V2-8 · Kategorizasyon iyileştirme (Diğer kovası)  `[~]`
+
+**İstek (22 Tem):** Sektörler/analiz/eşleştirmeyi iyileştirmek için "Diğer" jenerik kovasını küçült.
+**Teşhis:** ilanlar 579K "Diğer" (%30), DT 962K "Diğer/NULL" (%64). Kök neden: gecelik AI backfill sadece **400 satır/gece** → 570K kuyruk ~4 yıl sürer. Yeni DMO/Jandarma başlıktan kategorize oluyor (iyi).
+**Aksiyon:**
+- 🟢 **İlanlar AI drain BAŞLATILDI** (22 Tem ~13:15): `ai_kategori_backfill.py --limit 570000 --rpm 25` detached (PID 3488268), log `logs/ai_kategori_drain.log`. Gemini gemini-2.5-flash, %82 başarı, ~90K/saat → ~6 saatte biter, ~$20. Watcher: bio7y0hev.
+- ⏸️ **DT kategorizasyonu**: DT-kazanan backfill bitince `dt_kategori_backfill.py` (ücretsiz rule-based) — aynı tabloya yazdığı için lock çakışması olmasın diye ertelendi.
+- Drain bitince: kategori/sektör MV'lerini elle tazele → Sektörler'de sonucu göster.
+**Not:** Kök çözüm için gecelik `--limit 400` → daha yüksek yapılmalı (yeni Diğer'ler birikmesin) — run_scraper.sh satır 98.
+
+---
+
 ### Durum: V2-1..V2-4 + V2-6 TAMAM ✅ · V2-5 doğrulandı (opsiyonel iyileştirmeler açık)
 Tek kalan opsiyonel iş: **V2-5 Gürcistan kapsam artışı** (tek POST→sayfalama) + silent-zero guard. Veri zaten geliyor (20 satır), acil değil.
 

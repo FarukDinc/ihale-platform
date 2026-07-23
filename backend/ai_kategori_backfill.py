@@ -54,6 +54,41 @@ CHUNK = 60  # tek PATCH'te kaç UUID (id ~36 char; 60×~40≈2.4KB URL, nginx 41
 FIYAT_GIRDI_1M = float(os.environ.get("AI_FIYAT_GIRDI", "0.30"))
 FIYAT_CIKTI_1M = float(os.environ.get("AI_FIYAT_CIKTI", "2.50"))
 
+# Günlük harcama defteri: {"2026-07-23": 0.4213, ...}. Aynı günde birden fazla tur
+# (cron + elle) koşulsa bile tavan GÜN TOPLAMINA uygulanır — tek tur değil.
+HARCAMA_DEFTER = os.path.join(os.path.dirname(__file__), ".gemini_gunluk_harcama.json")
+
+
+def _bugun():
+    return datetime.now(timezone.utc).strftime("%Y-%m-%d")
+
+
+def harcama_oku(gun=None):
+    gun = gun or _bugun()
+    try:
+        with open(HARCAMA_DEFTER) as f:
+            return float(json.load(f).get(gun, 0.0))
+    except Exception:
+        return 0.0
+
+
+def harcama_ekle(usd):
+    """Bugünün toplamına ekle. 14 günden eski kayıtları temizler (defter küçük kalsın)."""
+    gun = _bugun()
+    try:
+        with open(HARCAMA_DEFTER) as f:
+            d = json.load(f)
+    except Exception:
+        d = {}
+    d[gun] = round(d.get(gun, 0.0) + usd, 6)
+    # eski günleri at
+    from datetime import timedelta
+    esik = (datetime.now(timezone.utc) - timedelta(days=14)).strftime("%Y-%m-%d")
+    d = {k: v for k, v in d.items() if k >= esik}
+    with open(HARCAMA_DEFTER, "w") as f:
+        json.dump(d, f)
+    return d[gun]
+
 # Numaralı kategori bloğu bir kez kurulur (prompt'ta sabit).
 _KATEGORI_BLOK = "\n".join(f"{i + 1}) {k}" for i, k in enumerate(KANONIK_KATEGORILER))
 
@@ -232,6 +267,9 @@ def main():
     ap.add_argument("--limit", type=int, default=500, help="Bu turda işlenecek azami satır (öntanım 500)")
     ap.add_argument("--batch", type=int, default=BATCH_VARSAYILAN, help="İstek başına başlık (öntanım 50)")
     ap.add_argument("--rpm", type=int, default=0, help="Dakika başına azami istek (0=sınırsız; free tier için ~15)")
+    ap.add_argument("--gunluk-usd", type=float, default=0.0,
+                    help="GÜNLÜK harcama tavanı USD (0=sınırsız). Bugünün toplamı bu sınıra ulaşınca "
+                         "tur bir sonraki istekten ÖNCE temiz durur. Defter: .gemini_gunluk_harcama.json")
     ap.add_argument("--dry-run", action="store_true", help="1 paketi sınıflandır, YAZMA; kuyruk+maliyet projeksiyonu")
     args = ap.parse_args()
 
@@ -282,9 +320,26 @@ def main():
             print("\n(dry-run — yazma/işaretleme yapılmadı)")
             return
 
+        # Günlük tavan: bugüne kadar (bu tur dahil değil) ne harcandı?
+        gun_baslangic = harcama_oku()
+        if args.gunluk_usd > 0:
+            print(f"→ Günlük tavan: ${args.gunluk_usd:.2f} · bugün şu ana kadar: ${gun_baslangic:.4f}")
+            if gun_baslangic >= args.gunluk_usd:
+                print(f"✋ Günlük tavana zaten ulaşılmış (${gun_baslangic:.4f} ≥ ${args.gunluk_usd:.2f}) — "
+                      f"bu tur hiç istek atmadan çıkıyor. Kuyruk: {kuyruk} satır.")
+                return
+
         kalan = args.limit
         islenen = siniflanan = girdi_tok = cikti_tok = istek = 0
         while kalan > 0:
+            # Tavan kontrolü — SONRAKİ istekten ÖNCE. Bu turun o ana kadarki maliyeti + gün başı
+            # birikimi tavanı aşacaksa dur (istek atmadan → aşım yok).
+            if args.gunluk_usd > 0:
+                simdiki_gun_toplam = gun_baslangic + _maliyet(girdi_tok, cikti_tok)
+                if simdiki_gun_toplam >= args.gunluk_usd:
+                    print(f"   ✋ Günlük tavana ulaşıldı (${simdiki_gun_toplam:.4f} ≥ ${args.gunluk_usd:.2f}) "
+                          f"— tur durduruluyor. Kalan kuyruk sonraki güne.")
+                    break
             batch = secim_cek(client, min(args.batch, kalan))
             if not batch:
                 break
@@ -314,7 +369,12 @@ def main():
         print(f"\n✓ Bitti: {islenen} işlendi, {siniflanan} kanonik kategoriye atandı, "
               f"{islenen - siniflanan} jenerik kaldı (denendi işaretli).")
         if istek:
-            print(f"  {istek} istek · {girdi_tok} girdi + {cikti_tok} çıktı tokeni ≈ ${_maliyet(girdi_tok, cikti_tok):.4f}")
+            tur_maliyet = _maliyet(girdi_tok, cikti_tok)
+            print(f"  {istek} istek · {girdi_tok} girdi + {cikti_tok} çıktı tokeni ≈ ${tur_maliyet:.4f}")
+            # Bu turun maliyetini günlük deftere işle → sonraki tur (aynı gün) tavanı bilerek başlar.
+            gun_toplam = harcama_ekle(tur_maliyet)
+            print(f"  📒 Bugünkü toplam Gemini harcaması: ${gun_toplam:.4f}"
+                  + (f" / ${args.gunluk_usd:.2f} tavan" if args.gunluk_usd > 0 else ""))
 
 
 if __name__ == "__main__":

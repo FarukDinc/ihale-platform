@@ -97,7 +97,9 @@
       width:3px; border-radius:2px; background:var(--amber); }
     .kmenu-foot { width:100%; padding:10px 0; display:flex; justify-content:center;
       border-top:1px solid var(--border); }
-    .kmenu-avatar { width:38px; height:38px; border-radius:50%; background:var(--amber); color:var(--navy);
+    /* .user-row + .user-avatar → sidebar-user.js baş harfi yazar + çıkış menüsünü bağlar */
+    .kmenu-foot .user-row { cursor:pointer; }
+    .kmenu-foot .user-avatar { width:38px; height:38px; border-radius:50%; background:var(--amber); color:var(--navy);
       font-size:13px; font-weight:800; display:flex; align-items:center; justify-content:center; cursor:pointer; }
 
     .kmenu-flyout { position:fixed; left:68px; top:0; height:100vh; width:236px; background:var(--navy-mid);
@@ -126,7 +128,7 @@
   ray.innerHTML = `
     <a class="kmenu-logo" href="/" title="İhaleGlobal"><img src="/favicon.svg" alt="İhaleGlobal"></a>
     <nav class="kmenu-nav" id="kmenu-nav"></nav>
-    <div class="kmenu-foot"><div class="kmenu-avatar" id="kmenu-avatar">—</div></div>`;
+    <div class="kmenu-foot"><div class="user-row" title="Hesap"><div class="user-avatar" id="kmenu-avatar">—</div></div></div>`;
   const nav = ray.querySelector('#kmenu-nav');
 
   const flyout = document.createElement('div');
@@ -171,11 +173,15 @@
     app.insertBefore(ray, app.firstChild);
     document.body.appendChild(flyout);
     document.body.appendChild(backdrop);
-    // Avatar → mevcut kullanıcı menüsünü (sidebar-user.js) tetikle, yoksa profile git
-    ray.querySelector('#kmenu-avatar').addEventListener('click', () => {
-      if (window.sbUserMenuToggle) window.sbUserMenuToggle(ray.querySelector('#kmenu-avatar'));
-      else location.href = 'profil';
-    });
+    // Avatar menüsü: sidebar-user.js `.sidebar .user-row`'a Profil/Abonelik/Çıkış menüsünü kendisi
+    // bağlar ve baş harfi `.user-avatar`'a yazar (ray .sidebar sınıflı → seçici tutar).
+    // Fallback: sidebar-user.js menüyü ~1sn içinde bağlamadıysa (o sayfada yüklü değilse) profile götür.
+    const row = ray.querySelector('.kmenu-foot .user-row');
+    setTimeout(() => {
+      if (!row._sbBound && !document.querySelector('.sb-user-menu')) {
+        row.addEventListener('click', () => location.href = 'profil');
+      }
+    }, 1200);
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', mont);
   else mont();
