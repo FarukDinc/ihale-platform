@@ -6225,3 +6225,17 @@ kaÃ§ vermen gerektiÄŸini sÃ¶yler."*
 - [ ] 🔴 Firma segmentleri MV + analiz kartları (Parlayan/Sönen/İlk Kez/150Mn+ — SQL türetme)
 - [ ] 🔴 Bugünkü-değer TL (TÜFE çarpan tablosu; sözleşme bedeli yanında "bugünkü ₺X")
 - [ ] 🔴 Yasaklı firmalar: kaynak araştır (EKAP yasaklı sorgusu / Resmî Gazete) → firma karnesine rozet
+
+## ✅ 23 Tem GECE — otonom geliştirme turu
+- [x] Takvime Ekle (ICS): ihaleler + doğrudan-temin kartlarında 📅 buton (son teklif → .ics + 1 gün önce hatırlatma)
+- [x] Listede Ara: ihaleler'de yüklü kartlar içinde anlık istemci filtresi
+- [x] 🔴 CANLI HATA: DT `tarih DESC NULLS LAST` indeks yok → misafirde "0 kayıt" (backfill 2M'e çıkarınca patladı) → idx_dt_ilanlari_tarih_nl (4485ms→1,3ms)
+- [x] 🔴 CANLI HATA: ilanlar maliyet sıralaması Geçmiş sekmede timeout → idx_ilanlar_maliyet_nl (3s→0,1sn)
+- [x] Menü: "Sonuç Bekleyenler"→sekme=gecmis&durum=kapali (gerçek filtre); "İptal Edilenler" kaldırıldı (EKAP'ta iptal statüsü yok)
+- [x] Sonuç zinciri kusuru düzeltildi (DT geç biterse 23 saat kaçak → 90dk sabit tavan + 01:45 kesim)
+- [x] KARAR: DT 2020-2023 backfill'i durduruldu (2022-2023 dolu, 2023-11/12 checkpoint'te kaldı) → 2024 SONUÇ backfill'ine öncelik (daha değerli, 81K kazanan)
+
+## Firma segmentleri — GECEYE ERTELENDİ (2024 sonuç açığı)
+Parlayan/Sönen Yıldızlar YIL-BAZLI karşılaştırma ister; 2024 sonuç verisi eksik (6K)
+olduğu için ŞU AN yanıltıcı olur. 2024 sonuç backfill bitince yapılacak. Ölçülen segment
+büyüklükleri (mevcut veri): 150Mn+ 4.954 · ilk-kez-1y 12.803 · aktif-1y 35.037 · toplam 82.263.
