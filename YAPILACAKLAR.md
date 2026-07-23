@@ -1,5 +1,25 @@
 # Ä°halePlatform â€” YapÄ±lacaklar Listesi
 
+> ## 🔗 23 TEM — FASONDA KÖPRÜSÜ (bilgi notu, ihaleglobal'de değişiklik YOK)
+> fasonda.com paneli, ihaleglobal PUBLIC REST'inden read-only ilan çekiyor (anon key, güvenli
+> kolonlar: baslik/kategori/il/son_teklif; idare maskesi geçerli). /rest/v1 2r/s limitine bu
+> istekler de dahil (panel başına 1 istek). Köprü detayı: C:\fasonda_platform\js\kopru.js.
+
+> ## 🏭 22 TEM — MaaS/FASONDA AYRI PROJEYE TAŞINDI
+> Kullanıcı kararı: fasonda.com KESİN marka; proje ihaleglobal'den AYRI çalışır. Yeni repo:
+> **`C:\fasonda_platform`** (kendi YAPILACAKLAR.md + FASONDA_PLAN.md orada). Bu dosya artık
+> YALNIZ ihaleglobal işleri içindir; fasonda işleri buraya YAZILMAZ.
+
+> ## 🌐 21 TEM — MaaS DOMAIN ARAŞTIRMASI (yeni talep, araştırıldı)
+> Kullanıcı MaaS (fason üretim ağı) projesi için boşta .com domain istedi. RDAP (Verisign
+> resmi kayıt sorgusu, 404=boşta) ile ~40 aday tarandı; boşta olanlar konuşmada raporlandı.
+> Satın alma kararı + ödeme kullanıcıda (parola/ödeme paneline ben giremem).
+> **GÜNCELLEME:** kullanıcının domaini zaten VAR: **fasonda.com**. Uluslararası tur (71 aday tarandı):
+> boşta en iyiler = capacityradar.com, rfqmap.com, turkforge.com, manuradar.com, fabtoria.com;
+> ayrıca fasondo.com / fasonhq.com / fasonapp.com boşta (typo/yardımcı koruma adayı).
+> **Önerim:** global dahil TEK marka fasonda.com (façon kökü Batı'da sezgisel; Xometry/Fictiv
+> emsali uydurma-marka sınıfı çalışıyor; tek domain = SEO/marka gücü bölünmez). fasondo typo-koruma opsiyonel.
+
 > ## âœ… SESSÄ°Z-KAYIP DÃœZELTMELERÄ° â€” 8 SCRAPER MERGE+DEPLOY (20 Tem gece)
 > KullanÄ±cÄ±nÄ±n "aynÄ± hata baÅŸka scraper'larda da var mÄ±" sezgisi doÄŸrulandÄ±: denetim 8
 > dosyada **14 hata** buldu (4 kritik), hepsi paralel worktree'de dÃ¼zeltildi, adversarial
@@ -6158,3 +6178,32 @@ geÃ§miÅŸte X,Y firmalarÄ± %Z tenzilatla aldÄ±" baÄŸlamÄ±nÄ± teklif
 
 **KonumlandÄ±rma cÃ¼mlesi (pazarlama, D2 sonrasÄ±):** *"ihaleciler sana geÃ§miÅŸi gÃ¶sterir; Ä°haleGlobal kazanmak iÃ§in
 kaÃ§ vermen gerektiÄŸini sÃ¶yler."*
+
+---
+
+# 🔵 İHALEPRO ANALİZİ SONUCU İŞ KUYRUĞU (23 Tem 2026)
+
+> Tam envanter: `rakip_analiz_ihalepro.md`. Kullanıcı Chrome'da app.ihalepro.com gezildi (Temel paket).
+> ÇARPICI: sonuçta 1.688.002 / sözleşmede 2.945.049 kayıtları var (biz 539K) — fark TARİHSEL derinlik.
+
+## Onaylılar (kullanıcı bu oturumda istedi)
+- [ ] 🔴 **2024 ihale SONUÇ backfill** — bizde 2024=6.029, 2023=126.855 (tuhaf çukur). ekap_sonuc_backfill ile 2024'ü doldur; başlangıç/bitiş tarihi + iş süresi alanlarını da TOPLA (aşağıdaki sözleşme maddesinin ön koşulu).
+- [ ] 🔴 **Tema: sol flyout alt menüler** (İhalePro tarzı) — üst sekmeler yerine sol menüde ikinci panel: İhaleler→(Aktif/DT), Sonuçlar→(Tümü/Bekleyen/İptal/Sonuçlanan), Sözleşmeler→(Tümü/Biten/Devam Eden), Analiz→(...). Mobil davranışı main.js hamburger ile uyumlu olmalı.
+- [ ] 🔴 **Sonuçlar bilgi mimarisi**: "Sonuç Bekleyenler" (süresi geçmiş + sonuç kaydı yok) / "İptal Edilenler" / "Sonuçlananlar" ayrımı — kullanıcının "sonuç > geçmiş olmalı" talebinin çözümü.
+- [ ] 🔴 **Sözleşmeler bölümü**: biten / devam eden işler (is_baslama/is_bitis dolunca).
+
+## Bizim veriyle hemen türetilebilir (kazıma yok)
+- [ ] 🔴 Firma segmentleri: Parlayan Yıldızlar / Sönen Yıldızlar / İlk Kez Kazananlar / 150Mn+ — ihale_sonuclari'ndan gece MV; analiz sayfasına segment kartları.
+- [ ] 🔴 Bugünkü-değer tutarlar (TÜFE çarpanı): sözleşme bedelinin yanında "bugünkü değeri ₺X" (İhalePro'nun 3-değerli gösterimi). TÜİK TÜFE serisi statik tablo.
+- [ ] 🟠 Kurumlar sayfasına toplam harcama kolonları (idare_ozet_mv'ye sözleşme toplamı).
+- [ ] 🟠 Firma detayına sekmeler: İş Yapılan Kurumlar / Rakipler (co-bidder) / Ortak Girişim / Kullanıcı Notları.
+- [ ] 🟠 Takvime ekle (ICS indir) — ihale satırı + detay sayfası.
+- [ ] 🟡 Mail ile paylaş (mailto:).
+
+## Yeni veri kaynağı gerektirenler
+- [ ] 🟠 **Yasaklı firmalar** (onlarda 17.055): EKAP yasaklılar sorgusu / Resmî Gazete — firma karnesine "yasaklı" rozeti (fesih şeridinin yanına). Kaynak araştırması gerekli.
+- [ ] 🟠 **KİK kararları** 120.884: uyuşmazlık + mahkeme + tutanak; kik-kararlari.html iskeleti bizde var, scraper yok (eski madde, önceliği yükseldi).
+- [ ] 🟡 İptal edilen ihaleler ayrı listesi (EKAP durum akışından geliyorsa etiketle).
+
+## Yapmayacaklarımız (bilinçli)
+- Excel/CSV export (kalıcı yasak) · doküman indirme sinyali ("ilgilendiği ihaleler" — EKAP bu veriyi bize vermiyor)
