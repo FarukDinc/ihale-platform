@@ -812,6 +812,7 @@
      dolduruluyor; eskiden HTML'e hardcode'lu 48 seçenek vardı ve 43'ü ölüydü. -->
 <script src="js/kategoriler.js?v=1"></script>
 <script src="js/takip.js?v=2"></script>
+<script src="js/kullanici-veri.js?v=1"></script>
 <script>
   const SUPABASE_URL = "https://ihaleglobal.com";
   const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzg0MzA3MTU4LCJleHAiOjE5NDE5ODcxNTh9.CjNKulvirotDD_y2oO2QKgo0kbqYvL0jUSV1RiDMoso";
@@ -939,10 +940,11 @@
     const save = s => localStorage.setItem(KEY, JSON.stringify([...s]));
     return {
       var: id => get().has(String(id)),
-      isle: id => { const s = get(); s.add(String(id)); save(s); },
-      sil: id => { const s = get(); s.delete(String(id)); save(s); },
+      // localStorage anlık kaynak; KullaniciVeri arka planda DB'ye yazar (cihazlar arası senkron)
+      isle: id => { const s = get(); s.add(String(id)); save(s); window.KullaniciVeri?.okunduEkle(id); },
+      sil: id => { const s = get(); s.delete(String(id)); save(s); window.KullaniciVeri?.okunduSil(id); },
       sayi: () => get().size,
-      temizle: () => localStorage.removeItem(KEY),
+      temizle: () => { localStorage.removeItem(KEY); window.KullaniciVeri?.okunduTemizle(); },
     };
   })();
 
@@ -1867,8 +1869,12 @@
     const save = list => localStorage.setItem(KEY, JSON.stringify(list));
     return {
       liste: get,
-      ekle: (ad, params) => { const l = get(); l.unshift({ id: Date.now(), ad, params, tarih: new Date().toISOString() }); save(l); },
-      sil: id => { const l = get().filter(x => x.id !== id); save(l); },
+      ekle: (ad, params) => {
+        const kayit = { id: Date.now(), ad, params, tarih: new Date().toISOString() };
+        const l = get(); l.unshift(kayit); save(l);
+        window.KullaniciVeri?.aramaEkle(kayit);   // arka planda DB'ye
+      },
+      sil: id => { const l = get().filter(x => x.id !== id); save(l); window.KullaniciVeri?.aramaSil(id); },
       sayi: () => get().length,
     };
   })();
@@ -2109,6 +2115,16 @@
       setEl('tab-cnt-gecmis', gecmis.count);
       setEl('tab-cnt-sonuc',  sonuc.count);
     } catch {}
+  })();
+
+  // Kayıtlı arama + okundu: DB'den çekip localStorage ile birleştir (cihazlar arası senkron).
+  // Sayfa çizimini bloklamaz; bittiğinde okundu rozetini/sayacı tazeler.
+  (async () => {
+    try {
+      await window.KullaniciVeri?.syncFromDB();
+      const el = document.getElementById('okundu-sayi');
+      if (el && okunduGizle) el.textContent = `(${Okundu.sayi()})`;
+    } catch (_) {}
   })();
 </script>
 <script src="js/main.js?v=trf2"></script>

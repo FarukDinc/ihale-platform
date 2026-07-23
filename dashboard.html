@@ -1076,6 +1076,7 @@
 <script src="js/plan.js?v=rot1"></script>
 <script src="js/main.js?v=trf2"></script>
 <script src="js/takip.js?v=2"></script>
+<script src="js/kullanici-veri.js?v=1"></script>
 <script>
   // ── Supabase config ──────────────────────────────────
   const SUPABASE_URL  = "https://ihaleglobal.com";
@@ -2021,6 +2022,11 @@
   // ── Kayıtlı Aramalar widget ────────────────────────────
   function kayitliAramalarWidgetYukle() {
     const el = document.getElementById('kayitli-aramalar-list');
+    // Başka cihazda kaydedilenler de görünsün: senkron bitince widget'ı bir kez tazele.
+    if (!kayitliAramalarWidgetYukle._senkron) {
+      kayitliAramalarWidgetYukle._senkron = true;
+      window.KullaniciVeri?.syncFromDB().then(() => kayitliAramalarWidgetYukle()).catch(() => {});
+    }
     try {
       const liste = JSON.parse(localStorage.getItem('ihale_kayitli_aramalar_v1') || '[]');
       if (!liste.length) {

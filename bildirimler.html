@@ -376,6 +376,7 @@
 <script src="js/plan.js?v=rot1"></script>
 <script src="js/main.js?v=trf2"></script>
 <script src="js/takip.js?v=2"></script>
+<script src="js/kullanici-veri.js?v=1"></script>
 <script>
   const SUPABASE_URL = "https://ihaleglobal.com";
   const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzg0MzA3MTU4LCJleHAiOjE5NDE5ODcxNTh9.CjNKulvirotDD_y2oO2QKgo0kbqYvL0jUSV1RiDMoso";
@@ -459,6 +460,8 @@
 
     if (user) {
       await Takip.syncFromDB();
+      // Kayıtlı arama + okundu listesini de DB ile birleştir (bu sayfa ikisini de gösteriyor)
+      await window.KullaniciVeri?.syncFromDB();
       const dbBildirimler = await dbBildirimleriYukle(user);
       bildirimler = dbBildirimler.length > 0 ? dbBildirimler : await localBildirimleriUret();
       yukleTercihler(user);
@@ -699,6 +702,7 @@
       const k = 'ihale_kayitli_aramalar_v1';
       const liste = JSON.parse(localStorage.getItem(k)) || [];
       localStorage.setItem(k, JSON.stringify(liste.filter(x => x.id !== id)));
+      window.KullaniciVeri?.aramaSil(id);   // DB'den de sil, yoksa senkron geri getirir
     } catch(_) {}
     document.getElementById('bk-' + id)?.remove();
     bultenYukle();
@@ -798,6 +802,7 @@
   function okunanlarTemizle() {
     if (!confirm('Tüm okuma geçmişi silinecek. Emin misiniz?')) return;
     localStorage.removeItem('ihale_okundu_v1');
+    window.KullaniciVeri?.okunduTemizle();   // DB'den de sil, yoksa senkron geri getirir
     document.getElementById('okuduklarim-liste').innerHTML = `
       <div class="oku-bos">
         <div style="font-size:32px;margin-bottom:8px;">📖</div>
