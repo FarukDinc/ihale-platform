@@ -376,6 +376,13 @@ def sonuc_kayitlari_olustur(ilan: dict, detay: dict) -> list[dict]:
         tenzilat = None
         if yaklasik and kazanan_teklif and yaklasik > 0:
             tenzilat = round((1 - (kazanan_teklif / yaklasik)) * 100, 3)
+            # tenzilat_yuzde numeric(6,3) → |değer| >= 1000 kolona SIĞMAZ ve PostgREST
+            # 22003 döndürüp KAYDIN TAMAMINI düşürür (24 Tem: 66 dk'da 25 kayıt kaybı).
+            # Bu uç değerler zaten çöp — çok kısımlı ihalede ihale-geneli yaklaşık maliyetin
+            # her kısma kopyalanmasından doğuyor (bkz. lot_sayisi kuralı). Kaydı korumak için
+            # tenzilatı NULL'a düşür; kaydın geri kalanı (kazanan, bedel, tarih) sağlam.
+            if abs(tenzilat) >= 1000:
+                tenzilat = None
 
         ortalama = None
         if en_dusuk is not None and en_yuksek is not None:
