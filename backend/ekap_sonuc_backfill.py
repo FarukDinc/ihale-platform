@@ -628,6 +628,7 @@ async def detay_cek_retry(havuz, ihale_id: str):
 
 
 async def calis(max_pages: int, dry_run: bool, start_skip: int | None, tum_kayitlar: bool = False,
+                eszamanli: int = 8,
                 no_checkpoint: bool = False):
     """
     EKAP'ın 'Result Announcement Published' (durum filtresi=5) listesini baştan/kaldığı
@@ -706,12 +707,17 @@ async def calis(max_pages: int, dry_run: bool, start_skip: int | None, tum_kayit
         taranan += len(liste)
         yazilan_once = yazilan
 
+        # ── Sayfa içi detay çekimi EŞZAMANLI (24 Tem) ────────────────────────────
+        # ESKİDEN: her kayıt için tek tek `await detay_cek_retry` + aralarda 0.15sn uyku.
+        # ÖLÇÜLDÜ: 8 saatte yalnız 97.000 liste pozisyonu (~12.1K/saat) → tüm arşiv ~5,5 GÜN.
+        # Oysa Webshare havuzunda 100 IP boşta bekliyordu. Artık sayfa içindeki adaylar
+        # semafor sınırlı olarak PARALEL çekiliyor; yazma ve hata muhasebesi SIRAYLA
+        # (idempotentlik + devre kesici semantiği korunuyor).
+        adaylar = []
         for item in liste:
             ikn = item.get("ikn")
             ilan = harita.get(ikn)
             if not ilan and tum_kayitlar:
-                # Faz A3 — havuzdan bağımsız mod: bizim ilanlar tablomuzda olmasa bile
-                # kompakt bir satır oluşturup devam et (hacmi 1.68M'e doğru büyütür).
                 ilan = ilan_kompakt_ekle(item, dry_run)
                 if ilan and ilan.get("id"):
                     harita[ikn] = ilan
@@ -720,25 +726,29 @@ async def calis(max_pages: int, dry_run: bool, start_skip: int | None, tum_kayit
             eslesen += 1
             ihale_id = item.get("id")
             if not ihale_id:
-                # id yoksa detay çekilemez — bu bir EKAP veri tuhaflığı, GEÇİCİ hata değil; atla.
+                # id yoksa detay çekilemez — EKAP veri tuhaflığı, GEÇİCİ hata değil; atla.
                 continue
+            adaylar.append((ikn, ilan, ihale_id))
 
-            # ── Detay çek: GEÇİCİ hatayı (blok/timeout/5xx) KALICI 404'ten AYIR (B6) ──
-            try:
-                detay = await detay_cek_retry(havuz, ihale_id)
-            except GeciciHata as e:
-                if e.blok:
-                    # 403/429 → IP kısıtlaması. Bu sayfa checkpoint'LENMEZ (skip sayfa
-                    # başında kalır); sonraki tur tekrar dener. Faz A3: proxy beklenir.
+        _sem = asyncio.Semaphore(eszamanli)
+        async def _detay_gorev(hid):
+            async with _sem:
+                return await detay_cek_retry(havuz, hid)
+        detaylar = await asyncio.gather(*[_detay_gorev(a[2]) for a in adaylar],
+                                        return_exceptions=True)
+
+        for (ikn, ilan, ihale_id), detay in zip(adaylar, detaylar):
+            # ── GEÇİCİ hatayı (blok/timeout/5xx) KALICI 404'ten AYIR (B6) ──
+            if isinstance(detay, GeciciHata):
+                if detay.blok:
+                    # 403/429 → IP kısıtlaması. Sayfa checkpoint'LENMEZ, sonraki tur tekrar dener.
                     durduruldu = "403/429 alındı — IP kısıtlanmış olabilir. PROXY GEREK."
                     print(f"  ⏹ {durduruldu} Durduruluyor (skip={skip}).")
                     break
-                # Blok-dışı geçici hata (retry'ler tükendi): izole zehirli/geçici detay.
-                # Bu eşleşme YAZILAMADI — DAMGALANMAZ (mevcut'a eklenmez), SAYILIR ve loglanır.
                 hata += 1
                 cekilemedi += 1
                 ardisik_detay_hata += 1
-                print(f"  ✗ {ikn}: {e} — çekilemedi ({cekilemedi}. kez), sonraki tur tekrar denenecek")
+                print(f"  ✗ {ikn}: {detay} — çekilemedi ({cekilemedi}. kez), sonraki tur tekrar denenecek")
                 if ardisik_detay_hata >= ARDISIK_DETAY_SINIRI:
                     durduruldu = (f"üst üste {ardisik_detay_hata} detay çekim hatası — "
                                   "EKAP baskı altında olabilir, durduruldu")
@@ -749,28 +759,31 @@ async def calis(max_pages: int, dry_run: bool, start_skip: int | None, tum_kayit
                     print(f"  ⏹ {durduruldu}")
                     break
                 continue
+            if isinstance(detay, Exception):
+                # Beklenmeyen istisna: say, damgalama YAPMA (sonraki tur tekrar dener).
+                hata += 1
+                cekilemedi += 1
+                ardisik_detay_hata += 1
+                print(f"  ✗ {ikn} (detay): {type(detay).__name__}: {detay}")
+                continue
 
             ardisik_detay_hata = 0             # başarı (veya temiz 404) → ardışık hatayı sıfırla
             if not detay:
-                # Gerçek 404 — bu ihalenin detayı EKAP'ta yok (KALICI). Atla; sayfa ilerleyebilir.
+                # Gerçek 404 — bu ihalenin detayı EKAP'ta yok (KALICI). Atla.
                 continue
 
-            # Kayıtları oluştur/yaz — burada AĞ çağrısı YOK; yalnız AYRIŞTIRMA hatasını say
-            # (havuzun RuntimeError emniyet supabı bu bloktan geçmez → yutulmaz).
+            # Kayıtları oluştur/yaz — burada AĞ çağrısı YOK; yalnız AYRIŞTIRMA hatasını say.
             try:
                 kayitlar = sonuc_kayitlari_olustur(ilan, detay)
                 if kayitlar:
                     for kayit in kayitlar:
                         sonuc_upsert(kayit, dry_run)
-                        print(f"  ✓ {ikn} kısım {kayit['kisim_no']} → {kayit['kazanan_firma']} "
-                              f"({kayit['kazanan_teklif']} TL, tenzilat {kayit['kazanan_teklif_farki_yuzde']}%)")
                     if ilan.get("id"):
                         mevcut.add(ilan["id"])
                     yazilan += 1
             except Exception as e:
                 hata += 1
                 print(f"  ✗ {ikn} (kayıt oluşturma/yazma): {e}")
-            await asyncio.sleep(0.15)
 
         # ── Sayfa sonu ──
         if durduruldu:
@@ -832,6 +845,8 @@ def main():
     ap.add_argument("--start-skip", type=int, default=None, help="Belirtilmezse checkpoint dosyasından devam eder")
     ap.add_argument("--reset", action="store_true", help="Checkpoint'i sıfırla (baştan tara)")
     ap.add_argument("--dry-run", action="store_true")
+    ap.add_argument("--eszamanli", type=int, default=8,
+                    help="Sayfa ici PARALEL detay cagrisi (varsayilan 8). Eskiden 1 idi -> tum arsiv ~5,5 gun.")
     ap.add_argument("--tum-kayitlar", action="store_true",
                      help="ÖNCELİK 10 Faz A3: bizim ilanlar tablomuzda olmayan IKN'leri de "
                           "kompakt satır olarak ekleyip işler (havuzdan bağımsız geniş backfill).")
@@ -841,7 +856,8 @@ def main():
                           "--backfill'in checkpoint'ini bozmaz (yeni sonuçlar EKAP listesinin başında).")
     args = ap.parse_args()
     start_skip = 0 if args.reset else args.start_skip
-    asyncio.run(calis(args.max_pages, args.dry_run, start_skip, args.tum_kayitlar, args.no_checkpoint))
+    asyncio.run(calis(args.max_pages, args.dry_run, start_skip, args.tum_kayitlar,
+                      eszamanli=args.eszamanli, no_checkpoint=args.no_checkpoint))
 
 
 if __name__ == "__main__":
