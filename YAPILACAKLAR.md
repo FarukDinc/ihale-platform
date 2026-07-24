@@ -6239,3 +6239,9 @@ kaÃ§ vermen gerektiÄŸini sÃ¶yler."*
 Parlayan/Sönen Yıldızlar YIL-BAZLI karşılaştırma ister; 2024 sonuç verisi eksik (6K)
 olduğu için ŞU AN yanıltıcı olur. 2024 sonuç backfill bitince yapılacak. Ölçülen segment
 büyüklükleri (mevcut veri): 150Mn+ 4.954 · ilk-kez-1y 12.803 · aktif-1y 35.037 · toplam 82.263.
+
+## ⚠️ 2024 SONUÇ BACKFILL GERÇEĞİ (24 Tem 00:10 keşif)
+- 2024 sonuç GERÇEKTEN eksik (İKN yılına göre: 2.108 kayıt vs 2023=114.651, 2025=114.588). sonuc_tarihi'ye göre saymak yanıltıcıydı (2024 ihalesinin sonucu 2025'te açıklanabiliyor) → İKN yılıyla say.
+- ⛔ DARBOĞAZ: sonuç liste API'si (GetListByParameters) kazanan/bedel DÖNMÜYOR → her kayıt için ayrı GetByIhaleIdIhaleDetay (proxy'den ~1-2sn). 90 dk'da net +382. 112K eksik 2024 için tek gece YETMEZ.
+- ⛔ `searchText='2024/'` GÜVENİLMEZ: liste `ikn` alanı SONUÇ-ilanının İKN'i (ör. 2026/633440), gerçek ihale İKN'i `ihaleAdi` metninde. Yıl hedefleme skip-pencere (sonuc_tarihi DESC sırası) ile daha güvenilir ama o da sonuc_tarihi bazlı.
+- PLAN: adanmış çok-gece 2024 (ve tam arşiv) sonuç backfill'i; gece cron'uyla çakışmadan (tek ağır proxy işi). Belki eşzamanlılık artırma araştırılmalı (async havuz kaç işçi?).
