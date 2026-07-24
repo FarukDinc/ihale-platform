@@ -416,14 +416,21 @@ def sb_headers():
 
 
 def bizim_ilanlar_haritasi() -> dict:
-    """ilanlar tablosundaki tüm kayıtları {ikn: {id, yaklasik_maliyet_min, tahmini_bedel}} olarak indeksler."""
+    """ilanlar tablosundaki tüm kayıtları {ikn: {id, yaklasik_maliyet_min, tahmini_bedel}} olarak indeksler.
+
+    ⚠️ KEYSET sayfalama (id>son_id) — OFFSET DEĞİL. Eski hali `offset=skip` kullanıyordu ve
+    tablo 1,96M satıra çıkınca her koşuda ~20-30 DAKİKA kurulum masrafı çıkardı: PostgreSQL
+    OFFSET N'de N satırı okuyup ATIYOR, yani derin sayfalar O(N) — son sayfalar saniyeler sürüyor.
+    Keyset'te `id > son_id ORDER BY id LIMIT 1000` birincil anahtar indeksinden gider, her sayfa
+    sabit maliyet. Aynı antipattern [[client-load-all-bug]] hafızasında kayıtlı.
+    """
     harita = {}
-    skip = 0
+    son_id = "00000000-0000-0000-0000-000000000000"
     with httpx.Client(timeout=30.0) as c:
         while True:
             r = c.get(f"{SUPABASE_URL}/rest/v1/ilanlar", params={
                 "select": "id,ikn,yaklasik_maliyet_min,tahmini_bedel",
-                "limit": 1000, "offset": skip,
+                "id": f"gt.{son_id}", "order": "id.asc", "limit": 1000,
             }, headers=sb_headers())
             batch = r.json()
             if not isinstance(batch, list) or not batch:
@@ -431,28 +438,30 @@ def bizim_ilanlar_haritasi() -> dict:
             for row in batch:
                 if row.get("ikn"):
                     harita[row["ikn"]] = row
+            son_id = batch[-1]["id"]
             if len(batch) < 1000:
                 break
-            skip += 1000
     return harita
 
 
 def mevcut_sonuc_ilan_idleri() -> set:
     """ihale_sonuclari'nde zaten kaydı olan ilan_id'leri döndürür (tekrar işlemeyi önlemek için)."""
+    # KEYSET sayfalama (bkz. bizim_ilanlar_haritasi açıklaması) — OFFSET derin sayfada O(N).
     ids = set()
-    skip = 0
+    son_id = "00000000-0000-0000-0000-000000000000"
     with httpx.Client(timeout=30.0) as c:
         while True:
             r = c.get(f"{SUPABASE_URL}/rest/v1/ihale_sonuclari",
-                      params={"select": "ilan_id", "limit": 1000, "offset": skip},
+                      params={"select": "id,ilan_id", "id": f"gt.{son_id}",
+                              "order": "id.asc", "limit": 1000},
                       headers=sb_headers())
             batch = r.json()
             if not isinstance(batch, list) or not batch:
                 break
             ids.update(x["ilan_id"] for x in batch if x.get("ilan_id"))
+            son_id = batch[-1]["id"]
             if len(batch) < 1000:
                 break
-            skip += 1000
     return ids
 
 
