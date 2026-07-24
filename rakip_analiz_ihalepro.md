@@ -124,3 +124,39 @@
 - AI şartname analizi, teklif robotu, uyumluluk modülü
 - Dünya ticaret analizi, harita, sektör dizini
 - Belge linki (336K ihale) + malzeme listesi + fesih/tasfiye şeridi
+
+---
+
+# 2. TUR İNCELEME (24 Tem) — derinlemesine sayfalar
+
+## 🔴 EN DEĞERLİ BULGU: Kurum bütçe tahmini
+Kurum detay sayfasında (`/ihalepro/kurumlar/idare/<slug>/<hash>/genel/anasayfa`):
+```
+2026 Tahmini Bütçesi        ₺60.191.398.951
+2026 Kalan Tahmini Bütçesi  ₺27.404.352.879
+```
+**Neden değerli:** yükleniciye "bu idarenin bu yıl ne kadar parası kaldı" diyor → yaklaşan
+ihale fırsatını ÖNGÖRÜYOR. Bizde hiç yok. **Kazıma gerektirmez** — kendi verimizden türetilebilir:
+geçmiş yılların toplam sözleşme hacmi + bu yılın gerçekleşeni → kalan tahmin.
+(Yöntemleri belli değil; muhtemelen önceki yıl(lar) ortalaması × mevsimsellik.)
+
+## Kurum detay sekmeleri (bizde kurum-analiz var ama sekmesiz)
+Kurum Hakkında · **Alt İdareler** · İhaleler · Sözleşmeler · **Yükleniciler** · Analiz · **Notlar**
+- 33.139 yüklenici firma sayısı · En çok iş yapan/alan firma
+- Sözleşme TÜRE göre kırılım: Mal ₺20,6Mr · Hizmet ₺27,4Mr · Yapım ₺106,2Mr · Danışmanlık ₺213M
+- 125 güncel / 96.898 geçmiş ihale
+- **"Yaklaşık Maliyet %X Daha Düşük"** — idare bazlı ortalama tenzilat (bizde analiz_pivot'ta var, kurum sayfasında yok)
+- Toplam harcama 3 değerli (nominal + USD + bugünkü değer)
+
+## Yasaklı Sorgulama (bizim kuyruğumuzdaki madde — veri şekli netleşti)
+17.055 kayıt. Kolonlar: **Firma Adı · İhale Yapan/Karar Veren Kurum · Başlangıç · Bitiş · Süre/Kapsam**
+Süreler: 6 Ay / 1 Yıl / 2 Yıl. Filtreler: firma ara · kurumda ara · yasak bitiş tarihi.
+→ Bizim `yasaklı firmalar` maddesi için hedef şema bu. Kaynak: EKAP/KİK yasaklılar yayını.
+
+## Sektör listesi
+48 sektör (bizde 41 kanonik). Kolonlar: aktif ihale · geçmiş ihale · sözleşme · toplam harcama (3 değerli).
+Bizim sektorler.html'de harcama tutarı YOK — eklenebilir (verimiz var).
+
+## Güncellenmiş öncelik notu
+Rakibin sayıları 1 günde arttı (441.510→441.581 firma, 5.129→5.124 aktif ihale) — canlı besleniyor.
+Bizim DT tarafımız bugün 2,09M→2,5M'e çıktı; DT'de ONLARDAN ÖNDEYİZ (onlarda aktif DT 4.874 görünüyor).
