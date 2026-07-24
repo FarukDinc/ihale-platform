@@ -501,6 +501,7 @@
           <div class="firma-eyebrow">🏢 Firma Analizi</div>
           <div class="firma-ad" id="firma-ad">—</div>
           <div class="firma-meta" id="firma-meta">—</div>
+          <div class="firma-meta" id="firma-vkn" style="display:none;margin-top:6px;"></div>
           <div style="margin-top:16px;display:flex;gap:10px;flex-wrap:wrap;">
             <a id="firma-ihaleler-btn" href="#" class="btn-ara" style="text-decoration:none;padding:9px 18px;font-size:13px;">📋 İhalelerini Gör</a>
             <button class="btn-ara" style="background:transparent;border:1px solid var(--border);color:var(--white);" onclick="karsilastirAc()">⚖️ Firmayla Karşılaştır</button>
@@ -1250,7 +1251,7 @@
 
     // Firma başlığı + resmi istatistikler (yukleniciler)
     const { data: yRows } = await sb.from('yukleniciler')
-      .select('id,ad,il,toplam_sozlesme_sayisi,toplam_ciro,ilk_sozlesme_tarihi,son_sozlesme_tarihi')
+      .select('id,ad,il,vergi_no,vkn_kaynak,toplam_sozlesme_sayisi,toplam_ciro,ilk_sozlesme_tarihi,son_sozlesme_tarihi')
       .eq('id', yid).limit(1);
     const y = (yRows && yRows[0]) || null;
     FIRMA = y ? y.ad : (FIRMA || '');
@@ -1329,6 +1330,20 @@
     document.getElementById('firma-meta').textContent = kayitSayisi
       ? `${gosterAdet.toLocaleString('tr')} kazanılan ihale · ${paraTam(toplamBedel)} · ${iller.size} il${y && y.son_sozlesme_tarihi ? ' · son: ' + tarihFormat(y.son_sozlesme_tarihi) : ''} · yalnız ihaleler (doğrudan temin hariç)${ORNEKLEM_KESIK ? ` · tutar ve dağılımlar son ${kayitSayisi.toLocaleString('tr')} kayıtlık örneklemden` : ''}`
       : 'Bu firma için henüz kazanım kaydı toplanmadı (geçmiş veri arka planda çekiliyor).';
+    // VKN — YALNIZ resmî kaynaktan (EKAP sözleşme devir kaydı). Beyan/tahmin GÖSTERİLMEZ:
+    // firma adına dayanıp "doğrulanmış" izlenimi vermek daha önce elenen bir sahtekârlık vektörüydü.
+    (function vknGoster() {
+      const el = document.getElementById('firma-vkn');
+      if (!el) return;
+      if (y && y.vergi_no) {
+        el.innerHTML = `<span style="color:var(--muted);">VKN:</span> <b style="color:var(--white);letter-spacing:.03em;">${y.vergi_no}</b>` +
+          `<span title="Kaynak: EKAP sözleşme devir kaydı — resmî" style="margin-left:8px;font-size:11px;color:#4ade80;border:1px solid rgba(74,222,128,.3);border-radius:5px;padding:1px 6px;">✓ resmî kayıt</span>`;
+        el.style.display = '';
+      } else {
+        el.style.display = 'none';   // VKN yoksa hiç gösterme (boş alan = yanlış izlenim)
+      }
+    })();
+
     if (tumIhaleler.length) firmaIstatistikGoster(tumIhaleler);
 
     if (document.getElementById('tab-sonuclar')?.classList.contains('active')) sonuclariGoster();
