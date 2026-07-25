@@ -1,5 +1,46 @@
 # Ä°halePlatform â€” YapÄ±lacaklar Listesi
 
+> ## ✅ 25 TEM — FİRMA SEGMENT + TÜFE + YASAKLI ALTYAPISI KURULDU
+> Kullanıcı "1-2-3 yap" dedi (segment altyapısı + yasaklı + bugünkü-değer). Durum:
+> - **#1 Firma segmentleri — TAMAM (canlı):** `migration_firma_segmentleri.sql`
+>   (yukleniciler'e seg_parlayan/sonen/ilk_kez/150mn + ciro_son12ay/onceki12ay +
+>   `yuklenici_segment_yenile()` zaman-pencereli); `firma_segment_sayilari/listesi` RPC
+>   (login-gated); **firma-segmentleri.html** (4 kart + sayfalı liste + önizleme uyarısı);
+>   firma-analiz'de giriş butonu; gece cron'a bağlandı. ⚠️ SAYILAR ÖNİZLEME (kısmi %55 veri) —
+>   sonuç %100 olunca `yuklenici_segment_yenile()` + EŞİK KALİBRASYONU gerekli
+>   (önizleme: parlayan 7.966 vs İhalePro 1.858 → 150mn eşiği "tek sözleşme" mi "kümülatif" mi netleştir).
+> - **#3 Bugünkü-değer TÜFE — TAMAM (canlı):** `js/tufe.js` (2003=100 yıllık ort. endeks,
+>   TÜİK/hakedis.org) + `migration_tufe_endeks.sql` (tufe_endeks + tufe_bugune()); ihale-detay
+>   sonuç bloğunda "≈ X bugünkü değer" (>1.05x ise). 2015 1Mn→15,1Mn doğrulandı.
+>   AÇIK: firma-analiz ciro + sonuç listelerine de yayılabilir (şimdilik yalnız ihale-detay).
+> - **#2 Yasaklı firmalar — ŞEMA KURULDU, VERİ BEKLİYOR:** `migration_yasakli_firmalar.sql`
+>   (yasakli_firmalar tablosu + yasakli_listesi/firma_yasakli_mi/aktif_tazele RPC, login-gated).
+>   ⛔ VERİ YOK: EKAP korumalı yasaklı-sorgu kazıması gerekiyor (crypto headers, proxy-yoğun);
+>   havuzlar sonuç backfill'iyle dolu → **sonuç bitip havuz boşalınca** backend/yasakli_scraper.py
+>   yazılıp çekilecek. Sayfa (yasakli-firmalar.html) veriyle birlikte kurulacak.
+
+> ## 🚦 25 TEM — PROXY DARBOĞAZI: IP SAYISI DEĞİL, KENDİ RPM TAVANIMIZ
+> Kullanıcı "100 proxy daha alsam fayda var mı?" diye sordu. ANALİZ:
+> - Asıl kısıt `proxy_havuz.py: PROXY_KURESEL_RPM=600` — bizim koyduğumuz KÜRESEL tavan.
+>   100 IP'de her IP dk'da 6 istek atıyordu = çok hafif. Daha fazla IP = daha fazla ATIL IP.
+> - TEST: RPM 600→**1500** çıkarıldı, Webshare'de **0 blok** (403/429). ~2,5x hız, BEDAVA.
+>   `.env.webshare`'de PROXY_KURESEL_RPM=1500 kalıcı yapıldı.
+> - `AZAMI_UC=40` (100 değil): Webshare PAYLAŞIMLI plan eşzamanlı-soket bütçesi yüzünden.
+>   İki iş aynı anda koşunca 80+ soket = read timeout. → Para harcanacaksa "High Concurrency
+>   $1.12/ay (500→3000 eşzamanlı)" 100 IP eklemekten DAHA MANTIKLI (soket sıkışması gerçek acımız).
+> - ISP gateway detay-çekiminde eszamanli>8'de `572 Target Host Connection Failed` seli
+>   (eszamanli 12 denendi, boğuldu → 8'e çekildi). ISP zayıf halka, Webshare güçlü.
+> - KARAR: önce ücretsiz kaldıraç (RPM 1500) kullanıldı; proxy alımı ŞİMDİLİK GEREKSİZ.
+>
+> ## 📅 25 TEM — DT GEÇMİŞ TARİH GERÇEĞİ (EKAP'ta 2022 ÖNCESİ YOK)
+> Sonda sonuçları: 2019-06 = 1 kayıt/ay, 2021-06/11 = 55-108 kayıt/ay, 2022'de ANİDEN 117K/yıl.
+> Yıllık dağılım: 2022=117K · 2023=195K · 2024=305K · 2025=1,47M · 2026=857K.
+> - 2022 ÖNCESİ: EKAP'ta sistematik DT sonuç ilanı YOK (mevzuat ~2022'de zorunlu oldu).
+>   Bizim eksiğimiz değil — kaynak boş. Bu, ihale/sonuç arşivinden (2003'e iner) FARKLI.
+> - ⚠️ AÇIK ŞÜPHE: 2024 (305K) → 2025 (1,47M) sıçraması organik büyümeye göre çok dik.
+>   2022-2024 EKSİK toplanmış olabilir. Sonda 2 sayfada dolu-sayfayla takıldı (kesin değil).
+>   → Sonuç backfill bir havuzu boşaltınca 2022-2024 için TAM AY doğrulama turu gerekli.
+
 > ## 🔗 23 TEM — FASONDA KÖPRÜSÜ (bilgi notu, ihaleglobal'de değişiklik YOK)
 > fasonda.com paneli, ihaleglobal PUBLIC REST'inden read-only ilan çekiyor (anon key, güvenli
 > kolonlar: baslik/kategori/il/son_teklif; idare maskesi geçerli). /rest/v1 2r/s limitine bu
