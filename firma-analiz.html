@@ -383,10 +383,15 @@
 
       <!-- DİZİN (açılış: firma dizini + arama + sıralama; firmaya tıkla → analiz) -->
       <div id="firma-dizin">
-        <div style="margin-bottom:16px;">
-          <div class="firma-eyebrow">🏢 Firmalar</div>
-          <div class="firma-liste-baslik" style="font-size:22px;">Firma Dizini & Analizi</div>
-          <div class="firma-liste-alt">İhale kazanmış firmaları sırala/ara, birine tıklayınca aynı ekranda derin analiz + karşılaştırma açılır.</div>
+        <div style="margin-bottom:16px;display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;">
+          <div>
+            <div class="firma-eyebrow">🏢 Firmalar</div>
+            <div class="firma-liste-baslik" style="font-size:22px;">Firma Dizini & Analizi</div>
+            <div class="firma-liste-alt">İhale kazanmış firmaları sırala/ara, birine tıklayınca aynı ekranda derin analiz + karşılaştırma açılır.</div>
+          </div>
+          <a href="firma-segmentleri" style="flex-shrink:0;background:var(--card-bg);border:1px solid var(--amber);color:var(--amber);padding:9px 16px;border-radius:8px;font-size:13px;font-weight:600;text-decoration:none;white-space:nowrap;">
+            ⭐ Firma Segmentleri →
+          </a>
         </div>
         <!-- KAPSAM NOTU (dizin): dizin de detay da `yukleniciler`/`ihale_sonuclari`
              zincirinden beslenir → firmaların doğrudan temin kazanımları bu ciro

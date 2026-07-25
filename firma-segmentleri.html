@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="author" content="Ömer Faruk Dinç">
+  <meta name="copyright" content="© 2026 Ömer Faruk Dinç — İhaleGlobal">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Firma Segmentleri — İhaleGlobal</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="icon" type="image/png" sizes="48x48" href="/favicon-48.png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/favicon-180.png" />
+  <link rel="stylesheet" href="css/style.css?v=mob1" />
+  <script src="js/theme.js?v=6"></script>
+  <style>
+    .seg-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:24px; }
+    @media (max-width:900px){ .seg-grid{ grid-template-columns:repeat(2,1fr);} }
+    @media (max-width:520px){ .seg-grid{ grid-template-columns:1fr;} }
+    .seg-card {
+      background:var(--card-bg); border:1px solid var(--border); border-radius:var(--radius-md);
+      padding:18px 16px; cursor:pointer; transition:border-color .15s, transform .15s;
+      position:relative; overflow:hidden;
+    }
+    .seg-card:hover { border-color:var(--amber); transform:translateY(-2px); }
+    .seg-card.aktif { border-color:var(--amber); box-shadow:0 0 0 1px var(--amber) inset; }
+    .seg-emoji { font-size:22px; }
+    .seg-num { font-size:26px; font-weight:800; color:var(--amber); font-family:var(--font-display); margin-top:6px; }
+    .seg-label { font-size:13px; color:var(--white); font-weight:600; margin-top:2px; }
+    .seg-desc { font-size:11px; color:var(--muted); margin-top:4px; line-height:1.4; }
+    .seg-tablo { width:100%; border-collapse:collapse; font-size:13px; }
+    .seg-tablo th, .seg-tablo td { text-align:left; padding:10px 12px; border-bottom:1px solid var(--border); }
+    .seg-tablo th { color:var(--muted); font-weight:600; font-size:12px; text-transform:uppercase; letter-spacing:.03em; }
+    .seg-tablo td.num { text-align:right; font-variant-numeric:tabular-nums; }
+    .seg-tablo tr:hover td { background:rgba(255,255,255,.02); }
+    .buyume-poz { color:#4CAF50; font-weight:600; }
+    .buyume-neg { color:#e05260; font-weight:600; }
+    .seg-uyari {
+      background:rgba(240,165,0,.08); border:1px solid rgba(240,165,0,.3); color:#e0b060;
+      padding:10px 14px; border-radius:8px; font-size:12px; margin-bottom:18px; line-height:1.5;
+    }
+    .seg-login {
+      text-align:center; padding:60px 20px; color:var(--muted);
+    }
+    .seg-login a { color:var(--amber); font-weight:600; }
+    .sayfalama { display:flex; gap:8px; align-items:center; justify-content:center; margin-top:18px; }
+    .sayfalama button {
+      background:var(--card-bg); border:1px solid var(--border); color:var(--muted);
+      padding:6px 14px; border-radius:6px; cursor:pointer; font-family:var(--font-body); font-size:13px;
+    }
+    .sayfalama button:disabled { opacity:.4; cursor:not-allowed; }
+  </style>
+</head>
+<body data-kenar-aktif="firmalar">
+<div class="app">
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <a href="/">
+        <span style="width:6px;height:6px;background:var(--amber);border-radius:50%;display:inline-block;animation:pulse 2s infinite;"></span>
+        İhale<span>Global</span>
+      </a>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-section-label">Kamu İhaleleri</div>
+      <a href="dashboard" class="nav-item"><span class="icon">◉</span> Anasayfa</a>
+      <a href="ihaleler" class="nav-item"><span class="icon">⊞</span> İhaleler</a>
+      <a href="dogrudan-temin" class="nav-item"><span class="icon">⚡</span> Doğrudan Temin</a>
+      <div class="nav-section-label" style="padding-left:16px;opacity:.85;">— Analiz —</div>
+      <a href="rekabet-analizi" class="nav-item"><span class="icon">📊</span> Rekabet Analizi</a>
+      <a href="dt-analiz" class="nav-item"><span class="icon">⚡</span> Doğrudan Temin Analizi</a>
+      <a href="kurum-analiz" class="nav-item"><span class="icon">🏛️</span> İdareler</a>
+      <a href="firma-analiz" class="nav-item"><span class="icon">🏢</span> Firmalar</a>
+      <a href="firma-segmentleri" class="nav-item active"><span class="icon">⭐</span> Firma Segmentleri</a>
+      <a href="sektorler" class="nav-item"><span class="icon">🏭</span> Sektörler Dizini</a>
+      <a href="kik-kararlar" class="nav-item"><span class="icon">⚖️</span> KİK Kararlar</a>
+      <div class="nav-section-label">Uluslararası</div>
+      <a href="uluslararasi" class="nav-item"><span class="icon">🌍</span> Uluslararası İhaleler</a>
+      <a href="ticaret-analiz" class="nav-item"><span class="icon">📈</span> Ticaret Analizi</a>
+      <div class="nav-section-label">Özel İhaleler</div>
+      <a href="ozel-ihaleler" class="nav-item"><span class="icon">🤝</span> e-Satınalma</a>
+      <a href="harita" class="nav-item"><span class="icon">🗺️</span> Harita</a>
+      <div class="nav-section-label">Firmam</div>
+      <a href="ihalelerim" class="nav-item"><span class="icon">📑</span> İhalelerim</a>
+      <a href="takipte" class="nav-item"><span class="icon">☆</span> Takibim</a>
+      <a href="bildirimler" class="nav-item"><span class="icon">🔔</span> Bildirimler</a>
+      <a href="uyumluluk" class="nav-item"><span class="icon">✓</span> Uyumluluk</a>
+      <a href="dokumanlar" class="nav-item"><span class="icon">📁</span> Dökümanlar</a>
+      <a href="profil" class="nav-item"><span class="icon">⚙</span> Profil & Filtreler</a>
+      <a href="fiyatlandirma_odeme_bolumu" class="nav-item"><span class="icon">💳</span> Abonelik</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="user-row" id="sb-user-row">
+        <div class="user-avatar" id="sb-avatar">?</div>
+        <div>
+          <div class="user-name" id="sb-name">Yükleniyor…</div>
+          <div class="user-plan" id="sb-plan">—</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-left">
+        <a href="firma-analiz" class="back-btn">← Firmalar</a>
+        <div class="breadcrumb">/ <span>Firma Segmentleri</span></div>
+      </div>
+    </div>
+
+    <div class="page-body">
+      <h1 style="font-size:22px;font-weight:800;color:var(--white);margin-bottom:4px;">Firma Segmentleri</h1>
+      <p style="color:var(--muted);font-size:14px;margin-bottom:20px;">
+        Kamu ihale kazanç geçmişinden türetilen firma segmentleri — yükselenler, sönenler, yeni oyuncular ve dev kazananlar.
+      </p>
+
+      <div id="onizleme-uyari" class="seg-uyari" style="display:none;">
+        ⚠️ <strong>Önizleme:</strong> Sonuç arşivi henüz tamamlanıyor (%<span id="uyari-yuzde">?</span>).
+        Segment sayıları veri tamamlanınca kesinleşecek — özellikle "İlk Kez Kazananlar" bu aşamada olduğundan fazla görünebilir.
+      </div>
+
+      <div id="giris-gate" class="seg-login" style="display:none;">
+        🔒 Firma segmentleri üyelere özeldir.<br><br>
+        <a href="login">Giriş yapın</a> veya <a href="fiyatlandirma_odeme_bolumu">üye olun</a> →
+      </div>
+
+      <div id="segment-icerik" style="display:none;">
+        <div class="seg-grid" id="seg-kartlar">
+          <div class="seg-card aktif" data-seg="parlayan">
+            <div class="seg-emoji">🌟</div>
+            <div class="seg-num" id="c-parlayan">…</div>
+            <div class="seg-label">Parlayan Yıldızlar</div>
+            <div class="seg-desc">Son 12 ayda kazançları hızla artan firmalar</div>
+          </div>
+          <div class="seg-card" data-seg="ilk_kez">
+            <div class="seg-emoji">🆕</div>
+            <div class="seg-num" id="c-ilk_kez">…</div>
+            <div class="seg-label">İlk Kez Kazananlar</div>
+            <div class="seg-desc">İlk kamu ihalesini son 12 ayda kazanan firmalar</div>
+          </div>
+          <div class="seg-card" data-seg="150mn">
+            <div class="seg-emoji">💰</div>
+            <div class="seg-num" id="c-150mn">…</div>
+            <div class="seg-label">150Mn+ Kazananlar</div>
+            <div class="seg-desc">Toplam kazancı 150 milyon TL'yi aşan firmalar</div>
+          </div>
+          <div class="seg-card" data-seg="sonen">
+            <div class="seg-emoji">📉</div>
+            <div class="seg-num" id="c-sonen">…</div>
+            <div class="seg-label">Sönen Yıldızlar</div>
+            <div class="seg-desc">Son 12 ayda kazançları belirgin düşen firmalar</div>
+          </div>
+        </div>
+
+        <div style="background:var(--card-bg);border:1px solid var(--border);border-radius:var(--radius-md);padding:4px 4px 12px;">
+          <div style="overflow-x:auto;">
+            <table class="seg-tablo">
+              <thead id="tablo-bas"></thead>
+              <tbody id="tablo-govde">
+                <tr><td colspan="6" style="text-align:center;padding:40px;color:var(--muted);">Yükleniyor…</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="sayfalama" id="sayfalama"></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="js/kenar-menu.js?v=3"></script>
+<script src="js/sidebar-user.js?v=3"></script>
+<script src="js/api.js?v=bldr1"></script>
+<script>
+(() => {
+  const SB_URL = "https://ihaleglobal.com";
+  const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzg0MzA3MTU4LCJleHAiOjE5NDE5ODcxNTh9.CjNKulvirotDD_y2oO2QKgo0kbqYvL0jUSV1RiDMoso";
+  const sb = window.supabase.createClient(SB_URL, SB_KEY);
+
+  const SEGMENTLER = {
+    parlayan: { emoji:'🌟', ad:'Parlayan Yıldızlar', ciro:'Son 12 ay kazancı', ciroAlan:'ciro_son_12ay', buyume:true },
+    ilk_kez:  { emoji:'🆕', ad:'İlk Kez Kazananlar', ciro:'İlk kazanım',        ciroAlan:null,           tarih:true },
+    '150mn':  { emoji:'💰', ad:'150Mn+ Kazananlar',  ciro:'Toplam kazanç',       ciroAlan:'toplam_ciro' },
+    sonen:    { emoji:'📉', ad:'Sönen Yıldızlar',    ciro:'Önceki 12 ay kazancı', ciroAlan:'ciro_onceki_12ay', buyume:true },
+  };
+  let aktifSeg = 'parlayan', sayfa = 0, sonToplam = 0;
+  const SAYFA = 50;
+
+  const tl = (v) => v == null ? '—' : (Number(v)/1e6 >= 1
+      ? (Number(v)/1e6).toLocaleString('tr-TR',{maximumFractionDigits:1}) + ' Mn ₺'
+      : Number(v).toLocaleString('tr-TR') + ' ₺');
+  const tarih = (t) => t ? new Date(t).toLocaleDateString('tr-TR',{year:'numeric',month:'short'}) : '—';
+
+  async function sayilariGetir() {
+    const { data, error } = await sb.rpc('firma_segment_sayilari');
+    if (error || !data) return;
+    document.getElementById('c-parlayan').textContent = (data.parlayan||0).toLocaleString('tr-TR');
+    document.getElementById('c-ilk_kez').textContent  = (data.ilk_kez ||0).toLocaleString('tr-TR');
+    document.getElementById('c-150mn').textContent    = (data.yuz50mn||0).toLocaleString('tr-TR');
+    document.getElementById('c-sonen').textContent    = (data.sonen  ||0).toLocaleString('tr-TR');
+  }
+
+  async function listeGetir() {
+    const govde = document.getElementById('tablo-govde');
+    govde.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--muted);">Yükleniyor…</td></tr>';
+    const { data, error } = await sb.rpc('firma_segment_listesi',
+      { p_segment: aktifSeg, p_limit: SAYFA, p_offset: sayfa*SAYFA });
+    if (error) { govde.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:40px;color:#e05260;">Liste alınamadı.</td></tr>'; return; }
+    const cfg = SEGMENTLER[aktifSeg];
+    sonToplam = data.toplam || 0;
+    const firmalar = data.firmalar || [];
+
+    // başlık
+    const bas = document.getElementById('tablo-bas');
+    bas.innerHTML = `<tr><th>#</th><th>Firma</th><th>İl</th><th style="text-align:right;">${cfg.ciro}</th>`
+      + (cfg.buyume ? '<th style="text-align:right;">Büyüme</th>' : '')
+      + (cfg.tarih ? '<th style="text-align:right;">İlk Kazanım</th>' : '<th style="text-align:right;">Sözleşme</th>')
+      + '</tr>';
+
+    if (!firmalar.length) {
+      govde.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--muted);">Bu segmentte firma yok.</td></tr>';
+    } else {
+      govde.innerHTML = firmalar.map((f, i) => {
+        const sira = sayfa*SAYFA + i + 1;
+        const ciroDeg = cfg.tarih ? tarih(f.ilk_sozlesme_tarihi)
+                      : tl(cfg.ciroAlan ? f[cfg.ciroAlan] : f.toplam_ciro);
+        let ekstra;
+        if (cfg.buyume) {
+          const b = f.buyume_yuzde;
+          ekstra = b == null ? '<td class="num">—</td>'
+            : `<td class="num ${b>=0?'buyume-poz':'buyume-neg'}">${b>=0?'+':''}${b.toLocaleString('tr-TR')}%</td>`;
+        } else if (cfg.tarih) {
+          ekstra = `<td class="num">${tarih(f.ilk_sozlesme_tarihi)}</td>`;
+        } else {
+          ekstra = `<td class="num">${(f.toplam_sozlesme_sayisi||0).toLocaleString('tr-TR')}</td>`;
+        }
+        // ilk_kez: ciro sütununda toplam ciro göster (ilk kazanım ekstrada)
+        const ciroHucre = cfg.tarih ? tl(f.toplam_ciro) : ciroDeg;
+        return `<tr>
+          <td style="color:var(--muted);">${sira}</td>
+          <td><a href="firma-analiz?firma=${encodeURIComponent(f.ad)}" style="color:var(--white);text-decoration:none;font-weight:500;">${f.ad||'—'}</a></td>
+          <td style="color:var(--muted);">${f.il||'—'}</td>
+          <td class="num">${ciroHucre}</td>
+          ${ekstra}
+        </tr>`;
+      }).join('');
+    }
+
+    // sayfalama
+    const sp = document.getElementById('sayfalama');
+    const maxSayfa = Math.ceil(sonToplam / SAYFA);
+    sp.innerHTML = maxSayfa <= 1 ? '' :
+      `<button ${sayfa<=0?'disabled':''} id="onceki">← Önceki</button>
+       <span style="color:var(--muted);font-size:13px;">${sayfa+1} / ${maxSayfa} · ${sonToplam.toLocaleString('tr-TR')} firma</span>
+       <button ${sayfa>=maxSayfa-1?'disabled':''} id="sonraki">Sonraki →</button>`;
+    const o = document.getElementById('onceki'), s = document.getElementById('sonraki');
+    if (o) o.onclick = () => { sayfa--; listeGetir(); };
+    if (s) s.onclick = () => { sayfa++; listeGetir(); };
+  }
+
+  function kartlariBagla() {
+    document.querySelectorAll('.seg-card').forEach(c => {
+      c.onclick = () => {
+        document.querySelectorAll('.seg-card').forEach(x => x.classList.remove('aktif'));
+        c.classList.add('aktif');
+        aktifSeg = c.dataset.seg; sayfa = 0; listeGetir();
+      };
+    });
+  }
+
+  (async () => {
+    // login gate
+    let uyeMi = false;
+    try { const { data } = await sb.auth.getSession(); uyeMi = !!(data && data.session); } catch(_) {}
+    if (!uyeMi) {
+      document.getElementById('giris-gate').style.display = 'block';
+      return;
+    }
+    document.getElementById('segment-icerik').style.display = 'block';
+    // Önizleme uyarısı: sonuç arşivi henüz tamamlanmadıysa göster
+    try {
+      const HEDEF = 1688002;
+      const { count } = await sb.from('ihale_sonuclari').select('id', { count:'exact', head:true });
+      if (count && count < HEDEF * 0.95) {
+        document.getElementById('uyari-yuzde').textContent =
+          Math.round(count / HEDEF * 100);
+        document.getElementById('onizleme-uyari').style.display = 'block';
+      }
+    } catch(_) {}
+    kartlariBagla();
+    await sayilariGetir();
+    await listeGetir();
+  })();
+})();
+</script>
+<script src="js/main.js?v=trf2"></script>
+</body>
+</html>
