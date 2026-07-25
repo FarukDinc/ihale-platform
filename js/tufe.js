@@ -64,4 +64,5 @@ const TUFE = (() => {
 
   return { ENDEKS, GUNCEL_YIL, GUNCEL_ENDEKS, carpani, buguneCevir, formatBugunku };
 })();
+if (typeof window !== 'undefined') window.TUFE = TUFE;
 if (typeof module !== 'undefined') module.exports = TUFE;
