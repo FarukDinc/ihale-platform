@@ -1,5 +1,26 @@
 # Ä°halePlatform â€” YapÄ±lacaklar Listesi
 
+> ## ⏭️ DÖNÜŞTE İLK İŞ — SONUÇ BACKFILL BİTİNCE (~27 Tem, hedef 1.688.002)
+> **Kontrol:** `curl -s ".../rest/v1/ihale_sonuclari?select=id&limit=1" -H apikey -H auth -H "Range:0-0" -H "Prefer:count=exact"`
+> → 1,65M+ ise "bitti" say. VDS: `ssh ihale`, backfill süreçleri `pgrep -f ekap_sonuc_backfill`.
+>
+> 1. **Segment sayılarını kesinleştir + eşik kalibre et** (şu an ÖNİZLEME, kısmi veriydi):
+>    - `ssh ihale "docker exec supabase-db psql -U postgres -d postgres -c 'SELECT public.yuklenici_yenile(); SELECT public.yuklenici_segment_yenile();'"`
+>    - Sonra `SELECT public.firma_segment_sayilari();` → İhalePro ile kıyasla
+>      (hedef: parlayan ~1.858 · ilk_kez ~7.238 · 150mn ~2.816 · sönen ~15.479).
+>    - Sapma büyükse EŞİKLERİ ayarla → `backend/migration_firma_segmentleri.sql` içinde
+>      `yuklenici_segment_yenile()`. En şüpheli: **150Mn+** (bizde "kümülatif toplam ciro ≥150Mn";
+>      İhalePro muhtemelen "TEK sözleşme ≥150Mn" → önizlemede 7.524 çıktı, fazla). Parlayan eşiği de gevşek olabilir.
+> 2. **Yasaklı firmalar verisini çek** (havuz artık boş):
+>    - `backend/yasakli_scraper.py` YAZ (henüz yok) → EKAP korumalı yasaklı-sorgu endpoint'i
+>      (crypto headers, bkz. [[ekap-crypto-headers]] memory) VEYA Resmî Gazete. Şema HAZIR:
+>      `migration_yasakli_firmalar.sql` (yasakli_firmalar tablosu canlıda).
+>    - Çekince: `yasakli-firmalar.html` sayfasını kur (firma-segmentleri.html şablonundan);
+>      firma-analiz'e `firma_yasakli_mi()` rozeti ekle (fesih şeridinin yanına, risk sinyali).
+> 3. **DT 2022-2024 tamlık doğrulaması** (bkz. aşağıdaki "DT GEÇMİŞ" notu — 2024→2025 sıçraması şüpheli).
+> 4. **TÜFE bugünkü-değeri yay** (opsiyonel): şu an yalnız ihale-detay'da; firma-analiz ciro +
+>    sonuç listelerine de eklenebilir (`js/tufe.js` hazır, `TUFE.buguneCevir(tutar,tarih)`).
+>
 > ## ✅ 25 TEM — FİRMA SEGMENT + TÜFE + YASAKLI ALTYAPISI KURULDU
 > Kullanıcı "1-2-3 yap" dedi (segment altyapısı + yasaklı + bugünkü-değer). Durum:
 > - **#1 Firma segmentleri — TAMAM (canlı):** `migration_firma_segmentleri.sql`
