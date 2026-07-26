@@ -269,6 +269,14 @@
     }
 
     .topbar-search input::placeholder { color: var(--muted); }
+    /* Global arama kapsam seçici (İhale/Firma/İdare/Sonuç/DT) */
+    .arama-kapsam {
+      background: none; border: none; border-right: 1px solid var(--border);
+      color: var(--white); font-size: 13px; font-weight: 600; font-family: var(--font-body);
+      padding: 2px 10px 2px 2px; margin-right: 6px; outline: none; cursor: pointer; flex-shrink: 0;
+    }
+    .arama-kapsam option { background: var(--navy-mid); color: var(--white); }
+    .ara-ikon { color: var(--muted); display: flex; align-items: center; flex-shrink: 0; }
 
     .topbar-actions { margin-left: auto; display: flex; gap: 12px; align-items: center; }
 
@@ -796,12 +804,19 @@
     <!-- TOP BAR -->
     <div class="topbar">
       <div class="topbar-search">
-        <span style="color:var(--muted);">⌕</span>
-        <input type="text" placeholder="İhale ara... (Ctrl + K)" id="main-search" />
+        <select id="arama-kapsam" class="arama-kapsam" title="Arama kapsamı">
+          <option value="ihale">İhale</option>
+          <option value="firma">Firma</option>
+          <option value="idare">İdare</option>
+          <option value="sonuc">Sonuç</option>
+          <option value="dt">Doğrudan Temin</option>
+        </select>
+        <span class="ara-ikon"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg></span>
+        <input type="text" placeholder="İhale, firma, kurum, sonuç ara… (Ctrl+K)" id="main-search" />
       </div>
       <div class="topbar-actions">
         <div class="icon-btn" title="Bildirimler" id="bell-btn" onclick="bildirimDropdownToggle(event)">
-          🔔
+          <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9a6 6 0 0112 0c0 5 2 6 2 6H4s2-1 2-6"/><path d="M10 19a2 2 0 004 0"/></svg>
           <span class="notif-dot" id="notif-dot" style="display:none;"></span>
           <div class="notif-dropdown" id="notif-dropdown" style="display:none;" onclick="event.stopPropagation()">
             <div class="notif-dropdown-header">
@@ -1807,12 +1822,32 @@
     clearTimeout(aramaTimer);
     aramaTimer = setTimeout(filtrele, 400);
   });
-  // Enter → tam listeye git (dashboard'daki canlı filtre limitli); hedef mod-farkındalıklı:
-  // 'dt' modunda dogrudan-temin?ara= (sayfa 'ara' paramını okuyor), diğerlerinde ihaleler?ara=
+  // Enter → seçili KAPSAMA göre doğru sayfaya yönlendir (İhale/Firma/İdare/Sonuç/DT).
+  // Tek kutu + kapsam dropdown ihalepro paritesi (26 Tem). Hedef sayfaların hepsi ?ara= okur.
+  function aramaYonlendir() {
+    const q = document.getElementById('main-search').value.trim();
+    if (!q) return;
+    const enc = encodeURIComponent(q);
+    const rota = {
+      ihale: 'ihaleler?ara=' + enc,
+      firma: 'firma-analiz?ara=' + enc,
+      idare: 'kurum-analiz?ara=' + enc,
+      sonuc: 'ihaleler?sekme=sonuc&ara=' + enc,
+      dt:    'dogrudan-temin?ara=' + enc,
+    };
+    const kapsam = document.getElementById('arama-kapsam')?.value || 'ihale';
+    window.location.href = rota[kapsam] || rota.ihale;
+  }
   document.getElementById('main-search').addEventListener('keydown', (e) => {
-    if (e.key !== 'Enter') return;
-    const q = e.target.value.trim();
-    if (q) window.location.href = (aktifDashMod === 'dt' ? 'dogrudan-temin?ara=' : 'ihaleler?ara=') + encodeURIComponent(q);
+    if (e.key === 'Enter') aramaYonlendir();
+  });
+  // Kapsam değişince placeholder ipucu güncelle
+  document.getElementById('arama-kapsam').addEventListener('change', (e) => {
+    const ph = { ihale: 'İhale adı/İKN ara…', firma: 'Firma adı ara…', idare: 'İdare/kurum ara…',
+                 sonuc: 'Sonuçlanan ihale ara…', dt: 'Doğrudan temin ara…' };
+    const el = document.getElementById('main-search');
+    el.placeholder = (ph[e.target.value] || 'Ara…') + ' (Ctrl+K)';
+    el.focus();
   });
   // Ctrl/Cmd + K → arama kutusuna odaklan (placeholder'da vaat ediliyordu ama handler yoktu)
   document.addEventListener('keydown', (e) => {

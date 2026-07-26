@@ -1321,7 +1321,14 @@
         if (el) { el.focus(); el.select(); }
       }
     });
-    izVeriCek().catch(izHata);
+    izVeriCek().then(() => {
+      // Global aramadan ?ara= deep-link (İdare kapsamı) → arama kutusunu doldur + filtrele
+      const ara = new URLSearchParams(location.search).get('ara');
+      if (ara && !KURUM) {
+        const el = document.getElementById('iz-arama');
+        if (el) { el.value = ara; if (typeof izGosterF === 'function') izGosterF(); el.scrollIntoView({ block: 'center' }); }
+      }
+    }).catch(izHata);
   }
 
   async function izHata(e) {
