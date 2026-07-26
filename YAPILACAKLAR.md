@@ -19,9 +19,17 @@
 >    bildirim+bülten. EKSİK: günlük ihale/sonuç raporu e-posta akışı ("raporunu oluştur, iş fırsatını kaçırma").
 > ÖNERİLEN SIRA: (2) global arama → (1) Benim Firmam eşleşme → (3) Takip Listem → (5) takvim → (4/6) rapor+ücretli (politika onayı sonrası).
 >
-> **DURUM (26 Tem):**
+> **DURUM (26 Tem — 4/6 ÖZELLİK CANLI):**
+> - ✅ **#1 Benim Firmam — CANLI:** migration_firmam_eslesme.sql (firma_id + 4 RPC, test: 12 eşleşme) +
+>   js/firmam.js (autocomplete + onboarding + eşleşen ihale kartları) + dashboard bloğu. Onboarding doğrulandı.
 > - ✅ **#2 Global arama — CANLI:** dashboard topbar kapsam dropdown (İhale/Firma/İdare/Sonuç/DT) +
 >   kapsam-bazlı yönlendirme; kurum-analiz `?ara=` deep-link; SVG arama+bell ikonu. İdare rotası test edildi.
+> - ✅ **#3 Takip Listem — CANLI:** migration_takip_sektorler.sql (tablo + takip_ozet + takip_firma_sozlesmeleri) +
+>   js/takip-panel.js (sayaç + son sözleşmeler + 3-sekmeli Yeni Ekle modal). Test: ALTEKMA sözleşmeleri + 41 sektör.
+> - ✅ **#5 Takvim — CANLI:** takipte'ye Liste|Takvim toggle + js/ajanda.js (self-contained aylık ızgara,
+>   son_teklif/ihale işaretleri, gün paneli + ICS). Toggle+gezinme çalışıyor.
+> - ⏭️ **KALAN: #4 Rapor+Excel (ÜCRETLİ) + #6 Rutin e-posta rapor** — #4 EXPORT POLİTİKA ONAYI BEKLİYOR
+>   (CSV/Excel yasağını tersine çevirir; güvenli plan: ücretli-üye+login+satır/hız limiti+filigran). Blueprint hazır (Blueprint 4).
 > - 📋 **5 blueprint HAZIR:** `bana_ozel_blueprintler.md` (paralel tasarım turu, gerçek şemaya doğrulanmış).
 >   Kritik bulgular — #1: `kullanici_profiller` UPDATE policy YOK → `firmami_belirle()` SECURITY DEFINER RPC;
 >   `ihale_sonuclari.yuklenici_id` İNDEKS EKSİK (ekle); eşleşme için `firma_icin_acik_ihaleler()` RPC (v3 motoru + trigram yeniden kullan); ağır firmada MV+gece REFRESH.
