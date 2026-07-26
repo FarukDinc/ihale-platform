@@ -149,7 +149,7 @@
   const ray = document.createElement('aside');
   ray.className = 'kmenu sidebar';   // .sidebar → main.js hamburger uyumu
   ray.innerHTML = `
-    <a class="kmenu-logo" href="/" title="İhaleGlobal"><img src="/favicon.svg?v=3" alt="İhaleGlobal"></a>
+    <a class="kmenu-logo" href="/" title="İhaleGlobal"><img src="/favicon.svg?v=4" alt="İhaleGlobal"></a>
     <nav class="kmenu-nav" id="kmenu-nav"></nav>
     <div class="kmenu-foot"><div class="user-row" title="Hesap"><div class="user-avatar" id="kmenu-avatar">—</div></div></div>`;
   const nav = ray.querySelector('#kmenu-nav');
