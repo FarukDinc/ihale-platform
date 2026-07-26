@@ -28,8 +28,14 @@
 >   js/takip-panel.js (sayaç + son sözleşmeler + 3-sekmeli Yeni Ekle modal). Test: ALTEKMA sözleşmeleri + 41 sektör.
 > - ✅ **#5 Takvim — CANLI:** takipte'ye Liste|Takvim toggle + js/ajanda.js (self-contained aylık ızgara,
 >   son_teklif/ihale işaretleri, gün paneli + ICS). Toggle+gezinme çalışıyor.
-> - ⏭️ **KALAN: #4 Rapor+Excel (ÜCRETLİ) + #6 Rutin e-posta rapor** — #4 EXPORT POLİTİKA ONAYI BEKLİYOR
->   (CSV/Excel yasağını tersine çevirir; güvenli plan: ücretli-üye+login+satır/hız limiti+filigran). Blueprint hazır (Blueprint 4).
+> - ✅ **#4 Rapor + Excel — CANLI (26 Tem, kullanıcı export'u onayladı):** migration_rapor.sql
+>   (rapor_ihale + rapor_sonuc RPC; MATERIALIZED tarih-önce + KISMİ-indeks predicate ile 16s→4-5s;
+>   il/kategori indeksleri eklendi) + raporlar.html (tip toggle + filtre + sayfalı tablo + SheetJS Excel).
+>   GATING: free=ilk 2 sayfa, Pro=tam ekran, KURUMSAL=Excel (filigranlı). Test: Ankara 420 kayıt.
+>   ⚠️ perf: geniş sonuç raporu 4-5s (auth 8s içinde); ileride il+tarih composite/denormalize düşünülebilir.
+> - ⏭️ **KALAN: #6 Rutin e-posta rapor** — "raporunu oluştur, iş fırsatını kaçırma": kayıtlı rapor kriteri
+>   → günlük yeni ihale/sonuç e-postası. Mevcut bildirim/bülten (yeni_ilan_bildirim_uret, rakip_bildirim.py) +
+>   rapor RPC'leri üstüne kurulur; export DEĞİL. TEK KALAN özellik.
 > - 📋 **5 blueprint HAZIR:** `bana_ozel_blueprintler.md` (paralel tasarım turu, gerçek şemaya doğrulanmış).
 >   Kritik bulgular — #1: `kullanici_profiller` UPDATE policy YOK → `firmami_belirle()` SECURITY DEFINER RPC;
 >   `ihale_sonuclari.yuklenici_id` İNDEKS EKSİK (ekle); eşleşme için `firma_icin_acik_ihaleler()` RPC (v3 motoru + trigram yeniden kullan); ağır firmada MV+gece REFRESH.
