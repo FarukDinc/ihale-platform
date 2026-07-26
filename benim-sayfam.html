@@ -49,6 +49,15 @@
     .bs-liste-ad{flex:1;min-width:0;font-size:13px;color:var(--white);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
     .bs-liste-alt{font-size:11px;color:var(--muted)}
     .bs-bos{color:var(--muted);font-size:12.5px;padding:14px 0;text-align:center}
+    /* Tarihi yaklaşan ihale satırı */
+    .bs-yak-oge{display:flex;align-items:center;gap:12px;padding:10px 0;border-top:1px solid var(--border);text-decoration:none;color:inherit}
+    .bs-yak-oge:first-child{border-top:none}
+    .bs-yak-oge:hover .bs-yak-baslik{color:var(--amber)}
+    .bs-yak-ad{flex:1;min-width:0}
+    .bs-yak-baslik{font-size:13px;color:var(--white);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:color .12s}
+    .bs-yak-alt{font-size:11px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .bs-yak-gun{flex-shrink:0;font-size:12px;font-weight:700;padding:4px 11px;border-radius:20px;background:rgba(240,165,0,.12);color:var(--amber)}
+    .bs-yak-gun.acil{background:rgba(224,82,96,.14);color:#e05260}
     .bs-giris{text-align:center;padding:70px 20px;color:var(--muted)}.bs-giris a{color:var(--amber);font-weight:600}
   </style>
 </head>
@@ -80,6 +89,15 @@
 
         <!-- 2) KPI (ihalepro paritesi: 6 kutu) -->
         <div class="bs-kpi" id="bs-kpi"></div>
+
+        <!-- 2.5) Tarihi Yaklaşan İhaleler -->
+        <div class="bs-bolum">
+          <div class="bs-bolum-bas">
+            <div class="bs-bolum-t"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg> Tarihi Yaklaşan İhaleler</div>
+            <a class="bs-gor" href="ihaleler?sekme=guncel&durum=aktif">Tümü →</a>
+          </div>
+          <div id="bs-yaklasan"><div class="bs-bos">Yükleniyor…</div></div>
+        </div>
 
         <!-- 3) Takip Listem (js/takip-panel.js) -->
         <div id="takip-panel" style="display:none;"></div>
@@ -160,7 +178,31 @@
       sayac('dogrudan_temin_ilanlari').then(v=>set('Doğrudan Temin',kısalt(v))),
       sayac('ihale_sonuclari').then(v=>set('Sözleşme',kısalt(v))),
       sayac('yukleniciler').then(v=>set('Yüklenici Firma',num(v))),
+      // İşveren İdare: idare_sayim() idare başına satır döner (authenticated); count head ile satır indirmeden say.
+      sb.rpc('idare_sayim',{},{count:'exact',head:true}).then(({count})=>set('İşveren İdare',num(count||0))).catch(()=>set('İşveren İdare','—')),
     ]);
+  }
+
+  async function yaklasanIhaleler(){
+    const el=document.getElementById('bs-yaklasan');
+    try{
+      const simdi=new Date().toISOString();
+      const {data,error}=await sb.from('ilanlar')
+        .select('id,baslik,il,tur,son_teklif_tarihi')
+        .eq('durum','aktif').gte('son_teklif_tarihi',simdi)
+        .order('son_teklif_tarihi',{ascending:true}).limit(6);
+      if(error) throw error;
+      if(!data||!data.length){ el.innerHTML='<div class="bs-bos">Yaklaşan aktif ihale bulunamadı.</div>'; return; }
+      const gunFmt=(t)=>new Date(t).toLocaleDateString('tr-TR',{day:'2-digit',month:'short'});
+      const kalan=(t)=>Math.max(0,Math.ceil((new Date(t)-new Date())/86400000));
+      el.innerHTML=data.map(i=>{
+        const g=kalan(i.son_teklif_tarihi);
+        return `<a class="bs-yak-oge" href="ihale-detay?id=${i.id}">
+          <div class="bs-yak-ad"><div class="bs-yak-baslik">${esc(i.baslik||'İhale')}</div>
+          <div class="bs-yak-alt">${esc(i.il||'—')}${i.tur?' · '+esc(i.tur):''} · Son teklif: ${gunFmt(i.son_teklif_tarihi)}</div></div>
+          <span class="bs-yak-gun${g<=3?' acil':''}">${g} gün</span></a>`;
+      }).join('');
+    }catch(_){ el.innerHTML='<div class="bs-bos">Yüklenemedi.</div>'; }
   }
 
   function sonIncelenenler(){
@@ -185,7 +227,7 @@
     document.getElementById('bs-icerik').style.display='block';
     const u=data.session.user;
     document.getElementById('bs-ad').textContent=(u.user_metadata&&u.user_metadata.full_name)||(u.email?u.email.split('@')[0]:'Üye');
-    kpiYukle(); sonIncelenenler(); favoriAramalar();
+    kpiYukle(); yaklasanIhaleler(); sonIncelenenler(); favoriAramalar();
   })();
 })();
 </script>
