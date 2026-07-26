@@ -11,6 +11,12 @@
   <link rel="stylesheet" href="css/style.css?v=mob1" />
   <script src="js/theme.js?v=6"></script>
   <style>
+    body{background:var(--navy)}
+    .app{display:flex;min-height:100vh}
+    .main{display:flex;flex-direction:column;flex:1;min-width:0;height:100vh;overflow-y:auto}
+    .topbar{background:var(--navy-mid);border-bottom:1px solid var(--border);padding:14px 28px;display:flex;align-items:center;gap:16px;position:sticky;top:0;z-index:10}
+    .page-body{padding:28px;flex:1}
+    .breadcrumb{font-size:15px;font-weight:700;color:var(--white)}
     .rp-tip{display:inline-flex;background:var(--navy);border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:16px}
     .rp-tip button{background:none;border:none;color:var(--muted);font-size:13.5px;font-weight:600;padding:9px 18px;cursor:pointer;font-family:var(--font-body)}
     .rp-tip button.aktif{background:rgba(240,165,0,.14);color:var(--amber)}
