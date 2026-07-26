@@ -72,6 +72,48 @@
     }
     .dash-mod-btn:hover { color: var(--white); border-color: var(--muted); }
     .dash-mod-btn.active { background: rgba(240,165,0,.12); border-color: var(--amber); color: var(--amber); }
+    /* ── BENİM FİRMAM bloğu ── */
+    .firmam-kart { background: var(--navy-mid); border: 1px solid var(--border); border-radius: 14px; padding: 20px 22px; margin-bottom: 18px; }
+    .firmam-onboarding { display: flex; gap: 18px; align-items: center; border-color: rgba(240,165,0,.35); background: rgba(240,165,0,.05); }
+    .firmam-ob-ikon { width: 60px; height: 60px; border-radius: 14px; background: rgba(240,165,0,.14); color: var(--amber); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .firmam-ob-govde { flex: 1; min-width: 0; }
+    .firmam-ob-baslik { font-size: 17px; font-weight: 800; color: var(--white); }
+    .firmam-ob-alt { font-size: 13px; color: var(--muted); margin: 4px 0 12px; }
+    .firmam-ac-wrap { position: relative; max-width: 460px; }
+    .firmam-ac-input { width: 100%; background: var(--navy); border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; color: var(--white); font-size: 14px; font-family: var(--font-body); outline: none; }
+    .firmam-ac-input:focus { border-color: var(--amber); }
+    .firmam-ac-liste { position: absolute; top: 100%; left: 0; right: 0; margin-top: 4px; background: var(--navy-mid); border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 12px 30px rgba(0,0,0,.35); z-index: 40; overflow: hidden; }
+    .firmam-ac-item { display: block; width: 100%; text-align: left; background: none; border: none; border-bottom: 1px solid var(--border); padding: 10px 14px; cursor: pointer; color: var(--white); font-family: var(--font-body); }
+    .firmam-ac-item:hover { background: var(--card-bg); }
+    .firmam-ac-ad { display: block; font-size: 13px; font-weight: 600; }
+    .firmam-ac-meta { display: block; font-size: 11.5px; color: var(--muted); margin-top: 2px; }
+    .firmam-ac-bos { padding: 12px 14px; color: var(--muted); font-size: 13px; }
+    .firmam-hero { margin-bottom: 16px; }
+    .firmam-eyebrow { font-size: 11px; font-weight: 700; letter-spacing: .1em; text-transform: uppercase; color: var(--amber); }
+    .firmam-baslik { font-size: 20px; font-weight: 800; color: var(--white); margin: 2px 0 8px; }
+    .firmam-firma { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .firmam-rozet { background: rgba(240,165,0,.14); color: var(--amber); font-weight: 700; font-size: 13px; padding: 4px 12px; border-radius: 20px; }
+    .firmam-firma-meta { font-size: 12.5px; color: var(--muted); }
+    .firmam-degistir { background: none; border: 1px solid var(--border); color: var(--muted); font-size: 12px; padding: 4px 12px; border-radius: 6px; cursor: pointer; font-family: var(--font-body); }
+    .firmam-degistir:hover { color: var(--white); border-color: var(--muted); }
+    .firmam-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
+    .firmam-yukleniyor, .firmam-bos { grid-column: 1/-1; text-align: center; color: var(--muted); font-size: 13px; padding: 26px; }
+    .firmam-ihale { display: flex; flex-direction: column; gap: 6px; background: var(--navy); border: 1px solid var(--border); border-radius: 10px; padding: 14px; text-decoration: none; color: inherit; transition: border-color .15s, transform .15s; }
+    .firmam-ihale:hover { border-color: var(--amber); transform: translateY(-2px); }
+    .firmam-ihale-ust { display: flex; align-items: center; justify-content: space-between; }
+    .firmam-skor { background: rgba(74,222,128,.14); color: #4ade80; font-weight: 800; font-size: 12px; padding: 2px 8px; border-radius: 6px; }
+    .firmam-kalan { font-size: 11.5px; color: var(--muted); }
+    .firmam-kalan-acil { font-size: 11.5px; color: #f0a500; font-weight: 700; }
+    .firmam-ihale-baslik { font-size: 13.5px; font-weight: 600; color: var(--white); line-height: 1.35; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .firmam-ihale-idare { font-size: 11.5px; color: var(--muted); display: -webkit-box; -webkit-line-clamp: 1; -webkit-box-orient: vertical; overflow: hidden; }
+    .firmam-ihale-alt { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 2px; }
+    .firmam-cip { font-size: 10.5px; background: var(--card-bg); border: 1px solid var(--border); color: var(--muted); padding: 2px 7px; border-radius: 10px; }
+    .firmam-il { font-size: 11px; color: var(--muted); }
+    .firmam-mal { font-size: 12px; color: var(--amber); font-weight: 600; margin-left: auto; }
+    .firmam-neden { font-size: 11px; color: #4ade80; }
+    .firmam-takvim { align-self: flex-start; background: none; border: 1px solid var(--border); color: var(--muted); font-size: 11px; padding: 3px 10px; border-radius: 6px; cursor: pointer; font-family: var(--font-body); margin-top: 2px; }
+    .firmam-takvim:hover { color: var(--amber); border-color: var(--amber); }
+    @media (max-width: 640px) { .firmam-onboarding { flex-direction: column; text-align: center; } .firmam-grid { grid-template-columns: 1fr; } }
     /* Kart kaynak seçici — "Tümü" modunda birleşik sayı gösteren bir karta tıklanınca
        açılır (il-popup'ın kart karşılığı: aynı satır düzeni, aynı amber vurgu). */
     .kaynak-secim {
@@ -845,6 +887,9 @@
         </div>
       </div>
 
+      <!-- BENİM FİRMAM → kişisel eşleşme (26 Tem). js/firmam.js doldurur; login yoksa gizli. -->
+      <div id="firmam-blok" style="display:none;"></div>
+
       <!-- GLOBAL MOD SEÇİCİ — sayfadaki TÜM widget'ları (KPI/trend/kategori/kurumlar/harita/liste)
            tek noktadan yönetir; her widget'ta ayrı ayrı seçtirmek yerine (18 Tem, kullanıcı talebi). -->
       <div class="dash-mod-wrap">
@@ -1119,6 +1164,7 @@
 <script src="js/main.js?v=trf2"></script>
 <script src="js/takip.js?v=2"></script>
 <script src="js/kullanici-veri.js?v=1"></script>
+<script src="js/firmam.js?v=1"></script>
 <script>
   // ── Supabase config ──────────────────────────────────
   const SUPABASE_URL  = "https://ihaleglobal.com";
