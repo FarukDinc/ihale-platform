@@ -72,10 +72,12 @@
           <div class="rp-eylem">
             <button class="rp-btn" id="rp-olustur">Rapor Oluştur</button>
             <button class="rp-btn ikincil" id="rp-excel">⬇ Excel İndir</button>
+            <button class="rp-btn ikincil" id="rp-kaydet" title="Bu kriterleri kaydet, yeni eşleşenleri günlük bildirim/e-posta al">🔔 Raporu Kaydet</button>
             <span style="font-size:11.5px;color:var(--muted);" id="rp-not"></span>
           </div>
         </div>
 
+        <div id="rp-abonelik" style="margin-bottom:16px;"></div>
         <div id="rp-kilit-ust"></div>
         <div id="rp-sonuc"></div>
       </div>
@@ -181,6 +183,29 @@
     btn.textContent='⬇ Excel İndir'; btn.disabled=false;
   }
 
+  // ── Rapor aboneliği: kaydet + günlük bildirim ──
+  async function kaydet(){
+    const k=kriter();
+    const ad=prompt('Rapora bir ad verin (günlük yeni eşleşmeler bildirim/e-posta gelir):', (k.kelime||k.il||k.kategori||'Raporum'));
+    if(!ad)return;
+    const {data:{session}}=await sb.auth.getSession();
+    const {error}=await sb.from('rapor_abonelikleri').insert({kullanici_id:session.user.id, ad, tip, kriter:k, aktif:true});
+    if(error){ alert('Kaydedilemedi: '+error.message); return; }
+    kayitliYukle();
+  }
+  async function kayitliYukle(){
+    const {data}=await sb.from('rapor_abonelikleri').select('id,ad,tip,aktif').order('olusturulma',{ascending:false});
+    const el=document.getElementById('rp-abonelik');
+    if(!data||!data.length){ el.innerHTML=''; return; }
+    el.innerHTML='<div style="background:var(--navy-mid);border:1px solid var(--border);border-radius:10px;padding:12px 14px;">'
+      +'<div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;">🔔 Kayıtlı Raporlarım (günlük bildirim)</div>'
+      +data.map(a=>`<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:6px 0;border-top:1px solid var(--border);">
+          <span style="font-size:13px;color:var(--white);">${esc(a.ad)} <span style="color:var(--muted);font-size:11px;">· ${a.tip==='ihale'?'İhale':'Sonuç'}</span></span>
+          <button data-sil="${a.id}" style="background:none;border:1px solid var(--border);color:var(--muted);font-size:11px;padding:3px 10px;border-radius:6px;cursor:pointer;font-family:var(--font-body);">Sil</button>
+        </div>`).join('')+'</div>';
+    el.querySelectorAll('[data-sil]').forEach(b=>b.onclick=async()=>{ await sb.from('rapor_abonelikleri').delete().eq('id',b.dataset.sil); kayitliYukle(); });
+  }
+
   function tipSec(t){
     tip=t;
     document.querySelectorAll('.rp-tip button').forEach(b=>b.classList.toggle('aktif',b.dataset.tip===t));
@@ -203,6 +228,8 @@
     document.querySelectorAll('.rp-tip button').forEach(b=>b.onclick=()=>tipSec(b.dataset.tip));
     document.getElementById('rp-olustur').onclick=olustur;
     excelBtn.onclick=excelIndir;
+    document.getElementById('rp-kaydet').onclick=kaydet;
+    kayitliYukle();
   })();
 })();
 </script>
