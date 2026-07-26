@@ -34,18 +34,20 @@
    Aynı değişken isimleri, ters kontrast: koyu metin/açık zemin.
    ============================================ */
 :root[data-theme="light"] {
-  --navy:      #FFFFFF;
-  --navy-mid:  #F3F5F8;
-  --navy-soft: #E7EBF0;
+  /* Kurumsal açık tema (26 Tem): açık-gri zemin + BEYAZ kartlar (derinlik), amber marka korunur.
+     Referans: ihalepro kurumsal beyaz görünüm. Zemin ve kart bilinçli AYRIŞIR (kartlar 'pop' eder). */
+  --navy:      #F4F6FA;   /* SAYFA zemini — hafif gri-mavi */
+  --navy-mid:  #FFFFFF;   /* KARTLAR / sidebar / topbar — beyaz */
+  --navy-soft: #EAEEF4;   /* input / hover / yükseltilmiş yüzey */
   --amber:     #F0A500;
   --amber-dim: #C98A00;
-  --off-white: #47516B;
-  --white:     #0A1628;
+  --off-white: #475569;   /* ikincil metin */
+  --white:     #16233B;   /* BİRİNCİL metin — koyu lacivert arduvaz */
   --muted:     #64748B;
-  --border:    rgba(10,22,40,0.10);
-  --card-bg:   rgba(10,22,40,0.035);
-  --overlay-rgb: 10,22,40;
-  --navy-rgb:  255,255,255;
+  --border:    rgba(15,42,71,0.12);
+  --card-bg:   rgba(15,42,71,0.028);
+  --overlay-rgb: 15,42,71;
+  --navy-rgb:  244,246,250;
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }

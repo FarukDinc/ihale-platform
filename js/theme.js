@@ -2,11 +2,11 @@
    Sayfa yüklenir yüklenmez kayıtlı tercihi uygular (flaş önleme için en üstte,
    <head>'te css/style.css'ten hemen sonra çağrılmalı), ardından sol-alt SIDEBAR
    FOOTER'ına kompakt bir geçiş düğmesi gömer (yoksa sol-alt sabit fallback).
-   Varsayılan: koyu tema (mevcut marka rengi). */
+   Varsayılan: AÇIK/kurumsal tema (26 Tem — kullanıcı talebi). Yalnız açıkça 'dark' seçilmişse koyu. */
 (function () {
   var KEY = 'ihale_tema';
   var kayitli = localStorage.getItem(KEY);
-  if (kayitli === 'light') {
+  if (kayitli !== 'dark') {                                   // varsayılan AÇIK
     document.documentElement.setAttribute('data-theme', 'light');
   }
 
@@ -33,7 +33,7 @@
 
   function ekle() {
     if (document.getElementById('tema-degistir-btn')) return;
-    var suAn = (localStorage.getItem(KEY) === 'light') ? 'light' : 'dark';
+    var suAn = (localStorage.getItem(KEY) === 'dark') ? 'dark' : 'light';
     var btn = document.createElement('button');
     btn.id = 'tema-degistir-btn';
     btn.title = 'Gündüz / Gece modu değiştir';
