@@ -636,7 +636,7 @@ async def detay_cek_retry(havuz, ihale_id: str):
 
 async def calis(max_pages: int, dry_run: bool, start_skip: int | None, tum_kayitlar: bool = False,
                 eszamanli: int = 8,
-                no_checkpoint: bool = False):
+                no_checkpoint: bool = False, no_plato: bool = False):
     """
     EKAP'ın 'Result Announcement Published' (durum filtresi=5) listesini baştan/kaldığı
     yerden sayfalar, kendi ilanlar tablomuzdaki IKN'lerle eşleşenleri bulur, detayını
@@ -814,7 +814,7 @@ async def calis(max_pages: int, dry_run: bool, start_skip: int | None, tum_kayit
         # skip~16000'den sonra binlerce kayıtta tek yeni eşleşme çıkmadığı gözlemlendi). Uzun süre
         # yeni kayıt yazılmazsa boşuna taramaya devam etmek yerine erken dur.
         sayfa_basina_yeni.append(1 if yazilan > yazilan_once else 0)
-        if len(sayfa_basina_yeni) >= 100 and sum(sayfa_basina_yeni[-100:]) == 0:
+        if not no_plato and len(sayfa_basina_yeni) >= 100 and sum(sayfa_basina_yeni[-100:]) == 0:
             plato = True
             print(f"\n  ⏹ Son 100 sayfada (10.000 kayıt) hiç yeni sonuç bulunamadı — plato tespit edildi, durduruluyor.")
             print(f"     (İleride farklı bir skip aralığından denemek isterseniz --start-skip kullanın.)")
@@ -861,10 +861,15 @@ def main():
                      help="Checkpoint dosyasını OKUMA/YAZMA. Gecelik 'en yeniden tara' turu için: "
                           "--start-skip 0 --no-checkpoint ile her gece skip=0'dan başlar, deep "
                           "--backfill'in checkpoint'ini bozmaz (yeni sonuçlar EKAP listesinin başında).")
+    ap.add_argument("--no-plato", action="store_true",
+                     help="Plato erken-çıkışını KAPAT. 26 Tem bulgusu: liste TEK kuru bölge değil — "
+                          "skip~860K'da 100 boş sayfa var ama 1.1M'de %98 YENİ eşleşme. 100-sayfa "
+                          "plato march'ı kuru bölgede durduruyordu → tüm arşivi taramak için bunu aç.")
     args = ap.parse_args()
     start_skip = 0 if args.reset else args.start_skip
     asyncio.run(calis(args.max_pages, args.dry_run, start_skip, args.tum_kayitlar,
-                      eszamanli=args.eszamanli, no_checkpoint=args.no_checkpoint))
+                      eszamanli=args.eszamanli, no_checkpoint=args.no_checkpoint,
+                      no_plato=args.no_plato))
 
 
 if __name__ == "__main__":
