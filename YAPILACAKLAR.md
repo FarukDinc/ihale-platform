@@ -18,6 +18,18 @@
 > 6. **Bildirim/rutin rapor gönderimi** ("rutin rapor içeriğini nasıl oluşturmak istersiniz?"): VAR
 >    bildirim+bülten. EKSİK: günlük ihale/sonuç raporu e-posta akışı ("raporunu oluştur, iş fırsatını kaçırma").
 > ÖNERİLEN SIRA: (2) global arama → (1) Benim Firmam eşleşme → (3) Takip Listem → (5) takvim → (4/6) rapor+ücretli (politika onayı sonrası).
+>
+> **DURUM (26 Tem):**
+> - ✅ **#2 Global arama — CANLI:** dashboard topbar kapsam dropdown (İhale/Firma/İdare/Sonuç/DT) +
+>   kapsam-bazlı yönlendirme; kurum-analiz `?ara=` deep-link; SVG arama+bell ikonu. İdare rotası test edildi.
+> - 📋 **5 blueprint HAZIR:** `bana_ozel_blueprintler.md` (paralel tasarım turu, gerçek şemaya doğrulanmış).
+>   Kritik bulgular — #1: `kullanici_profiller` UPDATE policy YOK → `firmami_belirle()` SECURITY DEFINER RPC;
+>   `ihale_sonuclari.yuklenici_id` İNDEKS EKSİK (ekle); eşleşme için `firma_icin_acik_ihaleler()` RPC (v3 motoru + trigram yeniden kullan); ağır firmada MV+gece REFRESH.
+> - ⏭️ SIRADAKİ: **#1 Benim Firmam** — migration (`migration_firmam_eslesme.sql`: firma_id kolonu + indeks +
+>   firmami_belirle + firma_icin_acik_ihaleler) → dashboard firma-seç + "Sizin İçin Katılabileceğiniz İhaleler" bloğu.
+>
+> **AYRICA (26 Tem tamamlanan UI):** yeni iG logo (favicon+og), sidebar emoji→SVG (25 sayfa),
+> KPI kartları ikon-çipli, TL formatı tam Türkçe (6 sayfa: 83K/43M → ₺83.400.061.000 / Mn-Mr-Bin).
 
 > ## 🎯 26 TEM — MAKSİMUM EKAP KAPSAMI PLANI (kullanıcı: "EKAP'ta olan her şeyi al, boşlukları kapat")
 > **Prensip:** EKAP'ta OLMAYAN alınmaz (pre-2010 ihale · pre-2015 sonuç · pre-2022 DT — kaynak yok).
