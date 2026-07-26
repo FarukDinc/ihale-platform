@@ -1,5 +1,31 @@
 # Ä°halePlatform â€” YapÄ±lacaklar Listesi
 
+> ## 🎯 26 TEM — MAKSİMUM EKAP KAPSAMI PLANI (kullanıcı: "EKAP'ta olan her şeyi al, boşlukları kapat")
+> **Prensip:** EKAP'ta OLMAYAN alınmaz (pre-2010 ihale · pre-2015 sonuç · pre-2022 DT — kaynak yok).
+> EKAP'ta OLAN maksimumda alınır. Probe bulguları (sonuc_tarih_probe.py):
+>
+> ### ✅ SONUÇ — zaten maksimum, sadece bitir
+> - EKAP `totalCount = 1.691.043` (İhalePro 1,688,002 ≈ aynı). Flat offset tarama sonuna
+>   ulaşıyor (ISP skip 1.015.000'de çalışıyor, derin sayfalama KAPALI DEĞİL).
+> - **Tarih filtresi bu endpoint'te YOK SAYILIYOR** (7 aday alan denendi, hepsi 1.691.043 döndü)
+>   → flat tarama tek yol VE tam kapsam. Bitince (~bu gece) EKAP'ın TAMAMI elimizde olacak.
+> - 2017 zayıflığı (42K) = backfill %78, bitince dolar. Bitince yıl dağılımını TEKRAR bak;
+>   hâlâ zayıfsa EKAP'ın gerçek içeriğidir (tüm liste tarandığı için gap olamaz).
+>
+> ### 🟠 DT — 2022-2024 yeniden tara (en olası gerçek gap)
+> - DT tarih filtresi (`dtTarihiBaslangic/Bitis`) ÇALIŞIYOR ve KATI. Yanıtta totalCount YOK,
+>   o yüzden "eksik mi" ancak yeniden tarayıp kıyaslayarak anlaşılır.
+> - Şüphe: 2024=305K → 2025=1,47M sıçraması organik değil. → **`dt_tarih_backfill.py --baslangic
+>   2022-01 --bitis 2024-12`** yeniden koş (idempotent upsert; eksikse doldurur, tamsa ~0 ekler).
+> - Havuz boşalınca (sonuç bitince) koş, öncesi/sonrası DT sayısını kıyasla.
+>
+> ### 🟡 İHALELER (ilanlar) — toplam doğrula
+> - Bizde 1.960.435. EKAP ihale listesi (tüm durumlar) toplamıyla kıyasla; eksikse yıl-dilimli doldur.
+> - 2019-2020 düşüklüğü (78-86K) muhtemelen gerçek (az ihale), ama EKAP totalCount ile teyit et.
+>
+> **SIRA:** (1) sonuç bitsin [bu gece] → (2) DT 2022-2024 re-scan → (3) ilanlar toplam doğrula →
+> (4) sonuç yıl dağılımını son kez kontrol. Tooling: `backend/sonuc_tarih_probe.py` (yıl-kıyas için genişlet).
+>
 > ## ⏭️ DÖNÜŞTE İLK İŞ — SONUÇ BACKFILL BİTİNCE (~27 Tem, hedef 1.688.002)
 > **Kontrol:** `curl -s ".../rest/v1/ihale_sonuclari?select=id&limit=1" -H apikey -H auth -H "Range:0-0" -H "Prefer:count=exact"`
 > → 1,65M+ ise "bitti" say. VDS: `ssh ihale`, backfill süreçleri `pgrep -f ekap_sonuc_backfill`.
