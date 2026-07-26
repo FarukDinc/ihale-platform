@@ -50,6 +50,25 @@
   --navy-rgb:  244,246,250;
 }
 
+/* ── Açık temada bile KOYU-LACİVERT sidebar (kmenu) — kurumsal kontrast (ihalepro referansı).
+   :root[data-theme=light] özgüllüğü (0,3,0) kenar-menu.js enjekte stilini (0,1,0) ezer. ── */
+:root[data-theme="light"] .kmenu {
+  background: #0F2743;
+  border-right: 1px solid rgba(255,255,255,0.07);
+}
+:root[data-theme="light"] .kmenu-item { color: #9FB0C9; }
+:root[data-theme="light"] .kmenu-item:hover { background: rgba(255,255,255,0.07); color: #FFFFFF; }
+:root[data-theme="light"] .kmenu-item.aktif { background: rgba(240,165,0,0.16); color: var(--amber); }
+:root[data-theme="light"] .kmenu-foot { border-top: 1px solid rgba(255,255,255,0.08); }
+:root[data-theme="light"] .kmenu-flyout {
+  background: #0F2743; border-right: 1px solid rgba(255,255,255,0.07);
+  box-shadow: 12px 0 30px rgba(6,17,33,.45);
+}
+:root[data-theme="light"] .kmenu-flyout-baslik { color: #7C8DA6; }
+:root[data-theme="light"] .kmenu-flyout a { color: #C3CEDF; }
+:root[data-theme="light"] .kmenu-flyout a:hover { background: rgba(255,255,255,0.07); color: #FFFFFF; }
+:root[data-theme="light"] .kmenu-flyout a.aktif { background: rgba(240,165,0,0.14); color: var(--amber); }
+
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
 /* ---- PRO LOCK ---- */
