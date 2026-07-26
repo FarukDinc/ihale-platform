@@ -530,7 +530,7 @@
   const PER_PAGE = 25;
   let aktifSekme = 'guncel';   // durum-bazlı: 'guncel'(aktif) | 'sonuc'(sonuçlanmış) | 'tumu'(hepsi)
   let dtNoParam = null;        // ?dt_no= ile gelinen tek-kayıt görünümü (ayrı detay sayfası yok — liste tek kayda daralır)
-  const kisaSayi = n => n >= 1e6 ? (n/1e6).toLocaleString('tr',{maximumFractionDigits:1})+'M' : n >= 1e3 ? Math.round(n/1e3)+'K' : String(n);
+  const kisaSayi = n => (Number(n) || 0).toLocaleString('tr-TR');
 
   function tarihFormat(s) {
     if (!s) return '—';
