@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="author" content="Ömer Faruk Dinç">
+  <meta name="copyright" content="© 2026 Ömer Faruk Dinç — İhaleGlobal">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Benim Sayfam — İhaleGlobal</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=3" />
+  <link rel="icon" type="image/png" sizes="48x48" href="/favicon-48.png?v=3" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/favicon-180.png?v=3" />
+  <link rel="stylesheet" href="css/style.css?v=mob1" />
+  <script src="js/theme.js?v=6"></script>
+  <style>
+    .bs-selam{font-size:24px;font-weight:800;color:var(--white);margin-bottom:2px}
+    .bs-selam .el{font-size:22px}
+    .bs-alt{font-size:14px;color:var(--muted);margin-bottom:20px}
+    .bs-firmam-btn{background:rgba(240,165,0,.12);border:1px solid var(--amber);color:var(--amber);font-size:13px;font-weight:700;padding:8px 16px;border-radius:8px;text-decoration:none;display:inline-flex;align-items:center;gap:7px}
+    /* KPI */
+    .bs-kpi{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:24px}
+    @media(max-width:900px){.bs-kpi{grid-template-columns:repeat(2,1fr)}}
+    @media(max-width:520px){.bs-kpi{grid-template-columns:1fr}}
+    .bs-kcard{background:var(--navy-mid);border:1px solid var(--border);border-radius:12px;padding:16px 18px;display:flex;align-items:center;gap:14px;text-decoration:none;color:inherit;transition:border-color .15s,transform .15s}
+    .bs-kcard:hover{border-color:var(--amber);transform:translateY(-2px)}
+    .bs-kicon{width:44px;height:44px;border-radius:11px;background:rgba(240,165,0,.12);color:var(--amber);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+    .bs-kicon svg{width:22px;height:22px}
+    .bs-knum{font-size:22px;font-weight:800;color:var(--white);line-height:1;font-family:var(--font-display)}
+    .bs-klabel{font-size:12px;color:var(--muted);margin-top:3px}
+    /* bolum */
+    .bs-bolum{background:var(--navy-mid);border:1px solid var(--border);border-radius:14px;padding:18px 20px;margin-bottom:18px}
+    .bs-bolum-bas{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+    .bs-bolum-t{display:flex;align-items:center;gap:9px;font-size:16px;font-weight:800;color:var(--white)}
+    .bs-bolum-t svg{color:var(--amber)}
+    .bs-gor{font-size:12.5px;color:var(--muted);text-decoration:none}.bs-gor:hover{color:var(--amber)}
+    .bs-ikili{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+    @media(max-width:760px){.bs-ikili{grid-template-columns:1fr}}
+    .bs-rapor-kart{background:var(--navy);border:1px solid var(--border);border-radius:10px;padding:16px}
+    .bs-rapor-kart h4{font-size:14px;color:var(--white);margin:0 0 4px}
+    .bs-rapor-kart p{font-size:12.5px;color:var(--muted);margin:0 0 12px;line-height:1.5}
+    .bs-rapor-btn{background:var(--amber);color:var(--navy);font-size:12.5px;font-weight:700;padding:8px 14px;border-radius:7px;text-decoration:none;display:inline-block}
+    .bs-liste-oge{display:flex;align-items:center;gap:10px;padding:9px 0;border-top:1px solid var(--border);text-decoration:none;color:inherit}
+    .bs-liste-oge:first-child{border-top:none}
+    .bs-liste-ad{flex:1;min-width:0;font-size:13px;color:var(--white);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .bs-liste-alt{font-size:11px;color:var(--muted)}
+    .bs-bos{color:var(--muted);font-size:12.5px;padding:14px 0;text-align:center}
+    .bs-giris{text-align:center;padding:70px 20px;color:var(--muted)}.bs-giris a{color:var(--amber);font-weight:600}
+  </style>
+</head>
+<body data-kenar-aktif="benim-sayfam">
+<div class="app">
+  <aside class="sidebar"></aside>
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-left"><div class="breadcrumb">Benim Sayfam</div></div>
+    </div>
+    <div class="page-body">
+
+      <div id="bs-giris" class="bs-giris" style="display:none;">🔒 Bu sayfa üyelere özeldir.<br><br><a href="login">Giriş yapın</a> veya <a href="fiyatlandirma_odeme_bolumu">üye olun</a> →</div>
+
+      <div id="bs-icerik" style="display:none;">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;">
+          <div>
+            <div class="bs-selam">Merhaba, <span id="bs-ad">—</span> <span class="el">👋</span></div>
+            <div class="bs-alt">Firmanıza özel fırsatlar, takip listeniz ve raporlarınız tek ekranda.</div>
+          </div>
+          <a href="firma-analiz" class="bs-firmam-btn">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 21V4a1 1 0 011-1h8a1 1 0 011 1v17M15 9h3a1 1 0 011 1v11M3 21h18"/></svg>
+            Benim Firmam
+          </a>
+        </div>
+
+        <!-- 1) Benim Firmam → eşleşen ihaleler (js/firmam.js) -->
+        <div id="firmam-blok" style="display:none;"></div>
+
+        <!-- 2) KPI (ihalepro paritesi: 6 kutu) -->
+        <div class="bs-kpi" id="bs-kpi"></div>
+
+        <!-- 3) Takip Listem (js/takip-panel.js) -->
+        <div id="takip-panel" style="display:none;"></div>
+
+        <!-- 4) Raporlarım -->
+        <div class="bs-bolum">
+          <div class="bs-bolum-bas">
+            <div class="bs-bolum-t"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a1 1 0 00-1 1v16a1 1 0 001 1h10a1 1 0 001-1V8z"/><path d="M14 3v5h4M9 13h6M9 17h4"/></svg> Raporlarım</div>
+            <a class="bs-gor" href="raporlar">Tümü →</a>
+          </div>
+          <div class="bs-ikili">
+            <div class="bs-rapor-kart"><h4>İhale Raporu</h4><p>Kriterlerinize göre yeni ihaleleri listeleyin, Excel'e aktarın, günlük bildirim alın.</p><a class="bs-rapor-btn" href="raporlar">Rapor Oluştur</a></div>
+            <div class="bs-rapor-kart"><h4>İhale Sonuç Raporu</h4><p>Sonuçlanan ihaleleri kritere göre raporlayın; kazananları ve bedelleri görün.</p><a class="bs-rapor-btn" href="raporlar">Sonuç Raporu</a></div>
+          </div>
+        </div>
+
+        <!-- 5) Son incelenenler + Favori aramalar -->
+        <div class="bs-ikili">
+          <div class="bs-bolum">
+            <div class="bs-bolum-bas"><div class="bs-bolum-t"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg> Son İncelediklerim</div></div>
+            <div id="bs-son"><div class="bs-bos">Yükleniyor…</div></div>
+          </div>
+          <div class="bs-bolum">
+            <div class="bs-bolum-bas"><div class="bs-bolum-t"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l2.5 6H21l-5 4 2 7-6-4-6 4 2-7-5-4h6.5z"/></svg> Favori Aramalarım</div><a class="bs-gor" href="ihaleler">İhale Ara →</a></div>
+            <div id="bs-favori"><div class="bs-bos">Yükleniyor…</div></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="js/kenar-menu.js?v=7"></script>
+<script src="js/sidebar-user.js?v=3"></script>
+<script src="js/kategoriler.js?v=1"></script>
+<script src="js/takip.js?v=2"></script>
+<script src="js/firmam.js?v=1"></script>
+<script src="js/takip-panel.js?v=1"></script>
+<script>
+(() => {
+  const SB_URL="https://ihaleglobal.com", SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzg0MzA3MTU4LCJleHAiOjE5NDE5ODcxNTh9.CjNKulvirotDD_y2oO2QKgo0kbqYvL0jUSV1RiDMoso";
+  const sb=window.supabase.createClient(SB_URL,SB_KEY);
+  const kısalt=(n)=>{n=Number(n)||0; return n>=1e6?(n/1e6).toLocaleString('tr-TR',{maximumFractionDigits:1})+' Mn':n>=1e3?(n/1e3).toLocaleString('tr-TR',{maximumFractionDigits:0})+' Bin':String(n);};
+  const num=(n)=>(Number(n)||0).toLocaleString('tr-TR');
+  const esc=(s)=>(s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+  async function sayac(tablo, filtre){
+    let q=sb.from(tablo).select('id',{count:'exact',head:true});
+    if(filtre) q=filtre(q);
+    const {count}=await q; return count||0;
+  }
+
+  async function kpiYukle(){
+    const simdi=new Date().toISOString();
+    const kart=(href,ikon,label,val)=>`<a class="bs-kcard" href="${href}"><span class="bs-kicon">${ikon}</span><div><div class="bs-knum" data-k="${label}">${val}</div><div class="bs-klabel">${label}</div></div></a>`;
+    const IK={
+      ihale:'<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a1 1 0 00-1 1v16a1 1 0 001 1h10a1 1 0 001-1V8z"/><path d="M14 3v5h4"/></svg>',
+      idare:'<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V10M19 21V10M4 10l8-6 8 6"/></svg>',
+      dt:'<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L4 14h7l-1 8 9-12h-7z"/></svg>',
+      sektor:'<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"/></svg>',
+      soz:'<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5M9 13h6M9 17h4"/></svg>',
+      firma:'<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M5 21V4a1 1 0 011-1h8a1 1 0 011 1v17M15 9h3a1 1 0 011 1v11M3 21h18"/></svg>',
+    };
+    const el=document.getElementById('bs-kpi');
+    el.innerHTML=
+      kart('ihaleler?sekme=detayli&durum=aktif',IK.ihale,'Aktif İhale','…')
+      +kart('kurum-analiz',IK.idare,'İşveren İdare','…')
+      +kart('dogrudan-temin',IK.dt,'Doğrudan Temin','…')
+      +kart('sektorler',IK.sektor,'Sektör','41')
+      +kart('ihaleler?sekme=sonuc',IK.soz,'Sözleşme','…')
+      +kart('firma-analiz',IK.firma,'Yüklenici Firma','…');
+    const set=(l,v)=>{const n=el.querySelector(`[data-k="${l}"]`);if(n)n.textContent=v;};
+    const simdiISO=new Date().toISOString();
+    Promise.all([
+      sayac('ilanlar',q=>q.eq('durum','aktif')).then(v=>set('Aktif İhale',num(v))),
+      sayac('dogrudan_temin_ilanlari').then(v=>set('Doğrudan Temin',kısalt(v))),
+      sayac('ihale_sonuclari').then(v=>set('Sözleşme',kısalt(v))),
+      sayac('yukleniciler').then(v=>set('Yüklenici Firma',num(v))),
+    ]);
+  }
+
+  function sonIncelenenler(){
+    let liste=[]; try{ liste=JSON.parse(localStorage.getItem('sonGoruntulenen')||'[]'); }catch(_){}
+    const el=document.getElementById('bs-son');
+    if(!liste.length){ el.innerHTML='<div class="bs-bos">Henüz ihale incelemediniz. <a href="ihaleler" style="color:var(--amber);">İhalelere göz atın →</a></div>'; return; }
+    el.innerHTML=liste.slice(0,6).map(i=>`<a class="bs-liste-oge" href="ihale-detay?id=${i.id}"><span class="bs-liste-ad">${esc(i.baslik||i.ad||'İhale')}</span><span class="bs-liste-alt">${esc(i.il||'')}</span></a>`).join('');
+  }
+
+  async function favoriAramalar(){
+    const el=document.getElementById('bs-favori');
+    try{
+      const {data}=await sb.from('kayitli_aramalar').select('id,ad,kriter').order('olusturulma',{ascending:false}).limit(6);
+      if(!data||!data.length){ el.innerHTML='<div class="bs-bos">Kayıtlı aramanız yok. Aramanızı kaydedip zaman kazanın.</div>'; return; }
+      el.innerHTML=data.map(a=>`<a class="bs-liste-oge" href="ihaleler"><span class="bs-liste-ad">⭐ ${esc(a.ad||'Arama')}</span></a>`).join('');
+    }catch(_){ el.innerHTML='<div class="bs-bos">Kayıtlı aramanız yok.</div>'; }
+  }
+
+  (async()=>{
+    const {data}=await sb.auth.getSession();
+    if(!data||!data.session){ document.getElementById('bs-giris').style.display='block'; return; }
+    document.getElementById('bs-icerik').style.display='block';
+    const u=data.session.user;
+    document.getElementById('bs-ad').textContent=(u.user_metadata&&u.user_metadata.full_name)||(u.email?u.email.split('@')[0]:'Üye');
+    kpiYukle(); sonIncelenenler(); favoriAramalar();
+  })();
+})();
+</script>
+<script src="js/main.js?v=trf2"></script>
+</body>
+</html>

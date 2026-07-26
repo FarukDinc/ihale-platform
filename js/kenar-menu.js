@@ -31,11 +31,13 @@
     sepet:   _s('<path d="M4 5h2l1.6 10h9L18 8H7"/><circle cx="9" cy="19" r="1.3"/><circle cx="17" cy="19" r="1.3"/>'),
     harita:  _s('<path d="M9 4L3 6v14l6-2 6 2 6-2V4l-6 2-6-2z"/><path d="M9 4v14M15 6v14"/>'),
     kullanici: _s('<circle cx="12" cy="8" r="4"/><path d="M5 21a7 7 0 0114 0"/>'),
+    yildiz:  _s('<path d="M12 3l2.6 6.3 6.8.5-5.2 4.4 1.6 6.6L12 17.8 6.2 20.8l1.6-6.6L2.6 9.8l6.8-.5z"/>'),
   };
 
   // ── Menü ağacı (tek kaynak) ────────────────────────────────────────────────
   // alt: [{ad, href}] verilirse flyout açılır; yoksa gruba tıklanınca href'e gidilir.
   const MENU = [
+    { id: 'benim-sayfam', ikon: IK.yildiz, ad: 'Benim Sayfam', href: 'benim-sayfam' },
     { id: 'anasayfa', ikon: IK.home, ad: 'Anasayfa', href: 'dashboard' },
     { id: 'ihaleler', ikon: IK.dosya, ad: 'İhaleler', alt: [
         { ad: 'Aktif İhaleler', href: 'ihaleler?sekme=guncel' },
