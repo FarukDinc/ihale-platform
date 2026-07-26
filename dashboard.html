@@ -896,7 +896,7 @@
         <a class="kpi-card" id="kpi-card-buyuk" href="ihaleler?sekme=detayli&amp;durum=aktif&amp;minBedel=43142132" title="Yüksek yaklaşık maliyetli ihaleleri gör">
           <span class="kpi-ikon" style="background:rgba(76,175,80,0.12);color:#4CAF50;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/></svg></span>
           <div class="kpi-body">
-            <div class="kpi-label" id="kpi-buyuk-label">Büyük İhale (₺43M+)</div>
+            <div class="kpi-label" id="kpi-buyuk-label">Büyük İhale (₺43 Mn+)</div>
             <div class="kpi-value" style="color:#4CAF50;" id="kpi-buyuk">—</div>
             <div class="kpi-delta" style="color:var(--muted);" id="kpi-buyuk-alt">Yüksek yaklaşık maliyet</div>
           </div>
@@ -1028,10 +1028,10 @@
         </select>
         <select class="filter-select" id="f-bedel" onchange="filtrele()">
           <option value="">Bütçe (Tümü)</option>
-          <option value="1000000">1M TL üzeri</option>
-          <option value="5000000">5M TL üzeri</option>
-          <option value="20000000">20M TL üzeri</option>
-          <option value="43142132">43M TL üzeri</option>
+          <option value="1000000">1 Mn TL üzeri</option>
+          <option value="5000000">5 Mn TL üzeri</option>
+          <option value="20000000">20 Mn TL üzeri</option>
+          <option value="43142132">43 Mn TL üzeri</option>
         </select>
         <select class="filter-select" id="f-sort" onchange="filtrele()">
           <option value="son_teklif">Son Teklif ↑</option>
@@ -1160,11 +1160,21 @@
   }
 
   // ── Bütçe formatlama ─────────────────────────────────
+  // TAM Türkçe TL formatı: ₺83.400.061.000 (binlik nokta ayraç). İngilizce K/M YOK
+  // (kullanıcı: "83K gibi türkçe olmayan rakam kullanma, net TL göster").
   function butceFormatla(bedel) {
-    if (!bedel) return '—';
-    if (bedel >= 1000000) return `₺${(bedel/1000000).toFixed(1)}M`;
-    if (bedel >= 1000) return `₺${(bedel/1000).toFixed(0)}K`;
-    return `₺${bedel}`;
+    if (bedel == null || bedel === '') return '—';
+    const n = Number(bedel);
+    if (!isFinite(n) || n === 0) return '—';
+    return '₺' + n.toLocaleString('tr-TR', { maximumFractionDigits: 0 });
+  }
+  // Dar alanlar (harita efsanesi) için TÜRKÇE kısaltma: ₺1,6 Mr · ₺83 Mn · ₺500 Bin
+  function butceKisa(bedel) {
+    const v = Number(bedel) || 0;
+    if (v >= 1e9) return '₺' + (v/1e9).toLocaleString('tr-TR', { maximumFractionDigits: 1 }) + ' Mr';
+    if (v >= 1e6) return '₺' + (v/1e6).toLocaleString('tr-TR', { maximumFractionDigits: 1 }) + ' Mn';
+    if (v >= 1e3) return '₺' + (v/1e3).toLocaleString('tr-TR', { maximumFractionDigits: 0 }) + ' Bin';
+    return '₺' + v.toLocaleString('tr-TR');
   }
 
   // ── Yaklaşık maliyet aralığı (itiraz bedeli eşiklerinden) ──
@@ -1721,7 +1731,7 @@
             .gte('tarih', bugunBaslangic.toISOString()).lte('tarih', bugunBitis.toISOString()),
           // ⚠️ ESKİDEN İHALE eşiği (43.142.132 = 2026 yasal eşik değer) DT'ye uygulanıyordu.
           // KATEGORİ HATASI: DT'nin ölçeği bambaşka — medyan ₺37.424, ortalama ₺182.215.
-          // O eşiğin üstünde yalnız 14 kayıt var ve "Büyük İhale (₺43M+)" etiketiyle
+          // O eşiğin üstünde yalnız 14 kayıt var ve "Büyük İhale (₺43 Mn+)" etiketiyle
           // gösterilmeleri anlamsızdı (doğrudan temin zaten limitli bir usul; limit üstü
           // olanlar ya 4734/22 istisna bentleri ya da veri hatası — ikisi de "büyük ihale" DEĞİL).
           sb.from('dogrudan_temin_sonuclari').select('dt_no', { count: 'exact', head: true }).gte('kazanan_bedel', DT_YUKSEK_BEDEL),
@@ -1760,7 +1770,7 @@
       const bAlt   = document.getElementById('kpi-buyuk-alt');
       const bKart  = document.getElementById('kpi-card-buyuk');
       const dtTek  = (mod === 'dt');
-      if (bLabel) bLabel.textContent = dtTek ? 'Yüksek Bedelli DT (₺1,5M+)' : 'Büyük İhale (₺43M+)';
+      if (bLabel) bLabel.textContent = dtTek ? 'Yüksek Bedelli DT (₺1,5 Mn+)' : 'Büyük İhale (₺43 Mn+)';
       if (bAlt)   bAlt.textContent   = dtTek ? 'Limit üstü — istisna bendi veya veri hatası'
                                              : 'Yüksek yaklaşık maliyet';
       if (bKart)  bKart.title        = dtTek ? 'Olağandışı yüksek bedelli doğrudan teminler'
@@ -1867,7 +1877,7 @@
   // ── Son Eklenen (İhale/DT) widget ────────────────────
   function dashParaKisa(v) {
     if (!v) return null;
-    return v >= 1e9 ? (v/1e9).toFixed(1)+'Mr₺' : v >= 1e6 ? (v/1e6).toFixed(1)+'M₺' : (v/1000).toFixed(0)+'K₺';
+    return butceKisa(v);
   }
   function dashGunAy(t) { return t ? new Date(t).toLocaleDateString('tr-TR', { day: '2-digit', month: 'short' }) : null; }
 
@@ -1959,7 +1969,7 @@
     const gosterIhale = mod === 'ihale' || mod === 'tumu';
     const gosterDt = (mod === 'dt' || mod === 'tumu') && window.TakipDT;
     try {
-      const paraCevir = v => v >= 1e9 ? (v/1e9).toFixed(1)+'M₺' : v >= 1e6 ? (v/1e6).toFixed(1)+'M₺' : v >= 1e3 ? (v/1e3).toFixed(0)+'B₺' : v+'₺';
+      const paraCevir = v => butceKisa(v);
       const simdi = new Date();
       let ihaleHtml = [], dtHtml = [];
 
@@ -2364,7 +2374,7 @@
       el.innerHTML = `<div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:0;">
         ${skorlu.map(({ ilan, skor }) => {
           const href = dtMod ? `dt-detay?dt_no=${encodeURIComponent(ilan.dt_no)}` : `ihale-detay?id=${ilan.id}`;
-          const bedel = !dtMod && ilan.tahmini_bedel ? '₺' + (ilan.tahmini_bedel / 1e6).toFixed(1) + 'M' : dtMod ? null : '—';
+          const bedel = !dtMod && ilan.tahmini_bedel ? butceFormatla(ilan.tahmini_bedel) : dtMod ? null : '—';
           const kalan = !dtMod && ilan.son_teklif_tarihi ? Math.ceil((new Date(ilan.son_teklif_tarihi) - Date.now()) / 86400000) : null;
           const kalanStr = kalan !== null ? (kalan <= 0 ? 'Bugün!' : `${kalan}g`) : '';
           // Sağ üst rozet: ihalede kalan gün, DT'de duyuru tarihi (deadline kavramı yok)
