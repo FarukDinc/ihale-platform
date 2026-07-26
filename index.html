@@ -878,7 +878,7 @@
       if (b && b.toplam_butce > 0) {
         const toplamTL = Number(b.toplam_butce) || 0;
         const milyar = toplamTL / 1_000_000_000;
-        set('cnt-budget', milyar >= 1 ? milyar.toFixed(1) : (toplamTL / 1_000_000).toFixed(0) + 'M TL');
+        set('cnt-budget', milyar.toLocaleString('tr-TR', { maximumFractionDigits: 1 }));
         // DÜRÜSTLÜK: toplam TÜM açık ihaleleri değil, maliyeti BİLİNEN kayıtları kapsıyor.
         // Kapsamı yazmazsak kullanıcı bunu "açık ihalelerin toplam bütçesi" sanır.
         const not = document.getElementById('cnt-budget-not');

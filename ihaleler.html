@@ -1663,7 +1663,7 @@
     // kullanıcı 1,6M kayıtta 2. sayfaya GEÇEMİYORDU (20 Tem, canlıda doğrulandı).
     // Null-güvenli hale getirildi; eleman ileride eklenirse kendiliğinden dolar.
     const sbCount = document.getElementById('sb-count');
-    if (sbCount) sbCount.textContent = toplamKayit > 999 ? Math.round(toplamKayit/1000*10)/10+'K' : toplamKayit;
+    if (sbCount) sbCount.textContent = (Number(toplamKayit) || 0).toLocaleString('tr-TR');
 
     paginasyonOlustur();
   }

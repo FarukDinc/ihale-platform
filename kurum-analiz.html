@@ -727,11 +727,10 @@
   let listeIstek = 0;   // hızlı sayfa geçişlerinde eski cevabın yenisini ezmemesi için
 
   function paraFormat(n) {
-    if (!n) return '—';
-    if (n >= 1e9) return '₺' + (n / 1e9).toFixed(1) + 'Mr';
-    if (n >= 1e6) return '₺' + (n / 1e6).toFixed(1) + 'M';
-    if (n >= 1e3) return '₺' + (n / 1e3).toFixed(0) + 'B';
-    return '₺' + n.toLocaleString('tr');
+    if (n == null || n === '') return '—';
+    const v = Number(n);
+    if (!isFinite(v) || v === 0) return '—';
+    return '₺' + v.toLocaleString('tr-TR', { maximumFractionDigits: 0 });
   }
 
   function tarihFormat(s) {
