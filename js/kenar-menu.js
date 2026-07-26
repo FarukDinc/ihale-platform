@@ -15,38 +15,56 @@
  * PİLOT: önce ihaleler.html'de dener; onaylanınca 24 sayfaya yayılır.
  */
 (function () {
+  // ── İkon seti (temiz çizgi ikonlar; stroke=currentColor → aktif/amber rengini miras alır) ──
+  // 20 Tem'e dek emoji kullanılıyordu (◉⊞🚩…); platforma göre değişip amatör duruyordu.
+  const _s = (p) => `<svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${p}</svg>`;
+  const IK = {
+    home:    _s('<path d="M3 11l9-7 9 7"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/>'),
+    dosya:   _s('<path d="M14 3H7a1 1 0 00-1 1v16a1 1 0 001 1h10a1 1 0 001-1V8z"/><path d="M14 3v5h4"/><path d="M9 13h6"/><path d="M9 17h4"/>'),
+    kupa:    _s('<path d="M7 4h10v4a5 5 0 01-10 0z"/><path d="M7 6H4v1a3 3 0 003 3"/><path d="M17 6h3v1a3 3 0 01-3 3"/><path d="M9 16h6v4H9z"/><path d="M12 13v3"/>'),
+    grafik:  _s('<path d="M4 20h16"/><path d="M6 20v-7"/><path d="M12 20V5"/><path d="M18 20v-10"/>'),
+    bina:    _s('<path d="M5 21V4a1 1 0 011-1h8a1 1 0 011 1v17"/><path d="M15 9h3a1 1 0 011 1v11"/><path d="M8 7h1M12 7h1M8 11h1M12 11h1M8 15h1M12 15h1"/><path d="M3 21h18"/>'),
+    kurum:   _s('<path d="M3 21h18"/><path d="M5 21V10M10 21V10M14 21V10M19 21V10"/><path d="M4 10l8-6 8 6"/>'),
+    izgara:  _s('<path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"/>'),
+    terazi:  _s('<path d="M12 3v18"/><path d="M7 21h10"/><path d="M5 7h14"/><path d="M8 7l-3 6a3 3 0 006 0z" transform="translate(0,0)"/><path d="M16 7l3 6a3 3 0 01-6 0z" transform="translate(0,0)"/>'),
+    kure:    _s('<circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3c2.7 2.6 2.7 15.4 0 18M12 3c-2.7 2.6-2.7 15.4 0 18"/>'),
+    sepet:   _s('<path d="M4 5h2l1.6 10h9L18 8H7"/><circle cx="9" cy="19" r="1.3"/><circle cx="17" cy="19" r="1.3"/>'),
+    harita:  _s('<path d="M9 4L3 6v14l6-2 6 2 6-2V4l-6 2-6-2z"/><path d="M9 4v14M15 6v14"/>'),
+    kullanici: _s('<circle cx="12" cy="8" r="4"/><path d="M5 21a7 7 0 0114 0"/>'),
+  };
+
   // ── Menü ağacı (tek kaynak) ────────────────────────────────────────────────
   // alt: [{ad, href}] verilirse flyout açılır; yoksa gruba tıklanınca href'e gidilir.
   const MENU = [
-    { id: 'anasayfa', ikon: '◉', ad: 'Anasayfa', href: 'dashboard' },
-    { id: 'ihaleler', ikon: '⊞', ad: 'İhaleler', alt: [
+    { id: 'anasayfa', ikon: IK.home, ad: 'Anasayfa', href: 'dashboard' },
+    { id: 'ihaleler', ikon: IK.dosya, ad: 'İhaleler', alt: [
         { ad: 'Aktif İhaleler', href: 'ihaleler?sekme=guncel' },
         { ad: 'Geçmiş İhaleler', href: 'ihaleler?sekme=gecmis' },
         { ad: 'Doğrudan Temin', href: 'dogrudan-temin' },
         { ad: 'Detaylı Arama', href: 'ihaleler?sekme=detayli' },
       ] },
-    { id: 'sonuclar', ikon: '🚩', ad: 'Sonuçlar', alt: [
+    { id: 'sonuclar', ikon: IK.kupa, ad: 'Sonuçlar', alt: [
         { ad: 'Sonuçlanan İhaleler', href: 'ihaleler?sekme=sonuc' },
         // "Sonuç Bekleyenler" = süresi geçmiş ama sonuç yayınlanmamış (durum=kapali, 1,6M).
         // "İptal Edilenler" EKAP'ta ayrı statü olarak GELMİYOR (durum yalnız aktif/kapali/sonuclandi)
         // → veri kaynağı olmadığı için menüye konmadı (ölü link yerine dürüst eksik).
         { ad: 'Sonuç Bekleyenler', href: 'ihaleler?sekme=gecmis&durum=kapali' },
       ] },
-    { id: 'analiz', ikon: '📊', ad: 'Analiz', alt: [
+    { id: 'analiz', ikon: IK.grafik, ad: 'Analiz', alt: [
         { ad: 'Rekabet Analizi', href: 'rekabet-analizi' },
         { ad: 'Doğrudan Temin Analizi', href: 'dt-analiz' },
       ] },
-    { id: 'firmalar', ikon: '🏢', ad: 'Firmalar', href: 'firma-analiz' },
-    { id: 'idareler', ikon: '🏛️', ad: 'İdareler', href: 'kurum-analiz' },
-    { id: 'sektorler', ikon: '🏭', ad: 'Sektörler', href: 'sektorler' },
-    { id: 'kararlar', ikon: '⚖️', ad: 'KİK Kararlar', href: 'kik-kararlar' },
-    { id: 'uluslararasi', ikon: '🌍', ad: 'Uluslararası', alt: [
+    { id: 'firmalar', ikon: IK.bina, ad: 'Firmalar', href: 'firma-analiz' },
+    { id: 'idareler', ikon: IK.kurum, ad: 'İdareler', href: 'kurum-analiz' },
+    { id: 'sektorler', ikon: IK.izgara, ad: 'Sektörler', href: 'sektorler' },
+    { id: 'kararlar', ikon: IK.terazi, ad: 'KİK Kararlar', href: 'kik-kararlar' },
+    { id: 'uluslararasi', ikon: IK.kure, ad: 'Uluslararası', alt: [
         { ad: 'Uluslararası İhaleler', href: 'uluslararasi' },
         { ad: 'Ticaret Analizi', href: 'ticaret-analiz' },
       ] },
-    { id: 'ozel', ikon: '🤝', ad: 'e-Satınalma', href: 'ozel-ihaleler' },
-    { id: 'harita', ikon: '🗺️', ad: 'Harita', href: 'harita' },
-    { id: 'firmam', ikon: '📁', ad: 'Firmam', alt: [
+    { id: 'ozel', ikon: IK.sepet, ad: 'e-Satınalma', href: 'ozel-ihaleler' },
+    { id: 'harita', ikon: IK.harita, ad: 'Harita', href: 'harita' },
+    { id: 'firmam', ikon: IK.kullanici, ad: 'Firmam', alt: [
         { ad: 'İhalelerim', href: 'ihalelerim' },
         { ad: 'Takibim', href: 'takipte' },
         { ad: 'Bildirimler', href: 'bildirimler' },
