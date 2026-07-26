@@ -65,6 +65,7 @@
     { id: 'ozel', ikon: IK.sepet, ad: 'e-Satınalma', href: 'ozel-ihaleler' },
     { id: 'harita', ikon: IK.harita, ad: 'Harita', href: 'harita' },
     { id: 'firmam', ikon: IK.kullanici, ad: 'Firmam', alt: [
+        { ad: 'Raporlarım', href: 'raporlar' },
         { ad: 'İhalelerim', href: 'ihalelerim' },
         { ad: 'Takibim', href: 'takipte' },
         { ad: 'Bildirimler', href: 'bildirimler' },

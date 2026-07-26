@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="author" content="Ömer Faruk Dinç">
+  <meta name="copyright" content="© 2026 Ömer Faruk Dinç — İhaleGlobal">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Raporlarım — İhaleGlobal</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=2" />
+  <link rel="icon" type="image/png" sizes="48x48" href="/favicon-48.png?v=2" />
+  <link rel="stylesheet" href="css/style.css?v=mob1" />
+  <script src="js/theme.js?v=6"></script>
+  <style>
+    .rp-tip{display:inline-flex;background:var(--navy);border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:16px}
+    .rp-tip button{background:none;border:none;color:var(--muted);font-size:13.5px;font-weight:600;padding:9px 18px;cursor:pointer;font-family:var(--font-body)}
+    .rp-tip button.aktif{background:rgba(240,165,0,.14);color:var(--amber)}
+    .rp-form{background:var(--navy-mid);border:1px solid var(--border);border-radius:12px;padding:16px 18px;margin-bottom:18px}
+    .rp-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}
+    .rp-alan label{display:block;font-size:11.5px;color:var(--muted);font-weight:600;margin-bottom:5px}
+    .rp-alan input,.rp-alan select{width:100%;background:var(--navy);border:1px solid var(--border);border-radius:7px;padding:9px 11px;color:var(--white);font-size:13px;font-family:var(--font-body);outline:none}
+    .rp-alan input:focus,.rp-alan select:focus{border-color:var(--amber)}
+    .rp-eylem{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap;align-items:center}
+    .rp-btn{background:var(--amber);color:var(--navy);border:none;font-size:13.5px;font-weight:700;padding:10px 20px;border-radius:8px;cursor:pointer;font-family:var(--font-body)}
+    .rp-btn.ikincil{background:none;border:1px solid var(--amber);color:var(--amber)}
+    .rp-btn.kilit{background:none;border:1px solid var(--border);color:var(--muted);cursor:not-allowed}
+    .rp-sonuc-bas{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:10px}
+    .rp-sayi{font-size:14px;color:var(--white);font-weight:700}
+    .rp-tablo-wrap{background:var(--navy-mid);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+    .rp-tablo{width:100%;border-collapse:collapse;font-size:12.5px}
+    .rp-tablo th,.rp-tablo td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--border);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:280px}
+    .rp-tablo th{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.03em;position:sticky;top:0;background:var(--navy-mid)}
+    .rp-tablo td.num{text-align:right;font-variant-numeric:tabular-nums;color:var(--amber)}
+    .rp-tablo tr:hover td{background:rgba(255,255,255,.02)}
+    .rp-sayfalama{display:flex;gap:8px;align-items:center;justify-content:center;padding:14px}
+    .rp-sayfalama button{background:var(--navy);border:1px solid var(--border);color:var(--muted);padding:6px 14px;border-radius:6px;cursor:pointer;font-family:var(--font-body);font-size:13px}
+    .rp-sayfalama button:disabled{opacity:.4;cursor:not-allowed}
+    .rp-bos{text-align:center;color:var(--muted);padding:40px;font-size:13px}
+    .rp-kilit-ust{background:rgba(240,165,0,.08);border:1px solid rgba(240,165,0,.3);color:#e0b060;padding:12px 16px;border-radius:8px;font-size:12.5px;margin-bottom:14px;line-height:1.5}
+    .rp-giris{text-align:center;padding:60px 20px;color:var(--muted)}
+    .rp-giris a{color:var(--amber);font-weight:600}
+  </style>
+</head>
+<body data-kenar-aktif="firmam">
+<div class="app">
+  <aside class="sidebar"></aside>
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-left"><div class="breadcrumb">İhale & Sonuç Raporları</div></div>
+    </div>
+    <div class="page-body">
+      <h1 style="font-size:22px;font-weight:800;color:var(--white);margin-bottom:4px;">Raporlarım</h1>
+      <p style="color:var(--muted);font-size:14px;margin-bottom:18px;">Kriter seçin, ihale ve sonuçları listeleyip <strong style="color:var(--white);">Excel'e aktarın</strong>. Excel dışa aktarım Premium (Kurumsal) üyelere özeldir.</p>
+
+      <div id="rp-giris" class="rp-giris" style="display:none;">🔒 Raporlar üyelere özeldir.<br><br><a href="login">Giriş yapın</a> veya <a href="fiyatlandirma_odeme_bolumu">üye olun</a> →</div>
+
+      <div id="rp-icerik" style="display:none;">
+        <div class="rp-tip">
+          <button class="aktif" data-tip="ihale">📋 İhale Raporu</button>
+          <button data-tip="sonuc">🏆 Sonuç Raporu</button>
+        </div>
+
+        <div class="rp-form">
+          <div class="rp-grid">
+            <div class="rp-alan"><label>Anahtar kelime</label><input type="text" id="f-kelime" placeholder="İhale adında ara…"></div>
+            <div class="rp-alan"><label>İl</label><select id="f-il"><option value="">Tümü</option></select></div>
+            <div class="rp-alan"><label>Kategori</label><select id="f-kategori"><option value="">Tümü</option></select></div>
+            <div class="rp-alan"><label>Başlangıç tarihi</label><input type="date" id="f-bas"></div>
+            <div class="rp-alan"><label>Bitiş tarihi</label><input type="date" id="f-bit"></div>
+            <div class="rp-alan"><label>Min. bedel (₺)</label><input type="number" id="f-min" placeholder="ör. 1000000"></div>
+            <div class="rp-alan" id="f-durum-wrap"><label>Durum</label><select id="f-durum"><option value="">Tümü</option><option value="aktif">Aktif</option><option value="sonuclandi">Sonuçlanan</option></select></div>
+          </div>
+          <div class="rp-eylem">
+            <button class="rp-btn" id="rp-olustur">Rapor Oluştur</button>
+            <button class="rp-btn ikincil" id="rp-excel">⬇ Excel İndir</button>
+            <span style="font-size:11.5px;color:var(--muted);" id="rp-not"></span>
+          </div>
+        </div>
+
+        <div id="rp-kilit-ust"></div>
+        <div id="rp-sonuc"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="js/kenar-menu.js?v=6"></script>
+<script src="js/sidebar-user.js?v=3"></script>
+<script src="js/plan.js?v=rot1"></script>
+<script src="js/kategoriler.js?v=1"></script>
+<script src="js/api.js?v=bldr1"></script>
+<script>
+(() => {
+  const SB_URL="https://ihaleglobal.com", SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzg0MzA3MTU4LCJleHAiOjE5NDE5ODcxNTh9.CjNKulvirotDD_y2oO2QKgo0kbqYvL0jUSV1RiDMoso";
+  const sb=window.supabase.createClient(SB_URL,SB_KEY);
+  const ILLER=['ADANA','ADIYAMAN','AFYONKARAHİSAR','AĞRI','AKSARAY','AMASYA','ANKARA','ANTALYA','ARDAHAN','ARTVİN','AYDIN','BALIKESİR','BARTIN','BATMAN','BAYBURT','BİLECİK','BİNGÖL','BİTLİS','BOLU','BURDUR','BURSA','ÇANAKKALE','ÇANKIRI','ÇORUM','DENİZLİ','DİYARBAKIR','DÜZCE','EDİRNE','ELAZIĞ','ERZİNCAN','ERZURUM','ESKİŞEHİR','GAZİANTEP','GİRESUN','GÜMÜŞHANE','HAKKARİ','HATAY','IĞDIR','ISPARTA','İSTANBUL','İZMİR','KAHRAMANMARAŞ','KARABÜK','KARAMAN','KARS','KASTAMONU','KAYSERİ','KIRIKKALE','KIRKLARELİ','KIRŞEHİR','KİLİS','KOCAELİ','KONYA','KÜTAHYA','MALATYA','MANİSA','MARDİN','MERSİN','MUĞLA','MUŞ','NEVŞEHİR','NİĞDE','ORDU','OSMANİYE','RİZE','SAKARYA','SAMSUN','SİİRT','SİNOP','SİVAS','ŞANLIURFA','ŞIRNAK','TEKİRDAĞ','TOKAT','TRABZON','TUNCELİ','UŞAK','VAN','YALOVA','YOZGAT','ZONGULDAK'];
+  let tip='ihale', sayfa=0, sonToplam=0, sonKriter=null, kurumsal=false, pro=false;
+  const SAYFA=50, FREE_MAX_SAYFA=2, EXCEL_MAX=5000;
+
+  const tl=(v)=>v==null||v===0?'—':'₺'+Number(v).toLocaleString('tr-TR',{maximumFractionDigits:0});
+  const gunAy=(t)=>t?new Date(t).toLocaleDateString('tr-TR'):'—';
+  const esc=(s)=>(s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+  function kriter(){
+    return { kelime:val('f-kelime')||null, il:val('f-il')||null, kategori:val('f-kategori')||null,
+      bas:val('f-bas')||null, bit:val('f-bit')||null, min:val('f-min')?+val('f-min'):null, durum:val('f-durum')||null };
+  }
+  const val=(id)=>document.getElementById(id).value.trim();
+
+  async function rpc(k,offset){
+    if(tip==='ihale') return sb.rpc('rapor_ihale',{p_kelime:k.kelime,p_il:k.il,p_kategori:k.kategori,p_bas:k.bas,p_bit:k.bit,p_min:k.min,p_durum:k.durum,p_offset:offset,p_limit:SAYFA});
+    return sb.rpc('rapor_sonuc',{p_kelime:k.kelime,p_il:k.il,p_kategori:k.kategori,p_bas:k.bas,p_bit:k.bit,p_min:k.min,p_offset:offset,p_limit:SAYFA});
+  }
+
+  async function olustur(){
+    sayfa=0; sonKriter=kriter(); await sayfaGetir();
+  }
+  async function sayfaGetir(){
+    const wrap=document.getElementById('rp-sonuc');
+    wrap.innerHTML='<div class="rp-bos">Rapor hazırlanıyor…</div>';
+    document.getElementById('rp-kilit-ust').innerHTML='';
+    const {data,error}=await rpc(sonKriter,sayfa*SAYFA);
+    if(error){wrap.innerHTML=`<div class="rp-bos" style="color:#e05260;">Rapor alınamadı: ${esc(error.message)}</div>`;return;}
+    sonToplam=data.toplam||0;
+    const satirlar=data.satirlar||[];
+    if(!satirlar.length){wrap.innerHTML='<div class="rp-bos">Kritere uyan kayıt yok. Filtreleri genişletin.</div>';return;}
+    // Free kullanıcı: yalnız ilk 2 sayfa
+    if(!pro && sayfa>=FREE_MAX_SAYFA){ kilitGoster(); return; }
+    tabloCiz(satirlar,data);
+  }
+
+  function kilitGoster(){
+    document.getElementById('rp-sonuc').innerHTML=`<div class="rp-bos">🔒 İlk ${FREE_MAX_SAYFA} sayfa ücretsiz. Tam rapor + Excel için <a href="fiyatlandirma_odeme_bolumu" style="color:var(--amber);">Pro'ya geçin</a>.</div>`;
+  }
+
+  function tabloCiz(satirlar,data){
+    const kol = tip==='ihale'
+      ? [['baslik','İhale Adı'],['idare','İdare'],['il','İl'],['kategori','Kategori'],['bedel','Yaklaşık Maliyet',1],['durum','Durum'],['son_teklif_tarihi','Son Teklif',0,1]]
+      : [['baslik','İhale Adı'],['kazanan_firma','Kazanan'],['il','İl'],['kategori','Kategori'],['sozlesme_bedeli','Bedel',1],['tenzilat_yuzde','Tenzilat %'],['sonuc_tarihi','Sonuç Tarihi',0,1]];
+    const th=kol.map(k=>`<th>${k[1]}</th>`).join('');
+    const gorSayfa=Math.ceil(sonToplam/SAYFA), maxSayfa=pro?gorSayfa:Math.min(gorSayfa,FREE_MAX_SAYFA);
+    const trs=satirlar.map(r=>'<tr>'+kol.map(k=>{
+      let v=r[k[0]]; if(k[0]==='bedel') v=r.bedel!=null?r.bedel:(r.yaklasik_maliyet_max||r.yaklasik_maliyet_min);
+      if(k[2]) return `<td class="num">${tl(v)}</td>`;
+      if(k[3]) return `<td>${gunAy(v)}</td>`;
+      if(k[0]==='tenzilat_yuzde') return `<td>${v!=null?'%'+Number(v).toFixed(1):'—'}</td>`;
+      return `<td title="${esc(String(v||''))}">${esc(String(v||'—'))}</td>`;
+    }).join('')+'</tr>').join('');
+    document.getElementById('rp-sonuc').innerHTML=`
+      <div class="rp-sonuc-bas">
+        <span class="rp-sayi">${data.tavan_asildi?'50.000+':sonToplam.toLocaleString('tr-TR')} kayıt${!pro?` · ilk ${FREE_MAX_SAYFA} sayfa (Pro değilsiniz)`:''}</span>
+      </div>
+      <div class="rp-tablo-wrap"><div style="overflow-x:auto;max-height:560px;overflow-y:auto;"><table class="rp-tablo"><thead><tr>${th}</tr></thead><tbody>${trs}</tbody></table></div>
+      <div class="rp-sayfalama">
+        <button ${sayfa<=0?'disabled':''} id="rp-onceki">← Önceki</button>
+        <span style="color:var(--muted);font-size:13px;">${sayfa+1} / ${maxSayfa||1}</span>
+        <button ${sayfa>=maxSayfa-1?'disabled':''} id="rp-sonraki">Sonraki →</button>
+      </div></div>`;
+    const o=document.getElementById('rp-onceki'),s=document.getElementById('rp-sonraki');
+    if(o)o.onclick=()=>{sayfa--;sayfaGetir();window.scrollTo(0,0);};
+    if(s)s.onclick=()=>{sayfa++;sayfaGetir();window.scrollTo(0,0);};
+  }
+
+  // ── Excel (yalnız kurumsal) ──
+  async function excelIndir(){
+    if(!kurumsal){ alert('Excel dışa aktarım Premium (Kurumsal) üyelere özeldir. Pro/Kurumsal pakete geçin.'); location.href='fiyatlandirma_odeme_bolumu'; return; }
+    const btn=document.getElementById('rp-excel'); btn.textContent='Hazırlanıyor…'; btn.disabled=true;
+    const k=kriter(); const tum=[]; let off=0;
+    while(off<EXCEL_MAX){
+      const {data,error}=await rpc(k,off); if(error||!data.satirlar||!data.satirlar.length)break;
+      tum.push(...data.satirlar); off+=SAYFA; if(data.satirlar.length<SAYFA)break;
+    }
+    if(!tum.length){ alert('Dışa aktarılacak kayıt yok.'); btn.textContent='⬇ Excel İndir'; btn.disabled=false; return; }
+    // filigran/kaynak satırı
+    const ust=[['İhaleGlobal — '+(tip==='ihale'?'İhale':'Sonuç')+' Raporu · Oluşturma: '+new Date().toLocaleString('tr-TR')+' · Kaynak: ihaleglobal.com · Yalnız üye kullanımı içindir.']];
+    const ws=XLSX.utils.aoa_to_sheet(ust);
+    XLSX.utils.sheet_add_json(ws,tum,{origin:'A3'});
+    const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,'Rapor');
+    XLSX.writeFile(wb,'ihaleglobal-rapor-'+Date.now()+'.xlsx');
+    btn.textContent='⬇ Excel İndir'; btn.disabled=false;
+  }
+
+  function tipSec(t){
+    tip=t;
+    document.querySelectorAll('.rp-tip button').forEach(b=>b.classList.toggle('aktif',b.dataset.tip===t));
+    document.getElementById('f-durum-wrap').style.display = t==='ihale'?'block':'none';
+    document.getElementById('rp-sonuc').innerHTML='';
+  }
+
+  (async()=>{
+    const {data}=await sb.auth.getSession();
+    if(!data||!data.session){document.getElementById('rp-giris').style.display='block';return;}
+    document.getElementById('rp-icerik').style.display='block';
+    // il + kategori doldur
+    document.getElementById('f-il').insertAdjacentHTML('beforeend', ILLER.map(i=>`<option value="${i}">${i.charAt(0)+i.slice(1).toLocaleLowerCase('tr')}</option>`).join(''));
+    (window.KATEGORILER||[]).forEach(k=>{const o=document.createElement('option');o.value=k.kod;o.textContent=k.kod;document.getElementById('f-kategori').appendChild(o);});
+    // plan
+    try{ pro=await Plan.isPro(); kurumsal=await Plan.isKurumsal(); }catch(_){}
+    const excelBtn=document.getElementById('rp-excel');
+    if(!kurumsal){ excelBtn.classList.add('kilit'); excelBtn.textContent='⬇ Excel İndir 🔒 Premium'; }
+    document.getElementById('rp-not').textContent = kurumsal?'Excel dışa aktarım açık.' : pro?'Excel için Kurumsal pakete geçin.' : 'İlk 2 sayfa ücretsiz · tam rapor Pro · Excel Kurumsal.';
+    document.querySelectorAll('.rp-tip button').forEach(b=>b.onclick=()=>tipSec(b.dataset.tip));
+    document.getElementById('rp-olustur').onclick=olustur;
+    excelBtn.onclick=excelIndir;
+  })();
+})();
+</script>
+<script src="js/main.js?v=trf2"></script>
+</body>
+</html>
