@@ -31,8 +31,22 @@
     try { window.dispatchEvent(new CustomEvent('tema-degisti', { detail: tema })); } catch (_) {}
   }
 
+  // Disari acilan kontrol: sidebar-user.js profil menusu bunlari cagirir (26 Tem — tema artik
+  // profil menusunden secilir; eski sabit buton avatarin ustune biniyordu).
+  window.temaSuAnki = function () {
+    return document.documentElement.getAttribute('data-theme') === 'light' ? 'light' : 'dark';
+  };
+  window.temaDegistir = function () {
+    var s = window.temaSuAnki() === 'light' ? 'dark' : 'light';
+    uygula(s);
+    return s;
+  };
+
   function ekle() {
     if (document.getElementById('tema-degistir-btn')) return;
+    // ⛔ .app (kmenu rayli) sayfalarda BUTON KOYMA — tema PROFIL MENUSUNDEN secilir.
+    // Eski sol-alt sabit fallback butonu kmenu avatarinin uzerine biniyordu (26 Tem saha bulgusu).
+    if (document.querySelector('.app')) return;
     var suAn = (localStorage.getItem(KEY) === 'dark') ? 'dark' : 'light';
     var btn = document.createElement('button');
     btn.id = 'tema-degistir-btn';

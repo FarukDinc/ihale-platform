@@ -97,16 +97,30 @@
     if (e.key === 'Escape') menuler.forEach(m => m.classList.remove('acik'));
   });
 
+  // Tema satiri (Gunduz/Gece) — eski sol-alt sabit buton kmenu avatarinin ustune biniyordu (26 Tem);
+  // tema artik BU MENUDEN secilir. theme.js global window.temaDegistir/temaSuAnki sunar.
+  const temaEtiket = () => (window.temaSuAnki && window.temaSuAnki() === 'light')
+    ? '🌙 <span>Gece Modu</span>' : '☀️ <span>Gündüz Modu</span>';
+
   const menuDoldur = (misafir) => {
+    const temaSatiri = `<button type="button" data-tema="1">${temaEtiket()}</button>`;
     const html = misafir
       ? `<button type="button" data-git="login">🔑 <span>Giriş Yap</span></button>
-         <button type="button" data-git="login">✨ <span>Ücretsiz Kayıt Ol</span></button>`
+         <button type="button" data-git="login">✨ <span>Ücretsiz Kayıt Ol</span></button>
+         <div class="ayrac"></div>
+         ${temaSatiri}`
       : `<button type="button" data-git="profil">⚙️ <span>Profil &amp; Ayarlar</span></button>
          <button type="button" data-git="fiyatlandirma_odeme_bolumu">💳 <span>Abonelik</span></button>
+         ${temaSatiri}
          <div class="ayrac"></div>
          <button type="button" class="cikis" data-cikis="1">🚪 <span>Çıkış Yap</span></button>`;
     menuler.forEach(m => {
       m.innerHTML = html;
+      m.querySelectorAll('[data-tema]').forEach(b => b.addEventListener('click', (ev) => {
+        ev.stopPropagation();
+        if (window.temaDegistir) window.temaDegistir();
+        b.innerHTML = temaEtiket();   // etiket guncellenir, menu acik kalir
+      }));
       m.querySelectorAll('[data-git]').forEach(b => b.addEventListener('click', (ev) => {
         ev.stopPropagation();
         window.location.href = b.dataset.git;
