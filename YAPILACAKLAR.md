@@ -1,5 +1,24 @@
 # Ä°halePlatform â€” YapÄ±lacaklar Listesi
 
+> ## 🎯 26 TEM — "BANA ÖZEL" ZENGİNLEŞTİRME (ihalepro paritesi, kullanıcı vizyonu)
+> Kullanıcı ihalepro Bana Özel'in güçlü yanlarını istedi. 6 özellik (mevcut altyapı notlarıyla):
+> 1. **"Benim Firmam" → kişisel eşleşme akışı:** dashboard'da firma seç → o firmanın GEÇMİŞ
+>    kazanımlarına benzer ihaleleri "Sizin İçin Katılabileceğiniz İhaleleri Bulduk" olarak öne çıkar.
+>    VAR: `benzer_ihaleler`/`ihaleye_uygun_firmalar` RPC + "En İyi Eşleşmeler". EKSİK: firma-seç onboarding + o firma çapalı büyük blok. Yüksek değer.
+> 2. **Global arama + kapsam dropdown** (İhale/Firma/İdare/Sonuç/Sözleşme tek kutu): VAR tek İhale
+>    kutusu (main-search). EKSİK: kapsam seçici + doğru sayfaya yönlendirme. Hızlı+yüksek değer.
+> 3. **Takip Listem paneli** (takip firma/kurum/sektör + "takip ettiğim firmaların TÜM sözleşmeleri"):
+>    VAR: takip_firmalar/takip_idareler/takipler. EKSİK: takip_sektorler + dashboard paneli + firma-sözleşme akışı.
+> 4. **⚠️ Rapor oluşturucu + EXCEL EXPORT (ÜCRETLİ):** İhale Raporu / İhale Sonuç Raporu — firma
+>    kriterlerine göre ihale+sonuç rapor üretsin, Excel indirsin; rapor üreten firmaları ÜCRETLİ üye çeksin.
+>    ⛔⛔ POLİTİKA ÇELİŞKİSİ: [[veri-disa-aktarim-yasagi]] = CSV/Excel export YASAK (veri koruma).
+>    Kullanıcı bunu BİLEREK tersine çeviriyor (gelir modeli). GÜVENLİ YAPILIŞ: yalnız ücretli-üye +
+>    login-gated + satır limiti + hız limiti + filigran/kaynak damgası; anon/ücretsiz ASLA. Onay alındıktan sonra.
+> 5. **Ajanda/Takvim görünümü** (takip edilen ihaleler takvimde): VAR ICS export. EKSİK: sayfa-içi takvim.
+> 6. **Bildirim/rutin rapor gönderimi** ("rutin rapor içeriğini nasıl oluşturmak istersiniz?"): VAR
+>    bildirim+bülten. EKSİK: günlük ihale/sonuç raporu e-posta akışı ("raporunu oluştur, iş fırsatını kaçırma").
+> ÖNERİLEN SIRA: (2) global arama → (1) Benim Firmam eşleşme → (3) Takip Listem → (5) takvim → (4/6) rapor+ücretli (politika onayı sonrası).
+
 > ## 🎯 26 TEM — MAKSİMUM EKAP KAPSAMI PLANI (kullanıcı: "EKAP'ta olan her şeyi al, boşlukları kapat")
 > **Prensip:** EKAP'ta OLMAYAN alınmaz (pre-2010 ihale · pre-2015 sonuç · pre-2022 DT — kaynak yok).
 > EKAP'ta OLAN maksimumda alınır. Probe bulguları (sonuc_tarih_probe.py):
