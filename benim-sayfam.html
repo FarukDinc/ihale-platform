@@ -73,6 +73,13 @@
     .bs-bildirim-oge .bs-yak-alt{white-space:normal;line-height:1.45;margin-top:3px}
     .bs-bildirim-zaman{flex-shrink:0;font-size:11px;color:var(--muted);white-space:nowrap;padding-top:1px}
     .bs-bildirim-oge.okunmadi .bs-yak-baslik::before{content:'';display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--amber);margin-right:7px;vertical-align:middle}
+    /* İllere göre açık ihaleler (çubuk) */
+    .bs-il-oge{display:flex;align-items:center;gap:12px;padding:7px 0;text-decoration:none;color:inherit}
+    .bs-il-ad{width:120px;flex-shrink:0;font-size:12.5px;color:var(--white);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;transition:color .12s}
+    .bs-il-oge:hover .bs-il-ad{color:var(--amber)}
+    .bs-il-bar-wrap{flex:1;height:9px;background:var(--navy);border-radius:5px;overflow:hidden}
+    .bs-il-bar{display:block;height:100%;background:var(--amber);border-radius:5px}
+    .bs-il-say{width:52px;flex-shrink:0;text-align:right;font-size:12.5px;font-weight:800;color:var(--amber)}
     .bs-giris{text-align:center;padding:70px 20px;color:var(--muted)}.bs-giris a{color:var(--amber);font-weight:600}
   </style>
 </head>
@@ -133,6 +140,15 @@
             <a class="bs-gor" href="ihaleler">İhale Ara →</a>
           </div>
           <div id="bs-takip-ihale"><div class="bs-bos">Yükleniyor…</div></div>
+        </div>
+
+        <!-- 3.6) İllere Göre Açık İhaleler -->
+        <div class="bs-bolum">
+          <div class="bs-bolum-bas">
+            <div class="bs-bolum-t"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 12-9 12s-9-5-9-12a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg> İllere Göre Açık İhaleler</div>
+            <a class="bs-gor" href="harita">Haritada Gör →</a>
+          </div>
+          <div id="bs-iller"><div class="bs-bos">Yükleniyor…</div></div>
         </div>
 
         <!-- 4) Raporlarım -->
@@ -241,6 +257,25 @@
   let uid=null;
   const zamanFmt=(t)=>{ if(!t)return''; const s=(Date.now()-new Date(t))/1000; if(s<3600)return Math.max(1,Math.floor(s/60))+' dk önce'; if(s<86400)return Math.floor(s/3600)+' sa önce'; if(s<604800)return Math.floor(s/86400)+' gün önce'; return new Date(t).toLocaleDateString('tr-TR',{day:'2-digit',month:'short'}); };
 
+  async function ilFirsatlari(){
+    const el=document.getElementById('bs-iller');
+    try{
+      const {data,error}=await sb.rpc('il_sayim_aktif');
+      if(error) throw error;
+      if(!data||!data.length){ el.innerHTML='<div class="bs-bos">Veri bulunamadı.</div>'; return; }
+      const top=data.slice().sort((a,b)=>(b.adet||0)-(a.adet||0)).slice(0,8);
+      const max=top[0].adet||1;
+      const cap=(s)=>(s||'').toLocaleLowerCase('tr').replace(/(^|\s)\S/g,c=>c.toLocaleUpperCase('tr'));
+      el.innerHTML=top.map(r=>{
+        const w=Math.max(4,Math.round((r.adet||0)/max*100));
+        return `<a class="bs-il-oge" href="ihaleler?sekme=guncel&durum=aktif&il=${encodeURIComponent(r.il)}">
+          <span class="bs-il-ad" title="${esc(cap(r.il))}">${esc(cap(r.il))}</span>
+          <span class="bs-il-bar-wrap"><span class="bs-il-bar" style="width:${w}%"></span></span>
+          <span class="bs-il-say">${num(r.adet)}</span></a>`;
+      }).join('');
+    }catch(_){ el.innerHTML='<div class="bs-bos">Yüklenemedi.</div>'; }
+  }
+
   async function sonBildirimler(){
     const el=document.getElementById('bs-bildirim');
     try{
@@ -309,7 +344,7 @@
     document.getElementById('bs-icerik').style.display='block';
     const u=data.session.user; uid=u.id;
     document.getElementById('bs-ad').textContent=(u.user_metadata&&u.user_metadata.full_name)||(u.email?u.email.split('@')[0]:'Üye');
-    kpiYukle(); yaklasanIhaleler(); sonBildirimler(); takipEttigimIhaleler(); sonIncelenenler(); favoriAramalar();
+    kpiYukle(); yaklasanIhaleler(); sonBildirimler(); takipEttigimIhaleler(); ilFirsatlari(); sonIncelenenler(); favoriAramalar();
   })();
 })();
 </script>
