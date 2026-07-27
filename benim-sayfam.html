@@ -18,23 +18,31 @@
     .topbar{background:var(--navy-mid);border-bottom:1px solid var(--border);padding:14px 28px;display:flex;align-items:center;gap:16px;position:sticky;top:0;z-index:10}
     .page-body{padding:28px;flex:1}
     .breadcrumb{font-size:15px;font-weight:700;color:var(--white)}
+    .bs-ust{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;margin-bottom:16px}
     .bs-selam{font-size:34px;font-weight:800;color:var(--white);line-height:1.05}
     .bs-selam-ad{font-size:22px;font-weight:600;color:var(--muted);margin-top:3px}
-    .bs-alt{font-size:14px;color:var(--muted);margin-bottom:20px}
-    .bs-slogan{text-align:center;font-size:17px;font-weight:800;color:var(--white);margin:22px 0}
     .bs-firmam-btn{background:rgba(240,165,0,.10);border:1.5px solid var(--amber);color:var(--amber);font-size:14px;font-weight:700;padding:11px 20px;border-radius:12px;text-decoration:none;display:inline-flex;align-items:center;gap:8px}
-    /* KPI — ihalepro 2-sütun daire-ikon stili (amber marka) */
-    .bs-kpi{display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-bottom:24px}
-    @media(max-width:640px){.bs-kpi{grid-template-columns:1fr}}
-    .bs-kcard{display:flex;align-items:center;gap:20px;padding:20px 26px;border-radius:16px;border:1px solid var(--border);text-decoration:none;color:inherit;transition:transform .15s,box-shadow .15s}
-    .bs-kcard:hover{transform:translateY(-2px);box-shadow:0 10px 24px rgba(15,42,71,.07)}
+    /* HERO — sol TR harita + sağ (slogan + KPI), ihalepro düzeni */
+    .bs-hero{display:grid;grid-template-columns:1.1fr 1fr;gap:28px;align-items:center;margin-bottom:26px}
+    @media(max-width:920px){.bs-hero{grid-template-columns:1fr;gap:20px}}
+    .bs-hero-map{min-width:0}
+    .bs-harita-yukleniyor{color:var(--muted);font-size:13px;text-align:center;padding:60px 0}
+    .bs-tr-svg{width:100%;height:auto;display:block}
+    .bs-tr-svg a path{stroke:var(--navy-mid);stroke-width:.5;cursor:pointer;transition:fill .15s,opacity .12s}
+    .bs-tr-svg a:hover path{opacity:.72}
+    .bs-slogan{font-size:18px;font-weight:800;color:var(--white);margin:0 0 18px;line-height:1.35;text-align:center}
+    /* KPI — ihalepro daire-ikon (hero sağ yarısında kompakt 2-sütun) */
+    .bs-kpi{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:0}
+    @media(max-width:520px){.bs-kpi{grid-template-columns:1fr}}
+    .bs-kcard{display:flex;align-items:center;gap:14px;padding:14px 16px;border-radius:14px;border:1px solid var(--border);text-decoration:none;color:inherit;transition:transform .15s,box-shadow .15s}
+    .bs-kcard:hover{transform:translateY(-2px);box-shadow:0 8px 20px rgba(15,42,71,.07)}
     .bs-kcard:nth-child(odd){background:rgba(240,165,0,.07);border-color:rgba(240,165,0,.20)}
     .bs-kcard:nth-child(even){background:var(--navy-mid)}
-    .bs-kcard>div{flex:1;text-align:center}
-    .bs-kicon{width:60px;height:60px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--amber);box-shadow:0 2px 10px rgba(15,42,71,.08)}
-    .bs-kicon svg{width:28px;height:28px}
-    .bs-knum{font-size:30px;font-weight:800;color:var(--white);line-height:1;font-family:var(--font-display)}
-    .bs-klabel{font-size:14px;color:var(--muted);margin-top:6px;font-weight:600}
+    .bs-kcard>div{flex:1;text-align:center;min-width:0}
+    .bs-kicon{width:46px;height:46px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--amber);box-shadow:0 2px 8px rgba(15,42,71,.08)}
+    .bs-kicon svg{width:24px;height:24px}
+    .bs-knum{font-size:22px;font-weight:800;color:var(--white);line-height:1;font-family:var(--font-display)}
+    .bs-klabel{font-size:12.5px;color:var(--muted);margin-top:4px;font-weight:600}
     /* bolum */
     .bs-bolum{background:var(--navy-mid);border:1px solid var(--border);border-radius:14px;padding:18px 20px;margin-bottom:18px}
     .bs-bolum-bas{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:14px}
@@ -142,7 +150,7 @@
       <div id="bs-giris" class="bs-giris" style="display:none;">🔒 Bu sayfa üyelere özeldir.<br><br><a href="login">Giriş yapın</a> veya <a href="fiyatlandirma_odeme_bolumu">üye olun</a> →</div>
 
       <div id="bs-icerik" style="display:none;">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;">
+        <div class="bs-ust">
           <div>
             <div class="bs-selam">Merhaba</div>
             <div class="bs-selam-ad" id="bs-ad">—</div>
@@ -152,10 +160,15 @@
             Benim Firmam
           </a>
         </div>
-        <div class="bs-slogan">Güncel, doğru ve kapsamlı veri havuzu ile kararlarınızı güvenle alın!</div>
 
-        <!-- 2) KPI (ihalepro paritesi: 6 kutu, 2-sütun daire-ikon) -->
-        <div class="bs-kpi" id="bs-kpi"></div>
+        <!-- HERO: sol TR harita (amber choropleth) + sağ slogan + 6 KPI — ihalepro düzeni -->
+        <div class="bs-hero">
+          <div class="bs-hero-map"><div id="bs-tr-harita" class="bs-harita-yukleniyor">Türkiye haritası yükleniyor…</div></div>
+          <div class="bs-hero-right">
+            <div class="bs-slogan">Güncel, doğru ve kapsamlı veri havuzu ile kararlarınızı güvenle alın!</div>
+            <div class="bs-kpi" id="bs-kpi"></div>
+          </div>
+        </div>
 
         <!-- 2.5) Tarihi Yaklaşan İhaleler -->
         <div class="bs-bolum">
@@ -188,15 +201,6 @@
             <a class="bs-gor" href="ihaleler">İhale Ara →</a>
           </div>
           <div id="bs-takip-ihale"><div class="bs-bos">Yükleniyor…</div></div>
-        </div>
-
-        <!-- 3.6) İllere Göre Açık İhaleler -->
-        <div class="bs-bolum">
-          <div class="bs-bolum-bas">
-            <div class="bs-bolum-t"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 12-9 12s-9-5-9-12a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg> İllere Göre Açık İhaleler</div>
-            <a class="bs-gor" href="harita">Haritada Gör →</a>
-          </div>
-          <div id="bs-iller"><div class="bs-bos">Yükleniyor…</div></div>
         </div>
 
         <!-- 4) Raporlarım -->
@@ -235,6 +239,7 @@
 <script src="js/takip.js?v=2"></script>
 <script src="js/firmam.js?v=1"></script>
 <script src="js/takip-panel.js?v=1"></script>
+<script src="js/tr-harita.js?v=1"></script>
 <script>
 (() => {
   const SB_URL="https://ihaleglobal.com", SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzg0MzA3MTU4LCJleHAiOjE5NDE5ODcxNTh9.CjNKulvirotDD_y2oO2QKgo0kbqYvL0jUSV1RiDMoso";
@@ -305,23 +310,25 @@
   let uid=null;
   const zamanFmt=(t)=>{ if(!t)return''; const s=(Date.now()-new Date(t))/1000; if(s<3600)return Math.max(1,Math.floor(s/60))+' dk önce'; if(s<86400)return Math.floor(s/3600)+' sa önce'; if(s<604800)return Math.floor(s/86400)+' gün önce'; return new Date(t).toLocaleDateString('tr-TR',{day:'2-digit',month:'short'}); };
 
-  async function ilFirsatlari(){
-    const el=document.getElementById('bs-iller');
-    try{
-      const {data,error}=await sb.rpc('il_sayim_aktif');
-      if(error) throw error;
-      if(!data||!data.length){ el.innerHTML='<div class="bs-bos">Veri bulunamadı.</div>'; return; }
-      const top=data.slice().sort((a,b)=>(b.adet||0)-(a.adet||0)).slice(0,8);
-      const max=top[0].adet||1;
-      const cap=(s)=>(s||'').toLocaleLowerCase('tr').replace(/(^|\s)\S/g,c=>c.toLocaleUpperCase('tr'));
-      el.innerHTML=top.map(r=>{
-        const w=Math.max(4,Math.round((r.adet||0)/max*100));
-        return `<a class="bs-il-oge" href="ihaleler?sekme=guncel&durum=aktif&il=${encodeURIComponent(r.il)}">
-          <span class="bs-il-ad" title="${esc(cap(r.il))}">${esc(cap(r.il))}</span>
-          <span class="bs-il-bar-wrap"><span class="bs-il-bar" style="width:${w}%"></span></span>
-          <span class="bs-il-say">${num(r.adet)}</span></a>`;
-      }).join('');
-    }catch(_){ el.innerHTML='<div class="bs-bos">Yüklenemedi.</div>'; }
+  const foldKey=(s)=>(s||'').toLocaleLowerCase('tr').replace(/ı/g,'i').replace(/i̇/g,'i')
+    .replace(/ç/g,'c').replace(/ğ/g,'g').replace(/ö/g,'o').replace(/ş/g,'s').replace(/ü/g,'u').replace(/[^a-z]/g,'');
+
+  async function renderHarita(){
+    const el=document.getElementById('bs-tr-harita');
+    const TR=window.TR_HARITA;
+    if(!el) return;
+    if(!TR||!TR.iller){ el.innerHTML='<div class="bs-harita-yukleniyor">Harita yüklenemedi.</div>'; return; }
+    let rows=[];
+    try{ const {data}=await sb.rpc('il_sayim_aktif'); rows=data||[]; }catch(_){}
+    const cnt={}; rows.forEach(r=>{cnt[foldKey(r.il)]=r.adet||0;});
+    const max=Math.max(1,...rows.map(r=>r.adet||0));
+    const renk=(c)=>{ if(!c)return '#e6eaf1'; const r=c/max;
+      return r>0.6?'#F0A500':r>0.33?'#F4B733':r>0.16?'#F8CC70':r>0.06?'#FBE0A8':'#FDEFCE'; };
+    el.className='';
+    el.innerHTML=`<svg viewBox="${TR.viewBox}" xmlns="http://www.w3.org/2000/svg" class="bs-tr-svg" role="img" aria-label="İllere göre açık ihale yoğunluğu">`+
+      TR.iller.map(il=>{const c=cnt[il.key]||0;
+        return `<a href="ihaleler?sekme=guncel&durum=aktif&il=${encodeURIComponent(il.ad)}"><path d="${il.d}" fill="${renk(c)}"><title>${esc(il.ad)}: ${num(c)} açık ihale</title></path></a>`;
+      }).join('')+`</svg>`;
   }
 
   async function sonBildirimler(){
@@ -392,7 +399,7 @@
     document.getElementById('bs-icerik').style.display='block';
     const u=data.session.user; uid=u.id;
     document.getElementById('bs-ad').textContent=(u.user_metadata&&u.user_metadata.full_name)||(u.email?u.email.split('@')[0]:'Üye');
-    kpiYukle(); yaklasanIhaleler(); sonBildirimler(); takipEttigimIhaleler(); ilFirsatlari(); sonIncelenenler(); favoriAramalar();
+    renderHarita(); kpiYukle(); yaklasanIhaleler(); sonBildirimler(); takipEttigimIhaleler(); sonIncelenenler(); favoriAramalar();
   })();
 })();
 </script>
