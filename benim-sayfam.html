@@ -58,6 +58,13 @@
     .bs-yak-alt{font-size:11px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
     .bs-yak-gun{flex-shrink:0;font-size:12px;font-weight:700;padding:4px 11px;border-radius:20px;background:rgba(240,165,0,.12);color:var(--amber)}
     .bs-yak-gun.acil{background:rgba(224,82,96,.14);color:#e05260}
+    /* Takip ihale durum rozeti */
+    .bs-durum{flex-shrink:0;font-size:11px;font-weight:700;padding:4px 10px;border-radius:20px;text-transform:capitalize}
+    .bs-durum.aktif{background:rgba(47,191,113,.15);color:#2fbf71}
+    .bs-durum.kapali{background:rgba(148,163,184,.16);color:var(--muted)}
+    .bs-durum.sonuclandi{background:rgba(240,165,0,.14);color:var(--amber)}
+    .bs-durum.iptal{background:rgba(224,82,96,.14);color:#e05260}
+    .bs-say-rozet{font-size:12px;font-weight:700;color:var(--amber);background:rgba(240,165,0,.12);padding:1px 9px;border-radius:20px;margin-left:2px}
     .bs-giris{text-align:center;padding:70px 20px;color:var(--muted)}.bs-giris a{color:var(--amber);font-weight:600}
   </style>
 </head>
@@ -101,6 +108,15 @@
 
         <!-- 3) Takip Listem (js/takip-panel.js) -->
         <div id="takip-panel" style="display:none;"></div>
+
+        <!-- 3.5) Takip Ettiğim İhaleler (bireysel ⭐ takip — takipler tablosu) -->
+        <div class="bs-bolum">
+          <div class="bs-bolum-bas">
+            <div class="bs-bolum-t"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12a1 1 0 011 1v17l-7-4-7 4V4a1 1 0 011-1z"/></svg> Takip Ettiğim İhaleler <span id="bs-takip-say"></span></div>
+            <a class="bs-gor" href="ihaleler">İhale Ara →</a>
+          </div>
+          <div id="bs-takip-ihale"><div class="bs-bos">Yükleniyor…</div></div>
+        </div>
 
         <!-- 4) Raporlarım -->
         <div class="bs-bolum">
@@ -205,6 +221,35 @@
     }catch(_){ el.innerHTML='<div class="bs-bos">Yüklenemedi.</div>'; }
   }
 
+  let uid=null;
+  async function takipEttigimIhaleler(){
+    const el=document.getElementById('bs-takip-ihale');
+    const sayEl=document.getElementById('bs-takip-say');
+    try{
+      let tq=sb.from('takipler').select('ilan_id');
+      if(uid) tq=tq.eq('kullanici_id',uid);
+      const {data:trows,error:te}=await tq;
+      if(te) throw te;
+      const ids=[...new Set((trows||[]).map(r=>r.ilan_id))];
+      if(sayEl) sayEl.innerHTML=ids.length?`<span class="bs-say-rozet">${ids.length}</span>`:'';
+      if(!ids.length){ el.innerHTML='<div class="bs-bos">Henüz ihale takip etmiyorsunuz. İhale detayında ⭐ ile takibe alın.</div>'; return; }
+      const {data,error}=await sb.from('ilanlar')
+        .select('id,baslik,il,tur,durum,son_teklif_tarihi')
+        .in('id',ids.slice(0,50)).limit(12);
+      if(error) throw error;
+      if(!data||!data.length){ el.innerHTML='<div class="bs-bos">Takip kayıtları bulunamadı.</div>'; return; }
+      const DUR={aktif:'Aktif',kapali:'Kapalı',sonuclandi:'Sonuçlandı',iptal:'İptal'};
+      const gunFmt=(t)=>t?new Date(t).toLocaleDateString('tr-TR',{day:'2-digit',month:'short',year:'2-digit'}):'—';
+      el.innerHTML=data.map(i=>{
+        const dcls=DUR[i.durum]?i.durum:'kapali';
+        return `<a class="bs-yak-oge" href="ihale-detay?id=${i.id}">
+          <div class="bs-yak-ad"><div class="bs-yak-baslik">${esc(i.baslik||'İhale')}</div>
+          <div class="bs-yak-alt">${esc(i.il||'—')}${i.tur?' · '+esc(i.tur):''} · Son teklif: ${gunFmt(i.son_teklif_tarihi)}</div></div>
+          <span class="bs-durum ${dcls}">${DUR[i.durum]||esc(i.durum||'—')}</span></a>`;
+      }).join('');
+    }catch(_){ el.innerHTML='<div class="bs-bos">Yüklenemedi.</div>'; }
+  }
+
   function sonIncelenenler(){
     let liste=[]; try{ liste=JSON.parse(localStorage.getItem('sonGoruntulenen')||'[]'); }catch(_){}
     const el=document.getElementById('bs-son');
@@ -225,9 +270,9 @@
     const {data}=await sb.auth.getSession();
     if(!data||!data.session){ document.getElementById('bs-giris').style.display='block'; return; }
     document.getElementById('bs-icerik').style.display='block';
-    const u=data.session.user;
+    const u=data.session.user; uid=u.id;
     document.getElementById('bs-ad').textContent=(u.user_metadata&&u.user_metadata.full_name)||(u.email?u.email.split('@')[0]:'Üye');
-    kpiYukle(); yaklasanIhaleler(); sonIncelenenler(); favoriAramalar();
+    kpiYukle(); yaklasanIhaleler(); takipEttigimIhaleler(); sonIncelenenler(); favoriAramalar();
   })();
 })();
 </script>
