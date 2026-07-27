@@ -65,6 +65,14 @@
     .bs-durum.sonuclandi{background:rgba(240,165,0,.14);color:var(--amber)}
     .bs-durum.iptal{background:rgba(224,82,96,.14);color:#e05260}
     .bs-say-rozet{font-size:12px;font-weight:700;color:var(--amber);background:rgba(240,165,0,.12);padding:1px 9px;border-radius:20px;margin-left:2px}
+    /* Son bildirimler */
+    .bs-bildirim-oge{display:flex;align-items:flex-start;gap:12px;padding:11px 0;border-top:1px solid var(--border);text-decoration:none;color:inherit}
+    .bs-bildirim-oge:first-child{border-top:none}
+    .bs-bildirim-oge:hover .bs-yak-baslik{color:var(--amber)}
+    .bs-bildirim-ad{flex:1;min-width:0}
+    .bs-bildirim-oge .bs-yak-alt{white-space:normal;line-height:1.45;margin-top:3px}
+    .bs-bildirim-zaman{flex-shrink:0;font-size:11px;color:var(--muted);white-space:nowrap;padding-top:1px}
+    .bs-bildirim-oge.okunmadi .bs-yak-baslik::before{content:'';display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--amber);margin-right:7px;vertical-align:middle}
     .bs-giris{text-align:center;padding:70px 20px;color:var(--muted)}.bs-giris a{color:var(--amber);font-weight:600}
   </style>
 </head>
@@ -104,6 +112,15 @@
             <a class="bs-gor" href="ihaleler?sekme=guncel&durum=aktif">Tümü →</a>
           </div>
           <div id="bs-yaklasan"><div class="bs-bos">Yükleniyor…</div></div>
+        </div>
+
+        <!-- 2.6) Son Bildirimler -->
+        <div class="bs-bolum">
+          <div class="bs-bolum-bas">
+            <div class="bs-bolum-t"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 00-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 01-3.4 0"/></svg> Son Bildirimler</div>
+            <a class="bs-gor" href="bildirimler">Tümü →</a>
+          </div>
+          <div id="bs-bildirim"><div class="bs-bos">Yükleniyor…</div></div>
         </div>
 
         <!-- 3) Takip Listem (js/takip-panel.js) -->
@@ -222,6 +239,26 @@
   }
 
   let uid=null;
+  const zamanFmt=(t)=>{ if(!t)return''; const s=(Date.now()-new Date(t))/1000; if(s<3600)return Math.max(1,Math.floor(s/60))+' dk önce'; if(s<86400)return Math.floor(s/3600)+' sa önce'; if(s<604800)return Math.floor(s/86400)+' gün önce'; return new Date(t).toLocaleDateString('tr-TR',{day:'2-digit',month:'short'}); };
+
+  async function sonBildirimler(){
+    const el=document.getElementById('bs-bildirim');
+    try{
+      const {data,error}=await sb.from('bildirimler')
+        .select('id,tur,baslik,icerik,ilan_id,aksiyon_url,okundu,olusturulma')
+        .eq('kullanici_id',uid).order('olusturulma',{ascending:false}).limit(6);
+      if(error) throw error;
+      if(!data||!data.length){ el.innerHTML='<div class="bs-bos">Yeni bildirim yok. Sektör/kurum/firma takibi ekleyin — fırsat çıkınca haber verelim. 🔔</div>'; return; }
+      el.innerHTML=data.map(b=>{
+        const url=b.aksiyon_url||(b.ilan_id?('ihale-detay?id='+b.ilan_id):'bildirimler');
+        return `<a class="bs-bildirim-oge${b.okundu?'':' okunmadi'}" href="${esc(url)}">
+          <div class="bs-bildirim-ad"><div class="bs-yak-baslik">${esc(b.baslik||'Bildirim')}</div>
+          ${b.icerik?`<div class="bs-yak-alt">${esc(b.icerik.slice(0,90))}</div>`:''}</div>
+          <span class="bs-bildirim-zaman">${zamanFmt(b.olusturulma)}</span></a>`;
+      }).join('');
+    }catch(_){ el.innerHTML='<div class="bs-bos">Yüklenemedi.</div>'; }
+  }
+
   async function takipEttigimIhaleler(){
     const el=document.getElementById('bs-takip-ihale');
     const sayEl=document.getElementById('bs-takip-say');
@@ -272,7 +309,7 @@
     document.getElementById('bs-icerik').style.display='block';
     const u=data.session.user; uid=u.id;
     document.getElementById('bs-ad').textContent=(u.user_metadata&&u.user_metadata.full_name)||(u.email?u.email.split('@')[0]:'Üye');
-    kpiYukle(); yaklasanIhaleler(); takipEttigimIhaleler(); sonIncelenenler(); favoriAramalar();
+    kpiYukle(); yaklasanIhaleler(); sonBildirimler(); takipEttigimIhaleler(); sonIncelenenler(); favoriAramalar();
   })();
 })();
 </script>
