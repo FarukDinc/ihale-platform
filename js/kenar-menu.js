@@ -112,8 +112,9 @@
     .kmenu-item { width:52px; height:50px; border-radius:12px; display:flex; flex-direction:column;
       align-items:center; justify-content:center; gap:2px; cursor:pointer; color:var(--muted);
       font-size:19px; border:none; background:none; transition:background .15s,color .15s; position:relative; }
-    .kmenu-item .etk { font-size:8.5px; font-weight:700; letter-spacing:.01em; line-height:1;
-      max-width:60px; text-align:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .kmenu-item .etk { font-size:8.5px; font-weight:700; letter-spacing:.01em; line-height:1.12;
+      max-width:60px; text-align:center; white-space:normal; overflow:hidden;
+      display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; word-break:break-word; }
     .kmenu-item:hover { background:var(--card-bg); color:var(--white); }
     .kmenu-item.aktif { background:rgba(240,165,0,0.14); color:var(--amber); }
     .kmenu-item.aktif::before { content:''; position:absolute; left:-8px; top:12px; bottom:12px;
