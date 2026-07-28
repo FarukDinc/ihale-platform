@@ -44,6 +44,22 @@
 >
 > **AYRICA (26 Tem tamamlanan UI):** yeni iG logo (favicon+og), sidebar emoji→SVG (25 sayfa),
 > KPI kartları ikon-çipli, TL formatı tam Türkçe (6 sayfa: 83K/43M → ₺83.400.061.000 / Mn-Mr-Bin).
+> **DURUM (28 Tem — BENİM SAYFAM + AI TEKLİF STRATEJİSİ CANLI):**
+> - ✅ **BENİM SAYFAM (benim-sayfam.html) — ihalepro Bana Özel paritesi TAMAM:** global arama (5 kapsam+Ctrl+K),
+>   harita+KPI yan yana HERO (81 il amber choropleth), 6 KPI DOLU ikon, AI Asistan bloğu, ve bölüm sırası
+>   ihalepro akışıyla BİREBİR: Takip Listem → Sizin İçin(firmam eşleşme) → AI Asistan → Raporlarım →
+>   Takip Ettiğim İhaleler → Son Bildirimler → Tarihi Yaklaşan → Son İncelediklerim+Favori.
+>   Renk: ihalepro mavi/teal DEĞİL, bizim amber/lacivert markamız (kullanıcı kararı).
+> - ✅ **AI FİYAT/TEKLİF STRATEJİSİ (DeepSeek) — CANLI:** teklif-olustur Adım 4'te panel; /ai/teklif-strateji
+>   endpoint (api.py) + teklif_ai.teklif_strateji_uret(). Grounding: analiz_pivot il tenzilatı + sonuc_ozet MV
+>   (Türkiye geneli). Dayanak sayılar kullanıcıya AYRICA gösterilir. Canlı test: BURSA %16,21 vs TR %11,7 →
+>   '265-272 milyon TL bandı'. Model: ucuz deepseek-chat yeterli (.env DEEPSEEK_MODEL ile değişir).
+> - 🐛 **YOL BOYU 2 KRİTİK BUG DÜZELTİLDİ:** (a) kredi_hareketleri_islem_turu_check YALNIZ 'analiz'/'yukleme'
+>   kabul ediyor — 'teklif_strateji' VE mevcut 'teklif_taslak' (AI teklif taslağı, uzun süredir sessizce bozuk)
+>   23514 ile reddediliyordu, kredi düşmüyordu; ikisi de 'analiz' yapıldı. (b) analiz_pivot p_grup='kategori'
+>   20sn TIMEOUT (2,2M sonuç satırı) → sonuc_ozet MV tabanı ile değiştirildi.
+> - KALAN (opsiyonel): kategori-bazlı tenzilat MV'si (v2), Firmam karne kartı zenginleştirme.
+
 
 > ## 🎯 26 TEM — MAKSİMUM EKAP KAPSAMI PLANI (kullanıcı: "EKAP'ta olan her şeyi al, boşlukları kapat")
 > **Prensip:** EKAP'ta OLMAYAN alınmaz (pre-2010 ihale · pre-2015 sonuç · pre-2022 DT — kaynak yok).
