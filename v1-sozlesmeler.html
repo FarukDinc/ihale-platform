@@ -94,8 +94,6 @@
     const tb=document.getElementById('v1-tbody');
     const kart=document.getElementById('v1-liste-kart');
     const notu=document.getElementById('v1-durum-notu');
-    // Biten / Devam Eden: sözleşme durumu verimizde YOK — dürüstçe belirt (uydurma yok)
-    if(sekme!=='tumu'){ notu.style.display='block'; kart.style.display='none'; return; }
     notu.style.display='none'; kart.style.display='';
     if(!uyeMi){
       document.getElementById('v1-misafir').style.display='block';
@@ -106,11 +104,16 @@
     try{
       const k=(document.getElementById('v1-ara-liste').value||'').trim();
       const kur=(sayimIcin)=>{
+        // ⚠️ Gerçek kolonlar: tenzilat_yuzde (tenzilat DEĞİL), sozlesme_bedeli, is_bitis_tarihi
         let q=sb.from('ihale_sonuclari').select(
-          sayimIcin?'id':'id,ilan_id,kazanan_firma,kazanan_teklif,sonuc_tarihi,tenzilat,lot_sayisi',
+          sayimIcin?'id':'id,ilan_id,kazanan_firma,kazanan_teklif,sozlesme_bedeli,sonuc_tarihi,tenzilat_yuzde,is_bitis_tarihi',
           sayimIcin?{count:'exact',head:true}:undefined)
           .not('kazanan_firma','is',null);
         if(k) q=q.ilike('kazanan_firma','%'+k+'%');
+        // Biten / Devam Eden — is_bitis_tarihi'ne göre (veri gerçekten var)
+        const bugun=new Date().toISOString().slice(0,10);
+        if(sekme==='biten') q=q.not('is_bitis_tarihi','is',null).lt('is_bitis_tarihi',bugun);
+        else if(sekme==='devam') q=q.gte('is_bitis_tarihi',bugun);
         return q;
       };
       const bas=(sayfa-1)*BOY;
@@ -127,14 +130,15 @@
       if(!d.length){ tb.innerHTML='<tr><td colspan="5" class="v1-bos">Sözleşme bulunamadı.</td></tr>'; document.getElementById('v1-sayfalama').innerHTML=''; return; }
       tb.innerHTML=d.map(r=>{
         const t=r.sonuc_tarihi?new Date(r.sonuc_tarihi).toLocaleDateString('tr-TR'):'—';
-        // ⚠️ Çok-lotlu ihalede tenzilat GÜVENİLMEZ (lot_sayisi>1 → EKAP kısım bazlı maliyet vermiyor)
-        const tenz = (r.lot_sayisi===1 && r.tenzilat!=null)
-          ? `<span style="font-weight:700;color:var(--v1-teal);">%${Number(r.tenzilat).toLocaleString('tr-TR',{maximumFractionDigits:1})}</span>`
-          : `<span style="color:var(--v1-muted);font-size:12px;" title="Çok kısımlı ihalede kısım bazlı yaklaşık maliyet yayımlanmadığı için hesaplanamıyor">—</span>`;
+        const bitis=r.is_bitis_tarihi?new Date(r.is_bitis_tarihi):null;
+        const devam = bitis ? (bitis>=new Date()) : null;
+        const tenz = (r.tenzilat_yuzde!=null && Math.abs(r.tenzilat_yuzde)<100)
+          ? `<span style="font-weight:700;color:var(--v1-teal);">%${Number(r.tenzilat_yuzde).toLocaleString('tr-TR',{maximumFractionDigits:1})}</span>`
+          : `<span style="color:var(--v1-muted);font-size:12px;" title="Kısım bazlı yaklaşık maliyet yayımlanmadığında hesaplanamaz">—</span>`;
         return `<tr>
-          <td class="v1-t-tarih">${t}</td>
+          <td class="v1-t-tarih">${t}${devam!=null?`<br><span class="v1-sonuc-rozet" style="background:${devam?'#E6F6EC':'#EFF2F6'};color:${devam?'var(--v1-yesil)':'var(--v1-muted)'};font-size:10.5px;">${devam?'Devam':'Bitti'}</span>`:''}</td>
           <td><a class="v1-t-ad" href="firma-analiz?ara=${encodeURIComponent(r.kazanan_firma||'')}">${esc(r.kazanan_firma||'—')}</a></td>
-          <td style="font-weight:700;color:var(--v1-mavi);">${tl(r.kazanan_teklif)}</td>
+          <td style="font-weight:700;color:var(--v1-mavi);">${tl(r.sozlesme_bedeli ?? r.kazanan_teklif)}</td>
           <td>${tenz}</td>
           <td style="text-align:right;">${r.ilan_id?`<a class="v1-yuvarlak-btn" style="text-decoration:none;" href="ihale-detay?id=${r.ilan_id}" title="İhale detayı">
             <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8.6 5.4 10 4l8 8-8 8-1.4-1.4L15.2 12 8.6 5.4Z"/></svg></a>`:''}</td></tr>`;
@@ -166,13 +170,14 @@
     const b=document.getElementById('v1-excel'); const e0=b.innerHTML; b.innerHTML='⏳'; b.disabled=true;
     try{
       const k=(document.getElementById('v1-ara-liste').value||'').trim();
-      let q=sb.from('ihale_sonuclari').select('kazanan_firma,kazanan_teklif,sonuc_tarihi,tenzilat,lot_sayisi').not('kazanan_firma','is',null);
+      let q=sb.from('ihale_sonuclari').select('kazanan_firma,kazanan_teklif,sozlesme_bedeli,sonuc_tarihi,tenzilat_yuzde,is_bitis_tarihi').not('kazanan_firma','is',null);
       if(k) q=q.ilike('kazanan_firma','%'+k+'%');
       const {data}=await q.order('sonuc_tarihi',{ascending:false,nullsFirst:false}).limit(1000);
-      const csv=['Sonuç Tarihi;Kazanan Firma;Sözleşme Bedeli;Tenzilat %',
+      const csv=['Sonuç Tarihi;Kazanan Firma;Sözleşme Bedeli;Tenzilat %;İş Bitiş',
         ...(data||[]).map(r=>[r.sonuc_tarihi?new Date(r.sonuc_tarihi).toLocaleDateString('tr-TR'):'',
-          (r.kazanan_firma||'').replace(/;/g,','), r.kazanan_teklif??'',
-          (r.lot_sayisi===1&&r.tenzilat!=null)?r.tenzilat:''].join(';')),
+          (r.kazanan_firma||'').replace(/;/g,','), (r.sozlesme_bedeli ?? r.kazanan_teklif) ?? '',
+          (r.tenzilat_yuzde!=null&&Math.abs(r.tenzilat_yuzde)<100)?r.tenzilat_yuzde:'',
+          r.is_bitis_tarihi?new Date(r.is_bitis_tarihi).toLocaleDateString('tr-TR'):''].join(';')),
         '','Kaynak: ihaleglobal.com — © Ömer Faruk Dinç'].join('\r\n');
       const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8;'}));
       a.download='ihaleglobal-sozlesmeler-'+new Date().toISOString().slice(0,10)+'.csv';
