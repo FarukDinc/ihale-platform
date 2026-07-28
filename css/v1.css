@@ -129,9 +129,12 @@
 .v1-kpi-kart:nth-child(even) { background: var(--v1-krem); border-color: #EFE7C9; }
 .v1-kpi-ikon { width: 58px; height: 58px; border-radius: 50%; background: #fff; color: var(--v1-lacivert); display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 2px 8px rgba(12,62,112,.10); }
 .v1-kpi-ikon svg { width: 28px; height: 28px; fill: currentColor; }
-.v1-kpi-govde { flex: 1; text-align: center; }
-.v1-kpi-sayi { font-size: 28px; font-weight: 700; color: var(--v1-mavi); line-height: 1.1; }
-.v1-kpi-etiket { font-size: 14px; font-weight: 600; color: var(--v1-lacivert); margin-top: 3px; }
+.v1-kpi-govde { flex: 1; text-align: center; display: block; }
+.v1-kpi-sayi { display: block; font-size: 28px; font-weight: 700; color: var(--v1-mavi); line-height: 1.1; }
+.v1-kpi-etiket { display: block; font-size: 14px; font-weight: 600; color: var(--v1-lacivert); margin-top: 4px; }
+.v1-takip-kart > span:last-child { display: block; }
+.v1-takip-sayi { display: block; }
+.v1-takip-et { display: block; }
 
 /* ── Liste sayfası: sol filtre + sağ tablo ─────────────────────────────── */
 .v1-liste-duzen { display: grid; grid-template-columns: 260px 1fr; gap: 18px; align-items: start; }
