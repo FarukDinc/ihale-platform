@@ -6394,3 +6394,24 @@ büyüklükleri (mevcut veri): 150Mn+ 4.954 · ilk-kez-1y 12.803 · aktif-1y 35.
 - ⛔ DARBOĞAZ: sonuç liste API'si (GetListByParameters) kazanan/bedel DÖNMÜYOR → her kayıt için ayrı GetByIhaleIdIhaleDetay (proxy'den ~1-2sn). 90 dk'da net +382. 112K eksik 2024 için tek gece YETMEZ.
 - ⛔ `searchText='2024/'` GÜVENİLMEZ: liste `ikn` alanı SONUÇ-ilanının İKN'i (ör. 2026/633440), gerçek ihale İKN'i `ihaleAdi` metninde. Yıl hedefleme skip-pencere (sonuc_tarihi DESC sırası) ile daha güvenilir ama o da sonuc_tarihi bazlı.
 - PLAN: adanmış çok-gece 2024 (ve tam arşiv) sonuç backfill'i; gece cron'uyla çakışmadan (tek ağır proxy işi). Belki eşzamanlılık artırma araştırılmalı (async havuz kaç işçi?).
+
+## ✅ v1 — 28 Tem: 3 canlı hata + 2 yeni sayfa (BİTTİ, canlıda doğrulandı)
+- **v1-harita firma listesi boştu** (Ankara: "23.026 kayıtlı firma" ama "Bu ilde firma bulunamadı").
+  KÖK NEDEN: `yukleniciler.il` DB'de BÜYÜK HARF ("ANKARA"), harita etiketi title-case ("Ankara")
+  → `eq('il','Ankara')` sessizce 0 satır. Düzeltme: `il_firma_dagilimi` RPC'sinin döndürdüğü
+  GERÇEK il adını kullan (fallback `toLocaleUpperCase('tr')`). **DERS: eq() ile eşleştirmeden önce
+  DB'deki gerçek değeri gör — ilike-TR tuzağının eq varyantı.** Sektör süzgeci de bağlandı
+  (`kategori`; eşleşme yoksa filtresiz listeye düşer + kullanıcıya söyler).
+- **Haritalar tekerlekle yakınlaşmıyordu** → `js/harita-zoom.js` (viewBox tabanlı pan/zoom:
+  tekerlek imlece doğru, sürükle, pinch, çift tık sıfırla, +/−/⟲ düğmeleri). v1-harita, v1-global,
+  v1-dis-ticaret'e bağlandı. 2 tuzak koda not düşüldü: (a) sürükleme sonrası sahte click path'in
+  seçme handler'ına gitmesin → capture'da yutuluyor; (b) harita yeniden çizilince yeni <svg>
+  doğuyor → MutationObserver ile zoom tekrar kuruluyor.
+- **Dış ticarette HS kodu sorgusu yoktu** → v1-dis-ticaret'e iki kart: "HS Kodu / Sektör Sorgusu"
+  (`ticaret_hs_ulkeler`, hiyerarşik öneri fasıl/pozisyon/kalem, js/hs-kodlar.js lazy 930KB) +
+  ülke tıklayınca "kalem-kalem HS6 döküm" (`ticaret_hs_kalem`, DEU'da 4.910 kalem — kırpma yok).
+  Ülke adları iso3→iso2→`Intl.DisplayNames('tr')` ile Türkçeleştirildi ("Germany" → "Almanya").
+- **YENİ v1-bildirimler** (zil ikonu artık v2'ye kaçmıyor) ve **YENİ v1-rekabet**
+  (`rekabet_ozet`; ⚠️ `trend` ve `butce` DİZİ DEĞİL — trend `{"2025-01":n}` objesi, butce
+  `{b0..b5,byok}`). Anon'da ham Postgres 42501 mesajı yerine üyelik kilidi gösteriliyor.
+- v1-analiz'e analiz sayfaları arası hızlı bağlantı şeridi. Tüm v1 sayfalarında `v1-kabuk.js?v=5`.
