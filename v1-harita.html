@@ -21,6 +21,8 @@
     .v1-katman button.aktif { background:var(--v1-mavi); color:#fff; }
     .v1-h-duzen { display:grid; grid-template-columns:1.55fr 1fr; gap:16px; align-items:start; }
     @media(max-width:1000px){ .v1-h-duzen{ grid-template-columns:1fr; } }
+    #h-harita { position:relative; background:var(--v1-zemin); border:1px solid var(--v1-cizgi);
+      border-radius:12px; overflow:hidden; }
     .v1-tr-svg { width:100%; height:auto; display:block; }
     .v1-tr-svg path { stroke:#fff; stroke-width:.6; cursor:pointer; transition:opacity .12s; }
     .v1-tr-svg path:hover { opacity:.75; }
@@ -87,7 +89,8 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/tr-harita.js?v=1"></script>
 <script src="js/kategoriler.js?v=1"></script>
-<script src="js/v1-kabuk.js?v=4"></script>
+<script src="js/harita-zoom.js?v=1"></script>
+<script src="js/v1-kabuk.js?v=5"></script>
 <script>
 (() => {
   const SB_URL="https://ihaleglobal.com", SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzg0MzA3MTU4LCJleHAiOjE5NDE5ODcxNTh9.CjNKulvirotDD_y2oO2QKgo0kbqYvL0jUSV1RiDMoso";
@@ -152,6 +155,8 @@
     const et = katman==='firma' ? 'Firma sayısı' : 'Açık talep sayısı';
     document.getElementById('h-lejant').innerHTML=`<span>${et}: Az</span>`+
       MAVI.slice(1).map(c=>`<i style="background:${c}"></i>`).join('')+`<span>Çok</span>`;
+    // Tekerlek/sürükle ile yakınlaştırma (harita her çizimde yeniden doğar → gözlemci tekrar kurar)
+    if(window.haritaZoomKur) haritaZoomKur(el,{gizle:()=>{tip.style.display='none';}});
   }
 
   async function ilSec(key,ad){
@@ -171,12 +176,21 @@
     // O ildeki en büyük firmalar (üyeye açık)
     const fl=document.getElementById('h-firmalar');
     if(!uyeMi){ fl.innerHTML='<div class="v1-bos">🔒 Firma listesi üyelere özeldir. <a href="login">Giriş yapın →</a></div>'; return; }
+    // ⚠️ yukleniciler.il DB'de BÜYÜK HARF ("ANKARA"); harita etiketi ise "Ankara" →
+    //    eq('il','Ankara') sessizce 0 satır döndürüyordu. RPC'den gelen gerçek il adını kullan.
+    const dbIl = (f && f.ad) ? f.ad : (ad||'').toLocaleUpperCase('tr');
+    const sec=(sektor)=>{ let q=sb.from('yukleniciler')
+        .select('id,ad,toplam_sozlesme_sayisi,toplam_ciro').eq('il',dbIl);
+      if(sektor) q=q.eq('kategori',sektor);
+      return q.order('toplam_ciro',{ascending:false,nullsFirst:false}).limit(8); };
     try{
       const sektor=document.getElementById('h-sektor').value;
-      let q=sb.from('yukleniciler').select('id,ad,toplam_sozlesme_sayisi,toplam_ciro').eq('il',ad);
-      const {data}=await q.order('toplam_ciro',{ascending:false,nullsFirst:false}).limit(8);
+      let {data}=await sec(sektor);
+      let sektorDustu=false;
+      if(sektor && (!data||!data.length)){ const r=await sec(''); data=r.data; sektorDustu=true; }
       if(!data||!data.length){ fl.innerHTML='<div class="v1-bos">Bu ilde kayıtlı firma bulunamadı.</div>'; return; }
-      fl.innerHTML=`<div style="font-size:12px;font-weight:800;color:var(--v1-lacivert);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;">En Büyük Firmalar${sektor?' · '+esc(sektor):''}</div>`+
+      fl.innerHTML=`<div style="font-size:12px;font-weight:800;color:var(--v1-lacivert);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;">En Büyük Firmalar${(sektor&&!sektorDustu)?' · '+esc(sektor):''}</div>`+
+        (sektorDustu?`<div style="font-size:11.5px;color:var(--v1-muted);margin:-2px 0 6px;">“${esc(sektor)}” sektöründe kayıt yok — ilin tümü gösteriliyor.</div>`:'')+
         data.map(x=>`<a class="v1-yan-satir" href="firma-analiz?ara=${encodeURIComponent(x.ad)}" style="text-decoration:none;color:inherit;">
           <span class="v1-yan-ad" title="${esc(x.ad)}">${esc(x.ad)}</span>
           <span class="v1-yan-deger">${tl(x.toplam_ciro)}</span></a>`).join('');

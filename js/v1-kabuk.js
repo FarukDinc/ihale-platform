@@ -95,7 +95,7 @@
       <div class="v1-top-ikon" title="Raporlarım" onclick="location.href='v1-raporlar'">${I.rapor}</div>
       <div class="v1-top-ikon" title="Profilim" id="v1-profil-btn">${I.kisi}</div>
       <div class="v1-top-ikon" title="Ajandam" onclick="location.href='v1-ajanda'">${I.takvim}</div>
-      <div class="v1-top-ikon" title="Bildirimler" onclick="location.href='bildirimler'">${I.zil}</div>
+      <div class="v1-top-ikon" title="Bildirimler" onclick="location.href='v1-bildirimler'">${I.zil}</div>
     </div>`;
 
   // ── Breadcrumb ─────────────────────────────────────────────────────────
