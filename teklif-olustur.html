@@ -919,6 +919,31 @@
             <p style="font-size:12px;color:var(--muted);margin-top:10px;">KDV oranı aşağıda her iş kalemi için ayrı seçilir. Tutarlar <strong style="color:var(--white);">KDV hariç</strong> girilir.</p>
           </div>
 
+          <!-- AI Fiyat Stratejisi (DeepSeek) — benzer geçmiş ihalelerin GERÇEK tenzilatından teklif bandı -->
+          <div class="ai-panel" style="margin-bottom:16px;">
+            <div style="display:flex;align-items:center;gap:12px;">
+              <div class="ai-icon">💡</div>
+              <div>
+                <div class="ai-panel-title">AI Fiyat Stratejisi</div>
+                <div class="ai-panel-sub">Benzer geçmiş ihalelerin gerçek tenzilat verisiyle size bir teklif bandı önerir (1 kredi)</div>
+              </div>
+            </div>
+            <div class="ai-actions">
+              <button class="btn-ai" id="ai-strateji-btn" onclick="aiFiyatStrateji()">
+                💡 Teklif Bandı Öner (1 Kredi)
+              </button>
+            </div>
+            <div class="ai-loading" id="ai-strateji-loading">
+              <div class="ai-spinner"></div>
+              <div class="ai-loading-text" id="ai-strateji-loading-text">Benzer ihaleler taranıyor...</div>
+            </div>
+            <div id="ai-strateji-sonuc" style="display:none;margin-top:14px;padding:14px 16px;background:var(--navy);border:1px solid var(--border);border-radius:10px;">
+              <div id="ai-strateji-metin" style="font-size:13.5px;line-height:1.65;color:var(--white);white-space:pre-wrap;"></div>
+              <div id="ai-strateji-veri" style="margin-top:12px;padding-top:10px;border-top:1px solid var(--border);font-size:11.5px;color:var(--muted);"></div>
+              <div style="margin-top:10px;font-size:11px;color:var(--muted);">⚠️ Bu öneri geçmiş veriye dayalı bir tahmindir, kesin sonuç değildir. Nihai teklif kararı size aittir.</div>
+            </div>
+          </div>
+
           <div class="card">
             <div class="card-title">Birim Fiyat Teklif Cetveli</div>
             <table class="fiyat-table" id="fiyat-tablo">
@@ -1543,6 +1568,83 @@
       loading.classList.remove('show');
       btn.disabled = false;
       btn.textContent = '✨ Yeniden Oluştur (1 Kredi)';
+    }
+  }
+
+  // ── AI Fiyat Stratejisi (DeepSeek) ────────────────────
+  // Benzer geçmiş ihalelerin GERÇEK tenzilatı (analiz_pivot, tek-lot filtreli) → teklif bandı önerisi.
+  async function aiFiyatStrateji() {
+    const btn = document.getElementById('ai-strateji-btn');
+    const loading = document.getElementById('ai-strateji-loading');
+    const kutu = document.getElementById('ai-strateji-sonuc');
+    const mesajlar = [
+      'Benzer ihaleler taranıyor...',
+      'Geçmiş tenzilat oranları hesaplanıyor...',
+      'Rekabet yoğunluğu değerlendiriliyor...',
+      'Teklif bandı öneriliyor...',
+    ];
+    let mi = 0;
+
+    if (!ihaleId) {
+      toast('Fiyat stratejisi için ihale bağlantısı gerekir (ihale detayından "Teklif Oluştur" ile gelin).', 'hata');
+      return;
+    }
+
+    btn.disabled = true;
+    loading.classList.add('show');
+    const interval = setInterval(() => {
+      mi = (mi + 1) % mesajlar.length;
+      document.getElementById('ai-strateji-loading-text').textContent = mesajlar[mi];
+    }, 1800);
+
+    try {
+      const { data: { session } } = await sb.auth.getSession();
+      if (!session) { toast('Bu özellik için giriş yapmalısınız.', 'hata'); return; }
+
+      const res = await fetch(`${API.CONFIG.BASE_URL}/ai/teklif-strateji`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ ihale_id: ihaleId })
+      }).catch(() => null);
+
+      if (!res) { toast('Sunucuya ulaşılamadı. Tekrar deneyin.', 'hata'); return; }
+      if (res.status === 402) { toast('Yetersiz kredi. Plan yükseltip tekrar deneyin.', 'hata'); return; }
+      if (!res.ok) {
+        const h = await res.json().catch(() => ({}));
+        toast(h.detail || 'Fiyat stratejisi alınamadı. Tekrar deneyin.', 'hata');
+        return;
+      }
+
+      const json = await res.json();
+      document.getElementById('ai-strateji-metin').textContent = json.metin || '';
+
+      // Dayanak sayılar — AI'nın uydurmadığını kullanıcı görsün (grounding şeffaflığı)
+      const satirlar = [];
+      const kir = json.kirilimlar || {};
+      for (const [ad, dizi] of Object.entries(kir)) {
+        const r = (dizi || [])[0];
+        if (!r) continue;
+        const t = (r.ort_tenzilat === null || r.ort_tenzilat === undefined)
+          ? 'tenzilat hesaplanamıyor'
+          : '%' + Number(r.ort_tenzilat).toLocaleString('tr-TR', { maximumFractionDigits: 1 }) + ' ort. tenzilat';
+        const n = Number(r.ihale_sayisi || 0).toLocaleString('tr-TR');
+        satirlar.push(`<strong style="color:var(--white);">${ad === 'kategori' ? 'Sektör' : 'İl'}:</strong> ${r.grup_deger || '—'} · ${n} ihale · ${t}`);
+      }
+      document.getElementById('ai-strateji-veri').innerHTML =
+        satirlar.length ? '📊 Dayanak veriler:<br>' + satirlar.join('<br>') : '';
+
+      kutu.style.display = 'block';
+      toast('Fiyat stratejisi hazır!', 'basari');
+    } catch (e) {
+      toast('Bir hata oluştu. Tekrar deneyin.', 'hata');
+    } finally {
+      clearInterval(interval);
+      loading.classList.remove('show');
+      btn.disabled = false;
+      btn.textContent = '💡 Yeniden Öner (1 Kredi)';
     }
   }
 
