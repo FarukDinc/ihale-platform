@@ -7,7 +7,7 @@
   <title>Global İhaleler — İhaleGlobal</title>
   <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=4" />
   <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/v1.css?v=3" />
+  <link rel="stylesheet" href="css/v1.css?v=4" />
   <style>
     .v1-sayfa-baslik { font-size:22px; font-weight:800; color:var(--v1-lacivert); margin-bottom:4px; }
     .v1-sayfa-alt { font-size:13.5px; color:var(--v1-muted); margin-bottom:16px; }
@@ -17,6 +17,18 @@
     .v1-f-etiket { font-size:11.5px; color:var(--v1-muted); margin:6px 0 3px; display:block; }
     .v1-bayrak { display:inline-block; font-size:11.5px; font-weight:700; padding:3px 10px; border-radius:20px;
       background:var(--v1-mavi-acik); color:var(--v1-mavi); white-space:nowrap; }
+    /* Dünya haritası — v1 mavi paleti */
+    .v1-dunya-wrap { position:relative; width:100%; background:var(--v1-zemin); border:1px solid var(--v1-cizgi);
+      border-radius:12px; overflow:hidden; }
+    .v1-dunya-svg { width:100%; height:auto; display:block; }
+    .v1-dunya-svg path { stroke:#fff; stroke-width:.35; cursor:pointer; transition:opacity .12s; }
+    .v1-dunya-svg path:hover { opacity:.75; }
+    .v1-tooltip { position:fixed; z-index:9999; background:var(--v1-lacivert); color:#fff; border-radius:9px;
+      padding:9px 12px; font-size:12.5px; line-height:1.5; pointer-events:none; display:none;
+      box-shadow:0 8px 22px rgba(12,62,112,.28); }
+    .v1-lejant { display:flex; align-items:center; gap:8px; flex-wrap:wrap; font-size:11.5px;
+      color:var(--v1-muted); margin-top:10px; }
+    .v1-lejant i { width:24px; height:11px; border-radius:3px; display:inline-block; }
   </style>
 </head>
 <body class="v1" data-v1-aktif="global" data-v1-kirinti="Global > Uluslararası İhaleler">
@@ -24,7 +36,17 @@
   <div class="v1-main">
     <div class="v1-govde">
       <div class="v1-sayfa-baslik">Global İhaleler</div>
-      <div class="v1-sayfa-alt">Avrupa Birliği (TED) kaynaklı uluslararası ihale ilanları — ülke, sektör ve tarihe göre süzün.</div>
+      <div class="v1-sayfa-alt">Avrupa Birliği (TED) kaynaklı uluslararası ihale ilanları — haritadan ülkeye tıklayın ya da aşağıdan süzün.</div>
+
+      <!-- Dünya haritası: ülke bazlı açık ihale yoğunluğu -->
+      <div class="v1-kart">
+        <div class="v1-kart-baslik" style="justify-content:space-between;">
+          <span>Dünya Haritası — Ülke Bazlı Açık İhale Yoğunluğu</span>
+          <a href="v1-dis-ticaret" style="font-size:12.5px;color:var(--v1-muted);">Dış Ticaret Analizi →</a>
+        </div>
+        <div class="v1-dunya-wrap" id="g-harita"><div class="v1-bos">Harita yükleniyor…</div></div>
+        <div class="v1-lejant" id="g-lejant"></div>
+      </div>
 
       <div class="v1-liste-duzen">
         <aside class="v1-filtre">
@@ -96,7 +118,8 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-<script src="js/v1-kabuk.js?v=3"></script>
+<script src="js/dunya-harita.js?v=1"></script>
+<script src="js/v1-kabuk.js?v=4"></script>
 <script>
 (() => {
   const SB_URL="https://ihaleglobal.com", SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzg0MzA3MTU4LCJleHAiOjE5NDE5ODcxNTh9.CjNKulvirotDD_y2oO2QKgo0kbqYvL0jUSV1RiDMoso";
@@ -184,6 +207,45 @@
     }catch(_){}
   }
 
+
+  // ── Dünya haritası: ülke bazlı açık ihale yoğunluğu (v1 mavi rampası) ──
+  const MAVI=['#EDF1F6','#D6E6F5','#9CC4E8','#4A8FD0','#135EAA','#0C3E70'];
+  async function haritaCiz(){
+    const el=document.getElementById('g-harita'); const D=window.DUNYA_HARITA;
+    if(!D){ el.innerHTML='<div class="v1-bos">Harita verisi yüklenemedi.</div>'; return; }
+    // Ülke bazlı açık ihale sayımı — ulke_kodu (ISO-A3) ile eşleşir
+    const say={}, adlar={};
+    try{
+      const {data}=await sb.from('uluslararasi_ihaleler').select('ulke,ulke_kodu')
+        .gte('son_teklif_tarihi',new Date().toISOString()).limit(20000);
+      (data||[]).forEach(r=>{ if(!r.ulke_kodu) return;
+        say[r.ulke_kodu]=(say[r.ulke_kodu]||0)+1; if(r.ulke) adlar[r.ulke_kodu]=r.ulke; });
+    }catch(_){}
+    const max=Math.max(1,...Object.values(say));
+    const renk=(c)=>{ if(!c) return MAVI[0]; const r=c/max;
+      return r>0.6?MAVI[5]:r>0.33?MAVI[4]:r>0.16?MAVI[3]:r>0.06?MAVI[2]:MAVI[1]; };
+    el.className='v1-dunya-wrap';
+    el.innerHTML=`<svg viewBox="${D.viewBox}" xmlns="http://www.w3.org/2000/svg" class="v1-dunya-svg" role="img" aria-label="Ülke bazlı açık ihale yoğunluğu">`+
+      D.ulkeler.map(u=>`<path d="${u.d}" fill="${renk(say[u.kod]||0)}" data-k="${esc(u.kod)}" data-ad="${esc(adlar[u.kod]||u.ad||'')}" data-n="${say[u.kod]||0}"></path>`).join('')+`</svg>`;
+    const tip=document.getElementById('g-tip');
+    el.querySelectorAll('path').forEach(p=>{
+      p.addEventListener('mousemove',(e)=>{
+        tip.innerHTML=`<b>${esc(p.dataset.ad||p.dataset.k)}</b><br>${num(p.dataset.n)} açık ihale`;
+        tip.style.display='block'; tip.style.left=Math.min(e.clientX+14,window.innerWidth-200)+'px';
+        tip.style.top=Math.max(8,e.clientY-56)+'px';
+      });
+      p.addEventListener('mouseleave',()=>{tip.style.display='none';});
+      p.addEventListener('click',()=>{
+        const ad=p.dataset.ad; if(!ad||!Number(p.dataset.n)) return;
+        const su=document.getElementById('f-ulke');
+        if([...su.options].some(o=>o.value===ad||o.text===ad)) su.value=ad;
+        sayfa=1; yukle(); document.getElementById('v1-sayi').scrollIntoView({block:'center',behavior:'smooth'});
+      });
+    });
+    document.getElementById('g-lejant').innerHTML='<span>Açık ihale: Az</span>'+
+      MAVI.slice(1).map(c=>`<i style="background:${c}"></i>`).join('')+'<span>Çok</span>';
+  }
+
   (async()=>{
     try{ const {data}=await sb.auth.getSession();
       if(window.v1PaketYaz){ if(data&&data.session){ const {data:c}=await sb.from('kullanici_krediler').select('plan').eq('kullanici_id',data.session.user.id).maybeSingle();
@@ -202,9 +264,10 @@
         tr.style.display=tr.textContent.toLocaleLowerCase('tr').includes(q)?'':'none';
       });
     });
-    secenekler(); yukle();
+    secenekler(); yukle(); haritaCiz();
   })();
 })();
 </script>
+<div class="v1-tooltip" id="g-tip"></div>
 </body>
 </html>

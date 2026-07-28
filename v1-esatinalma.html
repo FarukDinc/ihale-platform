@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="author" content="Ömer Faruk Dinç">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>e-Satınalma — İhaleGlobal</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=4" />
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/v1.css?v=4" />
+  <style>
+    .v1-sayfa-baslik { font-size:22px; font-weight:800; color:var(--v1-lacivert); margin-bottom:4px; }
+    .v1-sayfa-alt { font-size:13.5px; color:var(--v1-muted); margin-bottom:16px; }
+    .v1-f-input,.v1-f-select { width:100%; border:1px solid var(--v1-cizgi); border-radius:8px; padding:8px 10px;
+      font-family:var(--v1-font); font-size:13px; outline:none; background:#fff; }
+    .v1-f-input:focus,.v1-f-select:focus { border-color:var(--v1-mavi); }
+    .v1-rfq-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(320px,1fr)); gap:16px; }
+    .v1-rfq { background:#fff; border:1px solid var(--v1-cizgi); border-radius:var(--v1-radius-lg);
+      box-shadow:var(--v1-golge); padding:18px 20px; display:flex; flex-direction:column; gap:9px;
+      transition:border-color .15s, transform .15s; text-decoration:none; color:inherit; }
+    .v1-rfq:hover { border-color:var(--v1-teal); transform:translateY(-2px); text-decoration:none; }
+    .v1-rfq-ust { display:flex; align-items:center; justify-content:space-between; gap:10px; }
+    .v1-rfq-kat { font-size:11px; font-weight:700; padding:3px 10px; border-radius:20px;
+      background:var(--v1-teal-acik); color:#0B6C67; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:190px; }
+    .v1-rfq-gun { font-size:11.5px; font-weight:700; padding:3px 10px; border-radius:20px;
+      background:var(--v1-mavi-acik); color:var(--v1-mavi); white-space:nowrap; }
+    .v1-rfq-gun.acil { background:#FDECEE; color:var(--v1-kirmizi); }
+    .v1-rfq-baslik { font-size:15px; font-weight:700; color:var(--v1-lacivert); line-height:1.4;
+      display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+    .v1-rfq-aciklama { font-size:12.5px; color:var(--v1-muted); line-height:1.55;
+      display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+    .v1-rfq-alt { display:flex; align-items:center; justify-content:space-between; gap:10px;
+      border-top:1px solid var(--v1-cizgi); padding-top:10px; margin-top:auto; }
+    .v1-rfq-il { font-size:12.5px; color:var(--v1-metin-2); font-weight:600; }
+    .v1-rfq-bedel { font-size:14px; font-weight:800; color:var(--v1-mavi); }
+    .v1-bilgi-serit { background:var(--v1-mavi-acik); border:1px solid #CFE2F5; border-radius:12px;
+      padding:16px 18px; font-size:13.5px; line-height:1.6; margin-bottom:18px; }
+    .v1-bilgi-serit strong { color:var(--v1-lacivert); }
+  </style>
+</head>
+<body class="v1" data-v1-aktif="esatinalma" data-v1-kirinti="e-Satınalma > Açık Talepler">
+<div class="v1-app">
+  <div class="v1-main">
+    <div class="v1-govde">
+      <div class="v1-sayfa-baslik">e-Satınalma</div>
+      <div class="v1-sayfa-alt">Özel sektör satınalma talepleri (RFQ) — kamu ihalesi dışındaki iş fırsatları.</div>
+
+      <div class="v1-bilgi-serit">
+        🏭 <strong>Kamu dışı fırsatlar:</strong> Firmaların yayımladığı satınalma talepleri. Teklif vermek için talebe girin.
+        Kendi talebinizi yayımlamak isterseniz <a href="https://fasonda.com" target="_blank" rel="noopener">Fasonda.com</a> üzerinden ilan açabilirsiniz.
+      </div>
+
+      <div class="v1-liste-duzen">
+        <aside class="v1-filtre">
+          <div class="v1-filtre-bas">
+            <svg viewBox="0 0 24 24" width="17" height="17" fill="currentColor"><path d="M3 4.5h18l-7 8.4V21l-4-2.4v-6.1L3 4.5Z"/></svg>
+            Filtrele
+          </div>
+          <div class="v1-filtre-grup acik">
+            <button class="v1-filtre-btn">Kelime Arama<span class="ok">›</span></button>
+            <div class="v1-filtre-icerik"><input class="v1-f-input" id="f-kelime" placeholder="Talep başlığında ara…"></div>
+          </div>
+          <div class="v1-filtre-grup">
+            <button class="v1-filtre-btn">Sektör<span class="ok">›</span></button>
+            <div class="v1-filtre-icerik"><select class="v1-f-select" id="f-kategori"><option value="">Tümü</option></select></div>
+          </div>
+          <div class="v1-filtre-grup">
+            <button class="v1-filtre-btn">İl<span class="ok">›</span></button>
+            <div class="v1-filtre-icerik"><select class="v1-f-select" id="f-il"><option value="">Tümü</option></select></div>
+          </div>
+          <div class="v1-filtre-grup">
+            <button class="v1-filtre-btn">Durum<span class="ok">›</span></button>
+            <div class="v1-filtre-icerik">
+              <label style="display:flex;gap:8px;align-items:center;font-size:13px;">
+                <input type="checkbox" id="f-acik" checked> Yalnız teklif süresi devam edenler</label>
+            </div>
+          </div>
+          <button class="v1-filtre-uygula" id="f-uygula">Filtreyi Uygula</button>
+          <button style="width:100%;background:none;border:none;border-top:1px solid var(--v1-cizgi);padding:11px;
+            font-family:var(--v1-font);font-size:13px;font-weight:600;color:var(--v1-muted);cursor:pointer;" id="f-temizle">Vazgeç / Temizle</button>
+        </aside>
+
+        <section>
+          <div class="v1-kart" style="padding:18px 20px;margin-bottom:14px;">
+            <div class="v1-tablo-bas" style="margin:0;">
+              <div>
+                <div style="font-size:17px;font-weight:800;color:var(--v1-lacivert);">Açık Talepler</div>
+                <div class="v1-tablo-sayi" id="v1-sayi">Yükleniyor…</div>
+              </div>
+              <select class="v1-sec v1-f-select" id="f-sirala" style="max-width:200px;">
+                <option value="tarih">Son teklife göre (yakın)</option>
+                <option value="yeni">En yeni eklenen</option>
+                <option value="bedel">Bedele göre (yüksek)</option>
+              </select>
+            </div>
+          </div>
+          <div class="v1-rfq-grid" id="v1-liste"><div class="v1-bos">Yükleniyor…</div></div>
+          <div class="v1-sayfalama" id="v1-sayfalama"></div>
+        </section>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="js/kategoriler.js?v=1"></script>
+<script src="js/v1-kabuk.js?v=4"></script>
+<script>
+(() => {
+  const SB_URL="https://ihaleglobal.com", SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzg0MzA3MTU4LCJleHAiOjE5NDE5ODcxNTh9.CjNKulvirotDD_y2oO2QKgo0kbqYvL0jUSV1RiDMoso";
+  const sb=window.supabase.createClient(SB_URL,SB_KEY);
+  const esc=(s)=>(s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  const num=(n)=>(Number(n)||0).toLocaleString('tr-TR');
+  const bedelFmt=(v,pb)=>v==null?'Belirtilmemiş':(pb==='USD'?'$':pb==='EUR'?'€':'₺')+Number(v).toLocaleString('tr-TR',{maximumFractionDigits:0});
+  const ILLER=["ADANA","ANKARA","ANTALYA","AYDIN","BALIKESİR","BURSA","DENİZLİ","DİYARBAKIR","ESKİŞEHİR","GAZİANTEP","HATAY","İSTANBUL","İZMİR","KAYSERİ","KOCAELİ","KONYA","MANİSA","MERSİN","MUĞLA","SAKARYA","SAMSUN","TEKİRDAĞ","TRABZON"];
+  // ⚠️ window.KATEGORILER nesne dizisi — .kod al
+  const KATS=(window.KATEGORILER||[]).map(k=>(typeof k==='string'?k:(k&&k.kod)||'')).filter(Boolean);
+  const BOY=12;
+  let sayfa=1;
+
+  function sorgu(sayimIcin){
+    let q=sb.from('satinalma_talepleri').select(
+      sayimIcin?'id':'id,baslik,aciklama,kategori,il,ilce,miktar,tahmini_bedel,para_birimi,son_teklif_tarihi,durum,olusturulma',
+      sayimIcin?{count:'exact',head:true}:undefined);
+    const v=(id)=>{const e=document.getElementById(id); return e&&e.value?e.value.trim():'';};
+    if(v('f-kelime'))   q=q.ilike('baslik','%'+v('f-kelime')+'%');
+    if(v('f-kategori')) q=q.eq('kategori',v('f-kategori'));
+    if(v('f-il'))       q=q.eq('il',v('f-il'));
+    const ac=document.getElementById('f-acik');
+    if(ac&&ac.checked) q=q.or('son_teklif_tarihi.is.null,son_teklif_tarihi.gte.'+new Date().toISOString());
+    return q;
+  }
+
+  async function yukle(){
+    const el=document.getElementById('v1-liste');
+    el.innerHTML='<div class="v1-bos">Yükleniyor…</div>';
+    try{
+      const s=document.getElementById('f-sirala').value;
+      const kol = s==='bedel'?'tahmini_bedel' : s==='yeni'?'olusturulma' : 'son_teklif_tarihi';
+      const artan = (s==='tarih');
+      const bas=(sayfa-1)*BOY;
+      const [veri,sayim]=await Promise.all([
+        sorgu(false).order(kol,{ascending:artan,nullsFirst:artan}).range(bas,bas+BOY-1),
+        sorgu(true).then(r=>r).catch(()=>({count:null})),
+      ]);
+      if(veri.error) throw veri.error;
+      const toplam=(sayim&&sayim.count!=null)?sayim.count:null;
+      document.getElementById('v1-sayi').innerHTML = toplam!=null
+        ? `Arama kriterinize uygun <strong>${num(toplam)}</strong> satınalma talebi listeleniyor`
+        : `<strong>${(veri.data||[]).length}</strong> talep gösteriliyor`;
+      const d=veri.data||[];
+      if(!d.length){ el.innerHTML='<div class="v1-bos">Kriterlere uyan açık talep bulunamadı.</div>';
+        document.getElementById('v1-sayfalama').innerHTML=''; return; }
+      el.innerHTML=d.map(r=>{
+        const t=r.son_teklif_tarihi?new Date(r.son_teklif_tarihi):null;
+        const g=t?Math.max(0,Math.ceil((t-new Date())/86400000)):null;
+        return `<a class="v1-rfq" href="ozel-ihale-detay?id=${r.id}">
+          <div class="v1-rfq-ust">
+            <span class="v1-rfq-kat" title="${esc(r.kategori||'')}">${esc(r.kategori||'Genel')}</span>
+            ${g!=null?`<span class="v1-rfq-gun${g<=3?' acil':''}">Son ${g} gün</span>`:'<span class="v1-rfq-gun">Süresiz</span>'}
+          </div>
+          <div class="v1-rfq-baslik">${esc(r.baslik||'Satınalma Talebi')}</div>
+          ${r.aciklama?`<div class="v1-rfq-aciklama">${esc(r.aciklama)}</div>`:''}
+          <div class="v1-rfq-alt">
+            <span class="v1-rfq-il">📍 ${esc(r.il||'—')}${r.ilce?' / '+esc(r.ilce):''}${r.miktar?' · '+esc(String(r.miktar)):''}</span>
+            <span class="v1-rfq-bedel">${bedelFmt(r.tahmini_bedel,r.para_birimi)}</span>
+          </div></a>`;
+      }).join('');
+      sayfalama(toplam,d.length);
+    }catch(e){ el.innerHTML=`<div class="v1-bos">Liste yüklenemedi. ${esc(e.message||'')}</div>`; }
+  }
+
+  function sayfalama(toplam,adet){
+    const el=document.getElementById('v1-sayfalama');
+    if(toplam==null){
+      el.innerHTML=`<button ${sayfa===1?'disabled':''} data-s="${sayfa-1}">‹ Önceki</button><button class="aktif" disabled>${sayfa}</button><button ${adet<BOY?'disabled':''} data-s="${sayfa+1}">Sonraki ›</button>`;
+    } else {
+      const son=Math.max(1,Math.ceil(toplam/BOY)); if(son<=1){ el.innerHTML=''; return; }
+      const g=[]; const b1=Math.max(1,sayfa-2), b2=Math.min(son,b1+4);
+      for(let i=b1;i<=b2;i++) g.push(i);
+      el.innerHTML=`<button ${sayfa===1?'disabled':''} data-s="${sayfa-1}">‹</button>`+
+        g.map(i=>`<button class="${i===sayfa?'aktif':''}" data-s="${i}">${i}</button>`).join('')+
+        `<button ${sayfa===son?'disabled':''} data-s="${sayfa+1}">›</button>`;
+    }
+    el.querySelectorAll('[data-s]').forEach(b=>b.addEventListener('click',()=>{
+      const s=+b.dataset.s; if(s<1)return; sayfa=s; yukle(); window.scrollTo({top:0,behavior:'smooth'});
+    }));
+  }
+
+  (async()=>{
+    try{ const {data}=await sb.auth.getSession();
+      if(window.v1PaketYaz){ if(data&&data.session){ const {data:k}=await sb.from('kullanici_krediler').select('plan').eq('kullanici_id',data.session.user.id).maybeSingle();
+        v1PaketYaz(['standart','kurumsal'].includes(k?.plan)?'Pro':'Temel'); } else v1PaketYaz('Misafir'); }
+    }catch(_){}
+    const si=document.getElementById('f-il'), sk=document.getElementById('f-kategori');
+    ILLER.forEach(i=>si.insertAdjacentHTML('beforeend',`<option>${i}</option>`));
+    KATS.forEach(k=>sk.insertAdjacentHTML('beforeend',`<option>${esc(k)}</option>`));
+    document.querySelectorAll('.v1-filtre-btn').forEach(b=>b.addEventListener('click',()=>b.parentElement.classList.toggle('acik')));
+    document.getElementById('f-uygula').addEventListener('click',()=>{sayfa=1;yukle();});
+    document.getElementById('f-sirala').addEventListener('change',()=>{sayfa=1;yukle();});
+    document.getElementById('f-temizle').addEventListener('click',()=>{
+      document.querySelectorAll('.v1-f-input,.v1-f-select').forEach(e=>{ if(e.id!=='f-sirala') e.value=''; });
+      document.getElementById('f-acik').checked=true; sayfa=1; yukle();
+    });
+    yukle();
+  })();
+})();
+</script>
+</body>
+</html>

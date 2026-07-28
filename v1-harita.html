@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="author" content="Ömer Faruk Dinç">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Harita — İhaleGlobal</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=4" />
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/v1.css?v=4" />
+  <style>
+    .v1-sayfa-baslik { font-size:22px; font-weight:800; color:var(--v1-lacivert); margin-bottom:4px; }
+    .v1-sayfa-alt { font-size:13.5px; color:var(--v1-muted); margin-bottom:16px; }
+    .v1-h-bar { display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:14px; }
+    .v1-sec { border:1.5px solid var(--v1-cizgi); border-radius:9px; padding:8px 11px; background:#fff;
+      font-family:var(--v1-font); font-size:13px; color:var(--v1-metin); outline:none; cursor:pointer; }
+    .v1-sec:focus { border-color:var(--v1-mavi); }
+    .v1-katman { display:inline-flex; border:1.5px solid var(--v1-cizgi); border-radius:9px; overflow:hidden; }
+    .v1-katman button { background:#fff; border:none; padding:9px 16px; font-family:var(--v1-font);
+      font-size:13px; font-weight:700; color:var(--v1-muted); cursor:pointer; }
+    .v1-katman button.aktif { background:var(--v1-mavi); color:#fff; }
+    .v1-h-duzen { display:grid; grid-template-columns:1.55fr 1fr; gap:16px; align-items:start; }
+    @media(max-width:1000px){ .v1-h-duzen{ grid-template-columns:1fr; } }
+    .v1-tr-svg { width:100%; height:auto; display:block; }
+    .v1-tr-svg path { stroke:#fff; stroke-width:.6; cursor:pointer; transition:opacity .12s; }
+    .v1-tr-svg path:hover { opacity:.75; }
+    .v1-tr-svg path.secili { stroke:var(--v1-lacivert); stroke-width:1.8; }
+    .v1-tooltip { position:fixed; z-index:9999; background:var(--v1-lacivert); color:#fff; border-radius:9px;
+      padding:9px 12px; font-size:12.5px; line-height:1.5; pointer-events:none; display:none;
+      box-shadow:0 8px 22px rgba(12,62,112,.28); }
+    .v1-lejant { display:flex; align-items:center; gap:8px; flex-wrap:wrap; font-size:11.5px; color:var(--v1-muted); margin-top:10px; }
+    .v1-lejant i { width:24px; height:11px; border-radius:3px; display:inline-block; }
+    .v1-yan-satir { display:flex; align-items:center; justify-content:space-between; gap:10px;
+      padding:11px 0; border-top:1px solid var(--v1-cizgi); }
+    .v1-yan-satir:first-child { border-top:none; }
+    .v1-yan-ad { font-size:13px; color:var(--v1-metin); font-weight:600; flex:1; min-width:0;
+      white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .v1-yan-deger { font-size:13px; font-weight:800; color:var(--v1-mavi); white-space:nowrap; }
+  </style>
+</head>
+<body class="v1" data-v1-aktif="harita" data-v1-kirinti="Analiz > Harita">
+<div class="v1-app">
+  <div class="v1-main">
+    <div class="v1-govde">
+      <div class="v1-sayfa-baslik">Türkiye Haritası</div>
+      <div class="v1-sayfa-alt">İl bazlı firma yoğunluğu ve açık satınalma talepleri — bir ile tıklayın, detayını sağda görün.</div>
+
+      <div class="v1-kpi" style="grid-template-columns:repeat(4,1fr);margin-bottom:18px;">
+        <a class="v1-kpi-kart" href="v1-firmalar"><span class="v1-kpi-ikon">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" d="M4.8 2h6.8a1.4 1.4 0 0 1 1.4 1.4v6.2h6.2a1.4 1.4 0 0 1 1.4 1.4V22H3.4V3.4A1.4 1.4 0 0 1 4.8 2Zm.6 3.1v2h2v-2h-2Zm3.6 0v2h2v-2h-2Zm-3.6 3.6v2h2v-2h-2Zm3.6 0v2h2v-2h-2Zm-3.6 3.6v2h2v-2h-2Zm3.6 0v2h2v-2h-2Zm6.8 0v2h2v-2h-2Zm0 3.6v2h2v-2h-2Z"/></svg></span>
+          <span class="v1-kpi-govde"><span class="v1-kpi-sayi" id="k-firma">…</span><span class="v1-kpi-etiket">Toplam Firma</span></span></a>
+        <div class="v1-kpi-kart" style="cursor:default;"><span class="v1-kpi-ikon">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" d="M12 2.1a7.4 7.4 0 0 0-7.4 7.4c0 5.15 6.4 11.6 6.67 11.87a1.03 1.03 0 0 0 1.46 0c.27-.27 6.67-6.72 6.67-11.87A7.4 7.4 0 0 0 12 2.1Zm0 10.2a2.8 2.8 0 1 1 0-5.6 2.8 2.8 0 0 1 0 5.6Z"/></svg></span>
+          <span class="v1-kpi-govde"><span class="v1-kpi-sayi" id="k-yogun">…</span><span class="v1-kpi-etiket">En Yoğun İl</span></span></div>
+        <a class="v1-kpi-kart" href="v1-esatinalma"><span class="v1-kpi-ikon">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M2 3h3.1l.9 3H21a1 1 0 0 1 .96 1.28l-2.2 7.4A2 2 0 0 1 17.84 16H9.1a2 2 0 0 1-1.93-1.47L4.4 5H2V3Z"/><path d="M9.5 18.5a2 2 0 1 1 0 4 2 2 0 0 1 0-4ZM17.5 18.5a2 2 0 1 1 0 4 2 2 0 0 1 0-4Z"/></svg></span>
+          <span class="v1-kpi-govde"><span class="v1-kpi-sayi" id="k-rfq">…</span><span class="v1-kpi-etiket">Açık Talep (RFQ)</span></span></a>
+        <div class="v1-kpi-kart" style="cursor:default;"><span class="v1-kpi-ikon">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 20.5V9.8l5.5-3.2v2.5l5.5-3.2v3.2L21 5.8v14.7H3Zm3-2.2h2.6v-3H6v3Zm5.5 0h2.6v-3h-2.6v3Zm5.5 0h2.6v-3H17v3Z"/></svg></span>
+          <span class="v1-kpi-govde"><span class="v1-kpi-sayi" id="k-il">81</span><span class="v1-kpi-etiket">Kapsanan İl</span></span></div>
+      </div>
+
+      <div class="v1-h-duzen">
+        <div class="v1-kart">
+          <div class="v1-h-bar">
+            <div class="v1-katman">
+              <button class="aktif" data-k="firma">🏢 Firma Yoğunluğu</button>
+              <button data-k="rfq">🛒 Açık Talepler</button>
+            </div>
+            <span style="flex:1;"></span>
+            <select class="v1-sec" id="h-sektor"><option value="">Tüm Sektörler</option></select>
+          </div>
+          <div id="h-harita" class="v1-bos">Harita yükleniyor…</div>
+          <div class="v1-lejant" id="h-lejant"></div>
+        </div>
+
+        <div class="v1-kart">
+          <div class="v1-kart-baslik" id="h-yan-baslik">Bir ile tıklayın</div>
+          <div id="h-yan"><div class="v1-bos">Haritadan bir il seçin — o ildeki firmalar ve açık talepler burada listelenir.</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="v1-tooltip" id="h-tip"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="js/tr-harita.js?v=1"></script>
+<script src="js/kategoriler.js?v=1"></script>
+<script src="js/v1-kabuk.js?v=4"></script>
+<script>
+(() => {
+  const SB_URL="https://ihaleglobal.com", SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzg0MzA3MTU4LCJleHAiOjE5NDE5ODcxNTh9.CjNKulvirotDD_y2oO2QKgo0kbqYvL0jUSV1RiDMoso";
+  const sb=window.supabase.createClient(SB_URL,SB_KEY);
+  const esc=(s)=>(s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  const num=(n)=>(Number(n)||0).toLocaleString('tr-TR');
+  const tl=(v)=>v==null?'—':'₺'+Number(v).toLocaleString('tr-TR',{maximumFractionDigits:0});
+  const trFold=(s)=>(s||'').toLocaleLowerCase('tr').replace(/i̇/g,'i').replace(/ç/g,'c').replace(/ğ/g,'g')
+    .replace(/ö/g,'o').replace(/ş/g,'s').replace(/ü/g,'u');
+  const foldKey=(s)=>trFold(s).replace(/[^a-z]/g,'');
+  // v1 MAVİ rampası — amber YOK
+  const MAVI=['#EDF1F6','#D6E6F5','#9CC4E8','#4A8FD0','#135EAA','#0C3E70'];
+  const KATS=(window.KATEGORILER||[]).map(k=>(typeof k==='string'?k:(k&&k.kod)||'')).filter(Boolean);
+  let katman='firma', firmaVeri={}, rfqVeri={}, uyeMi=false, secili=null;
+
+  async function veriYukle(){
+    try{ const {data}=await sb.rpc('il_firma_dagilimi');
+      (data||[]).forEach(r=>{ firmaVeri[foldKey(r.il)]={adet:r.adet||0,ciro:r.toplam_ciro||0,ad:r.il}; });
+    }catch(_){}
+    try{ const {data}=await sb.rpc('il_rfq_dagilimi');
+      (data||[]).forEach(r=>{ rfqVeri[foldKey(r.il)]={adet:r.adet||0,ad:r.il}; });
+    }catch(_){}
+    kpiCiz(); ciz();
+  }
+
+  function kpiCiz(){
+    const f=Object.values(firmaVeri);
+    document.getElementById('k-firma').textContent=num(f.reduce((a,b)=>a+(b.adet||0),0));
+    const enY=f.slice().sort((a,b)=>(b.adet||0)-(a.adet||0))[0];
+    const cap=(s)=>(s||'').toLocaleLowerCase('tr').replace(/(^|\s)\S/g,c=>c.toLocaleUpperCase('tr'));
+    document.getElementById('k-yogun').textContent=enY?cap(enY.ad):'—';
+    document.getElementById('k-yogun').style.fontSize='20px';
+    document.getElementById('k-rfq').textContent=num(Object.values(rfqVeri).reduce((a,b)=>a+(b.adet||0),0));
+  }
+
+  function ciz(){
+    const el=document.getElementById('h-harita'); const TR=window.TR_HARITA;
+    if(!TR){ el.innerHTML='<div class="v1-bos">Harita verisi yüklenemedi.</div>'; return; }
+    const kaynak = katman==='firma' ? firmaVeri : rfqVeri;
+    const max=Math.max(1,...Object.values(kaynak).map(v=>v.adet||0));
+    const renk=(c)=>{ if(!c) return MAVI[0]; const r=c/max;
+      return r>0.6?MAVI[5]:r>0.33?MAVI[4]:r>0.16?MAVI[3]:r>0.06?MAVI[2]:MAVI[1]; };
+    el.className='';
+    el.innerHTML=`<svg viewBox="${TR.viewBox}" xmlns="http://www.w3.org/2000/svg" class="v1-tr-svg" role="img" aria-label="Türkiye il haritası">`+
+      TR.iller.map(il=>{ const v=kaynak[il.key]||{};
+        return `<path d="${il.d}" fill="${renk(v.adet)}" data-k="${il.key}" data-ad="${esc(il.ad)}"></path>`;
+      }).join('')+`</svg>`;
+    const tip=document.getElementById('h-tip');
+    el.querySelectorAll('path').forEach(p=>{
+      p.addEventListener('mousemove',(e)=>{
+        const f=firmaVeri[p.dataset.k]||{}, r=rfqVeri[p.dataset.k]||{};
+        tip.innerHTML=`<b>${esc(p.dataset.ad)}</b><br>🏢 ${num(f.adet)} firma<br>🛒 ${num(r.adet)} açık talep`;
+        tip.style.display='block'; tip.style.left=Math.min(e.clientX+14,window.innerWidth-200)+'px';
+        tip.style.top=Math.max(8,e.clientY-60)+'px';
+      });
+      p.addEventListener('mouseleave',()=>{tip.style.display='none';});
+      p.addEventListener('click',()=>{
+        el.querySelectorAll('path').forEach(x=>x.classList.remove('secili'));
+        p.classList.add('secili'); ilSec(p.dataset.k,p.dataset.ad);
+      });
+    });
+    const et = katman==='firma' ? 'Firma sayısı' : 'Açık talep sayısı';
+    document.getElementById('h-lejant').innerHTML=`<span>${et}: Az</span>`+
+      MAVI.slice(1).map(c=>`<i style="background:${c}"></i>`).join('')+`<span>Çok</span>`;
+  }
+
+  async function ilSec(key,ad){
+    secili=ad;
+    document.getElementById('h-yan-baslik').textContent=ad;
+    const yan=document.getElementById('h-yan');
+    const f=firmaVeri[key]||{}, r=rfqVeri[key]||{};
+    yan.innerHTML=`
+      <div class="v1-yan-satir"><span class="v1-yan-ad">🏢 Kayıtlı firma</span><span class="v1-yan-deger">${num(f.adet)}</span></div>
+      <div class="v1-yan-satir"><span class="v1-yan-ad">💰 Toplam ciro</span><span class="v1-yan-deger">${tl(f.ciro)}</span></div>
+      <div class="v1-yan-satir"><span class="v1-yan-ad">🛒 Açık talep (RFQ)</span><span class="v1-yan-deger">${num(r.adet)}</span></div>
+      <div style="margin-top:14px;display:flex;gap:9px;flex-wrap:wrap;">
+        <a class="v1-rapor-btn" style="background:var(--v1-mavi);color:#fff;font-size:12.5px;font-weight:700;padding:9px 14px;border-radius:8px;text-decoration:none;" href="v1-ihaleler?il=${encodeURIComponent(ad)}">İhalelerini Gör →</a>
+        <a class="v1-rapor-btn" style="background:#fff;color:var(--v1-mavi);border:1.5px solid var(--v1-mavi);font-size:12.5px;font-weight:700;padding:9px 14px;border-radius:8px;text-decoration:none;" href="v1-esatinalma">Talepleri Gör →</a>
+      </div>
+      <div id="h-firmalar" style="margin-top:16px;"><div class="v1-bos">Firmalar yükleniyor…</div></div>`;
+    // O ildeki en büyük firmalar (üyeye açık)
+    const fl=document.getElementById('h-firmalar');
+    if(!uyeMi){ fl.innerHTML='<div class="v1-bos">🔒 Firma listesi üyelere özeldir. <a href="login">Giriş yapın →</a></div>'; return; }
+    try{
+      const sektor=document.getElementById('h-sektor').value;
+      let q=sb.from('yukleniciler').select('id,ad,toplam_sozlesme_sayisi,toplam_ciro').eq('il',ad);
+      const {data}=await q.order('toplam_ciro',{ascending:false,nullsFirst:false}).limit(8);
+      if(!data||!data.length){ fl.innerHTML='<div class="v1-bos">Bu ilde kayıtlı firma bulunamadı.</div>'; return; }
+      fl.innerHTML=`<div style="font-size:12px;font-weight:800;color:var(--v1-lacivert);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;">En Büyük Firmalar${sektor?' · '+esc(sektor):''}</div>`+
+        data.map(x=>`<a class="v1-yan-satir" href="firma-analiz?ara=${encodeURIComponent(x.ad)}" style="text-decoration:none;color:inherit;">
+          <span class="v1-yan-ad" title="${esc(x.ad)}">${esc(x.ad)}</span>
+          <span class="v1-yan-deger">${tl(x.toplam_ciro)}</span></a>`).join('');
+    }catch(_){ fl.innerHTML='<div class="v1-bos">Firmalar yüklenemedi.</div>'; }
+  }
+
+  (async()=>{
+    try{ const {data}=await sb.auth.getSession(); uyeMi=!!(data&&data.session);
+      if(window.v1PaketYaz){ if(uyeMi){ const {data:k}=await sb.from('kullanici_krediler').select('plan').eq('kullanici_id',data.session.user.id).maybeSingle();
+        v1PaketYaz(['standart','kurumsal'].includes(k?.plan)?'Pro':'Temel'); } else v1PaketYaz('Misafir'); }
+    }catch(_){}
+    const sk=document.getElementById('h-sektor');
+    KATS.forEach(k=>sk.insertAdjacentHTML('beforeend',`<option>${esc(k)}</option>`));
+    sk.addEventListener('change',()=>{ if(secili){ const k=foldKey(secili); ilSec(k,secili); } });
+    document.querySelectorAll('.v1-katman button').forEach(b=>b.addEventListener('click',()=>{
+      document.querySelectorAll('.v1-katman button').forEach(x=>x.classList.remove('aktif'));
+      b.classList.add('aktif'); katman=b.dataset.k; ciz();
+    }));
+    veriYukle();
+  })();
+})();
+</script>
+</body>
+</html>

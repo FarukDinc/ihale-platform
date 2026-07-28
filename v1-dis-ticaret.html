@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="author" content="Ömer Faruk Dinç">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dış Ticaret Analizi — İhaleGlobal</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=4" />
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/v1.css?v=4" />
+  <style>
+    /* Tümü v1 paletinden — amber/koyu tema DEĞİL */
+    .v1-sayfa-baslik { font-size:22px; font-weight:800; color:var(--v1-lacivert); margin-bottom:4px; }
+    .v1-sayfa-alt { font-size:13.5px; color:var(--v1-muted); margin-bottom:16px; }
+    .v1-tic-kpi { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:18px; }
+    @media(max-width:960px){ .v1-tic-kpi{ grid-template-columns:repeat(2,1fr);} }
+    @media(max-width:560px){ .v1-tic-kpi{ grid-template-columns:1fr;} }
+    .v1-tic-kart { background:#fff; border:1px solid var(--v1-cizgi); border-radius:var(--v1-radius-lg);
+      box-shadow:var(--v1-golge); padding:16px 18px; }
+    .v1-tic-l { font-size:12px; font-weight:700; color:var(--v1-muted); text-transform:uppercase; letter-spacing:.04em; }
+    .v1-tic-v { font-size:23px; font-weight:800; color:var(--v1-mavi); margin-top:5px; line-height:1.15; }
+    .v1-tic-v.lacivert { color:var(--v1-lacivert); }
+    .v1-tic-v.kirmizi { color:var(--v1-kirmizi); }
+    .v1-tic-v.yesil { color:var(--v1-yesil); }
+    .v1-tic-s { font-size:11.5px; color:var(--v1-muted); margin-top:4px; }
+    /* Harita */
+    .v1-harita-bar { display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:12px; }
+    .v1-harita-bar label { font-size:12.5px; font-weight:700; color:var(--v1-lacivert); }
+    .v1-sec { border:1.5px solid var(--v1-cizgi); border-radius:9px; padding:8px 11px; background:#fff;
+      font-family:var(--v1-font); font-size:13px; color:var(--v1-metin); outline:none; cursor:pointer; }
+    .v1-sec:focus { border-color:var(--v1-mavi); }
+    .v1-dunya-wrap { position:relative; width:100%; background:var(--v1-zemin); border:1px solid var(--v1-cizgi);
+      border-radius:12px; overflow:hidden; }
+    .v1-dunya-svg { width:100%; height:auto; display:block; }
+    .v1-dunya-svg path { stroke:#fff; stroke-width:.35; cursor:pointer; transition:opacity .12s; }
+    .v1-dunya-svg path:hover { opacity:.75; }
+    /* ⚠️ Sabit KOYU zemin + açık metin: açık temada da okunur (v1 hep açık tema) */
+    .v1-tooltip { position:fixed; z-index:9999; background:var(--v1-lacivert); color:#fff; border-radius:9px;
+      padding:9px 12px; font-size:12.5px; line-height:1.5; pointer-events:none; display:none;
+      box-shadow:0 8px 22px rgba(12,62,112,.28); max-width:260px; }
+    .v1-tooltip b { color:#fff; }
+    .v1-lejant { display:flex; align-items:center; gap:8px; flex-wrap:wrap; font-size:11.5px;
+      color:var(--v1-muted); margin-top:10px; }
+    .v1-lejant i { width:22px; height:11px; border-radius:3px; display:inline-block; }
+    /* Tablo */
+    .v1-degisim { font-weight:700; font-size:12.5px; }
+    .v1-degisim.arti { color:var(--v1-yesil); }
+    .v1-degisim.eksi { color:var(--v1-kirmizi); }
+    .v1-kaynak { font-size:12px; color:var(--v1-muted); line-height:1.7; }
+    .v1-kaynak a { color:var(--v1-mavi); }
+  </style>
+</head>
+<body class="v1" data-v1-aktif="disticaret" data-v1-kirinti="Global > Dış Ticaret Analizi">
+<div class="v1-app">
+  <div class="v1-main">
+    <div class="v1-govde">
+      <div class="v1-sayfa-baslik">Dış Ticaret Analizi</div>
+      <div class="v1-sayfa-alt">Türkiye'nin ülke bazlı ihracat/ithalat hacimleri — yıl seçin, kıyas yılıyla karşılaştırın, haritada ülkeye tıklayın.</div>
+
+      <div class="v1-tic-kpi">
+        <div class="v1-tic-kart"><div class="v1-tic-l">Dünyaya İhracat</div><div class="v1-tic-v" id="k-ihr">—</div><div class="v1-tic-s" id="k-ihr-s">—</div></div>
+        <div class="v1-tic-kart"><div class="v1-tic-l">Dünyadan İthalat</div><div class="v1-tic-v lacivert" id="k-ith">—</div><div class="v1-tic-s" id="k-ith-s">—</div></div>
+        <div class="v1-tic-kart"><div class="v1-tic-l">Dış Ticaret Dengesi</div><div class="v1-tic-v" id="k-denge">—</div><div class="v1-tic-s">ihracat − ithalat</div></div>
+        <div class="v1-tic-kart"><div class="v1-tic-l">Kapsanan Ülke</div><div class="v1-tic-v lacivert" id="k-ulke">—</div><div class="v1-tic-s">ticaret verisi olan</div></div>
+      </div>
+
+      <div class="v1-kart">
+        <div class="v1-harita-bar">
+          <div class="v1-kart-baslik" style="margin:0;">Dünya Ticaret Haritası</div>
+          <span style="flex:1;"></span>
+          <label for="t-yil">Yıl</label><select class="v1-sec" id="t-yil"></select>
+          <label for="t-kiyas">Kıyas</label><select class="v1-sec" id="t-kiyas"></select>
+          <label for="t-mod">Gösterim</label>
+          <select class="v1-sec" id="t-mod">
+            <option value="ihr">İhracat (TR → ülke)</option>
+            <option value="ith">İthalat (ülke → TR)</option>
+            <option value="denge">Denge (ihracat − ithalat)</option>
+          </select>
+        </div>
+        <div class="v1-dunya-wrap" id="t-harita"><div class="v1-bos">Harita yükleniyor…</div></div>
+        <div class="v1-lejant" id="t-lejant"></div>
+      </div>
+
+      <div class="v1-kart">
+        <div class="v1-tablo-bas">
+          <div>
+            <div style="font-size:17px;font-weight:800;color:var(--v1-lacivert);">Ülke Listesi</div>
+            <div class="v1-tablo-sayi" id="t-sayi">Yükleniyor…</div>
+          </div>
+          <div class="v1-listede-ara">
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="var(--v1-muted)"><path fill-rule="evenodd" d="M10.5 3a7.5 7.5 0 1 0 4.55 13.46l4.24 4.25 1.42-1.42-4.25-4.24A7.5 7.5 0 0 0 10.5 3Zm0 2a5.5 5.5 0 1 1 0 11 5.5 5.5 0 0 1 0-11Z"/></svg>
+            <input type="text" id="t-ara" placeholder="Ülke ara">
+          </div>
+        </div>
+        <div style="overflow-x:auto;">
+          <table class="v1-tablo">
+            <thead><tr>
+              <th style="width:44px;">#</th><th>Ülke</th>
+              <th style="width:165px;cursor:pointer;" data-s="ihr">İhracat ⇅</th>
+              <th style="width:165px;cursor:pointer;" data-s="ith">İthalat ⇅</th>
+              <th style="width:150px;cursor:pointer;" data-s="denge">Denge ⇅</th>
+              <th style="width:110px;">Değişim</th>
+            </tr></thead>
+            <tbody id="t-tbody"><tr><td colspan="6" class="v1-bos">Yükleniyor…</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="v1-kart">
+        <div class="v1-kart-baslik">Veri Kaynağı ve Yöntem</div>
+        <div class="v1-kaynak">
+          Veriler <strong>UN Comtrade</strong> (ve WITS) kayıtlarından derlenmiştir; tutarlar <strong>ABD Doları</strong> cinsindendir.
+          Raporlayan ülke Türkiye'dir: <strong>İhracat</strong> = Türkiye'nin o ülkeye satışı, <strong>İthalat</strong> = o ülkeden alımı.
+          Yansıtma (mirror) farkları, geç bildirimler ve revizyonlar nedeniyle son yıllar eksik olabilir.
+          <strong>Değişim</strong> sütunu seçili yıl ile kıyas yılı arasındaki ihracat farkıdır.
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="v1-tooltip" id="t-tip"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="js/dunya-harita.js?v=1"></script>
+<script src="js/v1-kabuk.js?v=4"></script>
+<script>
+(() => {
+  const SB_URL="https://ihaleglobal.com", SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzg0MzA3MTU4LCJleHAiOjE5NDE5ODcxNTh9.CjNKulvirotDD_y2oO2QKgo0kbqYvL0jUSV1RiDMoso";
+  const sb=window.supabase.createClient(SB_URL,SB_KEY);
+  const esc=(s)=>(s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  const num=(n)=>(Number(n)||0).toLocaleString('tr-TR');
+  const usd=(n)=>{n=Number(n)||0; const a=Math.abs(n); const i=n<0?'-':'';
+    if(a>=1e9) return i+'$'+(a/1e9).toLocaleString('tr-TR',{maximumFractionDigits:1})+' Mr';
+    if(a>=1e6) return i+'$'+(a/1e6).toLocaleString('tr-TR',{maximumFractionDigits:1})+' Mn';
+    if(a>=1e3) return i+'$'+(a/1e3).toLocaleString('tr-TR',{maximumFractionDigits:0})+' Bin';
+    return i+'$'+num(a);};
+  // v1 MAVİ rampası (amber yok) — açıktan koyuya
+  const MAVI=['#E3EDF7','#C0D8EF','#8FBCE3','#4A8FD0','#1E6BB8','#0C3E70'];
+  const YESIL=['#E4F3EA','#BCE3CB','#8ACFA6','#4FB77E','#26975C','#0F6E3F'];
+  const KIRMIZI=['#FCE9EA','#F6C6C9','#EF9AA0','#E36B74','#CE4650','#A32B34'];
+
+  let yillar=[], yil=null, kiyas=null, mod='ihr', harita={}, liste=[], sirala='ihr', yon=false, ADLAR={};
+
+  function adSozluk(){
+    const D=window.DUNYA_HARITA;
+    if(D) D.ulkeler.forEach(u=>{ if(u.kod && u.ad) ADLAR[u.kod]=u.ad; });
+  }
+
+  async function yillarYukle(){
+    try{
+      const {data}=await sb.rpc('ticaret_yillar');
+      yillar=(data&&data.yillar)||[];
+      yil=(data&&data.guncel_yil)||yillar[yillar.length-1];
+      kiyas=yillar.includes(yil-1)?yil-1:yillar[0];
+      const sy=document.getElementById('t-yil'), sk=document.getElementById('t-kiyas');
+      const opt=(v,sel)=>`<option value="${v}"${sel?' selected':''}>${v}</option>`;
+      sy.innerHTML=yillar.slice().reverse().map(y=>opt(y,y===yil)).join('');
+      sk.innerHTML=yillar.slice().reverse().map(y=>opt(y,y===kiyas)).join('');
+      sy.addEventListener('change',()=>{yil=+sy.value; veriYukle();});
+      sk.addEventListener('change',()=>{kiyas=+sk.value; veriYukle();});
+    }catch(_){}
+  }
+
+  async function veriYukle(){
+    document.getElementById('t-tbody').innerHTML='<tr><td colspan="6" class="v1-bos">Yükleniyor…</td></tr>';
+    try{
+      const [h,l]=await Promise.all([
+        sb.rpc('ticaret_harita',{p_yil:yil}).then(r=>r.data||{}).catch(()=>({})),
+        sb.rpc('ticaret_liste',{p_yil:yil,p_kiyas_yil:kiyas}).then(r=>r.data||[]).catch(()=>[]),
+      ]);
+      harita=h||{}; liste=l||[];
+      kpiCiz(); haritaCiz(); listeCiz();
+    }catch(e){ document.getElementById('t-tbody').innerHTML=`<tr><td colspan="6" class="v1-bos">Veri alınamadı. ${esc(e.message||'')}</td></tr>`; }
+  }
+
+  function kpiCiz(){
+    let ihr=0, ith=0, n=0;
+    Object.values(harita).forEach(v=>{ ihr+=Number(v.ihr)||0; ith+=Number(v.ith)||0; if((v.ihr||v.ith))n++; });
+    const denge=ihr-ith;
+    document.getElementById('k-ihr').textContent=usd(ihr);
+    document.getElementById('k-ihr-s').textContent=yil+' yılı · Comtrade';
+    document.getElementById('k-ith').textContent=usd(ith);
+    document.getElementById('k-ith-s').textContent=yil+' yılı · Comtrade';
+    const dv=document.getElementById('k-denge');
+    dv.textContent=usd(denge);
+    dv.className='v1-tic-v '+(denge>=0?'yesil':'kirmizi');
+    document.getElementById('k-ulke').textContent=num(n);
+  }
+
+  function deger(v){ if(!v) return 0;
+    return mod==='ihr'?(Number(v.ihr)||0):mod==='ith'?(Number(v.ith)||0):((Number(v.ihr)||0)-(Number(v.ith)||0)); }
+
+  function haritaCiz(){
+    const el=document.getElementById('t-harita'); const D=window.DUNYA_HARITA;
+    if(!D){ el.innerHTML='<div class="v1-bos">Harita verisi yüklenemedi.</div>'; return; }
+    const degerler=Object.values(harita).map(deger).filter(x=>x);
+    const poz=degerler.filter(x=>x>0).sort((a,b)=>a-b);
+    const neg=degerler.filter(x=>x<0).map(Math.abs).sort((a,b)=>a-b);
+    const esik=(arr)=>[0.2,0.4,0.6,0.8].map(q=>arr.length?arr[Math.floor(arr.length*q)]:0);
+    const ep=esik(poz), en=esik(neg);
+    const renk=(d)=>{
+      if(!d) return '#EDF1F6';
+      if(mod==='denge'){
+        if(d>0){ const s=YESIL; return d>=ep[3]?s[5]:d>=ep[2]?s[4]:d>=ep[1]?s[3]:d>=ep[0]?s[2]:s[1]; }
+        const a=Math.abs(d), s=KIRMIZI; return a>=en[3]?s[5]:a>=en[2]?s[4]:a>=en[1]?s[3]:a>=en[0]?s[2]:s[1];
+      }
+      const s=MAVI; return d>=ep[3]?s[5]:d>=ep[2]?s[4]:d>=ep[1]?s[3]:d>=ep[0]?s[2]:s[1];
+    };
+    el.innerHTML=`<svg viewBox="${D.viewBox}" xmlns="http://www.w3.org/2000/svg" class="v1-dunya-svg" role="img" aria-label="Dünya ticaret haritası">`+
+      D.ulkeler.map(u=>{ const v=harita[u.kod]; const d=deger(v);
+        return `<path d="${u.d}" fill="${renk(d)}" data-k="${esc(u.kod)}" data-ad="${esc(u.ad||'')}"></path>`;
+      }).join('')+`</svg>`;
+    // Tooltip
+    const tip=document.getElementById('t-tip');
+    el.querySelectorAll('path').forEach(p=>{
+      p.addEventListener('mousemove',(e)=>{
+        const v=harita[p.dataset.k]||{};
+        const dn=(Number(v.ihr)||0)-(Number(v.ith)||0);
+        tip.innerHTML=`<b>${esc(p.dataset.ad||p.dataset.k)}</b><br>
+          İhracat: ${usd(v.ihr)}<br>İthalat: ${usd(v.ith)}<br>
+          Denge: <b style="color:${dn>=0?'#8ACFA6':'#F6C6C9'}">${usd(dn)}</b>`;
+        tip.style.display='block'; tip.style.left=Math.min(e.clientX+14,window.innerWidth-270)+'px';
+        tip.style.top=Math.max(8,e.clientY-70)+'px';
+      });
+      p.addEventListener('mouseleave',()=>{ tip.style.display='none'; });
+      p.addEventListener('click',()=>{ const a=document.getElementById('t-ara'); a.value=p.dataset.ad||''; listeCiz();
+        document.getElementById('t-tbody').scrollIntoView({block:'center',behavior:'smooth'}); });
+    });
+    const skala = mod==='denge' ? [KIRMIZI[4],KIRMIZI[2],'#EDF1F6',YESIL[2],YESIL[4]] : MAVI.slice(1);
+    document.getElementById('t-lejant').innerHTML =
+      (mod==='denge'?'<span>Açık ↔ Fazla</span>':'<span>Az</span>')+
+      skala.map(c=>`<i style="background:${c}"></i>`).join('')+
+      (mod==='denge'?'':'<span>Çok</span>')+
+      `<span style="margin-left:auto;">Kaynak: UN Comtrade · ${yil}</span>`;
+  }
+
+  function listeCiz(){
+    const q=(document.getElementById('t-ara').value||'').toLocaleLowerCase('tr');
+    let d=liste.map(r=>{
+      const ad=ADLAR[r.iso3]||r.iso3||r.iso2||'—';
+      const ihr=Number(r.yil_ihr)||0, ith=Number(r.yil_ith)||0, kih=Number(r.kiyas_ihr)||0;
+      return {ad,iso3:r.iso3,ihr,ith,denge:ihr-ith,degisim:kih?((ihr-kih)/kih*100):null};
+    });
+    if(q) d=d.filter(r=>r.ad.toLocaleLowerCase('tr').includes(q));
+    d.sort((a,b)=> yon ? (a[sirala]-b[sirala]) : (b[sirala]-a[sirala]));
+    document.getElementById('t-sayi').innerHTML=`<strong>${num(d.length)}</strong> ülke · ${yil} (kıyas ${kiyas})`;
+    const tb=document.getElementById('t-tbody');
+    if(!d.length){ tb.innerHTML='<tr><td colspan="6" class="v1-bos">Eşleşen ülke yok.</td></tr>'; return; }
+    tb.innerHTML=d.slice(0,120).map((r,i)=>`<tr>
+      <td style="color:var(--v1-muted);font-weight:700;">${i+1}</td>
+      <td style="font-weight:600;color:var(--v1-metin);">${esc(r.ad)}</td>
+      <td style="font-weight:700;color:var(--v1-mavi);">${usd(r.ihr)}</td>
+      <td style="font-weight:700;color:var(--v1-lacivert);">${usd(r.ith)}</td>
+      <td style="font-weight:700;color:${r.denge>=0?'var(--v1-yesil)':'var(--v1-kirmizi)'};">${usd(r.denge)}</td>
+      <td>${r.degisim==null?'—':`<span class="v1-degisim ${r.degisim>=0?'arti':'eksi'}">${r.degisim>=0?'▲':'▼'} %${Math.abs(r.degisim).toLocaleString('tr-TR',{maximumFractionDigits:1})}</span>`}</td>
+    </tr>`).join('');
+  }
+
+  (async()=>{
+    try{ const {data}=await sb.auth.getSession();
+      if(window.v1PaketYaz){ if(data&&data.session){ const {data:k}=await sb.from('kullanici_krediler').select('plan').eq('kullanici_id',data.session.user.id).maybeSingle();
+        v1PaketYaz(['standart','kurumsal'].includes(k?.plan)?'Pro':'Temel'); } else v1PaketYaz('Misafir'); }
+    }catch(_){}
+    adSozluk();
+    document.getElementById('t-mod').addEventListener('change',(e)=>{ mod=e.target.value; haritaCiz(); });
+    document.getElementById('t-ara').addEventListener('input',listeCiz);
+    document.querySelectorAll('[data-s]').forEach(th=>th.addEventListener('click',()=>{
+      const k=th.dataset.s; if(sirala===k) yon=!yon; else {sirala=k; yon=false;} listeCiz();
+    }));
+    await yillarYukle();
+    veriYukle();
+  })();
+})();
+</script>
+</body>
+</html>

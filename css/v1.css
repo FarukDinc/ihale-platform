@@ -93,6 +93,17 @@
 .v1-ara-kutu input::placeholder { color: #9AA7B5; }
 .v1-ara-btn { border: none; background: none; padding: 0 12px; color: var(--v1-lacivert); cursor: pointer; display: flex; align-items: center; }
 .v1-top-sag { margin-left: auto; display: flex; align-items: center; gap: 12px; }
+/* Fasonda.com geçiş butonu — aramanın sağı, paket rozetinin solu */
+.v1-fasonda {
+  display: flex; align-items: center; gap: 9px; text-decoration: none;
+  background: var(--v1-teal-acik); border: 1.5px solid var(--v1-teal);
+  border-radius: var(--v1-radius); padding: 7px 14px; transition: background .15s, transform .15s;
+}
+.v1-fasonda:hover { background: #CFEDEB; text-decoration: none; transform: translateY(-1px); }
+.v1-fasonda-ikon { font-size: 19px; line-height: 1; }
+.v1-fasonda-yazi { font-size: 11px; color: var(--v1-muted); line-height: 1.25; white-space: nowrap; }
+.v1-fasonda-yazi strong { display: block; font-size: 13px; color: var(--v1-teal); font-weight: 800; }
+@media (max-width: 1200px) { .v1-fasonda-yazi { display: none; } .v1-fasonda { padding: 9px 11px; } }
 .v1-paket {
   display: flex; align-items: center; gap: 10px; background: #F6FAFF; border: 1px solid var(--v1-cizgi);
   border-radius: var(--v1-radius); padding: 7px 12px;

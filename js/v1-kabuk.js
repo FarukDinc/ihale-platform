@@ -30,6 +30,9 @@
     kisi:   '<svg viewBox="0 0 24 24"><path d="M12 12a4.6 4.6 0 1 0 0-9.2 4.6 4.6 0 0 0 0 9.2Zm0 2c-3.6 0-8 1.8-8 4.4V21h16v-2.6c0-2.6-4.4-4.4-8-4.4Z"/></svg>',
     takvim: '<svg viewBox="0 0 24 24"><path fill-rule="evenodd" d="M7 2v2H5.5A2.5 2.5 0 0 0 3 6.5v13A2.5 2.5 0 0 0 5.5 22h13a2.5 2.5 0 0 0 2.5-2.5v-13A2.5 2.5 0 0 0 18.5 4H17V2h-2v2H9V2H7Zm12 8H5v9.5c0 .28.22.5.5.5h13a.5.5 0 0 0 .5-.5V10Z"/></svg>',
     zil:    '<svg viewBox="0 0 24 24"><path d="M12 2a1.6 1.6 0 0 1 1.6 1.6v.62a6 6 0 0 1 4.4 5.78v3.2l1.42 2.46a1 1 0 0 1-.87 1.5H5.45a1 1 0 0 1-.87-1.5L6 13.2V10a6 6 0 0 1 4.4-5.78V3.6A1.6 1.6 0 0 1 12 2Z"/><path d="M9.6 18.5h4.8a2.4 2.4 0 0 1-4.8 0Z"/></svg>',
+    ticaret:'<svg viewBox="0 0 24 24"><path d="M2.6 6.4 12 2.2l9.4 4.2-9.4 4.2L2.6 6.4Z"/><path d="M2.4 9.1 11 12.9v8.9L2.4 18V9.1ZM13 12.9l8.6-3.8V18L13 21.8v-8.9Z"/></svg>',
+    sepet:  '<svg viewBox="0 0 24 24"><path d="M2 3h3.1l.9 3H21a1 1 0 0 1 .96 1.28l-2.2 7.4A2 2 0 0 1 17.84 16H9.1a2 2 0 0 1-1.93-1.47L4.4 5H2V3Z"/><path d="M9.5 18.5a2 2 0 1 1 0 4 2 2 0 0 1 0-4ZM17.5 18.5a2 2 0 1 1 0 4 2 2 0 0 1 0-4Z"/></svg>',
+    harita: '<svg viewBox="0 0 24 24"><path d="M9 2.4 3.3 4.6A1.4 1.4 0 0 0 2.4 5.9v14.3a1 1 0 0 0 1.36.93L9 19.2V2.4ZM15 4.8 11 2.6v16.8l4 2.2V4.8ZM17 4.8v16.8l3.7-2.2a1.4 1.4 0 0 0 .9-1.3V3.8a1 1 0 0 0-1.36-.93L17 4.8Z"/></svg>',
   };
 
   // ── Menü (ihalepro nav'ıyla birebir sıra) ──────────────────────────────
@@ -43,7 +46,10 @@
     { id: 'firmalar',   ad: 'Firmalar',    ikon: I.firma,  href: 'v1-firmalar' },
     { id: 'kurumlar',   ad: 'Kurumlar',    ikon: I.kurum,  href: 'v1-kurumlar' },
     { id: 'sektorler',  ad: 'Sektörler',   ikon: I.sektor, href: 'v1-sektorler' },
-    { id: 'global',     ad: 'Global',      ikon: I.global, href: 'v1-global' },
+    { id: 'global',     ad: 'Global İhaleler', ikon: I.global, href: 'v1-global' },
+    { id: 'disticaret', ad: 'Dış Ticaret', ikon: I.ticaret, href: 'v1-dis-ticaret' },
+    { id: 'esatinalma', ad: 'e-Satınalma', ikon: I.sepet,  href: 'v1-esatinalma' },
+    { id: 'harita',     ad: 'Harita',      ikon: I.harita, href: 'v1-harita' },
     { id: 'bank',       ad: 'Bank',        ikon: I.para,   href: 'v1-bank' },
   ];
 
@@ -77,6 +83,11 @@
       <button class="v1-ara-btn" id="v1-ara-btn" aria-label="Ara">${I.ara}</button>
     </div>
     <div class="v1-top-sag">
+      <a class="v1-fasonda" href="https://fasonda.com" target="_blank" rel="noopener"
+         title="Fasonda.com — üretim & tedarik pazar yeri">
+        <span class="v1-fasonda-ikon">🏭</span>
+        <span class="v1-fasonda-yazi">Fasonda.com'a<br><strong>Geçiş Yap →</strong></span>
+      </a>
       <div class="v1-paket">
         <div class="v1-paket-ad">Mevcut Paket<strong id="v1-paket-ad">—</strong></div>
         <button class="v1-paket-btn" onclick="location.href='fiyatlandirma_odeme_bolumu'">Paket Yükselt</button>
