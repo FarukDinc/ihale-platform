@@ -41,6 +41,11 @@
     document.head.appendChild(st);
   }
 
+  // ⚠️ .user-row SONRADAN gelebilir: kmenu'lü sayfalarda (benim-sayfam, v2 iç sayfalar)
+  // kenar-menu.js rayı DOMContentLoaded'da monte eder; bu script ondan ÖNCE çalışırsa
+  // querySelectorAll boş döner ve profil menüsü HİÇ kurulmazdı (menü yerine profil'e
+  // zıplayan fallback devreye girerdi). Bu yüzden bağlama fonksiyona alınıp tekrar denenir.
+  function satirlariBagla() {
   document.querySelectorAll('.sidebar-footer .user-row, .sidebar .user-row').forEach(el => {
     if (el.dataset.userMenu) return;   // iki kez bağlama
     el.dataset.userMenu = '1';
@@ -86,11 +91,25 @@
       }
     };
     el.addEventListener('click', ac);
+    el._sbBound = true;   // kenar-menu.js fallback'i bunu kontrol eder
     el.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); ac(e); }
       if (e.key === 'Escape') menuler.forEach(m => m.classList.remove('acik'));
     });
   });
+  }
+  // Bağla + (yeni satır geldiyse) en son bilinen oturum durumuyla menüyü doldur.
+  // ⚠️ menuDoldur bu noktada henüz TANIMLI DEĞİL (const, aşağıda) → ilk çağrıda ÇAĞIRMA (TDZ).
+  //    DOMContentLoaded ve setTimeout'lar script gövdesi bittikten sonra çalışır, orada güvenli.
+  const baglaVeDoldur = () => {
+    const once = menuler.length;
+    satirlariBagla();
+    if (menuler.length > once) menuDoldur(sonMisafir);
+  };
+  satirlariBagla();                                             // hemen (satır HTML'de gömülüyse)
+  if (document.readyState === 'loading')
+    document.addEventListener('DOMContentLoaded', baglaVeDoldur);
+  [150, 400, 900].forEach(ms => setTimeout(baglaVeDoldur, ms)); // geç monte edilen kmenu rayı için
 
   document.addEventListener('click', () => menuler.forEach(m => m.classList.remove('acik')));
   document.addEventListener('keydown', (e) => {
@@ -110,7 +129,9 @@
     '<button type="button" data-surum="v2" style="color:#f0a500;">🟡 <span>v2 — İhaleGlobal (aktif)</span></button>' +
     '<div class="ayrac"></div>';
 
+  let sonMisafir = true;   // en son bilinen oturum durumu — geç bağlanan satırlar da dolsun
   const menuDoldur = (misafir) => {
+    sonMisafir = misafir;
     const temaSatiri = `<button type="button" data-tema="1">${temaEtiket()}</button>`;
     const html = misafir
       ? `<button type="button" data-git="login">🔑 <span>Giriş Yap</span></button>
