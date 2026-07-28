@@ -230,7 +230,8 @@
 
   (async()=>{
     const {data}=await sb.auth.getSession();
-    if(!data||!data.session){ document.getElementById('v1-giris').style.display='block'; return; }
+    if(!data||!data.session){ document.getElementById('v1-giris').style.display='block';
+      if(window.v1PaketYaz) v1PaketYaz('Misafir'); return; }
     document.getElementById('v1-icerik').style.display='block';
     uid=data.session.user.id;
     try{ const {data:k}=await sb.from('kullanici_krediler').select('plan').eq('kullanici_id',uid).maybeSingle();
