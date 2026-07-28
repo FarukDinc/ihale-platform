@@ -109,3 +109,27 @@ Bizde karşılığı: mevcut plan sistemi (`plan_kodu` standart/kurumsal) + `js/
 5. v1 Analiz Genel Bakış + Firmalar/Kurumlar/Sektörler
 6. v1 Ajanda · Raporlar · Profil · Yasaklı Sorgulama
 7. **v1/v2 geçişi** — profil menüsünde "Sürüm" satırı (localStorage `ihale_surum`)
+
+
+## ✅ İNŞA DURUMU (28 Tem)
+
+| Sayfa | Dosya | Durum |
+|---|---|---|
+| Bana Özel | `v1-benim-sayfam.html` | ✅ mavi harita + 6 KPI hero + 9 bölüm |
+| İhaleler (liste şablonu) | `v1-ihaleler.html` | ✅ 14 filtre + tablo + Excel + sayfalama |
+| Sektörler | `v1-sektorler.html` | ✅ 45 sektör, çubuk, takip |
+| Firmalar | `v1-firmalar.html` | ✅ Tümü/Takip/Parlayan Yıldızlar |
+| Kurumlar | `v1-kurumlar.html` | ✅ Tümü/Takip |
+| KİK Kararları | `v1-kararlar.html` | ✅ 775 karar, 4 sekme, TR-katlamalı arama |
+| Sözleşmeler | `v1-sozlesmeler.html` | ✅ 2,25M sözleşme, Biten/Devam Eden, Excel |
+| Analiz | `v1-analiz.html` | ⏳ sırada |
+| Global | `v1-global.html` | ⏳ |
+| Ajanda / Raporlar / Profil / Yasaklı | — | ⏳ |
+
+### Öğrenilen kritik teknik notlar
+- ⛔ **`window.KATEGORILER` nesne dizisi** (`{kod,emoji,...}`) — string sanıp `esc()` çağırmak sayfayı öldürür.
+- ⛔ **Sıralama yönü indeksle EŞLEŞMELİ:** `idx_ilanlar_durum_son_teklif` = `(durum, son_teklif_tarihi DESC NULLS LAST)`.
+  `ASC NULLS LAST` istersen planner indeksi kullanamaz → 1,6M satır tarar (7064ms). `ASC NULLS FIRST` → **0,79ms**.
+- ⛔ **Büyük tabloda `select+count:'exact'+order+range` BİRLİKTE timeout** — sayımı ayrı `head:true` sorgusuna böl.
+- ⛔ **`ihale_sonuclari` kolon adları:** `tenzilat_yuzde` (tenzilat değil), `sozlesme_bedeli`, `is_bitis_tarihi` (Biten/Devam Eden bundan türer), `lot_sayisi` YOK.
+- ⛔ **KİK aramada TR katlama şart** (`arama_fold`) — düz `ilike` İ/ı yüzünden sessiz veri kaybı yapar.
