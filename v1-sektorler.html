@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="author" content="Ömer Faruk Dinç">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sektörler — İhaleGlobal</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=4" />
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/v1.css?v=2" />
+  <style>
+    .v1-sayfa-baslik { font-size:22px; font-weight:800; color:var(--v1-lacivert); margin-bottom:4px; }
+    .v1-sayfa-alt { font-size:13.5px; color:var(--v1-muted); margin-bottom:16px; }
+    .v1-sekmeler { display:flex; gap:26px; border-bottom:2px solid var(--v1-cizgi); margin-bottom:18px; }
+    .v1-sekme { background:none; border:none; padding:10px 2px 12px; font-family:var(--v1-font); font-size:15px;
+      font-weight:700; color:var(--v1-muted); cursor:pointer; position:relative; }
+    .v1-sekme.aktif { color:var(--v1-lacivert); }
+    .v1-sekme.aktif::after { content:''; position:absolute; left:0; right:0; bottom:-2px; height:3px; background:var(--v1-mavi); border-radius:2px; }
+    .v1-bar-wrap { width:100%; height:8px; background:#EDF1F6; border-radius:5px; overflow:hidden; }
+    .v1-bar { display:block; height:100%; background:var(--v1-mavi); border-radius:5px; }
+  </style>
+</head>
+<body class="v1" data-v1-aktif="sektorler" data-v1-kirinti="İhaleGlobal > Sektörler">
+<div class="v1-app">
+  <div class="v1-main">
+    <div class="v1-govde">
+      <div class="v1-sayfa-baslik">Sektörler</div>
+      <div class="v1-sayfa-alt">Kamu ihalelerinin sektör bazlı dağılımı — hangi sektörde kaç ihale var, kaçı şu an açık.</div>
+
+      <div class="v1-sekmeler">
+        <button class="v1-sekme aktif" id="s-tum">Tüm Sektörler</button>
+        <button class="v1-sekme" id="s-takip">Takip Ettiklerim</button>
+      </div>
+
+      <div class="v1-kart" style="padding:18px 20px;">
+        <div class="v1-tablo-bas">
+          <div>
+            <div style="font-size:17px;font-weight:800;color:var(--v1-lacivert);" id="v1-liste-baslik">Tüm Sektörler</div>
+            <div class="v1-tablo-sayi" id="v1-sayi">Yükleniyor…</div>
+          </div>
+          <div class="v1-listede-ara">
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="var(--v1-muted)"><path fill-rule="evenodd" d="M10.5 3a7.5 7.5 0 1 0 4.55 13.46l4.24 4.25 1.42-1.42-4.25-4.24A7.5 7.5 0 0 0 10.5 3Zm0 2a5.5 5.5 0 1 1 0 11 5.5 5.5 0 0 1 0-11Z"/></svg>
+            <input type="text" id="v1-ara-liste" placeholder="Sektör ara">
+          </div>
+        </div>
+        <div style="overflow-x:auto;">
+          <table class="v1-tablo" id="v1-tablo">
+            <thead><tr>
+              <th style="width:44px;">#</th><th>Sektör</th>
+              <th style="width:210px;">Toplam İhale</th>
+              <th style="width:110px;">Açık İhale</th>
+              <th style="width:120px;"></th>
+            </tr></thead>
+            <tbody id="v1-tbody"><tr><td colspan="5" class="v1-bos">Yükleniyor…</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="js/v1-kabuk.js?v=1"></script>
+<script>
+(() => {
+  const SB_URL="https://ihaleglobal.com", SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzg0MzA3MTU4LCJleHAiOjE5NDE5ODcxNTh9.CjNKulvirotDD_y2oO2QKgo0kbqYvL0jUSV1RiDMoso";
+  const sb=window.supabase.createClient(SB_URL,SB_KEY);
+  const num=(n)=>(Number(n)||0).toLocaleString('tr-TR');
+  const esc=(s)=>(s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  let tumu=[], takipEdilen=new Set(), uyeMi=false, mod='tum';
+
+  async function yukle(){
+    const tb=document.getElementById('v1-tbody');
+    try{
+      const {data,error}=await sb.rpc('kategori_sayim');
+      if(error) throw error;
+      tumu=(data||[]).slice().sort((a,b)=>(b.toplam||0)-(a.toplam||0));
+      if(uyeMi){ try{ const {data:t}=await sb.from('takip_sektorler').select('sektor'); (t||[]).forEach(r=>takipEdilen.add(r.sektor)); }catch(_){} }
+      ciz();
+    }catch(e){ tb.innerHTML=`<tr><td colspan="5" class="v1-bos">Liste yüklenemedi.</td></tr>`; }
+  }
+
+  function ciz(){
+    const tb=document.getElementById('v1-tbody');
+    const q=(document.getElementById('v1-ara-liste').value||'').toLocaleLowerCase('tr');
+    let liste=tumu;
+    if(mod==='takip') liste=liste.filter(r=>takipEdilen.has(r.kategori));
+    if(q) liste=liste.filter(r=>(r.kategori||'').toLocaleLowerCase('tr').includes(q));
+    document.getElementById('v1-sayi').innerHTML=`Toplam <strong>${num(liste.length)}</strong> sektör listeleniyor`;
+    if(!liste.length){ tb.innerHTML=`<tr><td colspan="5" class="v1-bos">${mod==='takip'?'Henüz sektör takip etmiyorsunuz.':'Sonuç bulunamadı.'}</td></tr>`; return; }
+    const max=Math.max(1,...liste.map(r=>r.toplam||0));
+    tb.innerHTML=liste.map((r,i)=>{
+      const w=Math.max(3,Math.round((r.toplam||0)/max*100));
+      const takipli=takipEdilen.has(r.kategori);
+      return `<tr>
+        <td style="color:var(--v1-muted);font-weight:700;">${i+1}</td>
+        <td><a class="v1-t-ad" href="v1-ihaleler?kategori=${encodeURIComponent(r.kategori)}">${esc(r.kategori)}</a></td>
+        <td><div style="display:flex;align-items:center;gap:10px;">
+          <span class="v1-bar-wrap"><span class="v1-bar" style="width:${w}%"></span></span>
+          <span style="font-weight:700;color:var(--v1-lacivert);white-space:nowrap;">${num(r.toplam)}</span></div></td>
+        <td><span style="font-weight:700;color:var(--v1-teal);">${num(r.aktif)}</span></td>
+        <td style="text-align:right;">
+          <button class="v1-takip-btn" data-s="${esc(r.kategori)}" style="background:${takipli?'var(--v1-mavi)':'#fff'};
+            color:${takipli?'#fff':'var(--v1-mavi)'};border:1.5px solid var(--v1-mavi);border-radius:8px;padding:6px 12px;
+            font-family:var(--v1-font);font-size:12.5px;font-weight:700;cursor:pointer;white-space:nowrap;">
+            ${takipli?'✓ Takipte':'+ Takip Et'}</button></td></tr>`;
+    }).join('');
+    tb.querySelectorAll('.v1-takip-btn').forEach(b=>b.addEventListener('click',()=>takipToggle(b.dataset.s)));
+  }
+
+  async function takipToggle(sektor){
+    if(!uyeMi){ alert('Sektör takibi için giriş yapmalısınız.'); return; }
+    try{
+      if(takipEdilen.has(sektor)){ await sb.from('takip_sektorler').delete().eq('sektor',sektor); takipEdilen.delete(sektor); }
+      else { await sb.from('takip_sektorler').insert({sektor}); takipEdilen.add(sektor); }
+      ciz();
+    }catch(e){ alert('İşlem başarısız: '+(e.message||'')); }
+  }
+
+  (async()=>{
+    try{ const {data}=await sb.auth.getSession(); uyeMi=!!(data&&data.session);
+      if(window.v1PaketYaz){ if(uyeMi){ const {data:k}=await sb.from('kullanici_krediler').select('plan').eq('kullanici_id',data.session.user.id).maybeSingle();
+        v1PaketYaz(['standart','kurumsal'].includes(k?.plan)?'Pro':'Temel'); } else v1PaketYaz('Misafir'); }
+    }catch(_){}
+    document.getElementById('v1-ara-liste').addEventListener('input',ciz);
+    document.getElementById('s-tum').addEventListener('click',()=>{mod='tum';
+      document.getElementById('s-tum').classList.add('aktif'); document.getElementById('s-takip').classList.remove('aktif');
+      document.getElementById('v1-liste-baslik').textContent='Tüm Sektörler'; ciz();});
+    document.getElementById('s-takip').addEventListener('click',()=>{mod='takip';
+      document.getElementById('s-takip').classList.add('aktif'); document.getElementById('s-tum').classList.remove('aktif');
+      document.getElementById('v1-liste-baslik').textContent='Takip Ettiğim Sektörler'; ciz();});
+    yukle();
+  })();
+})();
+</script>
+</body>
+</html>
