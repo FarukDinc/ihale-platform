@@ -490,7 +490,9 @@ def teklif_olustur(
                 "p_miktar": 1,
                 "p_referans_id": ihale_id,
                 "p_referans_tip": "ihale",
-                "p_islem_turu": "teklif_taslak",
+                # ⚠️ 'teklif_taslak' kredi_hareketleri_islem_turu_check'i İHLAL EDİYORDU (23514) →
+                #    kredi hiç düşmüyor, endpoint 500 veriyordu. İzinli değer: 'analiz'/'yukleme'.
+                "p_islem_turu": "analiz",
                 "p_aciklama": f"AI Teklif Taslağı: {(ilan.get('baslik') or '')[:50]}"
             }).execute()
         except Exception as e:
@@ -540,20 +542,29 @@ def ai_teklif_strateji(
         if (kredi_bilgi.data or {}).get("kalan_kredi", 0) < 1:
             raise HTTPException(status_code=402, detail="Yetersiz kredi")
 
-        # Benzer geçmiş tenzilat — kategori + il kırılımı (analiz_pivot; ort_tenzilat tek-lot filtreli).
+        # Benzer geçmiş tenzilat (ort_tenzilat tek-lot filtreli — çok-lot bug'ı analiz_pivot içinde elenir).
+        # ⚠️ 28 Tem ölçüm: analiz_pivot p_grup='kategori' 20sn'de TIMEOUT eder (2,2M sonuç satırı),
+        #    p_grup='il' ~10sn'de döner. Kategori kırılımı yerine MV tabanlı sonuc_ozet (0,0sn) ile
+        #    ülke geneli tenzilat tabanı veriliyor. Kategori kırılımı için MV gerekir (v2).
         kirilimlar = {}
-        if ilan.get("kategori"):
-            try:
-                r = supabase.rpc("analiz_pivot", {"p_grup": "kategori", "p_kategori": ilan.get("kategori")}).execute()
-                kirilimlar["kategori"] = (r.data or [])[:1]
-            except Exception as e:
-                print(f"  ⚠ analiz_pivot kategori (teklif-strateji) atlandı: {e}")
         if ilan.get("il"):
             try:
                 r = supabase.rpc("analiz_pivot", {"p_grup": "il", "p_il": ilan.get("il")}).execute()
                 kirilimlar["il"] = (r.data or [])[:1]
             except Exception as e:
                 print(f"  ⚠ analiz_pivot il (teklif-strateji) atlandı: {e}")
+        try:
+            r = supabase.rpc("sonuc_ozet", {}).execute()
+            genel = (r.data or [])
+            if genel:
+                g = genel[0]
+                kirilimlar["genel"] = [{
+                    "grup_deger": "Türkiye geneli",
+                    "ihale_sayisi": g.get("toplam"),
+                    "ort_tenzilat": g.get("ort_tenzilat"),
+                }]
+        except Exception as e:
+            print(f"  ⚠ sonuc_ozet (teklif-strateji) atlandı: {e}")
 
         sonuc = teklif_strateji_uret(ihale=ilan, kirilimlar=kirilimlar)
         if not sonuc["basari"]:
@@ -565,7 +576,9 @@ def ai_teklif_strateji(
                 "p_miktar": 1,
                 "p_referans_id": ihale_id,
                 "p_referans_tip": "ihale",
-                "p_islem_turu": "teklif_strateji",
+                # ⚠️ kredi_hareketleri_islem_turu_check YALNIZ 'analiz'/'yukleme' kabul eder
+                #    (28 Tem: 'teklif_strateji' 23514 ile reddedildi → kredi düşmedi, endpoint 500).
+                "p_islem_turu": "analiz",
                 "p_aciklama": f"AI Fiyat Stratejisi: {(ilan.get('baslik') or '')[:50]}"
             }).execute()
         except Exception as e:

@@ -1631,7 +1631,8 @@
           ? 'tenzilat hesaplanamıyor'
           : '%' + Number(r.ort_tenzilat).toLocaleString('tr-TR', { maximumFractionDigits: 1 }) + ' ort. tenzilat';
         const n = Number(r.ihale_sayisi || 0).toLocaleString('tr-TR');
-        satirlar.push(`<strong style="color:var(--white);">${ad === 'kategori' ? 'Sektör' : 'İl'}:</strong> ${r.grup_deger || '—'} · ${n} ihale · ${t}`);
+        const etiket = ad === 'kategori' ? 'Sektör' : (ad === 'genel' ? 'Genel' : 'İl');
+        satirlar.push(`<strong style="color:var(--white);">${etiket}:</strong> ${r.grup_deger || '—'} · ${n} ihale · ${t}`);
       }
       document.getElementById('ai-strateji-veri').innerHTML =
         satirlar.length ? '📊 Dayanak veriler:<br>' + satirlar.join('<br>') : '';
