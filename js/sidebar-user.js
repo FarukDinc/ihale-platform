@@ -102,6 +102,14 @@
   const temaEtiket = () => (window.temaSuAnki && window.temaSuAnki() === 'light')
     ? '🌙 <span>Gece Modu</span>' : '☀️ <span>Gündüz Modu</span>';
 
+  // SÜRÜM GEÇİŞİ (v2 → v1). v1 tarafındaki karşılığı js/v1-kabuk.js profil menüsünde.
+  const surumSatiri =
+    '<div style="padding:8px 11px 3px;font-size:10.5px;font-weight:800;letter-spacing:.08em;' +
+    'text-transform:uppercase;color:#8a96a8;">Sürüm</div>' +
+    '<button type="button" data-surum="v1">🔵 <span>v1 — Kurumsal</span></button>' +
+    '<button type="button" data-surum="v2" style="color:#f0a500;">🟡 <span>v2 — İhaleGlobal (aktif)</span></button>' +
+    '<div class="ayrac"></div>';
+
   const menuDoldur = (misafir) => {
     const temaSatiri = `<button type="button" data-tema="1">${temaEtiket()}</button>`;
     const html = misafir
@@ -109,13 +117,21 @@
          <button type="button" data-git="login">✨ <span>Ücretsiz Kayıt Ol</span></button>
          <div class="ayrac"></div>
          ${temaSatiri}`
-      : `<button type="button" data-git="profil">⚙️ <span>Profil &amp; Ayarlar</span></button>
+      : `${surumSatiri}
+         <button type="button" data-git="profil">⚙️ <span>Profil &amp; Ayarlar</span></button>
          <button type="button" data-git="fiyatlandirma_odeme_bolumu">💳 <span>Abonelik</span></button>
          ${temaSatiri}
          <div class="ayrac"></div>
          <button type="button" class="cikis" data-cikis="1">🚪 <span>Çıkış Yap</span></button>`;
     menuler.forEach(m => {
       m.innerHTML = html;
+      m.querySelectorAll('[data-surum]').forEach(b => b.addEventListener('click', (ev) => {
+        ev.stopPropagation();
+        const s = b.dataset.surum;
+        try { localStorage.setItem('ihale_surum', s); } catch (_) {}
+        if (s === 'v1') window.location.href = 'v1-benim-sayfam';
+        else m.classList.remove('acik');
+      }));
       m.querySelectorAll('[data-tema]').forEach(b => b.addEventListener('click', (ev) => {
         ev.stopPropagation();
         if (window.temaDegistir) window.temaDegistir();
