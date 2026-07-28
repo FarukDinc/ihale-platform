@@ -133,3 +133,32 @@ Bizde karşılığı: mevcut plan sistemi (`plan_kodu` standart/kurumsal) + `js/
 - ⛔ **Büyük tabloda `select+count:'exact'+order+range` BİRLİKTE timeout** — sayımı ayrı `head:true` sorgusuna böl.
 - ⛔ **`ihale_sonuclari` kolon adları:** `tenzilat_yuzde` (tenzilat değil), `sozlesme_bedeli`, `is_bitis_tarihi` (Biten/Devam Eden bundan türer), `lot_sayisi` YOK.
 - ⛔ **KİK aramada TR katlama şart** (`arama_fold`) — düz `ilike` İ/ı yüzünden sessiz veri kaybı yapar.
+
+
+## 🏁 v1 KAPSAM TAMAMLANDI (28 Tem) — 15 sayfa
+
+| Sayfa | Dosya |
+|---|---|
+| Bana Özel | `v1-benim-sayfam.html` |
+| İhaleler (Aktif / Sonuçlar / **Doğrudan Teminler**) | `v1-ihaleler.html` |
+| **İhale Detayı** | `v1-ihale-detay.html` |
+| Sözleşmeler (Tümü / Biten / Devam Eden) | `v1-sozlesmeler.html` |
+| KİK Kararları (4 sekme) | `v1-kararlar.html` |
+| Yasaklı Sorgulama | `v1-yasakli.html` |
+| Analiz (firma paneli) | `v1-analiz.html` |
+| Firmalar (3 sekme) | `v1-firmalar.html` |
+| Kurumlar | `v1-kurumlar.html` |
+| Sektörler | `v1-sektorler.html` |
+| Global (TED) | `v1-global.html` |
+| **Bank Modülü** (5 sekme) | `v1-bank.html` |
+| Ajanda | `v1-ajanda.html` |
+| Raporlar | `v1-raporlar.html` |
+| Profil | `v1-profil.html` |
+
+Menü: 11 öğe (Bana Özel · Analiz · İhaleler · Sonuçlar · Sözleşmeler · Kararlar · Firmalar · Kurumlar · Sektörler · Global · Bank).
+Sürüm geçişi **iki yönlü** (v1 `js/v1-kabuk.js` · v2 `js/sidebar-user.js`).
+
+### Ek teknik notlar
+- Aktif menü sekmesinde ihalepro'nun "ters köşe" numarası tarayıcıda çirkin beyaz bloklar üretti → **kullanma**; temiz yuvarlak sekme + ince teal çubuk yeterli.
+- `dogrudan_temin_ilanlari` kolonları: `dt_no`, `tarih` (son_teklif_tarihi DEĞİL), `kategori`, `yayin_tarihi`.
+- Benzer ihalede **kategori tek başına yetmez** — sınıflandırıcı gürültüsü var, `tur` ile birlikte filtrele.
