@@ -174,7 +174,11 @@
     try{
       let q=sb.from('ilanlar').select('id,baslik,il,tur,son_teklif_tarihi')
         .eq('durum','aktif').gte('son_teklif_tarihi',new Date().toISOString()).neq('id',r.id);
+      // Kategori TEK BAŞINA yetmiyor: sınıflandırıcı bazı ilanları yanlış kovaya atıyor
+      // (ör. "Canlı Hayvan Borsası işletme hakkı" → İnşaat). İhale TİPİ de eşleşsin ki
+      // Yapım ihalesine Satış/Kiraya Verme ilanı benzer diye çıkmasın.
       if(r.kategori) q=q.eq('kategori',r.kategori);
+      if(r.tur) q=q.eq('tur',r.tur);
       const {data}=await q.order('son_teklif_tarihi',{ascending:true,nullsFirst:true}).limit(6);
       if(!data||!data.length){ el.innerHTML='<div class="v1-bos">Benzer açık ihale bulunamadı.</div>'; return; }
       el.innerHTML=data.map(i=>{
