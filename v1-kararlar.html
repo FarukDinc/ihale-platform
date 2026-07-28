@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="author" content="Ömer Faruk Dinç">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>KİK Kararları — İhaleGlobal</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=4" />
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/v1.css?v=2" />
+  <style>
+    .v1-sayfa-baslik { font-size:22px; font-weight:800; color:var(--v1-lacivert); margin-bottom:4px; }
+    .v1-sayfa-alt { font-size:13.5px; color:var(--v1-muted); margin-bottom:16px; }
+    .v1-sekmeler { display:flex; gap:24px; border-bottom:2px solid var(--v1-cizgi); margin-bottom:18px; flex-wrap:wrap; }
+    .v1-sekme { background:none; border:none; padding:10px 2px 12px; font-family:var(--v1-font); font-size:14.5px;
+      font-weight:700; color:var(--v1-muted); cursor:pointer; position:relative; }
+    .v1-sekme.aktif { color:var(--v1-lacivert); }
+    .v1-sekme.aktif::after { content:''; position:absolute; left:0; right:0; bottom:-2px; height:3px; background:var(--v1-mavi); border-radius:2px; }
+    .v1-uyari { background:var(--v1-mavi-acik); border:1px solid #CFE2F5; border-radius:12px; padding:16px 18px;
+      font-size:13.5px; margin-bottom:16px; }
+    .v1-sonuc-rozet { display:inline-block; font-size:11.5px; font-weight:700; padding:3px 10px; border-radius:20px; white-space:nowrap; }
+    .v1-karar-ozet { font-size:12.5px; color:var(--v1-muted); margin-top:4px; line-height:1.5;
+      display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+  </style>
+</head>
+<body class="v1" data-v1-aktif="kararlar" data-v1-kirinti="Kamu > KİK Kararları">
+<div class="v1-app">
+  <div class="v1-main">
+    <div class="v1-govde">
+      <div class="v1-sayfa-baslik">KİK Kararları</div>
+      <div class="v1-sayfa-alt">Kamu İhale Kurulu kararları, mahkeme kararları ve tutanaklar — itiraz emsallerini arayın.</div>
+
+      <div class="v1-sekmeler">
+        <button class="v1-sekme aktif" data-t="">Tümü</button>
+        <button class="v1-sekme" data-t="UK">Uyuşmazlık Kararları</button>
+        <button class="v1-sekme" data-t="MK">Mahkeme Kararları</button>
+        <button class="v1-sekme" data-t="MT">Mahkeme Tutanakları</button>
+      </div>
+
+      <div id="v1-misafir" class="v1-uyari" style="display:none;">
+        🔒 KİK kararları <strong>üyelere özeldir</strong>.
+        <a href="login">Giriş yapın</a> veya <a href="fiyatlandirma_odeme_bolumu">üye olun</a> →
+      </div>
+
+      <div class="v1-kart" style="padding:18px 20px;">
+        <div class="v1-tablo-bas">
+          <div>
+            <div style="font-size:17px;font-weight:800;color:var(--v1-lacivert);" id="v1-liste-baslik">Tüm Kararlar</div>
+            <div class="v1-tablo-sayi" id="v1-sayi">Yükleniyor…</div>
+          </div>
+          <div class="v1-listede-ara">
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="var(--v1-muted)"><path fill-rule="evenodd" d="M10.5 3a7.5 7.5 0 1 0 4.55 13.46l4.24 4.25 1.42-1.42-4.25-4.24A7.5 7.5 0 0 0 10.5 3Zm0 2a5.5 5.5 0 1 1 0 11 5.5 5.5 0 0 1 0-11Z"/></svg>
+            <input type="text" id="v1-ara-liste" placeholder="Karar / idare / konu ara">
+          </div>
+        </div>
+        <div style="overflow-x:auto;">
+          <table class="v1-tablo" id="v1-tablo">
+            <thead><tr>
+              <th style="width:120px;">Karar No<br>Tarih</th>
+              <th>Konu / Başlık</th>
+              <th style="width:140px;">Karar Türü</th>
+              <th style="width:120px;">Sonuç</th>
+              <th style="width:70px;"></th>
+            </tr></thead>
+            <tbody id="v1-tbody"><tr><td colspan="5" class="v1-bos">Yükleniyor…</td></tr></tbody>
+          </table>
+        </div>
+        <div class="v1-sayfalama" id="v1-sayfalama"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="js/v1-kabuk.js?v=1"></script>
+<script>
+(() => {
+  const SB_URL="https://ihaleglobal.com", SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzg0MzA3MTU4LCJleHAiOjE5NDE5ODcxNTh9.CjNKulvirotDD_y2oO2QKgo0kbqYvL0jUSV1RiDMoso";
+  const sb=window.supabase.createClient(SB_URL,SB_KEY);
+  const num=(n)=>(Number(n)||0).toLocaleString('tr-TR');
+  const esc=(s)=>(s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  // ⚠️ TR katlama şart: lower('İ')!=='i' → düz ilike sessiz veri kaybı yapar (kik-kararlar.html dersi)
+  const trFold=(s)=>(s||'').toLocaleLowerCase('tr').replace(/i̇/g,'i').replace(/ç/g,'c').replace(/ğ/g,'g')
+    .replace(/ö/g,'o').replace(/ş/g,'s').replace(/ü/g,'u');
+  const BOY=20;
+  let uyeMi=false, tur='', sayfa=1, aramaT;
+
+  const SONUC_RENK=(s)=>{
+    const x=(s||'').toLocaleLowerCase('tr');
+    if(x.includes('iptal')) return ['#FDECEE','var(--v1-kirmizi)'];
+    if(x.includes('ret')||x.includes('redd')) return ['#EFF2F6','var(--v1-muted)'];
+    if(x.includes('düzelt')||x.includes('duzelt')) return ['var(--v1-mavi-acik)','var(--v1-mavi)'];
+    return ['#E6F6EC','var(--v1-yesil)'];
+  };
+
+  async function yukle(){
+    const tb=document.getElementById('v1-tbody');
+    if(!uyeMi){
+      document.getElementById('v1-misafir').style.display='block';
+      tb.innerHTML='<tr><td colspan="5" class="v1-bos">🔒 KİK kararları üyelere özeldir. <a href="login">Giriş yapın →</a></td></tr>';
+      document.getElementById('v1-sayi').textContent=''; return;
+    }
+    tb.innerHTML='<tr><td colspan="5" class="v1-bos">Yükleniyor…</td></tr>';
+    try{
+      const k=(document.getElementById('v1-ara-liste').value||'').trim();
+      const kur=(sayimIcin)=>{
+        let q=sb.from('kik_kararlar').select(
+          sayimIcin?'id':'id,karar_no,karar_tarihi,karar_turu,sonuc,baslik,idare,ihale_konusu,kaynak_url,ozet',
+          sayimIcin?{count:'exact',head:true}:undefined);
+        if(tur) q=q.eq('karar_turu',tur);
+        if(k)   q=q.ilike('arama_fold','%'+trFold(k)+'%');
+        return q;
+      };
+      const bas=(sayfa-1)*BOY;
+      const [veri,sayim]=await Promise.all([
+        kur(false).order('karar_tarihi',{ascending:false,nullsFirst:false}).range(bas,bas+BOY-1),
+        kur(true).then(r=>r).catch(()=>({count:null})),
+      ]);
+      if(veri.error) throw veri.error;
+      const toplam=(sayim&&sayim.count!=null)?sayim.count:null;
+      document.getElementById('v1-sayi').innerHTML = toplam!=null
+        ? `Arama kriterinize uygun <strong>${num(toplam)}</strong> karar listeleniyor`
+        : `<strong>${(veri.data||[]).length}</strong> karar gösteriliyor`;
+      const d=veri.data||[];
+      if(!d.length){ tb.innerHTML='<tr><td colspan="5" class="v1-bos">Karar bulunamadı.</td></tr>'; document.getElementById('v1-sayfalama').innerHTML=''; return; }
+      tb.innerHTML=d.map(r=>{
+        const [bg,fg]=SONUC_RENK(r.sonuc);
+        const t=r.karar_tarihi?new Date(r.karar_tarihi).toLocaleDateString('tr-TR'):'—';
+        return `<tr>
+          <td class="v1-t-tarih"><strong style="color:var(--v1-lacivert);">${esc(r.karar_no||'—')}</strong><br><span class="saat">${t}</span></td>
+          <td><div class="v1-t-ad" style="font-weight:600;">${esc(r.baslik||r.ihale_konusu||'—')}</div>
+            <div class="v1-karar-ozet">${esc(r.idare||'')}${r.ozet?' · '+esc(r.ozet):''}</div></td>
+          <td style="font-size:12.5px;">${esc(r.karar_turu||'—')}</td>
+          <td><span class="v1-sonuc-rozet" style="background:${bg};color:${fg};">${esc(r.sonuc||'—')}</span></td>
+          <td style="text-align:right;">${r.kaynak_url?`<a href="${esc(r.kaynak_url)}" target="_blank" rel="noopener" class="v1-yuvarlak-btn" style="text-decoration:none;">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M14 3v2h3.6l-9.3 9.3 1.4 1.4L19 6.4V10h2V3h-7Z"/><path d="M5 5h5V3H3v18h18v-7h-2v5H5V5Z"/></svg></a>`:''}</td></tr>`;
+      }).join('');
+      sayfalama(toplam,d.length);
+    }catch(e){ tb.innerHTML=`<tr><td colspan="5" class="v1-bos">Liste yüklenemedi. ${esc(e.message||'')}</td></tr>`; }
+  }
+
+  function sayfalama(toplam,adet){
+    const el=document.getElementById('v1-sayfalama');
+    if(toplam==null){
+      el.innerHTML=`<button ${sayfa===1?'disabled':''} data-s="${sayfa-1}">‹ Önceki</button><button class="aktif" disabled>${sayfa}</button><button ${adet<BOY?'disabled':''} data-s="${sayfa+1}">Sonraki ›</button>`;
+    } else {
+      const son=Math.max(1,Math.ceil(toplam/BOY));
+      if(son<=1){ el.innerHTML=''; return; }
+      const g=[]; const b1=Math.max(1,sayfa-2), b2=Math.min(son,b1+4);
+      for(let i=b1;i<=b2;i++) g.push(i);
+      el.innerHTML=`<button ${sayfa===1?'disabled':''} data-s="${sayfa-1}">‹</button>`+
+        g.map(i=>`<button class="${i===sayfa?'aktif':''}" data-s="${i}">${i}</button>`).join('')+
+        `<button ${sayfa===son?'disabled':''} data-s="${sayfa+1}">›</button>`;
+    }
+    el.querySelectorAll('[data-s]').forEach(b=>b.addEventListener('click',()=>{
+      const s=+b.dataset.s; if(s<1)return; sayfa=s; yukle(); window.scrollTo({top:0,behavior:'smooth'});
+    }));
+  }
+
+  (async()=>{
+    try{ const {data}=await sb.auth.getSession(); uyeMi=!!(data&&data.session);
+      if(window.v1PaketYaz){ if(uyeMi){ const {data:k}=await sb.from('kullanici_krediler').select('plan').eq('kullanici_id',data.session.user.id).maybeSingle();
+        v1PaketYaz(['standart','kurumsal'].includes(k?.plan)?'Pro':'Temel'); } else v1PaketYaz('Misafir'); }
+    }catch(_){}
+    document.getElementById('v1-ara-liste').addEventListener('input',()=>{clearTimeout(aramaT); aramaT=setTimeout(()=>{sayfa=1;yukle();},350);});
+    document.querySelectorAll('.v1-sekme').forEach(b=>b.addEventListener('click',()=>{
+      document.querySelectorAll('.v1-sekme').forEach(x=>x.classList.remove('aktif')); b.classList.add('aktif');
+      tur=b.dataset.t; sayfa=1;
+      document.getElementById('v1-liste-baslik').textContent=b.textContent.trim()==='Tümü'?'Tüm Kararlar':b.textContent.trim();
+      yukle();
+    }));
+    yukle();
+  })();
+})();
+</script>
+</body>
+</html>

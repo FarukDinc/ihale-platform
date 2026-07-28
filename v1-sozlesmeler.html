@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="author" content="Ömer Faruk Dinç">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sözleşmeler — İhaleGlobal</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=4" />
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/v1.css?v=2" />
+  <style>
+    .v1-sayfa-baslik { font-size:22px; font-weight:800; color:var(--v1-lacivert); margin-bottom:4px; }
+    .v1-sayfa-alt { font-size:13.5px; color:var(--v1-muted); margin-bottom:16px; }
+    .v1-sekmeler { display:flex; gap:24px; border-bottom:2px solid var(--v1-cizgi); margin-bottom:18px; flex-wrap:wrap; }
+    .v1-sekme { background:none; border:none; padding:10px 2px 12px; font-family:var(--v1-font); font-size:14.5px;
+      font-weight:700; color:var(--v1-muted); cursor:pointer; position:relative; }
+    .v1-sekme.aktif { color:var(--v1-lacivert); }
+    .v1-sekme.aktif::after { content:''; position:absolute; left:0; right:0; bottom:-2px; height:3px; background:var(--v1-mavi); border-radius:2px; }
+    .v1-uyari { background:var(--v1-mavi-acik); border:1px solid #CFE2F5; border-radius:12px; padding:16px 18px;
+      font-size:13.5px; margin-bottom:16px; }
+    .v1-uyari.sari { background:#FFF8E6; border-color:#F0DFA8; }
+  </style>
+</head>
+<body class="v1" data-v1-aktif="sozlesme" data-v1-kirinti="Kamu > Sözleşmeler">
+<div class="v1-app">
+  <div class="v1-main">
+    <div class="v1-govde">
+      <div class="v1-sayfa-baslik">Sözleşmeler</div>
+      <div class="v1-sayfa-alt">Sonuçlanan ihalelerin sözleşmeleri — kazanan firma, sözleşme bedeli ve tenzilat.</div>
+
+      <div class="v1-sekmeler">
+        <button class="v1-sekme aktif" data-t="tumu">Tümü</button>
+        <button class="v1-sekme" data-t="biten">Biten İşler</button>
+        <button class="v1-sekme" data-t="devam">Devam Eden İşler</button>
+      </div>
+
+      <div id="v1-misafir" class="v1-uyari" style="display:none;">
+        🔒 Sözleşme verileri (kazanan firma, bedel) <strong>üyelere özeldir</strong>.
+        <a href="login">Giriş yapın</a> veya <a href="fiyatlandirma_odeme_bolumu">üye olun</a> →
+      </div>
+      <div id="v1-durum-notu" class="v1-uyari sari" style="display:none;">
+        ℹ️ <strong>Sözleşme durumu (biten / devam eden)</strong> verisi bu veri setinde henüz yok — EKAP sözleşme
+        durum alanı çekilmiyor. Bu sekme hazır olduğunda burada listelenecek; şimdilik <strong>Tümü</strong> sekmesini kullanın.
+      </div>
+
+      <div class="v1-kart" style="padding:18px 20px;" id="v1-liste-kart">
+        <div class="v1-tablo-bas">
+          <div>
+            <div style="font-size:17px;font-weight:800;color:var(--v1-lacivert);" id="v1-liste-baslik">Tüm Sözleşmeler</div>
+            <div class="v1-tablo-sayi" id="v1-sayi">Yükleniyor…</div>
+          </div>
+          <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+            <div class="v1-listede-ara">
+              <svg viewBox="0 0 24 24" width="15" height="15" fill="var(--v1-muted)"><path fill-rule="evenodd" d="M10.5 3a7.5 7.5 0 1 0 4.55 13.46l4.24 4.25 1.42-1.42-4.25-4.24A7.5 7.5 0 0 0 10.5 3Zm0 2a5.5 5.5 0 1 1 0 11 5.5 5.5 0 0 1 0-11Z"/></svg>
+              <input type="text" id="v1-ara-liste" placeholder="Kazanan firma ara">
+            </div>
+            <button class="v1-excel" id="v1-excel">
+              <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path fill-rule="evenodd" d="M8 2h6.2L21 8.8V20a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2Zm5.6 8.4V3.9L20.1 10.4h-6.5Z"/></svg>
+              Excel
+            </button>
+          </div>
+        </div>
+        <div style="overflow-x:auto;">
+          <table class="v1-tablo" id="v1-tablo">
+            <thead><tr>
+              <th style="width:110px;">Sonuç Tarihi</th>
+              <th>Kazanan Firma</th>
+              <th style="width:170px;">Sözleşme Bedeli</th>
+              <th style="width:110px;">Tenzilat</th>
+              <th style="width:70px;"></th>
+            </tr></thead>
+            <tbody id="v1-tbody"><tr><td colspan="5" class="v1-bos">Yükleniyor…</td></tr></tbody>
+          </table>
+        </div>
+        <div class="v1-sayfalama" id="v1-sayfalama"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="js/v1-kabuk.js?v=1"></script>
+<script>
+(() => {
+  const SB_URL="https://ihaleglobal.com", SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzg0MzA3MTU4LCJleHAiOjE5NDE5ODcxNTh9.CjNKulvirotDD_y2oO2QKgo0kbqYvL0jUSV1RiDMoso";
+  const sb=window.supabase.createClient(SB_URL,SB_KEY);
+  const num=(n)=>(Number(n)||0).toLocaleString('tr-TR');
+  const esc=(s)=>(s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  const tl=(v)=>v==null?'—':'₺'+Number(v).toLocaleString('tr-TR',{maximumFractionDigits:0});
+  const BOY=20;
+  let uyeMi=false, sekme='tumu', sayfa=1, aramaT;
+
+  async function yukle(){
+    const tb=document.getElementById('v1-tbody');
+    const kart=document.getElementById('v1-liste-kart');
+    const notu=document.getElementById('v1-durum-notu');
+    // Biten / Devam Eden: sözleşme durumu verimizde YOK — dürüstçe belirt (uydurma yok)
+    if(sekme!=='tumu'){ notu.style.display='block'; kart.style.display='none'; return; }
+    notu.style.display='none'; kart.style.display='';
+    if(!uyeMi){
+      document.getElementById('v1-misafir').style.display='block';
+      tb.innerHTML='<tr><td colspan="5" class="v1-bos">🔒 Sözleşme verileri üyelere özeldir. <a href="login">Giriş yapın →</a></td></tr>';
+      document.getElementById('v1-sayi').textContent=''; return;
+    }
+    tb.innerHTML='<tr><td colspan="5" class="v1-bos">Yükleniyor…</td></tr>';
+    try{
+      const k=(document.getElementById('v1-ara-liste').value||'').trim();
+      const kur=(sayimIcin)=>{
+        let q=sb.from('ihale_sonuclari').select(
+          sayimIcin?'id':'id,ilan_id,kazanan_firma,kazanan_teklif,sonuc_tarihi,tenzilat,lot_sayisi',
+          sayimIcin?{count:'exact',head:true}:undefined)
+          .not('kazanan_firma','is',null);
+        if(k) q=q.ilike('kazanan_firma','%'+k+'%');
+        return q;
+      };
+      const bas=(sayfa-1)*BOY;
+      const [veri,sayim]=await Promise.all([
+        kur(false).order('sonuc_tarihi',{ascending:false,nullsFirst:false}).range(bas,bas+BOY-1),
+        kur(true).then(r=>r).catch(()=>({count:null})),
+      ]);
+      if(veri.error) throw veri.error;
+      const toplam=(sayim&&sayim.count!=null)?sayim.count:null;
+      document.getElementById('v1-sayi').innerHTML = toplam!=null
+        ? `Arama kriterinize uygun <strong>${num(toplam)}</strong> sözleşme listeleniyor`
+        : `<strong>${(veri.data||[]).length}</strong> sözleşme gösteriliyor`;
+      const d=veri.data||[];
+      if(!d.length){ tb.innerHTML='<tr><td colspan="5" class="v1-bos">Sözleşme bulunamadı.</td></tr>'; document.getElementById('v1-sayfalama').innerHTML=''; return; }
+      tb.innerHTML=d.map(r=>{
+        const t=r.sonuc_tarihi?new Date(r.sonuc_tarihi).toLocaleDateString('tr-TR'):'—';
+        // ⚠️ Çok-lotlu ihalede tenzilat GÜVENİLMEZ (lot_sayisi>1 → EKAP kısım bazlı maliyet vermiyor)
+        const tenz = (r.lot_sayisi===1 && r.tenzilat!=null)
+          ? `<span style="font-weight:700;color:var(--v1-teal);">%${Number(r.tenzilat).toLocaleString('tr-TR',{maximumFractionDigits:1})}</span>`
+          : `<span style="color:var(--v1-muted);font-size:12px;" title="Çok kısımlı ihalede kısım bazlı yaklaşık maliyet yayımlanmadığı için hesaplanamıyor">—</span>`;
+        return `<tr>
+          <td class="v1-t-tarih">${t}</td>
+          <td><a class="v1-t-ad" href="firma-analiz?ara=${encodeURIComponent(r.kazanan_firma||'')}">${esc(r.kazanan_firma||'—')}</a></td>
+          <td style="font-weight:700;color:var(--v1-mavi);">${tl(r.kazanan_teklif)}</td>
+          <td>${tenz}</td>
+          <td style="text-align:right;">${r.ilan_id?`<a class="v1-yuvarlak-btn" style="text-decoration:none;" href="ihale-detay?id=${r.ilan_id}" title="İhale detayı">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8.6 5.4 10 4l8 8-8 8-1.4-1.4L15.2 12 8.6 5.4Z"/></svg></a>`:''}</td></tr>`;
+      }).join('');
+      sayfalama(toplam,d.length);
+    }catch(e){ tb.innerHTML=`<tr><td colspan="5" class="v1-bos">Liste yüklenemedi. ${esc(e.message||'')}</td></tr>`; }
+  }
+
+  function sayfalama(toplam,adet){
+    const el=document.getElementById('v1-sayfalama');
+    if(toplam==null){
+      el.innerHTML=`<button ${sayfa===1?'disabled':''} data-s="${sayfa-1}">‹ Önceki</button><button class="aktif" disabled>${sayfa}</button><button ${adet<BOY?'disabled':''} data-s="${sayfa+1}">Sonraki ›</button>`;
+    } else {
+      const son=Math.max(1,Math.ceil(toplam/BOY));
+      if(son<=1){ el.innerHTML=''; return; }
+      const g=[]; const b1=Math.max(1,sayfa-2), b2=Math.min(son,b1+4);
+      for(let i=b1;i<=b2;i++) g.push(i);
+      el.innerHTML=`<button ${sayfa===1?'disabled':''} data-s="${sayfa-1}">‹</button>`+
+        g.map(i=>`<button class="${i===sayfa?'aktif':''}" data-s="${i}">${i}</button>`).join('')+
+        `<button ${sayfa===son?'disabled':''} data-s="${sayfa+1}">›</button>`;
+    }
+    el.querySelectorAll('[data-s]').forEach(b=>b.addEventListener('click',()=>{
+      const s=+b.dataset.s; if(s<1)return; sayfa=s; yukle(); window.scrollTo({top:0,behavior:'smooth'});
+    }));
+  }
+
+  async function excel(){
+    if(!uyeMi){ alert('Excel indirme üyelere özeldir.'); return; }
+    const b=document.getElementById('v1-excel'); const e0=b.innerHTML; b.innerHTML='⏳'; b.disabled=true;
+    try{
+      const k=(document.getElementById('v1-ara-liste').value||'').trim();
+      let q=sb.from('ihale_sonuclari').select('kazanan_firma,kazanan_teklif,sonuc_tarihi,tenzilat,lot_sayisi').not('kazanan_firma','is',null);
+      if(k) q=q.ilike('kazanan_firma','%'+k+'%');
+      const {data}=await q.order('sonuc_tarihi',{ascending:false,nullsFirst:false}).limit(1000);
+      const csv=['Sonuç Tarihi;Kazanan Firma;Sözleşme Bedeli;Tenzilat %',
+        ...(data||[]).map(r=>[r.sonuc_tarihi?new Date(r.sonuc_tarihi).toLocaleDateString('tr-TR'):'',
+          (r.kazanan_firma||'').replace(/;/g,','), r.kazanan_teklif??'',
+          (r.lot_sayisi===1&&r.tenzilat!=null)?r.tenzilat:''].join(';')),
+        '','Kaynak: ihaleglobal.com — © Ömer Faruk Dinç'].join('\r\n');
+      const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8;'}));
+      a.download='ihaleglobal-sozlesmeler-'+new Date().toISOString().slice(0,10)+'.csv';
+      document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(a.href);
+    }catch(e){ alert('Dışa aktarım başarısız: '+(e.message||'')); }
+    finally{ b.innerHTML=e0; b.disabled=false; }
+  }
+
+  (async()=>{
+    try{ const {data}=await sb.auth.getSession(); uyeMi=!!(data&&data.session);
+      if(window.v1PaketYaz){ if(uyeMi){ const {data:k}=await sb.from('kullanici_krediler').select('plan').eq('kullanici_id',data.session.user.id).maybeSingle();
+        v1PaketYaz(['standart','kurumsal'].includes(k?.plan)?'Pro':'Temel'); } else v1PaketYaz('Misafir'); }
+    }catch(_){}
+    document.getElementById('v1-ara-liste').addEventListener('input',()=>{clearTimeout(aramaT); aramaT=setTimeout(()=>{sayfa=1;yukle();},350);});
+    document.getElementById('v1-excel').addEventListener('click',excel);
+    document.querySelectorAll('.v1-sekme').forEach(b=>b.addEventListener('click',()=>{
+      document.querySelectorAll('.v1-sekme').forEach(x=>x.classList.remove('aktif')); b.classList.add('aktif');
+      sekme=b.dataset.t; sayfa=1;
+      document.getElementById('v1-liste-baslik').textContent = sekme==='tumu'?'Tüm Sözleşmeler':b.textContent.trim();
+      yukle();
+    }));
+    yukle();
+  })();
+})();
+</script>
+</body>
+</html>
