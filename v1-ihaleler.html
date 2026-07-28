@@ -51,6 +51,7 @@
       <div class="v1-sekmeler">
         <button class="v1-sekme aktif" id="sekme-aktif">Aktif İhaleler</button>
         <button class="v1-sekme" id="sekme-sonuc">Sonuçlar</button>
+        <button class="v1-sekme" id="sekme-dt">Doğrudan Teminler</button>
       </div>
 
       <div class="v1-liste-duzen">
@@ -180,6 +181,22 @@
   // ⚠️ 1,96M satırda select+count:'exact'+order+range BİRLİKTE statement_timeout'a takılıyor.
   //    Sayımı AYRI hafif sorguya böldük (head:true — KPI'da çalışan desen), veri sorgusu count'suz.
   function sorguKur(sayimIcin){
+    // ── DOĞRUDAN TEMİN sekmesi: AYRI tablo (dogrudan_temin_ilanlari), farklı kolonlar ──
+    if (sekme==='dt') {
+      const dtKolon = sayimIcin ? 'id' : 'id,dt_no,baslik,idare,tur,il,tarih,durum,kategori,yayin_tarihi';
+      let d = sb.from('dogrudan_temin_ilanlari').select(dtKolon, sayimIcin?{count:'exact',head:true}:undefined);
+      const dv=(id)=>{const e=document.getElementById(id); return e&&e.value?e.value.trim():'';};
+      if(dv('f-kelime')) d=d.ilike('baslik','%'+dv('f-kelime')+'%');
+      if(dv('f-tarih1')) d=d.gte('tarih',dv('f-tarih1'));
+      if(dv('f-tarih2')) d=d.lte('tarih',dv('f-tarih2')+'T23:59:59');
+      if(dv('f-tur'))    d=d.eq('tur',dv('f-tur'));
+      if(dv('f-il'))     d=d.eq('il',dv('f-il'));
+      if(dv('f-kategori')) d=d.eq('kategori',dv('f-kategori'));
+      if(uyeMi && dv('f-idare')) d=d.ilike('idare','%'+dv('f-idare')+'%');
+      if(P.get('il') && !dv('f-il')) d=d.eq('il',P.get('il').toLocaleUpperCase('tr'));
+      if(P.get('ara') && !dv('f-kelime')) d=d.ilike('baslik','%'+P.get('ara')+'%');
+      return d;
+    }
     const kolon = sayimIcin ? 'id' : (uyeMi
       ? 'id,ekap_id,baslik,il,tur,usul,kategori,idare,durum,ilan_tarihi,son_teklif_tarihi,yaklasik_maliyet_min,yaklasik_maliyet_max'
       : 'id,baslik,il,tur,usul,kategori,durum,ilan_tarihi,son_teklif_tarihi');
@@ -224,7 +241,7 @@
       if(error) throw error;
       toplam = (sayimRes && sayimRes.count!=null) ? sayimRes.count : null;
       document.getElementById('v1-sayi').innerHTML = toplam!=null
-        ? `Arama kriterinize uygun <strong>${num(toplam)}</strong> ${sekme==='aktif'?'ihale ilanı':'sonuçlanan ihale'} listeleniyor`
+        ? `Arama kriterinize uygun <strong>${num(toplam)}</strong> ${sekme==='aktif'?'ihale ilanı':(sekme==='dt'?'doğrudan temin ilanı':'sonuçlanan ihale')} listeleniyor`
         : `<strong>${(data||[]).length}</strong> kayıt gösteriliyor`;
       if(!data||!data.length){ tb.innerHTML='<tr><td colspan="5" class="v1-bos">Kayıt bulunamadı. Filtreleri değiştirip tekrar deneyin.</td></tr>'; sayfalamaKur(); return; }
       tb.innerHTML=data.map(r=>satir(r)).join('');
@@ -234,17 +251,21 @@
   }
 
   function satir(r){
-    const t=r.son_teklif_tarihi?new Date(r.son_teklif_tarihi):null;
+    // DT sekmesinde tarih alanı 'tarih', kimlik 'dt_no' (ilan tablosunda son_teklif_tarihi / ekap_id)
+    const dtMi = sekme==='dt';
+    const ham = dtMi ? r.tarih : r.son_teklif_tarihi;
+    const t=ham?new Date(ham):null;
     const kalan=t?Math.ceil((t-new Date())/86400000):null;
     const tarih=t?t.toLocaleDateString('tr-TR',{day:'numeric',month:'long',year:'numeric'}):'—';
     const saat=t?t.toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'}):'';
+    const detayHref = dtMi ? `dogrudan-temin?id=${r.id}` : `ihale-detay?id=${r.id}`;
     return `<tr data-id="${r.id}">
       <td class="v1-t-tarih">${tarih}<br><span class="saat">${saat}</span>${kalan!=null&&kalan>=0?`<br><span class="kalan">Son ${kalan} gün</span>`:''}</td>
-      <td><div class="v1-t-ikn">${esc(r.ekap_id||'—')}</div><a class="v1-t-ad" href="ihale-detay?id=${r.id}">${esc(r.baslik||'—')}</a></td>
-      <td style="font-size:12.5px;color:var(--v1-metin-2);">${esc(r.tur||'—')}<br><span style="color:var(--v1-muted);">${esc(r.usul||'')}</span></td>
+      <td><div class="v1-t-ikn">${esc((dtMi?r.dt_no:r.ekap_id)||'—')}</div><a class="v1-t-ad" href="${detayHref}">${esc(r.baslik||'—')}</a></td>
+      <td style="font-size:12.5px;color:var(--v1-metin-2);">${esc(r.tur||'—')}<br><span style="color:var(--v1-muted);">${esc(dtMi?(r.kategori||''):(r.usul||''))}</span></td>
       <td style="font-size:13px;">${esc(r.il||'—')}</td>
       <td><div class="v1-t-islem">
-        <button class="v1-yuvarlak-btn" title="Takvime ekle" onclick="v1Takvim('${r.id}','${esc((r.baslik||'').slice(0,60))}','${r.son_teklif_tarihi||''}')">
+        <button class="v1-yuvarlak-btn" title="Takvime ekle" onclick="v1Takvim('${r.id}','${esc((r.baslik||'').slice(0,60))}','${ham||''}')">
           <svg viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" d="M7 2v2H5.5A2.5 2.5 0 0 0 3 6.5v13A2.5 2.5 0 0 0 5.5 22h13a2.5 2.5 0 0 0 2.5-2.5v-13A2.5 2.5 0 0 0 18.5 4H17V2h-2v2H9V2H7Zm12 8H5v9.5c0 .28.22.5.5.5h13a.5.5 0 0 0 .5-.5V10Z"/></svg>
         </button>
         <button class="v1-yuvarlak-btn" title="Detay" data-genislet="${r.id}" style="background:#fff;color:var(--v1-mavi);border:1.5px solid var(--v1-cizgi);">
@@ -262,6 +283,17 @@
     tr.after(d);
     (async()=>{
       try{
+        if(sekme==='dt'){   // DT ayrı tablo — kendi alanları
+          const {data}=await sb.from('dogrudan_temin_ilanlari').select('idare,kategori,tur,il,yayin_tarihi,dt_no').eq('id',id).limit(1);
+          const r=(data||[])[0]||{};
+          const alan=(b,v)=>`<div><b>${b}</b>${v||'—'}</div>`;
+          document.getElementById('d-'+id).innerHTML=
+            alan('İdare',esc(r.idare||(uyeMi?'—':'<span class="v1-kilit">••••• 🔒</span>')))+
+            alan('Sektör',esc(r.kategori))+alan('Tür',esc(r.tur))+alan('İl',esc(r.il))+
+            alan('Yayın Tarihi',r.yayin_tarihi?new Date(r.yayin_tarihi).toLocaleDateString('tr-TR'):'—')+
+            `<div><b>İşlem</b><a href="dogrudan-temin?id=${id}">Doğrudan temin detayına git →</a></div>`;
+          return;
+        }
         const kolon = uyeMi ? 'idare,kategori,yaklasik_maliyet_min,yaklasik_maliyet_max,ilan_tarihi,ekap_id' : 'kategori,ilan_tarihi';
         const {data}=await sb.from('ilanlar').select(kolon).eq('id',id).limit(1);
         const r=(data||[])[0]||{};
@@ -354,17 +386,26 @@
 
     // sekme
     const sekmeAyarla=(s)=>{ sekme=s; sayfa=1;
-      document.getElementById('sekme-aktif').classList.toggle('aktif',s==='aktif');
-      document.getElementById('sekme-sonuc').classList.toggle('aktif',s==='sonuc');
-      const bas=s==='aktif'?'Aktif İhaleler':'Sonuçlanan İhaleler';
+      ['aktif','sonuc','dt'].forEach(x=>document.getElementById('sekme-'+x).classList.toggle('aktif',s===x));
+      // DT ayrı tabloda → sıralama kolonu da farklı
+      sirala = (s==='dt') ? 'tarih' : 'son_teklif_tarihi';
+      yon = (s==='aktif');   // aktifte en yakın tarih önce, diğerlerinde en yeni önce
+      const bas = s==='aktif' ? 'Aktif İhaleler' : (s==='sonuc' ? 'Sonuçlanan İhaleler' : 'Doğrudan Teminler');
       document.getElementById('v1-baslik').textContent=bas;
       document.getElementById('v1-liste-baslik').textContent=bas;
       document.title=bas+' — İhaleGlobal';
+      // DT'de anlamsız filtreleri gizle (usul / yaklaşık maliyet / benzer iş / sözleşme tipi / düzeltme)
+      ['usul','maliyet','benzer','sozT','duzelt'].forEach(g=>{
+        const el=document.querySelector(`.v1-filtre-grup[data-g="${g}"]`);
+        if(el) el.style.display = (s==='dt') ? 'none' : '';
+      });
       yukle();
     };
     document.getElementById('sekme-aktif').addEventListener('click',()=>sekmeAyarla('aktif'));
     document.getElementById('sekme-sonuc').addEventListener('click',()=>sekmeAyarla('sonuc'));
+    document.getElementById('sekme-dt').addEventListener('click',()=>sekmeAyarla('dt'));
     if(sekme==='sonuc') sekmeAyarla('sonuc');
+    else if(P.get('tur')==='dt'){ sekme='dt'; sekmeAyarla('dt'); }
 
     document.getElementById('f-uygula').addEventListener('click',()=>{sayfa=1;yukle();});
     document.getElementById('f-temizle').addEventListener('click',()=>{
@@ -385,7 +426,7 @@
       const k=th.dataset.sirala; if(sirala===k) yon=!yon; else {sirala=k; yon=true;} sayfa=1; yukle();
     }));
 
-    if(sekme==='aktif') yukle();
+    if(sekme==='aktif') yukle();   // sonuc/dt sekmesi sekmeAyarla içinde zaten yükledi
   })();
 })();
 </script>
