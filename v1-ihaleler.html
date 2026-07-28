@@ -133,6 +133,9 @@
   const tl=(v)=>v==null?'—':'₺'+Number(v).toLocaleString('tr-TR',{maximumFractionDigits:0});
   const P=new URLSearchParams(location.search);
   const SAYFA_BOY=20;
+  // ⚠️ SIRALAMA YÖNÜ İNDEKSLE EŞLEŞMELİ: idx_ilanlar_durum_son_teklif = (durum, son_teklif_tarihi DESC NULLS LAST).
+  //    Btree ters taranır → ASC için NULLS FIRST şart. 'ASC NULLS LAST' istersek planner indeksi
+  //    kullanamaz, 1,6M satır tarar (ölçüm: 7064ms → 0,79ms). Bu yüzden nullsFirst = ascending.
   let sayfa=1, toplam=0, sekme=(P.get('sekme')==='sonuc')?'sonuc':'aktif', uyeMi=false, sirala='son_teklif_tarihi', yon=true;
 
   const ILLER=["ADANA","ADIYAMAN","AFYONKARAHİSAR","AĞRI","AKSARAY","AMASYA","ANKARA","ANTALYA","ARDAHAN","ARTVİN","AYDIN","BALIKESİR","BARTIN","BATMAN","BAYBURT","BİLECİK","BİNGÖL","BİTLİS","BOLU","BURDUR","BURSA","ÇANAKKALE","ÇANKIRI","ÇORUM","DENİZLİ","DİYARBAKIR","DÜZCE","EDİRNE","ELAZIĞ","ERZİNCAN","ERZURUM","ESKİŞEHİR","GAZİANTEP","GİRESUN","GÜMÜŞHANE","HAKKARİ","HATAY","IĞDIR","ISPARTA","İSTANBUL","İZMİR","KAHRAMANMARAŞ","KARABÜK","KARAMAN","KARS","KASTAMONU","KAYSERİ","KIRIKKALE","KIRKLARELİ","KIRŞEHİR","KİLİS","KOCAELİ","KONYA","KÜTAHYA","MALATYA","MANİSA","MARDİN","MERSİN","MUĞLA","MUŞ","NEVŞEHİR","NİĞDE","ORDU","OSMANİYE","RİZE","SAKARYA","SAMSUN","SİİRT","SİNOP","SİVAS","ŞANLIURFA","ŞIRNAK","TEKİRDAĞ","TOKAT","TRABZON","TUNCELİ","UŞAK","VAN","YALOVA","YOZGAT","ZONGULDAK"];
@@ -209,7 +212,7 @@
       const bas=(sayfa-1)*SAYFA_BOY;
       // Veri + sayım PARALEL, ayrı sorgular (sayım head:true → satır indirmez)
       const [veriRes, sayimRes] = await Promise.all([
-        sorguKur(false).order(sirala,{ascending:yon,nullsFirst:false}).range(bas,bas+SAYFA_BOY-1),
+        sorguKur(false).order(sirala,{ascending:yon,nullsFirst:yon}).range(bas,bas+SAYFA_BOY-1),
         sorguKur(true).then(r=>r).catch(()=>({count:null})),
       ]);
       const {data,error}=veriRes;
@@ -296,7 +299,7 @@
     if(!uyeMi){ alert('Excel indirme üyelere özeldir. Giriş yapın.'); return; }
     const btn=document.getElementById('v1-excel'); const eski=btn.innerHTML; btn.innerHTML='⏳ Hazırlanıyor…'; btn.disabled=true;
     try{
-      const {data}=await sorguKur(false).order(sirala,{ascending:yon,nullsFirst:false}).limit(1000);
+      const {data}=await sorguKur(false).order(sirala,{ascending:yon,nullsFirst:yon}).limit(1000);
       const satirlar=(data||[]).map(r=>[r.ekap_id||'',r.baslik||'',r.tur||'',r.usul||'',r.il||'',r.kategori||'',
         r.son_teklif_tarihi?new Date(r.son_teklif_tarihi).toLocaleString('tr-TR'):'']);
       const csv=['İKN;İhale Adı;Tip;Usul;İl;Sektör;Son Teklif Tarihi',
