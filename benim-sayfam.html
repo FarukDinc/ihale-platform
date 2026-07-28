@@ -17,6 +17,18 @@
     .main{display:flex;flex-direction:column;flex:1;min-width:0;height:100vh;overflow-y:auto}
     .topbar{background:var(--navy-mid);border-bottom:1px solid var(--border);padding:14px 28px;display:flex;align-items:center;gap:16px;position:sticky;top:0;z-index:10}
     .page-body{padding:28px;flex:1}
+    /* Global arama çubuğu — dashboard deseni (kapsam dropdown + tek kutu), ihalepro paritesi */
+    .topbar-search{flex:1;max-width:480px;display:flex;align-items:center;gap:10px;background:var(--navy);border:1px solid var(--border);border-radius:10px;padding:9px 14px}
+    .topbar-search input{flex:1;background:none;border:none;outline:none;color:var(--white);font-size:14px;font-family:var(--font-body)}
+    .topbar-search input::placeholder{color:var(--muted)}
+    .arama-kapsam{background:none;border:none;border-right:1px solid var(--border);color:var(--white);font-size:13px;font-weight:600;font-family:var(--font-body);padding:2px 10px 2px 2px;margin-right:6px;outline:none;cursor:pointer;flex-shrink:0}
+    .arama-kapsam option{background:var(--navy-mid);color:var(--white)}
+    .ara-ikon{color:var(--muted);display:flex;align-items:center;flex-shrink:0}
+    @media(max-width:900px){
+      .topbar{padding:10px 14px;gap:10px}
+      .topbar-search{max-width:none;min-width:0}
+      .topbar-left .breadcrumb{display:none}
+    }
     .breadcrumb{font-size:15px;font-weight:700;color:var(--white)}
     .bs-ust{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;flex-wrap:wrap;margin-bottom:16px}
     .bs-selam{font-size:34px;font-weight:800;color:var(--white);line-height:1.05}
@@ -144,6 +156,17 @@
   <div class="main">
     <div class="topbar">
       <div class="topbar-left"><div class="breadcrumb">Benim Sayfam</div></div>
+      <div class="topbar-search">
+        <select id="arama-kapsam" class="arama-kapsam" title="Arama kapsamı">
+          <option value="ihale">İhale</option>
+          <option value="firma">Firma</option>
+          <option value="idare">İdare</option>
+          <option value="sonuc">Sonuç</option>
+          <option value="dt">Doğrudan Temin</option>
+        </select>
+        <span class="ara-ikon"><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg></span>
+        <input type="text" placeholder="İhale ara… (Ctrl+K)" id="main-search" />
+      </div>
     </div>
     <div class="page-body">
 
@@ -258,12 +281,13 @@
     const simdi=new Date().toISOString();
     const kart=(href,ikon,label,val)=>`<a class="bs-kcard" href="${href}"><span class="bs-kicon">${ikon}</span><div><div class="bs-knum" data-k="${label}">${val}</div><div class="bs-klabel">${label}</div></div></a>`;
     const IK={
-      ihale:'<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a1 1 0 00-1 1v16a1 1 0 001 1h10a1 1 0 001-1V8z"/><path d="M14 3v5h4"/></svg>',
-      idare:'<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V10M19 21V10M4 10l8-6 8 6"/></svg>',
-      dt:'<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L4 14h7l-1 8 9-12h-7z"/></svg>',
-      sektor:'<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"/></svg>',
-      soz:'<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5M9 13h6M9 17h4"/></svg>',
-      firma:'<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.7"><path d="M5 21V4a1 1 0 011-1h8a1 1 0 011 1v17M15 9h3a1 1 0 011 1v11M3 21h18"/></svg>',
+      // DOLU (filled) ikonlar — ihalepro kurumsal görünüm; fill=currentColor, stroke YOK
+      ihale:'<svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M8 2h6.2L21 8.8V20a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2Zm5.6 8.4V3.9L20.1 10.4h-6.5Z"/></svg>',
+      idare:'<svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden="true"><path d="M12 2.15a1.1 1.1 0 0 0-.49.11L2.28 6.9A1.4 1.4 0 0 0 1.5 8.16V9.3a.7.7 0 0 0 .7.7h19.6a.7.7 0 0 0 .7-.7V8.16a1.4 1.4 0 0 0-.78-1.26l-9.23-4.64a1.1 1.1 0 0 0-.49-.11Z"/><path d="M4.3 11.6h3v6.6h-3zM10.5 11.6h3v6.6h-3zM16.7 11.6h3v6.6h-3z"/><path d="M2.6 19.8h18.8a1.1 1.1 0 0 1 0 2.2H2.6a1.1 1.1 0 0 1 0-2.2Z"/></svg>',
+      dt:'<svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden="true"><path d="M13.7 2 4.3 13.4a1 1 0 0 0 .7 1.5h4.6l-1 6.4a1 1 0 0 0 1.6.7l9.1-11.4a1 1 0 0 0-.7-1.5h-4.6l1-6.4a1 1 0 0 0-1.6-.7Z"/></svg>',
+      sektor:'<svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden="true"><path d="M4.9 3.5h4a1.4 1.4 0 0 1 1.4 1.4v4a1.4 1.4 0 0 1-1.4 1.4h-4a1.4 1.4 0 0 1-1.4-1.4v-4a1.4 1.4 0 0 1 1.4-1.4ZM15.1 3.5h4a1.4 1.4 0 0 1 1.4 1.4v4a1.4 1.4 0 0 1-1.4 1.4h-4a1.4 1.4 0 0 1-1.4-1.4v-4a1.4 1.4 0 0 1 1.4-1.4ZM4.9 13.7h4a1.4 1.4 0 0 1 1.4 1.4v4a1.4 1.4 0 0 1-1.4 1.4h-4a1.4 1.4 0 0 1-1.4-1.4v-4a1.4 1.4 0 0 1 1.4-1.4ZM15.1 13.7h4a1.4 1.4 0 0 1 1.4 1.4v4a1.4 1.4 0 0 1-1.4 1.4h-4a1.4 1.4 0 0 1-1.4-1.4v-4a1.4 1.4 0 0 1 1.4-1.4Z"/></svg>',
+      soz:'<svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M8 2h6.2L21 8.8V20a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2Zm5.6 8.4V3.9L20.1 10.4h-6.5ZM9.2 13.2h8v1.7h-8v-1.7Zm0 4h5.4v1.7H9.2v-1.7Z"/></svg>',
+      firma:'<svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M4.8 2h6.8a1.4 1.4 0 0 1 1.4 1.4v6.2h6.2a1.4 1.4 0 0 1 1.4 1.4V22H3.4V3.4A1.4 1.4 0 0 1 4.8 2Zm.6 3.1v2h2v-2h-2Zm3.6 0v2h2v-2h-2Zm-3.6 3.6v2h2v-2h-2Zm3.6 0v2h2v-2h-2Zm-3.6 3.6v2h2v-2h-2Zm3.6 0v2h2v-2h-2Zm6.8 0v2h2v-2h-2Zm0 3.6v2h2v-2h-2Z"/></svg>',
     };
     const el=document.getElementById('bs-kpi');
     el.innerHTML=
@@ -404,5 +428,43 @@
 })();
 </script>
 <script src="js/main.js?v=trf2"></script>
+<script>
+/* Global arama — kapsama göre doğru sayfaya yönlendirir.
+   ⚠️ Parametre adı ?q= DEĞİL ?ara= (hedef sayfaların hepsi 'ara' okur). */
+(function(){
+  const inp = document.getElementById('main-search');
+  const sel = document.getElementById('arama-kapsam');
+  if (!inp || !sel) return;
+
+  function aramaYonlendir() {
+    const q = inp.value.trim();
+    if (!q) return;
+    const enc = encodeURIComponent(q);
+    const rota = {
+      ihale: 'ihaleler?ara=' + enc,
+      firma: 'firma-analiz?ara=' + enc,
+      idare: 'kurum-analiz?ara=' + enc,
+      sonuc: 'ihaleler?sekme=sonuc&ara=' + enc,
+      dt:    'dogrudan-temin?ara=' + enc,
+    };
+    window.location.href = rota[sel.value] || rota.ihale;
+  }
+
+  inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') aramaYonlendir(); });
+
+  sel.addEventListener('change', (e) => {
+    const ph = { ihale:'İhale adı/İKN ara…', firma:'Firma adı ara…', idare:'İdare/kurum ara…',
+                 sonuc:'Sonuçlanan ihale ara…', dt:'Doğrudan temin ara…' };
+    inp.placeholder = (ph[e.target.value] || 'Ara…') + ' (Ctrl+K)';
+    inp.focus();
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if ((e.ctrlKey || e.metaKey) && (e.key === 'k' || e.key === 'K')) {
+      e.preventDefault(); inp.focus(); inp.select();
+    }
+  });
+})();
+</script>
 </body>
 </html>
