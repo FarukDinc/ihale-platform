@@ -184,7 +184,12 @@
       ? 'id,ekap_id,baslik,il,tur,usul,kategori,idare,durum,ilan_tarihi,son_teklif_tarihi,yaklasik_maliyet_min,yaklasik_maliyet_max'
       : 'id,baslik,il,tur,usul,kategori,durum,ilan_tarihi,son_teklif_tarihi');
     let q = sb.from('ilanlar').select(kolon, sayimIcin?{count:'exact',head:true}:undefined);
-    if (sekme==='aktif') q=q.eq('durum','aktif'); else q=q.eq('durum','sonuclandi');
+    if (sekme==='aktif') {
+      // Teklif süresi DEVAM EDEN ihaleler (ihalepro "Aktif İhaleler" davranışı).
+      // gte, indeksin 2. kolonunda aralık koşulu → idx_ilanlar_durum_son_teklif ile uyumlu,
+      // ayrıca NULL tarihli eski kayıtları da eler (NULLS FIRST yan etkisi).
+      q=q.eq('durum','aktif').gte('son_teklif_tarihi', new Date().toISOString());
+    } else q=q.eq('durum','sonuclandi');
     const v=(id)=>{const e=document.getElementById(id); return e&&e.value?e.value.trim():'';};
     if(v('f-kelime')) q=q.ilike('baslik','%'+v('f-kelime')+'%');
     if(v('f-tarih1')) q=q.gte('son_teklif_tarihi',v('f-tarih1'));
