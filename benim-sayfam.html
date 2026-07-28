@@ -202,7 +202,15 @@
           </div>
         </div>
 
-        <!-- 2.4) Yapay Zekâ Asistanı (ihalepro paritesi — DeepSeek teklif/fiyat stratejisi) -->
+        <!-- ═══ Bölüm sırası ihalepro "Bana Özel" akışıyla birebir ═══ -->
+
+        <!-- 1) Takip Listem + takip ettiğim firmaların sözleşmeleri (js/takip-panel.js) -->
+        <div id="takip-panel" style="display:none;"></div>
+
+        <!-- 2) "Sizin İçin Katılabileceğiniz İhaleleri Bulduk" — Benim Firmam eşleşmesi (js/firmam.js) -->
+        <div id="firmam-blok" style="display:none;"></div>
+
+        <!-- 3) Yapay Zekâ Asistanı — DeepSeek teklif/fiyat stratejisine köprü -->
         <div class="bs-ai-blok">
           <div class="bs-ai-ikon"><svg viewBox="0 0 24 24" width="30" height="30" fill="currentColor" aria-hidden="true"><path d="M12 1.6l1.9 4.7 4.7 1.9-4.7 1.9L12 14.8l-1.9-4.7L5.4 8.2l4.7-1.9L12 1.6ZM18.6 14l.95 2.35 2.35.95-2.35.95-.95 2.35-.95-2.35-2.35-.95 2.35-.95.95-2.35ZM6 15l.8 2 2 .8-2 .8L6 20.6l-.8-2-2-.8 2-.8L6 15Z"/></svg></div>
           <div class="bs-ai-govde">
@@ -212,43 +220,10 @@
           <a class="bs-ai-btn" href="ihaleler?sekme=guncel&durum=aktif">İhale Seç &amp; Başla →</a>
         </div>
 
-        <!-- 2.5) Tarihi Yaklaşan İhaleler -->
+        <!-- 4) Raporlarım (İhale Raporu + Sonuç Raporu) -->
         <div class="bs-bolum">
           <div class="bs-bolum-bas">
-            <div class="bs-bolum-t"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg> Tarihi Yaklaşan İhaleler</div>
-            <a class="bs-gor" href="ihaleler?sekme=guncel&durum=aktif">Tümü →</a>
-          </div>
-          <div id="bs-yaklasan"><div class="bs-bos">Yükleniyor…</div></div>
-        </div>
-
-        <!-- 2.6) Son Bildirimler -->
-        <div class="bs-bolum">
-          <div class="bs-bolum-bas">
-            <div class="bs-bolum-t"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 00-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 01-3.4 0"/></svg> Son Bildirimler</div>
-            <a class="bs-gor" href="bildirimler">Tümü →</a>
-          </div>
-          <div id="bs-bildirim"><div class="bs-bos">Yükleniyor…</div></div>
-        </div>
-
-        <!-- 3) Takip Listem (js/takip-panel.js) -->
-        <div id="takip-panel" style="display:none;"></div>
-
-        <!-- Benim Firmam → "Sizin İçin Katılabileceğiniz İhaleleri Bulduk" (js/firmam.js) -->
-        <div id="firmam-blok" style="display:none;"></div>
-
-        <!-- 3.5) Takip Ettiğim İhaleler (bireysel ⭐ takip — takipler tablosu) -->
-        <div class="bs-bolum">
-          <div class="bs-bolum-bas">
-            <div class="bs-bolum-t"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12a1 1 0 011 1v17l-7-4-7 4V4a1 1 0 011-1z"/></svg> Takip Ettiğim İhaleler <span id="bs-takip-say"></span></div>
-            <a class="bs-gor" href="ihaleler">İhale Ara →</a>
-          </div>
-          <div id="bs-takip-ihale"><div class="bs-bos">Yükleniyor…</div></div>
-        </div>
-
-        <!-- 4) Raporlarım -->
-        <div class="bs-bolum">
-          <div class="bs-bolum-bas">
-            <div class="bs-bolum-t"><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H7a1 1 0 00-1 1v16a1 1 0 001 1h10a1 1 0 001-1V8z"/><path d="M14 3v5h4M9 13h6M9 17h4"/></svg> Raporlarım</div>
+            <div class="bs-bolum-t"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M8 2h6.2L21 8.8V20a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2Zm5.6 8.4V3.9L20.1 10.4h-6.5ZM9 15.4h1.6v3.2H9v-3.2Zm2.6-2.2h1.6v5.4h-1.6v-5.4Zm2.6 3h1.6v2.4h-1.6v-2.4Z"/></svg> Raporlarım</div>
             <a class="bs-gor" href="raporlar">Tümü →</a>
           </div>
           <div class="bs-ikili">
@@ -257,14 +232,41 @@
           </div>
         </div>
 
-        <!-- 5) Son incelenenler + Favori aramalar -->
+        <!-- 5) Takip Ettiğim İhaleler (bireysel ⭐ takip — takipler tablosu) -->
+        <div class="bs-bolum">
+          <div class="bs-bolum-bas">
+            <div class="bs-bolum-t"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true"><path d="M7.4 2h9.2A2.4 2.4 0 0 1 19 4.4v16.3a1.3 1.3 0 0 1-1.98 1.11L12 18.72l-5.02 3.09A1.3 1.3 0 0 1 5 20.7V4.4A2.4 2.4 0 0 1 7.4 2Z"/></svg> Takip Ettiğim İhaleler <span id="bs-takip-say"></span></div>
+            <a class="bs-gor" href="ihaleler">İhale Ara →</a>
+          </div>
+          <div id="bs-takip-ihale"><div class="bs-bos">Yükleniyor…</div></div>
+        </div>
+
+        <!-- 6) Son Bildirimler (ihalepro: "Takip Edilenlerde Son Güncellemeler") -->
+        <div class="bs-bolum">
+          <div class="bs-bolum-bas">
+            <div class="bs-bolum-t"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true"><path d="M12 2a1.6 1.6 0 0 1 1.6 1.6v.62a6 6 0 0 1 4.4 5.78v3.2l1.42 2.46a1 1 0 0 1-.87 1.5H5.45a1 1 0 0 1-.87-1.5L6 13.2V10a6 6 0 0 1 4.4-5.78V3.6A1.6 1.6 0 0 1 12 2Z"/><path d="M9.6 18.5h4.8a2.4 2.4 0 0 1-4.8 0Z"/></svg> Son Bildirimler</div>
+            <a class="bs-gor" href="bildirimler">Tümü →</a>
+          </div>
+          <div id="bs-bildirim"><div class="bs-bos">Yükleniyor…</div></div>
+        </div>
+
+        <!-- 7) Tarihi Yaklaşan İhaleler -->
+        <div class="bs-bolum">
+          <div class="bs-bolum-bas">
+            <div class="bs-bolum-t"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M12 1.9a10.1 10.1 0 1 0 0 20.2 10.1 10.1 0 0 0 0-20.2Zm-.9 4.5h1.8v5h3.9v1.8h-5.7V6.4Z"/></svg> Tarihi Yaklaşan İhaleler</div>
+            <a class="bs-gor" href="ihaleler?sekme=guncel&durum=aktif">Tümü →</a>
+          </div>
+          <div id="bs-yaklasan"><div class="bs-bos">Yükleniyor…</div></div>
+        </div>
+
+        <!-- 8) Son incelenenler + Favori aramalar -->
         <div class="bs-ikili">
           <div class="bs-bolum">
-            <div class="bs-bolum-bas"><div class="bs-bolum-t"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg> Son İncelediklerim</div></div>
+            <div class="bs-bolum-bas"><div class="bs-bolum-t"><svg viewBox="0 0 24 24" width="19" height="19" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M12 1.9a10.1 10.1 0 1 0 0 20.2 10.1 10.1 0 0 0 0-20.2Zm-.9 4.5h1.8v5h3.9v1.8h-5.7V6.4Z"/></svg> Son İncelediklerim</div></div>
             <div id="bs-son"><div class="bs-bos">Yükleniyor…</div></div>
           </div>
           <div class="bs-bolum">
-            <div class="bs-bolum-bas"><div class="bs-bolum-t"><svg viewBox="0 0 24 24" width="19" height="19" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l2.5 6H21l-5 4 2 7-6-4-6 4 2-7-5-4h6.5z"/></svg> Favori Aramalarım</div><a class="bs-gor" href="ihaleler">İhale Ara →</a></div>
+            <div class="bs-bolum-bas"><div class="bs-bolum-t"><svg viewBox="0 0 24 24" width="19" height="19" fill="currentColor" aria-hidden="true"><path d="M12 2.4 14.72 8.79 21.65 9.39 16.4 13.94 17.97 20.7 12 17.11 6.03 20.7 7.6 13.94 2.35 9.39 9.28 8.79 12 2.4Z"/></svg> Favori Aramalarım</div><a class="bs-gor" href="ihaleler">İhale Ara →</a></div>
             <div id="bs-favori"><div class="bs-bos">Yükleniyor…</div></div>
           </div>
         </div>
