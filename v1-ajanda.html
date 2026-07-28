@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="author" content="Ömer Faruk Dinç">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ajandam — İhaleGlobal</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=4" />
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/v1.css?v=2" />
+  <style>
+    .v1-sayfa-baslik { font-size:22px; font-weight:800; color:var(--v1-lacivert); margin-bottom:4px; }
+    .v1-sayfa-alt { font-size:13.5px; color:var(--v1-muted); margin-bottom:18px; }
+    .v1-tak-bas { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:14px; flex-wrap:wrap; }
+    .v1-ay { font-size:18px; font-weight:800; color:var(--v1-lacivert); min-width:170px; text-align:center; }
+    .v1-ok { width:38px; height:38px; border:1.5px solid var(--v1-cizgi); background:#fff; border-radius:9px;
+      cursor:pointer; color:var(--v1-lacivert); font-size:17px; font-weight:700; }
+    .v1-ok:hover { border-color:var(--v1-mavi); color:var(--v1-mavi); }
+    .v1-bugun-btn { background:var(--v1-mavi); color:#fff; border:none; border-radius:9px; padding:9px 16px;
+      font-family:var(--v1-font); font-size:13px; font-weight:700; cursor:pointer; }
+    .v1-izgara { display:grid; grid-template-columns:repeat(7,1fr); gap:6px; }
+    .v1-gun-basi { text-align:center; font-size:12px; font-weight:700; color:var(--v1-muted); padding:6px 0; }
+    .v1-gun { min-height:92px; background:#fff; border:1px solid var(--v1-cizgi); border-radius:9px; padding:6px 7px;
+      display:flex; flex-direction:column; gap:4px; }
+    .v1-gun.bos { background:#F7F9FC; border-style:dashed; }
+    .v1-gun.bugun { border-color:var(--v1-mavi); box-shadow:0 0 0 2px rgba(19,94,170,.15); }
+    .v1-gun-no { font-size:12.5px; font-weight:700; color:var(--v1-metin-2); }
+    .v1-gun.bugun .v1-gun-no { color:var(--v1-mavi); }
+    .v1-olay { font-size:10.5px; font-weight:600; background:var(--v1-mavi-acik); color:var(--v1-mavi);
+      border-radius:5px; padding:3px 5px; cursor:pointer; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .v1-olay:hover { background:var(--v1-mavi); color:#fff; }
+    .v1-olay.acil { background:#FDECEE; color:var(--v1-kirmizi); }
+    .v1-olay.acil:hover { background:var(--v1-kirmizi); color:#fff; }
+    @media(max-width:760px){ .v1-gun{min-height:64px;} .v1-olay{display:none;} .v1-gun-no{font-size:12px;}
+      .v1-gun.dolu{background:var(--v1-mavi-acik);border-color:#CFE2F5;} }
+  </style>
+</head>
+<body class="v1" data-v1-aktif="benim" data-v1-kirinti="Hesabım > Ajandam">
+<div class="v1-app">
+  <div class="v1-main">
+    <div class="v1-govde">
+      <div class="v1-sayfa-baslik">Ajandam</div>
+      <div class="v1-sayfa-alt">Takip ettiğiniz ihalelerin son teklif tarihleri — takvimde bir güne tıklayarak ihaleye gidin.</div>
+
+      <div id="v1-giris" style="display:none;text-align:center;padding:80px 20px;color:var(--v1-muted);">
+        🔒 Ajanda üyelere özeldir.<br><br><a href="login">Giriş yapın</a> →
+      </div>
+
+      <div id="v1-icerik" style="display:none;">
+        <div class="v1-kart">
+          <div class="v1-tak-bas">
+            <div style="display:flex;align-items:center;gap:8px;">
+              <button class="v1-ok" id="v1-geri">‹</button>
+              <div class="v1-ay" id="v1-ay">—</div>
+              <button class="v1-ok" id="v1-ileri">›</button>
+            </div>
+            <div style="display:flex;gap:10px;align-items:center;">
+              <span class="v1-tablo-sayi" id="v1-olay-say"></span>
+              <button class="v1-bugun-btn" id="v1-bugun">Bugün</button>
+            </div>
+          </div>
+          <div class="v1-izgara" id="v1-basliklar"></div>
+          <div class="v1-izgara" id="v1-izgara" style="margin-top:6px;"></div>
+        </div>
+
+        <div class="v1-kart">
+          <div class="v1-kart-baslik" style="justify-content:space-between;">
+            <span>Yaklaşan Tarihler</span>
+            <a href="v1-ihaleler" style="font-size:12.5px;color:var(--v1-muted);">İhale Ara →</a>
+          </div>
+          <div id="v1-yaklasan"><div class="v1-bos">Yükleniyor…</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="js/v1-kabuk.js?v=2"></script>
+<script>
+(() => {
+  const SB_URL="https://ihaleglobal.com", SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzg0MzA3MTU4LCJleHAiOjE5NDE5ODcxNTh9.CjNKulvirotDD_y2oO2QKgo0kbqYvL0jUSV1RiDMoso";
+  const sb=window.supabase.createClient(SB_URL,SB_KEY);
+  const esc=(s)=>(s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  const AYLAR=['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
+  const GUNLER=['Pzt','Sal','Çar','Per','Cum','Cmt','Paz'];
+  let uid=null, olaylar=[], gAy=new Date().getMonth(), gYil=new Date().getFullYear();
+
+  async function veriYukle(){
+    // Takip edilen ihaleler (bireysel ⭐) + son teklif tarihleri
+    let ids=[];
+    try{
+      let q=sb.from('takipler').select('ilan_id'); if(uid) q=q.eq('kullanici_id',uid);
+      const {data}=await q; ids=[...new Set((data||[]).map(r=>r.ilan_id))];
+    }catch(_){}
+    if(!ids.length){ olaylar=[]; return; }
+    try{
+      const {data}=await sb.from('ilanlar').select('id,baslik,il,son_teklif_tarihi')
+        .in('id',ids.slice(0,200)).not('son_teklif_tarihi','is',null);
+      olaylar=(data||[]).map(r=>({id:r.id,baslik:r.baslik,il:r.il,t:new Date(r.son_teklif_tarihi)}));
+    }catch(_){ olaylar=[]; }
+  }
+
+  function ciz(){
+    document.getElementById('v1-basliklar').innerHTML=GUNLER.map(g=>`<div class="v1-gun-basi">${g}</div>`).join('');
+    document.getElementById('v1-ay').textContent=`${AYLAR[gAy]} ${gYil}`;
+    const ilk=new Date(gYil,gAy,1);
+    const kaydir=(ilk.getDay()+6)%7;          // Pazartesi başlangıç
+    const gunSay=new Date(gYil,gAy+1,0).getDate();
+    const bugun=new Date(); const bugunMu=(d)=>d.toDateString()===bugun.toDateString();
+    let html='';
+    for(let i=0;i<kaydir;i++) html+='<div class="v1-gun bos"></div>';
+    let ayOlay=0;
+    for(let g=1;g<=gunSay;g++){
+      const d=new Date(gYil,gAy,g);
+      const gunOlaylari=olaylar.filter(o=>o.t.getFullYear()===gYil&&o.t.getMonth()===gAy&&o.t.getDate()===g);
+      ayOlay+=gunOlaylari.length;
+      const kalan=Math.ceil((d-bugun)/86400000);
+      html+=`<div class="v1-gun${bugunMu(d)?' bugun':''}${gunOlaylari.length?' dolu':''}">
+        <div class="v1-gun-no">${g}</div>
+        ${gunOlaylari.slice(0,3).map(o=>`<div class="v1-olay${kalan<=3?' acil':''}" title="${esc(o.baslik||'')}"
+          onclick="location.href='ihale-detay?id=${o.id}'">${esc((o.baslik||'İhale').slice(0,26))}</div>`).join('')}
+        ${gunOlaylari.length>3?`<div style="font-size:10px;color:var(--v1-muted);">+${gunOlaylari.length-3} daha</div>`:''}
+      </div>`;
+    }
+    document.getElementById('v1-izgara').innerHTML=html;
+    document.getElementById('v1-olay-say').innerHTML=ayOlay?`Bu ayda <strong>${ayOlay}</strong> son teklif tarihi`:'Bu ayda kayıt yok';
+  }
+
+  function yaklasanListe(){
+    const el=document.getElementById('v1-yaklasan');
+    const ileri=olaylar.filter(o=>o.t>=new Date()).sort((a,b)=>a.t-b.t).slice(0,8);
+    if(!ileri.length){ el.innerHTML='<div class="v1-bos">Takip ettiğiniz ihale yok. İhale detayında ⭐ ile takibe alın.</div>'; return; }
+    el.innerHTML=ileri.map(o=>{
+      const g=Math.max(0,Math.ceil((o.t-new Date())/86400000));
+      return `<a class="v1-satir" href="ihale-detay?id=${o.id}" style="display:flex;align-items:center;gap:12px;padding:11px 0;border-top:1px solid var(--v1-cizgi);text-decoration:none;color:inherit;">
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:13.5px;font-weight:600;color:var(--v1-metin);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(o.baslik||'İhale')}</div>
+          <div style="font-size:11.5px;color:var(--v1-muted);margin-top:2px;">${esc(o.il||'—')} · ${o.t.toLocaleDateString('tr-TR')} ${o.t.toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'})}</div>
+        </div>
+        <span style="flex-shrink:0;font-size:12px;font-weight:700;padding:4px 11px;border-radius:20px;
+          background:${g<=3?'#FDECEE':'var(--v1-mavi-acik)'};color:${g<=3?'var(--v1-kirmizi)':'var(--v1-mavi)'};">Son ${g} gün</span></a>`;
+    }).join('');
+  }
+
+  (async()=>{
+    const {data}=await sb.auth.getSession();
+    if(!data||!data.session){ document.getElementById('v1-giris').style.display='block'; return; }
+    document.getElementById('v1-icerik').style.display='block';
+    uid=data.session.user.id;
+    try{ const {data:k}=await sb.from('kullanici_krediler').select('plan').eq('kullanici_id',uid).maybeSingle();
+      if(window.v1PaketYaz) v1PaketYaz(['standart','kurumsal'].includes(k?.plan)?'Pro':'Temel'); }catch(_){}
+    document.getElementById('v1-geri').addEventListener('click',()=>{ gAy--; if(gAy<0){gAy=11;gYil--;} ciz(); });
+    document.getElementById('v1-ileri').addEventListener('click',()=>{ gAy++; if(gAy>11){gAy=0;gYil++;} ciz(); });
+    document.getElementById('v1-bugun').addEventListener('click',()=>{ const n=new Date(); gAy=n.getMonth(); gYil=n.getFullYear(); ciz(); });
+    await veriYukle(); ciz(); yaklasanListe();
+  })();
+})();
+</script>
+</body>
+</html>

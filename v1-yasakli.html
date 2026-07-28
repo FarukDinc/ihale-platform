@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="author" content="Ömer Faruk Dinç">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Yasaklı Sorgulama — İhaleGlobal</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=4" />
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/v1.css?v=2" />
+  <style>
+    .v1-sayfa-baslik { font-size:22px; font-weight:800; color:var(--v1-lacivert); margin-bottom:4px; }
+    .v1-sayfa-alt { font-size:13.5px; color:var(--v1-muted); margin-bottom:18px; }
+    .v1-sorgu-kutu { display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:16px; }
+    .v1-sorgu-input { flex:1; min-width:260px; height:46px; border:1.5px solid var(--v1-cizgi); border-radius:10px;
+      padding:0 14px; font-family:var(--v1-font); font-size:14px; outline:none; background:#fff; }
+    .v1-sorgu-input:focus { border-color:var(--v1-mavi); box-shadow:0 0 0 3px rgba(19,94,170,.13); }
+    .v1-sorgu-btn { background:var(--v1-mavi); color:#fff; border:none; border-radius:10px; padding:13px 24px;
+      font-family:var(--v1-font); font-size:14px; font-weight:700; cursor:pointer; }
+    .v1-sorgu-btn:hover { background:var(--v1-lacivert); }
+    .v1-uyari { border-radius:12px; padding:16px 18px; font-size:13.5px; margin-bottom:16px; }
+    .v1-uyari.mavi { background:var(--v1-mavi-acik); border:1px solid #CFE2F5; }
+    .v1-uyari.sari { background:#FFF8E6; border:1px solid #F0DFA8; }
+    .v1-rozet-aktif { display:inline-block; font-size:11.5px; font-weight:700; padding:3px 10px; border-radius:20px;
+      background:#FDECEE; color:var(--v1-kirmizi); }
+    .v1-rozet-bitti { display:inline-block; font-size:11.5px; font-weight:700; padding:3px 10px; border-radius:20px;
+      background:#EFF2F6; color:var(--v1-muted); }
+  </style>
+</head>
+<body class="v1" data-v1-aktif="kararlar" data-v1-kirinti="Kamu > Yasaklı Sorgulama">
+<div class="v1-app">
+  <div class="v1-main">
+    <div class="v1-govde">
+      <div class="v1-sayfa-baslik">Yasaklı Sorgulama</div>
+      <div class="v1-sayfa-alt">4734 sayılı Kanun kapsamında ihalelere katılmaktan yasaklı firma ve kişileri sorgulayın.</div>
+
+      <div class="v1-kart">
+        <div class="v1-sorgu-kutu">
+          <input type="text" class="v1-sorgu-input" id="v1-sorgu" placeholder="Firma adı, T.C. kimlik no veya vergi no…">
+          <button class="v1-sorgu-btn" id="v1-sorgu-btn">Sorgula</button>
+        </div>
+        <div class="v1-uyari mavi" style="margin-bottom:0;">
+          ℹ️ Sorgulama sonucu <strong>bilgilendirme amaçlıdır</strong>; resmî kaynak Kamu İhale Kurumu ve
+          Resmî Gazete yayımlarıdır. Nihai teyit için resmî kaynaklara başvurun.
+        </div>
+      </div>
+
+      <div id="v1-veri-notu" class="v1-uyari sari" style="display:none;">
+        ⏳ <strong>Yasaklı firma veri seti henüz yüklenmedi.</strong> Tablo hazır, veri çekimi (Resmî Gazete + KİK
+        yasaklılar listesi) planlandı. Yüklendiğinde bu sayfa çalışır durumda olacak — arayüz ve sorgu akışı hazır.
+      </div>
+
+      <div class="v1-kart" id="v1-sonuc-kart" style="display:none;">
+        <div class="v1-kart-baslik" style="justify-content:space-between;">
+          <span>Sorgu Sonucu</span>
+          <span class="v1-tablo-sayi" id="v1-sayi"></span>
+        </div>
+        <div style="overflow-x:auto;">
+          <table class="v1-tablo">
+            <thead><tr>
+              <th>Firma / Kişi</th>
+              <th style="width:130px;">Vergi / T.C. No</th>
+              <th style="width:190px;">Karar Veren Kurum</th>
+              <th style="width:150px;">Yasak Süresi</th>
+              <th style="width:100px;">Durum</th>
+            </tr></thead>
+            <tbody id="v1-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="js/v1-kabuk.js?v=2"></script>
+<script>
+(() => {
+  const SB_URL="https://ihaleglobal.com", SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzg0MzA3MTU4LCJleHAiOjE5NDE5ODcxNTh9.CjNKulvirotDD_y2oO2QKgo0kbqYvL0jUSV1RiDMoso";
+  const sb=window.supabase.createClient(SB_URL,SB_KEY);
+  const esc=(s)=>(s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  const num=(n)=>(Number(n)||0).toLocaleString('tr-TR');
+  const trFold=(s)=>(s||'').toLocaleLowerCase('tr').replace(/i̇/g,'i').replace(/ç/g,'c').replace(/ğ/g,'g')
+    .replace(/ö/g,'o').replace(/ş/g,'s').replace(/ü/g,'u');
+  const gun=(t)=>t?new Date(t).toLocaleDateString('tr-TR'):'—';
+  let uyeMi=false;
+
+  async function sorgula(){
+    const q=(document.getElementById('v1-sorgu').value||'').trim();
+    if(q.length<3){ alert('En az 3 karakter girin.'); return; }
+    if(!uyeMi){ alert('Yasaklı sorgulama üyelere özeldir. Giriş yapın.'); return; }
+    const kart=document.getElementById('v1-sonuc-kart'), tb=document.getElementById('v1-tbody');
+    kart.style.display=''; tb.innerHTML='<tr><td colspan="5" class="v1-bos">Sorgulanıyor…</td></tr>';
+    try{
+      const sayisal=/^[0-9]+$/.test(q);
+      let s=sb.from('yasakli_firmalar').select('firma_ad,tc_vergi_no,karar_veren_kurum,yasak_baslangic,yasak_bitis,yasak_suresi,aktif,il,kanun_madde');
+      s = sayisal ? s.eq('tc_vergi_no',q) : s.ilike('normalize_ad','%'+trFold(q)+'%');
+      const {data,error}=await s.limit(50);
+      if(error) throw error;
+      document.getElementById('v1-sayi').textContent=`${num((data||[]).length)} kayıt`;
+      if(!data||!data.length){
+        tb.innerHTML=`<tr><td colspan="5" class="v1-bos">✅ "<strong>${esc(q)}</strong>" için yasaklılık kaydı bulunamadı.<br>
+          <span style="font-size:12px;">(Veri setimizde bulunmaması resmî teyit yerine geçmez.)</span></td></tr>`;
+        return;
+      }
+      tb.innerHTML=data.map(r=>{
+        const bitis=r.yasak_bitis?new Date(r.yasak_bitis):null;
+        const aktif = r.aktif===true || (bitis && bitis>=new Date());
+        return `<tr>
+          <td><div style="font-weight:600;color:var(--v1-metin);">${esc(r.firma_ad||'—')}</div>
+            <div class="v1-t-ikn">${esc(r.il||'')}${r.kanun_madde?' · '+esc(r.kanun_madde):''}</div></td>
+          <td style="font-size:13px;">${esc(r.tc_vergi_no||'—')}</td>
+          <td style="font-size:12.5px;">${esc(r.karar_veren_kurum||'—')}</td>
+          <td style="font-size:12.5px;">${gun(r.yasak_baslangic)} – ${gun(r.yasak_bitis)}${r.yasak_suresi?`<br><span style="color:var(--v1-muted);">${esc(r.yasak_suresi)}</span>`:''}</td>
+          <td><span class="${aktif?'v1-rozet-aktif':'v1-rozet-bitti'}">${aktif?'Yasaklı':'Süresi doldu'}</span></td></tr>`;
+      }).join('');
+    }catch(e){ tb.innerHTML=`<tr><td colspan="5" class="v1-bos">Sorgu başarısız. ${esc(e.message||'')}</td></tr>`; }
+  }
+
+  (async()=>{
+    try{ const {data}=await sb.auth.getSession(); uyeMi=!!(data&&data.session);
+      if(window.v1PaketYaz){ if(uyeMi){ const {data:k}=await sb.from('kullanici_krediler').select('plan').eq('kullanici_id',data.session.user.id).maybeSingle();
+        v1PaketYaz(['standart','kurumsal'].includes(k?.plan)?'Pro':'Temel'); } else v1PaketYaz('Misafir'); }
+      // Veri var mı — yoksa dürüst not göster
+      if(uyeMi){
+        const {count}=await sb.from('yasakli_firmalar').select('id',{count:'exact',head:true});
+        if(!count) document.getElementById('v1-veri-notu').style.display='block';
+      }
+    }catch(_){}
+    document.getElementById('v1-sorgu-btn').addEventListener('click',sorgula);
+    document.getElementById('v1-sorgu').addEventListener('keydown',e=>{if(e.key==='Enter')sorgula();});
+  })();
+})();
+</script>
+</body>
+</html>

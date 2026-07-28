@@ -80,9 +80,9 @@
         <div class="v1-paket-ad">Mevcut Paket<strong id="v1-paket-ad">—</strong></div>
         <button class="v1-paket-btn" onclick="location.href='fiyatlandirma_odeme_bolumu'">Paket Yükselt</button>
       </div>
-      <div class="v1-top-ikon" title="Raporlarım" onclick="location.href='raporlar'">${I.rapor}</div>
+      <div class="v1-top-ikon" title="Raporlarım" onclick="location.href='v1-raporlar'">${I.rapor}</div>
       <div class="v1-top-ikon" title="Profilim" id="v1-profil-btn">${I.kisi}</div>
-      <div class="v1-top-ikon" title="Ajandam" onclick="location.href='takipte'">${I.takvim}</div>
+      <div class="v1-top-ikon" title="Ajandam" onclick="location.href='v1-ajanda'">${I.takvim}</div>
       <div class="v1-top-ikon" title="Bildirimler" onclick="location.href='bildirimler'">${I.zil}</div>
     </div>`;
 
@@ -161,7 +161,7 @@
       const f = b.dataset.fn;
       if (f === 'v2') { localStorage.setItem('ihale_surum', 'v2'); location.href = 'benim-sayfam'; }
       else if (f === 'v1') { localStorage.setItem('ihale_surum', 'v1'); m.remove(); }
-      else if (f === 'profil') location.href = 'profil';
+      else if (f === 'profil') location.href = 'v1-profil';
       else if (f === 'abonelik') location.href = 'fiyatlandirma_odeme_bolumu';
       else if (f === 'cikis') { try { localStorage.removeItem('ihale_token'); } catch (_) {} location.href = '/'; }
     }));

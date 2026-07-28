@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="author" content="Ömer Faruk Dinç">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Profilim — İhaleGlobal</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=4" />
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/v1.css?v=2" />
+  <style>
+    .v1-sayfa-baslik { font-size:22px; font-weight:800; color:var(--v1-lacivert); margin-bottom:4px; }
+    .v1-sayfa-alt { font-size:13.5px; color:var(--v1-muted); margin-bottom:18px; }
+    .v1-form-grid { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+    @media(max-width:760px){ .v1-form-grid{ grid-template-columns:1fr; } }
+    .v1-alan label { display:block; font-size:12.5px; font-weight:700; color:var(--v1-lacivert); margin-bottom:5px; }
+    .v1-alan input, .v1-alan textarea, .v1-alan select {
+      width:100%; border:1.5px solid var(--v1-cizgi); border-radius:9px; padding:10px 12px;
+      font-family:var(--v1-font); font-size:13.5px; color:var(--v1-metin); outline:none; background:#fff; }
+    .v1-alan input:focus, .v1-alan textarea:focus, .v1-alan select:focus { border-color:var(--v1-mavi); box-shadow:0 0 0 3px rgba(19,94,170,.12); }
+    .v1-alan textarea { min-height:88px; resize:vertical; }
+    .v1-alan .ipucu { font-size:11.5px; color:var(--v1-muted); margin-top:4px; }
+    .v1-kaydet { background:var(--v1-mavi); color:#fff; border:none; border-radius:10px; padding:13px 30px;
+      font-family:var(--v1-font); font-size:14px; font-weight:700; cursor:pointer; }
+    .v1-kaydet:hover { background:var(--v1-lacivert); }
+    .v1-kaydet:disabled { opacity:.6; cursor:default; }
+    .v1-hesap-satir { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:14px 0;
+      border-bottom:1px solid var(--v1-cizgi); flex-wrap:wrap; }
+    .v1-hesap-satir:last-child { border-bottom:none; }
+    .v1-hesap-et { font-size:13px; color:var(--v1-muted); }
+    .v1-hesap-deger { font-size:14px; font-weight:700; color:var(--v1-lacivert); }
+    .v1-bildirim { text-align:center; padding:12px; border-radius:9px; font-size:13.5px; font-weight:600; margin-bottom:14px; display:none; }
+    .v1-bildirim.ok { background:#E6F6EC; color:var(--v1-yesil); display:block; }
+    .v1-bildirim.hata { background:#FDECEE; color:var(--v1-kirmizi); display:block; }
+  </style>
+</head>
+<body class="v1" data-v1-aktif="benim" data-v1-kirinti="Hesabım > Profilim">
+<div class="v1-app">
+  <div class="v1-main">
+    <div class="v1-govde">
+      <div class="v1-sayfa-baslik">Profilim</div>
+      <div class="v1-sayfa-alt">Firma bilgileriniz — eşleşme motoru ve AI teklif önerileri bu verilerle çalışır.</div>
+
+      <div id="v1-giris" style="display:none;text-align:center;padding:80px 20px;color:var(--v1-muted);">
+        🔒 Bu sayfa üyelere özeldir.<br><br><a href="login">Giriş yapın</a> →
+      </div>
+
+      <div id="v1-icerik" style="display:none;">
+        <div class="v1-bildirim" id="v1-bildirim"></div>
+
+        <!-- Hesap özeti -->
+        <div class="v1-kart">
+          <div class="v1-kart-baslik">Hesap</div>
+          <div class="v1-hesap-satir"><span class="v1-hesap-et">E-posta</span><span class="v1-hesap-deger" id="v1-eposta">—</span></div>
+          <div class="v1-hesap-satir"><span class="v1-hesap-et">Mevcut Paket</span>
+            <span><span class="v1-hesap-deger" id="v1-plan">—</span>
+            <a href="fiyatlandirma_odeme_bolumu" style="margin-left:12px;font-size:12.5px;">Paket Yükselt →</a></span></div>
+          <div class="v1-hesap-satir"><span class="v1-hesap-et">Kalan Kredi</span><span class="v1-hesap-deger" id="v1-kredi">—</span></div>
+          <div class="v1-hesap-satir"><span class="v1-hesap-et">Seçili Firmam</span>
+            <span><span class="v1-hesap-deger" id="v1-firmam">—</span>
+            <a href="v1-analiz" style="margin-left:12px;font-size:12.5px;">Değiştir →</a></span></div>
+        </div>
+
+        <!-- Firma bilgileri -->
+        <div class="v1-kart">
+          <div class="v1-kart-baslik">Firma Bilgileri</div>
+          <div class="v1-form-grid">
+            <div class="v1-alan"><label>Firma Adı</label><input id="p-firma_adi" placeholder="Örn. ABC İnşaat San. Tic. Ltd. Şti."></div>
+            <div class="v1-alan"><label>Vergi No</label><input id="p-vergi_no" placeholder="10 haneli"></div>
+            <div class="v1-alan"><label>MERSİS No</label><input id="p-mersisi_no" placeholder="16 haneli"></div>
+            <div class="v1-alan"><label>Telefon</label><input id="p-telefon" placeholder="0(___) ___ __ __"></div>
+            <div class="v1-alan"><label>Web Sitesi</label><input id="p-web_sitesi" placeholder="https://"></div>
+            <div class="v1-alan"><label>Çalışan Sayısı</label><input type="number" id="p-calisani_sayisi" placeholder="0"></div>
+            <div class="v1-alan"><label>Yıllık Ciro (₺)</label><input type="number" id="p-yillik_ciro_tl" placeholder="0">
+              <div class="ipucu">AI teklif stratejisi ve eşleşme skorunda kullanılır.</div></div>
+            <div class="v1-alan"><label>Çalışma İlleri</label><input id="p-calisma_illeri" placeholder="ANKARA, İSTANBUL, İZMİR">
+              <div class="ipucu">Virgülle ayırın.</div></div>
+          </div>
+          <div class="v1-form-grid" style="margin-top:16px;">
+            <div class="v1-alan"><label>Hizmet Alanları</label><textarea id="p-hizmet_alanlari" placeholder="Örn. altyapı, yol yapımı, elektrik tesisatı"></textarea></div>
+            <div class="v1-alan"><label>Referanslar</label><textarea id="p-referanslar" placeholder="Tamamladığınız önemli işler"></textarea></div>
+            <div class="v1-alan"><label>Belgeler / Sertifikalar</label><textarea id="p-belgeler" placeholder="ISO 9001, iş deneyim belgesi vb."></textarea></div>
+            <div class="v1-alan"><label>Kaçındığınız İşler</label><textarea id="p-kacinilanlar" placeholder="İlgilenmediğiniz iş türleri — eşleşmede elenir"></textarea></div>
+          </div>
+          <div style="margin-top:20px;"><button class="v1-kaydet" id="v1-kaydet">Bilgileri Kaydet</button></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="js/v1-kabuk.js?v=2"></script>
+<script>
+(() => {
+  const SB_URL="https://ihaleglobal.com", SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzg0MzA3MTU4LCJleHAiOjE5NDE5ODcxNTh9.CjNKulvirotDD_y2oO2QKgo0kbqYvL0jUSV1RiDMoso";
+  const sb=window.supabase.createClient(SB_URL,SB_KEY);
+  const num=(n)=>(Number(n)||0).toLocaleString('tr-TR');
+  const ALANLAR=['firma_adi','vergi_no','mersisi_no','telefon','web_sitesi','calisani_sayisi','yillik_ciro_tl',
+                 'calisma_illeri','hizmet_alanlari','referanslar','belgeler','kacinilanlar'];
+  // Dizi olarak saklanan alanlar (metin ↔ dizi çevrimi)
+  const DIZI=['calisma_illeri','hizmet_alanlari','referanslar','belgeler','kacinilanlar'];
+  let uid=null;
+
+  const bildir=(m,ok=true)=>{ const e=document.getElementById('v1-bildirim');
+    e.className='v1-bildirim '+(ok?'ok':'hata'); e.textContent=m; setTimeout(()=>{e.className='v1-bildirim';},4000); };
+
+  async function yukle(){
+    const {data}=await sb.from('kullanici_profiller').select('*').eq('id',uid).maybeSingle();
+    const p=data||{};
+    ALANLAR.forEach(a=>{
+      const e=document.getElementById('p-'+a); if(!e) return;
+      let v=p[a];
+      if(DIZI.includes(a) && Array.isArray(v)) v=v.join(', ');
+      e.value = (v===null||v===undefined) ? '' : v;
+    });
+    document.getElementById('v1-firmam').textContent = p.firma_adi || 'Seçilmedi';
+  }
+
+  async function kaydet(){
+    const btn=document.getElementById('v1-kaydet'); btn.disabled=true; const eski=btn.textContent; btn.textContent='Kaydediliyor…';
+    try{
+      const kayit={id:uid};
+      ALANLAR.forEach(a=>{
+        const e=document.getElementById('p-'+a); if(!e) return;
+        let v=e.value.trim();
+        if(v==='') { kayit[a]=null; return; }
+        if(DIZI.includes(a)) kayit[a]=v.split(',').map(x=>x.trim()).filter(Boolean);
+        else if(a==='calisani_sayisi'||a==='yillik_ciro_tl') kayit[a]=Number(v)||null;
+        else kayit[a]=v;
+      });
+      const {error}=await sb.from('kullanici_profiller').upsert(kayit,{onConflict:'id'});
+      if(error) throw error;
+      bildir('Profil bilgileriniz kaydedildi ✓');
+    }catch(e){ bildir('Kaydedilemedi: '+(e.message||''),false); }
+    finally{ btn.disabled=false; btn.textContent=eski; }
+  }
+
+  (async()=>{
+    const {data}=await sb.auth.getSession();
+    if(!data||!data.session){ document.getElementById('v1-giris').style.display='block'; return; }
+    document.getElementById('v1-icerik').style.display='block';
+    uid=data.session.user.id;
+    document.getElementById('v1-eposta').textContent=data.session.user.email||'—';
+    try{
+      const {data:k}=await sb.from('kullanici_krediler').select('plan,kalan_kredi').eq('kullanici_id',uid).maybeSingle();
+      const pro=['standart','kurumsal'].includes(k?.plan);
+      document.getElementById('v1-plan').textContent=pro?'Pro':'Temel';
+      document.getElementById('v1-kredi').textContent=num(k?.kalan_kredi)+' kredi';
+      if(window.v1PaketYaz) v1PaketYaz(pro?'Pro':'Temel');
+    }catch(_){}
+    document.getElementById('v1-kaydet').addEventListener('click',kaydet);
+    yukle();
+  })();
+})();
+</script>
+</body>
+</html>
