@@ -206,6 +206,15 @@
   const KIRMIZI=['#FCE9EA','#F6C6C9','#EF9AA0','#E36B74','#CE4650','#A32B34'];
 
   let yillar=[], yil=null, kiyas=null, mod='ihr', harita={}, liste=[], sirala='ihr', yon=false, ADLAR={};
+  // SVG'deki adlar İngilizce ("Germany") → iso2 üzerinden Türkçeleştirilir ("Almanya").
+  // iso2 eşlemesi ticaret_liste RPC'sinden gelir; gelmezse İngilizce ada düşülür.
+  let ISO2={}, _adTr=null;
+  try{ _adTr=new Intl.DisplayNames(['tr'],{type:'region'}); }catch(_){}
+  function ulkeAdi(iso3){
+    const a2=ISO2[iso3];
+    if(a2&&_adTr){ try{ const t=_adTr.of(a2); if(t&&t!==a2) return t; }catch(_){} }
+    return ADLAR[iso3]||iso3||'—';
+  }
 
   function adSozluk(){
     const D=window.DUNYA_HARITA;
@@ -235,6 +244,7 @@
         sb.rpc('ticaret_liste',{p_yil:yil,p_kiyas_yil:kiyas}).then(r=>r.data||[]).catch(()=>[]),
       ]);
       harita=h||{}; liste=l||[];
+      liste.forEach(r=>{ if(r.iso3&&r.iso2) ISO2[r.iso3]=String(r.iso2).toUpperCase(); });
       kpiCiz(); haritaCiz(); listeCiz();
     }catch(e){ document.getElementById('t-tbody').innerHTML=`<tr><td colspan="6" class="v1-bos">Veri alınamadı. ${esc(e.message||'')}</td></tr>`; }
   }
@@ -306,7 +316,7 @@
   function listeCiz(){
     const q=(document.getElementById('t-ara').value||'').toLocaleLowerCase('tr');
     let d=liste.map(r=>{
-      const ad=ADLAR[r.iso3]||r.iso3||r.iso2||'—';
+      const ad=ulkeAdi(r.iso3);
       const ihr=Number(r.yil_ihr)||0, ith=Number(r.yil_ith)||0, kih=Number(r.kiyas_ihr)||0;
       return {ad,iso3:r.iso3,ihr,ith,denge:ihr-ith,degisim:kih?((ihr-kih)/kih*100):null};
     });
@@ -342,7 +352,7 @@
   const yoyNum=(g,o)=>(o>0&&g!=null)?(g-o)/o*100:-Infinity;   // veri yoksa sıralamada en sona
   const yoyHtml=(g,o)=>{ if(!(o>0)||g==null) return '—'; const p=(g-o)/o*100;
     return `<span class="v1-degisim ${p>=0?'arti':'eksi'}">${p>=0?'▲':'▼'} %${Math.abs(p).toLocaleString('tr-TR',{maximumFractionDigits:1})}</span>`; };
-  const ulkeAd=(iso3)=>ADLAR[iso3]||iso3||'—';
+  const ulkeAd=(iso3)=>ulkeAdi(iso3);
 
   let _hsYuklu=false;
   function hsKodlarYukle(){                    // ~900 KB — yalnız gerekince indir
