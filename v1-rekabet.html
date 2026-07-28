@@ -223,8 +223,13 @@
       cubuklar('l-tur-maliyet',tm.map(r=>({k:`${r.k} (${num(r.sayi)} ihale)`,n:r.ort})),'k','n',kisalt);
     }catch(e){
       document.getElementById('f-durum-notu').textContent='';
-      document.getElementById('v1-kpi').innerHTML=`<div class="v1-bos" style="grid-column:1/-1;">Analiz alınamadı. ${esc(e.message||'')}
-        ${String(e.message||'').includes('permission')?'<br><a href="login">Giriş yapın →</a> (bu analiz üyelere özeldir)':''}</div>`;
+      // 42501 = RPC üyeye özel (anon'a EXECUTE yok) → ham Postgres mesajını kullanıcıya gösterme
+      const kilit = e.code==='42501' || /permission denied/i.test(e.message||'');
+      document.getElementById('v1-kpi').innerHTML=`<div class="v1-bos" style="grid-column:1/-1;padding:34px 20px;">`+
+        (kilit
+          ? `🔒 Rekabet analizi üyelere özeldir.<br><br><a href="login">Giriş yapın</a> veya <a href="fiyatlandirma_odeme_bolumu">üye olun</a> →`
+          : `Analiz alınamadı. ${esc(e.message||'')}`)+`</div>`;
+      ['g-trend','g-tur','g-il','g-kategori'].forEach(i=>{ if(grafikler[i]){grafikler[i].destroy(); delete grafikler[i];} });
       ['l-usul','l-butce','l-idare','l-tur-maliyet'].forEach(i=>{const el=document.getElementById(i); if(el) el.innerHTML='<div class="v1-bos">—</div>';});
     }
   }
