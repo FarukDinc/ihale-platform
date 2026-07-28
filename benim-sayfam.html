@@ -104,6 +104,15 @@
     .bs-il-bar{display:block;height:100%;background:var(--amber);border-radius:5px}
     .bs-il-say{width:52px;flex-shrink:0;text-align:right;font-size:12.5px;font-weight:800;color:var(--amber)}
     .bs-giris{text-align:center;padding:70px 20px;color:var(--muted)}.bs-giris a{color:var(--amber);font-weight:600}
+    /* Yapay Zekâ Asistanı bloğu */
+    .bs-ai-blok{display:flex;align-items:center;gap:18px;flex-wrap:wrap;background:rgba(240,165,0,.07);border:1px solid rgba(240,165,0,.28);border-radius:16px;padding:20px 24px;margin-bottom:18px}
+    .bs-ai-ikon{width:58px;height:58px;border-radius:50%;background:#fff;color:var(--amber);display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 2px 10px rgba(15,42,71,.08)}
+    .bs-ai-govde{flex:1;min-width:220px}
+    .bs-ai-baslik{font-size:17px;font-weight:800;color:var(--white)}
+    .bs-ai-alt{font-size:13px;color:var(--muted);margin-top:4px;line-height:1.55}
+    .bs-ai-alt strong{color:var(--white)}
+    .bs-ai-btn{background:var(--amber);color:var(--navy);font-size:13.5px;font-weight:800;padding:11px 20px;border-radius:10px;text-decoration:none;white-space:nowrap;flex-shrink:0}
+    .bs-ai-btn:hover{filter:brightness(1.06)}
     /* ── Benim Firmam (firmam.js) — dashboard'dan port + MODERN arama kutusu (ihalepro tarzı) ── */
     .firmam-kart{background:var(--navy-mid);border:1px solid var(--border);border-radius:14px;padding:20px 22px;margin-bottom:18px}
     .firmam-onboarding{display:flex;gap:18px;align-items:center;border-color:rgba(240,165,0,.35);background:rgba(240,165,0,.05)}
@@ -191,6 +200,16 @@
             <div class="bs-slogan">Güncel, doğru ve kapsamlı veri havuzu ile kararlarınızı güvenle alın!</div>
             <div class="bs-kpi" id="bs-kpi"></div>
           </div>
+        </div>
+
+        <!-- 2.4) Yapay Zekâ Asistanı (ihalepro paritesi — DeepSeek teklif/fiyat stratejisi) -->
+        <div class="bs-ai-blok">
+          <div class="bs-ai-ikon"><svg viewBox="0 0 24 24" width="30" height="30" fill="currentColor" aria-hidden="true"><path d="M12 1.6l1.9 4.7 4.7 1.9-4.7 1.9L12 14.8l-1.9-4.7L5.4 8.2l4.7-1.9L12 1.6ZM18.6 14l.95 2.35 2.35.95-2.35.95-.95 2.35-.95-2.35-2.35-.95 2.35-.95.95-2.35ZM6 15l.8 2 2 .8-2 .8L6 20.6l-.8-2-2-.8 2-.8L6 15Z"/></svg></div>
+          <div class="bs-ai-govde">
+            <div class="bs-ai-baslik">Yapay Zekâ Asistanınız Hazır</div>
+            <div class="bs-ai-alt">Bir ihaleye <strong>kaç TL teklif vermelisiniz?</strong> Benzer geçmiş ihalelerin gerçek tenzilat verisiyle size somut bir teklif bandı öneriyoruz. Teknik teklif metninizi de AI yazıyor.</div>
+          </div>
+          <a class="bs-ai-btn" href="ihaleler?sekme=guncel&durum=aktif">İhale Seç &amp; Başla →</a>
         </div>
 
         <!-- 2.5) Tarihi Yaklaşan İhaleler -->
