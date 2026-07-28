@@ -76,7 +76,7 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-<script src="js/v1-kabuk.js?v=2"></script>
+<script src="js/v1-kabuk.js?v=3"></script>
 <script>
 (() => {
   const SB_URL="https://ihaleglobal.com", SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzg0MzA3MTU4LCJleHAiOjE5NDE5ODcxNTh9.CjNKulvirotDD_y2oO2QKgo0kbqYvL0jUSV1RiDMoso";
@@ -119,7 +119,7 @@
       html+=`<div class="v1-gun${bugunMu(d)?' bugun':''}${gunOlaylari.length?' dolu':''}">
         <div class="v1-gun-no">${g}</div>
         ${gunOlaylari.slice(0,3).map(o=>`<div class="v1-olay${kalan<=3?' acil':''}" title="${esc(o.baslik||'')}"
-          onclick="location.href='ihale-detay?id=${o.id}'">${esc((o.baslik||'İhale').slice(0,26))}</div>`).join('')}
+          onclick="location.href='v1-ihale-detay?id=${o.id}'">${esc((o.baslik||'İhale').slice(0,26))}</div>`).join('')}
         ${gunOlaylari.length>3?`<div style="font-size:10px;color:var(--v1-muted);">+${gunOlaylari.length-3} daha</div>`:''}
       </div>`;
     }
@@ -133,7 +133,7 @@
     if(!ileri.length){ el.innerHTML='<div class="v1-bos">Takip ettiğiniz ihale yok. İhale detayında ⭐ ile takibe alın.</div>'; return; }
     el.innerHTML=ileri.map(o=>{
       const g=Math.max(0,Math.ceil((o.t-new Date())/86400000));
-      return `<a class="v1-satir" href="ihale-detay?id=${o.id}" style="display:flex;align-items:center;gap:12px;padding:11px 0;border-top:1px solid var(--v1-cizgi);text-decoration:none;color:inherit;">
+      return `<a class="v1-satir" href="v1-ihale-detay?id=${o.id}" style="display:flex;align-items:center;gap:12px;padding:11px 0;border-top:1px solid var(--v1-cizgi);text-decoration:none;color:inherit;">
         <div style="flex:1;min-width:0;">
           <div style="font-size:13.5px;font-weight:600;color:var(--v1-metin);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(o.baslik||'İhale')}</div>
           <div style="font-size:11.5px;color:var(--v1-muted);margin-top:2px;">${esc(o.il||'—')} · ${o.t.toLocaleDateString('tr-TR')} ${o.t.toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'})}</div>

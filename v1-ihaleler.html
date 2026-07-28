@@ -124,7 +124,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/kategoriler.js?v=1"></script>
-<script src="js/v1-kabuk.js?v=2"></script>
+<script src="js/v1-kabuk.js?v=3"></script>
 <script>
 (() => {
   const SB_URL="https://ihaleglobal.com", SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzg0MzA3MTU4LCJleHAiOjE5NDE5ODcxNTh9.CjNKulvirotDD_y2oO2QKgo0kbqYvL0jUSV1RiDMoso";
@@ -258,7 +258,7 @@
     const kalan=t?Math.ceil((t-new Date())/86400000):null;
     const tarih=t?t.toLocaleDateString('tr-TR',{day:'numeric',month:'long',year:'numeric'}):'—';
     const saat=t?t.toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'}):'';
-    const detayHref = dtMi ? `dogrudan-temin?id=${r.id}` : `ihale-detay?id=${r.id}`;
+    const detayHref = dtMi ? `dogrudan-temin?id=${r.id}` : `v1-ihale-detay?id=${r.id}`;
     return `<tr data-id="${r.id}">
       <td class="v1-t-tarih">${tarih}<br><span class="saat">${saat}</span>${kalan!=null&&kalan>=0?`<br><span class="kalan">Son ${kalan} gün</span>`:''}</td>
       <td><div class="v1-t-ikn">${esc((dtMi?r.dt_no:r.ekap_id)||'—')}</div><a class="v1-t-ad" href="${detayHref}">${esc(r.baslik||'—')}</a></td>
@@ -303,7 +303,7 @@
           alan('Sektör',esc(r.kategori))+
           alan('İlan Tarihi',r.ilan_tarihi?new Date(r.ilan_tarihi).toLocaleDateString('tr-TR'):'—')+
           alan('Yaklaşık Maliyet',uyeMi?(r.yaklasik_maliyet_min?tl(r.yaklasik_maliyet_min)+(r.yaklasik_maliyet_max?' – '+tl(r.yaklasik_maliyet_max):''):'İlan edilmemiş'):'<span class="v1-kilit">••••• 🔒</span>')+
-          `<div><b>İşlem</b><a href="ihale-detay?id=${id}">İhale detayına git →</a> · <a href="teklif-olustur?ihale_id=${id}">Teklif oluştur →</a></div>`;
+          `<div><b>İşlem</b><a href="v1-ihale-detay?id=${id}">İhale detayına git →</a> · <a href="teklif-olustur?ihale_id=${id}">Teklif oluştur →</a></div>`;
       }catch(_){ document.getElementById('d-'+id).textContent='Detay yüklenemedi.'; }
     })();
   }

@@ -44,6 +44,7 @@
     { id: 'kurumlar',   ad: 'Kurumlar',    ikon: I.kurum,  href: 'v1-kurumlar' },
     { id: 'sektorler',  ad: 'Sektörler',   ikon: I.sektor, href: 'v1-sektorler' },
     { id: 'global',     ad: 'Global',      ikon: I.global, href: 'v1-global' },
+    { id: 'bank',       ad: 'Bank',        ikon: I.para,   href: 'v1-bank' },
   ];
 
   const aktif = document.body.getAttribute('data-v1-aktif') || '';

@@ -214,7 +214,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/tr-harita.js?v=1"></script>
-<script src="js/v1-kabuk.js?v=2"></script>
+<script src="js/v1-kabuk.js?v=3"></script>
 <script>
 (() => {
   const SB_URL="https://ihaleglobal.com", SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzg0MzA3MTU4LCJleHAiOjE5NDE5ODcxNTh9.CjNKulvirotDD_y2oO2QKgo0kbqYvL0jUSV1RiDMoso";
@@ -298,7 +298,7 @@
       if(!data||!data.length){ el.innerHTML='<div class="v1-bos">Firmanızı seçin, geçmiş kazanımlarınıza benzeyen açık ihaleleri getirelim. <a href="v1-analiz">Benim Firmam →</a></div>'; return; }
       el.innerHTML=data.map(i=>{
         const g=i.son_teklif_tarihi?kalanGun(i.son_teklif_tarihi):null;
-        return `<a class="v1-satir" href="ihale-detay?id=${i.id}">
+        return `<a class="v1-satir" href="v1-ihale-detay?id=${i.id}">
           <div class="v1-satir-govde"><div class="v1-satir-ad">${esc(i.baslik||'İhale')}</div>
           <div class="v1-satir-alt">${esc(i.idare||'—')} · ${esc(i.il||'')}${i.son_teklif_tarihi?' · Son teklif: '+gunFmt(i.son_teklif_tarihi):''}</div></div>
           ${g!=null?`<span class="v1-rozet${g<=3?' acil':''}">Son ${g} gün</span>`:''}</a>`;
@@ -315,7 +315,7 @@
       if(error) throw error;
       if(!data||!data.length){ el.innerHTML='<div class="v1-bos">Yaklaşan aktif ihale bulunamadı.</div>'; return; }
       el.innerHTML=data.map(i=>{ const g=kalanGun(i.son_teklif_tarihi);
-        return `<a class="v1-satir" href="ihale-detay?id=${i.id}">
+        return `<a class="v1-satir" href="v1-ihale-detay?id=${i.id}">
           <div class="v1-satir-govde"><div class="v1-satir-ad">${esc(i.baslik||'İhale')}</div>
           <div class="v1-satir-alt">${esc(i.il||'—')}${i.tur?' · '+esc(i.tur):''} · Son teklif: ${gunFmt(i.son_teklif_tarihi)}</div></div>
           <span class="v1-rozet${g<=3?' acil':''}">Son ${g} gün</span></a>`; }).join('');
@@ -333,7 +333,7 @@
       const {data}=await sb.from('ilanlar').select('id,baslik,il,tur,durum,son_teklif_tarihi').in('id',ids.slice(0,50)).limit(12);
       const DUR={aktif:['Aktif','yesil'],kapali:['Kapalı','gri'],sonuclandi:['Sonuçlandı',''],iptal:['İptal','acil']};
       el.innerHTML=(data||[]).map(i=>{ const d=DUR[i.durum]||['—','gri'];
-        return `<a class="v1-satir" href="ihale-detay?id=${i.id}">
+        return `<a class="v1-satir" href="v1-ihale-detay?id=${i.id}">
           <div class="v1-satir-govde"><div class="v1-satir-ad">${esc(i.baslik||'İhale')}</div>
           <div class="v1-satir-alt">${esc(i.il||'—')}${i.tur?' · '+esc(i.tur):''} · ${gunFmt(i.son_teklif_tarihi)}</div></div>
           <span class="v1-rozet ${d[1]}">${d[0]}</span></a>`; }).join('');
@@ -347,7 +347,7 @@
         .eq('kullanici_id',uid).order('olusturulma',{ascending:false}).limit(6);
       if(error) throw error;
       if(!data||!data.length){ el.innerHTML='<div class="v1-bos">Firmaları takibe al, gelişmelerden haberdar ol! <a href="v1-firmalar">Yüklenici Firmaları Keşfet →</a></div>'; return; }
-      el.innerHTML=data.map(b=>{ const url=b.aksiyon_url||(b.ilan_id?('ihale-detay?id='+b.ilan_id):'bildirimler');
+      el.innerHTML=data.map(b=>{ const url=b.aksiyon_url||(b.ilan_id?('v1-ihale-detay?id='+b.ilan_id):'bildirimler');
         return `<a class="v1-satir" href="${esc(url)}">
           <div class="v1-satir-govde"><div class="v1-satir-ad">${b.okundu?'':'<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--v1-teal);margin-right:7px;vertical-align:middle;"></span>'}${esc(b.baslik||'Bildirim')}</div>
           ${b.icerik?`<div class="v1-satir-alt">${esc(b.icerik.slice(0,90))}</div>`:''}</div>
@@ -359,7 +359,7 @@
     let liste=[]; try{ liste=JSON.parse(localStorage.getItem('sonGoruntulenen')||'[]'); }catch(_){}
     const el=document.getElementById('v1-son');
     if(!liste.length){ el.innerHTML='<div class="v1-bos">Gösterilecek ihale henüz yok!</div>'; return; }
-    el.innerHTML=liste.slice(0,6).map(i=>`<a class="v1-satir" href="ihale-detay?id=${i.id}">
+    el.innerHTML=liste.slice(0,6).map(i=>`<a class="v1-satir" href="v1-ihale-detay?id=${i.id}">
       <div class="v1-satir-govde"><div class="v1-satir-ad">${esc(i.baslik||i.ad||'İhale')}</div>
       <div class="v1-satir-alt">${esc(i.il||'')}</div></div></a>`).join('');
   }

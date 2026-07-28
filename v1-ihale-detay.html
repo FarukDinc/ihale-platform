@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="author" content="Ömer Faruk Dinç">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>İhale Detayı — İhaleGlobal</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=4" />
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/v1.css?v=3" />
+  <style>
+    .v1-d-bant { background:var(--v1-lacivert); border-radius:var(--v1-radius-lg); padding:24px 26px; color:#fff; margin-bottom:18px; }
+    .v1-d-ikn { font-size:12.5px; color:rgba(255,255,255,.72); font-weight:600; letter-spacing:.04em; }
+    .v1-d-baslik { font-size:22px; font-weight:800; line-height:1.35; margin:6px 0 12px; }
+    .v1-d-rozetler { display:flex; gap:8px; flex-wrap:wrap; }
+    .v1-d-rozet { font-size:12px; font-weight:700; padding:5px 12px; border-radius:20px; background:rgba(255,255,255,.16); }
+    .v1-d-rozet.yesil { background:#1E9E57; }
+    .v1-d-rozet.kirmizi { background:#D64550; }
+    .v1-d-rozet.teal { background:var(--v1-teal); }
+    .v1-d-islem { display:flex; gap:10px; flex-wrap:wrap; margin-top:16px; }
+    .v1-d-btn { background:#fff; color:var(--v1-lacivert); border:none; border-radius:9px; padding:10px 18px;
+      font-family:var(--v1-font); font-size:13px; font-weight:700; cursor:pointer; text-decoration:none; display:inline-flex; align-items:center; gap:7px; }
+    .v1-d-btn:hover { background:#EAF1F9; text-decoration:none; }
+    .v1-d-btn.teal { background:var(--v1-teal); color:#fff; }
+    .v1-d-btn.hayalet { background:rgba(255,255,255,.12); color:#fff; border:1.5px solid rgba(255,255,255,.35); }
+    .v1-bilgi-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(210px,1fr)); gap:18px 26px; }
+    .v1-bilgi b { display:block; font-size:11.5px; text-transform:uppercase; letter-spacing:.05em; color:var(--v1-muted); margin-bottom:3px; }
+    .v1-bilgi span { font-size:14px; font-weight:600; color:var(--v1-metin); }
+    .v1-metin { font-size:13.5px; line-height:1.7; color:var(--v1-metin); white-space:pre-wrap;
+      max-height:340px; overflow-y:auto; background:var(--v1-zemin); border:1px solid var(--v1-cizgi);
+      border-radius:10px; padding:16px; }
+    .v1-sonuc-kart { background:#E6F6EC; border:1px solid #BFE6CE; border-radius:12px; padding:18px 20px; }
+    .v1-sonuc-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(170px,1fr)); gap:14px 24px; }
+    .v1-sonuc-grid b { display:block; font-size:11.5px; text-transform:uppercase; color:#1E7A46; margin-bottom:3px; }
+    .v1-sonuc-grid span { font-size:16px; font-weight:800; color:#146035; }
+  </style>
+</head>
+<body class="v1" data-v1-aktif="ihaleler" data-v1-kirinti="Kamu > İhaleler > Detay">
+<div class="v1-app">
+  <div class="v1-main">
+    <div class="v1-govde" id="v1-govde">
+      <div class="v1-bos">Yükleniyor…</div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="js/v1-kabuk.js?v=3"></script>
+<script>
+(() => {
+  const SB_URL="https://ihaleglobal.com", SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzg0MzA3MTU4LCJleHAiOjE5NDE5ODcxNTh9.CjNKulvirotDD_y2oO2QKgo0kbqYvL0jUSV1RiDMoso";
+  const sb=window.supabase.createClient(SB_URL,SB_KEY);
+  const esc=(s)=>(s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  const num=(n)=>(Number(n)||0).toLocaleString('tr-TR');
+  const tl=(v)=>v==null?null:'₺'+Number(v).toLocaleString('tr-TR',{maximumFractionDigits:0});
+  const gun=(t)=>t?new Date(t).toLocaleDateString('tr-TR',{day:'numeric',month:'long',year:'numeric'}):null;
+  const saat=(t)=>t?new Date(t).toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'}):'';
+  const id=new URLSearchParams(location.search).get('id');
+  const G=()=>document.getElementById('v1-govde');
+  let uyeMi=false;
+
+  const DURUM={aktif:['Aktif','yesil'],kapali:['Kapalı',''],sonuclandi:['Sonuçlandı','teal'],iptal:['İptal','kirmizi']};
+
+  async function yukle(){
+    if(!id){ G().innerHTML='<div class="v1-bos">İhale kimliği belirtilmedi.</div>'; return; }
+    try{
+      const kolon = uyeMi
+        ? 'id,ekap_id,ikn,baslik,aciklama,idare,il,tur,usul,durum,kategori,ilan_tarihi,son_teklif_tarihi,ihale_tarihi,yaklasik_maliyet_min,yaklasik_maliyet_max,tahmini_bedel,itiraz_bedeli,isin_yapilacagi_yer,ihale_yeri,yapay_zeka_ozeti,pdf_url,kaynak'
+        : 'id,baslik,il,tur,usul,durum,kategori,ilan_tarihi,son_teklif_tarihi,kaynak';
+      const {data,error}=await sb.from('ilanlar').select(kolon).eq('id',id).limit(1);
+      if(error) throw error;
+      const r=(data||[])[0];
+      if(!r){ G().innerHTML='<div class="v1-bos">İhale bulunamadı.</div>'; return; }
+      ciz(r);
+      sonucYukle(r);
+      benzerYukle(r);
+      sonGoruntulenenKaydet(r);
+    }catch(e){ G().innerHTML=`<div class="v1-bos">Yüklenemedi. ${esc(e.message||'')}</div>`; }
+  }
+
+  function ciz(r){
+    const d=DURUM[r.durum]||[r.durum||'—',''];
+    const t=r.son_teklif_tarihi?new Date(r.son_teklif_tarihi):null;
+    const kalan=t?Math.ceil((t-new Date())/86400000):null;
+    const kilit='<span class="v1-kilit">••••• 🔒</span>';
+    const alan=(b,v)=>`<div class="v1-bilgi"><b>${b}</b><span>${v||'—'}</span></div>`;
+    const maliyet = uyeMi
+      ? (r.yaklasik_maliyet_min ? tl(r.yaklasik_maliyet_min)+(r.yaklasik_maliyet_max&&r.yaklasik_maliyet_max!==r.yaklasik_maliyet_min?' – '+tl(r.yaklasik_maliyet_max):'') : 'İlan edilmemiş')
+      : kilit;
+
+    G().innerHTML=`
+      <div class="v1-d-bant">
+        <div class="v1-d-ikn">${esc(r.ikn||r.ekap_id||'')} ${r.kaynak?'· '+esc(String(r.kaynak).toUpperCase()):''}</div>
+        <div class="v1-d-baslik">${esc(r.baslik||'—')}</div>
+        <div class="v1-d-rozetler">
+          <span class="v1-d-rozet ${d[1]}">${esc(d[0])}</span>
+          ${r.tur?`<span class="v1-d-rozet">${esc(r.tur)}</span>`:''}
+          ${r.il?`<span class="v1-d-rozet">${esc(r.il)}</span>`:''}
+          ${kalan!=null&&kalan>=0?`<span class="v1-d-rozet ${kalan<=3?'kirmizi':'teal'}">Son ${kalan} gün</span>`:''}
+        </div>
+        <div class="v1-d-islem">
+          <button class="v1-d-btn" id="d-takip">⭐ Takibe Al</button>
+          <button class="v1-d-btn hayalet" id="d-takvim">📅 Takvime Ekle</button>
+          <a class="v1-d-btn teal" href="teklif-olustur?ihale_id=${r.id}">📝 Teklif Oluştur</a>
+          <a class="v1-d-btn hayalet" href="teklif-olustur?ihale_id=${r.id}#fiyat">💡 AI Fiyat Stratejisi</a>
+        </div>
+      </div>
+
+      <div class="v1-kart">
+        <div class="v1-kart-baslik">İhale Bilgileri</div>
+        <div class="v1-bilgi-grid">
+          ${alan('İhaleyi Yapan İdare', uyeMi?esc(r.idare):kilit)}
+          ${alan('Sektör', esc(r.kategori))}
+          ${alan('İhale Usulü', esc(r.usul))}
+          ${alan('İlan Tarihi', gun(r.ilan_tarihi))}
+          ${alan('Son Teklif Tarihi', t?`${gun(r.son_teklif_tarihi)} ${saat(r.son_teklif_tarihi)}`:'—')}
+          ${alan('İhale Tarihi', gun(r.ihale_tarihi))}
+          ${alan('Yaklaşık Maliyet', maliyet)}
+          ${uyeMi?alan('İtiraz Bedeli', tl(r.itiraz_bedeli)):''}
+          ${uyeMi?alan('İşin Yapılacağı Yer', esc(r.isin_yapilacagi_yer)):''}
+          ${uyeMi?alan('İhale Yeri', esc(r.ihale_yeri)):''}
+        </div>
+        ${!uyeMi?`<div style="margin-top:16px;background:var(--v1-mavi-acik);border:1px solid #CFE2F5;border-radius:10px;padding:13px 15px;font-size:13px;">
+          🔒 İdare, yaklaşık maliyet ve iş yeri bilgileri <strong>üyelere açıktır</strong>. <a href="login">Giriş yapın →</a></div>`:''}
+      </div>
+
+      ${r.yapay_zeka_ozeti?`<div class="v1-kart">
+        <div class="v1-kart-baslik">
+          <svg viewBox="0 0 24 24" width="19" height="19" fill="var(--v1-teal)"><path d="M12 1.6l1.9 4.7 4.7 1.9-4.7 1.9L12 14.8l-1.9-4.7L5.4 8.2l4.7-1.9L12 1.6Z"/></svg>
+          Yapay Zekâ Özeti</div>
+        <div class="v1-metin">${esc(r.yapay_zeka_ozeti)}</div></div>`:''}
+
+      ${(uyeMi&&r.aciklama)?`<div class="v1-kart">
+        <div class="v1-kart-baslik">İlan Metni</div>
+        <div class="v1-metin">${esc(r.aciklama)}</div></div>`:''}
+
+      <div id="d-sonuc"></div>
+      <div class="v1-kart">
+        <div class="v1-kart-baslik">Benzer İhaleler</div>
+        <div id="d-benzer"><div class="v1-bos">Yükleniyor…</div></div>
+      </div>`;
+
+    document.getElementById('d-takip').addEventListener('click',takipToggle);
+    document.getElementById('d-takvim').addEventListener('click',()=>takvim(r));
+    takipDurumGuncelle();
+  }
+
+  // ── Sonuç (sonuçlanmışsa) ──
+  async function sonucYukle(r){
+    if(!uyeMi) return;
+    try{
+      const {data}=await sb.from('ihale_sonuclari')
+        .select('kazanan_firma,kazanan_teklif,sozlesme_bedeli,tenzilat_yuzde,sonuc_tarihi,katilimci_sayisi,is_bitis_tarihi')
+        .eq('ilan_id',r.id).limit(1);
+      const s=(data||[])[0]; if(!s) return;
+      const tz=(s.tenzilat_yuzde!=null&&Math.abs(s.tenzilat_yuzde)<100)
+        ? '%'+Number(s.tenzilat_yuzde).toLocaleString('tr-TR',{maximumFractionDigits:1}) : '—';
+      document.getElementById('d-sonuc').innerHTML=`
+        <div class="v1-kart"><div class="v1-kart-baslik">İhale Sonucu</div>
+          <div class="v1-sonuc-kart"><div class="v1-sonuc-grid">
+            <div><b>Kazanan Firma</b><span>${esc(s.kazanan_firma||'—')}</span></div>
+            <div><b>Sözleşme Bedeli</b><span>${tl(s.sozlesme_bedeli??s.kazanan_teklif)||'—'}</span></div>
+            <div><b>Tenzilat</b><span>${tz}</span></div>
+            <div><b>Katılımcı</b><span>${s.katilimci_sayisi!=null?num(s.katilimci_sayisi):'—'}</span></div>
+            <div><b>Sonuç Tarihi</b><span>${gun(s.sonuc_tarihi)||'—'}</span></div>
+            ${s.is_bitis_tarihi?`<div><b>İş Bitiş</b><span>${gun(s.is_bitis_tarihi)}</span></div>`:''}
+          </div></div></div>`;
+    }catch(_){}
+  }
+
+  // ── Benzer ihaleler (aynı kategori + il) ──
+  async function benzerYukle(r){
+    const el=document.getElementById('d-benzer');
+    try{
+      let q=sb.from('ilanlar').select('id,baslik,il,tur,son_teklif_tarihi')
+        .eq('durum','aktif').gte('son_teklif_tarihi',new Date().toISOString()).neq('id',r.id);
+      if(r.kategori) q=q.eq('kategori',r.kategori);
+      const {data}=await q.order('son_teklif_tarihi',{ascending:true,nullsFirst:true}).limit(6);
+      if(!data||!data.length){ el.innerHTML='<div class="v1-bos">Benzer açık ihale bulunamadı.</div>'; return; }
+      el.innerHTML=data.map(i=>{
+        const g=Math.max(0,Math.ceil((new Date(i.son_teklif_tarihi)-new Date())/86400000));
+        return `<a class="v1-satir" href="v1-ihale-detay?id=${i.id}" style="display:flex;align-items:center;gap:12px;padding:11px 0;border-top:1px solid var(--v1-cizgi);text-decoration:none;color:inherit;">
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:13.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(i.baslik||'İhale')}</div>
+            <div style="font-size:11.5px;color:var(--v1-muted);margin-top:2px;">${esc(i.il||'—')}${i.tur?' · '+esc(i.tur):''}</div>
+          </div>
+          <span style="flex-shrink:0;font-size:12px;font-weight:700;padding:4px 11px;border-radius:20px;
+            background:${g<=3?'#FDECEE':'var(--v1-mavi-acik)'};color:${g<=3?'var(--v1-kirmizi)':'var(--v1-mavi)'};">Son ${g} gün</span></a>`;
+      }).join('');
+    }catch(_){ el.innerHTML='<div class="v1-bos">Yüklenemedi.</div>'; }
+  }
+
+  // ── Takip ──
+  function yerelTakip(){ try{ return JSON.parse(localStorage.getItem('takipEdilen')||'[]'); }catch(_){ return []; } }
+  async function takipDurumGuncelle(){
+    const b=document.getElementById('d-takip'); if(!b) return;
+    let takipte=yerelTakip().includes(id);
+    if(uyeMi){ try{ const {data}=await sb.from('takipler').select('ilan_id').eq('ilan_id',id).limit(1);
+      takipte=!!(data&&data.length); }catch(_){} }
+    b.textContent = takipte ? '✓ Takipte' : '⭐ Takibe Al';
+    b.dataset.takipte = takipte ? '1' : '';
+  }
+  async function takipToggle(){
+    if(!uyeMi){ alert('Takip için giriş yapmalısınız.'); return; }
+    const b=document.getElementById('d-takip');
+    try{
+      if(b.dataset.takipte){ await sb.from('takipler').delete().eq('ilan_id',id); }
+      else { const {data:{session}}=await sb.auth.getSession();
+        await sb.from('takipler').upsert({kullanici_id:session.user.id,ilan_id:id},{onConflict:'kullanici_id,ilan_id',ignoreDuplicates:true}); }
+      takipDurumGuncelle();
+    }catch(e){ alert('İşlem başarısız: '+(e.message||'')); }
+  }
+
+  function takvim(r){
+    if(!r.son_teklif_tarihi){ alert('Bu ihalede son teklif tarihi yok.'); return; }
+    const d=new Date(r.son_teklif_tarihi); const f=(x)=>x.toISOString().replace(/[-:]/g,'').split('.')[0]+'Z';
+    const ics=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//ihaleglobal//TR','BEGIN:VEVENT',
+      'UID:'+r.id+'@ihaleglobal.com','DTSTAMP:'+f(new Date()),'DTSTART:'+f(d),'DTEND:'+f(new Date(d.getTime()+36e5)),
+      'SUMMARY:'+String(r.baslik||'İhale').replace(/[,;]/g,' '),'DESCRIPTION:İhaleGlobal — son teklif tarihi',
+      'URL:https://ihaleglobal.com/v1-ihale-detay?id='+r.id,'END:VEVENT','END:VCALENDAR'].join('\r\n');
+    const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([ics],{type:'text/calendar'}));
+    a.download='ihale.ics'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(a.href);
+  }
+
+  function sonGoruntulenenKaydet(r){
+    try{
+      let l=JSON.parse(localStorage.getItem('sonGoruntulenen')||'[]');
+      l=l.filter(x=>x.id!==r.id); l.unshift({id:r.id,baslik:r.baslik,il:r.il});
+      localStorage.setItem('sonGoruntulenen',JSON.stringify(l.slice(0,12)));
+    }catch(_){}
+  }
+
+  (async()=>{
+    try{ const {data}=await sb.auth.getSession(); uyeMi=!!(data&&data.session);
+      if(window.v1PaketYaz){ if(uyeMi){ const {data:k}=await sb.from('kullanici_krediler').select('plan').eq('kullanici_id',data.session.user.id).maybeSingle();
+        v1PaketYaz(['standart','kurumsal'].includes(k?.plan)?'Pro':'Temel'); } else v1PaketYaz('Misafir'); }
+    }catch(_){}
+    yukle();
+  })();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="author" content="Ömer Faruk Dinç">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Bank Modülü — İhaleGlobal</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=4" />
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/v1.css?v=3" />
+  <style>
+    .v1-sayfa-baslik { font-size:22px; font-weight:800; color:var(--v1-lacivert); margin-bottom:4px; }
+    .v1-sayfa-alt { font-size:13.5px; color:var(--v1-muted); margin-bottom:16px; }
+    .v1-sekmeler { display:flex; gap:24px; border-bottom:2px solid var(--v1-cizgi); margin-bottom:18px; flex-wrap:wrap; }
+    .v1-sekme { background:none; border:none; padding:10px 2px 12px; font-family:var(--v1-font); font-size:14.5px;
+      font-weight:700; color:var(--v1-muted); cursor:pointer; position:relative; }
+    .v1-sekme.aktif { color:var(--v1-lacivert); }
+    .v1-sekme.aktif::after { content:''; position:absolute; left:0; right:0; bottom:-2px; height:3px; background:var(--v1-mavi); border-radius:2px; }
+    .v1-bank-bant { background:var(--v1-lacivert); border-radius:var(--v1-radius-lg); padding:20px 24px; color:#fff;
+      display:flex; align-items:center; gap:16px; flex-wrap:wrap; margin-bottom:18px; }
+    .v1-bank-ikon { width:52px; height:52px; border-radius:12px; background:rgba(255,255,255,.14);
+      display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+    .v1-bank-ikon svg { width:26px; height:26px; fill:#fff; }
+    .v1-bank-t { font-size:17px; font-weight:800; }
+    .v1-bank-a { font-size:13px; color:rgba(255,255,255,.8); margin-top:3px; line-height:1.5; }
+    .v1-bar-wrap { width:100%; height:8px; background:#EDF1F6; border-radius:5px; overflow:hidden; }
+    .v1-bar { display:block; height:100%; background:var(--v1-mavi); border-radius:5px; }
+    .v1-uyari { background:var(--v1-mavi-acik); border:1px solid #CFE2F5; border-radius:12px; padding:16px 18px;
+      font-size:13.5px; margin-bottom:16px; }
+  </style>
+</head>
+<body class="v1" data-v1-aktif="bank" data-v1-kirinti="Bank > Genel Bakış">
+<div class="v1-app">
+  <div class="v1-main">
+    <div class="v1-govde">
+      <div class="v1-bank-bant">
+        <div class="v1-bank-ikon"><svg viewBox="0 0 24 24"><path d="M12 2.15a1.1 1.1 0 0 0-.49.11L2.28 6.9A1.4 1.4 0 0 0 1.5 8.16V9.3a.7.7 0 0 0 .7.7h19.6a.7.7 0 0 0 .7-.7V8.16a1.4 1.4 0 0 0-.78-1.26l-9.23-4.64a1.1 1.1 0 0 0-.49-.11Z"/><path d="M4.3 11.6h3v6.6h-3zM10.5 11.6h3v6.6h-3zM16.7 11.6h3v6.6h-3z"/><path d="M2.6 19.8h18.8a1.1 1.1 0 0 1 0 2.2H2.6a1.1 1.1 0 0 1 0-2.2Z"/></svg></div>
+        <div style="flex:1;min-width:240px;">
+          <div class="v1-bank-t">Bank Modülü — Kamu İhale İstihbaratı</div>
+          <div class="v1-bank-a">Kredi/risk değerlendirmesi için firma kamu performansı, sektör hacimleri ve idare bütçeleri.</div>
+        </div>
+      </div>
+
+      <div class="v1-sekmeler">
+        <button class="v1-sekme aktif" data-t="dashboard">Genel Bakış</button>
+        <button class="v1-sekme" data-t="firmalar">Firmalar</button>
+        <button class="v1-sekme" data-t="ihaleler">İhaleler</button>
+        <button class="v1-sekme" data-t="sektorler">Sektörler</button>
+        <button class="v1-sekme" data-t="kurumlar">Kurumlar</button>
+      </div>
+
+      <div id="v1-misafir" class="v1-uyari" style="display:none;">
+        🔒 Bank modülü <strong>üyelere özeldir</strong>. <a href="login">Giriş yapın</a> →
+      </div>
+
+      <div id="v1-icerik"><div class="v1-bos">Yükleniyor…</div></div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="js/v1-kabuk.js?v=3"></script>
+<script>
+(() => {
+  const SB_URL="https://ihaleglobal.com", SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzg0MzA3MTU4LCJleHAiOjE5NDE5ODcxNTh9.CjNKulvirotDD_y2oO2QKgo0kbqYvL0jUSV1RiDMoso";
+  const sb=window.supabase.createClient(SB_URL,SB_KEY);
+  const num=(n)=>(Number(n)||0).toLocaleString('tr-TR');
+  const esc=(s)=>(s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  const tl=(v)=>v==null?'—':'₺'+Number(v).toLocaleString('tr-TR',{maximumFractionDigits:0});
+  const kisalt=(n)=>{n=Number(n)||0;
+    if(n>=1e12) return (n/1e12).toLocaleString('tr-TR',{maximumFractionDigits:1})+' Tn';
+    if(n>=1e9)  return (n/1e9).toLocaleString('tr-TR',{maximumFractionDigits:1})+' Mr';
+    if(n>=1e6)  return (n/1e6).toLocaleString('tr-TR',{maximumFractionDigits:1})+' Mn';
+    if(n>=1e3)  return (n/1e3).toLocaleString('tr-TR',{maximumFractionDigits:0})+' Bin';
+    return String(n);};
+  const G=()=>document.getElementById('v1-icerik');
+  let uyeMi=false, sekme='dashboard';
+
+  const kpi=(ikon,sayi,etiket)=>`<div class="v1-kpi-kart" style="cursor:default;">
+    <span class="v1-kpi-ikon">${ikon}</span>
+    <span class="v1-kpi-govde"><span class="v1-kpi-sayi">${sayi}</span><span class="v1-kpi-etiket">${etiket}</span></span></div>`;
+  const IK={
+    firma:'<svg viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" d="M4.8 2h6.8a1.4 1.4 0 0 1 1.4 1.4v6.2h6.2a1.4 1.4 0 0 1 1.4 1.4V22H3.4V3.4A1.4 1.4 0 0 1 4.8 2Zm.6 3.1v2h2v-2h-2Zm3.6 0v2h2v-2h-2Zm-3.6 3.6v2h2v-2h-2Zm3.6 0v2h2v-2h-2Zm-3.6 3.6v2h2v-2h-2Zm3.6 0v2h2v-2h-2Zm6.8 0v2h2v-2h-2Zm0 3.6v2h2v-2h-2Z"/></svg>',
+    para:'<svg viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm.9 4.3v1.3c1.5.2 2.6 1 2.9 2.4h-1.9c-.2-.6-.8-1-1.7-1-1 0-1.6.4-1.6 1.1 0 .6.4.9 1.7 1.2l1 .2c2 .5 2.9 1.3 2.9 2.9 0 1.6-1.2 2.7-3.2 2.9v1.4h-1.7v-1.4c-1.7-.2-2.9-1.1-3.1-2.6h1.9c.2.7.9 1.1 1.9 1.1s1.7-.4 1.7-1.1c0-.6-.4-.9-1.6-1.2l-1.1-.3c-1.9-.4-2.8-1.3-2.8-2.8 0-1.6 1.2-2.6 3-2.9V6.3h1.7Z"/></svg>',
+    dosya:'<svg viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" d="M8 2h6.2L21 8.8V20a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2Zm5.6 8.4V3.9L20.1 10.4h-6.5Z"/></svg>',
+    sektor:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 20.5V9.8l5.5-3.2v2.5l5.5-3.2v3.2L21 5.8v14.7H3Zm3-2.2h2.6v-3H6v3Zm5.5 0h2.6v-3h-2.6v3Zm5.5 0h2.6v-3H17v3Z"/></svg>',
+    kurum:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.15a1.1 1.1 0 0 0-.49.11L2.28 6.9A1.4 1.4 0 0 0 1.5 8.16V9.3a.7.7 0 0 0 .7.7h19.6a.7.7 0 0 0 .7-.7V8.16a1.4 1.4 0 0 0-.78-1.26l-9.23-4.64a1.1 1.1 0 0 0-.49-.11Z"/><path d="M4.3 11.6h3v6.6h-3zM10.5 11.6h3v6.6h-3zM16.7 11.6h3v6.6h-3z"/><path d="M2.6 19.8h18.8a1.1 1.1 0 0 1 0 2.2H2.6a1.1 1.1 0 0 1 0-2.2Z"/></svg>',
+  };
+
+  async function dashboard(){
+    G().innerHTML='<div class="v1-bos">Özet hazırlanıyor…</div>';
+    let y={},s={};
+    try{ const {data}=await sb.rpc('yuklenici_ozet'); y=(data||[])[0]||{}; }catch(_){}
+    try{ const {data}=await sb.rpc('sonuc_ozet'); s=(data||[])[0]||{}; }catch(_){}
+    G().innerHTML=`
+      <div class="v1-kpi" style="margin-bottom:18px;">
+        ${kpi(IK.firma,num(y.toplam),'Yüklenici Firma')}
+        ${kpi(IK.dosya,kisalt(s.toplam),'Sözleşme Kaydı')}
+        ${kpi(IK.para,kisalt(s.toplam_bedel),'Toplam Sözleşme Hacmi ₺')}
+        ${kpi(IK.firma,num(s.farkli_firma),'Kazanan Farklı Firma')}
+      </div>
+      <div class="v1-kart">
+        <div class="v1-kart-baslik">Piyasa Göstergeleri</div>
+        <div class="v1-bilgi-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:18px;">
+          <div><div style="font-size:12px;color:var(--v1-muted);font-weight:700;text-transform:uppercase;">Ortalama Tenzilat</div>
+            <div style="font-size:24px;font-weight:800;color:var(--v1-mavi);margin-top:4px;">${s.ort_tenzilat!=null?'%'+Number(s.ort_tenzilat).toLocaleString('tr-TR',{maximumFractionDigits:1}):'—'}</div>
+            <div style="font-size:11.5px;color:var(--v1-muted);margin-top:3px;">Tek kısımlı ihalelerden hesaplanır</div></div>
+          <div><div style="font-size:12px;color:var(--v1-muted);font-weight:700;text-transform:uppercase;">Ortalama Sözleşme Bedeli</div>
+            <div style="font-size:24px;font-weight:800;color:var(--v1-mavi);margin-top:4px;">${(s.toplam&&s.toplam_bedel)?tl(s.toplam_bedel/s.toplam):'—'}</div></div>
+          <div><div style="font-size:12px;color:var(--v1-muted);font-weight:700;text-transform:uppercase;">Toplam Firma Cirosu</div>
+            <div style="font-size:24px;font-weight:800;color:var(--v1-mavi);margin-top:4px;">${kisalt(y.toplam_ciro)} ₺</div></div>
+          <div><div style="font-size:12px;color:var(--v1-muted);font-weight:700;text-transform:uppercase;">İş Ortaklığı (JV)</div>
+            <div style="font-size:24px;font-weight:800;color:var(--v1-mavi);margin-top:4px;">${num(y.ortak_sayisi)}</div></div>
+        </div>
+      </div>
+      <div class="v1-kart">
+        <div class="v1-kart-baslik">Bank Modülü Ne İşe Yarar?</div>
+        <div style="font-size:13.5px;line-height:1.75;color:var(--v1-metin-2);">
+          Bir firmanın <strong>kamu ihale karnesi</strong> kredi değerlendirmesinde güçlü bir sinyaldir:
+          kaç sözleşme kazanmış, toplam cirosu ne, hangi idarelerle çalışmış, tenzilat davranışı agresif mi
+          ihtiyatlı mı, işleri devam ediyor mu bitmiş mi. Sekmelerden firma/sektör/idare kırılımlarına inin.
+        </div>
+      </div>`;
+  }
+
+  async function firmalar(){
+    G().innerHTML='<div class="v1-bos">Yükleniyor…</div>';
+    try{
+      const {data,error}=await sb.from('yukleniciler').select('id,ad,il,toplam_sozlesme_sayisi,toplam_ciro')
+        .order('toplam_ciro',{ascending:false,nullsFirst:false}).limit(30);
+      if(error) throw error;
+      const max=Math.max(1,...(data||[]).map(r=>Number(r.toplam_ciro)||0));
+      G().innerHTML=`<div class="v1-kart"><div class="v1-kart-baslik">Ciroya Göre En Büyük 30 Yüklenici</div>
+        <div style="overflow-x:auto;"><table class="v1-tablo"><thead><tr>
+          <th style="width:44px;">#</th><th>Firma</th><th style="width:95px;">İl</th>
+          <th style="width:100px;">Sözleşme</th><th style="width:230px;">Toplam Ciro</th></tr></thead><tbody>
+        ${(data||[]).map((r,i)=>{const w=Math.max(3,Math.round((Number(r.toplam_ciro)||0)/max*100));
+          return `<tr><td style="color:var(--v1-muted);font-weight:700;">${i+1}</td>
+          <td><a class="v1-t-ad" href="firma-analiz?ara=${encodeURIComponent(r.ad)}">${esc(r.ad)}</a></td>
+          <td style="font-size:13px;">${esc(r.il||'—')}</td>
+          <td style="font-weight:700;color:var(--v1-lacivert);">${num(r.toplam_sozlesme_sayisi)}</td>
+          <td><div style="display:flex;align-items:center;gap:10px;"><span class="v1-bar-wrap"><span class="v1-bar" style="width:${w}%"></span></span>
+            <span style="font-weight:700;color:var(--v1-mavi);white-space:nowrap;">${tl(r.toplam_ciro)}</span></div></td></tr>`;}).join('')}
+        </tbody></table></div></div>`;
+    }catch(e){ G().innerHTML=`<div class="v1-bos">Yüklenemedi. ${esc(e.message||'')}</div>`; }
+  }
+
+  async function ihaleler(){
+    G().innerHTML='<div class="v1-bos">Yükleniyor…</div>';
+    try{
+      const {data,error}=await sb.rpc('il_sayim_aktif');
+      if(error) throw error;
+      const top=(data||[]).slice().sort((a,b)=>(b.adet||0)-(a.adet||0)).slice(0,20);
+      const max=Math.max(1,...top.map(r=>r.adet||0));
+      const cap=(s)=>(s||'').toLocaleLowerCase('tr').replace(/(^|\s)\S/g,c=>c.toLocaleUpperCase('tr'));
+      G().innerHTML=`<div class="v1-kart"><div class="v1-kart-baslik">Açık İhale Yoğunluğu — İl Bazlı (İlk 20)</div>
+        <div style="overflow-x:auto;"><table class="v1-tablo"><thead><tr>
+          <th style="width:44px;">#</th><th style="width:160px;">İl</th><th>Açık İhale</th></tr></thead><tbody>
+        ${top.map((r,i)=>{const w=Math.max(3,Math.round((r.adet||0)/max*100));
+          return `<tr><td style="color:var(--v1-muted);font-weight:700;">${i+1}</td>
+          <td><a class="v1-t-ad" href="v1-ihaleler?il=${encodeURIComponent(r.il)}">${esc(cap(r.il))}</a></td>
+          <td><div style="display:flex;align-items:center;gap:10px;"><span class="v1-bar-wrap"><span class="v1-bar" style="width:${w}%"></span></span>
+            <span style="font-weight:700;color:var(--v1-mavi);white-space:nowrap;">${num(r.adet)}</span></div></td></tr>`;}).join('')}
+        </tbody></table></div></div>`;
+    }catch(e){ G().innerHTML=`<div class="v1-bos">Yüklenemedi. ${esc(e.message||'')}</div>`; }
+  }
+
+  async function sektorler(){
+    G().innerHTML='<div class="v1-bos">Yükleniyor…</div>';
+    try{
+      const {data,error}=await sb.rpc('kategori_sayim');
+      if(error) throw error;
+      const top=(data||[]).slice().sort((a,b)=>(b.toplam||0)-(a.toplam||0));
+      const max=Math.max(1,...top.map(r=>r.toplam||0));
+      G().innerHTML=`<div class="v1-kart"><div class="v1-kart-baslik">Sektör Hacimleri</div>
+        <div style="overflow-x:auto;"><table class="v1-tablo"><thead><tr>
+          <th style="width:44px;">#</th><th>Sektör</th><th style="width:230px;">Toplam İhale</th><th style="width:100px;">Açık</th></tr></thead><tbody>
+        ${top.map((r,i)=>{const w=Math.max(3,Math.round((r.toplam||0)/max*100));
+          return `<tr><td style="color:var(--v1-muted);font-weight:700;">${i+1}</td>
+          <td><a class="v1-t-ad" href="v1-ihaleler?kategori=${encodeURIComponent(r.kategori)}">${esc(r.kategori)}</a></td>
+          <td><div style="display:flex;align-items:center;gap:10px;"><span class="v1-bar-wrap"><span class="v1-bar" style="width:${w}%"></span></span>
+            <span style="font-weight:700;color:var(--v1-lacivert);white-space:nowrap;">${num(r.toplam)}</span></div></td>
+          <td style="font-weight:700;color:var(--v1-teal);">${num(r.aktif)}</td></tr>`;}).join('')}
+        </tbody></table></div></div>`;
+    }catch(e){ G().innerHTML=`<div class="v1-bos">Yüklenemedi. ${esc(e.message||'')}</div>`; }
+  }
+
+  async function kurumlar(){
+    G().innerHTML='<div class="v1-bos">Yükleniyor…</div>';
+    try{
+      const {data,error}=await sb.rpc('idare_sayim');
+      if(error) throw error;
+      const top=(data||[]).slice().sort((a,b)=>(b.toplam||0)-(a.toplam||0)).slice(0,30);
+      const max=Math.max(1,...top.map(r=>r.toplam||0));
+      G().innerHTML=`<div class="v1-kart"><div class="v1-kart-baslik">En Çok İhale Açan 30 İdare</div>
+        <div style="overflow-x:auto;"><table class="v1-tablo"><thead><tr>
+          <th style="width:44px;">#</th><th>İdare</th><th style="width:95px;">İl</th>
+          <th style="width:230px;">Toplam İhale</th><th style="width:90px;">Aktif</th></tr></thead><tbody>
+        ${top.map((r,i)=>{const w=Math.max(3,Math.round((r.toplam||0)/max*100));
+          return `<tr><td style="color:var(--v1-muted);font-weight:700;">${i+1}</td>
+          <td><a class="v1-t-ad" href="v1-ihaleler?ara=${encodeURIComponent(r.idare)}">${esc(r.idare)}</a></td>
+          <td style="font-size:13px;">${esc(r.en_yakin_il||'—')}</td>
+          <td><div style="display:flex;align-items:center;gap:10px;"><span class="v1-bar-wrap"><span class="v1-bar" style="width:${w}%"></span></span>
+            <span style="font-weight:700;color:var(--v1-lacivert);white-space:nowrap;">${num(r.toplam)}</span></div></td>
+          <td style="font-weight:700;color:var(--v1-teal);">${num(r.aktif)}</td></tr>`;}).join('')}
+        </tbody></table></div></div>`;
+    }catch(e){ G().innerHTML=`<div class="v1-bos">Yüklenemedi. ${esc(e.message||'')}</div>`; }
+  }
+
+  const CIZ={dashboard,firmalar,ihaleler,sektorler,kurumlar};
+
+  (async()=>{
+    try{ const {data}=await sb.auth.getSession(); uyeMi=!!(data&&data.session);
+      if(window.v1PaketYaz){ if(uyeMi){ const {data:k}=await sb.from('kullanici_krediler').select('plan').eq('kullanici_id',data.session.user.id).maybeSingle();
+        v1PaketYaz(['standart','kurumsal'].includes(k?.plan)?'Pro':'Temel'); } else v1PaketYaz('Misafir'); }
+    }catch(_){}
+    if(!uyeMi){
+      document.getElementById('v1-misafir').style.display='block';
+      G().innerHTML='<div class="v1-bos">🔒 Bank modülü üyelere özeldir. <a href="login">Giriş yapın →</a></div>';
+      return;
+    }
+    document.querySelectorAll('.v1-sekme').forEach(b=>b.addEventListener('click',()=>{
+      document.querySelectorAll('.v1-sekme').forEach(x=>x.classList.remove('aktif')); b.classList.add('aktif');
+      sekme=b.dataset.t; (CIZ[sekme]||dashboard)();
+    }));
+    dashboard();
+  })();
+})();
+</script>
+</body>
+</html>
