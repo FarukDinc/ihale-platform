@@ -174,11 +174,13 @@
   }
 
   // ── Sorgu ──
+  // ⚠️ 1,96M satırda select+count:'exact'+order+range BİRLİKTE statement_timeout'a takılıyor.
+  //    Sayımı AYRI hafif sorguya böldük (head:true — KPI'da çalışan desen), veri sorgusu count'suz.
   function sorguKur(sayimIcin){
-    const kolon = uyeMi
+    const kolon = sayimIcin ? 'id' : (uyeMi
       ? 'id,ekap_id,baslik,il,tur,usul,kategori,idare,durum,ilan_tarihi,son_teklif_tarihi,yaklasik_maliyet_min,yaklasik_maliyet_max'
-      : 'id,baslik,il,tur,usul,kategori,durum,ilan_tarihi,son_teklif_tarihi';
-    let q = sb.from('ilanlar').select(kolon, sayimIcin?{count:'exact'}:undefined);
+      : 'id,baslik,il,tur,usul,kategori,durum,ilan_tarihi,son_teklif_tarihi');
+    let q = sb.from('ilanlar').select(kolon, sayimIcin?{count:'exact',head:true}:undefined);
     if (sekme==='aktif') q=q.eq('durum','aktif'); else q=q.eq('durum','sonuclandi');
     const v=(id)=>{const e=document.getElementById(id); return e&&e.value?e.value.trim():'';};
     if(v('f-kelime')) q=q.ilike('baslik','%'+v('f-kelime')+'%');
@@ -205,13 +207,17 @@
     tb.innerHTML='<tr><td colspan="5" class="v1-bos">Yükleniyor…</td></tr>';
     try{
       const bas=(sayfa-1)*SAYFA_BOY;
-      const {data,count,error}=await sorguKur(true)
-        .order(sirala,{ascending:yon,nullsFirst:false})
-        .range(bas,bas+SAYFA_BOY-1);
+      // Veri + sayım PARALEL, ayrı sorgular (sayım head:true → satır indirmez)
+      const [veriRes, sayimRes] = await Promise.all([
+        sorguKur(false).order(sirala,{ascending:yon,nullsFirst:false}).range(bas,bas+SAYFA_BOY-1),
+        sorguKur(true).then(r=>r).catch(()=>({count:null})),
+      ]);
+      const {data,error}=veriRes;
       if(error) throw error;
-      toplam=count||0;
-      document.getElementById('v1-sayi').innerHTML=
-        `Arama kriterinize uygun <strong>${num(toplam)}</strong> ${sekme==='aktif'?'ihale ilanı':'sonuçlanan ihale'} listeleniyor`;
+      toplam = (sayimRes && sayimRes.count!=null) ? sayimRes.count : null;
+      document.getElementById('v1-sayi').innerHTML = toplam!=null
+        ? `Arama kriterinize uygun <strong>${num(toplam)}</strong> ${sekme==='aktif'?'ihale ilanı':'sonuçlanan ihale'} listeleniyor`
+        : `<strong>${(data||[]).length}</strong> kayıt gösteriliyor`;
       if(!data||!data.length){ tb.innerHTML='<tr><td colspan="5" class="v1-bos">Kayıt bulunamadı. Filtreleri değiştirip tekrar deneyin.</td></tr>'; sayfalamaKur(); return; }
       tb.innerHTML=data.map(r=>satir(r)).join('');
       tb.querySelectorAll('[data-genislet]').forEach(b=>b.addEventListener('click',()=>genislet(b)));
@@ -264,6 +270,14 @@
 
   function sayfalamaKur(){
     const el=document.getElementById('v1-sayfalama');
+    if(toplam==null){ // sayım alınamadı (timeout) → basit ileri/geri
+      el.innerHTML=`<button ${sayfa===1?'disabled':''} data-s="${sayfa-1}">‹ Önceki</button>`+
+        `<button class="aktif" disabled>${sayfa}</button><button data-s="${sayfa+1}">Sonraki ›</button>`;
+      el.querySelectorAll('[data-s]').forEach(b=>b.addEventListener('click',()=>{
+        const s=+b.dataset.s; if(s<1)return; sayfa=s; yukle(); window.scrollTo({top:0,behavior:'smooth'});
+      }));
+      return;
+    }
     const sonSayfa=Math.max(1,Math.ceil(toplam/SAYFA_BOY));
     if(sonSayfa<=1){ el.innerHTML=''; return; }
     const gorunur=[]; const bas=Math.max(1,sayfa-2), bit=Math.min(sonSayfa,bas+4);
