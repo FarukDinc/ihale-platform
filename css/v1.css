@@ -61,17 +61,17 @@
 }
 .v1-ray-item svg { width: 22px; height: 22px; fill: currentColor; }
 .v1-ray-item:hover { background: rgba(255,255,255,.09); color: #fff; }
-/* Aktif: beyaz çıkıntı sekme (ihalepro imzası) */
+/* Aktif sekme — TEMİZ beyaz kart (eski "ters köşe" hilesi çirkin lekeler bırakıyordu, kaldırıldı) */
 .v1-ray-item.aktif {
   background: var(--v1-zemin); color: var(--v1-lacivert); font-weight: 700;
-  border-top-left-radius: 14px; border-bottom-left-radius: 14px;
+  width: calc(100% - 10px); margin: 3px 0 3px 10px;
+  border-top-left-radius: 12px; border-bottom-left-radius: 12px;
+  border-top-right-radius: 0; border-bottom-right-radius: 0;
 }
-.v1-ray-item.aktif::before,
-.v1-ray-item.aktif::after {
-  content: ''; position: absolute; right: 0; width: 14px; height: 14px; background: var(--v1-zemin);
+.v1-ray-item.aktif::before {                      /* solda ince amber/teal vurgu çubuğu */
+  content: ''; position: absolute; left: 0; top: 8px; bottom: 8px;
+  width: 3px; border-radius: 0 2px 2px 0; background: var(--v1-teal);
 }
-.v1-ray-item.aktif::before { top: -14px; border-bottom-right-radius: 14px; box-shadow: 0 7px 0 0 var(--v1-lacivert); }
-.v1-ray-item.aktif::after  { bottom: -14px; border-top-right-radius: 14px; box-shadow: 0 -7px 0 0 var(--v1-lacivert); }
 
 /* ── Topbar ────────────────────────────────────────────────────────────── */
 .v1-topbar {
