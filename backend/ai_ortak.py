@@ -132,8 +132,21 @@ def _json_kelimesi_garanti(sistem: str, kullanici: str) -> tuple:
 
 # ── DeepSeek (OpenAI-uyumlu) ───────────────────────────────────────────────────
 def _deepseek_cagir(sistem: str, kullanici: str, max_tokens: int, json_mod: bool,
-                    temperature: float, model: str, zaman_asimi: int, deneme: int) -> dict:
-    """DeepSeek chat completion. Döner: {basari, metin, hata}."""
+                    temperature: float, model: str, zaman_asimi: int, deneme: int,
+                    dusunme: bool = False) -> dict:
+    """DeepSeek chat completion. Döner: {basari, metin, hata}.
+
+    ⛔ DÜŞÜNME TUZAĞI (29 Tem, canlı ölçümle bulundu): deepseek-v4-* VARSAYILAN OLARAK
+    reasoning yapıyor ve düşünme token'ları `max_tokens` bütçesinden HARCANIYOR. Küçük
+    bütçelerde bütçenin tamamı düşünmeye gidiyor, `content` BOŞ ve `finish_reason='length'`
+    dönüyor — yani iş sessizce sıfır satır yazıyor. (Ölçüm: max_tokens=64 istekte
+    completion_tokens=45'in 38'i reasoning_tokens.) Bu, Gemini'deki `thinking_budget=0`
+    tuzağının birebir aynısı.
+    ÇALIŞAN KAPATMA: `"thinking": {"type": "disabled"}` → reasoning_tokens=None.
+    ÇALIŞMAYANLAR (denendi): `reasoning_effort:"none"|"minimal"` → 400 (yalnız high/low/medium
+    kabul ediliyor, yani hepsi düşünür); `enable_thinking:false` → sessizce YOK SAYILIYOR
+    (reasoning_tokens=21 gelmeye devam etti).
+    """
     anahtar = _env("DEEPSEEK_API_KEY")
     if not anahtar:
         return {"basari": False, "metin": None, "hata": "DEEPSEEK_API_KEY eksik (.env)"}
@@ -156,6 +169,9 @@ def _deepseek_cagir(sistem: str, kullanici: str, max_tokens: int, json_mod: bool
     if json_mod:
         # DeepSeek yalnız serbest json_object destekliyor (json_schema YOK).
         govde["response_format"] = {"type": "json_object"}
+    if not dusunme:
+        # Düşünmeyi kapat — yoksa max_tokens bütçesi reasoning'e gider, content boş döner.
+        govde["thinking"] = {"type": "disabled"}
 
     url = _env("DEEPSEEK_URL", DEEPSEEK_VARSAYILAN_URL)
     son_hata = "DeepSeek: bilinmeyen hata"
@@ -220,7 +236,7 @@ def _deepseek_cagir(sistem: str, kullanici: str, max_tokens: int, json_mod: bool
         print(f"  ⚠ {son_hata[:140]} — response_format'sız tekrar deneniyor "
               f"(JSON biçimi prompt'tan gelecek)", file=sys.stderr, flush=True)
         return _deepseek_cagir(sistem, kullanici, max_tokens, False,
-                               temperature, model, zaman_asimi, deneme)
+                               temperature, model, zaman_asimi, deneme, dusunme)
 
     return {"basari": False, "metin": None, "hata": son_hata}
 
@@ -329,7 +345,8 @@ def ai_cagir(sistem: str, kullanici: str, max_tokens: int = 700, json_mod: bool 
         kullanilacak_model = model if sira_no == 0 else None
         if saglayici == "deepseek":
             sonuc = _deepseek_cagir(sistem, kullanici, max_tokens, json_mod,
-                                    temperature, kullanilacak_model, zaman_asimi, deneme)
+                                    temperature, kullanilacak_model, zaman_asimi, deneme,
+                                    dusunme)
         else:
             sonuc = _gemini_cagir(sistem, kullanici, max_tokens, json_mod,
                                   temperature, kullanilacak_model, dusunme)
