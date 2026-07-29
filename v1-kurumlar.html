@@ -69,7 +69,7 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-<script src="js/v1-kabuk.js?v=5"></script>
+<script src="js/v1-kabuk.js?v=6"></script>
 <script>
 (() => {
   const SB_URL="https://ihaleglobal.com", SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzg0MzA3MTU4LCJleHAiOjE5NDE5ODcxNTh9.CjNKulvirotDD_y2oO2QKgo0kbqYvL0jUSV1RiDMoso";
@@ -91,7 +91,7 @@
       const {data,error}=await sb.rpc('idare_sayim');
       if(error) throw error;
       tumu=(data||[]).slice().sort((a,b)=>(b.toplam||0)-(a.toplam||0));
-      try{ const {data:t}=await sb.from('takip_idareler').select('idare'); (t||[]).forEach(r=>takipli.add(r.idare)); }catch(_){}
+      try{ const {data:t}=await sb.from('takip_idareler').select('idare_ad'); (t||[]).forEach(r=>takipli.add(r.idare_ad)); }catch(_){}
       ciz();
     }catch(e){ tb.innerHTML=`<tr><td colspan="6" class="v1-bos">Liste yüklenemedi. ${esc(e.message||'')}</td></tr>`; }
   }
@@ -112,7 +112,7 @@
       const t=takipli.has(r.idare);
       return `<tr>
         <td style="color:var(--v1-muted);font-weight:700;">${bas+i+1}</td>
-        <td><a class="v1-t-ad" href="v1-ihaleler?ara=${encodeURIComponent(r.idare)}">${esc(r.idare)}</a></td>
+        <td><a class="v1-t-ad" href="v1-kurum-analiz?kurum=${encodeURIComponent(r.idare)}">${esc(r.idare)}</a></td>
         <td style="font-size:13px;">${esc(r.en_yakin_il||'—')}</td>
         <td><div style="display:flex;align-items:center;gap:10px;">
           <span class="v1-bar-wrap"><span class="v1-bar" style="width:${w}%"></span></span>
@@ -139,8 +139,16 @@
   async function takipToggle(idare){
     if(!uyeMi){ alert('Kurum takibi için giriş yapmalısınız.'); return; }
     try{
-      if(takipli.has(idare)){ await sb.from('takip_idareler').delete().eq('idare',idare); takipli.delete(idare); }
-      else { await sb.from('takip_idareler').insert({idare}); takipli.add(idare); }
+      const {data:oturum}=await sb.auth.getSession();
+      const uid=oturum&&oturum.session&&oturum.session.user.id;
+      if(!uid){ alert('Oturum bulunamadı, tekrar giriş yapın.'); return; }
+      if(takipli.has(idare)){
+        const {error}=await sb.from('takip_idareler').delete().eq('kullanici_id',uid).eq('idare_ad',idare);
+        if(error) throw error; takipli.delete(idare);
+      } else {
+        const {error}=await sb.from('takip_idareler').upsert({kullanici_id:uid,idare_ad:idare},{onConflict:'kullanici_id,idare_ad'});
+        if(error) throw error; takipli.add(idare);
+      }
       ciz();
     }catch(e){ alert('İşlem başarısız: '+(e.message||'')); }
   }

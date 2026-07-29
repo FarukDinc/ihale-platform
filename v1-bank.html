@@ -59,7 +59,7 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-<script src="js/v1-kabuk.js?v=5"></script>
+<script src="js/v1-kabuk.js?v=6"></script>
 <script>
 (() => {
   const SB_URL="https://ihaleglobal.com", SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzg0MzA3MTU4LCJleHAiOjE5NDE5ODcxNTh9.CjNKulvirotDD_y2oO2QKgo0kbqYvL0jUSV1RiDMoso";
@@ -136,7 +136,7 @@
           <th style="width:100px;">Sözleşme</th><th style="width:230px;">Toplam Ciro</th></tr></thead><tbody>
         ${(data||[]).map((r,i)=>{const w=Math.max(3,Math.round((Number(r.toplam_ciro)||0)/max*100));
           return `<tr><td style="color:var(--v1-muted);font-weight:700;">${i+1}</td>
-          <td><a class="v1-t-ad" href="firma-analiz?ara=${encodeURIComponent(r.ad)}">${esc(r.ad)}</a></td>
+          <td><a class="v1-t-ad" href="v1-firma-analiz?ara=${encodeURIComponent(r.ad)}">${esc(r.ad)}</a></td>
           <td style="font-size:13px;">${esc(r.il||'—')}</td>
           <td style="font-weight:700;color:var(--v1-lacivert);">${num(r.toplam_sozlesme_sayisi)}</td>
           <td><div style="display:flex;align-items:center;gap:10px;"><span class="v1-bar-wrap"><span class="v1-bar" style="width:${w}%"></span></span>

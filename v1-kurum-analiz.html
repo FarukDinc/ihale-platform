@@ -1,0 +1,1440 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="author" content="Ömer Faruk Dinç">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Kurum Analizi — İhaleGlobal</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=4" />
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/v1.css?v=4" />
+  <style>
+    /* ── Sayfa başlıkları ─────────────────────────────────────────── */
+    .v1-sayfa-baslik { font-size:22px; font-weight:800; color:var(--v1-lacivert); margin-bottom:4px; }
+    .v1-sayfa-alt { font-size:13.5px; color:var(--v1-muted); margin-bottom:16px; }
+
+    /* ── Görünüm anahtarı (Dizin Listesi / Kurum Ağacı) ───────────── */
+    .v1-gor { display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap; }
+    .v1-gor-btn { padding:9px 18px; border-radius:9px; font-size:13px; font-weight:700; background:#fff;
+      border:1.5px solid var(--v1-cizgi); color:var(--v1-muted); cursor:pointer; font-family:var(--v1-font); transition:all .15s; }
+    .v1-gor-btn:hover { border-color:var(--v1-mavi); color:var(--v1-mavi); }
+    .v1-gor-btn.aktif { background:var(--v1-mavi-acik); border-color:var(--v1-mavi); color:var(--v1-mavi); }
+
+    /* ── Form öğeleri ─────────────────────────────────────────────── */
+    .v1-sec { border:1.5px solid var(--v1-cizgi); border-radius:9px; padding:9px 12px; background:#fff;
+      font-family:var(--v1-font); font-size:13px; color:var(--v1-metin); outline:none; cursor:pointer; min-width:150px; }
+    .v1-sec:focus { border-color:var(--v1-mavi); }
+    .v1-mini-btn { background:#fff; border:1.5px solid var(--v1-cizgi); color:var(--v1-muted); border-radius:9px;
+      padding:9px 14px; font-family:var(--v1-font); font-size:12.5px; font-weight:700; cursor:pointer; }
+    .v1-mini-btn:hover { border-color:var(--v1-mavi); color:var(--v1-mavi); }
+    .v1-mini-btn:disabled { opacity:.45; cursor:default; border-color:var(--v1-cizgi); color:var(--v1-muted); }
+    .v1-arac { display:flex; gap:10px; align-items:center; flex-wrap:wrap; background:#fff;
+      border:1px solid var(--v1-cizgi); border-radius:var(--v1-radius-lg); box-shadow:var(--v1-golge);
+      padding:12px 14px; margin-bottom:14px; }
+    .v1-arac .say { margin-left:auto; font-size:13px; color:var(--v1-muted); white-space:nowrap; }
+    .v1-ara-ic { display:flex; align-items:center; gap:8px; border:1.5px solid var(--v1-cizgi); border-radius:9px;
+      padding:8px 12px; background:#fff; flex:1; min-width:210px; }
+    .v1-ara-ic input { border:none; outline:none; font-family:var(--v1-font); font-size:13.5px;
+      color:var(--v1-metin); width:100%; background:none; }
+
+    /* ── Yükleniyor / kilit ───────────────────────────────────────── */
+    .v1-yukleniyor { text-align:center; padding:60px 20px; color:var(--v1-muted); font-size:13.5px; }
+    .v1-spin { width:30px; height:30px; border:3px solid var(--v1-cizgi); border-top-color:var(--v1-mavi);
+      border-radius:50%; animation:v1spin .8s linear infinite; margin:0 auto 14px; }
+    @keyframes v1spin { to { transform:rotate(360deg); } }
+    .v1-kilit-kutu { max-width:470px; margin:26px auto; text-align:center; background:#fff;
+      border:1px solid var(--v1-cizgi); border-radius:var(--v1-radius-lg); box-shadow:var(--v1-golge); padding:34px 28px; }
+    .v1-kilit-bas { font-size:16.5px; font-weight:800; color:var(--v1-lacivert); margin:8px 0 8px; }
+    .v1-kilit-yazi { font-size:13px; color:var(--v1-muted); line-height:1.65; margin-bottom:18px; }
+
+    /* ── Kurum başlık kartı ───────────────────────────────────────── */
+    .k-eyebrow { font-size:11px; font-weight:800; letter-spacing:.1em; text-transform:uppercase;
+      color:var(--v1-teal); margin-bottom:9px; }
+    .k-ad { font-size:21px; font-weight:800; color:var(--v1-lacivert); line-height:1.32; margin-bottom:9px; }
+    .k-meta { font-size:13px; color:var(--v1-muted); line-height:1.6; }
+    .k-aksiyon { display:flex; gap:10px; margin-top:18px; flex-wrap:wrap; }
+    .v1-btn-ana { background:var(--v1-mavi); color:#fff; border:1.5px solid var(--v1-mavi); border-radius:9px;
+      padding:10px 18px; font-family:var(--v1-font); font-size:13.5px; font-weight:700; cursor:pointer;
+      text-decoration:none; display:inline-flex; align-items:center; gap:6px; }
+    .v1-btn-ana:hover { background:var(--v1-lacivert); border-color:var(--v1-lacivert); text-decoration:none; color:#fff; }
+    .v1-btn-ikincil { background:#fff; color:var(--v1-mavi); border:1.5px solid var(--v1-cizgi); border-radius:9px;
+      padding:10px 18px; font-family:var(--v1-font); font-size:13.5px; font-weight:700; cursor:pointer;
+      text-decoration:none; display:inline-flex; align-items:center; gap:6px; }
+    .v1-btn-ikincil:hover { border-color:var(--v1-mavi); text-decoration:none; color:var(--v1-mavi); }
+    .v1-btn-ikincil.secili { background:var(--v1-mavi-acik); border-color:var(--v1-mavi); }
+
+    /* ── Kapsam notu / rozeti (krem tint — v1-rekabet ile aynı) ───── */
+    .k-kapsam { background:#FFF8E6; border:1px solid #F0DFA8; border-radius:12px; padding:14px 16px;
+      font-size:12.5px; line-height:1.65; color:var(--v1-metin); margin-bottom:18px; display:flex; gap:9px; align-items:flex-start; }
+    .k-kapsam strong { color:var(--v1-lacivert); }
+    .k-rozet { display:inline-block; font-size:10.5px; font-weight:800; padding:2px 8px; border-radius:20px;
+      background:#FFF3D6; color:#8A6100; margin-left:6px; vertical-align:middle; cursor:help; }
+
+    /* ── Sekmeler ─────────────────────────────────────────────────── */
+    .v1-sekmeler { display:flex; gap:26px; border-bottom:2px solid var(--v1-cizgi); margin-bottom:18px; flex-wrap:wrap; }
+    .v1-sekme { background:none; border:none; padding:10px 2px 12px; font-family:var(--v1-font); font-size:15px;
+      font-weight:700; color:var(--v1-muted); cursor:pointer; position:relative; }
+    .v1-sekme.aktif { color:var(--v1-lacivert); }
+    .v1-sekme.aktif::after { content:''; position:absolute; left:0; right:0; bottom:-2px; height:3px;
+      background:var(--v1-mavi); border-radius:2px; }
+    .v1-panel { display:none; }
+    .v1-panel.aktif { display:block; }
+
+    /* ── Grafik / ikili düzen ─────────────────────────────────────── */
+    .v1-ikili { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+    @media(max-width:900px){ .v1-ikili{ grid-template-columns:1fr; } }
+    .v1-graf { position:relative; height:230px; }
+
+    /* ── Çubuk kırılım listesi ────────────────────────────────────── */
+    .k-cb { margin-bottom:11px; }
+    .k-cb-bas { display:flex; justify-content:space-between; gap:10px; margin-bottom:4px; font-size:13px; }
+    .k-cb-ad { color:var(--v1-metin); font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .k-cb-say { color:var(--v1-mavi); font-weight:800; white-space:nowrap; flex-shrink:0; }
+    .k-cb-yol { height:7px; background:#EDF1F6; border-radius:4px; overflow:hidden; }
+    .k-cb-dolu { display:block; height:100%; background:var(--v1-mavi); border-radius:4px; }
+
+    /* ── İl listesi ───────────────────────────────────────────────── */
+    .k-il-liste { max-height:270px; overflow-y:auto; }
+    .k-il { display:flex; justify-content:space-between; align-items:center; font-size:13px; padding:7px 0;
+      border-bottom:1px solid var(--v1-cizgi); }
+    .k-il:last-child { border-bottom:none; }
+    .k-il-ad { color:var(--v1-metin); font-weight:600; }
+    .k-il-say { color:var(--v1-mavi); font-weight:800; }
+
+    /* ── İhale kartı ──────────────────────────────────────────────── */
+    .k-ihale { background:#fff; border:1px solid var(--v1-cizgi); border-radius:var(--v1-radius);
+      padding:16px 18px; margin-bottom:10px; transition:border-color .15s; }
+    .k-ihale:hover { border-color:var(--v1-mavi); }
+    .k-ih-ust { display:flex; justify-content:space-between; align-items:flex-start; gap:12px; }
+    .k-ih-bas { font-size:14px; font-weight:700; color:var(--v1-lacivert); text-decoration:none; line-height:1.4; flex:1; }
+    .k-ih-bas:hover { color:var(--v1-mavi); }
+    .k-ih-durum { font-size:11px; font-weight:800; padding:3px 9px; border-radius:20px; white-space:nowrap; flex-shrink:0; }
+    .d-acik { background:#E4F5EC; color:#14713E; }
+    .d-son { background:#FDECEE; color:#B3323C; }
+    .d-kapandi { background:#EEF2F7; color:var(--v1-muted); }
+    .k-ih-meta { display:flex; gap:14px; margin-top:8px; font-size:12px; color:var(--v1-muted); flex-wrap:wrap; }
+    .k-ih-bedel { font-size:13px; font-weight:800; color:var(--v1-mavi); margin-top:7px; }
+    .k-ih-kazanan { font-size:13px; font-weight:700; color:var(--v1-yesil); margin-top:4px; }
+    .k-etiketler { display:flex; gap:6px; flex-wrap:wrap; margin-top:8px; }
+    .k-et { font-size:11px; padding:2px 9px; border-radius:20px; font-weight:700; }
+    .k-et-tur { background:var(--v1-teal-acik); color:#0B6C67; }
+    .k-et-il { background:#EEF2F7; color:var(--v1-muted); }
+
+    /* ── Sayfalama (ihale listesi) ────────────────────────────────── */
+    .k-pager { display:flex; justify-content:center; align-items:center; gap:8px; margin-top:18px; flex-wrap:wrap; }
+    .k-pager-bilgi { font-size:13px; color:var(--v1-muted); padding:0 6px; }
+
+    /* ── İdare dizini tablosu ─────────────────────────────────────── */
+    .v1-tablo tbody tr.tiklanir { cursor:pointer; }
+    .iz-srt { cursor:pointer; user-select:none; }
+    .iz-srt:hover { color:var(--v1-mavi); }
+    @media (max-width:900px) {
+      .iz-il-h, .iz-il-c, .iz-islem-h, .iz-islem-c { display:none; }
+    }
+
+    /* ── Kurum ağacı ──────────────────────────────────────────────── */
+    .ag-kapsama { background:#fff; border:1px solid var(--v1-cizgi); border-radius:var(--v1-radius-lg);
+      box-shadow:var(--v1-golge); padding:16px 18px; margin-bottom:14px; }
+    .ag-kapsama-baslik { font-size:11px; font-weight:800; color:var(--v1-muted); text-transform:uppercase;
+      letter-spacing:.06em; margin-bottom:10px; }
+    .ag-bar { height:8px; border-radius:4px; background:#EDF1F6; overflow:hidden; margin:6px 0 10px; }
+    .ag-bar-esli { background:var(--v1-mavi); height:100%; border-radius:4px; }
+    .ag-kapsama-sat { font-size:12px; color:var(--v1-muted); display:flex; justify-content:space-between;
+      gap:10px; flex-wrap:wrap; }
+    .ag-kapsama-sat b { color:var(--v1-lacivert); }
+
+    .ag-panel { background:#fff; border:1px solid var(--v1-cizgi); border-radius:var(--v1-radius-lg);
+      box-shadow:var(--v1-golge); overflow:hidden; }
+    .ag-satir { display:flex; align-items:center; gap:8px; min-width:0;
+      padding:8px 14px 8px calc(14px + var(--derin, 0) * 22px);
+      border-bottom:1px solid var(--v1-cizgi); transition:background .12s; }
+    .ag-satir:hover { background:#F8FBFF; }
+    .ag-ok { width:22px; height:22px; flex-shrink:0; background:none; border:none; color:var(--v1-muted);
+      cursor:pointer; font-size:11px; border-radius:4px; transition:transform .15s, color .15s; font-family:var(--v1-font); }
+    .ag-ok:hover { color:var(--v1-mavi); }
+    .ag-ok.acik { transform:rotate(90deg); }
+    .ag-ok.yok { visibility:hidden; cursor:default; }
+    .ag-ad { font-size:13px; font-weight:700; color:var(--v1-lacivert); cursor:pointer; overflow:hidden;
+      text-overflow:ellipsis; white-space:nowrap; min-width:0; flex:1; }
+    .ag-ad:hover { color:var(--v1-mavi); }
+    .ag-ad .adet { color:var(--v1-muted); font-weight:600; font-size:11px; }
+    .ag-rozet { font-size:11px; font-weight:700; padding:2px 8px; border-radius:20px; white-space:nowrap; flex-shrink:0; }
+    .ag-rozet.ihale { background:var(--v1-mavi-acik); color:var(--v1-mavi); }
+    .ag-rozet.dt { background:var(--v1-teal-acik); color:#0B6C67; }
+    .ag-rozet.bos { background:#EEF2F7; color:var(--v1-muted); }
+    .ag-pay { font-size:11px; color:var(--v1-muted); white-space:nowrap; flex-shrink:0; width:54px; text-align:right; }
+    .ag-cocuklar { display:none; }
+    .ag-cocuklar.acik { display:block; }
+    .ag-vurgu { animation:agVurgu 2.4s ease; }
+    @keyframes agVurgu { 0%, 60% { background:var(--v1-mavi-acik); } 100% { background:transparent; } }
+    .ag-not { font-size:12px; color:var(--v1-muted);
+      padding:8px 14px 10px calc(14px + var(--derin, 0) * 22px); border-bottom:1px solid var(--v1-cizgi); }
+    .ag-daha { padding:8px 14px 12px calc(14px + var(--derin, 0) * 22px); }
+    .ag-kucuk-btn { font-size:11px; font-weight:700; padding:4px 10px; border-radius:6px; cursor:pointer;
+      font-family:var(--v1-font); border:1px solid var(--v1-cizgi); background:#fff; color:var(--v1-muted); }
+    .ag-kucuk-btn:hover { border-color:var(--v1-mavi); color:var(--v1-mavi); }
+    .ag-kucuk-btn.mavi { background:var(--v1-mavi-acik); border-color:#CFE2F5; color:var(--v1-mavi); }
+
+    .ag-sonuc { background:#fff; border:1px solid var(--v1-cizgi); border-radius:var(--v1-radius-lg);
+      box-shadow:var(--v1-golge); margin-bottom:14px; overflow:hidden; }
+    .ag-sonuc-baslik { font-size:11px; font-weight:800; color:var(--v1-muted); text-transform:uppercase;
+      letter-spacing:.06em; padding:10px 14px; border-bottom:1px solid var(--v1-cizgi); }
+    .ag-sonuc-satir { display:flex; align-items:center; gap:10px; padding:9px 14px;
+      border-bottom:1px solid var(--v1-cizgi); cursor:pointer; min-width:0; }
+    .ag-sonuc-satir:last-child { border-bottom:none; }
+    .ag-sonuc-satir:hover { background:#F8FBFF; }
+    .ag-sonuc-satir:hover .ag-sonuc-ad { color:var(--v1-mavi); }
+    .ag-sonuc-ad { font-size:13px; font-weight:700; color:var(--v1-lacivert); flex:1; min-width:0;
+      overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .ag-sonuc-ust { font-size:11px; color:var(--v1-muted); white-space:nowrap; max-width:34%;
+      overflow:hidden; text-overflow:ellipsis; }
+
+    /* ── Dal ihaleleri modalı ─────────────────────────────────────── */
+    .k-modal-fon { position:fixed; inset:0; background:rgba(12,62,112,.42); z-index:60;
+      display:flex; align-items:center; justify-content:center; padding:20px; }
+    .k-modal { background:#fff; border:1px solid var(--v1-cizgi); border-radius:var(--v1-radius-lg);
+      box-shadow:var(--v1-golge-lg); max-width:660px; width:100%; max-height:80vh; display:flex; flex-direction:column; }
+    .k-modal-bas { padding:15px 20px; border-bottom:1px solid var(--v1-cizgi); display:flex;
+      justify-content:space-between; align-items:center; gap:12px; }
+    .k-modal-bas b { font-size:14px; color:var(--v1-lacivert); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .k-modal-kapat { background:none; border:none; color:var(--v1-muted); font-size:18px; cursor:pointer; flex-shrink:0; }
+    .k-modal-kapat:hover { color:var(--v1-lacivert); }
+    .k-modal-govde { overflow-y:auto; padding:12px 20px 18px; background:var(--v1-zemin); }
+
+    @media (max-width:900px) { .ag-rozet.dt, .ag-pay, .ag-sonuc-ust { display:none; } }
+
+    /* ── KPI 4'lüsü: mobil taşma koruması ─────────────────────────────
+       Her iki KPI şeridi de grid-template-columns'u INLINE yazıyor; inline stil
+       v1.css'teki mobil media query'yi yener → dar ekranda 4 sütun sıkışıp
+       sayılar taşardı. Bu yüzden burada !important ile geri alınıyor
+       (kapsam yalnız bu sayfa; kabuk/overlay kurallarına dokunulmuyor). */
+    @media (max-width:900px) { .v1-kpi { grid-template-columns:repeat(2,1fr) !important; } }
+    @media (max-width:560px) { .v1-kpi { grid-template-columns:1fr !important; } }
+  </style>
+</head>
+<body class="v1" data-v1-aktif="kurumlar" data-v1-kirinti="Kurumlar > Kurum Analizi">
+<div class="v1-app">
+  <div class="v1-main">
+    <div class="v1-govde">
+
+      <!-- ══════════════ İDARE DİZİNİ (açılış görünümü) ══════════════ -->
+      <div id="dizin-view" style="display:none;">
+        <div class="v1-sayfa-baslik">🏛️ İdare Dizini</div>
+        <div class="v1-sayfa-alt">İhale açan kamu idarelerinin karnesi — idareye tıklayın, analizi aynı ekranda açılsın.</div>
+
+        <!-- Görünüm anahtarı: kurum sekmelerinden (.v1-sekme) AYRI sınıf kullanılır;
+             aynı sınıf olsaydı analiz görünümüne geçince buradaki seçim silinirdi. -->
+        <div class="v1-gor">
+          <button class="v1-gor-btn aktif" id="gor-liste">📋 Dizin Listesi</button>
+          <button class="v1-gor-btn" id="gor-agac">🌳 Kurum Ağacı</button>
+        </div>
+
+        <!-- ── Liste görünümü ── -->
+        <div id="liste-gorunum">
+          <div class="v1-kpi" style="grid-template-columns:repeat(4,1fr);margin-bottom:18px;" id="iz-kpi">
+            <div class="v1-kpi-kart" style="cursor:default;"><span class="v1-kpi-govde">
+              <span class="v1-kpi-sayi" id="iz-st-idare">—</span><span class="v1-kpi-etiket">Toplam İdare</span></span></div>
+            <div class="v1-kpi-kart" style="cursor:default;"><span class="v1-kpi-govde">
+              <span class="v1-kpi-sayi" id="iz-st-aktif-idare">—</span><span class="v1-kpi-etiket">Aktif İdareler</span></span></div>
+            <div class="v1-kpi-kart" style="cursor:default;"><span class="v1-kpi-govde">
+              <span class="v1-kpi-sayi" id="iz-st-ihale">—</span><span class="v1-kpi-etiket">Toplam İhale</span></span></div>
+            <div class="v1-kpi-kart" style="cursor:default;"><span class="v1-kpi-govde">
+              <span class="v1-kpi-sayi" id="iz-st-aktif-ihale">—</span><span class="v1-kpi-etiket">Aktif İhale</span></span></div>
+          </div>
+
+          <div id="iz-yukleniyor" class="v1-yukleniyor">
+            <div class="v1-spin"></div>
+            <p>İdare dizini yükleniyor…</p>
+          </div>
+
+          <div id="iz-icerik" style="display:none;">
+            <div class="v1-arac">
+              <div class="v1-ara-ic">
+                <svg viewBox="0 0 24 24" width="15" height="15" fill="var(--v1-muted)"><path fill-rule="evenodd" d="M10.5 3a7.5 7.5 0 1 0 4.55 13.46l4.24 4.25 1.42-1.42-4.25-4.24A7.5 7.5 0 0 0 10.5 3Zm0 2a5.5 5.5 0 1 1 0 11 5.5 5.5 0 0 1 0-11Z"/></svg>
+                <input type="text" id="iz-arama" placeholder="İdare adı veya il ara…" autocomplete="off">
+              </div>
+              <select class="v1-sec" id="iz-il-filtre"><option value="">Tüm İller</option></select>
+              <select class="v1-sec" id="iz-aktif-filtre">
+                <option value="">Tüm İdareler</option>
+                <option value="aktif">Sadece Aktif</option>
+              </select>
+              <select class="v1-sec" id="iz-sirala">
+                <option value="toplam_desc">En Çok İhale</option>
+                <option value="aktif_desc">En Çok Aktif</option>
+                <option value="ad_asc">İsme Göre (A→Z)</option>
+                <option value="ad_desc">İsme Göre (Z→A)</option>
+                <option value="il_asc">İle Göre (A→Z)</option>
+              </select>
+              <span class="say" id="iz-sayac">— idare</span>
+            </div>
+
+            <div class="v1-kart" style="padding:6px 10px 12px;">
+              <div style="overflow-x:auto;">
+                <table class="v1-tablo">
+                  <thead><tr>
+                    <th>İDARE ADI</th>
+                    <th class="iz-il-h" style="width:120px;">BAŞLICA İL</th>
+                    <th class="iz-srt" id="iz-sort-toplam" style="width:110px;">TOPLAM ▾</th>
+                    <th class="iz-srt" id="iz-sort-aktif" style="width:100px;">AKTİF</th>
+                    <th class="iz-islem-h" style="width:120px;"></th>
+                  </tr></thead>
+                  <tbody id="iz-govde"><tr><td colspan="5" class="v1-bos">Veri bekleniyor…</td></tr></tbody>
+                </table>
+              </div>
+              <div class="k-pager" id="iz-pager" style="display:none;">
+                <button class="v1-mini-btn" id="iz-prev" disabled>‹ Önceki</button>
+                <span class="k-pager-bilgi" id="iz-info"></span>
+                <button class="v1-mini-btn" id="iz-next">Sonraki ›</button>
+              </div>
+            </div>
+          </div>
+        </div><!-- /liste-gorunum -->
+
+        <!-- ── Kurum ağacı görünümü (DETSİS hiyerarşisi, tembel dallar) ── -->
+        <div id="agac-gorunum" style="display:none;">
+          <div id="ag-yukleniyor" class="v1-yukleniyor">
+            <div class="v1-spin"></div>
+            <p>Kurum ağacı yükleniyor…</p>
+          </div>
+          <div id="ag-icerik" style="display:none;">
+            <div class="ag-kapsama" id="ag-kapsama" style="display:none;"></div>
+            <div class="v1-arac">
+              <div class="v1-ara-ic">
+                <svg viewBox="0 0 24 24" width="15" height="15" fill="var(--v1-muted)"><path fill-rule="evenodd" d="M10.5 3a7.5 7.5 0 1 0 4.55 13.46l4.24 4.25 1.42-1.42-4.25-4.24A7.5 7.5 0 0 0 10.5 3Zm0 2a5.5 5.5 0 1 1 0 11 5.5 5.5 0 0 1 0-11Z"/></svg>
+                <input type="text" id="ag-arama" placeholder="Ağaçta kurum ara (ör. emniyet)…" autocomplete="off">
+              </div>
+              <span class="say" id="ag-sayac">dal açmak için ▸ okuna tıklayın</span>
+            </div>
+            <div id="ag-arama-sonuc" style="display:none;"></div>
+            <div class="ag-panel" id="ag-kokler"></div>
+          </div>
+        </div><!-- /agac-gorunum -->
+      </div><!-- /dizin-view -->
+
+      <!-- ══════════════ KURUM ANALİZİ ══════════════ -->
+      <div id="root-loading" class="v1-yukleniyor" style="display:none;">
+        <div class="v1-spin"></div>
+        <p>Kurum verileri yükleniyor…</p>
+      </div>
+
+      <div id="root-content" style="display:none;">
+        <div class="v1-kart">
+          <div class="k-eyebrow">🏛️ Kurum Analizi</div>
+          <div class="k-ad" id="kurum-ad">—</div>
+          <div class="k-meta" id="kurum-meta">Veri yükleniyor…</div>
+          <div class="k-aksiyon">
+            <button class="v1-btn-ana" id="btn-liste-git">📋 Tüm İhalelerini Gör</button>
+            <a class="v1-btn-ikincil" id="btn-dt" href="#">⚡ Doğrudan Temin Kayıtları</a>
+            <button class="v1-btn-ikincil" id="btn-takip">🔔 Kurumu Takip Et</button>
+            <button class="v1-btn-ikincil" id="btn-paylas">🔗 Paylaş</button>
+            <button class="v1-btn-ikincil" id="btn-dizin">← Dizine Dön</button>
+          </div>
+        </div>
+
+        <div class="v1-kpi" style="grid-template-columns:repeat(4,1fr);margin-bottom:18px;">
+          <div class="v1-kpi-kart" style="cursor:default;"><span class="v1-kpi-govde">
+            <span class="v1-kpi-sayi" id="kpi-toplam">—</span>
+            <span class="v1-kpi-etiket">Toplam İhale</span>
+            <span style="display:block;font-size:11px;color:var(--v1-muted);margin-top:3px;">tüm zamanlar</span></span></div>
+          <div class="v1-kpi-kart" style="cursor:default;"><span class="v1-kpi-govde">
+            <span class="v1-kpi-sayi" id="kpi-aktif">—</span>
+            <span class="v1-kpi-etiket">Aktif / Açık</span>
+            <span style="display:block;font-size:11px;color:var(--v1-muted);margin-top:3px;">teklif süresi dolmamış</span></span></div>
+          <div class="v1-kpi-kart" style="cursor:default;"><span class="v1-kpi-govde">
+            <span class="v1-kpi-sayi" id="kpi-butce">—</span>
+            <span class="v1-kpi-etiket">Toplam Bütçe
+              <span class="k-rozet" title="Yalnız ihaleler — bu kurumun doğrudan temin harcamaları bu toplama dahil DEĞİL">yalnız ihaleler</span></span>
+            <!-- Payda görünür: toplam bütçe = sum(yaklasik_maliyet_min); maliyeti ilan
+                 EDİLMEMİŞ kayıtlar bu toplama 0 katkı verir. Payda yazılmazsa kullanıcı
+                 rakamı "kurumun tüm harcaması" sanıyor. -->
+            <span style="display:block;font-size:11px;color:var(--v1-muted);margin-top:3px;" id="kpi-butce-alt"
+              title="Yaklaşık maliyeti ilan edilmemiş ihaleler bu toplama katkı vermez; doğrudan temin kayıtları hiç girmez.">yaklaşık maliyet toplamı</span></span></div>
+          <div class="v1-kpi-kart" style="cursor:default;"><span class="v1-kpi-govde">
+            <span class="v1-kpi-sayi" id="kpi-il">—</span>
+            <span class="v1-kpi-etiket">Kapsanan İl</span>
+            <span style="display:block;font-size:11px;color:var(--v1-muted);margin-top:3px;">farklı şehir</span></span></div>
+        </div>
+
+        <!-- kurum_ozet YALNIZ `ilanlar` tablosunu okur → 4 KPI ve tüm grafikler ihale
+             evrenidir. Bu sayfada ihale/DT modu seçici YOKTUR; DT evrenine geçiş
+             üstteki "⚡ Doğrudan Temin Kayıtları" butonuyla olur. -->
+        <div class="k-kapsam">
+          <span style="flex-shrink:0;">📋</span>
+          <span>
+            <strong>Kapsam: yalnız ihaleler.</strong> Yukarıdaki sayılar, parasal toplam ve aşağıdaki tüm grafikler
+            bu kurumun 4734 sayılı Kanun ihale usulleriyle yaptığı alımlardan hesaplanır.
+            <strong>Doğrudan temin kayıtları dahil değildir</strong> — doğrudan teminde yaklaşık maliyet ilan edilmez ve
+            ölçek bambaşkadır (DT medyanı ≈ ₺37 bin), bu yüzden iki evren bilinçli olarak toplanmaz.
+            Kurumun doğrudan temin kayıtları için yukarıdaki <strong>⚡ Doğrudan Temin Kayıtları</strong> butonunu kullanın.
+          </span>
+        </div>
+
+        <div class="v1-sekmeler">
+          <button class="v1-sekme aktif" data-sek="genel">Genel Bakış</button>
+          <button class="v1-sekme" data-sek="dagilim">Dağılım Analizi</button>
+          <button class="v1-sekme" data-sek="liste">İhale Listesi</button>
+        </div>
+
+        <!-- GENEL BAKIŞ -->
+        <div id="sek-genel" class="v1-panel aktif">
+          <div class="v1-kart">
+            <div class="v1-kart-baslik">Aylık İhale Hareketi
+              <span style="font-size:12px;font-weight:400;color:var(--v1-muted);">son 24 ay (ilan/teklif tarihi)</span></div>
+            <div class="v1-graf" style="height:190px;"><canvas id="g-aylik"></canvas></div>
+          </div>
+          <div class="v1-ikili">
+            <div class="v1-kart">
+              <div class="v1-kart-baslik">Yıllara Göre İhale Hareketi
+                <span style="font-size:12px;font-weight:400;color:var(--v1-muted);">kayıttaki en güncel tarihe göre</span></div>
+              <div class="v1-graf"><canvas id="g-yillik"></canvas></div>
+            </div>
+            <div class="v1-kart">
+              <div class="v1-kart-baslik">İhale Türüne Göre Dağılım</div>
+              <div id="l-tur"><div class="v1-bos">Yükleniyor…</div></div>
+            </div>
+          </div>
+          <div class="v1-kart">
+            <div class="v1-kart-baslik">İl Bazlı Dağılım</div>
+            <div class="k-il-liste" id="l-il"><div class="v1-bos">Yükleniyor…</div></div>
+          </div>
+        </div>
+
+        <!-- DAĞILIM ANALİZİ -->
+        <div id="sek-dagilim" class="v1-panel">
+          <div class="v1-ikili">
+            <div class="v1-kart">
+              <div class="v1-kart-baslik">Sektör / Kategori Dağılımı</div>
+              <div id="l-kategori"><div class="v1-bos">Yükleniyor…</div></div>
+            </div>
+            <div class="v1-kart">
+              <div class="v1-kart-baslik">İhale Usulü Dağılımı</div>
+              <div id="l-usul"><div class="v1-bos">Yükleniyor…</div></div>
+            </div>
+          </div>
+          <div class="v1-kart">
+            <div class="v1-kart-baslik">Aktif vs Kapanmış İhaleler</div>
+            <div class="v1-graf" style="height:190px;"><canvas id="g-durum"></canvas></div>
+          </div>
+          <!-- analiz_pivot RPC'sinden kazanan firma dağılımı (RPC yoksa kart gizli kalır) -->
+          <div class="v1-kart" id="kart-kazanan" style="display:none;">
+            <div class="v1-kart-baslik">🏆 Kazanan Firmalar
+              <span style="font-size:12px;font-weight:400;color:var(--v1-muted);">sonuçlanan ihaleler</span></div>
+            <div id="l-kazanan"></div>
+          </div>
+        </div>
+
+        <!-- İHALE LİSTESİ -->
+        <div id="sek-liste" class="v1-panel">
+          <div id="liste-kap"><div class="v1-bos">Yükleniyor…</div></div>
+          <div class="k-pager" id="pager" style="display:none;">
+            <button class="v1-mini-btn" id="pg-ilk">« İlk</button>
+            <button class="v1-mini-btn" id="pg-prev">‹ Önceki</button>
+            <span class="k-pager-bilgi" id="pg-info"></span>
+            <button class="v1-mini-btn" id="pg-next">Sonraki ›</button>
+            <button class="v1-mini-btn" id="pg-son">Son »</button>
+          </div>
+        </div>
+      </div><!-- /root-content -->
+
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="js/v1-kabuk.js?v=6"></script>
+<script>
+(() => {
+  const SB_URL="https://ihaleglobal.com", SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzg0MzA3MTU4LCJleHAiOjE5NDE5ODcxNTh9.CjNKulvirotDD_y2oO2QKgo0kbqYvL0jUSV1RiDMoso";
+  const sb = window.supabase.createClient(SB_URL, SB_KEY);
+
+  // ── Yardımcılar ─────────────────────────────────────────────────
+  const esc = s => (s == null ? '' : String(s)).replace(/[<>&"']/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&#39;'}[c]));
+  const num = n => (Number(n) || 0).toLocaleString('tr-TR');
+  const sayi = n => Number(n || 0).toLocaleString('tr-TR');
+  const el = id => document.getElementById(id);
+
+  function paraFormat(n) {
+    if (n == null || n === '') return '—';
+    const v = Number(n);
+    if (!isFinite(v) || v === 0) return '—';
+    return '₺' + v.toLocaleString('tr-TR', { maximumFractionDigits: 0 });
+  }
+  function tarihFormat(s) {
+    if (!s) return '—';
+    const d = new Date(s);
+    if (isNaN(d)) return '—';
+    return d.toLocaleDateString('tr-TR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  }
+  // Türkçe karakter-duyarsız arama: İ/I/ı→i vb. (PostgREST ilike İ/ı'da sessizce 0 döner)
+  function trFold(s) {
+    return (s || '')
+      .replace(/İ/g, 'i').replace(/I/g, 'i').replace(/ı/g, 'i')
+      .replace(/Ş/g, 's').replace(/ş/g, 's')
+      .replace(/Ğ/g, 'g').replace(/ğ/g, 'g')
+      .replace(/Ü/g, 'u').replace(/ü/g, 'u')
+      .replace(/Ö/g, 'o').replace(/ö/g, 'o')
+      .replace(/Ç/g, 'c').replace(/ç/g, 'c')
+      .toLowerCase();
+  }
+  function durumSec(sonTeklif) {
+    if (!sonTeklif) return { cls: 'd-kapandi', etiket: 'Geçmiş' };
+    const gun = Math.ceil((new Date(sonTeklif) - Date.now()) / 86400000);
+    if (gun < 0) return { cls: 'd-kapandi', etiket: 'Kapandı' };
+    if (gun <= 7) return { cls: 'd-son', etiket: `Son ${gun} Gün` };
+    return { cls: 'd-acik', etiket: 'Açık' };
+  }
+  // 42501 = RPC/kolon üyeye özel (anon'a yetki yok) → ham Postgres mesajı gösterilmez
+  const kilitliMi = e => !!e && (e.code === '42501' || e.code === 'PGRST301' || /permission denied/i.test(e.message || ''));
+  function kilitHtml(baslik, aciklama) {
+    return `<div class="v1-kilit-kutu">
+      <div style="font-size:34px;">🔒</div>
+      <div class="v1-kilit-bas">${baslik}</div>
+      <div class="v1-kilit-yazi">${aciklama}</div>
+      <div style="font-size:13.5px;font-weight:600;">
+        <a href="login">Giriş yapın</a> veya <a href="fiyatlandirma_odeme_bolumu">üye olun</a> →
+      </div>
+    </div>`;
+  }
+  // ⚠️ KABUK YARIŞI: v1-kabuk.js kırıntıyı/paket rozetini DOMContentLoaded'da monte
+  // eder; bu sayfanın açılışı async (getSession). readyState 'interactive' olduğu ama
+  // kabuk henüz monte edilmediği aralıkta yazarsak hedef eleman yoktur ve yazı
+  // SESSİZCE kaybolur (rozet '—', kırıntı 'Kurum Analizi' kalırdı).
+  // Çözüm: eleman görünene kadar 50 ms aralıkla dene (en fazla ~3 sn).
+  function kabukYaz(sec, uygula) {
+    let kalan = 60;
+    const dene = () => {
+      const e = document.querySelector(sec);
+      if (e) { uygula(e); return; }
+      if (--kalan > 0) setTimeout(dene, 50);
+    };
+    dene();
+  }
+  let kirintiMetin = '';
+  function kirintiYaz(metin) {
+    kirintiMetin = metin;   // bekleyen deneme DAİMA en son metni yazar (dizin↔analiz geçişi)
+    kabukYaz('.v1-kirinti .son', k => { k.textContent = kirintiMetin; });
+  }
+  // ⚠️ v1 kabuğunda kaydırılan kap .v1-main (height:100vh; overflow-y:auto) —
+  // window.scrollTo TEK BAŞINA ETKİSİZDİR (body zaten viewport boyunda).
+  function basaKaydir() {
+    const m = document.querySelector('.v1-main');
+    if (m) m.scrollTop = 0;
+    window.scrollTo(0, 0);
+  }
+
+  // v1 MAVİ paleti — Chart.js CSS değişkeni okumaz, sabit renk veriyoruz
+  const C = { mavi:'#135EAA', lacivert:'#0C3E70', teal:'#00A19A', acik:'#9CC4E8',
+              cizgi:'#DCE5EF', muted:'#6C757D', yesil:'#1E9E57', gri:'#9AA7B5' };
+
+  const P = new URLSearchParams(location.search);
+  let KURUM = P.get('kurum') || '';    // birleşik hub: pushState ile sayfa içinde değişir
+  let uyeMi = false;
+
+  // ══════════════════ KURUM ANALİZİ ══════════════════
+  const PER_PAGE = 20;
+  let sayfa = 1;
+  let topSayfa = 1;      // kurum_ozet kpi.toplam'dan hesaplanır (count=exact yok)
+  let listeIstek = 0;    // hızlı sayfa geçişlerinde eski cevap yenisini ezmesin
+  let gAylik = null, gYillik = null, gDurum = null;
+
+  function sekmeAc(id) {
+    document.querySelectorAll('#root-content .v1-panel').forEach(p => p.classList.remove('aktif'));
+    document.querySelectorAll('#root-content .v1-sekme').forEach(b => b.classList.toggle('aktif', b.dataset.sek === id));
+    const p = el('sek-' + id);
+    if (p) p.classList.add('aktif');
+    if (id === 'liste') listeSayfa(sayfa);
+  }
+
+  function sayfaGit(s) {
+    sayfa = Math.max(1, Math.min(s, topSayfa));
+    listeSayfa(sayfa);
+    el('sek-liste').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  // Server-side sayfalama: sadece görünen 20 satır iner
+  async function listeSayfa(s) {
+    const istek = ++listeIstek;
+    const bas = (s - 1) * PER_PAGE;
+    const kap = el('liste-kap');
+    kap.innerHTML = '<div class="v1-bos">Yükleniyor…</div>';
+
+    const { data: dilim, error } = await sb.from('ilanlar')
+      .select('id,ekap_id,baslik,il,tur,ilan_tarihi,son_teklif_tarihi,yaklasik_maliyet_min,yaklasik_maliyet_max,ihale_sonuclari(kazanan_firma,kazanan_teklif,kazanan_teklif_farki_yuzde,sonuc_tarihi,kisim_no)')
+      .ilike('idare', `%${KURUM}%`)
+      // etkin_tarih: ilan_tarihi yalnız ~%3 dolu; sıralama indeksle aynı yönde
+      // (yön indeksle eşleşmezse sorgu 9000× yavaşlar)
+      .order('etkin_tarih', { ascending: false, nullsFirst: false })
+      .order('id', { ascending: true })
+      .range(bas, bas + PER_PAGE - 1);
+    if (istek !== listeIstek) return;   // araya yeni istek girdi
+
+    if (error || !dilim || !dilim.length) {
+      kap.innerHTML = error
+        ? (kilitliMi(error)
+            ? kilitHtml('İhale listesi üyelere özel', 'Bu idarenin ihale kayıtlarını görmek için hesabınızla giriş yapın.')
+            : '<div class="v1-bos">Liste yüklenemedi, lütfen tekrar deneyin.</div>')
+        : '<div class="v1-bos">Bu kuruma ait ihale bulunamadı.</div>';
+      el('pager').style.display = 'none';
+      return;
+    }
+
+    kap.innerHTML = dilim.map(i => {
+      const d = durumSec(i.son_teklif_tarihi);
+      const bedel = i.yaklasik_maliyet_min
+        ? (i.yaklasik_maliyet_max && i.yaklasik_maliyet_max !== i.yaklasik_maliyet_min
+            ? `${paraFormat(i.yaklasik_maliyet_min)} – ${paraFormat(i.yaklasik_maliyet_max)}`
+            : paraFormat(i.yaklasik_maliyet_min))
+        : null;
+      // Kazanan firma(lar) — ihale_sonuclari embed'i (çok kısımlı ihalede dizi döner)
+      const sonuclar = Array.isArray(i.ihale_sonuclari) ? i.ihale_sonuclari : (i.ihale_sonuclari ? [i.ihale_sonuclari] : []);
+      let kazananBlok = '';
+      if (sonuclar.length === 1) {
+        const so = sonuclar[0];
+        const parca = [
+          `🏆 ${esc(so.kazanan_firma) || '—'}`,
+          so.kazanan_teklif ? paraFormat(so.kazanan_teklif) : null,
+          so.kazanan_teklif_farki_yuzde != null ? `tenzilat %${Number(so.kazanan_teklif_farki_yuzde).toFixed(1)}` : null,
+          so.sonuc_tarihi ? tarihFormat(so.sonuc_tarihi) : null,
+        ].filter(Boolean).join(' · ');
+        kazananBlok = `<div class="k-ih-kazanan">${parca}</div>`;
+      } else if (sonuclar.length > 1) {
+        const toplam = sonuclar.reduce((t, so) => t + (Number(so.kazanan_teklif) || 0), 0);
+        kazananBlok = `<div class="k-ih-kazanan">🏆 ${sonuclar.length} kısım sonuçlandı${toplam ? ` · toplam ${paraFormat(toplam)}` : ''}</div>`;
+      }
+      return `<div class="k-ihale">
+        <div class="k-ih-ust">
+          <a class="k-ih-bas" href="v1-ihale-detay?id=${encodeURIComponent(i.id)}">${esc(i.baslik) || '—'}</a>
+          <span class="k-ih-durum ${d.cls}">${d.etiket}</span>
+        </div>
+        <div class="k-etiketler">
+          ${i.tur ? `<span class="k-et k-et-tur">${esc(i.tur)}</span>` : ''}
+          ${i.il ? `<span class="k-et k-et-il">📍 ${esc(i.il)}</span>` : ''}
+        </div>
+        <div class="k-ih-meta">
+          ${i.ilan_tarihi ? `<span>📅 Yayın: ${tarihFormat(i.ilan_tarihi)}</span>` : ''}
+          ${i.son_teklif_tarihi ? `<span>⏰ Son teklif: ${tarihFormat(i.son_teklif_tarihi)}</span>` : ''}
+          ${i.ekap_id ? `<span>EKAP: ${esc(i.ekap_id)}</span>` : ''}
+        </div>
+        ${bedel ? `<div class="k-ih-bedel">${bedel}</div>` : ''}
+        ${kazananBlok}
+      </div>`;
+    }).join('');
+
+    el('pager').style.display = topSayfa > 1 ? 'flex' : 'none';
+    el('pg-info').textContent = `${s} / ${topSayfa}`;
+    el('pg-ilk').disabled = s <= 1;
+    el('pg-prev').disabled = s <= 1;
+    el('pg-next').disabled = s >= topSayfa;
+    el('pg-son').disabled = s >= topSayfa;
+  }
+
+  // trend: kurum_ozet.aylik_trend — DİZİ DEĞİL, {'YYYY-MM': n} OBJESİ (son 24 ay)
+  function aylikTrendGrafik(trend) {
+    const simdi = new Date(), ayMap = {};
+    for (let i = 23; i >= 0; i--) {
+      const d = new Date(simdi.getFullYear(), simdi.getMonth() - i, 1);
+      ayMap[`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`] = 0;
+    }
+    Object.keys(trend || {}).forEach(k => { if (k in ayMap) ayMap[k] = Number(trend[k]) || 0; });
+    const AYLAR = ['Oca','Şub','Mar','Nis','May','Haz','Tem','Ağu','Eyl','Eki','Kas','Ara'];
+    const etiketler = Object.keys(ayMap).map(k => {
+      const [y, m] = k.split('-');
+      return `${AYLAR[parseInt(m, 10) - 1]} ${y.slice(2)}`;
+    });
+    const c = el('g-aylik');
+    if (!c) return;
+    if (gAylik) { gAylik.destroy(); gAylik = null; }
+    gAylik = new Chart(c, {
+      type: 'line',
+      data: { labels: etiketler, datasets: [{
+        label: 'İhale Sayısı', data: Object.values(ayMap),
+        borderColor: C.mavi, backgroundColor: 'rgba(19,94,170,.12)',
+        borderWidth: 2.2, pointRadius: 2, pointBackgroundColor: C.mavi, tension: .3, fill: true }] },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false }, tooltip: { backgroundColor: C.lacivert, titleColor:'#fff',
+          bodyColor:'#fff', padding: 10, cornerRadius: 8, displayColors: false } },
+        scales: {
+          x: { ticks: { color: C.muted, font: { size: 10 }, maxRotation: 45 }, grid: { display: false } },
+          y: { ticks: { color: C.muted, font: { size: 11 } }, grid: { color: C.cizgi }, beginAtZero: true }
+        }
+      }
+    });
+  }
+
+  // yillik: kurum_ozet.yillik — [{k:'2024', n:123}] yıla göre artan sıralı
+  function yillikGrafik(yillik) {
+    const c = el('g-yillik');
+    if (!c) return;
+    if (gYillik) { gYillik.destroy(); gYillik = null; }
+    gYillik = new Chart(c, {
+      type: 'bar',
+      data: { labels: (yillik || []).map(r => r.k), datasets: [{
+        label: 'İhale Sayısı', data: (yillik || []).map(r => Number(r.n) || 0),
+        backgroundColor: C.mavi, borderColor: C.mavi, borderWidth: 1, borderRadius: 5 }] },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: { legend: { display: false }, tooltip: { backgroundColor: C.lacivert, titleColor:'#fff',
+          bodyColor:'#fff', padding: 10, cornerRadius: 8, displayColors: false } },
+        scales: {
+          x: { ticks: { color: C.muted, font: { size: 11 } }, grid: { display: false } },
+          y: { ticks: { color: C.muted, font: { size: 11 } }, grid: { color: C.cizgi }, beginAtZero: true }
+        }
+      }
+    });
+  }
+
+  // Ortak çubuk kırılımı: [{k,n}] → başlık + oran çubuğu
+  function cubukListe(hedefId, dizi, bosMetin) {
+    const kap = el(hedefId);
+    if (!kap) return;
+    const d = (dizi || []).map(r => [String(r.k == null ? '—' : r.k), Number(r.n) || 0]);
+    if (!d.length) { kap.innerHTML = `<div class="v1-bos">${bosMetin}</div>`; return; }
+    const max = Math.max(1, ...d.map(x => x[1]));
+    kap.innerHTML = d.map(([ad, cnt]) => `<div class="k-cb">
+      <div class="k-cb-bas"><span class="k-cb-ad" title="${esc(ad)}">${esc(ad)}</span><span class="k-cb-say">${num(cnt)}</span></div>
+      <div class="k-cb-yol"><span class="k-cb-dolu" style="width:${Math.max(2, Math.round(cnt / max * 100))}%"></span></div>
+    </div>`).join('');
+  }
+
+  // iller: kurum_ozet.il — [{k,n}] desc (yalnızca il dolu satırlar)
+  function ilListe(iller) {
+    const kap = el('l-il');
+    kap.innerHTML = (iller || []).map(r =>
+      `<div class="k-il"><span class="k-il-ad">${esc(r.k)}</span><span class="k-il-say">${num(r.n)}</span></div>`
+    ).join('') || '<div class="v1-bos">İl bilgisi yok.</div>';
+  }
+
+  // durum: kurum_ozet.durum — {aktif, kapandi}
+  function durumGrafik(durum) {
+    const aktif = Number(durum && durum.aktif) || 0;
+    const kapandi = Number(durum && durum.kapandi) || 0;
+    const c = el('g-durum');
+    if (!c) return;
+    if (gDurum) { gDurum.destroy(); gDurum = null; }
+    gDurum = new Chart(c, {
+      type: 'doughnut',
+      data: { labels: ['Aktif', 'Kapandı / Geçmiş'], datasets: [{
+        data: [aktif, kapandi], backgroundColor: [C.yesil, C.acik],
+        borderColor: ['#fff', '#fff'], borderWidth: 2, hoverOffset: 4 }] },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        plugins: {
+          legend: { position: 'right', labels: { color: C.muted, font: { size: 12 }, padding: 14 } },
+          tooltip: { backgroundColor: C.lacivert, titleColor:'#fff', bodyColor:'#fff', padding: 10,
+            cornerRadius: 8, displayColors: false,
+            callbacks: { label: ctx => ` ${ctx.label}: ${num(ctx.raw)} ihale` } }
+        },
+        cutout: '62%'
+      }
+    });
+  }
+
+  // analiz_pivot: bu idarenin kazanan firma dağılımı + yoğunlaşma endeksi
+  async function kazananFirmalar() {
+    try {
+      const { data, error } = await sb.rpc('analiz_pivot', { p_grup: 'firma', p_idare: KURUM });
+      if (error) throw error;
+      if (!data || !data.length) return;
+      const max = Number(data[0].ihale_sayisi) || 1;
+      const toplamIs = data.reduce((s, r) => s + (Number(r.ihale_sayisi) || 0), 0);
+
+      // Yoğunlaşma endeksi: işlerin ne kadarı ilk 3 firmada toplanmış?
+      const top3 = data.slice(0, 3).reduce((s, r) => s + (Number(r.ihale_sayisi) || 0), 0);
+      const oran = toplamIs > 0 ? (top3 / toplamIs * 100) : 0;
+      let serit = '';
+      if (data.length >= 3 && toplamIs >= 5) {
+        const renk = oran >= 60 ? 'var(--v1-kirmizi)' : (oran >= 35 ? '#8A6100' : 'var(--v1-yesil)');
+        const yorum = oran >= 60
+          ? 'Yüksek yoğunlaşma — işlerin büyük kısmı az sayıda firmada.'
+          : (oran >= 35 ? 'Orta düzey yoğunlaşma.' : 'Dağınık — çok sayıda farklı firma kazanıyor.');
+        serit = `<div style="display:flex;align-items:center;gap:8px;margin-bottom:13px;padding:9px 13px;
+            background:var(--v1-mavi-acik);border:1px solid #CFE2F5;border-radius:9px;flex-wrap:wrap;">
+          <span style="font-size:11.5px;color:var(--v1-muted);">İlk 3 Firma Payı:</span>
+          <b style="color:${renk};font-size:13.5px;">%${oran.toFixed(0)}</b>
+          <span style="font-size:11.5px;color:var(--v1-muted);">— ${yorum}</span>
+        </div>`;
+      }
+
+      el('l-kazanan').innerHTML = serit + data.slice(0, 12).map(r => {
+        const adet = Number(r.ihale_sayisi) || 0;
+        const tenz = r.ort_tenzilat != null ? ` · ort. %${Number(r.ort_tenzilat).toFixed(1)} tenz.` : '';
+        return `<div class="k-cb">
+          <div class="k-cb-bas">
+            <span class="k-cb-ad" title="${esc(r.grup_deger)}">🏢 ${esc(r.grup_deger)}</span>
+            <span class="k-cb-say">${num(adet)} iş${tenz}</span>
+          </div>
+          <div class="k-cb-yol"><span class="k-cb-dolu" style="width:${Math.max(2, Math.round(adet / max * 100))}%"></span></div>
+        </div>`;
+      }).join('');
+      el('kart-kazanan').style.display = 'block';
+    } catch (err) {
+      // RPC henüz uygulanmadıysa / üyeye özelse kart gizli kalır, sayfa çalışmaya devam eder
+      console.info('analiz_pivot kullanılamıyor:', (err && err.message) || err);
+    }
+  }
+
+  // ── Kurum takibi (takip_idareler: kullanici_id + idare_ad) ──────
+  async function takipDurumu() {
+    const btn = el('btn-takip');
+    if (!btn || !KURUM) return;
+    try {
+      const { data: { user } } = await sb.auth.getUser();
+      if (!user) { btn.textContent = '🔔 Kurumu Takip Et'; btn.dataset.takipte = ''; btn.classList.remove('secili'); return; }
+      const { data } = await sb.from('takip_idareler')
+        .select('id').eq('kullanici_id', user.id).eq('idare_ad', KURUM).limit(1);
+      const takipte = !!(data && data.length);
+      btn.textContent = takipte ? '✓ Takip Ediliyor' : '🔔 Kurumu Takip Et';
+      btn.dataset.takipte = takipte ? '1' : '';
+      btn.classList.toggle('secili', takipte);
+    } catch (_) { /* tablo/yetki yoksa sessizce geç */ }
+  }
+
+  async function takipToggle() {
+    if (!KURUM) return;
+    const btn = el('btn-takip');
+    const { data: { user } } = await sb.auth.getUser();
+    if (!user) { location.href = `login?donus=${encodeURIComponent(location.pathname + location.search)}`; return; }
+    try {
+      if (btn.dataset.takipte === '1') {
+        await sb.from('takip_idareler').delete().eq('kullanici_id', user.id).eq('idare_ad', KURUM);
+      } else {
+        await sb.from('takip_idareler').upsert(
+          { kullanici_id: user.id, idare_ad: KURUM },
+          { onConflict: 'kullanici_id,idare_ad', ignoreDuplicates: true }
+        );
+      }
+      takipDurumu();
+    } catch (_) {
+      alert('Takip işlemi şu an yapılamıyor, lütfen daha sonra tekrar deneyin.');
+    }
+  }
+
+  // Seçilen idarenin analizini AYNI SAYFADA açar
+  async function analizYukle(kurum) {
+    KURUM = kurum;
+    el('dizin-view').style.display = 'none';
+    el('root-content').style.display = 'none';
+    el('root-loading').style.display = 'block';
+    document.title = KURUM + ' — İhaleGlobal';
+    kirintiYaz(KURUM);
+
+    // hub içi ikinci açılış: sekme + liste durumu sıfırla
+    sayfa = 1; listeIstek++;
+    el('liste-kap').innerHTML = '';
+    el('kart-kazanan').style.display = 'none';
+    document.querySelectorAll('#root-content .v1-panel').forEach(p => p.classList.remove('aktif'));
+    document.querySelectorAll('#root-content .v1-sekme').forEach(b => b.classList.toggle('aktif', b.dataset.sek === 'genel'));
+    el('sek-genel').classList.add('aktif');
+
+    // Misafir kapısı: sayfanın tamamı bir İDARENİN analizi (kurum_ozet + analiz_pivot +
+    // ilanlar.idare filtresi) — hepsi anon'a kapalı. RPC hatasını beklemeden kibar kapı çiz.
+    if (!uyeMi) {
+      el('root-loading').innerHTML = kilitHtml(
+        'Kurum Analizi üyelere özeldir',
+        'İdare bazlı ihale karnesi, kırılımlar ve kazanan firma analizi için hesabınızla giriş yapın.');
+      return;
+    }
+
+    el('btn-dt').href = `dogrudan-temin?idare=${encodeURIComponent(KURUM)}`;
+    takipDurumu();
+
+    // Server-side aggregate: 8 kırılım + KPI tek RPC'de (client-load-all yok)
+    const { data: ozet, error } = await sb.rpc('kurum_ozet', { p_idare: KURUM });
+    if (error) throw error;
+
+    el('root-loading').style.display = 'none';
+    el('root-content').style.display = 'block';
+    el('kurum-ad').textContent = KURUM;
+
+    const kpi = (ozet && ozet.kpi) || {};
+    const toplam = Number(kpi.toplam) || 0;
+    const aktifSay = Number(kpi.aktif) || 0;
+    const toplamButce = Number(kpi.toplam_butce) || 0;
+    const ilSayisi = Number(kpi.il_sayisi) || 0;
+    topSayfa = Math.max(1, Math.ceil(toplam / PER_PAGE));
+
+    el('kurum-meta').textContent =
+      `${num(toplam)} ihale kaydı · ${num(ilSayisi)} il · toplam bütçe: ${paraFormat(toplamButce)} (yalnız ihaleler, doğrudan temin hariç)`;
+    el('kpi-toplam').textContent = num(toplam);
+    el('kpi-aktif').textContent = num(aktifSay);
+    el('kpi-butce').textContent = paraFormat(toplamButce);
+    el('kpi-il').textContent = num(ilSayisi);
+    el('kpi-butce-alt').textContent = `${num(toplam)} ihale üzerinden · maliyeti ilan edilmeyen kayıtlar 0 sayılır`;
+    // Uzun parasal değerde KPI sayısı taşmasın
+    const bEl = el('kpi-butce');
+    bEl.style.fontSize = bEl.textContent.length > 13 ? '19px' : '';
+
+    aylikTrendGrafik((ozet && ozet.aylik_trend) || {});
+    yillikGrafik((ozet && ozet.yillik) || []);
+    cubukListe('l-tur', (ozet && ozet.tur) || [], 'Tür verisi yok.');
+    ilListe((ozet && ozet.il) || []);
+    cubukListe('l-kategori', (ozet && ozet.kategori) || [], 'Kategori verisi yok.');
+    cubukListe('l-usul', (ozet && ozet.usul) || [], 'Usul verisi yok.');
+    durumGrafik((ozet && ozet.durum) || {});
+    kazananFirmalar();
+  }
+
+  // ══════════════════ İDARE DİZİNİ ══════════════════
+  const IZ_BOYUT = 50;
+  let izTum = [], izFiltre = [], izSayfaNo = 0, izKuruldu = false;
+
+  function izGirisKapisi() {
+    el('iz-yukleniyor').innerHTML = kilitHtml(
+      'İdare Dizini üyelere özeldir',
+      '23.000+ idarenin ihale karnesini görmek için hesabınızla giriş yapın.');
+    el('iz-yukleniyor').style.display = 'block';
+    el('iz-icerik').style.display = 'none';
+  }
+
+  // idare_dizin_json() TÜM dizini tek istekte döner (idare_ozet_mv, gece tazelenir).
+  // Satır formatı: [idare, toplam, aktif, en_yakin_il]. 30 dk sessionStorage önbelleği.
+  async function izVeriCek() {
+    if (!uyeMi) { izGirisKapisi(); return; }
+
+    const CACHE_KEY = 'idare_dizin_v1', TTL = 30 * 60 * 1000;
+    let sonuc = null;
+    try {
+      const ham = sessionStorage.getItem(CACHE_KEY);
+      if (ham) {
+        const paket = JSON.parse(ham);
+        if (paket && paket.t && (Date.now() - paket.t) < TTL && Array.isArray(paket.d)) sonuc = paket.d;
+      }
+    } catch (_) { /* önbellek okunamadı → normal fetch */ }
+
+    if (!sonuc) {
+      const { data, error } = await sb.rpc('idare_dizin_json', {}, { get: true });
+      if (error) throw error;
+      sonuc = Array.isArray(data) ? data : [];
+      try { sessionStorage.setItem(CACHE_KEY, JSON.stringify({ t: Date.now(), d: sonuc })); } catch (_) { /* kota */ }
+    }
+
+    izTum = sonuc.map(r => ({ ad: r[0], toplam: Number(r[1]) || 0, aktif: Number(r[2]) || 0, il: r[3] || '—' }));
+
+    const toplamIhale = izTum.reduce((s, i) => s + i.toplam, 0);
+    const aktifIhale = izTum.reduce((s, i) => s + i.aktif, 0);
+    const aktifIdare = izTum.filter(i => i.aktif > 0).length;
+    el('iz-st-idare').textContent = num(izTum.length);
+    el('iz-st-aktif-idare').textContent = num(aktifIdare);
+    el('iz-st-ihale').textContent = num(toplamIhale);
+    el('iz-st-aktif-ihale').textContent = num(aktifIhale);
+
+    const iller = [...new Set(izTum.map(i => i.il).filter(x => x && x !== '—'))].sort((a, b) => a.localeCompare(b, 'tr'));
+    const ilSel = el('iz-il-filtre');
+    iller.forEach(il => { const o = document.createElement('option'); o.value = il; o.textContent = il; ilSel.appendChild(o); });
+
+    el('iz-yukleniyor').style.display = 'none';
+    el('iz-icerik').style.display = 'block';
+
+    // Global aramadan ?ara= deep-link → arama kutusunu doldur + filtrele
+    const ara = P.get('ara');
+    if (ara && !KURUM) el('iz-arama').value = ara;
+    izFiltrele();
+  }
+
+  function izFiltrele() {
+    const q = trFold(el('iz-arama').value.trim());
+    const ilVal = el('iz-il-filtre').value;
+    const aktifV = el('iz-aktif-filtre').value;
+    const sira = el('iz-sirala').value;
+
+    izFiltre = izTum.filter(i => {
+      if (q && !trFold(i.ad).includes(q) && !trFold(i.il).includes(q)) return false;
+      if (ilVal && i.il !== ilVal) return false;
+      if (aktifV === 'aktif' && i.aktif < 1) return false;
+      return true;
+    });
+    izFiltre.sort((a, b) => {
+      switch (sira) {
+        case 'aktif_desc': return b.aktif - a.aktif;
+        case 'ad_asc':     return a.ad.localeCompare(b.ad, 'tr');
+        case 'ad_desc':    return b.ad.localeCompare(a.ad, 'tr');
+        case 'il_asc':     return a.il.localeCompare(b.il, 'tr');
+        default:           return b.toplam - a.toplam;
+      }
+    });
+    el('iz-sort-toplam').textContent = sira === 'toplam_desc' ? 'TOPLAM ▾' : 'TOPLAM';
+    el('iz-sort-aktif').textContent = sira === 'aktif_desc' ? 'AKTİF ▾' : 'AKTİF';
+    izSayfaNo = 0;
+    izSayfaGoster();
+  }
+
+  function izSayfaGoster() {
+    const bas = izSayfaNo * IZ_BOYUT;
+    const dilim = izFiltre.slice(bas, bas + IZ_BOYUT);
+    const topS = Math.ceil(izFiltre.length / IZ_BOYUT);
+    el('iz-sayac').textContent = num(izFiltre.length) + ' idare';
+
+    const govde = el('iz-govde');
+    if (!dilim.length) {
+      govde.innerHTML = '<tr><td colspan="5" class="v1-bos">Arama kriterleriyle eşleşen idare bulunamadı.</td></tr>';
+      el('iz-pager').style.display = 'none';
+      return;
+    }
+    const max = Math.max(1, ...dilim.map(i => i.toplam));
+    // İnline onclick YOK — idare adındaki tırnak kırardı; data-ad + delegasyon
+    govde.innerHTML = dilim.map((i, ix) => `
+      <tr class="tiklanir" data-ad="${esc(i.ad)}">
+        <td><span style="color:var(--v1-muted);font-weight:700;margin-right:8px;">${bas + ix + 1}</span>
+          <span class="v1-t-ad" title="${esc(i.ad)}">${esc(i.ad)}</span></td>
+        <td class="iz-il-c" style="font-size:13px;color:var(--v1-muted);">${esc(i.il)}</td>
+        <td><div style="display:flex;align-items:center;gap:9px;">
+          <span style="flex:1;height:8px;background:#EDF1F6;border-radius:5px;overflow:hidden;">
+            <span style="display:block;height:100%;background:var(--v1-mavi);border-radius:5px;width:${Math.max(3, Math.round(i.toplam / max * 100))}%"></span></span>
+          <span style="font-weight:800;color:var(--v1-lacivert);white-space:nowrap;">${num(i.toplam)}</span></div></td>
+        <td><span style="font-weight:800;color:${i.aktif > 0 ? 'var(--v1-teal)' : 'var(--v1-muted)'};">${num(i.aktif)}</span></td>
+        <td class="iz-islem-c" style="text-align:right;">
+          <button class="ag-kucuk-btn mavi" data-ad="${esc(i.ad)}">📊 Analiz</button></td>
+      </tr>`).join('');
+
+    const pager = el('iz-pager');
+    if (topS <= 1) { pager.style.display = 'none'; return; }
+    pager.style.display = 'flex';
+    el('iz-info').textContent = `Sayfa ${izSayfaNo + 1} / ${topS} (${num(izFiltre.length)} idare)`;
+    el('iz-prev').disabled = izSayfaNo === 0;
+    el('iz-next').disabled = izSayfaNo >= topS - 1;
+  }
+
+  function izHata(e) {
+    console.error(e);
+    if (!uyeMi || kilitliMi(e)) { izGirisKapisi(); return; }
+    el('iz-yukleniyor').innerHTML =
+      '<div class="v1-bos" style="color:var(--v1-kirmizi);">Dizin yüklenemedi. Lütfen sayfayı yenileyin.</div>';
+    el('iz-yukleniyor').style.display = 'block';
+  }
+
+  // ══════════════════ KURUM AĞACI (DETSİS) ══════════════════
+  // idare_agac_dallar (tembel dallar) + idare_agac_ara + idare_agac_yol +
+  // idare_agac_bagsiz_ozet/liste + idare_dal_son_ihaleler. Hepsi üyeye özel.
+  const AG_BAGSIZ = '__bagsiz';
+  let agKuruldu = false, agAraIstek = 0, agBagsizOffset = 0;
+  let agTumIhale = 0, agTumDt = 0;
+  const agCocukYuklendi = new Set();   // detsis → çocukları çekildi (tekrar RPC yok)
+
+  function dizinGorunum(g) {
+    el('gor-liste').classList.toggle('aktif', g === 'liste');
+    el('gor-agac').classList.toggle('aktif', g === 'agac');
+    el('liste-gorunum').style.display = g === 'liste' ? '' : 'none';
+    el('agac-gorunum').style.display = g === 'agac' ? '' : 'none';
+    if (g === 'agac' && !agKuruldu) { agKuruldu = true; agacBaslat().catch(agacHata); }
+  }
+
+  // Kapsama payı: dalın toplamı / TÜM kayıtlar (bağlantısızlar dahil payda)
+  function payYuzde(top, payda) {
+    if (!payda || !top || top <= 0) return '';
+    const p = top / payda * 100;
+    return p >= 0.1 ? '%' + p.toLocaleString('tr-TR', { maximumFractionDigits: 1 }) : '&lt;%0,1';
+  }
+
+  function agacGirisKapisi() {
+    el('ag-yukleniyor').innerHTML = kilitHtml(
+      'Kurum Ağacı üyelere özeldir',
+      'Bakanlıktan il müdürlüğüne 87.000+ kurumun hiyerarşisini ve ihale sayılarını görmek için hesabınızla giriş yapın.');
+    el('ag-yukleniyor').style.display = 'block';
+    el('ag-icerik').style.display = 'none';
+  }
+
+  function agacHata(e) {
+    console.error(e);
+    if (!uyeMi || kilitliMi(e)) { agacGirisKapisi(); return; }
+    el('ag-yukleniyor').innerHTML =
+      '<div class="v1-bos" style="color:var(--v1-kirmizi);">Kurum ağacı yüklenemedi. Lütfen sayfayı yenileyin.</div>';
+    el('ag-yukleniyor').style.display = 'block';
+  }
+
+  async function agacBaslat() {
+    if (!uyeMi) { agacGirisKapisi(); return; }
+
+    // 30 dk önbellek: kökler + kapsama özeti (RPC'ler seyrek kalsın — 2 r/s limiti)
+    const CK = 'kurum_agac_v1', TTL = 30 * 60 * 1000;
+    let kokler = null, ozet = null;
+    try {
+      const ham = sessionStorage.getItem(CK);
+      if (ham) {
+        const p = JSON.parse(ham);
+        if (p && p.t && (Date.now() - p.t) < TTL && Array.isArray(p.k)) { kokler = p.k; ozet = p.o; }
+      }
+    } catch (_) { /* önbellek okunamadı → normal fetch */ }
+
+    if (!kokler) {
+      const [kokRes, ozetRes] = await Promise.all([
+        sb.rpc('idare_agac_dallar', { p_ust: null }),
+        sb.rpc('idare_agac_bagsiz_ozet'),
+      ]);
+      if (kokRes.error) throw kokRes.error;
+      kokler = kokRes.data || [];
+      // bağlantısız özeti yoksa ağaç yine çalışsın
+      ozet = ozetRes.error ? null : ozetRes.data;
+      try { sessionStorage.setItem(CK, JSON.stringify({ t: Date.now(), k: kokler, o: ozet })); } catch (_) { /* kota */ }
+    }
+
+    agTumIhale = Number(ozet && ozet.tum_ihale) || 0;
+    agTumDt = Number(ozet && ozet.tum_dt) || 0;
+    // özet yoksa pay paydası: köklerin toplamı (yalnız ağaca bağlı kısım)
+    if (!agTumIhale) agTumIhale = kokler.reduce((s, r) => s + (Number(r.toplam_ihale) || 0), 0);
+    if (!agTumDt) agTumDt = kokler.reduce((s, r) => s + (Number(r.toplam_dt) || 0), 0);
+
+    kapsamaCiz(ozet);
+
+    const kokEl = el('ag-kokler');
+    kokEl.innerHTML = kokler.map(d => dugumHtml(d, 0)).join('') + bagsizKokHtml(ozet);
+    el('ag-sayac').textContent = `${sayi(kokler.length)} kök kurum · dalları ▸ ile açın`;
+    el('ag-yukleniyor').style.display = 'none';
+    el('ag-icerik').style.display = 'block';
+  }
+
+  function kapsamaCiz(ozet) {
+    if (!ozet) return;   // özet RPC'si yoksa şerit çizilmez
+    const tumI = Number(ozet.tum_ihale) || 0, esliI = Number(ozet.esli_ihale) || 0;
+    const tumD = Number(ozet.tum_dt) || 0, esliD = Number(ozet.esli_dt) || 0;
+    const pI = tumI ? esliI / tumI * 100 : 0;
+    const pD = tumD ? esliD / tumD * 100 : 0;
+    const kap = el('ag-kapsama');
+    kap.innerHTML = `
+      <div class="ag-kapsama-baslik">Ağaç kapsaması — kayıtların DETSİS hiyerarşisine bağlanma oranı (her gece güncellenir)</div>
+      <div class="ag-kapsama-sat"><span>📋 İhale: <b>${sayi(esliI)}</b> / ${sayi(tumI)} kayıt ağaca bağlı</span><span><b>%${pI.toLocaleString('tr-TR', { maximumFractionDigits: 1 })}</b></span></div>
+      <div class="ag-bar"><div class="ag-bar-esli" style="width:${Math.min(100, pI).toFixed(1)}%"></div></div>
+      <div class="ag-kapsama-sat"><span>⚡ Doğrudan temin: <b>${sayi(esliD)}</b> / ${sayi(tumD)} kayıt ağaca bağlı</span><span><b>%${pD.toLocaleString('tr-TR', { maximumFractionDigits: 1 })}</b></span></div>
+      <div class="ag-bar"><div class="ag-bar-esli" style="width:${Math.min(100, pD).toFixed(1)}%"></div></div>
+      <div class="ag-kapsama-sat" style="margin-top:2px;"><span>Ağaca bağlanamayan kayıtlar aşağıda <b>🔗 Bağlantısız Kurumlar</b> dalında ayrıca listelenir — veri gizlenmez.</span></div>`;
+    kap.style.display = 'block';
+  }
+
+  // Düğüm satırı: kendi/toplam sayılar AYRI (ihale 📋, DT ⚡) + tüm kayıtlar içindeki pay
+  function dugumHtml(d, derin) {
+    const acilir = Number(d.cocuk_sayisi) > 0;
+    return `<div class="ag-dugum" data-detsis="${esc(d.detsis_no)}" data-derin="${derin}">
+      <div class="ag-satir" style="--derin:${derin}">
+        <button class="ag-ok ${acilir ? '' : 'yok'}" title="${acilir ? sayi(d.cocuk_sayisi) + ' alt birim' : ''}">▸</button>
+        <span class="ag-ad" title="${esc(d.ad)}">${esc(d.ad)}${acilir ? ` <span class="adet">(${sayi(d.cocuk_sayisi)})</span>` : ''}</span>
+        <span class="ag-rozet ${Number(d.toplam_ihale) ? 'ihale' : 'bos'}" title="İhale — kendi: ${sayi(d.kendi_ihale)}, dal toplamı (kendisi + tüm alt birimler): ${sayi(d.toplam_ihale)}">📋 ${sayi(d.kendi_ihale)} / ${sayi(d.toplam_ihale)}</span>
+        <span class="ag-rozet ${Number(d.toplam_dt) ? 'dt' : 'bos'}" title="Doğrudan temin — kendi: ${sayi(d.kendi_dt)}, dal toplamı: ${sayi(d.toplam_dt)}">⚡ ${sayi(d.kendi_dt)} / ${sayi(d.toplam_dt)}</span>
+        <span class="ag-pay" title="Tüm ihale kayıtları içindeki pay">${payYuzde(Number(d.toplam_ihale), agTumIhale)}</span>
+        ${Number(d.toplam_ihale) > 0 ? '<button class="ag-kucuk-btn ag-dal-ihale" title="Bu dalın (kendisi + alt birimleri) en güncel ihaleleri">📋 Son ihaleler</button>' : ''}
+      </div>
+      <div class="ag-cocuklar"></div>
+    </div>`;
+  }
+
+  // "Bağlantısız Kurumlar" — DETSİS'e eşlenemeyen idareler AYRI DAL olarak gösterilir;
+  // gizlenirse kullanıcı ağaç toplamlarını "tüm veri" sanır.
+  function bagsizKokHtml(ozet) {
+    const kurum = ozet ? sayi(ozet.kurum_sayisi) : '—';
+    const ih = ozet ? sayi(ozet.bagsiz_ihale) : '—';
+    const dt = ozet ? sayi(ozet.bagsiz_dt) : '—';
+    return `<div class="ag-dugum" data-detsis="${AG_BAGSIZ}" data-derin="0">
+      <div class="ag-satir" style="--derin:0; border-top:1px dashed var(--v1-cizgi);">
+        <button class="ag-ok" title="Bağlantısız kurumları listele">▸</button>
+        <span class="ag-ad" title="DETSİS ağacına henüz bağlanamayan idareler — eşleme her gece iyileşir">🔗 Bağlantısız Kurumlar <span class="adet">(${kurum} kurum — ağaca eşlenemedi)</span></span>
+        <span class="ag-rozet ${ozet && Number(ozet.bagsiz_ihale) ? 'ihale' : 'bos'}" title="Ağaca bağlanamayan ihale kayıtları">📋 ${ih}</span>
+        <span class="ag-rozet ${ozet && Number(ozet.bagsiz_dt) ? 'dt' : 'bos'}" title="Ağaca bağlanamayan doğrudan temin kayıtları">⚡ ${dt}</span>
+        <span class="ag-pay" title="Tüm ihale kayıtları içindeki pay">${ozet ? payYuzde(Number(ozet.bagsiz_ihale), agTumIhale) : ''}</span>
+      </div>
+      <div class="ag-cocuklar"></div>
+    </div>`;
+  }
+
+  function agacTikla(e) {
+    const dugum = e.target.closest('.ag-dugum');
+    if (!dugum) return;
+    if (e.target.closest('.ag-dal-ihale')) {
+      const adEl = dugum.querySelector(':scope > .ag-satir > .ag-ad');
+      dalIhaleleriAc(dugum.dataset.detsis, adEl ? adEl.title : '');
+      return;
+    }
+    if (e.target.closest('.ag-bagsiz-daha')) {
+      bagsizYukle(dugum, Number(dugum.dataset.derin) + 1, agBagsizOffset);
+      return;
+    }
+    const analiz = e.target.closest('.ag-bagsiz-analiz');
+    if (analiz) { kurumAc(analiz.dataset.ad); return; }
+    if (e.target.closest('.ag-ok') || e.target.closest('.ag-ad')) dugumAcKapa(dugum);
+  }
+
+  // Tembel dal açılımı: çocuklar İLK açılışta RPC ile gelir, sonrası DOM'da kalır
+  async function dugumAcKapa(dugum) {
+    const ok = dugum.querySelector(':scope > .ag-satir > .ag-ok');
+    if (!ok || ok.classList.contains('yok')) return;
+    const cocuklar = dugum.querySelector(':scope > .ag-cocuklar');
+    if (cocuklar.classList.contains('acik')) {
+      cocuklar.classList.remove('acik'); ok.classList.remove('acik');
+      return;
+    }
+    cocuklar.classList.add('acik'); ok.classList.add('acik');
+    const detsis = dugum.dataset.detsis;
+    if (agCocukYuklendi.has(detsis)) return;
+    agCocukYuklendi.add(detsis);
+    const derin = Number(dugum.dataset.derin) + 1;
+    cocuklar.innerHTML = `<div class="ag-not" style="--derin:${derin}">Yükleniyor…</div>`;
+    if (detsis === AG_BAGSIZ) { agBagsizOffset = 0; await bagsizYukle(dugum, derin, 0); return; }
+    const { data, error } = await sb.rpc('idare_agac_dallar', { p_ust: detsis });
+    if (error) {
+      console.error(error);
+      // Oturum dal açılırken düşerse 42501 gelir — "tekrar deneyin" yerine kibar kilit
+      cocuklar.innerHTML = `<div class="ag-not" style="--derin:${derin}">${kilitliMi(error)
+        ? 'Bu dalın alt birimleri üyelere özeldir — <a href="login">giriş yapın</a>.'
+        : 'Dallar yüklenemedi, tekrar deneyin.'}</div>`;
+      agCocukYuklendi.delete(detsis);
+      return;
+    }
+    const dallar = data || [];
+    cocuklar.innerHTML = dallar.map(d => dugumHtml(d, derin)).join('')
+      + (dallar.length >= 500 ? `<div class="ag-not" style="--derin:${derin}">İlk 500 dal gösteriliyor (ihale sayısına göre sıralı).</div>` : '')
+      + (!dallar.length ? `<div class="ag-not" style="--derin:${derin}">Alt birim bulunamadı.</div>` : '');
+  }
+
+  // Bağlantısız dal: 50'şerli sayfalarla iner ("Daha fazla" ile offset artar)
+  async function bagsizYukle(dugum, derin, offset) {
+    const cocuklar = dugum.querySelector(':scope > .ag-cocuklar');
+    const { data, error } = await sb.rpc('idare_agac_bagsiz_liste', { p_q: null, p_limit: 50, p_offset: offset });
+    if (error) {
+      console.info('idare_agac_bagsiz_liste kullanılamıyor:', error.message);
+      cocuklar.innerHTML = `<div class="ag-not" style="--derin:${derin}">Bağlantısız kurum listesi henüz hazırlanıyor — yakında burada.</div>`;
+      agCocukYuklendi.delete(AG_BAGSIZ);
+      return;
+    }
+    const satirlar = data || [];
+    const html = satirlar.map(r => `
+      <div class="ag-satir" style="--derin:${derin}">
+        <button class="ag-ok yok">▸</button>
+        <span class="ag-ad ag-bagsiz-analiz" data-ad="${esc(r.idare)}" title="${esc(r.idare)} — analizi aç">${esc(r.idare)}</span>
+        <span class="ag-rozet ${Number(r.ihale_sayisi) ? 'ihale' : 'bos'}" title="Bu idarenin ağaca bağlanamayan ihale kayıtları">📋 ${sayi(r.ihale_sayisi)}</span>
+        <span class="ag-rozet ${Number(r.dt_sayisi) ? 'dt' : 'bos'}" title="Bu idarenin ağaca bağlanamayan DT kayıtları">⚡ ${sayi(r.dt_sayisi)}</span>
+        <span class="ag-pay"></span>
+        <button class="ag-kucuk-btn mavi ag-bagsiz-analiz" data-ad="${esc(r.idare)}">📊 Analiz</button>
+      </div>`).join('');
+    const daha = satirlar.length >= 50
+      ? `<div class="ag-daha" style="--derin:${derin}"><button class="v1-mini-btn ag-bagsiz-daha">Daha fazla göster</button></div>` : '';
+    if (offset === 0) {
+      cocuklar.innerHTML = (html || `<div class="ag-not" style="--derin:${derin}">Bağlantısız kurum kalmadı — tüm idareler ağaca eşlendi. 🎉</div>`) + daha;
+    } else {
+      const eski = cocuklar.querySelector('.ag-daha');
+      if (eski) eski.remove();
+      cocuklar.insertAdjacentHTML('beforeend', html + daha);
+    }
+    agBagsizOffset = offset + satirlar.length;
+  }
+
+  // Ağaçta arama: idare_agac_ara (ağaç) + idare_agac_bagsiz_liste (bağlantısız) paralel
+  async function agacAra() {
+    const q = el('ag-arama').value.trim();
+    const panel = el('ag-arama-sonuc');
+    if (q.length < 2) { panel.style.display = 'none'; panel.innerHTML = ''; return; }
+    const istek = ++agAraIstek;
+    const [agacRes, bagsizRes] = await Promise.all([
+      sb.rpc('idare_agac_ara', { p_q: q, p_limit: 20 }),
+      sb.rpc('idare_agac_bagsiz_liste', { p_q: q, p_limit: 10, p_offset: 0 }),
+    ]);
+    if (istek !== agAraIstek) return;   // araya yeni arama girdi
+    const agaclar = agacRes.error ? [] : (agacRes.data || []);
+    const bagsizlar = bagsizRes.error ? [] : (bagsizRes.data || []);
+    if (!agaclar.length && !bagsizlar.length) {
+      panel.innerHTML = '<div class="ag-sonuc"><div class="ag-not" style="--derin:0;border:none;">Eşleşen kurum bulunamadı.</div></div>';
+      panel.style.display = 'block';
+      return;
+    }
+    panel.innerHTML =
+      (agaclar.length ? '<div class="ag-sonuc"><div class="ag-sonuc-baslik">Ağaçta eşleşenler — tıklayınca dal açılır</div>'
+        + agaclar.map(r => `
+          <div class="ag-sonuc-satir ag-sonuc-agac" data-detsis="${esc(r.detsis_no)}">
+            <span class="ag-sonuc-ad" title="${esc(r.ad)}">${esc(r.ad)}</span>
+            ${r.ust_ad ? `<span class="ag-sonuc-ust" title="${esc(r.ust_ad)}">↳ ${esc(r.ust_ad)}</span>` : ''}
+            <span class="ag-rozet ${Number(r.toplam_ihale) ? 'ihale' : 'bos'}">📋 ${sayi(r.toplam_ihale)}</span>
+            <span class="ag-rozet ${Number(r.toplam_dt) ? 'dt' : 'bos'}">⚡ ${sayi(r.toplam_dt)}</span>
+          </div>`).join('') + '</div>' : '')
+      + (bagsizlar.length ? '<div class="ag-sonuc"><div class="ag-sonuc-baslik">Bağlantısız kurumlarda eşleşenler — tıklayınca analiz açılır</div>'
+        + bagsizlar.map(r => `
+          <div class="ag-sonuc-satir ag-sonuc-bagsiz" data-ad="${esc(r.idare)}">
+            <span class="ag-sonuc-ad" title="${esc(r.idare)}">${esc(r.idare)}</span>
+            <span class="ag-rozet ${Number(r.ihale_sayisi) ? 'ihale' : 'bos'}">📋 ${sayi(r.ihale_sayisi)}</span>
+            <span class="ag-rozet ${Number(r.dt_sayisi) ? 'dt' : 'bos'}">⚡ ${sayi(r.dt_sayisi)}</span>
+          </div>`).join('') + '</div>' : '');
+    panel.style.display = 'block';
+  }
+
+  // Arama sonucundan dala in: idare_agac_yol kırıntısını (kök → düğüm) sırayla açar
+  async function agacYoluAc(detsis) {
+    const { data, error } = await sb.rpc('idare_agac_yol', { p_detsis: detsis });
+    if (error || !data || !data.length) { console.error(error); return; }
+    // mesafe DESC geldi: kök önce, düğümün kendisi (mesafe 0) sonda → ataları sırayla aç
+    for (const adim of data.slice(0, -1)) {
+      const d = document.querySelector(`.ag-dugum[data-detsis="${CSS.escape(adim.detsis_no)}"]`);
+      if (!d) break;   // 500-dal sınırına takılan ara düğüm — inebildiğimiz yerde dururuz
+      const cocuklar = d.querySelector(':scope > .ag-cocuklar');
+      if (!cocuklar.classList.contains('acik')) await dugumAcKapa(d);
+    }
+    const hedef = document.querySelector(`.ag-dugum[data-detsis="${CSS.escape(detsis)}"]`);
+    if (hedef) {
+      hedef.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      const satir = hedef.querySelector(':scope > .ag-satir');
+      satir.classList.remove('ag-vurgu'); void satir.offsetWidth; satir.classList.add('ag-vurgu');
+    }
+    // arama paneli AÇIK bırakılır: kullanıcı diğer sonuçlara da bakabilsin
+  }
+
+  // Dalın son ihaleleri: idare_dal_son_ihaleler sunucuda JOIN kurar
+  // (istemcide detsis listesi `in.()` URL'e yazılsaydı 414 verirdi)
+  async function dalIhaleleriAc(detsis, ad) {
+    const fon = document.createElement('div');
+    fon.className = 'k-modal-fon';
+    fon.innerHTML = `<div class="k-modal">
+      <div class="k-modal-bas"><b>📋 ${esc(ad)}</b><button class="k-modal-kapat" title="Kapat">✕</button></div>
+      <div class="k-modal-govde"><div class="v1-yukleniyor" style="padding:30px;"><div class="v1-spin"></div><p>Dalın ihaleleri yükleniyor…</p></div></div>
+    </div>`;
+    fon.addEventListener('click', e => { if (e.target === fon || e.target.closest('.k-modal-kapat')) fon.remove(); });
+    document.body.appendChild(fon);
+    const govde = fon.querySelector('.k-modal-govde');
+    try {
+      const { data: ihaleler, error } = await sb.rpc('idare_dal_son_ihaleler', { p_detsis: detsis, p_limit: 20 });
+      if (error) throw error;
+      if (!ihaleler || !ihaleler.length) {
+        govde.innerHTML = '<div class="v1-bos">Bu dala bağlı ihale kaydı bulunamadı.</div>';
+        return;
+      }
+      govde.innerHTML = ihaleler.map(i => {
+        const d = durumSec(i.son_teklif_tarihi);
+        return `<div class="k-ihale" style="padding:12px 14px;margin-bottom:8px;">
+          <div class="k-ih-ust">
+            <a class="k-ih-bas" style="font-size:13px;" href="v1-ihale-detay?id=${encodeURIComponent(i.id)}">${esc(i.baslik) || '—'}</a>
+            <span class="k-ih-durum ${d.cls}">${d.etiket}</span>
+          </div>
+          <div class="k-ih-meta">
+            ${i.tur ? `<span>${esc(i.tur)}</span>` : ''}
+            ${i.il ? `<span>📍 ${esc(i.il)}</span>` : ''}
+            ${i.etkin_tarih ? `<span>📅 ${tarihFormat(i.etkin_tarih)}</span>` : ''}
+          </div>
+        </div>`;
+      }).join('') + '<div class="v1-bos" style="padding:12px;">Dalın (kendisi + alt birimleri) en güncel 20 kaydı gösterilir.</div>';
+    } catch (err) {
+      console.error(err);
+      // PGRST202 = RPC henüz kurulmamış → "tekrar deneyin" demek yanıltıcı olur
+      govde.innerHTML = (err && err.code === 'PGRST202')
+        ? '<div class="v1-bos">Dal ihaleleri henüz hazırlanıyor — yakında burada.</div>'
+        : (kilitliMi(err)
+            ? kilitHtml('Dal ihaleleri üyelere özeldir', 'Bu dalın ihale kayıtlarını görmek için hesabınızla giriş yapın.')
+            : '<div class="v1-bos">İhale listesi yüklenemedi, lütfen tekrar deneyin.</div>');
+    }
+  }
+
+  // ══════════════════ Rota / tarayıcı geçmişi ══════════════════
+  function dizinGoster() {
+    KURUM = '';
+    el('root-loading').style.display = 'none';
+    el('root-content').style.display = 'none';
+    el('dizin-view').style.display = 'block';
+    document.title = 'Kurum Analizi — İhaleGlobal';
+    kirintiYaz('Kurum Analizi');
+    if (!izKuruldu) { izKuruldu = true; izVeriCek().catch(izHata); }
+  }
+
+  function analizAc(kurum) {
+    el('root-loading').innerHTML = '<div class="v1-spin"></div><p>Kurum verileri yükleniyor…</p>';
+    analizYukle(kurum).catch(e => {
+      console.error(e);
+      el('root-loading').innerHTML = kilitliMi(e)
+        ? kilitHtml('Kurum Analizi üyelere özeldir',
+            'İdare bazlı ihale karnesi, kırılımlar ve kazanan firma analizi için hesabınızla giriş yapın.')
+        : '<div class="v1-bos" style="color:var(--v1-kirmizi);">Veri yüklenemedi. Lütfen sayfayı yenileyin.</div>';
+    });
+  }
+
+  function kurumAc(ad) {
+    try { history.pushState({ kurum: ad }, '', 'v1-kurum-analiz?kurum=' + encodeURIComponent(ad)); } catch (_) { /* file:// test */ }
+    analizAc(ad);
+  }
+
+  function dizineDon() {
+    try { history.pushState({}, '', 'v1-kurum-analiz'); } catch (_) { /* file:// test */ }
+    dizinGoster();   // dizin DOM'u korunur: arama/filtre/sayfa aynen kalır
+  }
+
+  // ══════════════════ Olay bağlama ══════════════════
+  function olaylariBagla() {
+    // görünüm anahtarı
+    el('gor-liste').addEventListener('click', () => dizinGorunum('liste'));
+    el('gor-agac').addEventListener('click', () => dizinGorunum('agac'));
+
+    // dizin filtreleri
+    let zaman;
+    el('iz-arama').addEventListener('input', () => { clearTimeout(zaman); zaman = setTimeout(izFiltrele, 300); });
+    ['iz-il-filtre', 'iz-aktif-filtre', 'iz-sirala'].forEach(id => el(id).addEventListener('change', izFiltrele));
+    el('iz-prev').addEventListener('click', () => { izSayfaNo--; izSayfaGoster(); basaKaydir(); });
+    el('iz-next').addEventListener('click', () => { izSayfaNo++; izSayfaGoster(); basaKaydir(); });
+    el('iz-sort-toplam').addEventListener('click', () => {
+      const s = el('iz-sirala');
+      s.value = s.value === 'toplam_desc' ? 'aktif_desc' : 'toplam_desc';
+      izFiltrele();
+    });
+    el('iz-sort-aktif').addEventListener('click', () => { el('iz-sirala').value = 'aktif_desc'; izFiltrele(); });
+    el('iz-govde').addEventListener('click', e => {
+      const satir = e.target.closest('[data-ad]');
+      if (satir) kurumAc(satir.dataset.ad);
+    });
+
+    // ağaç
+    el('ag-kokler').addEventListener('click', agacTikla);
+    el('ag-arama-sonuc').addEventListener('click', e => {
+      const a = e.target.closest('.ag-sonuc-agac');
+      if (a) { agacYoluAc(a.dataset.detsis); return; }
+      const b = e.target.closest('.ag-sonuc-bagsiz');
+      if (b) kurumAc(b.dataset.ad);
+    });
+    let agZaman;
+    el('ag-arama').addEventListener('input', () => { clearTimeout(agZaman); agZaman = setTimeout(agacAra, 350); });
+
+    // kurum analizi sekmeleri + aksiyonlar
+    document.querySelectorAll('#root-content .v1-sekme').forEach(b =>
+      b.addEventListener('click', () => sekmeAc(b.dataset.sek)));
+    el('btn-liste-git').addEventListener('click', () => {
+      sekmeAc('liste');
+      el('sek-liste').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+    el('btn-takip').addEventListener('click', takipToggle);
+    el('btn-dizin').addEventListener('click', dizineDon);
+    el('btn-paylas').addEventListener('click', () => {
+      const btn = el('btn-paylas'), eski = btn.textContent, u = location.href;
+      navigator.clipboard.writeText(u).then(() => {
+        btn.textContent = '✓ Kopyalandı';
+        setTimeout(() => { btn.textContent = eski; }, 1900);
+      }).catch(() => prompt('Bağlantı:', u));
+    });
+
+    // ihale listesi sayfalama
+    el('pg-ilk').addEventListener('click', () => sayfaGit(1));
+    el('pg-prev').addEventListener('click', () => sayfaGit(sayfa - 1));
+    el('pg-next').addEventListener('click', () => sayfaGit(sayfa + 1));
+    el('pg-son').addEventListener('click', () => sayfaGit(topSayfa));
+
+    window.addEventListener('popstate', () => {
+      const k = new URLSearchParams(location.search).get('kurum') || '';
+      if (k) analizAc(k); else dizinGoster();
+    });
+  }
+
+  // ══════════════════ Açılış ══════════════════
+  (async () => {
+    try {
+      const { data } = await sb.auth.getSession();
+      uyeMi = !!(data && data.session);
+      if (window.v1PaketYaz) {
+        let paket = 'Misafir';
+        if (uyeMi) {
+          const { data: k } = await sb.from('kullanici_krediler').select('plan')
+            .eq('kullanici_id', data.session.user.id).maybeSingle();
+          paket = ['standart', 'kurumsal'].includes(k && k.plan) ? 'Pro' : 'Temel';
+        }
+        kabukYaz('#v1-paket-ad', () => v1PaketYaz(paket));
+      }
+    } catch (_) { /* oturum okunamadı → misafir gibi davran */ }
+
+    olaylariBagla();
+    // Açılış rotası: ?kurum= → analiz (deep-link), yoksa dizin
+    if (KURUM) analizAc(KURUM); else dizinGoster();
+    // Derin bağlantı: v1-kurum-analiz?gorunum=agac → Kurum Ağacı görünümüyle açılır
+    if (!KURUM && P.get('gorunum') === 'agac') dizinGorunum('agac');
+  })();
+})();
+</script>
+</body>
+</html>

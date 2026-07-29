@@ -90,7 +90,7 @@
 <script src="js/tr-harita.js?v=1"></script>
 <script src="js/kategoriler.js?v=1"></script>
 <script src="js/harita-zoom.js?v=1"></script>
-<script src="js/v1-kabuk.js?v=5"></script>
+<script src="js/v1-kabuk.js?v=6"></script>
 <script>
 (() => {
   const SB_URL="https://ihaleglobal.com", SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzg0MzA3MTU4LCJleHAiOjE5NDE5ODcxNTh9.CjNKulvirotDD_y2oO2QKgo0kbqYvL0jUSV1RiDMoso";
@@ -191,7 +191,7 @@
       if(!data||!data.length){ fl.innerHTML='<div class="v1-bos">Bu ilde kayıtlı firma bulunamadı.</div>'; return; }
       fl.innerHTML=`<div style="font-size:12px;font-weight:800;color:var(--v1-lacivert);text-transform:uppercase;letter-spacing:.05em;margin-bottom:6px;">En Büyük Firmalar${(sektor&&!sektorDustu)?' · '+esc(sektor):''}</div>`+
         (sektorDustu?`<div style="font-size:11.5px;color:var(--v1-muted);margin:-2px 0 6px;">“${esc(sektor)}” sektöründe kayıt yok — ilin tümü gösteriliyor.</div>`:'')+
-        data.map(x=>`<a class="v1-yan-satir" href="firma-analiz?ara=${encodeURIComponent(x.ad)}" style="text-decoration:none;color:inherit;">
+        data.map(x=>`<a class="v1-yan-satir" href="v1-firma-analiz?ara=${encodeURIComponent(x.ad)}" style="text-decoration:none;color:inherit;">
           <span class="v1-yan-ad" title="${esc(x.ad)}">${esc(x.ad)}</span>
           <span class="v1-yan-deger">${tl(x.toplam_ciro)}</span></a>`).join('');
     }catch(_){ fl.innerHTML='<div class="v1-bos">Firmalar yüklenemedi.</div>'; }

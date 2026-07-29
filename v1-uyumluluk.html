@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="author" content="Ömer Faruk Dinç">
+  <meta name="copyright" content="© 2026 Ömer Faruk Dinç — İhaleGlobal">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Uyumluluk Analizi — İhaleGlobal</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=4" />
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/v1.css?v=4" />
+  <style>
+    /* ── Sayfa başlığı ───────────────────────────────────────────────── */
+    .v1-sayfa-baslik { font-size:22px; font-weight:800; color:var(--v1-lacivert); margin-bottom:4px; }
+    .v1-sayfa-alt { font-size:13.5px; color:var(--v1-muted); margin-bottom:16px; }
+
+    /* ── Pro / üyelik kilidi (v2'deki Plan.lockPage'in v1 karşılığı) ─── */
+    .v1-pro-kilit { background:#fff; border:1px solid var(--v1-cizgi); border-radius:var(--v1-radius-lg);
+      box-shadow:var(--v1-golge); padding:52px 28px; text-align:center; }
+    .v1-pro-kilit .ikon { font-size:46px; line-height:1; }
+    .v1-pro-kilit .bas { font-size:20px; font-weight:800; color:var(--v1-lacivert); margin:14px 0 8px; }
+    .v1-pro-kilit .metin { font-size:13.5px; color:var(--v1-muted); max-width:540px; margin:0 auto 22px; line-height:1.75; }
+    .v1-pro-btn { display:inline-block; background:var(--v1-mavi); color:#fff; border-radius:10px;
+      padding:12px 24px; font-size:14px; font-weight:700; text-decoration:none; }
+    .v1-pro-btn:hover { background:var(--v1-lacivert); color:#fff; text-decoration:none; }
+    .v1-pro-btn.ikincil { background:#fff; color:var(--v1-mavi); border:1.5px solid var(--v1-cizgi); margin-left:8px; }
+    .v1-pro-btn.ikincil:hover { border-color:var(--v1-mavi); background:#F6FAFF; color:var(--v1-mavi); }
+
+    /* ── Profil özet kartı ───────────────────────────────────────────── */
+    .v1-ozet { background:#fff; border:1px solid var(--v1-cizgi); border-radius:var(--v1-radius-lg);
+      box-shadow:var(--v1-golge); padding:18px 22px; margin-bottom:16px;
+      display:flex; gap:30px; flex-wrap:wrap; align-items:center; }
+    .v1-ozet-blok { display:flex; flex-direction:column; gap:7px; }
+    .v1-ozet-bas { font-size:11px; font-weight:800; letter-spacing:.08em; text-transform:uppercase; color:var(--v1-muted); }
+    .v1-chipler { display:flex; gap:6px; flex-wrap:wrap; }
+    .v1-chip { background:var(--v1-mavi-acik); color:var(--v1-mavi); border:1px solid #CFE2F5;
+      padding:3px 10px; border-radius:20px; font-size:12px; font-weight:700; }
+    .v1-chip.sessiz { background:#F2F5F8; color:var(--v1-muted); border-color:var(--v1-cizgi); }
+
+    /* ── Profil eksik uyarısı (v2'deki kesikli çerçeveli bant) ───────── */
+    .v1-uyari { background:var(--v1-krem); border:1px dashed #DCCE9E; border-radius:var(--v1-radius-lg);
+      padding:15px 20px; margin-bottom:16px; display:flex; align-items:center; gap:10px;
+      font-size:13.5px; color:var(--v1-metin); flex-wrap:wrap; line-height:1.6; }
+
+    .v1-link-btn { background:none; border:none; padding:0; font-family:var(--v1-font); font-size:13px;
+      font-weight:700; color:var(--v1-mavi); cursor:pointer; text-decoration:none; white-space:nowrap; }
+    .v1-link-btn:hover { text-decoration:underline; }
+
+    /* ── Eşleşme tercihleri düzenleyici ──────────────────────────────── */
+    .v1-terc-ust { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+    .v1-terc-govde { display:none; margin-top:16px; }
+    .v1-terc-govde.acik { display:block; }
+    .v1-terc-satir { margin-bottom:16px; }
+    .v1-terc-satir > label, .v1-alan > label { display:block; font-size:12.5px; font-weight:700;
+      color:var(--v1-lacivert); margin-bottom:7px; }
+    .v1-secim { display:flex; flex-wrap:wrap; gap:7px; max-height:180px; overflow-y:auto;
+      border:1px solid var(--v1-cizgi); border-radius:10px; padding:12px; background:#FAFCFF; }
+    .v1-sec-chip { border:1.5px solid var(--v1-cizgi); background:#fff; border-radius:20px; padding:5px 12px;
+      font-family:var(--v1-font); font-size:12.5px; font-weight:600; color:var(--v1-metin); cursor:pointer; }
+    .v1-sec-chip:hover { border-color:var(--v1-mavi); color:var(--v1-mavi); }
+    .v1-sec-chip.secili { background:var(--v1-mavi); border-color:var(--v1-mavi); color:#fff; }
+    .v1-terc-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; }
+    @media(max-width:800px){ .v1-terc-grid{ grid-template-columns:1fr; } }
+    .v1-in { width:100%; border:1.5px solid var(--v1-cizgi); border-radius:9px; padding:9px 11px;
+      font-family:var(--v1-font); font-size:13px; color:var(--v1-metin); outline:none; background:#fff; }
+    .v1-in:focus { border-color:var(--v1-mavi); }
+    .v1-ipucu { font-size:11.5px; color:var(--v1-muted); margin-top:5px; line-height:1.5; }
+    .v1-kaydet { background:var(--v1-mavi); color:#fff; border:none; border-radius:9px; padding:11px 22px;
+      font-family:var(--v1-font); font-size:13.5px; font-weight:700; cursor:pointer; }
+    .v1-kaydet:hover { background:var(--v1-lacivert); }
+    .v1-kaydet:disabled { opacity:.6; cursor:default; }
+    .v1-mini-btn { background:#fff; border:1.5px solid var(--v1-cizgi); color:var(--v1-muted); border-radius:9px;
+      padding:9px 14px; font-family:var(--v1-font); font-size:12.5px; font-weight:700; cursor:pointer; }
+    .v1-mini-btn:hover { border-color:var(--v1-mavi); color:var(--v1-mavi); }
+
+    /* ── Araç çubuğu ─────────────────────────────────────────────────── */
+    .v1-arac { display:flex; align-items:center; justify-content:space-between; gap:12px;
+      flex-wrap:wrap; margin-bottom:12px; }
+    .v1-arac-sag { display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+    .v1-arac-et { font-size:12.5px; color:var(--v1-muted); font-weight:600; }
+    .v1-sec { border:1.5px solid var(--v1-cizgi); border-radius:9px; padding:8px 11px; background:#fff;
+      font-family:var(--v1-font); font-size:13px; color:var(--v1-metin); outline:none; cursor:pointer; }
+    .v1-sec:focus { border-color:var(--v1-mavi); }
+    .v1-ara-in { border:1.5px solid var(--v1-cizgi); border-radius:9px; padding:8px 12px; min-width:210px;
+      font-family:var(--v1-font); font-size:13px; color:var(--v1-metin); outline:none; background:#fff; }
+    .v1-ara-in:focus { border-color:var(--v1-mavi); }
+
+    /* ── Tablo ───────────────────────────────────────────────────────── */
+    .v1-tablo-kutu { background:#fff; border:1px solid var(--v1-cizgi); border-radius:var(--v1-radius-lg);
+      box-shadow:var(--v1-golge); overflow:hidden; }
+    .v1-tablo-kaydir { overflow-x:auto; }
+    .v1-t-baslik { color:var(--v1-mavi); font-weight:700; font-size:13.5px; display:block; margin-bottom:3px; }
+    .v1-t-meta { font-size:11.5px; color:var(--v1-muted); line-height:1.5; }
+    .v1-t-bedel { font-weight:700; color:var(--v1-mavi); white-space:nowrap; font-size:13px; }
+    .v1-maske { color:var(--v1-muted); letter-spacing:2px; font-weight:700; }
+
+    .v1-rozet { display:inline-block; padding:3px 10px; border-radius:20px; font-size:11.5px;
+      font-weight:800; white-space:nowrap; }
+    .v1-rozet.acik { background:#E6F6EE; color:#12784A; }
+    .v1-rozet.acil { background:#FDECEE; color:var(--v1-kirmizi); }
+    .v1-rozet.notr { background:#F2F5F8; color:var(--v1-muted); }
+
+    /* Uyum skoru — v1 rampası: yüksek yeşil / orta mavi / düşük kırmızı */
+    .v1-uyum { display:flex; align-items:center; gap:9px; min-width:136px; }
+    .v1-uyum-iz { flex:1; height:7px; background:#EDF1F6; border-radius:4px; overflow:hidden; }
+    .v1-uyum-dolu { display:block; height:100%; border-radius:4px; transition:width .45s; }
+    .v1-uyum-say { font-size:13px; font-weight:800; min-width:40px; text-align:right; }
+    .uy-yuksek .v1-uyum-dolu { background:var(--v1-yesil); }
+    .uy-yuksek .v1-uyum-say  { color:var(--v1-yesil); }
+    .uy-orta   .v1-uyum-dolu { background:var(--v1-mavi); }
+    .uy-orta   .v1-uyum-say  { color:var(--v1-mavi); }
+    .uy-dusuk  .v1-uyum-dolu { background:var(--v1-kirmizi); }
+    .uy-dusuk  .v1-uyum-say  { color:var(--v1-kirmizi); }
+
+    .v1-islem { display:flex; gap:7px; justify-content:flex-end; }
+    .v1-kucuk-btn { border:1.5px solid var(--v1-cizgi); background:#fff; color:var(--v1-metin);
+      border-radius:8px; padding:6px 11px; font-family:var(--v1-font); font-size:12.5px; font-weight:700;
+      cursor:pointer; text-decoration:none; display:inline-flex; align-items:center; }
+    .v1-kucuk-btn:hover { border-color:var(--v1-mavi); color:var(--v1-mavi); text-decoration:none; }
+    .v1-kucuk-btn.aktif { background:var(--v1-mavi); border-color:var(--v1-mavi); color:#fff; }
+    .v1-kucuk-btn.aktif:hover { background:var(--v1-lacivert); color:#fff; }
+
+    .v1-pag { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;
+      padding:12px 16px; border-top:1px solid var(--v1-cizgi); font-size:12.5px; color:var(--v1-muted); }
+    .v1-pag .v1-sayfalama { padding:0; }
+
+    .v1-durum-notu { font-size:12.5px; color:var(--v1-muted); margin-top:10px; }
+    .v1-durum-notu.ok { color:var(--v1-yesil); font-weight:700; }
+    .v1-durum-notu.hata { color:var(--v1-kirmizi); font-weight:700; }
+  </style>
+</head>
+<body class="v1" data-v1-aktif="analiz" data-v1-kirinti="Analiz > Uyumluluk Analizi">
+<div class="v1-app">
+  <div class="v1-main">
+    <div class="v1-govde">
+      <div class="v1-sayfa-baslik">Uyumluluk Analizi</div>
+      <div class="v1-sayfa-alt">Profilinize göre her ihalenin uyum skoru hesaplanır. En yüksek eşleşmeler en üstte.</div>
+
+      <!-- Pro / üyelik kilidi -->
+      <div id="v1-kilit-alan" style="display:none;"></div>
+
+      <!-- Asıl içerik (yalnız Pro üyede görünür) -->
+      <div id="v1-icerik" style="display:none;">
+
+        <!-- Profil özeti / profil eksik uyarısı -->
+        <div id="v1-profil-ozet"></div>
+
+        <!-- Eşleşme tercihleri düzenleyici -->
+        <div class="v1-kart" id="v1-terc-kart">
+          <div class="v1-terc-ust">
+            <div>
+              <div class="v1-kart-baslik" style="margin-bottom:2px;">⚙️ Eşleşme Tercihlerim</div>
+              <div style="font-size:12.5px;color:var(--v1-muted);">Uyum skorunun girdileri: sektör, il, ihale türü ve bütçe aralığı.</div>
+            </div>
+            <button class="v1-mini-btn" id="v1-terc-ac">Tercihleri Düzenle ▾</button>
+          </div>
+
+          <div class="v1-terc-govde" id="v1-terc-govde">
+            <div class="v1-terc-satir">
+              <label>Sektörler <span style="font-weight:400;color:var(--v1-muted);">(kategori eşleşmesi — skorun 40 puanı)</span></label>
+              <div class="v1-secim" id="t-sektorler"></div>
+            </div>
+            <div class="v1-terc-satir">
+              <label>Çalışılan İller <span style="font-weight:400;color:var(--v1-muted);">(hiç seçmezseniz tüm Türkiye)</span></label>
+              <div class="v1-secim" id="t-iller"></div>
+            </div>
+            <div class="v1-terc-satir">
+              <label>İhale Türleri</label>
+              <div class="v1-secim" id="t-turler" style="max-height:none;"></div>
+            </div>
+            <div class="v1-terc-grid">
+              <div class="v1-alan">
+                <label>Min. Bütçe (₺)</label>
+                <input class="v1-in" type="number" min="0" id="t-min" placeholder="0">
+              </div>
+              <div class="v1-alan">
+                <label>Maks. Bütçe (₺)</label>
+                <input class="v1-in" type="number" min="0" id="t-max" placeholder="0 = sınırsız">
+              </div>
+              <div class="v1-alan">
+                <label>Anahtar Kelimeler</label>
+                <input class="v1-in" id="t-kelime" placeholder="asfalt, jeneratör, catering">
+                <div class="v1-ipucu">Virgülle ayırın. Başlıkta geçerse +10 puan. Bu alan yalnız tarayıcınızda saklanır.</div>
+              </div>
+            </div>
+            <div style="margin-top:18px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+              <button class="v1-kaydet" id="t-kaydet">Tercihleri Kaydet</button>
+              <button class="v1-mini-btn" id="t-temizle">Seçimleri Temizle</button>
+              <a class="v1-link-btn" href="v1-profil" style="margin-left:6px;">Firma künyesi (v1-profil) →</a>
+            </div>
+            <div class="v1-durum-notu" id="t-durum"></div>
+          </div>
+        </div>
+
+        <!-- Araç çubuğu -->
+        <div class="v1-arac">
+          <div class="v1-tablo-sayi" id="v1-sonuc-bilgi">Yükleniyor…</div>
+          <div class="v1-arac-sag">
+            <input type="text" class="v1-ara-in" id="f-arama" placeholder="Başlık / idare ara…">
+            <span class="v1-arac-et">Min. Uyum:</span>
+            <select class="v1-sec" id="f-min-uyum">
+              <option value="0">Tümü</option>
+              <option value="40">%40+</option>
+              <option value="60" selected>%60+</option>
+              <option value="75">%75+</option>
+              <option value="85">%85+</option>
+            </select>
+            <select class="v1-sec" id="f-sirala">
+              <option value="uyum_desc">Uyum % ↓</option>
+              <option value="son_teklif">Son Teklif ↑</option>
+              <option value="maliyet_desc">Maliyet ↓</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Tablo -->
+        <div class="v1-tablo-kutu">
+          <div class="v1-tablo-kaydir">
+            <table class="v1-tablo">
+              <thead>
+                <tr>
+                  <th>İhale</th>
+                  <th>Durum</th>
+                  <th>Yaklaşık Maliyet</th>
+                  <th>Son Teklif Tarihi</th>
+                  <th>Uyum Skoru</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="v1-tbody">
+                <tr><td colspan="6"><div class="v1-bos">Yükleniyor…</div></td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="v1-pag">
+            <span id="v1-pag-bilgi">—</span>
+            <div class="v1-sayfalama" id="v1-sayfalama"></div>
+          </div>
+        </div>
+
+        <div class="v1-durum-notu" id="v1-tarama-notu"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="js/kategoriler.js?v=1"></script>
+<script src="js/uyum.js?v=1"></script>
+<script src="js/takip.js?v=2"></script>
+<script src="js/v1-kabuk.js?v=6"></script>
+<script>
+(() => {
+  const SB_URL="https://ihaleglobal.com", SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzg0MzA3MTU4LCJleHAiOjE5NDE5ODcxNTh9.CjNKulvirotDD_y2oO2QKgo0kbqYvL0jUSV1RiDMoso";
+  const sb=window.supabase.createClient(SB_URL,SB_KEY);
+
+  const esc=(s)=>(s==null?'':String(s)).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const num=(n)=>(Number(n)||0).toLocaleString('tr-TR');
+  // ⚠️ TR harf tuzağı: İ/I için toLocaleLowerCase('tr') + şapkasızlaştırma (istemci tarafı arama)
+  // U+0307 = birleşen üst nokta: bazı ortamlarda 'İ'.toLocaleLowerCase() 'i'+U+0307 üretir,
+  // düz 'i' ile karşılaştırma sessizce tutmaz → önce noktayı at.
+  const trFold=(s)=>String(s==null?'':s).toLocaleLowerCase('tr').replace(/\u0307/g,'')
+    .replace(/ı/g,'i').replace(/ğ/g,'g').replace(/ü/g,'u').replace(/ş/g,'s')
+    .replace(/ö/g,'o').replace(/ç/g,'c').replace(/â/g,'a').replace(/î/g,'i').replace(/û/g,'u');
+
+  const AYLAR=['Oca','Şub','Mar','Nis','May','Haz','Tem','Ağu','Eyl','Eki','Kas','Ara'];
+  const tarihFmt=(t)=>{ if(!t) return '—'; const d=new Date(t);
+    if(isNaN(d.getTime())) return '—';
+    return `${d.getDate()} ${AYLAR[d.getMonth()]} ${d.getFullYear()}`; };
+  const kisaTL=(v)=>{ const n=Number(v)||0;
+    if(n>=1e9) return '₺'+(n/1e9).toLocaleString('tr-TR',{maximumFractionDigits:1})+' Mr';
+    if(n>=1e6) return '₺'+(n/1e6).toLocaleString('tr-TR',{maximumFractionDigits:1})+' Mn';
+    if(n>=1e3) return '₺'+(n/1e3).toLocaleString('tr-TR',{maximumFractionDigits:0})+' Bin';
+    return '₺'+num(n); };
+  const butceFmt=(mn,mx)=>{
+    if(mn!=null && mx!=null && Number(mx)>Number(mn)) return `${kisaTL(mn)} – ${kisaTL(mx)}`;
+    if(mn!=null && mx!=null) return kisaTL(mn);
+    if(mn!=null) return `${kisaTL(mn)} üzeri`;
+    if(mx!=null) return `${kisaTL(mx)} altı`;
+    return '—'; };
+  const kalanGun=(bitis)=>{ if(!bitis) return null; const d=new Date(bitis);
+    if(isNaN(d.getTime())) return null; return Math.ceil((d-new Date())/86400000); };
+  const durumRozet=(durum,bitis)=>{
+    const g=kalanGun(bitis);
+    if(g!==null && g<=3 && g>=0) return `<span class="v1-rozet acil">● Son ${g} Gün</span>`;
+    if(durum==='aktif') return `<span class="v1-rozet acik">● Açık</span>`;
+    return `<span class="v1-rozet notr">${esc(durum||'—')}</span>`;
+  };
+  const uyumSinif=(p)=> p>=70 ? 'uy-yuksek' : (p>=45 ? 'uy-orta' : 'uy-dusuk');
+
+  // ── Sabitler ────────────────────────────────────────────────────────────
+  const SAYFA=25;                 // sayfa başına satır (v2 ile aynı)
+  const TARAMA=600;               // skorlanmak üzere çekilen aktif ihale sayısı
+  const PRO_PLANLAR=['standart','kurumsal','pro','premium','enterprise'];
+  // ilanlar.tur'un CANLI değer kümesi (1.000 aktif ilan örneklendi): Mal 355 · Hizmet 233 ·
+  // Yapım 225 · Satış 101 · Kiraya Verme 71 · Danışmanlık 1. v2'nin profil.html'i yalnız ilk
+  // dördünü sunuyordu → aktif ilanların ~%17'si (satış + kiraya verme) hiç seçilemiyordu.
+  const TURLER=['Mal','Hizmet','Yapım','Danışmanlık','Satış','Kiraya Verme'];
+  const ILLER=["ADANA","ADIYAMAN","AFYONKARAHİSAR","AĞRI","AKSARAY","AMASYA","ANKARA","ANTALYA","ARDAHAN","ARTVİN","AYDIN","BALIKESİR","BARTIN","BATMAN","BAYBURT","BİLECİK","BİNGÖL","BİTLİS","BOLU","BURDUR","BURSA","ÇANAKKALE","ÇANKIRI","ÇORUM","DENİZLİ","DİYARBAKIR","DÜZCE","EDİRNE","ELAZIĞ","ERZİNCAN","ERZURUM","ESKİŞEHİR","GAZİANTEP","GİRESUN","GÜMÜŞHANE","HAKKARİ","HATAY","IĞDIR","ISPARTA","İSTANBUL","İZMİR","KAHRAMANMARAŞ","KARABÜK","KARAMAN","KARS","KASTAMONU","KAYSERİ","KIRIKKALE","KIRKLARELİ","KIRŞEHİR","KİLİS","KOCAELİ","KONYA","KÜTAHYA","MALATYA","MANİSA","MARDİN","MERSİN","MUĞLA","MUŞ","NEVŞEHİR","NİĞDE","ORDU","OSMANİYE","RİZE","SAKARYA","SAMSUN","SİİRT","SİNOP","SİVAS","ŞANLIURFA","ŞIRNAK","TEKİRDAĞ","TOKAT","TRABZON","TUNCELİ","UŞAK","VAN","YALOVA","YOZGAT","ZONGULDAK"];
+  // js/kategoriler.js → [{kod, emoji, aciklama, eski}]
+  const KAT_LISTE=(window.KATEGORILER||[]).filter(k=>k&&k.kod);
+  // uyum.js'in anahtar-kelime tablosu KISA anahtarlarla (insaat, saglik…) kurulu;
+  // profil tablosunda kanonik UZUN adlar saklanıyor → kategoriler.js'teki `eski` ile köprüle.
+  const KOD2ESKI={}; KAT_LISTE.forEach(k=>{ if(k.eski) KOD2ESKI[k.kod]=k.eski; });
+
+  // ⚠️ TR-locale/yazım tuzağı — SESSİZ SKOR KAYBI (canlı REST ile doğrulandı):
+  //   · ilanlar.il TAMAMEN BÜYÜK ("ANKARA", "İSTANBUL") — `il=eq.Ankara` 0 satır döner —
+  //     oysa v2'nin profil.html'i tercih_iller'e BAŞ HARF BÜYÜK yazıyor ("Ankara").
+  //   · ilanlar.tur "Danışmanlık"; profil.html ise şapkasız "Danismanlik" saklıyor.
+  // Bu ham değerler uyum.js'in includes() karşılaştırmasına girerse il (25p) ve tür (20p)
+  // bileşenleri HER ZAMAN 0 kalır, kullanıcı hiçbir hata görmez. Katlanmış anahtarla kanoniğe çevir.
+  const IL_FOLD={};  ILLER .forEach(v=>{ IL_FOLD [trFold(v)]=v; });
+  const TUR_FOLD={}; TURLER.forEach(v=>{ TUR_FOLD[trFold(v)]=v; });
+  // Eşleşmeyen değer olduğu gibi geçer → uyum.js'in özel "Tüm Türkiye" kuralı korunur.
+  const ilNorm =(v)=>IL_FOLD [trFold(v)]||v;
+  const turNorm=(v)=>TUR_FOLD[trFold(v)]||v;
+
+  // Sunucudan çekilen kolonlar. `idare` misafirde kolon-yetkisiyle kapalı (42501);
+  // bu sayfa Pro kapısının arkasında olduğu için normalde tam liste kullanılır, yine de yedek var.
+  const KOLON_TAM='id,baslik,idare,il,tur,kategori,durum,son_teklif_tarihi,tahmini_bedel,yaklasik_maliyet_min,yaklasik_maliyet_max';
+  const KOLON_DAR='id,baslik,il,tur,kategori,durum,son_teklif_tarihi,tahmini_bedel,yaklasik_maliyet_min,yaklasik_maliyet_max';
+
+  // ── Durum ───────────────────────────────────────────────────────────────
+  let uyeId=null;
+  let profil=null;          // profil tablosundan ham kayıt
+  let profilUyum=null;      // Uyum.hesapla'ya verilen normalize kopya
+  let hamIlanlar=[];        // sunucudan gelen ham liste
+  let tumIlanlar=[];        // skorlanmış + eşik uygulanmış + sıralanmış liste
+  let mevcutSayfa=1;
+  let idareMaskeli=false;
+  let aramaZaman=null;
+  const seciliSektor=new Set(), seciliIl=new Set(), seciliTur=new Set();
+
+  // ⚠️ YARIŞ: v1-kabuk.js topbar'ı DOMContentLoaded'da monte eder; getSession bundan önce
+  // çözülürse #v1-paket-ad henüz YOKTUR ve rozet '—' kalır. DOM hazır olana kadar ertele.
+  function paketYaz(ad){
+    const uygula=()=>{ if(window.v1PaketYaz) window.v1PaketYaz(ad); };
+    if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',uygula,{once:true});
+    else uygula();
+  }
+
+  // ── Kilit ekranları ─────────────────────────────────────────────────────
+  function kilitCiz(html){
+    document.getElementById('v1-icerik').style.display='none';
+    const k=document.getElementById('v1-kilit-alan');
+    k.style.display='block';
+    k.innerHTML=html;
+  }
+  function misafirKilit(){
+    kilitCiz(`<div class="v1-pro-kilit">
+      <div class="ikon">🔒</div>
+      <div class="bas">Uyumluluk Analizi üyelere özeldir</div>
+      <div class="metin">Profilinize göre kişiselleştirilmiş uyum skorlarını görmek için giriş yapmanız gerekir.</div>
+      <div><a class="v1-pro-btn" href="login">Giriş yapın</a>
+        <a class="v1-pro-btn ikincil" href="fiyatlandirma_odeme_bolumu">Üye olun →</a></div>
+    </div>`);
+  }
+  function proKilit(){
+    kilitCiz(`<div class="v1-pro-kilit">
+      <div class="ikon">🔒</div>
+      <div class="bas">Uyumluluk Analizi — Pro Özelliği</div>
+      <div class="metin">Profilinize göre kişiselleştirilmiş uyumluluk skorları Pro plan kullanıcılarına özeldir.
+        Sektör, il, ihale türü ve bütçe tercihlerinize göre açık ihaleler puanlanır; en yüksek eşleşmeler en üstte listelenir.</div>
+      <div><a class="v1-pro-btn" href="fiyatlandirma_odeme_bolumu">Pro'ya Geç — İlk 30 Gün Ücretsiz →</a></div>
+    </div>`);
+  }
+  function hataKilit(mesaj){
+    kilitCiz(`<div class="v1-pro-kilit">
+      <div class="ikon">⚠️</div>
+      <div class="bas">Sayfa yüklenemedi</div>
+      <div class="metin">${esc(mesaj||'Beklenmeyen bir hata oluştu.')}</div>
+      <div><a class="v1-pro-btn ikincil" href="v1-benim-sayfam">Ana sayfaya dön</a></div>
+    </div>`);
+  }
+
+  // ── Plan ────────────────────────────────────────────────────────────────
+  // js/plan.js'in kuralı: kullanici_krediler.plan PRO listesinde VE plan_bitis geçmemişse Pro.
+  async function planBelirle(session){
+    if(!session) return 'misafir';
+    try{
+      const {data}=await sb.from('kullanici_krediler')
+        .select('plan,plan_bitis').eq('kullanici_id',session.user.id).maybeSingle();
+      let kod=(data&&data.plan)?String(data.plan).toLowerCase():'free';
+      if(data&&data.plan_bitis&&new Date(data.plan_bitis)<new Date()) kod='free';
+      return PRO_PLANLAR.includes(kod)?'pro':'temel';
+    }catch(_){ return 'temel'; }
+  }
+
+  // ── Profil ──────────────────────────────────────────────────────────────
+  function profilNormalize(p){
+    if(!p) return null;
+    const ham=(p.kategoriler&&p.kategoriler.length)?p.kategoriler:(p.sektorler||[]);
+    return Object.assign({},p,{ kategoriler: ham.map(k=>KOD2ESKI[k]||k).filter(Boolean) });
+  }
+
+  async function profilCek(){
+    try{
+      const {data,error}=await sb.from('profil')
+        .select('sektorler,kategoriler,tercih_iller,tercih_turler,min_bedel,max_bedel')
+        .eq('user_id',uyeId).maybeSingle();
+      if(error) throw error;
+      // Eski (v2 profil.html) kayıtlarını tek noktada kanonikleştir: hem özet kartı, hem
+      // chip seçimi, hem skor, hem de yeniden kaydetme aynı normalize değerleri kullansın.
+      profil = data ? Object.assign({},data,{
+        tercih_iller :(data.tercih_iller ||[]).map(ilNorm),
+        tercih_turler:(data.tercih_turler||[]).map(turNorm)
+      }) : null;
+    }catch(_){ profil=null; }
+    profilUyum=profilNormalize(profil);
+  }
+
+  function profilOzetGoster(){
+    const wrap=document.getElementById('v1-profil-ozet');
+    const sektorler=(profil&&profil.sektorler)||[];
+    const iller=(profil&&profil.tercih_iller)||[];
+    const turler=(profil&&profil.tercih_turler)||[];
+
+    if(!profil || (sektorler.length===0 && iller.length===0)){
+      wrap.innerHTML=`<div class="v1-uyari">
+        <span>⚠️</span>
+        <span style="flex:1;min-width:240px;">Profilinizde <strong>sektör</strong> veya <strong>il</strong> tercihi seçilmemiş.
+          Uyum skorları genel tahmin kullanır.</span>
+        <button class="v1-link-btn" data-terc-ac>→ Eşleşme Tercihlerini Düzenle</button>
+      </div>`;
+      return;
+    }
+
+    const chip=(m)=>`<span class="v1-chip">${esc(m)}</span>`;
+    const sessiz=(m)=>`<span class="v1-chip sessiz">${esc(m)}</span>`;
+    wrap.innerHTML=`<div class="v1-ozet">
+      <div class="v1-ozet-blok">
+        <div class="v1-ozet-bas">Sektörler (${sektorler.length})</div>
+        <div class="v1-chipler">${
+          sektorler.length===0 ? sessiz('Seçilmedi')
+          : sektorler.slice(0,4).map(s=>{ const t=String(s); return chip(t.length>28?t.slice(0,27)+'…':t); }).join('')+
+            (sektorler.length>4?sessiz('+'+(sektorler.length-4)):'')
+        }</div>
+      </div>
+      <div class="v1-ozet-blok">
+        <div class="v1-ozet-bas">İller (${iller.length||'Tümü'})</div>
+        <div class="v1-chipler">${
+          iller.length===0 ? sessiz('Tüm Türkiye')
+          : iller.slice(0,4).map(chip).join('')+(iller.length>4?sessiz('+'+(iller.length-4)):'')
+        }</div>
+      </div>
+      <div class="v1-ozet-blok">
+        <div class="v1-ozet-bas">İhale Türleri</div>
+        <div class="v1-chipler">${ turler.length===0 ? sessiz('Tümü') : turler.map(chip).join('') }</div>
+      </div>
+      <div class="v1-ozet-blok">
+        <div class="v1-ozet-bas">Bütçe Aralığı</div>
+        <div class="v1-chipler">${
+          (Number(profil.min_bedel)||Number(profil.max_bedel))
+            ? chip(kisaTL(profil.min_bedel||0)+' – '+((Number(profil.max_bedel)>0)?kisaTL(profil.max_bedel):'sınırsız'))
+            : sessiz('Sınır yok')
+        }</div>
+      </div>
+      <button class="v1-link-btn" style="margin-left:auto;" data-terc-ac>Tercihleri Güncelle →</button>
+    </div>`;
+  }
+
+  // ── Tercih düzenleyici ──────────────────────────────────────────────────
+  function chipKur(hedefId,degerler,kume,etiketFn){
+    const el=document.getElementById(hedefId);
+    el.innerHTML=degerler.map(d=>{
+      const deger=(typeof d==='string')?d:d.kod;
+      const etiket=etiketFn?etiketFn(d):esc(deger);
+      return `<button type="button" class="v1-sec-chip${kume.has(deger)?' secili':''}" data-deger="${esc(deger)}">${etiket}</button>`;
+    }).join('');
+    el.querySelectorAll('.v1-sec-chip').forEach(b=>b.addEventListener('click',()=>{
+      const d=b.getAttribute('data-deger');
+      if(kume.has(d)) kume.delete(d); else kume.add(d);
+      b.classList.toggle('secili',kume.has(d));
+    }));
+  }
+
+  function tercihUIKur(){
+    chipKur('t-sektorler',KAT_LISTE,seciliSektor,(k)=>`${k.emoji?esc(k.emoji)+' ':''}${esc(k.kod)}`);
+    chipKur('t-iller',ILLER,seciliIl);
+    chipKur('t-turler',TURLER,seciliTur);
+    document.getElementById('t-min').value=(profil&&Number(profil.min_bedel))?profil.min_bedel:'';
+    document.getElementById('t-max').value=(profil&&Number(profil.max_bedel))?profil.max_bedel:'';
+    document.getElementById('t-kelime').value=localStorage.getItem('ihale_anahtar_kelimeler')||'';
+  }
+
+  function tercihSecimleriYukle(){
+    seciliSektor.clear(); seciliIl.clear(); seciliTur.clear();
+    ((profil&&profil.sektorler)||[]).forEach(s=>seciliSektor.add(s));
+    ((profil&&profil.tercih_iller)||[]).forEach(i=>seciliIl.add(i));
+    ((profil&&profil.tercih_turler)||[]).forEach(t=>seciliTur.add(t));
+  }
+
+  async function tercihKaydet(){
+    const btn=document.getElementById('t-kaydet');
+    const d=document.getElementById('t-durum');
+    btn.disabled=true; const eski=btn.textContent; btn.textContent='Kaydediliyor…';
+    d.className='v1-durum-notu'; d.textContent='';
+    try{
+      const kelime=(document.getElementById('t-kelime').value||'').trim();
+      localStorage.setItem('ihale_anahtar_kelimeler',kelime);
+      const kayit={
+        user_id:uyeId,
+        sektorler:[...seciliSektor],
+        kategoriler:[...seciliSektor],
+        tercih_iller:[...seciliIl],
+        tercih_turler:[...seciliTur],
+        min_bedel:parseInt(document.getElementById('t-min').value,10)||0,
+        max_bedel:parseInt(document.getElementById('t-max').value,10)||0
+      };
+      const {error}=await sb.from('profil').upsert(kayit,{onConflict:'user_id'});
+      if(error) throw error;
+      profil=Object.assign({},profil||{},kayit);
+      profilUyum=profilNormalize(profil);
+      d.className='v1-durum-notu ok'; d.textContent='Tercihleriniz kaydedildi ✓ Skorlar güncellendi.';
+      profilOzetGoster();
+      skorlaSirala();
+      renderSayfa(1);
+    }catch(e){
+      d.className='v1-durum-notu hata';
+      d.textContent='Kaydedilemedi: '+((e&&e.message)||'bilinmeyen hata');
+    }finally{
+      btn.disabled=false; btn.textContent=eski;
+      setTimeout(()=>{ d.className='v1-durum-notu'; d.textContent=''; },6000);
+    }
+  }
+
+  // ── Skor ────────────────────────────────────────────────────────────────
+  function skorHesapla(ilan){
+    if(window.Uyum && typeof Uyum.hesapla==='function') return Uyum.hesapla(ilan,profilUyum);
+    return 0;
+  }
+
+  // ── Veri çekimi ─────────────────────────────────────────────────────────
+  async function ilanCek(sirala){
+    const kur=(kolon)=>{
+      let q=sb.from('ilanlar').select(kolon).eq('durum','aktif');
+      // ⚠️ İndeks yönü: sıralama alanı + nulls konumu sorgu planını değiştirir.
+      if(sirala==='maliyet_desc') q=q.order('yaklasik_maliyet_min',{ascending:false,nullsFirst:false});
+      else                        q=q.order('son_teklif_tarihi',{ascending:true,nullsFirst:false});
+      return q.limit(TARAMA);
+    };
+    let r=await kur(KOLON_TAM);
+    if(r.error && (r.error.code==='42501' || /permission denied/i.test(r.error.message||''))){
+      // idare kolonu yetkisi yoksa dar kolon listesine düş, idareyi maskele
+      const r2=await kur(KOLON_DAR);
+      if(!r2.error){ idareMaskeli=true; return r2.data||[]; }
+      throw r.error;
+    }
+    if(r.error) throw r.error;
+    idareMaskeli=false;
+    return r.data||[];
+  }
+
+  function skorlaSirala(){
+    const esik=parseInt(document.getElementById('f-min-uyum').value,10)||0;
+    const sirala=document.getElementById('f-sirala').value;
+    let liste=hamIlanlar.map(i=>Object.assign({},i,{_uyum:skorHesapla(i)}));
+    if(esik>0) liste=liste.filter(i=>i._uyum>=esik);
+    if(sirala==='uyum_desc') liste.sort((a,b)=>b._uyum-a._uyum);
+    tumIlanlar=liste;
+  }
+
+  async function yukle(sayfa=1){
+    const tb=document.getElementById('v1-tbody');
+    tb.innerHTML='<tr><td colspan="6"><div class="v1-bos">Yükleniyor…</div></td></tr>';
+    document.getElementById('v1-sonuc-bilgi').textContent='Hesaplanıyor…';
+    try{
+      const sirala=document.getElementById('f-sirala').value;
+      hamIlanlar=await ilanCek(sirala);
+      skorlaSirala();
+      const pencere = (sirala==='maliyet_desc')
+        ? 'Yaklaşık maliyeti en yüksek' : 'Son teklif tarihi en yakın';
+      document.getElementById('v1-tarama-notu').textContent =
+        `${pencere} ${num(hamIlanlar.length)} aktif ihale tarandı ve profilinize göre puanlandı.`+
+        (idareMaskeli?' · İdare adı bu oturumda görüntülenemiyor.':'');
+      renderSayfa(sayfa);
+    }catch(e){
+      document.getElementById('v1-sonuc-bilgi').textContent='';
+      document.getElementById('v1-sayfalama').innerHTML='';
+      document.getElementById('v1-pag-bilgi').textContent='—';
+      document.getElementById('v1-tarama-notu').textContent='';
+      const kilit = e && (e.code==='42501' || /permission denied/i.test(e.message||''));
+      tb.innerHTML=`<tr><td colspan="6"><div class="v1-bos" style="padding:34px 20px;">`+
+        (kilit
+          ? `🔒 İhale listesi üyelere özeldir.<br><br><a href="login">Giriş yapın</a> veya <a href="fiyatlandirma_odeme_bolumu">üye olun</a> →`
+          : `İhaleler alınamadı. ${esc((e&&e.message)||'')}`)+`</div></td></tr>`;
+    }
+  }
+
+  // ── Satır ───────────────────────────────────────────────────────────────
+  function satirHtml(i){
+    const p=i._uyum||0;
+    const sinif=uyumSinif(p);
+    const takipte=(window.Takip && Takip.var(i.id))?true:false;
+    const idareMetin = idareMaskeli
+      ? '<span class="v1-maske">•••••</span>'
+      : (i.idare?esc(i.idare):'—');
+    const katMetin = i.kategori?` · ${esc(i.kategori)}`:'';
+    const ilMetin  = i.il?` — 📍${esc(i.il)}`:'';
+    const turMetin = i.tur?` · ${esc(i.tur)}`:'';
+    return `<tr>
+      <td style="max-width:430px;">
+        <a class="v1-t-baslik" href="v1-ihale-detay?id=${encodeURIComponent(i.id)}">${esc(i.baslik)||'—'}</a>
+        <div class="v1-t-meta">${idareMetin}${ilMetin}${turMetin}${katMetin}</div>
+      </td>
+      <td>${durumRozet(i.durum,i.son_teklif_tarihi)}</td>
+      <td class="v1-t-bedel">${butceFmt(i.yaklasik_maliyet_min,i.yaklasik_maliyet_max)}</td>
+      <td class="v1-t-tarih">${tarihFmt(i.son_teklif_tarihi)}</td>
+      <td>
+        <div class="v1-uyum ${sinif}">
+          <span class="v1-uyum-iz"><span class="v1-uyum-dolu" style="width:${Math.max(0,Math.min(100,p))}%;"></span></span>
+          <span class="v1-uyum-say">${p}%</span>
+        </div>
+      </td>
+      <td>
+        <div class="v1-islem">
+          <button class="v1-kucuk-btn${takipte?' aktif':''}" data-takip="${esc(i.id)}"
+            title="${takipte?'Takipten çıkar':'Takibe al'}" style="font-size:14px;">${takipte?'★':'☆'}</button>
+          <a class="v1-kucuk-btn" href="v1-ihale-detay?id=${encodeURIComponent(i.id)}">Detay</a>
+        </div>
+      </td>
+    </tr>`;
+  }
+
+  // ── Render + sayfalama (Supabase'e gitmeden, anlık) ──────────────────────
+  function renderSayfa(sayfa=1){
+    const tb=document.getElementById('v1-tbody');
+    const ara=trFold((document.getElementById('f-arama').value||'').trim());
+    let liste=tumIlanlar;
+    if(ara) liste=liste.filter(i=>trFold(i.baslik).includes(ara)||trFold(i.idare).includes(ara));
+
+    const toplam=liste.length;
+    const sonSayfa=Math.max(1,Math.ceil(toplam/SAYFA));
+    mevcutSayfa=Math.min(Math.max(1,sayfa),sonSayfa);
+    const bas=(mevcutSayfa-1)*SAYFA;
+    const dilim=liste.slice(bas,bas+SAYFA);
+
+    if(dilim.length===0){
+      tb.innerHTML='<tr><td colspan="6"><div class="v1-bos">Filtrelere uyan ihale bulunamadı. Min. uyum eşiğini düşürün.</div></td></tr>';
+    } else {
+      tb.innerHTML=dilim.map(satirHtml).join('');
+    }
+
+    document.getElementById('v1-sonuc-bilgi').innerHTML=`<strong>${num(toplam)}</strong> eşleşme`;
+    document.getElementById('v1-pag-bilgi').textContent = toplam
+      ? `${bas+1}–${Math.min(bas+SAYFA,toplam)} / ${num(toplam)}` : '0 / 0';
+    sayfalamaCiz(toplam);
+  }
+
+  function sayfalamaCiz(toplam){
+    const el=document.getElementById('v1-sayfalama');
+    const son=Math.max(1,Math.ceil(toplam/SAYFA));
+    if(son<=1){ el.innerHTML=''; return; }
+    const b1=Math.max(1,Math.min(mevcutSayfa-2,son-4));
+    const b2=Math.min(son,b1+4);
+    const g=[]; for(let i=b1;i<=b2;i++) g.push(i);
+    let html=`<button ${mevcutSayfa===1?'disabled':''} data-s="${mevcutSayfa-1}">‹</button>`;
+    if(b1>1) html+=`<button data-s="1">1</button>`+(b1>2?`<button disabled>…</button>`:'');
+    html+=g.map(i=>`<button class="${i===mevcutSayfa?'aktif':''}" data-s="${i}">${i}</button>`).join('');
+    if(b2<son) html+=(b2<son-1?`<button disabled>…</button>`:'')+`<button data-s="${son}">${son}</button>`;
+    html+=`<button ${mevcutSayfa===son?'disabled':''} data-s="${mevcutSayfa+1}">›</button>`;
+    el.innerHTML=html;
+    el.querySelectorAll('[data-s]').forEach(b=>b.addEventListener('click',()=>{
+      const s=parseInt(b.dataset.s,10); if(!s||s<1) return;
+      renderSayfa(s);
+      // Gerçek kaydırma kabı .v1-main (height:100vh; overflow-y:auto) — window.scrollTo tek başına iş görmez.
+      const kap=document.querySelector('.v1-main');
+      if(kap && kap.scrollHeight>kap.clientHeight) kap.scrollTo({top:0,behavior:'smooth'});
+      else window.scrollTo({top:0,behavior:'smooth'});
+    }));
+  }
+
+  // ── Olay bağlama ────────────────────────────────────────────────────────
+  function olaylariBagla(){
+    // Takip ★/☆ — ilan id UUID olduğu için inline onclick DEĞİL, delegasyon kullanılır
+    document.getElementById('v1-tbody').addEventListener('click',(ev)=>{
+      const b=ev.target.closest('[data-takip]'); if(!b) return;
+      if(!window.Takip) return;
+      const id=b.getAttribute('data-takip');
+      const durum=Takip.toggle(id);
+      b.textContent=durum?'★':'☆';
+      b.classList.toggle('aktif',durum);
+      b.title=durum?'Takipten çıkar':'Takibe al';
+    });
+
+    document.getElementById('f-arama').addEventListener('input',()=>{
+      clearTimeout(aramaZaman);
+      aramaZaman=setTimeout(()=>renderSayfa(1),220);
+    });
+    // Eşik yalnız istemci tarafı filtre → yeniden çekim gerekmez
+    document.getElementById('f-min-uyum').addEventListener('change',()=>{ skorlaSirala(); renderSayfa(1); });
+    // Sıralama sunucu tarafındaki 600'lük pencereyi değiştirir → yeniden çek
+    document.getElementById('f-sirala').addEventListener('change',()=>yukle(1));
+
+    const tercAc=()=>{
+      const g=document.getElementById('v1-terc-govde');
+      const acik=g.classList.toggle('acik');
+      document.getElementById('v1-terc-ac').textContent=acik?'Paneli Kapat ▴':'Tercihleri Düzenle ▾';
+      if(acik) g.scrollIntoView({behavior:'smooth',block:'nearest'});
+    };
+    document.getElementById('v1-terc-ac').addEventListener('click',tercAc);
+    document.getElementById('v1-profil-ozet').addEventListener('click',(ev)=>{
+      if(ev.target.closest('[data-terc-ac]')){
+        if(!document.getElementById('v1-terc-govde').classList.contains('acik')) tercAc();
+      }
+    });
+    document.getElementById('t-kaydet').addEventListener('click',tercihKaydet);
+    document.getElementById('t-temizle').addEventListener('click',()=>{
+      seciliSektor.clear(); seciliIl.clear(); seciliTur.clear();
+      document.querySelectorAll('.v1-sec-chip.secili').forEach(b=>b.classList.remove('secili'));
+      document.getElementById('t-min').value='';
+      document.getElementById('t-max').value='';
+    });
+  }
+
+  // ── Başlat ──────────────────────────────────────────────────────────────
+  (async()=>{
+    let session=null;
+    try{ const {data}=await sb.auth.getSession(); session=(data&&data.session)||null; }catch(_){}
+
+    let plan='misafir';
+    try{ plan=await planBelirle(session); }catch(_){ plan='temel'; }
+
+    paketYaz(plan==='misafir'?'Misafir':(plan==='pro'?'Pro':'Temel'));
+
+    if(plan==='misafir'){ misafirKilit(); return; }
+    if(plan!=='pro'){ proKilit(); return; }
+
+    uyeId=session.user.id;
+    document.getElementById('v1-icerik').style.display='block';
+
+    try{
+      await profilCek();
+      tercihSecimleriYukle();
+      tercihUIKur();
+      profilOzetGoster();
+      olaylariBagla();
+      // Takip listesini DB ile birleştir → ★ durumları doğru boyansın
+      if(window.Takip && Takip.syncFromDB){ try{ await Takip.syncFromDB(); }catch(_){} }
+      await yukle(1);
+    }catch(e){
+      hataKilit((e&&e.message)||'');
+    }
+  })();
+})();
+</script>
+</body>
+</html>

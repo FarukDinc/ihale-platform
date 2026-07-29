@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="author" content="Ömer Faruk Dinç">
+  <meta name="copyright" content="© 2026 Ömer Faruk Dinç — İhaleGlobal">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Talep Detayı — İhaleGlobal</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=4" />
+  <link rel="icon" type="image/png" sizes="48x48" href="/favicon-48.png?v=4" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/favicon-180.png?v=4" />
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/v1.css?v=4" />
+  <style>
+    /* ── Üst bant (RFQ başlığı) — v1 lacivert ─────────────────────────── */
+    .v1-d-bant { background:var(--v1-lacivert); border-radius:var(--v1-radius-lg); padding:24px 26px; color:#fff; margin-bottom:18px; }
+    .v1-d-ust { font-size:11.5px; font-weight:700; letter-spacing:.09em; text-transform:uppercase; color:rgba(255,255,255,.72); }
+    .v1-d-baslik { font-size:22px; font-weight:800; line-height:1.35; margin:7px 0 12px; }
+    .v1-d-rozetler { display:flex; gap:8px; flex-wrap:wrap; }
+    .v1-d-rozet { font-size:12px; font-weight:700; padding:5px 12px; border-radius:20px; background:rgba(255,255,255,.16); }
+    .v1-d-rozet.yesil { background:var(--v1-yesil); }
+    .v1-d-rozet.kirmizi { background:var(--v1-kirmizi); }
+    .v1-d-rozet.teal { background:var(--v1-teal); }
+    .v1-d-rozet.gri { background:rgba(255,255,255,.22); color:rgba(255,255,255,.9); }
+
+    /* ── Üçlü KPI ızgarası ─────────────────────────────────────────────── */
+    .v1-rfq-kpi3 { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin:16px 0 4px; }
+    @media (max-width:760px) { .v1-rfq-kpi3 { grid-template-columns:1fr; } }
+    .v1-rfq-kutu { background:var(--v1-mavi-acik); border:1px solid #CFE2F5; border-radius:var(--v1-radius); padding:14px 16px; }
+    .v1-rfq-kutu:nth-child(2) { background:var(--v1-krem); border-color:#EFE7C9; }
+    .v1-rfq-kutu .l { font-size:10.5px; font-weight:700; letter-spacing:.06em; text-transform:uppercase; color:var(--v1-muted); margin-bottom:5px; }
+    .v1-rfq-kutu .v { font-size:17px; font-weight:800; color:var(--v1-lacivert); line-height:1.25; word-break:break-word; }
+    .v1-rfq-kutu .v.mavi { color:var(--v1-mavi); }
+    .v1-rfq-kutu .a { font-size:11.5px; font-weight:600; color:var(--v1-muted); margin-top:3px; }
+
+    /* ── Alıcı beyan bloğu ─────────────────────────────────────────────── */
+    .v1-beyan { background:var(--v1-zemin); border:1px solid var(--v1-cizgi); border-radius:var(--v1-radius);
+      padding:12px 15px; font-size:12.5px; color:var(--v1-metin-2); line-height:1.7; margin-top:14px; }
+    .v1-beyan b { color:var(--v1-lacivert); }
+    .v1-beyan .not { color:var(--v1-muted); font-weight:600; }
+    .v1-metin { font-size:13.5px; line-height:1.7; color:var(--v1-metin); white-space:pre-wrap;
+      max-height:340px; overflow-y:auto; background:var(--v1-zemin); border:1px solid var(--v1-cizgi);
+      border-radius:10px; padding:16px; }
+
+    /* ── Form ──────────────────────────────────────────────────────────── */
+    .v1-form-grup { display:flex; flex-direction:column; gap:6px; margin-bottom:13px; }
+    .v1-form-grup label { font-size:12px; font-weight:700; color:var(--v1-muted); }
+    .v1-form-grup input, .v1-form-grup textarea {
+      border:1.5px solid var(--v1-cizgi); border-radius:9px; padding:10px 12px; background:#fff;
+      font-family:var(--v1-font); font-size:13.5px; color:var(--v1-metin); outline:none; }
+    .v1-form-grup input:focus, .v1-form-grup textarea:focus { border-color:var(--v1-mavi); }
+    .v1-form-grup textarea { resize:vertical; min-height:70px; }
+    .v1-btn-birincil { background:var(--v1-mavi); color:#fff; border:none; border-radius:9px; padding:11px 22px;
+      font-family:var(--v1-font); font-size:14px; font-weight:700; cursor:pointer; }
+    .v1-btn-birincil:hover { background:var(--v1-lacivert); }
+    .v1-btn-birincil[disabled] { opacity:.6; cursor:default; }
+    .v1-btn-sec { background:#E7F5EC; color:#146035; border:1.5px solid #BFE6CE; border-radius:8px; padding:7px 13px;
+      font-family:var(--v1-font); font-size:12.5px; font-weight:700; cursor:pointer; white-space:nowrap; }
+    .v1-btn-sec:hover { background:#D6EEDF; }
+    .v1-not { font-size:11.5px; color:var(--v1-muted); margin-top:9px; line-height:1.6; }
+
+    /* ── Teklif / firma satırları ──────────────────────────────────────── */
+    .v1-teklif-satir { display:flex; align-items:center; gap:12px; padding:13px 4px;
+      border-bottom:1px solid var(--v1-cizgi); flex-wrap:wrap; }
+    .v1-teklif-satir:last-child { border-bottom:none; }
+    .v1-teklif-satir.kazanan { background:#E6F6EC; border:1px solid #BFE6CE; border-radius:10px; padding:13px; margin-bottom:6px; }
+    .v1-teklif-firma { font-size:13.5px; font-weight:700; color:var(--v1-lacivert); display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+    .v1-teklif-meta { font-size:12px; color:var(--v1-muted); margin-top:3px; line-height:1.55; }
+    .v1-teklif-bedel { font-size:15.5px; font-weight:800; color:var(--v1-mavi); white-space:nowrap; }
+    .v1-firma-satir { display:flex; align-items:center; gap:12px; padding:11px 4px; border-bottom:1px solid var(--v1-cizgi); }
+    .v1-firma-satir:last-child { border-bottom:none; }
+    .v1-firma-no { width:26px; height:26px; border-radius:50%; background:var(--v1-mavi-acik); color:var(--v1-mavi);
+      font-size:11.5px; font-weight:800; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+    .v1-rozet { font-size:10.5px; font-weight:800; padding:3px 9px; border-radius:20px; white-space:nowrap; }
+    .v1-rozet-il { background:var(--v1-mavi-acik); color:var(--v1-mavi); }
+    .v1-rozet-kap { background:#E7F5EC; color:#146035; }
+    .v1-rozet-kazanan { background:var(--v1-yesil); color:#fff; }
+
+    /* ── Uyarı / kilit blokları ────────────────────────────────────────── */
+    .v1-uyari { background:#fff; border:1.5px dashed var(--v1-cizgi); border-radius:var(--v1-radius-lg);
+      padding:32px 24px; text-align:center; font-size:14px; color:var(--v1-metin); line-height:1.8; }
+    .v1-uyari a { font-weight:700; }
+    .v1-geri { display:inline-flex; align-items:center; gap:6px; font-size:13px; font-weight:600;
+      color:var(--v1-muted); text-decoration:none; margin-bottom:12px; }
+    .v1-geri:hover { color:var(--v1-mavi); text-decoration:none; }
+  </style>
+</head>
+<body class="v1" data-v1-aktif="esatinalma" data-v1-kirinti="e-Satınalma > Talep Detayı">
+<div class="v1-app">
+  <div class="v1-main">
+    <div class="v1-govde">
+      <a class="v1-geri" href="v1-esatinalma">← e-Satınalma listesine dön</a>
+      <div id="v1-icerik"><div class="v1-bos">Yükleniyor…</div></div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="js/v1-kabuk.js?v=6"></script>
+<script>
+(() => {
+  const SB_URL="https://ihaleglobal.com", SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzg0MzA3MTU4LCJleHAiOjE5NDE5ODcxNTh9.CjNKulvirotDD_y2oO2QKgo0kbqYvL0jUSV1RiDMoso";
+  const sb=window.supabase.createClient(SB_URL,SB_KEY);
+
+  const esc=(s)=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+  const num=(n)=>(Number(n)||0).toLocaleString('tr-TR');
+  const sembol=(pb)=>pb==='USD'?'$':pb==='EUR'?'€':'₺';
+  // Tahmini bedel ve teklifler AYNI para biriminde gösterilir (talebin para_birimi'si).
+  const bedel=(v,pb)=>(v==null||v==='')?'—':sembol(pb)+Number(v).toLocaleString('tr-TR',{maximumFractionDigits:0});
+  const gun=(t)=>t?new Date(t).toLocaleDateString('tr-TR',{day:'2-digit',month:'long',year:'numeric'}):'—';
+
+  const id=new URLSearchParams(location.search).get('id');
+  const IC=()=>document.getElementById('v1-icerik');
+  let user=null, talep=null;
+
+  // NOT: Alıcı ünvanını yukleniciler kamu karnesine eşleştirip "tanınan alıcı" rozeti göstermek
+  // KALDIRILDI (v2 ile aynı karar). Ünvan/VKN beyandır; VKN sahipliğini doğrulayamıyoruz —
+  // eşleştirme beyan edilen isme dayandığı için ünlü bir firmanın kamu karnesi taklit edilebiliyordu.
+
+  // Süre doldu mu — durum='acik' olsa bile son_teklif_tarihi geçmişse yeni teklif alınmaz.
+  function sureDoldu(){ return !!(talep && talep.son_teklif_tarihi && new Date(talep.son_teklif_tarihi).getTime() < Date.now()); }
+  // Teklif ancak durum 'acik' VE süre dolmamışsa alınır.
+  function teklifAcik(){ return !!(talep && talep.durum==='acik' && !sureDoldu()); }
+
+  function kalanGun(){
+    if(!talep || !talep.son_teklif_tarihi) return null;
+    return Math.ceil((new Date(talep.son_teklif_tarihi) - new Date())/86400000);
+  }
+
+  function bantHTML(){
+    const t=talep, doldu=sureDoldu(), k=kalanGun();
+    const durumMetin = t.durum!=='acik' ? 'Kapandı' : (doldu ? 'Süresi doldu' : 'Açık');
+    const durumSinif = teklifAcik() ? 'yesil' : (doldu && t.durum==='acik' ? 'kirmizi' : 'gri');
+    const durumIkon  = (doldu && t.durum==='acik') ? '⏹' : '●';
+    return `<div class="v1-d-bant">
+      <div class="v1-d-ust">🤝 Özel Satınalma İhalesi</div>
+      <div class="v1-d-baslik">${esc(t.baslik||'Satınalma Talebi')}</div>
+      <div class="v1-d-rozetler">
+        <span class="v1-d-rozet ${durumSinif}">${durumIkon} ${durumMetin}</span>
+        ${t.kategori?`<span class="v1-d-rozet teal">${esc(t.kategori)}</span>`:''}
+        ${t.il?`<span class="v1-d-rozet">📍 ${esc(t.il)}${t.ilce?' / '+esc(t.ilce):''}</span>`:''}
+        ${(k!=null&&k>=0&&t.durum==='acik')?`<span class="v1-d-rozet ${k<=3?'kirmizi':''}">Son ${num(k)} gün</span>`:''}
+      </div>
+    </div>`;
+  }
+
+  function ozetHTML(){
+    const t=talep, k=kalanGun();
+    const beyan = (t.olusturan_firma || t.olusturan_vkn)
+      ? `<div class="v1-beyan">🏢 Alıcı (beyan): <b>${esc(t.olusturan_firma)||'—'}</b>${
+          t.olusturan_vkn?` · <span title="Vergi Kimlik No — teklif öncesi bağımsız doğrulayın">VKN: ${esc(t.olusturan_vkn)}</span>`:''
+        } <span class="not" title="Bilgiler alıcı beyanıdır, platformca doğrulanmamıştır">ⓘ doğrulanmamış</span>${
+          t.acik_adres?`<br>📍 ${esc(t.acik_adres)}${(t.ilce||t.il)?' — '+esc([t.ilce,t.il].filter(Boolean).join(', ')):''}`:''
+        }</div>`
+      : '';
+    return `<div class="v1-kart">
+      <div class="v1-kart-baslik">Talep Özeti</div>
+      <div class="v1-rfq-kpi3">
+        <div class="v1-rfq-kutu"><div class="l">Tahmini Bedel</div><div class="v mavi">${bedel(t.tahmini_bedel,t.para_birimi)}</div></div>
+        <div class="v1-rfq-kutu"><div class="l">Miktar</div><div class="v">${esc(t.miktar)||'—'}</div></div>
+        <div class="v1-rfq-kutu"><div class="l">Son Teklif Tarihi</div><div class="v">${gun(t.son_teklif_tarihi)}</div>${
+          k!=null?`<div class="a">${k>=0?'Kalan '+num(k)+' gün':'Süre doldu'}</div>`:'<div class="a">Süresiz</div>'}</div>
+      </div>
+      ${beyan}
+      ${t.aciklama?`<div style="margin-top:16px;"><div style="font-size:11.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--v1-muted);margin-bottom:7px;">İşin Tanımı</div><div class="v1-metin">${esc(t.aciklama)}</div></div>`:''}
+    </div>`;
+  }
+
+  // ── ALICI (talep sahibi) görünümü: gelen teklifler ───────────────────
+  async function gelenTekliflerHTML(){
+    const {data:teklifler,error}=await sb.from('tedarikci_teklifleri')
+      .select('*').eq('talep_id',id).order('teklif_bedeli',{ascending:true});
+    if(error){
+      return `<div class="v1-kart"><div class="v1-kart-baslik">📥 Gelen Teklifler</div>
+        <div class="v1-bos">${kilitMi(error)?kilitMetni('Gelen teklif listesi'):'Teklifler yüklenemedi. '+esc(error.message||'')}</div></div>`;
+    }
+    let ic;
+    if(!teklifler || !teklifler.length){
+      ic='<div class="v1-bos">Henüz teklif gelmedi. Önerilen tedarikçilere bildirim/davet gidecek (Faz 2).</div>';
+    } else {
+      ic=teklifler.map(tk=>{
+        const kazanan = talep.kazanan_teklif_id===tk.id;
+        return `<div class="v1-teklif-satir ${kazanan?'kazanan':''}">
+          <div style="flex:1;min-width:0;">
+            <div class="v1-teklif-firma">${esc(tk.teklif_veren_firma)||'Tedarikçi'}${kazanan?'<span class="v1-rozet v1-rozet-kazanan">KAZANAN</span>':''}</div>
+            ${tk.aciklama?`<div class="v1-teklif-meta">${esc(tk.aciklama)}</div>`:''}
+          </div>
+          <div class="v1-teklif-bedel">${bedel(tk.teklif_bedeli,talep.para_birimi)}</div>
+          ${(talep.durum==='acik' && !kazanan)?`<button class="v1-btn-sec" data-kazanan="${esc(tk.id)}">Kazanan Seç</button>`:''}
+        </div>`;
+      }).join('');
+    }
+    return `<div class="v1-kart">
+      <div class="v1-kart-baslik">📥 Gelen Teklifler (${num(teklifler?teklifler.length:0)})</div>
+      <div style="font-size:12.5px;color:var(--v1-muted);margin:-8px 0 12px;">Teklifler kapalı zarftır — yalnızca siz görürsünüz, tedarikçiler birbirinin bedelini göremez. Bedele göre artan sıralı.</div>
+      ${ic}</div>`;
+  }
+
+  // ── ALICI görünümü: önerilen tedarikçiler (coğrafi ağırlıklı) ────────
+  async function onerilenTedarikciHTML(){
+    if(!talep.kategori) return '';
+    try{
+      // Coğrafi-ağırlıklı variant: aynı il > yakın il > uzak; mesafe_km döner
+      const {data,error}=await sb.rpc('ihaleye_uygun_firmalar_geo',
+        {p_kategori:talep.kategori, p_il:talep.il, p_bedel:talep.tahmini_bedel, p_limit:8});
+      if(error) throw error;
+      if(!data || !data.length) return '';
+      const s=data.map((f,i)=>`<div class="v1-firma-satir">
+        <div class="v1-firma-no">${i+1}</div>
+        <div style="flex:1;min-width:0;">
+          <div class="v1-teklif-firma"><a href="v1-firma-analiz?ara=${encodeURIComponent(f.kazanan_firma||'')}" target="_blank" rel="noopener">${esc(f.kazanan_firma)}</a></div>
+          <div class="v1-teklif-meta">${f.firma_il?'📍 '+esc(f.firma_il)+' · ':''}${f.mesafe_km!=null?'~'+num(f.mesafe_km)+' km · ':''}${num(f.kategori_kazanim)} kazanım · en büyük ₺${num(f.max_kazanim)}</div>
+        </div>
+        ${f.ayni_il?'<span class="v1-rozet v1-rozet-il">Aynı il</span>':''}${f.kapasite_uygun?'<span class="v1-rozet v1-rozet-kap">Kapasite ✓</span>':''}
+      </div>`).join('');
+      return `<div class="v1-kart">
+        <div class="v1-kart-baslik">🎯 Önerilen Tedarikçiler</div>
+        <div style="font-size:12.5px;color:var(--v1-muted);margin:-8px 0 12px;">EKAP geçmişi + coğrafi yakınlığa göre bu işe uygun firmalar.</div>
+        ${s}</div>`;
+    }catch(e){
+      if(kilitMi(e)){
+        return `<div class="v1-kart"><div class="v1-kart-baslik">🎯 Önerilen Tedarikçiler</div>
+          <div class="v1-bos">${kilitMetni('Tedarikçi önerileri')}</div></div>`;
+      }
+      return '';
+    }
+  }
+
+  // ── TEDARİKÇİ görünümü: teklif ver / teklifim ────────────────────────
+  async function teklifBolumuHTML(){
+    const {data:kendi,error}=await sb.from('tedarikci_teklifleri').select('*')
+      .eq('talep_id',id).eq('teklif_veren_user_id',user.id).maybeSingle();
+    if(error && !kilitMi(error)){
+      return `<div class="v1-kart"><div class="v1-kart-baslik">💼 Teklif Ver</div>
+        <div class="v1-bos">Teklif durumu okunamadı. ${esc(error.message||'')}</div></div>`;
+    }
+    if(kendi){
+      return `<div class="v1-kart">
+        <div class="v1-kart-baslik">✓ Teklifiniz Alındı</div>
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap;">
+          <div class="v1-teklif-meta" style="margin:0;font-size:13px;">${esc(kendi.aciklama)||'Teklifiniz değerlendirmede.'}</div>
+          <div class="v1-teklif-bedel">${bedel(kendi.teklif_bedeli,talep.para_birimi)}</div>
+        </div>
+        ${talep.kazanan_teklif_id===kendi.id?'<div class="v1-not" style="color:#146035;font-weight:700;">🏆 Bu ihaleyi kazandınız.</div>':''}
+      </div>`;
+    }
+    if(!teklifAcik()){
+      const mesaj = (sureDoldu() && talep.durum==='acik')
+        ? '⏹ Bu ihalenin son teklif tarihi geçti — teklif alınmıyor.'
+        : 'Bu ihale kapandı, teklif alınmıyor.';
+      return `<div class="v1-kart"><div class="v1-bos">${mesaj}</div></div>`;
+    }
+    const pbSembol=sembol(talep.para_birimi);
+    return `<div class="v1-kart">
+      <div class="v1-kart-baslik">💼 Teklif Ver</div>
+      <div class="v1-form-grup"><label>Firma Adınız</label>
+        <input type="text" id="tk-firma" placeholder="Tedarikçi firma" /></div>
+      <div class="v1-form-grup"><label>Teklif Bedeli (${pbSembol}) *</label>
+        <input type="number" id="tk-bedel" placeholder="0" min="0" step="0.01" /></div>
+      <div class="v1-form-grup"><label>Açıklama / Notlar</label>
+        <textarea id="tk-aciklama" placeholder="Teslim süresi, kapsam, notlar…"></textarea></div>
+      <button class="v1-btn-birincil" id="tk-gonder">Teklifi Gönder →</button>
+      <div class="v1-not">Teklifiniz kapalı-zarftır — yalnızca alıcı görür, rakip tedarikçiler göremez.</div>
+    </div>`;
+  }
+
+  // ── Yardımcılar: üyelik kilidi ───────────────────────────────────────
+  function kilitMi(e){ return !!e && (e.code==='42501' || /permission denied/i.test(e.message||'')); }
+  function kilitMetni(ne){
+    return `🔒 ${ne} üyelere özeldir.<br><br><a href="login">Giriş yapın</a> veya <a href="fiyatlandirma_odeme_bolumu">üye olun</a> →`;
+  }
+
+  // ── Yazma işlemleri (v2 ile birebir aynı tablo/alanlar) ──────────────
+  async function kazananSec(teklifId){
+    if(!confirm('Bu teklifi KAZANAN olarak seçmek istediğinize emin misiniz? İhale kapanacak.')) return;
+    const {error}=await sb.from('satinalma_talepleri')
+      .update({kazanan_teklif_id:teklifId, durum:'kapali'}).eq('id',id);
+    if(error){ alert(kilitMi(error)?'Bu işlem için yetkiniz yok. Yalnızca talebi açan firma kazanan seçebilir.':'Hata: '+error.message); return; }
+    alert('✓ Kazanan seçildi, ihale kapatıldı.');
+    location.reload();
+  }
+
+  async function teklifVer(){
+    if(!teklifAcik()){ alert('Bu ihale kapandı veya son teklif tarihi geçti — teklif alınamıyor.'); location.reload(); return; }
+    const bedelStr=document.getElementById('tk-bedel').value;
+    const tutar=parseFloat(bedelStr);
+    if(!tutar || tutar<=0){ alert('Geçerli bir teklif bedeli girin.'); return; }
+    const btn=document.getElementById('tk-gonder');
+    if(btn){ btn.disabled=true; btn.textContent='Gönderiliyor…'; }
+    const teklif={
+      talep_id:id,
+      teklif_veren_user_id:user.id,
+      teklif_veren_firma:(document.getElementById('tk-firma').value||'').trim()||null,
+      teklif_bedeli:tutar,
+      aciklama:(document.getElementById('tk-aciklama').value||'').trim()||null,
+    };
+    const {error}=await sb.from('tedarikci_teklifleri').insert([teklif]);
+    if(error){
+      if(btn){ btn.disabled=false; btn.textContent='Teklifi Gönder →'; }
+      alert(/duplicate/i.test(error.message||'')
+        ? 'Bu ihaleye zaten teklif verdiniz.'
+        : (kilitMi(error) ? 'Teklif verme yetkiniz yok. Geçerli bir üyeliğiniz olduğundan emin olun.' : 'Hata: '+error.message));
+      return;
+    }
+    alert('✓ Teklifiniz gönderildi!');
+    location.reload();
+  }
+
+  function olaylariBagla(){
+    document.querySelectorAll('[data-kazanan]').forEach(b=>
+      b.addEventListener('click',()=>kazananSec(b.getAttribute('data-kazanan'))));
+    const g=document.getElementById('tk-gonder');
+    if(g) g.addEventListener('click',teklifVer);
+  }
+
+  // Paket rozetini kabuk monte OLDUKTAN SONRA yaz — v1-kabuk.js topbar'ı
+  // DOMContentLoaded'da kurar, oysa getSession (özellikle misafirde, ağ isteği
+  // olmadığı için) ondan ÖNCE çözülür: #v1-paket-ad henüz DOM'da olmaz, yazma
+  // sessizce düşer ve rozet '—' kalırdı. (v1-ihalelerim / v1-bildirimler dersi.)
+  function paketYaz(ad){
+    const yaz=()=>{ if(window.v1PaketYaz) window.v1PaketYaz(ad); };
+    if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',yaz,{once:true});
+    else yaz();
+  }
+
+  // ── Açılış ───────────────────────────────────────────────────────────
+  (async()=>{
+    // Paket rozeti (kabuk topbar'ı) — getSession/plan sorgusu patlasa bile
+    // rozet MUTLAKA yazılsın diye iki try ayrı ayrı sarmalanır.
+    let oturum=null;
+    try{
+      const {data}=await sb.auth.getSession();
+      oturum=(data && data.session) ? data.session : null;
+    }catch(_){}
+    if(oturum){
+      let plan=null;
+      try{
+        const {data:k}=await sb.from('kullanici_krediler').select('plan').eq('kullanici_id',oturum.user.id).maybeSingle();
+        plan=k&&k.plan;
+      }catch(_){}
+      paketYaz(['standart','kurumsal'].includes(plan)?'Pro':'Temel');
+    } else paketYaz('Misafir');
+    user = oturum ? oturum.user : null;
+
+    if(!id){ IC().innerHTML='<div class="v1-uyari">Geçersiz talep bağlantısı — kimlik belirtilmemiş.<br><br><a href="v1-esatinalma">Açık taleplere dön →</a></div>'; return; }
+
+    // Anon (giriş yok) hassas kolonları (VKN / açık adres / koordinat / olusturan_user_id) GÖREMEZ —
+    // kolon-GRANT ile kapalı (backend/migration_satinalma_revoke.sql). olusturan_user_id anon'a GEREKMEZ:
+    // sahiplik kontrolü user ister, anon'da user=null → dal zaten çalışmaz. Bu listeye kolon EKLEME —
+    // grant'ta olmayan bir kolon eklenirse sorgu 42501 alır ve sayfa "talep bulunamadı"ya düşer.
+    // Girişli kullanıcı (alıcı/tedarikçi) '*' ile tam erişir (olusturan_user_id oradan gelir).
+    const guvenliKolonlar='id,olusturan_firma,baslik,aciklama,kategori,il,ilce,miktar,tahmini_bedel,para_birimi,son_teklif_tarihi,durum,olusturulma,kazanan_teklif_id';
+    const {data,error}=await sb.from('satinalma_talepleri')
+      .select(user?'*':guvenliKolonlar).eq('id',id).maybeSingle();
+
+    if(error || !data){
+      IC().innerHTML=`<div class="v1-uyari">${
+        kilitMi(error) ? kilitMetni('Bu talebin detayı')
+                       : 'Talep bulunamadı veya kaldırılmış.<br><br><a href="v1-esatinalma">Açık taleplere dön →</a>'
+      }</div>`;
+      return;
+    }
+    talep=data;
+
+    const sahibiMi = !!(user && user.id===talep.olusturan_user_id);
+    let html = bantHTML() + ozetHTML();
+    if(sahibiMi){
+      html += await gelenTekliflerHTML();
+      html += await onerilenTedarikciHTML();
+    } else if(user){
+      html += await teklifBolumuHTML();
+    } else {
+      html += `<div class="v1-uyari">💼 Bu talebe <strong>teklif vermek</strong> için üye girişi gerekir.<br>
+        Teklifler kapalı zarftır; yalnızca alıcı görür.<br><br>
+        <a href="login">Giriş yapın</a> veya <a href="fiyatlandirma_odeme_bolumu">üye olun</a> →</div>`;
+    }
+    IC().innerHTML=html;
+    olaylariBagla();
+  })();
+})();
+</script>
+</body>
+</html>

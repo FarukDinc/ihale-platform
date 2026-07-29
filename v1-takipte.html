@@ -1,0 +1,940 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="author" content="Ömer Faruk Dinç">
+  <meta name="copyright" content="© 2026 Ömer Faruk Dinç — İhaleGlobal">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Takip Listem — İhaleGlobal</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=4" />
+  <link rel="icon" type="image/png" sizes="48x48" href="/favicon-48.png?v=4" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/favicon-180.png?v=4" />
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/v1.css?v=4" />
+  <style>
+    /* ── Sayfa başlığı ───────────────────────────────────────────────── */
+    .v1-sayfa-baslik { font-size:22px; font-weight:800; color:var(--v1-lacivert); margin-bottom:4px; }
+    .v1-sayfa-alt { font-size:13.5px; color:var(--v1-muted); margin-bottom:16px; }
+    .v1-bas-serit { display:flex; align-items:flex-start; justify-content:space-between;
+      gap:16px; flex-wrap:wrap; margin-bottom:18px; }
+    .v1-bas-islem { display:flex; gap:8px; flex-wrap:wrap; }
+
+    /* ── Butonlar ────────────────────────────────────────────────────── */
+    .v1-btn { border:1.5px solid var(--v1-cizgi); background:#fff; color:var(--v1-metin);
+      border-radius:9px; padding:9px 15px; font-family:var(--v1-font); font-size:13px; font-weight:700;
+      cursor:pointer; text-decoration:none; display:inline-flex; align-items:center; gap:6px; white-space:nowrap; }
+    .v1-btn:hover { border-color:var(--v1-mavi); color:var(--v1-mavi); text-decoration:none; }
+    .v1-btn-ana { background:var(--v1-mavi); border-color:var(--v1-mavi); color:#fff; }
+    .v1-btn-ana:hover { background:var(--v1-lacivert); border-color:var(--v1-lacivert); color:#fff; }
+    .v1-btn-kck { padding:6px 12px; font-size:12px; border-radius:8px; font-weight:700; }
+    .v1-btn-sil { color:var(--v1-kirmizi); border-color:#F2C6CA; background:#FDF7F8; }
+    .v1-btn-sil:hover { background:#FDECEE; border-color:var(--v1-kirmizi); color:var(--v1-kirmizi); }
+
+    /* ── KPI ızgarası (4 sütun) ──────────────────────────────────────── */
+    #v1-kpi { grid-template-columns:repeat(4,1fr); margin-bottom:18px; }
+    @media (max-width:1100px) { #v1-kpi { grid-template-columns:repeat(2,1fr) !important; } }
+    @media (max-width:600px)  { #v1-kpi { grid-template-columns:1fr !important; } }
+    .v1-kpi-ikon.emoji { font-size:25px; line-height:1; }
+    .v1-kpi-alt { display:block; font-size:11px; color:var(--v1-muted); margin-top:3px; }
+
+    /* ── Tablo kartı ─────────────────────────────────────────────────── */
+    .v1-tk-kart { background:#fff; border:1px solid var(--v1-cizgi); border-radius:var(--v1-radius-lg);
+      box-shadow:var(--v1-golge); overflow:hidden; margin-bottom:18px; }
+    .v1-tk-bas { display:flex; align-items:center; justify-content:space-between; gap:12px;
+      flex-wrap:wrap; padding:15px 18px; border-bottom:1px solid var(--v1-cizgi); }
+    .v1-tk-bas-ad { font-size:15.5px; font-weight:800; color:var(--v1-lacivert); display:flex; align-items:center; gap:8px; }
+    .v1-tk-bas-sag { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+    .v1-tk-govde { padding:6px 18px 12px; }
+    .v1-tablo-kaydir { overflow-x:auto; }
+    .v1-tablo-kaydir .v1-tablo { min-width:880px; }
+
+    /* ── Form öğeleri ────────────────────────────────────────────────── */
+    .v1-sec { border:1.5px solid var(--v1-cizgi); border-radius:9px; padding:8px 11px; background:#fff;
+      font-family:var(--v1-font); font-size:12.5px; color:var(--v1-metin); outline:none; cursor:pointer; }
+    .v1-sec:focus { border-color:var(--v1-mavi); }
+    .v1-ara-kucuk { display:flex; align-items:center; gap:7px; border:1.5px solid var(--v1-cizgi);
+      border-radius:9px; padding:7px 11px; background:#fff; }
+    .v1-ara-kucuk input { border:none; outline:none; font-family:var(--v1-font); font-size:12.5px;
+      color:var(--v1-metin); min-width:170px; background:none; }
+
+    /* ── Görünüm değiştirici ─────────────────────────────────────────── */
+    .v1-gt { display:inline-flex; border:1.5px solid var(--v1-cizgi); border-radius:9px; overflow:hidden; }
+    .v1-gt button { background:#fff; border:none; color:var(--v1-muted); font-family:var(--v1-font);
+      font-size:12.5px; font-weight:700; padding:7px 13px; cursor:pointer; }
+    .v1-gt button.aktif { background:var(--v1-mavi); color:#fff; }
+
+    /* ── Rozetler ────────────────────────────────────────────────────── */
+    .v1-rozet { display:inline-flex; align-items:center; gap:5px; padding:3px 10px; border-radius:20px;
+      font-size:11.5px; font-weight:700; background:#EDF1F6; color:var(--v1-muted); white-space:nowrap; }
+    .v1-rozet.acik { background:#E4F6EC; color:var(--v1-yesil); }
+    .v1-rozet.acil { background:#FDECEE; color:var(--v1-kirmizi); }
+    .v1-rozet.bilgi { background:var(--v1-mavi-acik); color:var(--v1-mavi); }
+
+    /* ── Uyum çubuğu ─────────────────────────────────────────────────── */
+    .v1-uyum { display:flex; align-items:center; gap:9px; min-width:112px; }
+    .v1-uyum-yol { flex:1; height:5px; background:#EDF1F6; border-radius:3px; overflow:hidden; }
+    .v1-uyum-dolu { display:block; height:100%; border-radius:3px; }
+    .v1-uyum-sayi { font-size:12.5px; font-weight:800; min-width:36px; text-align:right; }
+
+    /* ── Satır içi başlık hücresi ────────────────────────────────────── */
+    .v1-ad-hucre a { font-size:13.5px; font-weight:700; color:var(--v1-mavi); text-decoration:none; }
+    .v1-ad-hucre a:hover { text-decoration:underline; }
+    .v1-ad-alt { font-size:11.5px; color:var(--v1-muted); margin-top:3px; line-height:1.45; }
+    .v1-islem-hucre { display:flex; gap:7px; justify-content:flex-end; }
+
+    /* ── Mini liste satırı (DT / kurum / firma) ──────────────────────── */
+    .v1-satir { display:flex; align-items:center; justify-content:space-between; gap:12px;
+      padding:11px 0; border-bottom:1px solid var(--v1-cizgi); }
+    .v1-satir:last-child { border-bottom:none; }
+    .v1-satir-ad { font-size:13.5px; font-weight:700; color:var(--v1-mavi); text-decoration:none; display:block; }
+    .v1-satir-ad:hover { text-decoration:underline; }
+    .v1-satir-alt { font-size:11.5px; color:var(--v1-muted); margin-top:3px; }
+
+    /* ── Boş durum ekranı ────────────────────────────────────────────── */
+    .v1-bosluk { text-align:center; padding:54px 22px; }
+    .v1-bosluk-ikon { font-size:44px; margin-bottom:12px; }
+    .v1-bosluk-bas { font-size:18px; font-weight:800; color:var(--v1-lacivert); margin-bottom:7px; }
+    .v1-bosluk-yazi { font-size:13.5px; color:var(--v1-muted); max-width:420px; margin:0 auto 18px; line-height:1.6; }
+
+    /* ── Takvim görünümü ─────────────────────────────────────────────── */
+    .v1-tkv-bas { display:flex; align-items:center; justify-content:space-between; gap:12px;
+      flex-wrap:wrap; margin:10px 0 12px; }
+    .v1-tkv-ay { font-size:16px; font-weight:800; color:var(--v1-lacivert); min-width:150px; text-align:center; }
+    .v1-ok { width:34px; height:34px; border:1.5px solid var(--v1-cizgi); background:#fff; border-radius:9px;
+      cursor:pointer; color:var(--v1-lacivert); font-size:16px; font-weight:700; font-family:var(--v1-font); }
+    .v1-ok:hover { border-color:var(--v1-mavi); color:var(--v1-mavi); }
+    .v1-izgara { display:grid; grid-template-columns:repeat(7,1fr); gap:5px; }
+    .v1-gun-basi { text-align:center; font-size:11px; font-weight:800; color:var(--v1-muted);
+      padding:5px 0; text-transform:uppercase; }
+    .v1-hucre { min-height:86px; background:#fff; border:1px solid var(--v1-cizgi); border-radius:9px;
+      padding:5px 6px; overflow:hidden; }
+    .v1-hucre.bos { background:#F7F9FC; border-style:dashed; }
+    .v1-hucre.dolu { cursor:pointer; }
+    .v1-hucre.dolu:hover { border-color:var(--v1-mavi); }
+    .v1-hucre.bugun { border-color:var(--v1-mavi); box-shadow:0 0 0 2px rgba(19,94,170,.15); }
+    .v1-hucre-no { font-size:12px; font-weight:700; color:var(--v1-metin-2); }
+    .v1-hucre.bugun .v1-hucre-no { color:var(--v1-mavi); }
+    .v1-etkinlik { font-size:10px; font-weight:600; border-radius:5px; padding:2px 5px; margin-top:3px;
+      white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .v1-etkinlik.son { background:var(--v1-mavi-acik); color:var(--v1-mavi); }
+    .v1-etkinlik.ihale { background:var(--v1-teal-acik); color:#0B6C67; }
+    .v1-etkinlik.gecti { background:#F1F3F6; color:var(--v1-muted); }
+    .v1-etkinlik-fazla { font-size:9.5px; color:var(--v1-muted); margin-top:3px; }
+    .v1-tkv-panel { margin-top:14px; border:1px solid var(--v1-cizgi); border-radius:12px;
+      padding:13px 15px; background:#F8FBFF; }
+    .v1-tkv-panel-bas { font-size:13.5px; font-weight:800; color:var(--v1-lacivert); margin-bottom:9px; }
+    .v1-tkv-kart { display:flex; align-items:center; gap:10px; padding:9px 0; border-bottom:1px solid var(--v1-cizgi); }
+    .v1-tkv-kart:last-child { border-bottom:none; }
+    @media (max-width:760px) {
+      .v1-hucre { min-height:56px; }
+      .v1-etkinlik { display:none; }
+      .v1-hucre.dolu { background:var(--v1-mavi-acik); border-color:#CFE2F5; }
+    }
+  </style>
+</head>
+<body class="v1" data-v1-aktif="benim" data-v1-kirinti="Hesabım > Takip Listem">
+<div class="v1-app">
+  <div class="v1-main">
+    <div class="v1-govde">
+
+      <div class="v1-bas-serit">
+        <div>
+          <div class="v1-sayfa-baslik">Takip Listem</div>
+          <div class="v1-sayfa-alt" style="margin-bottom:0;">
+            Takibe aldığınız ihaleler, doğrudan teminler, kurumlar ve rakip firmalar tek ekranda.
+            Girişliyseniz takipleriniz hesabınıza kaydedilir; misafirseniz yalnız bu tarayıcıda saklanır.
+          </div>
+        </div>
+        <div class="v1-bas-islem">
+          <button class="v1-btn" id="v1-bittileri" title="Teklif tarihi geçmiş ihaleleri listeden kaldır">↩ Bittileri Kaldır</button>
+          <button class="v1-btn v1-btn-sil" id="v1-hepsini">🗑 Listeyi Temizle</button>
+          <a class="v1-btn v1-btn-ana" href="v1-ihaleler">+ İhale Ekle</a>
+        </div>
+      </div>
+
+      <!-- ÖZET İSTATİSTİKLER -->
+      <div class="v1-kpi" id="v1-kpi">
+        <div class="v1-kpi-kart" style="cursor:default;">
+          <span class="v1-kpi-ikon emoji">☆</span>
+          <span class="v1-kpi-govde">
+            <span class="v1-kpi-sayi" id="k-toplam">—</span>
+            <span class="v1-kpi-etiket">Takip Edilen İhale</span>
+            <span class="v1-kpi-alt" id="k-toplam-alt">&nbsp;</span>
+          </span>
+        </div>
+        <div class="v1-kpi-kart" style="cursor:default;">
+          <span class="v1-kpi-ikon emoji">⏰</span>
+          <span class="v1-kpi-govde">
+            <span class="v1-kpi-sayi" id="k-yaklasan" style="color:var(--v1-kirmizi);">—</span>
+            <span class="v1-kpi-etiket">7 Gün İçinde Bitiyor</span>
+            <span class="v1-kpi-alt">son teklif tarihine göre</span>
+          </span>
+        </div>
+        <div class="v1-kpi-kart" style="cursor:default;">
+          <span class="v1-kpi-ikon emoji">✓</span>
+          <span class="v1-kpi-govde">
+            <span class="v1-kpi-sayi" id="k-aktif" style="color:var(--v1-yesil);">—</span>
+            <span class="v1-kpi-etiket">Açık İhale</span>
+            <span class="v1-kpi-alt">durumu aktif olanlar</span>
+          </span>
+        </div>
+        <div class="v1-kpi-kart" style="cursor:default;">
+          <span class="v1-kpi-ikon emoji">₺</span>
+          <span class="v1-kpi-govde">
+            <span class="v1-kpi-sayi" id="k-bedel" style="font-size:22px;">—</span>
+            <span class="v1-kpi-etiket">Toplam Tahmini Değer</span>
+            <span class="v1-kpi-alt">yaklaşık maliyet alt sınırı toplamı</span>
+          </span>
+        </div>
+      </div>
+
+      <!-- TAKİP EDİLEN İHALELER -->
+      <div class="v1-tk-kart">
+        <div class="v1-tk-bas">
+          <div class="v1-tk-bas-ad">☆ Takip Ettiğim İhaleler</div>
+          <div class="v1-tk-bas-sag">
+            <div class="v1-ara-kucuk">
+              <span style="color:var(--v1-muted);">⌕</span>
+              <input type="text" id="v1-ara-takip" placeholder="Takip listesinde ara…" autocomplete="off">
+            </div>
+            <select class="v1-sec" id="v1-sirala">
+              <option value="ekle">Son Eklenen Önce</option>
+              <option value="deadline">En Yakın Tarih Önce</option>
+              <option value="uyum">En Yüksek Uyum Önce</option>
+            </select>
+            <div class="v1-gt">
+              <button id="gt-liste" class="aktif">☰ Liste</button>
+              <button id="gt-takvim">📅 Takvim</button>
+            </div>
+            <span class="v1-tablo-sayi" id="v1-sonuc-say">Yükleniyor…</span>
+          </div>
+        </div>
+
+        <div id="v1-liste-gorunum">
+          <div class="v1-tablo-kaydir">
+            <table class="v1-tablo">
+              <thead>
+                <tr>
+                  <th>İhale Adı</th>
+                  <th>Durum</th>
+                  <th>Yaklaşık Maliyet</th>
+                  <th>Son Tarih</th>
+                  <th>Uyum</th>
+                  <th style="text-align:right;">İşlem</th>
+                </tr>
+              </thead>
+              <tbody id="v1-tbody">
+                <tr><td colspan="6" class="v1-bos">Yükleniyor…</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div id="v1-takvim-gorunum" style="display:none; padding:6px 18px 18px;"></div>
+      </div>
+
+      <!-- TAKİP EDİLEN DOĞRUDAN TEMİNLER
+           Panel kartı ihale + DT takiplerini toplayıp gösterir; DT bölümü olmazsa
+           sayaç ile liste uyuşmaz. Ayrı depo: dt_takipler + localStorage 'dt_takip'
+           (js/takip.js -> TakipDT). -->
+      <div class="v1-tk-kart">
+        <div class="v1-tk-bas">
+          <div class="v1-tk-bas-ad">⚡ Takip Ettiğim Doğrudan Teminler</div>
+          <span class="v1-tablo-sayi" id="v1-dt-say"></span>
+        </div>
+        <div class="v1-tk-govde" id="v1-dt-liste"><div class="v1-bos">Yükleniyor…</div></div>
+      </div>
+
+      <!-- TAKİP EDİLEN KURUMLAR -->
+      <div class="v1-tk-kart">
+        <div class="v1-tk-bas">
+          <div class="v1-tk-bas-ad">🏛️ Takip Ettiğim Kurumlar</div>
+          <span class="v1-tablo-sayi" id="v1-kurum-say"></span>
+        </div>
+        <div class="v1-tk-govde" id="v1-kurum-liste"><div class="v1-bos">Yükleniyor…</div></div>
+      </div>
+
+      <!-- TAKİP EDİLEN FİRMALAR (RAKİP TAKİBİ) -->
+      <div class="v1-tk-kart">
+        <div class="v1-tk-bas">
+          <div class="v1-tk-bas-ad">🏆 Takip Ettiğim Firmalar <span style="font-size:12px;font-weight:400;color:var(--v1-muted);">(rakip takibi)</span></div>
+          <span class="v1-tablo-sayi" id="v1-firma-say"></span>
+        </div>
+        <div class="v1-tk-govde" id="v1-firma-liste"><div class="v1-bos">Yükleniyor…</div></div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="js/takip.js?v=2"></script>
+<script src="js/uyum.js?v=1"></script>
+<script src="js/v1-kabuk.js?v=6"></script>
+<script>
+(() => {
+  const SB_URL="https://ihaleglobal.com", SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzg0MzA3MTU4LCJleHAiOjE5NDE5ODcxNTh9.CjNKulvirotDD_y2oO2QKgo0kbqYvL0jUSV1RiDMoso";
+  const sb = window.supabase.createClient(SB_URL, SB_KEY);
+
+  // ── Yardımcılar ────────────────────────────────────────────────────
+  const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g,
+    c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+  const num = (n) => (Number(n) || 0).toLocaleString('tr-TR');
+  const kucuk = (s) => String(s == null ? '' : s).toLocaleLowerCase('tr');
+  const AY_KISA = ['Oca','Şub','Mar','Nis','May','Haz','Tem','Ağu','Eyl','Eki','Kas','Ara'];
+  const AY_TAM  = ['Ocak','Şubat','Mart','Nisan','Mayıs','Haziran','Temmuz','Ağustos','Eylül','Ekim','Kasım','Aralık'];
+  const GUN_KISA = ['Pzt','Sal','Çar','Per','Cum','Cmt','Paz'];
+
+  // Misafir / yetkisiz dalı: ham Postgres mesajı ASLA kullanıcıya gösterilmez
+  const kilitMi = (e) => !!e && (e.code === '42501' || /permission denied/i.test(e.message || ''));
+  const KILIT = (ne) => `<div class="v1-bos">🔒 ${ne} üyelere özeldir.<br><br>
+    <a href="login">Giriş yapın</a> veya <a href="fiyatlandirma_odeme_bolumu">üye olun</a> →</div>`;
+
+  // ilanlar.id UUID'dir; takip listesi localStorage tabanlı olduğu için oraya uuid
+  // olmayan bayat bir değer sızarsa PostgREST 22P02 ("invalid input syntax for type
+  // uuid") döner ve TÜM tablo hata ekranına düşer (aynı tuzak v1-dokumanlar.html'de
+  // belgelendi). Sorgudan ÖNCE süz.
+  const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+  // Çok takipli kullanıcıda tek istekte 500+ anahtar ≈ 20 KB'lık URL demek; nginx/Kong
+  // başlık sınırını aşınca 414 döner ve bölüm komple ölür. 100'lük parçalara böl.
+  const parcala = (arr, n = 100) => {
+    const p = [];
+    for (let i = 0; i < arr.length; i += n) p.push(arr.slice(i, i + n));
+    return p;
+  };
+
+  // ⚠️ YARIŞ: v1-kabuk.js topbar'ı DOMContentLoaded'da monte eder; getSession bundan
+  // önce çözülürse #v1-paket-ad henüz YOKTUR ve rozet '—' kalırdı. DOM'u bekle.
+  function paketYaz(ad) {
+    const uygula = () => { if (window.v1PaketYaz) window.v1PaketYaz(ad); };
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', uygula, { once: true });
+    else uygula();
+  }
+
+  function paraKisa(v) {
+    const n = Number(v) || 0;
+    if (!n) return '—';
+    if (n >= 1e9) return '₺' + (n / 1e9).toLocaleString('tr-TR', { maximumFractionDigits: 1 }) + ' Mr';
+    if (n >= 1e6) return '₺' + (n / 1e6).toLocaleString('tr-TR', { maximumFractionDigits: 1 }) + ' Mn';
+    if (n >= 1e3) return '₺' + (n / 1e3).toLocaleString('tr-TR', { maximumFractionDigits: 0 }) + ' Bin';
+    return '₺' + num(n);
+  }
+
+  function tarihYaz(t) {
+    if (!t) return '—';
+    const d = new Date(t);
+    if (isNaN(d)) return '—';
+    return `${d.getDate()} ${AY_KISA[d.getMonth()]} ${d.getFullYear()}`;
+  }
+
+  function saatYaz(t) {
+    if (!t) return '';
+    const d = new Date(t);
+    if (isNaN(d)) return '';
+    return d.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
+  }
+
+  function gunAy(t) {
+    if (!t) return '—';
+    const d = new Date(t);
+    return isNaN(d) ? '—' : d.toLocaleDateString('tr-TR', { day: '2-digit', month: 'short', year: 'numeric' });
+  }
+
+  function yaklasikMaliyet(i) {
+    const mn = Number(i.yaklasik_maliyet_min) || 0;
+    const mx = Number(i.yaklasik_maliyet_max) || 0;
+    if (!mn && !mx) return i.tahmini_bedel ? paraKisa(i.tahmini_bedel) : '—';
+    if (!mn && mx) return paraKisa(mx) + ' altı';
+    if (mn && !mx) return paraKisa(mn) + ' üzeri';
+    return paraKisa(mn) + ' – ' + paraKisa(mx);
+  }
+
+  // Kalan gün renk kodu — v1 rampası: ≤3 kırmızı · ≤7 mavi (dikkat) · üstü yeşil
+  function kalanGun(bitis) {
+    if (!bitis) return { renk: 'var(--v1-muted)', etiket: '', gun: null };
+    const d = new Date(bitis);
+    if (isNaN(d)) return { renk: 'var(--v1-muted)', etiket: '', gun: null };
+    const g = Math.ceil((d - new Date()) / 86400000);
+    if (g < 0)  return { renk: 'var(--v1-muted)',   etiket: 'Kapandı',        gun: g };
+    if (g === 0) return { renk: 'var(--v1-kirmizi)', etiket: 'Bugün son gün', gun: 0 };
+    if (g <= 3) return { renk: 'var(--v1-kirmizi)', etiket: `Son ${g} gün`,   gun: g };
+    if (g <= 7) return { renk: 'var(--v1-mavi)',    etiket: `${g} gün kaldı`, gun: g };
+    return { renk: 'var(--v1-yesil)', etiket: `${g} gün kaldı`, gun: g };
+  }
+
+  function durumRozet(durum, bitis) {
+    const k = kalanGun(bitis);
+    if (k.gun === 0) return '<span class="v1-rozet acil">● Bugün Son Gün</span>';
+    if (k.gun !== null && k.gun > 0 && k.gun <= 3) return `<span class="v1-rozet acil">● Son ${k.gun} Gün</span>`;
+    if (durum === 'aktif') return '<span class="v1-rozet acik">● Açık</span>';
+    return `<span class="v1-rozet">${esc(durum || '—')}</span>`;
+  }
+
+  // ── Durum ──────────────────────────────────────────────────────────
+  let tumIlanlar = [];
+  let profil = null;
+  let uid = null, uyeMi = false;
+  let takvimAy = null;
+  const bugun = new Date(); bugun.setHours(0, 0, 0, 0);
+
+  const $ = (id) => document.getElementById(id);
+
+  function uyumSkoru(ilan) {
+    if (window.Uyum) return Uyum.hesapla(ilan, profil);
+    return 60;
+  }
+
+  // ── İhale satırı ───────────────────────────────────────────────────
+  function satirOlustur(ilan) {
+    const uyum = uyumSkoru(ilan);
+    const uyumRenk = uyum >= 75 ? 'var(--v1-yesil)' : uyum >= 55 ? 'var(--v1-mavi)' : 'var(--v1-muted)';
+    const k = kalanGun(ilan.son_teklif_tarihi);
+    const saat = saatYaz(ilan.son_teklif_tarihi);
+    const aramaMetni = kucuk([ilan.baslik, ilan.idare, ilan.il, ilan.ekap_id].filter(Boolean).join(' '));
+    const altSatir = [
+      ilan.idare ? esc(ilan.idare) : '',
+      ilan.il ? '📍 ' + esc(ilan.il) : '',
+      ilan.ekap_id ? 'EKAP #' + esc(ilan.ekap_id) : ''
+    ].filter(Boolean).join(' · ') || '—';
+    return `
+      <tr data-id="${esc(ilan.id)}" data-ara="${esc(aramaMetni)}"
+          data-deadline="${esc(ilan.son_teklif_tarihi || '')}" data-uyum="${uyum}">
+        <td class="v1-ad-hucre">
+          <a href="v1-ihale-detay?id=${encodeURIComponent(ilan.id)}">${esc(ilan.baslik || '—')}</a>
+          <div class="v1-ad-alt">${altSatir}</div>
+        </td>
+        <td>${durumRozet(ilan.durum, ilan.son_teklif_tarihi)}</td>
+        <td style="font-weight:700;color:var(--v1-lacivert);white-space:nowrap;">${yaklasikMaliyet(ilan)}</td>
+        <td class="v1-t-tarih" style="text-align:left;">
+          <div>${tarihYaz(ilan.son_teklif_tarihi)}${saat ? ` <span class="saat">${saat}</span>` : ''}</div>
+          ${k.etiket ? `<div style="font-size:11.5px;font-weight:800;color:${k.renk};margin-top:2px;">${k.etiket}</div>` : ''}
+        </td>
+        <td>
+          <div class="v1-uyum">
+            <span class="v1-uyum-yol"><span class="v1-uyum-dolu" style="width:${uyum}%;background:${uyumRenk};"></span></span>
+            <span class="v1-uyum-sayi" style="color:${uyumRenk};">${uyum}%</span>
+          </div>
+        </td>
+        <td>
+          <div class="v1-islem-hucre">
+            <a class="v1-btn v1-btn-kck" href="v1-ihale-detay?id=${encodeURIComponent(ilan.id)}">Detay</a>
+            <button class="v1-btn v1-btn-kck v1-btn-sil" data-cikar="${esc(ilan.id)}">✕ Çıkar</button>
+          </div>
+        </td>
+      </tr>`;
+  }
+
+  function bosEkran() {
+    $('v1-tbody').innerHTML = `
+      <tr><td colspan="6" style="padding:0;">
+        <div class="v1-bosluk">
+          <div class="v1-bosluk-ikon">☆</div>
+          <div class="v1-bosluk-bas">Takip listeniz boş</div>
+          <div class="v1-bosluk-yazi">İhale listesine gidip bir ihalenin ☆ / "Takibe Al" düğmesine basarak buraya ekleyebilirsiniz.</div>
+          <a class="v1-btn v1-btn-ana" href="v1-ihaleler">İhalelere Git →</a>
+        </div>
+      </td></tr>`;
+    $('v1-sonuc-say').textContent = '0 ihale';
+  }
+
+  function istatistikGuncelle() {
+    $('k-toplam').textContent = num(tumIlanlar.length);
+    const dtSay = window.TakipDT ? TakipDT.sayi() : 0;
+    $('k-toplam-alt').textContent = dtSay
+      ? `ayrıca ${num(dtSay)} doğrudan temin takibi`
+      : 'ayrıca takip edilen doğrudan temin yok';
+
+    const simdi = new Date();
+    const haftaSonu = new Date(simdi.getTime() + 7 * 86400000);
+    const yaklasan = tumIlanlar.filter(i => {
+      if (!i.son_teklif_tarihi) return false;
+      const t = new Date(i.son_teklif_tarihi);
+      return !isNaN(t) && t >= simdi && t <= haftaSonu;
+    }).length;
+    $('k-yaklasan').textContent = num(yaklasan);
+    $('k-aktif').textContent = num(tumIlanlar.filter(i => i.durum === 'aktif').length);
+
+    const toplamBedel = tumIlanlar.reduce((s, i) =>
+      s + (Number(i.yaklasik_maliyet_min) || Number(i.tahmini_bedel) || 0), 0);
+    $('k-bedel').textContent = toplamBedel > 0 ? paraKisa(toplamBedel) : '—';
+
+    // Sonuç sayacını aktif arama filtresine göre yaz (arama kutusu doluysa "N / M")
+    aramaUygula($('v1-ara-takip').value);
+  }
+
+  // ── Sıralama / arama ───────────────────────────────────────────────
+  function siralamaUygula(mod) {
+    const tbody = $('v1-tbody');
+    const satirlar = [...tbody.querySelectorAll('tr[data-id]')];
+    if (!satirlar.length) return;
+    satirlar.sort((a, b) => {
+      if (mod === 'deadline') {
+        const da = a.dataset.deadline, db = b.dataset.deadline;
+        if (!da && !db) return 0;
+        if (!da) return 1;
+        if (!db) return -1;
+        return new Date(da) - new Date(db);
+      }
+      if (mod === 'uyum') return (parseInt(b.dataset.uyum, 10) || 0) - (parseInt(a.dataset.uyum, 10) || 0);
+      return 0; // 'ekle' — DOM sırası (en son eklenen zaten en üstte)
+    });
+    satirlar.forEach(r => tbody.appendChild(r));
+  }
+
+  function aramaUygula(q) {
+    const aranan = kucuk(q).trim();
+    const satirlar = $('v1-tbody').querySelectorAll('tr[data-id]');
+    let gorunen = 0;
+    satirlar.forEach(r => {
+      const uygun = !aranan || (r.getAttribute('data-ara') || '').includes(aranan);
+      r.style.display = uygun ? '' : 'none';
+      if (uygun) gorunen++;
+    });
+    $('v1-sonuc-say').textContent = aranan
+      ? `${num(gorunen)} / ${num(tumIlanlar.length)} ihale`
+      : `${num(tumIlanlar.length)} ihale`;
+  }
+
+  // ── Takipten çıkarma ───────────────────────────────────────────────
+  function takiptenCikar(btn, id) {
+    if (!window.Takip) return;
+    Takip.toggle(id);
+    const tr = btn.closest('tr');
+    if (tr) {
+      tr.style.transition = 'opacity .2s';
+      tr.style.opacity = '0';
+      setTimeout(() => {
+        tr.remove();
+        tumIlanlar = tumIlanlar.filter(i => String(i.id) !== String(id));
+        window.__takipIlanlar = tumIlanlar;
+        istatistikGuncelle();
+        if (!$('v1-tbody').querySelector('tr[data-id]')) bosEkran();
+        if ($('v1-takvim-gorunum').style.display !== 'none') takvimCiz();
+      }, 200);
+    }
+  }
+
+  function hepsiniTemizle() {
+    if (!window.Takip) return;
+    if (!tumIlanlar.length && !Takip.sayi()) { alert('Takip listeniz zaten boş.'); return; }
+    if (!confirm('Takip listenizdeki tüm ihaleler kaldırılacak. Emin misiniz?')) return;
+    Takip.liste().forEach(id => Takip.toggle(id));
+    tumIlanlar = [];
+    window.__takipIlanlar = [];
+    istatistikGuncelle();
+    bosEkran();
+    if ($('v1-takvim-gorunum').style.display !== 'none') takvimCiz();
+  }
+
+  function bittileriTemizle() {
+    if (!window.Takip) return;
+    const simdi = new Date();
+    const gecmis = tumIlanlar.filter(i => {
+      if (!i.son_teklif_tarihi) return false;
+      const t = new Date(i.son_teklif_tarihi);
+      return !isNaN(t) && t < simdi;
+    });
+    if (!gecmis.length) { alert('Teklif tarihi geçmiş ihale yok.'); return; }
+    if (!confirm(`${gecmis.length} süresi dolmuş ihale listeden kaldırılacak. Emin misiniz?`)) return;
+    const silinen = new Set(gecmis.map(g => String(g.id)));
+    gecmis.forEach(i => Takip.toggle(i.id));
+    // Seçici yerine dataset karşılaştırması — id'ler UUID, CSS kaçışına gerek kalmasın
+    $('v1-tbody').querySelectorAll('tr[data-id]').forEach(r => {
+      if (silinen.has(String(r.dataset.id))) r.remove();
+    });
+    tumIlanlar = tumIlanlar.filter(i => !silinen.has(String(i.id)));
+    window.__takipIlanlar = tumIlanlar;
+    istatistikGuncelle();
+    if (!tumIlanlar.length) bosEkran();
+    if ($('v1-takvim-gorunum').style.display !== 'none') takvimCiz();
+  }
+
+  // ── İhale takip listesi ────────────────────────────────────────────
+  async function takipListesiniYukle() {
+    const tbody = $('v1-tbody');
+    if (!window.Takip) {
+      tbody.innerHTML = '<tr><td colspan="6" class="v1-bos">Takip modülü yüklenemedi. Sayfayı yenileyin.</td></tr>';
+      return;
+    }
+    // Girişliyse DB'den tazele (başka cihazda eklenenler de gelsin) — hata yutar
+    if (uyeMi) { try { await Takip.syncFromDB(); } catch (_) {} }
+
+    // Bayat/uuid olmayan kayıtları ELE — biri kalırsa PostgREST 22P02 ile tüm tabloyu düşürür
+    const ids = Takip.liste().filter(v => UUID_RE.test(String(v)));
+    if (!ids.length) {
+      tumIlanlar = [];
+      window.__takipIlanlar = [];
+      bosEkran();
+      istatistikGuncelle();
+      return;
+    }
+
+    tbody.innerHTML = '<tr><td colspan="6" class="v1-bos">Yükleniyor…</td></tr>';
+
+    // Misafir maskesi: idare / ekap_id anon'a KAPALI (migration_anon_maske.sql).
+    // Select'e girerse tüm sorgu 42501 ile düşer → misafir dalında istenmiyor.
+    const kolonlar = uyeMi
+      ? 'id, ekap_id, baslik, idare, il, tur, durum, son_teklif_tarihi, ihale_tarihi, tahmini_bedel, yaklasik_maliyet_min, yaklasik_maliyet_max'
+      : 'id, baslik, il, tur, durum, son_teklif_tarihi, ihale_tarihi, tahmini_bedel, yaklasik_maliyet_min, yaklasik_maliyet_max';
+
+    const sonuclar = await Promise.all(
+      parcala(ids).map(p => sb.from('ilanlar').select(kolonlar).in('id', p)));
+
+    const hatali = sonuclar.find(r => r.error);
+    if (hatali) {
+      // Ham Postgres metni (kolon/rol/timeout ayrıntısı) kullanıcıya GÖSTERİLMEZ; konsola.
+      console.error('v1-takipte ihale listesi hatası:', hatali.error);
+      tbody.innerHTML = kilitMi(hatali.error)
+        ? `<tr><td colspan="6" style="padding:0;">${KILIT('Takip listesi ayrıntıları')}</td></tr>`
+        : '<tr><td colspan="6" class="v1-bos">Liste şu an yüklenemedi. Lütfen birkaç saniye sonra sayfayı yenileyin.</td></tr>';
+      return;
+    }
+    const data = sonuclar.reduce((a, r) => a.concat(r.data || []), []);
+    if (!data.length) {
+      tumIlanlar = [];
+      window.__takipIlanlar = [];
+      bosEkran();
+      istatistikGuncelle();
+      return;
+    }
+
+    // Takip sırasını koru — en son eklenen en üstte
+    const sirali = ids.map(id => data.find(d => String(d.id) === String(id))).filter(Boolean).reverse();
+    tumIlanlar = sirali;
+    window.__takipIlanlar = sirali;
+    tbody.innerHTML = sirali.map(satirOlustur).join('');
+    istatistikGuncelle();
+    siralamaUygula($('v1-sirala').value);
+    aramaUygula($('v1-ara-takip').value);
+    if ($('v1-takvim-gorunum').style.display !== 'none') takvimCiz();
+  }
+
+  // ── Doğrudan temin takipleri ───────────────────────────────────────
+  async function dtTakipleriniYukle() {
+    const el = $('v1-dt-liste'), say = $('v1-dt-say');
+    if (!el) return;
+    if (!window.TakipDT) { el.innerHTML = '<div class="v1-bos">Doğrudan temin takip modülü yüklenemedi.</div>'; return; }
+
+    try { await TakipDT.syncFromDB(); } catch (_) {}
+
+    const noLar = TakipDT.liste();
+    if (!noLar.length) {
+      el.innerHTML = `<div class="v1-bos">Henüz bir doğrudan temin takip etmiyorsunuz.
+        <a href="v1-ihaleler?tur=dt">Doğrudan Teminler</a> sayfasında bir duyurunun ☆ simgesine basarak ekleyin.</div>`;
+      if (say) say.textContent = '';
+      return;
+    }
+
+    el.innerHTML = '<div class="v1-bos">Yükleniyor…</div>';
+    // idare anon'a KAPALI — misafir dalında select'ten çıkarılır
+    const kolonlar = uyeMi ? 'dt_no,baslik,idare,il,tur,tarih,durum' : 'dt_no,baslik,il,tur,tarih,durum';
+    const sonuclar = await Promise.all(
+      parcala(noLar).map(p => sb.from('dogrudan_temin_ilanlari').select(kolonlar).in('dt_no', p)));
+
+    const hatali = sonuclar.find(r => r.error);
+    if (hatali) {
+      console.error('v1-takipte DT listesi hatası:', hatali.error);
+      el.innerHTML = kilitMi(hatali.error)
+        ? KILIT('Doğrudan temin ayrıntıları')
+        : '<div class="v1-bos">Doğrudan temin listesi şu an yüklenemedi. Lütfen birkaç saniye sonra sayfayı yenileyin.</div>';
+      return;
+    }
+    const data = sonuclar.reduce((a, r) => a.concat(r.data || []), []);
+    if (!data.length) {
+      el.innerHTML = '<div class="v1-bos">Takip ettiğiniz doğrudan temin kayıtları bulunamadı (kaldırılmış olabilir).</div>';
+      if (say) say.textContent = '';
+      return;
+    }
+
+    const sirali = noLar.map(n => data.find(d => String(d.dt_no) === String(n))).filter(Boolean).reverse();
+    if (say) say.textContent = `${num(sirali.length)} duyuru`;
+
+    el.innerHTML = sirali.map(d => `
+      <div class="v1-satir" data-dt-satir="${esc(d.dt_no)}">
+        <div style="min-width:0;">
+          <a class="v1-satir-ad" href="v1-dt-detay?dt_no=${encodeURIComponent(d.dt_no)}">${esc(d.baslik) || '(başlıksız)'}</a>
+          <div class="v1-satir-alt">
+            ${uyeMi && d.idare ? '🏛️ ' + esc(d.idare) + ' · ' : ''}📍 ${esc(d.il) || '—'}${d.tur ? ' · ' + esc(d.tur) : ''} · 📅 ${gunAy(d.tarih)}${d.durum ? ' · ' + esc(d.durum) : ''}
+          </div>
+        </div>
+        <button class="v1-btn v1-btn-kck" data-dt-cikar="${esc(d.dt_no)}">Takibi Bırak</button>
+      </div>`).join('');
+  }
+
+  function dtTakipCikar(dtNo, btn) {
+    if (!window.TakipDT) return;
+    TakipDT.toggle(dtNo);
+    const satir = btn.closest('[data-dt-satir]');
+    if (satir) satir.remove();
+    const kalan = TakipDT.liste().length;
+    const say = $('v1-dt-say');
+    if (say) say.textContent = kalan ? `${num(kalan)} duyuru` : '';
+    istatistikGuncelle();
+    if (!kalan) dtTakipleriniYukle();   // boş duruma düşünce yönlendirme metnini göster
+  }
+
+  // ── Kurum / firma takipleri ────────────────────────────────────────
+  function takipSatiri(ad, href, tablo) {
+    return `<div class="v1-satir" data-tk-satir="1">
+      <a class="v1-satir-ad" href="${href}">${esc(ad)}</a>
+      <button class="v1-btn v1-btn-kck" data-tk-tablo="${esc(tablo)}" data-tk-ad="${esc(ad)}">Takibi Bırak</button>
+    </div>`;
+  }
+
+  async function kurumFirmaYukle() {
+    const kEl = $('v1-kurum-liste'), fEl = $('v1-firma-liste');
+    const kSay = $('v1-kurum-say'), fSay = $('v1-firma-say');
+
+    if (!uyeMi) {
+      kEl.innerHTML = KILIT('Kurum takibi');
+      fEl.innerHTML = KILIT('Rakip firma takibi');
+      if (kSay) kSay.textContent = '';
+      if (fSay) fSay.textContent = '';
+      return;
+    }
+
+    // Kurumlar — takip_idareler.idare_ad (canlı REST ile doğrulandı).
+    // Bu satırları YAZAN sayfa v1-kurum-analiz (kullanici_id + idare_ad); v1-kurumlar
+    // farklı bir kolona (idare) yazdığı için yönlendirme kurum analizine yapılır.
+    try {
+      const { data, error } = await sb.from('takip_idareler').select('idare_ad').eq('kullanici_id', uid);
+      if (error) throw error;
+      if (!data || !data.length) {
+        kEl.innerHTML = `<div class="v1-bos">Henüz bir kurum takip etmiyorsunuz.
+          <a href="v1-kurum-analiz">Kurum Analizi</a> sayfasında "🔔 Kurumu Takip Et" düğmesine basarak ekleyin.</div>`;
+        if (kSay) kSay.textContent = '';
+      } else {
+        if (kSay) kSay.textContent = `${num(data.length)} kurum`;
+        kEl.innerHTML = data.map(k =>
+          takipSatiri(k.idare_ad, 'v1-kurum-analiz?kurum=' + encodeURIComponent(k.idare_ad), 'takip_idareler')).join('');
+      }
+    } catch (e) {
+      console.error('v1-takipte kurum takipleri hatası:', e);
+      kEl.innerHTML = kilitMi(e) ? KILIT('Kurum takibi')
+        : '<div class="v1-bos">Kurum takipleri şu an alınamadı. Lütfen birkaç saniye sonra sayfayı yenileyin.</div>';
+    }
+
+    // Firmalar — takip_firmalar.firma_ad (canlı REST ile doğrulandı).
+    // Yazan sayfa v1-firma-analiz (kullanici_id + firma_ad); v1-firmalar firma_adi'ya
+    // yazdığı için derin link firma analizine gider.
+    try {
+      const { data, error } = await sb.from('takip_firmalar').select('firma_ad').eq('kullanici_id', uid);
+      if (error) throw error;
+      if (!data || !data.length) {
+        fEl.innerHTML = `<div class="v1-bos">Henüz bir firma takip etmiyorsunuz.
+          <a href="v1-firma-analiz">Firma Analizi</a> sayfasında "⭐ Rakibi Takip Et" düğmesine basarak ekleyin.</div>`;
+        if (fSay) fSay.textContent = '';
+      } else {
+        if (fSay) fSay.textContent = `${num(data.length)} firma`;
+        fEl.innerHTML = data.map(f =>
+          takipSatiri(f.firma_ad, 'v1-firma-analiz?firma=' + encodeURIComponent(f.firma_ad), 'takip_firmalar')).join('');
+      }
+    } catch (e) {
+      console.error('v1-takipte firma takipleri hatası:', e);
+      fEl.innerHTML = kilitMi(e) ? KILIT('Rakip firma takibi')
+        : '<div class="v1-bos">Firma takipleri şu an alınamadı. Lütfen birkaç saniye sonra sayfayı yenileyin.</div>';
+    }
+  }
+
+  async function takipSil(tablo, ad, btn) {
+    if (!uyeMi) return;
+    const kolon = tablo === 'takip_idareler' ? 'idare_ad' : 'firma_ad';
+    try {
+      const { error } = await sb.from(tablo).delete().eq('kullanici_id', uid).eq(kolon, ad);
+      if (error) throw error;
+    } catch (e) {
+      console.error('v1-takipte takip silme hatası:', e);
+      alert(kilitMi(e)
+        ? 'Takip kaldırılamadı: bu işlem için yetkiniz yok.'
+        : 'Takip kaldırılamadı. Lütfen birkaç saniye sonra tekrar deneyin.');
+      return;
+    }
+    const satir = btn.closest('[data-tk-satir]');
+    const kap = satir ? satir.parentElement : null;
+    if (satir) satir.remove();
+    if (kap) {
+      const kalan = kap.querySelectorAll('[data-tk-satir]').length;
+      const sayEl = tablo === 'takip_idareler' ? $('v1-kurum-say') : $('v1-firma-say');
+      if (sayEl) sayEl.textContent = kalan ? `${num(kalan)} ${tablo === 'takip_idareler' ? 'kurum' : 'firma'}` : '';
+      if (!kalan) kurumFirmaYukle();
+    }
+  }
+
+  // ── Takvim görünümü (v1 paleti — dış kütüphane yok) ────────────────
+  function takvimIsaretleri() {
+    const out = [];
+    tumIlanlar.forEach(i => {
+      if (i.son_teklif_tarihi) {
+        const d = new Date(i.son_teklif_tarihi);
+        if (!isNaN(d)) out.push({ d, tip: 'son', ilan: i });
+      }
+      if (i.ihale_tarihi && i.ihale_tarihi !== i.son_teklif_tarihi) {
+        const d = new Date(i.ihale_tarihi);
+        if (!isNaN(d)) out.push({ d, tip: 'ihale', ilan: i });
+      }
+    });
+    return out;
+  }
+
+  function takvimCiz() {
+    const kap = $('v1-takvim-gorunum');
+    if (!kap) return;
+    if (!takvimAy) takvimAy = new Date(bugun.getFullYear(), bugun.getMonth(), 1);
+    const yil = takvimAy.getFullYear(), ay = takvimAy.getMonth();
+
+    const gunHaritasi = {};
+    takvimIsaretleri().forEach(m => {
+      if (m.d.getFullYear() === yil && m.d.getMonth() === ay) {
+        const g = m.d.getDate();
+        (gunHaritasi[g] = gunHaritasi[g] || []).push(m);
+      }
+    });
+    const toplamIsaret = Object.values(gunHaritasi).reduce((a, v) => a + v.length, 0);
+
+    const bosOn = (new Date(yil, ay, 1).getDay() + 6) % 7;   // Pazartesi başlangıç
+    const gunSayisi = new Date(yil, ay + 1, 0).getDate();
+
+    let hucreler = '';
+    for (let i = 0; i < bosOn; i++) hucreler += '<div class="v1-hucre bos"></div>';
+    for (let g = 1; g <= gunSayisi; g++) {
+      const bu = new Date(yil, ay, g); bu.setHours(0, 0, 0, 0);
+      const mlar = gunHaritasi[g] || [];
+      const buBugun = bu.getTime() === bugun.getTime();
+      const etkinlikler = mlar.slice(0, 2).map(m => {
+        const sinif = m.d < bugun ? 'gecti' : m.tip;
+        const et = m.tip === 'son' ? 'Son teklif' : 'İhale';
+        return `<div class="v1-etkinlik ${sinif}" title="${esc(m.ilan.baslik || '')}">${et}: ${esc(String(m.ilan.baslik || '').slice(0, 20))}</div>`;
+      }).join('');
+      const fazla = mlar.length > 2 ? `<div class="v1-etkinlik-fazla">+${mlar.length - 2} daha</div>` : '';
+      hucreler += `<div class="v1-hucre${mlar.length ? ' dolu' : ''}${buBugun ? ' bugun' : ''}"${mlar.length ? ` data-gun="${g}"` : ''}>
+        <div class="v1-hucre-no">${g}</div>${etkinlikler}${fazla}</div>`;
+    }
+
+    kap.innerHTML = `
+      <div class="v1-tkv-bas">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <button class="v1-ok" id="tkv-geri">‹</button>
+          <div class="v1-tkv-ay">${AY_TAM[ay]} ${yil}</div>
+          <button class="v1-ok" id="tkv-ileri">›</button>
+          <button class="v1-btn v1-btn-kck" id="tkv-bugun" style="margin-left:6px;">Bugün</button>
+        </div>
+        <span class="v1-tablo-sayi">${toplamIsaret ? `Bu ayda <strong>${num(toplamIsaret)}</strong> işaretli tarih` : 'Bu ayda işaretli tarih yok'}</span>
+      </div>
+      ${toplamIsaret === 0
+        ? '<div class="v1-bos">Bu ay işaretli ihale yok. ‹ › ile gezinin ya da yeni ihale takibe alın.</div>'
+        : `<div class="v1-izgara">${GUN_KISA.map(g => `<div class="v1-gun-basi">${g}</div>`).join('')}</div>
+           <div class="v1-izgara" style="margin-top:5px;">${hucreler}</div>`}
+      <div id="tkv-panel"></div>`;
+
+    $('tkv-geri').addEventListener('click', () => { takvimAy = new Date(yil, ay - 1, 1); takvimCiz(); });
+    $('tkv-ileri').addEventListener('click', () => { takvimAy = new Date(yil, ay + 1, 1); takvimCiz(); });
+    $('tkv-bugun').addEventListener('click', () => { takvimAy = new Date(bugun.getFullYear(), bugun.getMonth(), 1); takvimCiz(); });
+    kap.querySelectorAll('.v1-hucre.dolu').forEach(h => h.addEventListener('click', () => {
+      const g = +h.dataset.gun;
+      gunPaneli(g, gunHaritasi[g] || [], yil, ay);
+    }));
+  }
+
+  function gunPaneli(gun, mlar, yil, ay) {
+    const p = $('tkv-panel');
+    if (!p) return;
+    p.innerHTML = `<div class="v1-tkv-panel">
+      <div class="v1-tkv-panel-bas">${gun} ${AY_TAM[ay]} ${yil} — ${num(mlar.length)} kayıt</div>
+      ${mlar.map(m => {
+        const i = m.ilan;
+        const et = m.tip === 'son' ? 'Son teklif' : 'İhale günü';
+        const mal = i.yaklasik_maliyet_max || i.yaklasik_maliyet_min || i.tahmini_bedel;
+        return `<div class="v1-tkv-kart">
+          <span class="v1-rozet ${m.tip === 'son' ? 'bilgi' : ''}" style="flex-shrink:0;">${et}</span>
+          <div style="flex:1;min-width:0;">
+            <a class="v1-satir-ad" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"
+               href="v1-ihale-detay?id=${encodeURIComponent(i.id)}">${esc(i.baslik || '—')}</a>
+            <div class="v1-satir-alt">${esc(i.idare || i.il || '')}${mal ? ' · ' + paraKisa(mal) : ''}</div>
+          </div>
+          <button class="v1-btn v1-btn-kck" data-ics-id="${esc(i.id)}" data-ics-tarih="${m.d.toISOString()}"
+                  data-ics-baslik="${esc(i.baslik || '')}">📅 .ics</button>
+        </div>`;
+      }).join('')}
+    </div>`;
+    p.querySelectorAll('[data-ics-id]').forEach(b => b.addEventListener('click', () =>
+      icsIndir(b.dataset.icsTarih, b.dataset.icsBaslik, b.dataset.icsId)));
+    p.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  }
+
+  function icsIndir(tarih, baslik, id) {
+    const d = new Date(tarih), pad = (n) => String(n).padStart(2, '0');
+    const dt = d.getUTCFullYear() + pad(d.getUTCMonth() + 1) + pad(d.getUTCDate()) + 'T' +
+               pad(d.getUTCHours()) + pad(d.getUTCMinutes()) + '00Z';
+    const ics = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//ihaleglobal//TR', 'BEGIN:VEVENT',
+      'UID:' + id + '@ihaleglobal.com', 'DTSTART:' + dt,
+      'SUMMARY:' + String(baslik || 'İhale').replace(/[,;\\]/g, ' ').slice(0, 80),
+      'DESCRIPTION:https://ihaleglobal.com/v1-ihale-detay?id=' + id,
+      'END:VEVENT', 'END:VCALENDAR'].join('\r\n');
+    const url = URL.createObjectURL(new Blob([ics], { type: 'text/calendar' }));
+    const a = document.createElement('a');
+    a.href = url; a.download = 'ihale-' + String(id).slice(0, 8) + '.ics';
+    document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+  }
+
+  function gorunumSec(mod) {
+    const liste = $('v1-liste-gorunum'), takvim = $('v1-takvim-gorunum');
+    const bL = $('gt-liste'), bT = $('gt-takvim');
+    if (mod === 'takvim') {
+      liste.style.display = 'none'; takvim.style.display = 'block';
+      bL.classList.remove('aktif'); bT.classList.add('aktif');
+      takvimCiz();
+    } else {
+      liste.style.display = 'block'; takvim.style.display = 'none';
+      bT.classList.remove('aktif'); bL.classList.add('aktif');
+    }
+  }
+
+  // ── Açılış ─────────────────────────────────────────────────────────
+  (async () => {
+    // Üyelik / paket rozeti
+    try {
+      const { data } = await sb.auth.getSession();
+      uyeMi = !!(data && data.session);
+      uid = uyeMi ? data.session.user.id : null;
+      if (uyeMi) {
+        const { data: k } = await sb.from('kullanici_krediler').select('plan').eq('kullanici_id', uid).maybeSingle();
+        paketYaz(['standart', 'kurumsal'].includes(k && k.plan) ? 'Pro' : 'Temel');
+      } else paketYaz('Misafir');
+    } catch (_) {}
+
+    // Uyum skoru için profil (misafirde null → Uyum kendi varsayılanını kullanır)
+    if (window.Uyum) { try { profil = await Uyum.profilCek(sb); } catch (_) { profil = null; } }
+
+    // Olay bağlantıları
+    $('v1-sirala').addEventListener('change', (e) => siralamaUygula(e.target.value));
+    $('v1-ara-takip').addEventListener('input', (e) => aramaUygula(e.target.value));
+    $('v1-bittileri').addEventListener('click', bittileriTemizle);
+    $('v1-hepsini').addEventListener('click', hepsiniTemizle);
+    $('gt-liste').addEventListener('click', () => gorunumSec('liste'));
+    $('gt-takvim').addEventListener('click', () => gorunumSec('takvim'));
+
+    $('v1-tbody').addEventListener('click', (e) => {
+      const b = e.target.closest('[data-cikar]');
+      if (b) takiptenCikar(b, b.getAttribute('data-cikar'));
+    });
+    $('v1-dt-liste').addEventListener('click', (e) => {
+      const b = e.target.closest('[data-dt-cikar]');
+      if (b) dtTakipCikar(b.getAttribute('data-dt-cikar'), b);
+    });
+    const tkTikla = (e) => {
+      const b = e.target.closest('[data-tk-tablo]');
+      if (b) takipSil(b.getAttribute('data-tk-tablo'), b.getAttribute('data-tk-ad'), b);
+    };
+    $('v1-kurum-liste').addEventListener('click', tkTikla);
+    $('v1-firma-liste').addEventListener('click', tkTikla);
+
+    await takipListesiniYukle();
+    await dtTakipleriniYukle();
+    istatistikGuncelle();
+    await kurumFirmaYukle();
+  })();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="author" content="Ömer Faruk Dinç">
+  <meta name="copyright" content="© 2026 Ömer Faruk Dinç — İhaleGlobal">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Firma Segmentleri — İhaleGlobal</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=4" />
+  <link rel="icon" type="image/png" sizes="48x48" href="/favicon-48.png?v=4" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/favicon-180.png?v=4" />
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/v1.css?v=4" />
+  <style>
+    .v1-sayfa-baslik { font-size:22px; font-weight:800; color:var(--v1-lacivert); margin-bottom:4px; }
+    .v1-sayfa-alt { font-size:13.5px; color:var(--v1-muted); margin-bottom:16px; }
+    .v1-ust-bar { display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:10px; }
+    .v1-geri {
+      display:inline-flex; align-items:center; gap:6px; background:#fff; border:1.5px solid var(--v1-cizgi);
+      border-radius:9px; padding:7px 13px; font-size:12.5px; font-weight:700; color:var(--v1-muted);
+      text-decoration:none;
+    }
+    .v1-geri:hover { border-color:var(--v1-mavi); color:var(--v1-mavi); text-decoration:none; }
+
+    .v1-bilgi-serit { background:var(--v1-mavi-acik); border:1px solid #CFE2F5; border-radius:12px;
+      padding:14px 18px; font-size:13px; line-height:1.65; color:var(--v1-metin); margin-bottom:16px; }
+    .v1-bilgi-serit strong { color:var(--v1-lacivert); }
+
+    /* Önizleme uyarısı — krem şerit (v1 paletinde uyarı tonu) */
+    .v1-onizleme { background:#FFF8E6; border:1px solid #F0DFA8; border-radius:12px;
+      padding:12px 16px; font-size:12.5px; line-height:1.6; color:var(--v1-metin); margin-bottom:16px; }
+    .v1-onizleme strong { color:var(--v1-lacivert); }
+
+    /* Üyelik kilidi */
+    .v1-kilit-kutu { background:#fff; border:1px solid var(--v1-cizgi); border-radius:var(--v1-radius-lg);
+      box-shadow:var(--v1-golge); padding:56px 22px; text-align:center; font-size:14.5px;
+      color:var(--v1-metin); line-height:1.8; }
+    .v1-kilit-kutu a { font-weight:700; }
+
+    /* Segment kartları */
+    .v1-seg-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:18px; }
+    @media (max-width:1000px){ .v1-seg-grid{ grid-template-columns:repeat(2,1fr); } }
+    @media (max-width:560px){ .v1-seg-grid{ grid-template-columns:1fr; } }
+    .v1-seg {
+      background:#fff; border:1.5px solid var(--v1-cizgi); border-radius:var(--v1-radius-lg);
+      box-shadow:var(--v1-golge); padding:18px 16px; cursor:pointer; text-align:left;
+      font-family:var(--v1-font); transition:border-color .15s, transform .15s, background .15s;
+      position:relative; overflow:hidden;
+    }
+    .v1-seg:hover { border-color:var(--v1-mavi); transform:translateY(-2px); }
+    .v1-seg.aktif { border-color:var(--v1-mavi); background:var(--v1-mavi-acik); }
+    .v1-seg.aktif::before { content:''; position:absolute; left:0; top:0; bottom:0; width:4px;
+      background:var(--v1-teal); }
+    .v1-seg-emoji { font-size:22px; line-height:1; }
+    .v1-seg-sayi { font-size:26px; font-weight:800; color:var(--v1-mavi); margin-top:6px; line-height:1.1; }
+    .v1-seg-etiket { font-size:13px; font-weight:700; color:var(--v1-lacivert); margin-top:3px; }
+    .v1-seg-aciklama { font-size:11px; color:var(--v1-muted); margin-top:4px; line-height:1.45; }
+
+    /* Tablo yardımcıları */
+    .v1-tablo td.sayi, .v1-tablo th.sayi { text-align:right; font-variant-numeric:tabular-nums; }
+    .v1-buyume-poz { color:var(--v1-yesil); font-weight:800; }
+    .v1-buyume-neg { color:var(--v1-kirmizi); font-weight:800; }
+    .v1-firma-ad { color:var(--v1-mavi); font-weight:600; }
+    .v1-analiz-link { margin-left:7px; font-size:12px; text-decoration:none; opacity:.75; }
+    .v1-analiz-link:hover { opacity:1; text-decoration:none; }
+    .v1-tazelik { font-size:12px; color:var(--v1-muted); margin-top:2px; }
+    .v1-sayfalama .bilgi { display:inline-flex; align-items:center; padding:0 12px; font-size:13px;
+      color:var(--v1-muted); }
+    .v1-sayfalama button { padding:0 14px; font-size:13px; }
+    .v1-sayfalama button[disabled] { opacity:.45; cursor:not-allowed; }
+  </style>
+</head>
+<body class="v1" data-v1-aktif="firmalar" data-v1-kirinti="Firmalar > Firma Segmentleri">
+<div class="v1-app">
+  <div class="v1-main">
+    <div class="v1-govde">
+
+      <div class="v1-ust-bar">
+        <a class="v1-geri" href="v1-firmalar">← Firmalar</a>
+      </div>
+
+      <div class="v1-sayfa-baslik">Firma Segmentleri</div>
+      <div class="v1-sayfa-alt">
+        Kamu ihale kazanç geçmişinden türetilen firma segmentleri — yükselenler, sönenler, yeni oyuncular ve dev kazananlar.
+      </div>
+
+      <div class="v1-bilgi-serit">
+        ⭐ <strong>Segmentler nasıl hesaplanır?</strong> Firmaların kamu ihalesi kazanç geçmişi (sonuç arşivi) üzerinden,
+        son 12 ay ve önceki 12 ay pencereleri karşılaştırılarak türetilir. Ek bir veri kazıması yapılmaz;
+        tüm rakamlar sistemdeki mevcut sonuç kayıtlarından hesaplanır.
+      </div>
+
+      <div id="v1-onizleme" class="v1-onizleme" style="display:none;">
+        ⚠️ <strong>Önizleme:</strong> Sonuç arşivi henüz tamamlanıyor (%<span id="v1-onizleme-yuzde">?</span>).
+        Segment sayıları veri tamamlanınca kesinleşecek — özellikle “İlk Kez Kazananlar” bu aşamada olduğundan fazla görünebilir.
+      </div>
+
+      <div id="v1-kilit" class="v1-kilit-kutu" style="display:none;">
+        🔒 Firma segmentleri üyelere özeldir.<br><br>
+        <a href="login">Giriş yapın</a> veya <a href="fiyatlandirma_odeme_bolumu">üye olun</a> →
+      </div>
+
+      <div id="v1-icerik" style="display:none;">
+        <div class="v1-seg-grid" id="v1-seg-kartlar">
+          <div class="v1-seg aktif" role="button" tabindex="0" data-seg="parlayan">
+            <div class="v1-seg-emoji">🌟</div>
+            <div class="v1-seg-sayi" id="v1-c-parlayan">…</div>
+            <div class="v1-seg-etiket">Parlayan Yıldızlar</div>
+            <div class="v1-seg-aciklama">Son 12 ayda kazançları hızla artan firmalar</div>
+          </div>
+          <div class="v1-seg" role="button" tabindex="0" data-seg="ilk_kez">
+            <div class="v1-seg-emoji">🆕</div>
+            <div class="v1-seg-sayi" id="v1-c-ilk_kez">…</div>
+            <div class="v1-seg-etiket">İlk Kez Kazananlar</div>
+            <div class="v1-seg-aciklama">İlk kamu ihalesini son 12 ayda kazanan firmalar</div>
+          </div>
+          <div class="v1-seg" role="button" tabindex="0" data-seg="150mn">
+            <div class="v1-seg-emoji">💰</div>
+            <div class="v1-seg-sayi" id="v1-c-150mn">…</div>
+            <div class="v1-seg-etiket">150Mn+ Kazananlar</div>
+            <div class="v1-seg-aciklama">Toplam kazancı 150 milyon TL'yi aşan firmalar</div>
+          </div>
+          <div class="v1-seg" role="button" tabindex="0" data-seg="sonen">
+            <div class="v1-seg-emoji">📉</div>
+            <div class="v1-seg-sayi" id="v1-c-sonen">…</div>
+            <div class="v1-seg-etiket">Sönen Yıldızlar</div>
+            <div class="v1-seg-aciklama">Son 12 ayda kazançları belirgin düşen firmalar</div>
+          </div>
+        </div>
+
+        <div class="v1-kart" style="padding:18px 20px;">
+          <div class="v1-tablo-bas">
+            <div>
+              <div style="font-size:17px;font-weight:800;color:var(--v1-lacivert);" id="v1-liste-baslik">Parlayan Yıldızlar</div>
+              <div class="v1-tablo-sayi" id="v1-sayi">Yükleniyor…</div>
+              <div class="v1-tazelik" id="v1-tazelik"></div>
+            </div>
+          </div>
+          <div style="overflow-x:auto;">
+            <table class="v1-tablo">
+              <thead id="v1-thead"></thead>
+              <tbody id="v1-tbody">
+                <tr><td colspan="6" class="v1-bos">Yükleniyor…</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div class="v1-sayfalama" id="v1-sayfalama"></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="js/v1-kabuk.js?v=6"></script>
+<script>
+(() => {
+  const SB_URL="https://ihaleglobal.com", SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzg0MzA3MTU4LCJleHAiOjE5NDE5ODcxNTh9.CjNKulvirotDD_y2oO2QKgo0kbqYvL0jUSV1RiDMoso";
+  const sb=window.supabase.createClient(SB_URL,SB_KEY);
+
+  const esc=(s)=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  const num=(n)=>(Number(n)||0).toLocaleString('tr-TR');
+  // v2 ile aynı biçim: 1 Mn ve üzeri "x,y Mn ₺", altı tam sayı "N ₺"
+  const tl=(v)=>v==null?'—':(Number(v)/1e6>=1
+      ? (Number(v)/1e6).toLocaleString('tr-TR',{maximumFractionDigits:1})+' Mn ₺'
+      : Number(v).toLocaleString('tr-TR',{maximumFractionDigits:0})+' ₺');
+  const ayTarih=(t)=>t?new Date(t).toLocaleDateString('tr-TR',{year:'numeric',month:'short'}):'—';
+  const tamTarih=(t)=>t?new Date(t).toLocaleDateString('tr-TR',{year:'numeric',month:'long',day:'numeric'}):'';
+
+  // ⚠️ Sayaç RPC'si '150mn' segmentini 'yuz50mn' anahtarıyla döner (migration_firma_segmentleri.sql)
+  const SEGMENTLER = {
+    parlayan: { emoji:'🌟', ad:'Parlayan Yıldızlar', sayacAnahtar:'parlayan',
+                ciroBaslik:'Son 12 ay kazancı',     ciroAlan:'ciro_son_12ay',    buyume:true,  tarih:false },
+    ilk_kez:  { emoji:'🆕', ad:'İlk Kez Kazananlar', sayacAnahtar:'ilk_kez',
+                ciroBaslik:'Toplam kazanç',          ciroAlan:'toplam_ciro',      buyume:false, tarih:true  },
+    '150mn':  { emoji:'💰', ad:'150Mn+ Kazananlar',  sayacAnahtar:'yuz50mn',
+                ciroBaslik:'Toplam kazanç',          ciroAlan:'toplam_ciro',      buyume:false, tarih:false },
+    sonen:    { emoji:'📉', ad:'Sönen Yıldızlar',    sayacAnahtar:'sonen',
+                ciroBaslik:'Önceki 12 ay kazancı',   ciroAlan:'ciro_onceki_12ay', buyume:true,  tarih:false },
+  };
+  const SAYFA=50;
+  let aktifSeg='parlayan', sayfa=0, sonToplam=0, kilitli=false;
+
+  const kilitliMi=(e)=>!!e && (e.code==='42501' || /permission denied/i.test(e.message||''));
+
+  function kilidiGoster(){
+    kilitli=true;
+    document.getElementById('v1-icerik').style.display='none';
+    document.getElementById('v1-onizleme').style.display='none';
+    document.getElementById('v1-kilit').style.display='block';
+  }
+
+  // ⚠️ Paket rozeti YARIŞI: v1-kabuk.js topbar'ı DOMContentLoaded'da monte eder, bu
+  // script ise getSession() çözülür çözülmez çalışır. Erken v1PaketYaz() çağrısı
+  // #v1-paket-ad henüz DOM'da olmadığı için SESSİZCE kaybolur (rozet '—' kalır).
+  function paketYaz(ad){
+    let kalan=60;                                   // en fazla ~3 sn dene
+    const dene=()=>{
+      if(window.v1PaketYaz && document.getElementById('v1-paket-ad')){ window.v1PaketYaz(ad); return; }
+      if(--kalan>0) setTimeout(dene,50);
+    };
+    dene();
+  }
+
+  // v1 kabuğunda kaydırılan kap .v1-main (height:100vh; overflow-y:auto) —
+  // window.scrollTo ETKİSİZDİR (body zaten viewport boyunda).
+  // NOT: kapsayıcıda behavior:'smooth' bazı ortamlarda sessizce yok sayılıyor —
+  // scrollTop'a doğrudan yazmak tek güvenilir yol.
+  function basaKaydir(){
+    const m=document.querySelector('.v1-main');
+    if(m) m.scrollTop=0;
+    window.scrollTo(0,0);
+  }
+  // Sayfa değiştir: liste "Yükleniyor…"e düşünce içerik kısalır ve tarayıcının
+  // kaydırma çıpası eski konumu geri getirir → render BİTTİKTEN sonra da başa al.
+  function sayfaGit(yeni){
+    sayfa=yeni; basaKaydir();
+    listeGetir().then(basaKaydir, basaKaydir);
+  }
+
+  async function sayilariGetir(){
+    try{
+      const {data,error}=await sb.rpc('firma_segment_sayilari');
+      if(error) throw error;
+      const d=data||{};
+      Object.keys(SEGMENTLER).forEach(k=>{
+        const el=document.getElementById('v1-c-'+k);
+        if(el) el.textContent=num(d[SEGMENTLER[k].sayacAnahtar]);
+      });
+      const tz=document.getElementById('v1-tazelik');
+      if(tz) tz.textContent = d.guncellendi ? 'Segmentler son güncelleme: '+tamTarih(d.guncellendi) : '';
+    }catch(e){
+      if(kilitliMi(e)){ kilidiGoster(); return; }
+      Object.keys(SEGMENTLER).forEach(k=>{
+        const el=document.getElementById('v1-c-'+k); if(el) el.textContent='—';
+      });
+    }
+  }
+
+  function basliklariYaz(cfg){
+    const th=document.getElementById('v1-thead');
+    th.innerHTML='<tr>'+
+      '<th style="width:56px;">#</th>'+
+      '<th>Firma</th>'+
+      '<th style="width:120px;">İl</th>'+
+      `<th class="sayi" style="width:170px;">${esc(cfg.ciroBaslik)}</th>`+
+      (cfg.buyume?'<th class="sayi" style="width:110px;">Büyüme</th>':'')+
+      (cfg.tarih?'<th class="sayi" style="width:140px;">İlk Kazanım</th>'
+                :'<th class="sayi" style="width:110px;">Sözleşme</th>')+
+      '</tr>';
+  }
+
+  function sutunSayisi(cfg){ return 4 + (cfg.buyume?1:0) + 1; }
+
+  async function listeGetir(){
+    if(kilitli) return;                             // kilit gösterildiyse ikinci 42501 isteği atma
+    const cfg=SEGMENTLER[aktifSeg];
+    const tb=document.getElementById('v1-tbody');
+    const ks=sutunSayisi(cfg);
+    basliklariYaz(cfg);
+    document.getElementById('v1-liste-baslik').textContent=cfg.emoji+' '+cfg.ad;
+    tb.innerHTML=`<tr><td colspan="${ks}" class="v1-bos">Yükleniyor…</td></tr>`;
+    document.getElementById('v1-sayi').textContent='Yükleniyor…';
+    try{
+      const {data,error}=await sb.rpc('firma_segment_listesi',
+        { p_segment:aktifSeg, p_limit:SAYFA, p_offset:sayfa*SAYFA });
+      if(error) throw error;
+      const d=data||{};
+      sonToplam=Number(d.toplam)||0;
+      const firmalar=Array.isArray(d.firmalar)?d.firmalar:[];
+
+      document.getElementById('v1-sayi').innerHTML = sonToplam
+        ? `Bu segmentte <strong>${num(sonToplam)}</strong> firma var — ${num(firmalar.length)} tanesi listeleniyor`
+        : 'Bu segmentte firma bulunmuyor';
+
+      if(!firmalar.length){
+        tb.innerHTML=`<tr><td colspan="${ks}" class="v1-bos">Bu segmentte firma yok.</td></tr>`;
+        document.getElementById('v1-sayfalama').innerHTML='';
+        return;
+      }
+
+      tb.innerHTML=firmalar.map((f,i)=>{
+        const sira=sayfa*SAYFA+i+1;
+        const ad=f.ad||'—';
+        const ciroHucre=tl(f[cfg.ciroAlan]);
+        let hucreler='';
+        if(cfg.buyume){
+          const b=f.buyume_yuzde;
+          hucreler += (b==null)
+            ? '<td class="sayi" style="color:var(--v1-muted);">—</td>'
+            : `<td class="sayi ${Number(b)>=0?'v1-buyume-poz':'v1-buyume-neg'}">${Number(b)>=0?'+':''}${Number(b).toLocaleString('tr-TR',{maximumFractionDigits:1})}%</td>`;
+        }
+        hucreler += cfg.tarih
+          ? `<td class="sayi" style="color:var(--v1-metin-2);">${esc(ayTarih(f.ilk_sozlesme_tarihi))}</td>`
+          : `<td class="sayi" style="font-weight:700;color:var(--v1-lacivert);">${f.toplam_sozlesme_sayisi==null?'—':num(f.toplam_sozlesme_sayisi)}</td>`;
+        return `<tr>
+          <td style="color:var(--v1-muted);font-weight:700;">${sira}</td>
+          <td>
+            <a class="v1-firma-ad" href="v1-firmalar?ara=${encodeURIComponent(ad)}">${esc(ad)}</a>
+            <a class="v1-analiz-link" href="v1-firma-analiz?firma=${encodeURIComponent(ad)}" title="Firma analizi">📊</a>
+          </td>
+          <td style="font-size:13px;color:var(--v1-metin-2);">${esc(f.il||'—')}</td>
+          <td class="sayi" style="font-weight:700;color:var(--v1-mavi);">${ciroHucre}</td>
+          ${hucreler}
+        </tr>`;
+      }).join('');
+
+      sayfalamaYaz();
+    }catch(e){
+      if(kilitliMi(e)){ kilidiGoster(); return; }
+      tb.innerHTML=`<tr><td colspan="${ks}" class="v1-bos">Liste alınamadı. ${esc(e.message||'')}</td></tr>`;
+      document.getElementById('v1-sayi').textContent='';
+      document.getElementById('v1-sayfalama').innerHTML='';
+    }
+  }
+
+  function sayfalamaYaz(){
+    const el=document.getElementById('v1-sayfalama');
+    const maks=Math.max(1,Math.ceil(sonToplam/SAYFA));
+    if(maks<=1){ el.innerHTML=''; return; }
+    el.innerHTML=
+      `<button id="v1-onceki" ${sayfa<=0?'disabled':''}>‹ Önceki</button>`+
+      `<span class="bilgi">${sayfa+1} / ${num(maks)} · ${num(sonToplam)} firma</span>`+
+      `<button id="v1-sonraki" ${sayfa>=maks-1?'disabled':''}>Sonraki ›</button>`;
+    const o=document.getElementById('v1-onceki'), s=document.getElementById('v1-sonraki');
+    if(o) o.addEventListener('click',()=>{ if(sayfa<=0)return; sayfaGit(sayfa-1); });
+    if(s) s.addEventListener('click',()=>{ if(sayfa>=maks-1)return; sayfaGit(sayfa+1); });
+  }
+
+  function kartlariBagla(){
+    document.querySelectorAll('.v1-seg').forEach(k=>{
+      const sec=()=>{
+        const s=k.dataset.seg;
+        if(!Object.prototype.hasOwnProperty.call(SEGMENTLER,s) || s===aktifSeg) return;
+        document.querySelectorAll('.v1-seg').forEach(x=>x.classList.toggle('aktif',x===k));
+        aktifSeg=s; sayfa=0;
+        try{ history.replaceState(null,'',location.pathname+'?seg='+encodeURIComponent(s)); }catch(_){}
+        listeGetir();
+      };
+      k.addEventListener('click',sec);
+      k.addEventListener('keydown',(e)=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); sec(); } });
+    });
+  }
+
+  async function onizlemeUyarisi(){
+    // Sonuç arşivi hedefin altındaysa "önizleme" şeridi göster
+    try{
+      const HEDEF=1688002;
+      const {count}=await sb.from('ihale_sonuclari').select('id',{count:'exact',head:true});
+      if(count && count < HEDEF*0.95){
+        document.getElementById('v1-onizleme-yuzde').textContent=Math.round(count/HEDEF*100);
+        document.getElementById('v1-onizleme').style.display='block';
+      }
+    }catch(_){}
+  }
+
+  (async()=>{
+    let uyeMi=false;
+    try{
+      const {data}=await sb.auth.getSession();
+      uyeMi=!!(data&&data.session);
+      if(uyeMi){
+        let plan=null;
+        try{
+          const {data:k}=await sb.from('kullanici_krediler').select('plan').eq('kullanici_id',data.session.user.id).maybeSingle();
+          plan=k&&k.plan;
+        }catch(_){}
+        paketYaz(['standart','kurumsal'].includes(plan)?'Pro':'Temel');
+      } else paketYaz('Misafir');
+    }catch(_){ paketYaz('Misafir'); }
+
+    if(!uyeMi){ kilidiGoster(); return; }
+
+    document.getElementById('v1-icerik').style.display='block';
+
+    // URL'den segment geri okuma (paylaşılabilir link)
+    const P=new URLSearchParams(location.search);
+    const istenen=P.get('seg');
+    if(istenen && Object.prototype.hasOwnProperty.call(SEGMENTLER,istenen)){
+      aktifSeg=istenen;
+      document.querySelectorAll('.v1-seg').forEach(x=>x.classList.toggle('aktif',x.dataset.seg===istenen));
+    }
+
+    kartlariBagla();
+    onizlemeUyarisi();
+    await sayilariGetir();
+    await listeGetir();
+  })();
+})();
+</script>
+</body>
+</html>

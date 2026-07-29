@@ -124,7 +124,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/kategoriler.js?v=1"></script>
-<script src="js/v1-kabuk.js?v=5"></script>
+<script src="js/v1-kabuk.js?v=6"></script>
 <script>
 (() => {
   const SB_URL="https://ihaleglobal.com", SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzg0MzA3MTU4LCJleHAiOjE5NDE5ODcxNTh9.CjNKulvirotDD_y2oO2QKgo0kbqYvL0jUSV1RiDMoso";
@@ -137,7 +137,7 @@
   // ⚠️ SIRALAMA YÖNÜ İNDEKSLE EŞLEŞMELİ: idx_ilanlar_durum_son_teklif = (durum, son_teklif_tarihi DESC NULLS LAST).
   //    Btree ters taranır → ASC için NULLS FIRST şart. 'ASC NULLS LAST' istersek planner indeksi
   //    kullanamaz, 1,6M satır tarar (ölçüm: 7064ms → 0,79ms). Bu yüzden nullsFirst = ascending.
-  let sayfa=1, toplam=0, sekme=(P.get('sekme')==='sonuc')?'sonuc':'aktif', uyeMi=false, sirala='son_teklif_tarihi', yon=true;
+  let sayfa=1, toplam=0, sekme=(P.get('sekme')==='sonuc')?'sonuc':((P.get('sekme')==='dt'||P.get('tur')==='dt')?'dt':'aktif'), uyeMi=false, sirala='son_teklif_tarihi', yon=true;
 
   const ILLER=["ADANA","ADIYAMAN","AFYONKARAHİSAR","AĞRI","AKSARAY","AMASYA","ANKARA","ANTALYA","ARDAHAN","ARTVİN","AYDIN","BALIKESİR","BARTIN","BATMAN","BAYBURT","BİLECİK","BİNGÖL","BİTLİS","BOLU","BURDUR","BURSA","ÇANAKKALE","ÇANKIRI","ÇORUM","DENİZLİ","DİYARBAKIR","DÜZCE","EDİRNE","ELAZIĞ","ERZİNCAN","ERZURUM","ESKİŞEHİR","GAZİANTEP","GİRESUN","GÜMÜŞHANE","HAKKARİ","HATAY","IĞDIR","ISPARTA","İSTANBUL","İZMİR","KAHRAMANMARAŞ","KARABÜK","KARAMAN","KARS","KASTAMONU","KAYSERİ","KIRIKKALE","KIRKLARELİ","KIRŞEHİR","KİLİS","KOCAELİ","KONYA","KÜTAHYA","MALATYA","MANİSA","MARDİN","MERSİN","MUĞLA","MUŞ","NEVŞEHİR","NİĞDE","ORDU","OSMANİYE","RİZE","SAKARYA","SAMSUN","SİİRT","SİNOP","SİVAS","ŞANLIURFA","ŞIRNAK","TEKİRDAĞ","TOKAT","TRABZON","TUNCELİ","UŞAK","VAN","YALOVA","YOZGAT","ZONGULDAK"];
   const TURLER=["Mal","Hizmet","Yapım","Danışmanlık","Kiraya Verme","Satış"];
@@ -195,6 +195,8 @@
       if(uyeMi && dv('f-idare')) d=d.ilike('idare','%'+dv('f-idare')+'%');
       if(P.get('il') && !dv('f-il')) d=d.eq('il',P.get('il').toLocaleUpperCase('tr'));
       if(P.get('ara') && !dv('f-kelime')) d=d.ilike('baslik','%'+P.get('ara')+'%');
+      if(P.get('kategori') && !dv('f-kategori')) d=d.eq('kategori',P.get('kategori'));
+      if(uyeMi && P.get('idare') && !dv('f-idare')) d=d.ilike('idare','%'+P.get('idare')+'%');
       return d;
     }
     const kolon = sayimIcin ? 'id' : (uyeMi
@@ -224,6 +226,8 @@
     // URL'den gelen il/ara
     if(P.get('il') && !v('f-il')) q=q.eq('il',P.get('il').toLocaleUpperCase('tr'));
     if(P.get('ara') && !v('f-kelime')) q=q.ilike('baslik','%'+P.get('ara')+'%');
+    if(P.get('kategori') && !v('f-kategori')) q=q.eq('kategori',P.get('kategori'));
+    if(uyeMi && P.get('idare') && !v('f-idare')) q=q.ilike('idare','%'+P.get('idare')+'%');
     return q;
   }
 
@@ -258,7 +262,7 @@
     const kalan=t?Math.ceil((t-new Date())/86400000):null;
     const tarih=t?t.toLocaleDateString('tr-TR',{day:'numeric',month:'long',year:'numeric'}):'—';
     const saat=t?t.toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'}):'';
-    const detayHref = dtMi ? `dogrudan-temin?id=${r.id}` : `v1-ihale-detay?id=${r.id}`;
+    const detayHref = dtMi ? `v1-dt-detay?dt_no=${encodeURIComponent(r.dt_no||"")}&id=${r.id}` : `v1-ihale-detay?id=${r.id}`;
     return `<tr data-id="${r.id}">
       <td class="v1-t-tarih">${tarih}<br><span class="saat">${saat}</span>${kalan!=null&&kalan>=0?`<br><span class="kalan">Son ${kalan} gün</span>`:''}</td>
       <td><div class="v1-t-ikn">${esc((dtMi?r.dt_no:r.ekap_id)||'—')}</div><a class="v1-t-ad" href="${detayHref}">${esc(r.baslik||'—')}</a></td>
@@ -291,7 +295,7 @@
             alan('İdare',esc(r.idare||(uyeMi?'—':'<span class="v1-kilit">••••• 🔒</span>')))+
             alan('Sektör',esc(r.kategori))+alan('Tür',esc(r.tur))+alan('İl',esc(r.il))+
             alan('Yayın Tarihi',r.yayin_tarihi?new Date(r.yayin_tarihi).toLocaleDateString('tr-TR'):'—')+
-            `<div><b>İşlem</b><a href="dogrudan-temin?id=${id}">Doğrudan temin detayına git →</a></div>`;
+            `<div><b>İşlem</b><a href="v1-dt-detay?id=${id}">Doğrudan temin detayına git →</a></div>`;
           return;
         }
         const kolon = uyeMi ? 'idare,kategori,yaklasik_maliyet_min,yaklasik_maliyet_max,ilan_tarihi,ekap_id' : 'kategori,ilan_tarihi';
@@ -303,7 +307,7 @@
           alan('Sektör',esc(r.kategori))+
           alan('İlan Tarihi',r.ilan_tarihi?new Date(r.ilan_tarihi).toLocaleDateString('tr-TR'):'—')+
           alan('Yaklaşık Maliyet',uyeMi?(r.yaklasik_maliyet_min?tl(r.yaklasik_maliyet_min)+(r.yaklasik_maliyet_max?' – '+tl(r.yaklasik_maliyet_max):''):'İlan edilmemiş'):'<span class="v1-kilit">••••• 🔒</span>')+
-          `<div><b>İşlem</b><a href="v1-ihale-detay?id=${id}">İhale detayına git →</a> · <a href="teklif-olustur?ihale_id=${id}">Teklif oluştur →</a></div>`;
+          `<div><b>İşlem</b><a href="v1-ihale-detay?id=${id}">İhale detayına git →</a> · <a href="v1-teklif-olustur?ihale_id=${id}">Teklif oluştur →</a></div>`;
       }catch(_){ document.getElementById('d-'+id).textContent='Detay yüklenemedi.'; }
     })();
   }
@@ -405,6 +409,10 @@
     document.getElementById('sekme-sonuc').addEventListener('click',()=>sekmeAyarla('sonuc'));
     document.getElementById('sekme-dt').addEventListener('click',()=>sekmeAyarla('dt'));
     if(sekme==='sonuc') sekmeAyarla('sonuc');
+    else if(sekme==='dt') sekmeAyarla('dt');   // ?sekme=dt / ?tur=dt ile derin bag (v1-dt-detay, v1-rekabet)
+    // URL'den gelen kategori/idare filtre kutusuna yaz
+    if(P.get('kategori')) { const e=document.getElementById('f-kategori'); if(e) e.value=P.get('kategori'); }
+    if(P.get('idare'))    { const e=document.getElementById('f-idare');    if(e) e.value=P.get('idare'); }
     else if(P.get('tur')==='dt'){ sekme='dt'; sekmeAyarla('dt'); }
 
     document.getElementById('f-uygula').addEventListener('click',()=>{sayfa=1;yukle();});

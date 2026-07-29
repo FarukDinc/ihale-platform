@@ -33,14 +33,18 @@
     ticaret:'<svg viewBox="0 0 24 24"><path d="M2.6 6.4 12 2.2l9.4 4.2-9.4 4.2L2.6 6.4Z"/><path d="M2.4 9.1 11 12.9v8.9L2.4 18V9.1ZM13 12.9l8.6-3.8V18L13 21.8v-8.9Z"/></svg>',
     sepet:  '<svg viewBox="0 0 24 24"><path d="M2 3h3.1l.9 3H21a1 1 0 0 1 .96 1.28l-2.2 7.4A2 2 0 0 1 17.84 16H9.1a2 2 0 0 1-1.93-1.47L4.4 5H2V3Z"/><path d="M9.5 18.5a2 2 0 1 1 0 4 2 2 0 0 1 0-4ZM17.5 18.5a2 2 0 1 1 0 4 2 2 0 0 1 0-4Z"/></svg>',
     harita: '<svg viewBox="0 0 24 24"><path d="M9 2.4 3.3 4.6A1.4 1.4 0 0 0 2.4 5.9v14.3a1 1 0 0 0 1.36.93L9 19.2V2.4ZM15 4.8 11 2.6v16.8l4 2.2V4.8ZM17 4.8v16.8l3.7-2.2a1.4 1.4 0 0 0 .9-1.3V3.8a1 1 0 0 0-1.36-.93L17 4.8Z"/></svg>',
+    yildiz: '<svg viewBox="0 0 24 24"><path d="m12 2.6 2.9 5.9 6.5.95-4.7 4.58 1.11 6.47L12 17.44l-5.81 3.06 1.11-6.47-4.7-4.58 6.5-.95L12 2.6Z"/></svg>',
+    klasor: '<svg viewBox="0 0 24 24"><path d="M2.4 5.6A2.2 2.2 0 0 1 4.6 3.4h4.3l2.2 2.6h8.3a2.2 2.2 0 0 1 2.2 2.2v10.2a2.2 2.2 0 0 1-2.2 2.2H4.6a2.2 2.2 0 0 1-2.2-2.2V5.6Z"/></svg>',
   };
 
   // ── Menü (ihalepro nav'ıyla birebir sıra) ──────────────────────────────
   const MENU = [
     { id: 'benim',      ad: 'Bana Özel',   ikon: I.home,   href: 'v1-benim-sayfam' },
+    { id: 'takipte',    ad: 'Takibim',     ikon: I.yildiz, href: 'v1-takipte' },
     { id: 'analiz',     ad: 'Analiz',      ikon: I.analiz, href: 'v1-analiz' },
     { id: 'ihaleler',   ad: 'İhaleler',    ikon: I.dosya,  href: 'v1-ihaleler' },
     { id: 'sonuclar',   ad: 'Sonuçlar',    ikon: I.bayrak, href: 'v1-ihaleler?sekme=sonuc' },
+    { id: 'dokumanlar', ad: 'Dökümanlar',  ikon: I.klasor, href: 'v1-dokumanlar' },
     { id: 'sozlesme',   ad: 'Sözleşmeler', ikon: I.para,   href: 'v1-sozlesmeler' },
     { id: 'kararlar',   ad: 'Kararlar',    ikon: I.tokmak, href: 'v1-kararlar' },
     { id: 'firmalar',   ad: 'Firmalar',    ikon: I.firma,  href: 'v1-firmalar' },
@@ -49,6 +53,7 @@
     { id: 'global',     ad: 'Global İhaleler', ikon: I.global, href: 'v1-global' },
     { id: 'disticaret', ad: 'Dış Ticaret', ikon: I.ticaret, href: 'v1-dis-ticaret' },
     { id: 'esatinalma', ad: 'e-Satınalma', ikon: I.sepet,  href: 'v1-esatinalma' },
+    { id: 'ihalelerim', ad: 'İhalelerim',  ikon: I.rapor,  href: 'v1-ihalelerim' },
     { id: 'harita',     ad: 'Harita',      ikon: I.harita, href: 'v1-harita' },
     { id: 'bank',       ad: 'Bank',        ikon: I.para,   href: 'v1-bank' },
   ];

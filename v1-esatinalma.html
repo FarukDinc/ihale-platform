@@ -104,7 +104,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/kategoriler.js?v=1"></script>
-<script src="js/v1-kabuk.js?v=5"></script>
+<script src="js/v1-kabuk.js?v=6"></script>
 <script>
 (() => {
   const SB_URL="https://ihaleglobal.com", SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzg0MzA3MTU4LCJleHAiOjE5NDE5ODcxNTh9.CjNKulvirotDD_y2oO2QKgo0kbqYvL0jUSV1RiDMoso";
@@ -154,7 +154,7 @@
       el.innerHTML=d.map(r=>{
         const t=r.son_teklif_tarihi?new Date(r.son_teklif_tarihi):null;
         const g=t?Math.max(0,Math.ceil((t-new Date())/86400000)):null;
-        return `<a class="v1-rfq" href="ozel-ihale-detay?id=${r.id}">
+        return `<a class="v1-rfq" href="v1-ozel-ihale-detay?id=${r.id}">
           <div class="v1-rfq-ust">
             <span class="v1-rfq-kat" title="${esc(r.kategori||'')}">${esc(r.kategori||'Genel')}</span>
             ${g!=null?`<span class="v1-rfq-gun${g<=3?' acil':''}">Son ${g} gün</span>`:'<span class="v1-rfq-gun">Süresiz</span>'}

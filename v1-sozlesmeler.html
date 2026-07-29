@@ -79,7 +79,7 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-<script src="js/v1-kabuk.js?v=5"></script>
+<script src="js/v1-kabuk.js?v=6"></script>
 <script>
 (() => {
   const SB_URL="https://ihaleglobal.com", SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzg0MzA3MTU4LCJleHAiOjE5NDE5ODcxNTh9.CjNKulvirotDD_y2oO2QKgo0kbqYvL0jUSV1RiDMoso";
@@ -137,7 +137,7 @@
           : `<span style="color:var(--v1-muted);font-size:12px;" title="Kısım bazlı yaklaşık maliyet yayımlanmadığında hesaplanamaz">—</span>`;
         return `<tr>
           <td class="v1-t-tarih">${t}${devam!=null?`<br><span class="v1-sonuc-rozet" style="background:${devam?'#E6F6EC':'#EFF2F6'};color:${devam?'var(--v1-yesil)':'var(--v1-muted)'};font-size:10.5px;">${devam?'Devam':'Bitti'}</span>`:''}</td>
-          <td><a class="v1-t-ad" href="firma-analiz?ara=${encodeURIComponent(r.kazanan_firma||'')}">${esc(r.kazanan_firma||'—')}</a></td>
+          <td><a class="v1-t-ad" href="v1-firma-analiz?ara=${encodeURIComponent(r.kazanan_firma||'')}">${esc(r.kazanan_firma||'—')}</a></td>
           <td style="font-weight:700;color:var(--v1-mavi);">${tl(r.sozlesme_bedeli ?? r.kazanan_teklif)}</td>
           <td>${tenz}</td>
           <td style="text-align:right;">${r.ilan_id?`<a class="v1-yuvarlak-btn" style="text-decoration:none;" href="v1-ihale-detay?id=${r.ilan_id}" title="İhale detayı">

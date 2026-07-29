@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="author" content="Ömer Faruk Dinç">
+  <meta name="copyright" content="© 2026 Ömer Faruk Dinç — İhaleGlobal">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <!-- noindex ŞART: 1,49M doğrudan temin kaydı × ayrı URL = crawl patlaması.
+       follow bırakıldı ki içerideki idare/kategori linkleri yine de keşfedilsin. -->
+  <meta name="robots" content="noindex,follow" />
+  <title>Doğrudan Temin Detayı — İhaleGlobal</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=4" />
+  <link rel="icon" type="image/png" sizes="48x48" href="/favicon-48.png?v=4" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/favicon-180.png?v=4" />
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/v1.css?v=4" />
+  <style>
+    /* Geri linki */
+    .v1-geri { display:inline-flex; align-items:center; gap:6px; margin-bottom:14px;
+      font-size:13px; font-weight:700; color:var(--v1-muted); text-decoration:none; }
+    .v1-geri:hover { color:var(--v1-mavi); text-decoration:none; }
+
+    /* Lacivert üst bant (v1-ihale-detay ile aynı dil) */
+    .v1-d-bant { background:var(--v1-lacivert); border-radius:var(--v1-radius-lg); padding:24px 26px; color:#fff; margin-bottom:18px; }
+    .v1-d-ust { display:flex; justify-content:space-between; align-items:flex-start; gap:18px; }
+    .v1-d-no { font-size:12.5px; color:rgba(255,255,255,.72); font-weight:700; letter-spacing:.04em; }
+    .v1-d-baslik { font-size:22px; font-weight:800; line-height:1.35; margin:6px 0 12px; color:#fff; }
+    .v1-d-rozetler { display:flex; gap:8px; flex-wrap:wrap; }
+    .v1-d-rozet { font-size:12px; font-weight:700; padding:5px 12px; border-radius:20px; background:rgba(255,255,255,.16); }
+    .v1-d-rozet.yesil { background:var(--v1-yesil); }
+    .v1-d-rozet.kirmizi { background:var(--v1-kirmizi); }
+    .v1-d-rozet.teal { background:var(--v1-teal); }
+    .v1-d-islem { display:flex; gap:10px; flex-wrap:wrap; margin-top:16px; }
+    .v1-d-btn { background:#fff; color:var(--v1-lacivert); border:none; border-radius:9px; padding:10px 18px;
+      font-family:var(--v1-font); font-size:13px; font-weight:700; cursor:pointer; text-decoration:none;
+      display:inline-flex; align-items:center; gap:7px; }
+    .v1-d-btn:hover { background:#EAF1F9; text-decoration:none; }
+    .v1-d-btn.hayalet { background:rgba(255,255,255,.12); color:#fff; border:1.5px solid rgba(255,255,255,.35); }
+    .v1-d-btn.hayalet:hover { background:rgba(255,255,255,.22); }
+    .v1-d-btn.aktif { background:var(--v1-teal); color:#fff; }
+
+    /* Bilgi ızgarası */
+    .v1-bilgi-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(210px,1fr)); gap:18px 26px; }
+    .v1-bilgi b { display:block; font-size:11.5px; text-transform:uppercase; letter-spacing:.05em; color:var(--v1-muted); margin-bottom:3px; }
+    .v1-bilgi span { font-size:14px; font-weight:600; color:var(--v1-metin); line-height:1.45; word-break:break-word; }
+    .v1-bilgi span a { color:var(--v1-mavi); font-weight:600; }
+    .v1-bilgi span.acil { color:var(--v1-kirmizi); }
+    .v1-bilgi .ek { font-weight:600; font-size:12.5px; color:var(--v1-muted); }
+
+    /* Kilitli (misafir) değer — v1 paywall deseni */
+    .v1 a.v1-kilit { color:var(--v1-muted); }
+    .v1 a.v1-kilit:hover { color:var(--v1-mavi); text-decoration:none; }
+
+    /* Misafir uyarı şeridi */
+    .v1-uyari-mavi { margin-top:16px; background:var(--v1-mavi-acik); border:1px solid #CFE2F5;
+      border-radius:10px; padding:13px 15px; font-size:13px; line-height:1.6; color:var(--v1-metin); }
+
+    /* Sonuç kartı (yeşil) */
+    .v1-sonuc-kart { background:#E6F6EC; border:1px solid #BFE6CE; border-radius:12px; padding:18px 20px; }
+    .v1-sonuc-satir { display:grid; grid-template-columns:repeat(auto-fit,minmax(165px,1fr));
+      gap:14px 24px; padding:14px 0; border-top:1px solid #BFE6CE; }
+    .v1-sonuc-satir:first-child { border-top:none; padding-top:0; }
+    .v1-sonuc-satir b { display:block; font-size:11.5px; text-transform:uppercase; letter-spacing:.04em; color:#1E7A46; margin-bottom:3px; }
+    .v1-sonuc-satir span { font-size:15px; font-weight:700; color:#146035; word-break:break-word; }
+    .v1-sonuc-satir span.buyuk { font-size:17px; font-weight:800; }
+    .v1-sonuc-ozet { font-size:12.5px; font-weight:700; color:var(--v1-muted); margin-left:8px; }
+    .v1-sozlesme-rozet { display:inline-block; font-size:10.5px; font-weight:800; padding:2px 8px;
+      border-radius:20px; background:#CDEBD8; color:#146035; margin-left:6px; vertical-align:middle; }
+
+    /* EKAP / ilgili bağlar */
+    .v1-not { font-size:13px; line-height:1.7; color:var(--v1-metin); }
+    .v1-not b { color:var(--v1-lacivert); }
+    .v1-dis-link { display:inline-flex; align-items:center; gap:7px; margin-top:12px; padding:9px 16px;
+      border-radius:9px; background:#fff; border:1.5px solid var(--v1-cizgi); color:var(--v1-mavi);
+      font-size:13px; font-weight:700; text-decoration:none; }
+    .v1-dis-link:hover { border-color:var(--v1-mavi); background:var(--v1-mavi-acik); text-decoration:none; }
+    .v1-ilgili-baglar { display:flex; gap:10px; flex-wrap:wrap; }
+    .v1-ilgili-bag { padding:9px 15px; border-radius:9px; background:var(--v1-zemin);
+      border:1px solid var(--v1-cizgi); color:var(--v1-metin); font-size:13px; font-weight:700; text-decoration:none; }
+    .v1-ilgili-bag:hover { border-color:var(--v1-mavi); color:var(--v1-mavi); text-decoration:none; }
+
+    /* Yükleniyor / bulunamadı */
+    @keyframes v1-spin { to { transform:rotate(360deg); } }
+    .v1-yukleniyor { text-align:center; padding:56px 20px; color:var(--v1-muted); font-size:13.5px; }
+    .v1-spinner { width:30px; height:30px; border:3px solid var(--v1-cizgi); border-top-color:var(--v1-mavi);
+      border-radius:50%; animation:v1-spin .8s linear infinite; margin:0 auto 14px; }
+    .v1-bulunamadi { text-align:center; padding:46px 24px; }
+    .v1-bulunamadi .ikon { font-size:38px; margin-bottom:12px; }
+    .v1-bulunamadi .bas { font-size:17px; font-weight:800; color:var(--v1-lacivert); margin-bottom:8px; }
+    .v1-bulunamadi .alt { font-size:13.5px; color:var(--v1-muted); max-width:440px; margin:0 auto 18px; line-height:1.65; }
+
+    @media (max-width:600px){
+      .v1-d-ust { flex-direction:column; align-items:stretch; }
+      .v1-d-baslik { font-size:19px; }
+    }
+  </style>
+</head>
+<body class="v1" data-v1-aktif="ihaleler" data-v1-kirinti="İhaleler > Doğrudan Temin Detayı">
+<div class="v1-app">
+  <div class="v1-main">
+    <div class="v1-govde">
+      <a class="v1-geri" href="v1-ihaleler?tur=dt">← Doğrudan Temin listesine dön</a>
+
+      <div id="v1-yukleniyor" class="v1-yukleniyor">
+        <div class="v1-spinner"></div>
+        <div>Duyuru yükleniyor…</div>
+      </div>
+
+      <div id="v1-bulunamadi" class="v1-kart v1-bulunamadi" style="display:none;">
+        <div class="ikon">🔍</div>
+        <div class="bas" id="v1-bulunamadi-bas">Duyuru bulunamadı</div>
+        <div class="alt" id="v1-bulunamadi-alt">Bu numaraya ait bir doğrudan temin duyurusu kayıtlarımızda yok.</div>
+        <a class="v1-ilgili-bag" href="v1-ihaleler?tur=dt">Listeye dön</a>
+      </div>
+
+      <div id="v1-icerik" style="display:none;"></div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="js/takip.js?v=2"></script>
+<script src="js/v1-kabuk.js?v=6"></script>
+<script>
+(() => {
+  const SB_URL="https://ihaleglobal.com", SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzg0MzA3MTU4LCJleHAiOjE5NDE5ODcxNTh9.CjNKulvirotDD_y2oO2QKgo0kbqYvL0jUSV1RiDMoso";
+  const sb = window.supabase.createClient(SB_URL, SB_KEY);
+
+  // ── Misafir maskeleme ────────────────────────────────────────────────────
+  // dogrudan_temin_ilanlari.idare        → anon'a DB'de KAPALI (42501, doğrulandı)
+  // dogrudan_temin_sonuclari.kazanan_firma → anon'a DB'de KAPALI (42501, doğrulandı)
+  // Bu iki kolon misafir select'ine EKLENİRSE tüm sorgu düşer (kısmî sonuç değil).
+  let uyeMi = false;
+  const MASKE = '<a href="login" class="v1-kilit" title="Üyelere özel — giriş yapın">••••• 🔒</a>';
+
+  // dogrudan-temin.html / dt-detay.html ile AYNI durum grupları
+  const DURUM_GRUP = {
+    acik:  ['Doğrudan Temin Duyurusu Yayımlanmış', 'Teklifler Değerlendiriliyor'],
+    sonuc: ['Sonuç Duyurusu Yayımlanmış', 'Doğrudan Temin Sonuçlandırıldı', 'Sonuç Bilgileri Gönderildi'],
+  };
+
+  const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+  function tarihFormat(s) {
+    if (!s) return '—';
+    const d = new Date(s);
+    if (isNaN(d)) return '—';
+    return d.toLocaleDateString('tr-TR', { day:'2-digit', month:'short', year:'numeric' });
+  }
+
+  function gunFarki(iso) {
+    const d = new Date(iso);
+    if (isNaN(d)) return null;
+    const bugun = new Date(); bugun.setHours(0, 0, 0, 0);
+    return Math.round((new Date(d.getFullYear(), d.getMonth(), d.getDate()) - bugun) / 86400000);
+  }
+
+  function bedelFormat(n) {
+    if (n == null || isNaN(Number(n))) return '—';
+    return '₺' + Number(n).toLocaleString('tr-TR', { maximumFractionDigits: 0 });
+  }
+
+  function durumRozet(durum) {
+    if (!durum) return '';
+    if (DURUM_GRUP.sonuc.includes(durum)) return '<span class="v1-d-rozet yesil">✅ Sonuçlandı</span>';
+    if (DURUM_GRUP.acik.includes(durum))  return '<span class="v1-d-rozet teal">🟢 Açık</span>';
+    return `<span class="v1-d-rozet">${esc(durum)}</span>`;
+  }
+
+  const kilitMi = (e) => !!e && (e.code === '42501' || /permission denied/i.test(e.message || ''));
+  // ?id= elle bozulursa PostgREST 400 + 22P02 döner ve mesajı HAM Postgres metnidir
+  // ("invalid input syntax for type uuid: ..."). Kullanıcıya bunu göstermek yerine
+  // "bulunamadı" say — tek makul yorum bu.
+  const gecersizKimlikMi = (e) => !!e && (e.code === '22P02' || /invalid input syntax/i.test(e.message || ''));
+  const UUID_KALIP = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+  // v1-kabuk.js topbar'ı DOMContentLoaded'da monte ediyor; getSession() ondan ÖNCE
+  // dönerse #v1-paket-ad henüz belgede yoktur ve rozet "—" kalır. DOM hazır olana ertele.
+  function paketYaz(ad) {
+    const f = () => { if (window.v1PaketYaz) window.v1PaketYaz(ad); };
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', f);
+    else f();
+  }
+
+  // ── Veri ─────────────────────────────────────────────────────────────────
+  // select('*') ASLA: token kolonları (dt_ihale_token/dt_idare_token) frontend'e
+  // hiç inmemeli, misafirde de 42501 üretirdi.
+  const DT_KOLONLAR = 'id,dt_no,baslik,tur,il,tarih,yayin_tarihi,durum,kategori,dokuman_var,duyuru_var';
+
+  async function ilanGetir(dtNo, satirId) {
+    let q = sb.from('dogrudan_temin_ilanlari').select(uyeMi ? DT_KOLONLAR + ',idare' : DT_KOLONLAR);
+    q = dtNo ? q.eq('dt_no', dtNo) : q.eq('id', satirId);
+    // single() olmayan kayıtta 406 atardı; maybeSingle null döner
+    const { data, error } = await q.maybeSingle();
+    if (error) throw error;
+    return data;
+  }
+
+  async function sonucGetir(dtNo) {
+    // Bir dt_no'da BİRDEN FAZLA sözleşme satırı olabilir (EKAP SozlesmeBilgisiList).
+    const { data, error } = await sb.from('dogrudan_temin_sonuclari')
+      .select(`${uyeMi ? 'kazanan_firma,' : ''}kazanan_bedel,sozlesme_tarihi,en_yuksek_teklif,en_dusuk_teklif,sozlesme_mi`)
+      .eq('dt_no', dtNo)
+      .limit(200);
+    if (error) { console.info('sonuç bilgisi alınamadı:', error.message); return []; }
+    return data || [];
+  }
+
+  // ── Parçalar ─────────────────────────────────────────────────────────────
+  function tarihBlogu(k) {
+    const p = [];
+    if (k.yayin_tarihi) {
+      // E8 = o anki duyurunun yayım tarihi. Sonuçlanmış kayıtta bu, SONUÇ duyurusunun
+      // tarihidir (ölçüldü: aktiflerde yayın>ihale %0, sonuçlananlarda %58) — etiket bunu söylemeli.
+      const sonuclu = DURUM_GRUP.sonuc.includes(k.durum);
+      p.push(`<div class="v1-bilgi"><b>${sonuclu ? 'Sonuç Duyurusu Tarihi' : 'Yayın Tarihi'}</b>
+              <span>${tarihFormat(k.yayin_tarihi)}</span></div>`);
+    }
+    if (k.tarih) {
+      const fark = gunFarki(k.tarih);
+      let etiket = 'İhale Tarihi', deger = tarihFormat(k.tarih), sinif = '';
+      if (fark === 0)    { etiket = 'Son Teklif Tarihi'; deger = 'BUGÜN'; sinif = ' acil'; }
+      else if (fark > 0) { etiket = 'Son Teklif Tarihi';
+        deger = `${tarihFormat(k.tarih)} <span class="ek">(${fark} gün kaldı)</span>`;
+        sinif = fark <= 3 ? ' acil' : ''; }
+      p.push(`<div class="v1-bilgi"><b>${etiket}</b><span class="${sinif.trim()}">${deger}</span></div>`);
+    }
+    return p.join('');
+  }
+
+  function sonucKarti(satirlar) {
+    if (!satirlar.length) return '';
+    const toplam = satirlar.reduce((a, s) => a + (Number(s.kazanan_bedel) || 0), 0);
+    const cok = satirlar.length > 1;
+    const govde = satirlar.map(s => `
+      <div class="v1-sonuc-satir">
+        <div>
+          <b>Kazanan Firma</b>
+          <span>${uyeMi ? (esc(s.kazanan_firma) || '—') : MASKE}${s.sozlesme_mi ? '<span class="v1-sozlesme-rozet">SÖZLEŞME</span>' : ''}</span>
+        </div>
+        <div>
+          <b>Sözleşme Bedeli</b>
+          <span class="buyuk">${bedelFormat(s.kazanan_bedel)}</span>
+        </div>
+        <div>
+          <b>Sözleşme Tarihi</b>
+          <span>${tarihFormat(s.sozlesme_tarihi)}</span>
+        </div>
+        ${(s.en_dusuk_teklif != null || s.en_yuksek_teklif != null) ? `
+        <div>
+          <b>Teklif Aralığı</b>
+          <span>${bedelFormat(s.en_dusuk_teklif)} – ${bedelFormat(s.en_yuksek_teklif)}</span>
+        </div>` : ''}
+      </div>`).join('');
+    return `
+      <div class="v1-kart">
+        <div class="v1-kart-baslik">Sonuç Bilgileri
+          ${cok ? `<span class="v1-sonuc-ozet">${satirlar.length} kalem · toplam ${bedelFormat(toplam)}</span>` : ''}
+        </div>
+        <div class="v1-sonuc-kart">${govde}</div>
+      </div>`;
+  }
+
+  function ilgiliKarti(k) {
+    const baglar = [];
+    // v1-ihaleler DT sekmesi URL'den yalnız ?il= ve ?ara= okuyor; idare/kategori
+    // süzgeci v1'de URL parametresi olarak YOK → o iki bağ v2 listesine gidiyor.
+    if (uyeMi && k.idare) {
+      baglar.push(`<a class="v1-ilgili-bag" href="v1-ihaleler?sekme=dt&idare=${encodeURIComponent(k.idare)}">🏛️ Bu idarenin diğer duyuruları</a>`);
+    }
+    // 'Diğer' jenerik kova (kayıtların büyük bölümü orada) — rozette zaten gizleniyor,
+    // bağ olarak da anlamsız: kullanıcıyı ilgisiz yüz binlerce duyuruya atar.
+    if (k.kategori && k.kategori !== 'Diğer') {
+      baglar.push(`<a class="v1-ilgili-bag" href="v1-ihaleler?sekme=dt&kategori=${encodeURIComponent(k.kategori)}">🏭 Aynı sektör: ${esc(k.kategori)}</a>`);
+    }
+    if (k.il) {
+      baglar.push(`<a class="v1-ilgili-bag" href="v1-ihaleler?tur=dt&il=${encodeURIComponent(k.il)}">📍 ${esc(k.il)} duyuruları</a>`);
+    }
+    if (!baglar.length) return '';
+    return `<div class="v1-kart">
+      <div class="v1-kart-baslik">İlgili Aramalar</div>
+      <div class="v1-ilgili-baglar">${baglar.join('')}</div>
+    </div>`;
+  }
+
+  // ── Çizim ────────────────────────────────────────────────────────────────
+  function ciz(k, sonuclar) {
+    const takipte = !!(window.TakipDT && TakipDT.var(k.dt_no));
+    const fark = k.tarih ? gunFarki(k.tarih) : null;
+    document.title = `${k.baslik || 'Doğrudan Temin'} — İhaleGlobal`;
+
+    document.getElementById('v1-icerik').innerHTML = `
+      <div class="v1-d-bant">
+        <div class="v1-d-ust">
+          <div style="min-width:0;flex:1;">
+            <div class="v1-d-no">${esc(k.dt_no)} · DOĞRUDAN TEMİN</div>
+            <div class="v1-d-baslik">${esc(k.baslik) || '(başlık yok)'}</div>
+            <div class="v1-d-rozetler">
+              ${durumRozet(k.durum)}
+              ${k.tur ? `<span class="v1-d-rozet">${esc(k.tur)}</span>` : ''}
+              ${(k.kategori && k.kategori !== 'Diğer') ? `<span class="v1-d-rozet">${esc(k.kategori)}</span>` : ''}
+              ${k.il ? `<span class="v1-d-rozet">📍 ${esc(k.il)}</span>` : ''}
+              ${k.dokuman_var ? '<span class="v1-d-rozet teal">📄 Doküman var</span>' : ''}
+              ${(fark != null && fark >= 0) ? `<span class="v1-d-rozet ${fark <= 3 ? 'kirmizi' : 'teal'}">${fark === 0 ? 'Bugün son gün' : `Son ${fark} gün`}</span>` : ''}
+            </div>
+          </div>
+        </div>
+        <div class="v1-d-islem">
+          <button class="v1-d-btn${takipte ? ' aktif' : ''}" id="v1-takip">${takipte ? '★ Takipte' : '☆ Takibe Al'}</button>
+          <button class="v1-d-btn hayalet" id="v1-kopyala">🔗 Bağlantıyı Kopyala</button>
+        </div>
+      </div>
+
+      <div class="v1-kart">
+        <div class="v1-kart-baslik">Duyuru Bilgileri</div>
+        <div class="v1-bilgi-grid">
+          <div class="v1-bilgi"><b>İdare</b><span>${uyeMi
+            ? (k.idare ? `<a href="v1-ihaleler?sekme=dt&idare=${encodeURIComponent(k.idare)}">${esc(k.idare)}</a>` : '—')
+            : MASKE}</span></div>
+          <div class="v1-bilgi"><b>İl</b><span>${esc(k.il) || '—'}</span></div>
+          <div class="v1-bilgi"><b>Tür</b><span>${esc(k.tur) || '—'}</span></div>
+          <div class="v1-bilgi"><b>Kategori</b><span>${esc(k.kategori) || '—'}</span></div>
+          ${tarihBlogu(k)}
+          <div class="v1-bilgi"><b>Durum</b><span>${esc(k.durum) || '—'}</span></div>
+          <div class="v1-bilgi"><b>Duyuru No</b><span>${esc(k.dt_no)}</span></div>
+        </div>
+        ${!uyeMi ? `<div class="v1-uyari-mavi">🔒 İdare bilgisi ve kazanan firma adı <strong>üyelere açıktır</strong>.
+          <a href="login">Giriş yapın</a> veya <a href="fiyatlandirma_odeme_bolumu">üye olun</a> →</div>` : ''}
+      </div>
+
+      ${sonucKarti(sonuclar)}
+
+      <div class="v1-kart">
+        <div class="v1-kart-baslik">EKAP Kaydı</div>
+        <div class="v1-not">
+          Bu duyurunun resmî kaydı EKAP'tadır. EKAP doğrudan temin duyuruları için kalıcı bir
+          derin bağlantı vermediğinden, arama sayfasında <b>${esc(k.dt_no)}</b> numarası ile
+          aratmanız gerekiyor.
+          ${!k.dokuman_var ? '<br>Bu duyuruda indirilebilir doküman bulunmuyor.' : ''}
+        </div>
+        <a class="v1-dis-link" href="https://ekapv2.kik.gov.tr/ekap-dt/search" target="_blank" rel="noopener noreferrer">
+          EKAP doğrudan temin arama →
+        </a>
+      </div>
+
+      ${ilgiliKarti(k)}
+    `;
+
+    document.getElementById('v1-yukleniyor').style.display = 'none';
+    document.getElementById('v1-icerik').style.display = '';
+
+    const takipBtn = document.getElementById('v1-takip');
+    const takipYaz = (durum) => {
+      takipBtn.classList.toggle('aktif', !!durum);
+      takipBtn.textContent = durum ? '★ Takipte' : '☆ Takibe Al';
+    };
+    takipBtn.addEventListener('click', function () {
+      if (!window.TakipDT) { alert('Takip listesi yüklenemedi.'); return; }
+      takipYaz(TakipDT.toggle(k.dt_no));
+    });
+    // DB ↔ localStorage birleşimi SAYFAYI BEKLETMEZ: bitince rozet tazelenir.
+    if (uyeMi && window.TakipDT) {
+      TakipDT.syncFromDB().then(() => takipYaz(TakipDT.var(k.dt_no))).catch(() => {});
+    }
+
+    document.getElementById('v1-kopyala').addEventListener('click', function () {
+      const btn = this, eski = btn.textContent;
+      const bitir = (m) => { btn.textContent = m; setTimeout(() => { btn.textContent = eski; }, 1600); };
+      navigator.clipboard.writeText(window.location.href)
+        .then(() => bitir('✓ Kopyalandı'))
+        .catch(() => bitir('✕ Kopyalanamadı'));
+    });
+  }
+
+  function hata(baslik, alt) {
+    document.getElementById('v1-yukleniyor').style.display = 'none';
+    document.getElementById('v1-bulunamadi-bas').textContent = baslik;
+    document.getElementById('v1-bulunamadi-alt').innerHTML = alt;
+    document.getElementById('v1-bulunamadi').style.display = '';
+  }
+
+  // ── Başlangıç ────────────────────────────────────────────────────────────
+  (async () => {
+    // v2 dt-detay.html ile AYNI parametre: ?dt_no=…  ·  ?id=<uuid> de desteklenir
+    // (v1-ihaleler DT satırları satır kimliğiyle link verebiliyor).
+    const P = new URLSearchParams(window.location.search);
+    const dtNo = (P.get('dt_no') || '').trim();
+    const satirId = (P.get('id') || '').trim();
+    if (!dtNo && !satirId) {
+      hata('Duyuru seçilmedi', 'Adreste bir duyuru numarası (dt_no) yok.');
+      return;
+    }
+    // uuid olmayan ?id= sunucuya hiç gitmesin: 400 + ham Postgres metni üretiyordu.
+    if (!dtNo && !UUID_KALIP.test(satirId)) {
+      hata('Duyuru bulunamadı', `"${esc(satirId)}" geçerli bir duyuru kimliği değil.`);
+      return;
+    }
+
+    // uyeMi ilk sorgudan ÖNCE kesinleşmeli: misafir select'i idare/kazanan_firma'sız olmalı.
+    let oturum = null;
+    try { const { data } = await sb.auth.getSession(); oturum = (data && data.session) || null; } catch (_) { oturum = null; }
+    uyeMi = !!oturum;
+
+    try {
+      if (oturum) {
+        const { data: kr } = await sb.from('kullanici_krediler').select('plan').eq('kullanici_id', oturum.user.id).maybeSingle();
+        paketYaz(['standart','kurumsal'].includes(kr && kr.plan) ? 'Pro' : 'Temel');
+      } else paketYaz('Misafir');
+    } catch (_) { paketYaz(oturum ? 'Temel' : 'Misafir'); }
+
+    try {
+      const k = await ilanGetir(dtNo, satirId);
+      if (!k) {
+        hata('Duyuru bulunamadı',
+          `"${esc(dtNo || satirId)}" için bir doğrudan temin duyurusu kayıtlarımızda yok.`);
+        return;
+      }
+      const sonuclar = DURUM_GRUP.sonuc.includes(k.durum) ? await sonucGetir(k.dt_no) : [];
+      ciz(k, sonuclar);
+    } catch (e) {
+      console.error(e);
+      if (kilitMi(e)) {
+        hata('Bu içerik üyelere özel',
+          '🔒 Doğrudan temin duyuru detayı üyelere özeldir. <a href="login">Giriş yapın</a> veya <a href="fiyatlandirma_odeme_bolumu">üye olun</a> →');
+      } else if (gecersizKimlikMi(e)) {
+        hata('Duyuru bulunamadı',
+          `"${esc(dtNo || satirId)}" için bir doğrudan temin duyurusu kayıtlarımızda yok.`);
+      } else {
+        hata('Duyuru yüklenemedi', esc((e && e.message) || 'Bilinmeyen bir hata oluştu.'));
+      }
+    }
+  })();
+})();
+</script>
+</body>
+</html>
