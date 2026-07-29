@@ -20,6 +20,20 @@
     .v1-bar { display:block; height:100%; background:var(--v1-mavi); border-radius:5px; }
     .v1-uyari { background:var(--v1-mavi-acik); border:1px solid #CFE2F5; border-radius:12px; padding:16px 18px;
       font-size:13.5px; color:var(--v1-metin); margin-bottom:16px; }
+    /* Filtre araçları — v1-kurum-analiz ile aynı görünüm (css/v1.css PAYLAŞILAN, dokunulmadı) */
+    .v1-arac-sag { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+    .v1-sec { border:1.5px solid var(--v1-cizgi); border-radius:9px; padding:9px 12px; background:#fff;
+      font-family:var(--v1-font); font-size:13px; color:var(--v1-metin); outline:none; cursor:pointer;
+      min-width:150px; max-width:230px; }
+    .v1-sec:focus { border-color:var(--v1-mavi); }
+    .v1-mini-btn { background:#fff; border:1.5px solid var(--v1-cizgi); color:var(--v1-muted); border-radius:9px;
+      padding:9px 12px; font-family:var(--v1-font); font-size:12.5px; font-weight:700; cursor:pointer; white-space:nowrap; }
+    .v1-mini-btn:hover { border-color:var(--v1-mavi); color:var(--v1-mavi); }
+    /* Tıklanabilir sütun başlıkları */
+    .v1-tablo th.v1-sr { cursor:pointer; user-select:none; }
+    .v1-tablo th.v1-sr:hover { color:var(--v1-mavi); }
+    .v1-tablo th.v1-sr:focus-visible { outline:2px solid var(--v1-mavi); outline-offset:-2px; }
+    .v1-ok { font-size:10.5px; margin-left:5px; }
   </style>
 </head>
 <body class="v1" data-v1-aktif="kurumlar" data-v1-kirinti="İhaleGlobal > Kurumlar">
@@ -45,18 +59,23 @@
             <div style="font-size:17px;font-weight:800;color:var(--v1-lacivert);" id="v1-liste-baslik">Tüm Kurumlar</div>
             <div class="v1-tablo-sayi" id="v1-sayi">Yükleniyor…</div>
           </div>
-          <div class="v1-listede-ara">
-            <svg viewBox="0 0 24 24" width="15" height="15" fill="var(--v1-muted)"><path fill-rule="evenodd" d="M10.5 3a7.5 7.5 0 1 0 4.55 13.46l4.24 4.25 1.42-1.42-4.25-4.24A7.5 7.5 0 0 0 10.5 3Zm0 2a5.5 5.5 0 1 1 0 11 5.5 5.5 0 0 1 0-11Z"/></svg>
-            <input type="text" id="v1-ara-liste" placeholder="Kurum ara">
+          <div class="v1-arac-sag">
+            <select class="v1-sec" id="v1-il" aria-label="İl filtresi"><option value="">Tüm İller</option></select>
+            <button type="button" class="v1-mini-btn" id="v1-sifirla" style="display:none;">Filtreyi temizle</button>
+            <div class="v1-listede-ara">
+              <svg viewBox="0 0 24 24" width="15" height="15" fill="var(--v1-muted)"><path fill-rule="evenodd" d="M10.5 3a7.5 7.5 0 1 0 4.55 13.46l4.24 4.25 1.42-1.42-4.25-4.24A7.5 7.5 0 0 0 10.5 3Zm0 2a5.5 5.5 0 1 1 0 11 5.5 5.5 0 0 1 0-11Z"/></svg>
+              <input type="text" id="v1-ara-liste" placeholder="Kurum ara">
+            </div>
           </div>
         </div>
         <div style="overflow-x:auto;">
           <table class="v1-tablo" id="v1-tablo">
             <thead><tr>
-              <th style="width:44px;">#</th><th>İdare / Kurum</th>
-              <th style="width:100px;">İl</th>
-              <th style="width:210px;">Toplam İhale</th>
-              <th style="width:100px;">Aktif</th>
+              <th style="width:44px;">#</th>
+              <th class="v1-sr" data-k="ad" title="İsme göre sırala">İdare / Kurum<span class="v1-ok" id="v1-ok-ad"></span></th>
+              <th class="v1-sr" style="width:110px;" data-k="il" title="İle göre sırala">İl<span class="v1-ok" id="v1-ok-il"></span></th>
+              <th class="v1-sr" style="width:210px;" data-k="toplam" title="Toplam ihaleye göre sırala">Toplam İhale<span class="v1-ok" id="v1-ok-toplam"></span></th>
+              <th class="v1-sr" style="width:100px;" data-k="aktif" title="Aktif ihaleye göre sırala">Aktif<span class="v1-ok" id="v1-ok-aktif"></span></th>
               <th style="width:120px;"></th>
             </tr></thead>
             <tbody id="v1-tbody"><tr><td colspan="6" class="v1-bos">Yükleniyor…</td></tr></tbody>
@@ -78,42 +97,154 @@
   const esc=(s)=>(s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
   const P=new URLSearchParams(location.search);
   const BOY=25;
-  let tumu=[], takipli=new Set(), uyeMi=false, mod='tum', sayfa=1;
+  // İl'i boş/NULL olan kayıtları YUTMA — ayrı "Belirsiz" kovası
+  const IL_YOK='__yok__';
+  // v1-kurum-analiz.html ile ORTAK önbellek (aynı RPC, aynı ham biçim)
+  const CACHE_KEY='idare_dizin_v1', CACHE_TTL=30*60*1000;
+  const trFold=window.trFold||((s)=>(s||'').toLocaleLowerCase('tr'));
+  // Türkçe sıralama — 23K satırda localeCompare'i satır başı çağırmak yerine tek collator
+  const KRS=new Intl.Collator('tr');
+  const SIRA_ANAHTAR=['ad','il','toplam','aktif'];
+  const YON_VARSAYILAN={ad:'asc', il:'asc', toplam:'desc', aktif:'desc'};
 
+  let tumu=[], takipli=new Set(), uyeMi=false, mod='tum', sayfa=1;
+  let ilSecim='', sirala='toplam', yon='desc';
+
+  // ── URL (derin link) ────────────────────────────────────────────────
+  function urlOku(){
+    const il=P.get('il'); if(il) ilSecim=il;
+    const s=P.get('sirala'); if(SIRA_ANAHTAR.includes(s)) sirala=s;
+    const y=P.get('yon'); if(y==='asc'||y==='desc') yon=y;
+  }
+  function urlYaz(){
+    const p=new URLSearchParams(location.search);
+    const ara=(document.getElementById('v1-ara-liste').value||'').trim();
+    if(ara) p.set('ara',ara); else p.delete('ara');
+    if(ilSecim) p.set('il',ilSecim); else p.delete('il');
+    if(sirala==='toplam'&&yon==='desc'){ p.delete('sirala'); p.delete('yon'); }
+    else { p.set('sirala',sirala); p.set('yon',yon); }
+    const qs=p.toString();
+    history.replaceState(null,'',location.pathname+(qs?'?'+qs:'')+location.hash);
+  }
+
+  // ── Veri ────────────────────────────────────────────────────────────
+  // idare_sayim() satır döndürdüğü için PostgREST db-max-rows=1000 tavanına
+  // takılıyordu ("Toplam 1.000 kurum" sahte sayısı). idare_dizin_json() jsonb
+  // skaler döner → sınır işlemez, ~23K idarenin TAMAMI tek istekte gelir.
+  // Satır formatı DİZİ: [idare, toplam, aktif, en_yakin_il] — nesne DEĞİL.
   async function yukle(){
     const tb=document.getElementById('v1-tbody');
     if(!uyeMi){
       document.getElementById('v1-misafir').style.display='block';
+      document.getElementById('v1-il').style.display='none';
+      document.getElementById('v1-sifirla').style.display='none';
       tb.innerHTML='<tr><td colspan="6" class="v1-bos">🔒 Kurum listesi üyelere özeldir. <a href="login">Giriş yapın →</a></td></tr>';
       document.getElementById('v1-sayi').textContent=''; return;
     }
     try{
-      const {data,error}=await sb.rpc('idare_sayim');
-      if(error) throw error;
-      tumu=(data||[]).slice().sort((a,b)=>(b.toplam||0)-(a.toplam||0));
-      try{ const {data:t}=await sb.from('takip_idareler').select('idare_ad'); (t||[]).forEach(r=>takipli.add(r.idare_ad)); }catch(_){}
+      let ham=null;
+      try{
+        const paket=JSON.parse(sessionStorage.getItem(CACHE_KEY)||'null');
+        if(paket&&paket.t&&(Date.now()-paket.t)<CACHE_TTL&&Array.isArray(paket.d)) ham=paket.d;
+      }catch(_){ /* bozuk önbellek → normal çekim */ }
+      if(!ham){
+        const {data,error}=await sb.rpc('idare_dizin_json',{},{get:true});
+        if(error) throw error;
+        ham=Array.isArray(data)?data:[];
+        try{ sessionStorage.setItem(CACHE_KEY,JSON.stringify({t:Date.now(),d:ham})); }catch(_){ /* kota */ }
+      }
+      tumu=ham.map(r=>({
+        idare:(r&&r[0])||'',
+        toplam:Number(r&&r[1])||0,
+        aktif:Number(r&&r[2])||0,
+        il:((r&&r[3])||'').trim()
+      })).filter(r=>r.idare);
+      // takip_idareler kolonu `idare_ad` (idare DEĞİL); supabase-js hata FIRLATMAZ
+      const {data:t,error:te}=await sb.from('takip_idareler').select('idare_ad');
+      if(te) console.warn('takip listesi okunamadı:',te.message||te);
+      else (t||[]).forEach(r=>takipli.add(r.idare_ad));
+      ilSecenekleriYaz();
       ciz();
     }catch(e){ tb.innerHTML=`<tr><td colspan="6" class="v1-bos">Liste yüklenemedi. ${esc(e.message||'')}</td></tr>`; }
   }
 
+  // ── Filtre / sıralama (tamamı client'ta — RPC bir kez çağrılır) ──────
+  const tabanListe=()=>mod==='takip'?tumu.filter(r=>takipli.has(r.idare)):tumu;
+
+  function ilSecenekleriYaz(){
+    const sel=document.getElementById('v1-il');
+    const taban=tabanListe(), sayac=new Map();
+    taban.forEach(r=>{ const k=r.il||IL_YOK; sayac.set(k,(sayac.get(k)||0)+1); });
+    const anahtar=[...sayac.keys()].filter(k=>k!==IL_YOK).sort(KRS.compare);
+    if(sayac.has(IL_YOK)) anahtar.push(IL_YOK);
+    // Seçili il bu sekmede yoksa bile seçenekte kalsın (kullanıcı filtreyi kaybetmesin)
+    if(ilSecim&&!sayac.has(ilSecim)){ anahtar.unshift(ilSecim); sayac.set(ilSecim,0); }
+    sel.innerHTML=`<option value="">Tüm İller (${num(taban.length)})</option>`+
+      anahtar.map(k=>`<option value="${esc(k)}">${esc(k===IL_YOK?'Belirsiz':k)} (${num(sayac.get(k))})</option>`).join('');
+    sel.value=ilSecim;
+    if(sel.value!==ilSecim){ ilSecim=''; sel.value=''; }
+  }
+
+  function suz(taban){
+    const qf=trFold((document.getElementById('v1-ara-liste').value||'').trim());
+    let l=taban;
+    if(ilSecim) l=l.filter(r=>(r.il||IL_YOK)===ilSecim);
+    if(qf) l=l.filter(r=>trFold(r.idare).includes(qf));
+    const k=yon==='asc'?1:-1;
+    l=l.slice().sort((a,b)=>{
+      let c;
+      if(sirala==='ad') c=KRS.compare(a.idare,b.idare);
+      else if(sirala==='il'){
+        if(!a.il&&!b.il) c=0;
+        else if(!a.il) return 1;          // "Belirsiz" yönden bağımsız olarak sonda
+        else if(!b.il) return -1;
+        else c=KRS.compare(a.il,b.il);
+      }
+      else c=a[sirala]-b[sirala];
+      if(c) return k*c;
+      return (b.toplam-a.toplam)||KRS.compare(a.idare,b.idare);
+    });
+    return l;
+  }
+
+  function baslikOkYaz(){
+    SIRA_ANAHTAR.forEach(k=>{
+      const o=document.getElementById('v1-ok-'+k); if(!o) return;
+      const secili=(k===sirala);
+      o.textContent=secili?(yon==='asc'?'▲':'▼'):'⇅';
+      o.style.opacity=secili?'1':'.3';
+      const th=o.parentElement;
+      if(th) th.setAttribute('aria-sort',secili?(yon==='asc'?'ascending':'descending'):'none');
+    });
+  }
+
   function ciz(){
+    // Misafirde çizme: başlık tıklaması / arama kutusu kilit mesajını "Sonuç
+    // bulunamadı" ile ezip giriş çağrısını yok ediyordu (misafir dalı korunur).
+    if(!uyeMi) return;
     const tb=document.getElementById('v1-tbody');
-    const q=(document.getElementById('v1-ara-liste').value||'').toLocaleLowerCase('tr');
-    let liste=tumu;
-    if(mod==='takip') liste=liste.filter(r=>takipli.has(r.idare));
-    if(q) liste=liste.filter(r=>(r.idare||'').toLocaleLowerCase('tr').includes(q));
+    const taban=tabanListe(), liste=suz(taban);
     const toplamAdet=liste.length;
-    const max=Math.max(1,...liste.slice(0,200).map(r=>r.toplam||0));
+    const sonSayfa=Math.max(1,Math.ceil(toplamAdet/BOY));
+    if(sayfa>sonSayfa) sayfa=sonSayfa;
+    if(sayfa<1) sayfa=1;
+    baslikOkYaz();
+    document.getElementById('v1-sifirla').style.display=(ilSecim||document.getElementById('v1-ara-liste').value.trim())?'':'none';
+    // Bar ölçeği o anki LİSTENİN maksimumuna göre (il filtresinde barlar minicik kalmasın)
+    let max=1; for(const r of liste) if(r.toplam>max) max=r.toplam;
     const bas=(sayfa-1)*BOY; const dilim=liste.slice(bas,bas+BOY);
-    document.getElementById('v1-sayi').innerHTML=`Toplam <strong>${num(toplamAdet)}</strong> kurum · sayfa ${sayfa}`;
-    if(!dilim.length){ tb.innerHTML=`<tr><td colspan="6" class="v1-bos">${mod==='takip'?'Henüz kurum takip etmiyorsunuz.':'Sonuç bulunamadı.'}</td></tr>`; document.getElementById('v1-sayfalama').innerHTML=''; return; }
+    let bilgi=`Toplam <strong>${num(toplamAdet)}</strong> kurum`;
+    if(toplamAdet!==taban.length) bilgi+=` <span style="color:var(--v1-muted);">(${num(taban.length)} kurum içinden)</span>`;
+    bilgi+=` · sayfa ${num(sayfa)}/${num(sonSayfa)}`;
+    document.getElementById('v1-sayi').innerHTML=bilgi;
+    if(!dilim.length){ tb.innerHTML=`<tr><td colspan="6" class="v1-bos">${mod==='takip'&&!taban.length?'Henüz kurum takip etmiyorsunuz.':'Sonuç bulunamadı.'}</td></tr>`; document.getElementById('v1-sayfalama').innerHTML=''; return; }
     tb.innerHTML=dilim.map((r,i)=>{
       const w=Math.max(3,Math.round((r.toplam||0)/max*100));
       const t=takipli.has(r.idare);
       return `<tr>
         <td style="color:var(--v1-muted);font-weight:700;">${bas+i+1}</td>
         <td><a class="v1-t-ad" href="v1-kurum-analiz?kurum=${encodeURIComponent(r.idare)}">${esc(r.idare)}</a></td>
-        <td style="font-size:13px;">${esc(r.en_yakin_il||'—')}</td>
+        <td style="font-size:13px;">${esc(r.il||'—')}</td>
         <td><div style="display:flex;align-items:center;gap:10px;">
           <span class="v1-bar-wrap"><span class="v1-bar" style="width:${w}%"></span></span>
           <span style="font-weight:700;color:var(--v1-lacivert);white-space:nowrap;">${num(r.toplam)}</span></div></td>
@@ -124,7 +255,6 @@
             font-size:12.5px;font-weight:700;cursor:pointer;white-space:nowrap;">${t?'✓ Takipte':'+ Takip Et'}</button></td></tr>`;
     }).join('');
     tb.querySelectorAll('.v1-tk').forEach(b=>b.addEventListener('click',()=>takipToggle(b.dataset.i)));
-    const sonSayfa=Math.max(1,Math.ceil(toplamAdet/BOY));
     const el=document.getElementById('v1-sayfalama');
     const gor=[]; const b1=Math.max(1,sayfa-2), b2=Math.min(sonSayfa,b1+4);
     for(let i=b1;i<=b2;i++) gor.push(i);
@@ -149,7 +279,7 @@
         const {error}=await sb.from('takip_idareler').upsert({kullanici_id:uid,idare_ad:idare},{onConflict:'kullanici_id,idare_ad'});
         if(error) throw error; takipli.add(idare);
       }
-      ciz();
+      ilSecenekleriYaz(); ciz();
     }catch(e){ alert('İşlem başarısız: '+(e.message||'')); }
   }
 
@@ -159,13 +289,46 @@
         v1PaketYaz(['standart','kurumsal'].includes(k?.plan)?'Pro':'Temel'); } else v1PaketYaz('Misafir'); }
     }catch(_){}
     if(P.get('ara')) document.getElementById('v1-ara-liste').value=P.get('ara');
-    document.getElementById('v1-ara-liste').addEventListener('input',()=>{sayfa=1;ciz();});
+    urlOku();
+
+    let araZ=null;
+    document.getElementById('v1-ara-liste').addEventListener('input',()=>{
+      clearTimeout(araZ);
+      araZ=setTimeout(()=>{ sayfa=1; urlYaz(); ciz(); },150);
+    });
+
+    // İl filtresi — sayfalama 1'e döner, seçili sıralama KORUNUR
+    document.getElementById('v1-il').addEventListener('change',e=>{
+      ilSecim=e.target.value; sayfa=1; urlYaz(); ciz();
+    });
+
+    document.getElementById('v1-sifirla').addEventListener('click',()=>{
+      ilSecim=''; document.getElementById('v1-ara-liste').value=''; sayfa=1;
+      document.getElementById('v1-il').value=''; urlYaz(); ciz();
+    });
+
+    // Tıklanabilir sütun başlıkları — aynı sütuna ikinci tık yönü çevirir
+    document.querySelectorAll('#v1-tablo th.v1-sr').forEach(th=>{
+      th.setAttribute('role','button'); th.tabIndex=0;
+      const tetik=()=>{
+        const k=th.dataset.k; if(!SIRA_ANAHTAR.includes(k)) return;
+        if(sirala===k) yon=(yon==='asc'?'desc':'asc');
+        else { sirala=k; yon=YON_VARSAYILAN[k]; }
+        sayfa=1; urlYaz(); ciz();
+      };
+      th.addEventListener('click',tetik);
+      th.addEventListener('keydown',e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); tetik(); } });
+    });
+
     const sek=(id,m,baslik)=>document.getElementById(id).addEventListener('click',()=>{
       mod=m; sayfa=1;
       ['s-tum','s-takip'].forEach(x=>document.getElementById(x).classList.toggle('aktif',x===id));
-      document.getElementById('v1-liste-baslik').textContent=baslik; ciz();
+      document.getElementById('v1-liste-baslik').textContent=baslik;
+      if(!uyeMi) return;                 // misafir kilidi ekranda kalsın
+      ilSecenekleriYaz(); ciz();
     });
     sek('s-tum','tum','Tüm Kurumlar'); sek('s-takip','takip','Takip Ettiğim Kurumlar');
+    baslikOkYaz();
     yukle();
   })();
 })();
