@@ -133,8 +133,31 @@
     kirintiEl = document.createElement('div');
     kirintiEl.className = 'v1-kirinti';
     const parcalar = kirinti.split('>').map(s => s.trim()).filter(Boolean);
-    kirintiEl.innerHTML = '<a href="v1-benim-sayfam">🏠</a>' +
-      parcalar.map((p, i) => ` <span>›</span> <span${i === parcalar.length - 1 ? ' class="son"' : ''}>${p}</span>`).join('');
+    /**
+     * ARA SEGMENTLER TIKLANABİLİR: "Analiz › Harita"da Analiz'e basınca üst sayfaya dönülür.
+     * Hedef MENU dizisindeki ad↔href eşlemesinden bulunur; menüde karşılığı olmayan başlıklar
+     * (Hesabım, Araçlar, Kamu…) KIRINTI_EK'ten çözülür. İkisinde de yoksa düz metin kalır —
+     * kırık link üretmeyiz. SON segment her zaman düz metin (zaten bulunulan sayfa).
+     */
+    const KIRINTI_EK = {
+      'hesabım': 'v1-benim-sayfam', 'ihaleglobal': 'v1-benim-sayfam', 'bana özel': 'v1-benim-sayfam',
+      'global': 'v1-global', 'kamu': 'v1-ihaleler', 'araçlar': 'v1-ihaleler',
+      'e-satınalma': 'v1-esatinalma', 'firmalar': 'v1-firmalar', 'kurumlar': 'v1-kurumlar',
+    };
+    const hedefBul = (ad) => {
+      const k = ad.toLocaleLowerCase('tr');
+      const m = MENU.find(x => x.ad.toLocaleLowerCase('tr') === k);
+      return m ? m.href : (KIRINTI_EK[k] || null);
+    };
+    kirintiEl.innerHTML = '<a href="v1-benim-sayfam" title="Ana sayfa">🏠</a>' +
+      parcalar.map((p, i) => {
+        const son = i === parcalar.length - 1;
+        const hedef = son ? null : hedefBul(p);
+        const govde = hedef
+          ? `<a href="${hedef}">${p}</a>`
+          : `<span${son ? ' class="son"' : ''}>${p}</span>`;
+        return ` <span>›</span> ${govde}`;
+      }).join('');
   }
 
   // ── Monte et ───────────────────────────────────────────────────────────
