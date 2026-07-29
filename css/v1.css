@@ -33,8 +33,15 @@
   margin: 0; background: var(--v1-zemin); color: var(--v1-metin);
   font-family: var(--v1-font); font-size: 14px; line-height: 1.5;
 }
-.v1 a { color: var(--v1-mavi); text-decoration: none; }
-.v1 a:hover { text-decoration: underline; }
+/* ⚠️ BUTON GÖRÜNÜMLÜ <a>'LAR HARİÇ TUTULUR — yoksa metin GÖRÜNMEZ olur.
+   Eski hâli `.v1 a { color: var(--v1-mavi) }` idi: özgüllüğü (0,1,1), sayfa içindeki
+   `.v1-rapor-btn { color:#fff }` ise (0,1,0) → link kuralı kazanıp KOYU ZEMİNE MAVİ YAZI
+   yazıyordu ("Yeni Rapor" butonu okunmuyordu). 13 buton sınıfı aynı durumdaydı:
+   -btn / -cta ekiyle biten her sınıf artık kendi rengini korur.
+   Yeni bir buton sınıfı eklerken adında "-btn" ya da "-cta" geçsin, kural kendiliğinden uysun. */
+.v1 a { text-decoration: none; }
+.v1 a:not([class*="-btn"]):not([class*="-cta"]) { color: var(--v1-mavi); }
+.v1 a:not([class*="-btn"]):not([class*="-cta"]):hover { text-decoration: underline; }
 .v1 h1,.v1 h2,.v1 h3,.v1 h4 { margin: 0; color: var(--v1-lacivert); font-weight: 700; }
 
 /* ── Kabuk: sol ray + ana alan ─────────────────────────────────────────── */
