@@ -70,11 +70,16 @@ BEGIN
     RAISE EXCEPTION 'ABORT: dt_ihale_token/dt_idare_token bulunamadi (bulunan: %). migration_dt_kazanan.sql uygulanmis mi?', token_adet;
   END IF;
 
+  -- ⚠️ 29 Tem — dt_ilanlar EKLENDİ: migration_dt_detay.sql ile gelen bu jsonb kolon
+  -- IlanBilgileri bloğunun tamamını (her ilan için EncIlanId, 64 haneli EKAP erişim
+  -- hash'i) taşır → dt_ihale_token ile AYNI SINIF: saf altyapı, frontend'in ihtiyacı
+  -- yok. Bu liste KARA LİSTE olduğu için (tüm kolonlar EKSİ şunlar) buraya eklenmezse
+  -- dosya bir dahaki koşuşta dt_ilanlar'ı authenticated'a SESSİZCE AÇARDI.
   SELECT string_agg(quote_ident(column_name), ', ')
     INTO kolonlar
   FROM information_schema.columns
   WHERE table_schema = 'public' AND table_name = 'dogrudan_temin_ilanlari'
-    AND column_name NOT IN ('dt_ihale_token', 'dt_idare_token');
+    AND column_name NOT IN ('dt_ihale_token', 'dt_idare_token', 'dt_ilanlar');
 
   IF kolonlar IS NULL THEN
     RAISE EXCEPTION 'ABORT: kolon listesi bos cikti — tablo adi yanlis olabilir';
@@ -91,10 +96,10 @@ BEGIN
   EXECUTE 'REVOKE SELECT ON public.dogrudan_temin_ilanlari FROM authenticated';
   EXECUTE format('GRANT SELECT (%s) ON public.dogrudan_temin_ilanlari TO authenticated', kolonlar);
 
-  RAISE NOTICE 'authenticated icin % kolon GRANT edildi (2 token haric)',
+  RAISE NOTICE 'authenticated icin % kolon GRANT edildi (2 token + dt_ilanlar haric)',
     (SELECT count(*) FROM information_schema.columns
       WHERE table_schema='public' AND table_name='dogrudan_temin_ilanlari'
-        AND column_name NOT IN ('dt_ihale_token','dt_idare_token'));
+        AND column_name NOT IN ('dt_ihale_token','dt_idare_token','dt_ilanlar'));
 END $$;
 
 -- ── DOĞRULAMA: migration kendi kendini denetler, yanlışsa COMMIT ETMEZ ───────

@@ -32,6 +32,20 @@ Akış (30 Haz - 1 Tem 2026 testleriyle bulunan doğru yön):
      sozlesmeBilgiList[0] + ilanList'teki "SONUÇ İLANI" HTML'inden teklif
      sayılarını regex ile çıkar.
   4. ihale_sonuclari'na upsert et (ilan_id anahtarıyla).
+  5. (29 Tem) AYNI detay yanıtındaki `ihaleBilgi` / `idare` / ihtiyaç-kalemi alanlarını
+     `ilanlar` satırına da yaz — bkz. aşağıdaki not.
+
+── 29 TEM: AYNI YANITTAN ATILAN ALANLAR ARTIK YAZILIYOR ────────────────────────────────
+Denetim: bu script detay yanıtından YALNIZ `sozlesmeBilgiList` + `ilanList` okuyup gerisini
+atıyordu. Atılanlar: ihaleBilgi (okas, isinYapilacagiYer, ihaleYeri, yasa kapsamı, iptal
+tarihi/nedeni, ihale/yeterlik/ilk-teklif tarihleri), idare bloğu (telefon, faks, üst idare,
+en üst idare, il/ilçe, idareId) ve ihtiyaç kalemi listesi. Ölçüm: ilanlar.okas %0,62 dolu,
+kalem listesi %0,41 — veri ZATEN elimizdeydi. `ekap_detay_alanlar` modülü onu `ilanlar`a
+yazıyor; EK EKAP İSTEĞİ YOK (eşleşen ihale başına yalnız 1 ek PATCH).
+⚠️ `iptal_tarihi/iptal_nedeni` KOLONLARI dolar ama `durum` alanına 'iptal' YAZILMAZ —
+arayüz 'iptal' durumunu beklemiyor (bkz. ekap_detay_alanlar başlığı).
+Geriye uyum: migration uygulanmamışsa yeni kolonlar sessizce düşürülür, sonuç yazımı
+(bu scriptin ASIL işi) hiçbir koşulda etkilenmez.
 
 Kullanım:
   python ekap_sonuc_backfill.py --max-pages 50              # 50x100=5000 kayıt tara
@@ -44,6 +58,7 @@ Env: SUPABASE_URL, SUPABASE_SERVICE_KEY (backend/.env)
 
 import argparse
 import asyncio
+import html as html_mod
 import json
 import os
 import re
@@ -52,7 +67,7 @@ import sys
 import time
 import unicodedata
 import uuid
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 
 import base64
 import httpx
@@ -66,6 +81,18 @@ load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), ".env"))
 from proxy_config import rastgele_proxy_url  # KALSIN: ilan_metni_backfill.py:45 bunu
                                              # bu modülden import ediyor, silinirse o script açılışta ölür
 from proxy_havuz import async_havuz_al, ekap_ssl_baglami
+
+# Aynı detay yanıtından ihaleBilgi/idare/kalem alanlarını çıkarıp `ilanlar`a yazan modül.
+# ⚠️ KORUMALI IMPORT: bu script GÜNLERCE koşuyor ve o sırada `git pull` yapılabiliyor.
+# Yeni dosya henüz gelmemişse (yarım pull) sert import scripti AÇILIŞTA öldürürdü —
+# oysa asıl işi (sonuç yazma) bu modüle hiç bağımlı değil. Yoksa zenginleştirme kapanır.
+try:
+    from ekap_detay_alanlar import (detay_ilan_alanlari, ilan_alanlarini_yaz,
+                                    kolonlari_sapta)
+except Exception as _e:                      # ImportError + modülün kendi açılış hataları
+    detay_ilan_alanlari = ilan_alanlarini_yaz = kolonlari_sapta = None
+    print(f"⚠ ekap_detay_alanlar yüklenemedi ({type(_e).__name__}: {_e}) — "
+          "ilan alan zenginleştirmesi KAPALI, sonuç yazımı normal sürüyor.")
 
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "")
 SUPABASE_KEY = os.environ.get("SUPABASE_SERVICE_KEY", "")
@@ -267,6 +294,314 @@ def html_yaklasik_maliyet_parse(html: str) -> int | None:
     return bedel_parse(m2.group(1))
 
 
+# ══════════════════════════════════════════════════════════════════════════════
+# SONUÇ İLANI HTML — TAM AYRIŞTIRMA (29 Tem 2026)
+#
+# NE DEĞİŞTİ: Bu HTML her sonuç kaydında ZATEN çekiliyordu; içinden yalnız 4 regex
+# okunup gerisi atılıyordu. Aşağıdaki ayrıştırıcı aynı HTML'den 20+ alan çıkarır —
+# EK EKAP İSTEĞİ YOK, ek maliyet YOK.
+#
+# ⚠ ESKİ REGEX'LER SESSİZCE ÇALIŞMIYORDU: html_teklif_sayisi_parse'ın
+# 'Toplam Teklif Sayısı[^0-9]{0,20}?(\d+)' kalıbı etiketle değer arasındaki ~54
+# karakterlik `</td><td valign="top">:</td><td valign="top">` işaretlemesine takılıyor.
+# 29 Tem'de 5 gerçek sonuç ilanında ölçüldü: 3/3 alan (toplam/geçerli/katılımcı) None.
+# `katilimci_sayisi`nın 2,5M satırda tamamen boş olmasının sebebi budur.
+#
+# ÇÖZÜM: nokta atışı regex yerine <tr>/<td> yapısını okuyup {(bölüm, etiket): değer}
+# sözlüğü kur. Kırılganlığın üç kaynağı da böyle ortadan kalkar:
+#   1) etiket–değer arasındaki keyfi uzunlukta işaretleme,
+#   2) HARF SIRASI DEĞİŞKEN — pazarlık gerekçesi olan ilanda tüm harfler kayar
+#      (adres kimi ilanda 'e)', kimi ilanda 'f)'); harfe asla güvenilmez,
+#   3) AYNI ETİKET İKİ KEZ — 'Süresi' hem 2) İhale konusu işin süresi ('120',
+#      '4 aydır') hem 4) Sözleşmenin süresi ('03.08.2026 - 01.12.2026') olarak geçer;
+#      bölüm numarası olmadan yanlış değer okunur.
+# ══════════════════════════════════════════════════════════════════════════════
+
+# 81 il — yüklenici adresinden il türetirken doğrulama listesi (uydurma il yazmamak için).
+TR_ILLER = frozenset({
+    "ADANA", "ADIYAMAN", "AFYONKARAHİSAR", "AĞRI", "AKSARAY", "AMASYA", "ANKARA", "ANTALYA",
+    "ARDAHAN", "ARTVİN", "AYDIN", "BALIKESİR", "BARTIN", "BATMAN", "BAYBURT", "BİLECİK",
+    "BİNGÖL", "BİTLİS", "BOLU", "BURDUR", "BURSA", "ÇANAKKALE", "ÇANKIRI", "ÇORUM", "DENİZLİ",
+    "DİYARBAKIR", "DÜZCE", "EDİRNE", "ELAZIĞ", "ERZİNCAN", "ERZURUM", "ESKİŞEHİR", "GAZİANTEP",
+    "GİRESUN", "GÜMÜŞHANE", "HAKKARİ", "HATAY", "IĞDIR", "ISPARTA", "İSTANBUL", "İZMİR",
+    "KAHRAMANMARAŞ", "KARABÜK", "KARAMAN", "KARS", "KASTAMONU", "KAYSERİ", "KIRIKKALE",
+    "KIRKLARELİ", "KIRŞEHİR", "KİLİS", "KOCAELİ", "KONYA", "KÜTAHYA", "MALATYA", "MANİSA",
+    "MARDİN", "MERSİN", "MUĞLA", "MUŞ", "NEVŞEHİR", "NİĞDE", "ORDU", "OSMANİYE", "RİZE",
+    "SAKARYA", "SAMSUN", "SİİRT", "SİNOP", "SİVAS", "ŞANLIURFA", "ŞIRNAK", "TEKİRDAĞ", "TOKAT",
+    "TRABZON", "TUNCELİ", "UŞAK", "VAN", "YALOVA", "YOZGAT", "ZONGULDAK",
+})
+
+_SATIR_RE    = re.compile(r"<tr\b[^>]*>(.*?)</tr>", re.IGNORECASE | re.DOTALL)
+_HUCRE_RE    = re.compile(r"<td\b[^>]*>(.*?)</td>", re.IGNORECASE | re.DOTALL)
+_ILAN_BAS_RE = re.compile(r"<center[^>]*>\s*<b>\s*(.*?)\s*</b>\s*</center>", re.IGNORECASE | re.DOTALL)
+_HARF_RE     = re.compile(r"^\(?[a-zçğıöşü]\)\s*", re.IGNORECASE)
+_BOLUM_NO_RE = re.compile(r"^\s*(\d+)\s*[-.)]")
+# '03.08.2026 - 01.12.2026' · tire/uzun tire/'ile' ayracı · gg/aa/yyyy da kabul
+_ARALIK_RE   = re.compile(r"(\d{1,2}[./]\d{1,2}[./]\d{4})\s*(?:-|–|—|ile)\s*(\d{1,2}[./]\d{1,2}[./]\d{4})")
+_SURE_RE     = re.compile(r"(\d+)\s*(takvim\s*g[üu]n\w*|g[üu]n\w*|ay\w*|y[ıi]l\w*|hafta\w*)?", re.IGNORECASE)
+_MADDE_RE    = re.compile(r"4734\s*/\s*(\d{1,2})\s*-\s*([a-zçğıöşü])", re.IGNORECASE)   # '4734 / 3-g'
+_MD_RE       = re.compile(r"\bMD\.?\s*(\d{1,2})\s*[-/ ]?\s*([A-ZÇĞİÖŞÜa-zçğıöşü])\b")   # 'Pazarlık (MD 21 C)'
+_TR_HARF     = str.maketrans("çğıöşüâîû", "cgiosuaiu")
+
+
+def _duz_metin(s: str) -> str:
+    """Bir <td> içeriğini düz metne indirger (etiketler, yorum artıkları, &amp; vb.)."""
+    if not s:
+        return ""
+    s = re.sub(r"<!--.*?-->", " ", s, flags=re.DOTALL)
+    s = re.sub(r"<[^>]+>", " ", s)
+    # EKAP şablonunda kimi hücrede eşi olmayan yorum işareti kalıyor ('22.177.001,68 TRY -->')
+    s = s.replace("-->", " ").replace("<!--", " ")
+    return re.sub(r"\s+", " ", html_mod.unescape(s)).strip()
+
+
+def _anahtar(s: str) -> str:
+    """Etiketi eşleştirme anahtarına indirger: TR-duyarlı küçük harf + yalnız harf/rakam."""
+    s = (s or "").replace("İ", "i").replace("I", "ı").lower()
+    return re.sub(r"[^0-9a-zçğıöşü]+", "", s)
+
+
+def _yalin(s: str) -> str:
+    """_anahtar + aksan sadeleştirme ('SONUÇ İLANI' → 'sonucilani'). Başlık sınıflaması için."""
+    return _anahtar(s).translate(_TR_HARF)
+
+
+def sonuc_ilan_tablosu(html: str) -> dict:
+    """
+    SONUÇ İLANI tablosunu {(bölüm_no, etiket_anahtarı): değer} sözlüğüne çevirir.
+
+    Bölümler ilanda 'colspan' ile tek hücreli başlık satırı olarak geçer:
+      1- İhalenin · 2- İhale konusu {yapım işinin|hizmetin|malın} · 3- Teklifler · 4- Sözleşmenin
+    Bölüm başlığının METNİ ihale türüne göre değişir, NUMARASI değişmez → numara kullanılır.
+    Aynı etiket tekrar ederse İLKİ tutulur (setdefault).
+    """
+    out = {}
+    if not html:
+        return out
+    fixed = mojibake_duzelt(html) or html
+    bolum = 0
+    for satir in _SATIR_RE.findall(fixed):
+        hucreler = _HUCRE_RE.findall(satir)
+        if not hucreler:
+            continue
+        if len(hucreler) == 1:                       # bölüm başlığı satırı
+            m = _BOLUM_NO_RE.match(_duz_metin(hucreler[0]))
+            if m:
+                bolum = int(m.group(1))
+            continue
+        if len(hucreler) < 3:                        # etiket : değer düzeni değil
+            continue
+        etiket = _HARF_RE.sub("", _duz_metin(hucreler[0])).strip()
+        deger = _duz_metin(hucreler[-1])
+        if etiket:
+            out.setdefault((bolum, _anahtar(etiket)), deger)
+    return out
+
+
+def _al(tablo: dict, bolum: int, *etiketler, esnek: bool = True):
+    """
+    Bölüm içinde etiketi arar: önce birebir, sonra (esnek ise) 'anahtar içerir' eşleşmesi.
+
+    ESNEK ŞART: aynı alan ihale türüne göre farklı adlandırılıyor —
+      'Yapılacağı yer' (yapım/hizmet) ↔ 'Yapılacağı/teslim edileceği yer' (mal),
+      'Yerli istekli lehine…'          ↔ 'Yerli malı teklif eden istekli lehine…'.
+    esnek=False YALNIZ yüklenici adı için: 'Yüklenici' kısa anahtarı esnek modda
+    'Yüklenicinin uyruğu' hücresine düşer ve firma adı yerine 'Türkiye' yazardı.
+    """
+    anahtarlar = [_anahtar(e) for e in etiketler]
+    for a in anahtarlar:
+        v = tablo.get((bolum, a))
+        if v:
+            return v
+    if not esnek:
+        return None
+    for a in anahtarlar:
+        for (b, k), v in tablo.items():
+            if b == bolum and v and a and a in k:
+                return v
+    return None
+
+
+def _sayi(s):
+    if not s:
+        return None
+    m = re.search(r"\d+", s.replace(".", ""))
+    return int(m.group(0)) if m else None
+
+
+def _tarih_araligi(s):
+    """'03.08.2026 - 01.12.2026' → (başlangıç ISO, bitiş ISO); yoksa (None, None)."""
+    if not s:
+        return (None, None)
+    m = _ARALIK_RE.search(s)
+    if not m:
+        return (None, None)
+    return (tarih_iso(m.group(1).replace("/", ".")), tarih_iso(m.group(2).replace("/", ".")))
+
+
+def _gun_farki(bas_iso, bitis_iso):
+    try:
+        b = date.fromisoformat(bas_iso[:10])
+        s = date.fromisoformat(bitis_iso[:10])
+    except (TypeError, ValueError, IndexError):
+        return None
+    fark = (s - b).days
+    return fark if 0 < fark <= 40000 else None       # negatif/absürt süre = çöp, yazma
+
+
+def _sure_gun(s):
+    """
+    '120' → 120 · '150 Takvim Günü' → 150 · '4 aydır' → 120 · '1 yıl' → 365 ·
+    '06.07.2026 - 20.08.2026' → 45.
+
+    ⚠ TARİH ARALIĞI ÖNCE sınanır: bazı hizmet ilanlarında 2) Süresi alanı gün sayısı
+    değil tarih aralığı taşıyor; sayı arayan kalıp '06.07.2026'daki 6'yı süre sanıyordu.
+    """
+    if not s:
+        return None
+    bas, bit = _tarih_araligi(s)
+    if bas and bit:
+        return _gun_farki(bas, bit)
+    m = _SURE_RE.search(s)
+    if not m or not m.group(1):
+        return None
+    n = int(m.group(1))
+    birim = _anahtar(m.group(2) or "")
+    if birim.startswith("ay"):
+        n *= 30                                       # YAKLAŞIK — ham metin ham_json'da durur
+    elif birim.startswith(("yıl", "yil")):
+        n *= 365
+    elif birim.startswith("hafta"):
+        n *= 7
+    return n if 0 < n <= 40000 else None
+
+
+def _il_ayikla(adres):
+    """
+    Yüklenici adresinden il. EKAP adresi 'ILÇE/İL' ile bitiyor ('… ŞİLE/İSTANBUL').
+    Sondan başlayıp '/' içeren ilk parçayı dener; 81 il listesinde YOKSA kabul etmez
+    ('No:10/7' gibi parçalar böyle elenir). Bulamazsa adres metninde tam sözcük arar.
+    """
+    if not adres:
+        return None
+    for parca in reversed(re.split(r"[\s,]+", adres)):
+        if "/" in parca:
+            aday = parca.rsplit("/", 1)[-1].strip(" .,-").upper()
+            if aday in TR_ILLER:
+                return aday
+    yukari = adres.upper()
+    for il in sorted(TR_ILLER, key=len, reverse=True):
+        if re.search(r"(?<![0-9A-ZÇĞİÖŞÜ])" + re.escape(il) + r"(?![0-9A-ZÇĞİÖŞÜ])", yukari):
+            return il
+    return None
+
+
+def _madde_ayikla(usul):
+    """Usul metninden 4734 madde referansı: '4734 / 3-g' → '3-g' · 'Pazarlık (MD 21 C)' → '21-c'."""
+    if not usul:
+        return None
+    m = _MADDE_RE.search(usul) or _MD_RE.search(usul)
+    return f"{m.group(1)}-{m.group(2).lower()}" if m else None
+
+
+def _evet_hayir(s):
+    if not s:
+        return None
+    a = _anahtar(s)
+    if a.startswith(("uygulanmamış", "uygulanmamis", "hayır", "hayir", "yok")):
+        return False
+    if a.startswith(("uygulanmış", "uygulanmis", "evet", "var")):
+        return True
+    return None
+
+
+SONUC_HTML_ALANLARI = (
+    "sonuc_tur", "ihale_usulu", "yasa_madde_kodu", "usul_gerekce", "ihale_turu",
+    "ihale_tarihi", "yaklasik_maliyet", "isin_yeri", "is_suresi_gun",
+    "dokuman_indiren_sayisi", "toplam_teklif", "gecerli_teklif", "yerli_fiyat_avantaji",
+    "sozlesme_tarihi", "sozlesme_bedeli", "is_baslama_tarihi", "is_bitis_tarihi",
+    "yuklenici", "yuklenici_uyruk", "yuklenici_adres", "yuklenici_il", "ikn",
+)
+
+
+def ilan_turu_ayikla(html: str):
+    """İlan HTML'inin ilk <center><b>…</b></center> başlığı → 'sonuc' | 'iptal' | 'duzeltme' | None."""
+    mb = _ILAN_BAS_RE.search(mojibake_duzelt(html) or html or "")
+    if not mb:
+        return None
+    b = _yalin(_duz_metin(mb.group(1)))
+    if "iptal" in b:
+        return "iptal"
+    if "duzeltme" in b:
+        return "duzeltme"
+    if "sonuc" in b:
+        return "sonuc"
+    return None
+
+
+def html_sonuc_detay_parse(html: str) -> dict:
+    """
+    SONUÇ İLANI HTML'inden yapılandırılmış alanlar. Alan bulunamazsa None — UYDURMA YOK.
+
+    ⚠ BAŞLIK KAPISI: sonuc_ilan_html_bul() sonuç ilanı bulamazsa ilanList'in SON girdisine
+    düşüyor; o girdi çoğu zaman normal İHALE İLANI'dır ve tablo düzeni bambaşkadır.
+    Onu ayrıştırmak 'ihale_turu' alanına ihale konusu paragrafını yazıyordu (5 örnekte
+    3 kez). Bu yüzden başlık 'SONUÇ/İPTAL İLANI' değilse HİÇBİR ŞEY döndürmüyoruz.
+    """
+    out = dict.fromkeys(SONUC_HTML_ALANLARI)
+    tur = ilan_turu_ayikla(html)
+    if tur not in ("sonuc", "iptal"):
+        return out
+    t = sonuc_ilan_tablosu(html)
+    if not t:
+        return out
+    out["sonuc_tur"] = tur
+    out["ikn"] = t.get((0, _anahtar("İhale kayıt numarası")))
+
+    # 1- İhalenin
+    out["ihale_tarihi"] = tarih_iso(_al(t, 1, "Tarihi"))
+    out["ihale_turu"] = _al(t, 1, "Türü")
+    out["ihale_usulu"] = _al(t, 1, "Usulü")
+    # Kanonik kanun maddesi kodu ('3-g', '21-c'). Kolon adı DT tarafıyla ORTAK:
+    # dogrudan_temin_ilanlari.yasa_madde_kodu ('22-d') ile aynı anlam/aynı değer uzayı
+    # (4734 sayılı Kanun'un maddesi) → tek ad, iki tabloda birlikte sorgulanabilsin.
+    out["yasa_madde_kodu"] = _madde_ayikla(out["ihale_usulu"])
+    out["usul_gerekce"] = _al(t, 1, "Pazarlık Usulünün Seçilme Gerekçesi", "Seçilme Gerekçesi")
+    ym = _al(t, 1, "Yaklaşık Maliyeti")
+    out["yaklasik_maliyet"] = bedel_parse(re.sub(r"[^\d.,]", "", ym)) if ym else None
+
+    # 2- İhale konusu {yapım işinin|hizmetin|malın}
+    out["isin_yeri"] = _al(t, 2, "Yapılacağı yer", "Yapılacağı", "Teslim yeri")
+    sure2 = _al(t, 2, "Süresi", "Teslim tarihi", "İşin süresi")
+    out["is_suresi_gun"] = _sure_gun(sure2)
+
+    # 3- Teklifler
+    out["dokuman_indiren_sayisi"] = _sayi(
+        _al(t, 3, "Dokümanı EKAP üzerinden e-imza kullanarak indiren sayısı",
+            "indiren sayısı", "satın alan sayısı"))
+    out["toplam_teklif"] = _sayi(_al(t, 3, "Toplam Teklif Sayısı"))
+    out["gecerli_teklif"] = _sayi(_al(t, 3, "Toplam Geçerli Teklif Sayısı"))
+    out["yerli_fiyat_avantaji"] = _evet_hayir(
+        _al(t, 3, "Yerli istekli lehine fiyat avantajı uygulaması", "fiyat avantajı uygulaması"))
+
+    # 4- Sözleşmenin
+    out["sozlesme_tarihi"] = tarih_iso(_al(t, 4, "Tarihi"))
+    sb = _al(t, 4, "Bedeli")
+    out["sozlesme_bedeli"] = bedel_parse(re.sub(r"[^\d.,]", "", sb)) if sb else None
+    bas, bit = _tarih_araligi(_al(t, 4, "Süresi"))
+    if not (bas and bit):                 # kimi ilanda tarih aralığı 2) Süresi'nde duruyor
+        bas, bit = _tarih_araligi(sure2)
+    out["is_baslama_tarihi"], out["is_bitis_tarihi"] = bas, bit
+    if out["is_suresi_gun"] is None and bas and bit:
+        out["is_suresi_gun"] = _gun_farki(bas, bit)
+    out["yuklenici"] = _al(t, 4, "Yüklenicisi", "Yüklenici", "Yüklenicinin adı",
+                           "Yüklenicinin ünvanı", esnek=False)
+    out["yuklenici_uyruk"] = _al(t, 4, "Yüklenicinin uyruğu", "uyruğu")
+    out["yuklenici_adres"] = _al(t, 4, "Yüklenicinin adresi", "adresi")
+    out["yuklenici_il"] = _il_ayikla(out["yuklenici_adres"])
+    return out
+
+
 def sonuc_ilan_html_bul(ilan_list: list) -> dict | None:
     """
     ilanList'te hem orijinal ihale ilanı hem sonuç ilanı bulunabilir (sıra garanti değil).
@@ -342,14 +677,54 @@ def sonuc_kayitlari_olustur(ilan: dict, detay: dict) -> list[dict]:
 
     sonuc_entry = sonuc_ilan_html_bul(ilan_list)
     ilan_html = sonuc_entry.get("veriHtml") if sonuc_entry else None
+
+    # SONUÇ İLANI HTML'inin TAMAMI (29 Tem) — aynı yanıt, ek istek yok.
+    hd = html_sonuc_detay_parse(ilan_html)
+    # Teklif sayıları: tablo ayrıştırması ASIL kaynak, eski regex'ler YEDEK.
+    # (Eski kalıplar gerçek HTML'de eşleşmiyordu — bkz. html_sonuc_detay_parse başlığı.
+    #  Yedek olarak bırakıldı ki farklı bir şablonda yine de bir şey yakalayabilelim.)
     teklif_info = html_teklif_sayisi_parse(ilan_html)
+    if hd.get("toplam_teklif") is not None:
+        teklif_info["toplam_teklif"] = hd["toplam_teklif"]
+    if hd.get("gecerli_teklif") is not None:
+        teklif_info["gecerli_teklif"] = hd["gecerli_teklif"]
+    if teklif_info.get("katilimci") is None:
+        teklif_info["katilimci"] = teklif_info.get("toplam_teklif")
+
     # HTML'den ayrıştırılan yaklaşık maliyet en güvenilir kaynak (sozlesmeBilgiList.yaklasikMaliyet
     # EKAP'ta gözlemlenen örneklerde 10x hatalı geliyor). Yoksa bizim ilanlar.yaklasik_maliyet_min'e düş.
-    yaklasik_html = html_yaklasik_maliyet_parse(ilan_html) \
+    yaklasik_html = hd.get("yaklasik_maliyet") or html_yaklasik_maliyet_parse(ilan_html) \
         or ilan.get("yaklasik_maliyet_min") or ilan.get("tahmini_bedel")
-    sonuc_tarihi_genel = tarih_iso(item.get("sozlesmeTarih") or item.get("karar_tarihi"))
+    sonuc_tarihi_genel = tarih_iso(item.get("sozlesmeTarih") or item.get("karar_tarihi")) \
+        or hd.get("sozlesme_tarihi")
+
+    # İHALE DÜZEYİNDE alanlar — çok kısımlı ihalede her kısma yazılabilir.
+    ihale_duzeyi = {
+        "sonuc_tur": hd.get("sonuc_tur"),
+        "ihale_usulu": hd.get("ihale_usulu"),
+        "yasa_madde_kodu": hd.get("yasa_madde_kodu"),
+        "usul_gerekce": hd.get("usul_gerekce"),
+        "isin_yeri": hd.get("isin_yeri"),
+        "ihale_tarihi": hd.get("ihale_tarihi"),
+        "dokuman_indiren_sayisi": hd.get("dokuman_indiren_sayisi"),
+        "yerli_fiyat_avantaji": hd.get("yerli_fiyat_avantaji"),
+        "ham_json": {k: v for k, v in hd.items() if v is not None} or None,
+    }
+    # SÖZLEŞME DÜZEYİNDE alanlar — tek sözleşme anlatan HTML'den geliyor. Çok kısımlı
+    # ihalede her kısma kopyalamak, lot_sayisi bug'ının (ihale-geneli değeri kısma yazmak)
+    # aynısı olurdu → YALNIZ tek kısım varsa ya da yüklenici adı o kısımla eşleşiyorsa yaz.
+    sozlesme_duzeyi = {
+        "is_baslama_tarihi": hd.get("is_baslama_tarihi"),
+        "is_bitis_tarihi": hd.get("is_bitis_tarihi"),
+        "is_suresi_gun": hd.get("is_suresi_gun"),
+        "yuklenici_adres": hd.get("yuklenici_adres"),
+        "yuklenici_il": hd.get("yuklenici_il"),
+        "yuklenici_uyruk": hd.get("yuklenici_uyruk"),
+    }
+    html_yuklenici_anahtar = _anahtar(hd.get("yuklenici") or "")
 
     kaynak_list = sozlesme_list if sozlesme_list else [{}]
+    tek_kisim = len(kaynak_list) == 1
     kayitlar = []
     for idx, sozlesme in enumerate(kaynak_list, start=1):
         # Bazı ihaleler (özellikle çok kısımlı/ithal alımlar) sözleşme bedelini yabancı para
@@ -388,7 +763,7 @@ def sonuc_kayitlari_olustur(ilan: dict, detay: dict) -> list[dict]:
         if en_dusuk is not None and en_yuksek is not None:
             ortalama = int(round((en_dusuk + en_yuksek) / 2))
 
-        kayitlar.append({
+        kayit = {
             "ilan_id": ilan["id"],
             "kisim_no": idx,
             "kazanan_firma": kazanan_firma,
@@ -409,7 +784,13 @@ def sonuc_kayitlari_olustur(ilan: dict, detay: dict) -> list[dict]:
             "yaklasik_maliyet": yaklasik,
             "katilimci_sayisi": teklif_info.get("katilimci"),
             "gecerli_teklif_sayisi": teklif_info.get("gecerli_teklif"),
-        })
+        }
+        # ── SONUÇ İLANI HTML'inden gelen genişletilmiş alanlar (29 Tem) ──────────
+        kayit.update({k: v for k, v in ihale_duzeyi.items() if v is not None})
+        if tek_kisim or (html_yuklenici_anahtar
+                         and html_yuklenici_anahtar == _anahtar(kazanan_firma or "")):
+            kayit.update({k: v for k, v in sozlesme_duzeyi.items() if v is not None})
+        kayitlar.append(kayit)
     return kayitlar
 
 
@@ -488,17 +869,114 @@ def checkpoint_yaz(skip: int):
         json.dump({"skip": skip, "guncellendi": datetime.now(timezone.utc).isoformat()}, f)
 
 
+# ── Şema-güvenli sonuç yazma (migration UYGULANMAMIŞ olabilir) ─────────────
+# GERİYE UYUM GARANTİSİ: bu backfill GÜNLERCE koşuyor ve o sırada `git pull` yapılabiliyor.
+# Kod yeni alanları göndermeye başlar ama migration_sonuc_ilan_alanlari.sql henüz koşmamış
+# olabilir; PostgREST bilinmeyen gövde anahtarında TÜM satırı reddeder (PGRST204 / 42703)
+# ve sonuç kaydı sessizce kaybolurdu. Çare, ilan_kompakt_ekle'deki desenle aynı:
+# yalnız AŞAĞIDAKİ opsiyonel alanlar düşürülüp tekrar denenir, düşen alan hatırlanır
+# (sonraki satırlar baştan onsuz gider). Çekirdek alanlar (kazanan, bedel, tarih) hiç
+# düşmez → migration uygulanmadan da eski davranış birebir sürer.
+SONUC_OPSIYONEL = {
+    # migration_sonuc_ilan_alanlari.sql ile GELEN yeni kolonlar
+    "ihale_usulu", "yasa_madde_kodu", "usul_gerekce", "isin_yeri", "ihale_tarihi",
+    "dokuman_indiren_sayisi", "yerli_fiyat_avantaji", "yuklenici_adres",
+    # migration_sonuc_B_kurulum.sql'de VAR ama bugüne dek hiç yazılmayan kolonlar —
+    # o migration'ın uygulanmadığı bir ortamda da kod ölmesin diye listede.
+    "is_baslama_tarihi", "is_bitis_tarihi", "is_suresi_gun", "sonuc_tur",
+    "ham_json", "yuklenici_il", "yuklenici_uyruk",
+}
+_sonuc_dusen = set()
+# "Could not find the 'ihale_usulu' column of 'ihale_sonuclari' in the schema cache"
+_SONUC_KOLON_RE = re.compile(r"['\"]([A-Za-z0-9_]+)['\"]")
+
+
+def eksik_kolon_adi(r, opsiyonel: set):
+    """PostgREST 'kolon yok' yanıtından, YALNIZ verilen opsiyonel kümedeki kolon adını döner."""
+    try:
+        j = r.json()
+    except Exception:
+        return None
+    if not isinstance(j, dict) or str(j.get("code") or "") not in ("PGRST204", "42703"):
+        return None
+    m = _SONUC_KOLON_RE.search(str(j.get("message") or ""))
+    ad = m.group(1) if m else None
+    return ad if ad in opsiyonel else None
+
+
 def sonuc_upsert(kayit: dict, dry_run: bool):
     if dry_run:
         print(f"    [DRY-RUN] kısım {kayit['kisim_no']}: {kayit['kazanan_firma']} — {kayit['kazanan_teklif']} TL "
               f"(tenzilat: {kayit['kazanan_teklif_farki_yuzde']}%)")
         return
+    for alan in _sonuc_dusen:            # bu koşuda yokluğu kanıtlanmış alanlar
+        kayit.pop(alan, None)
     with httpx.Client(timeout=30.0) as c:
-        r = c.post(f"{SUPABASE_URL}/rest/v1/ihale_sonuclari", json=kayit,
-                    params={"on_conflict": "ilan_id,kisim_no"},
-                    headers={**sb_headers(), "Prefer": "resolution=merge-duplicates"})
-        if r.status_code >= 300:
+        while True:
+            r = c.post(f"{SUPABASE_URL}/rest/v1/ihale_sonuclari", json=kayit,
+                        params={"on_conflict": "ilan_id,kisim_no"},
+                        headers={**sb_headers(), "Prefer": "resolution=merge-duplicates"})
+            if r.status_code < 300:
+                return
+            alan = eksik_kolon_adi(r, SONUC_OPSIYONEL)
+            if alan and alan not in _sonuc_dusen:   # her alan için EN FAZLA bir tekrar
+                _sonuc_dusen.add(alan)
+                kayit.pop(alan, None)
+                print(f"    ⚠ '{alan}' kolonu yok (migration uygulanmamış) — alan düşürüldü, "
+                      f"sonuç yazımı sürüyor. migration_sonuc_ilan_alanlari.sql koşulunca geri gelir.")
+                continue
             print(f"    ✗ yazma hatası: {r.status_code} {r.text[:200]}")
+            return
+
+
+# ── İlan zenginleştirme: AYNI detay yanıtından ihaleBilgi/idare/kalem alanları ──
+def ilan_alanlarini_guncelle(ilan: dict, detay: dict, dry_run: bool) -> bool:
+    """
+    Sonuç kayıtları yazıldıktan sonra, ELDEKİ detay yanıtından `ilanlar` satırını da
+    zenginleştirir (okas, işin yeri, yasa kapsamı, iptal bilgisi, tarih listesi, idare
+    telefon/faks/üst idare/il-ilçe, ihtiyaç kalemleri…). EK EKAP İSTEĞİ YOK.
+
+    ⚠️ ASIL İŞİ ASLA DÜŞÜRMEZ: modül yüklenememişse, kolonlar şemada yoksa ya da PATCH
+    hata verirse yalnız False döner — sonuç yazımı (`ihale_sonuclari`) etkilenmez.
+    Bu yüzden çağrı yeri de try/except ile sarılıdır ve `hata` sayacına dokunmaz.
+    """
+    if not (ilan_alanlarini_yaz and detay_ilan_alanlari):
+        return False
+    ilan_id = ilan.get("id")
+    if not ilan_id:                       # --tum-kayitlar dry-run'ında id yok
+        return False
+    alanlar = detay_ilan_alanlari(detay)
+    if not alanlar:
+        return False
+    return ilan_alanlarini_yaz(SUPABASE_URL, sb_headers(), ilan_id, alanlar, dry_run=dry_run)
+
+
+# ── Şema-güvenli kompakt yazma (migration UYGULANMAMIŞ olabilir) ────────────
+# Bu script GÜNLERCE koşuyor ve o sırada `git pull` yapılabiliyor: kod yeni kolonları
+# göndermeye başlar ama migration henüz çalışmamış olabilir. PostgREST bilinmeyen bir
+# gövde anahtarında TÜM satırı reddeder (PGRST204 / 42703) → kompakt ilan hiç yazılmaz,
+# dolayısıyla o ihalenin SONUCU da yazılamaz (ilan_id FK'sı doğmaz). Yani migration'ı
+# unutmak, tüm '--tum-kayitlar' turunu sessizce boşa çıkarırdı.
+#
+# Çare: yalnız AŞAĞIDAKİ opsiyonel alanlar düşürülüp tek kez yeniden denenir; düşen alan
+# hatırlanır (sonraki satırlar baştan onsuz gider). Zorunlu kolon eksikse hiçbir şey
+# düşürülmez, hata eskisi gibi görünür kalır.
+KOMPAKT_OPSIYONEL = {"ekap_ihale_id", "usul", "son_teklif_tarihi"}
+_kompakt_dusen = set()
+_KOMPAKT_KOLON_RE = re.compile(r"['\"]([A-Za-z0-9_]+)['\"]")
+
+
+def kompakt_eksik_kolon(r):
+    """PostgREST 'kolon yok' yanıtından, YALNIZ opsiyonel alanlar için kolon adı döner."""
+    try:
+        j = r.json()
+    except Exception:
+        return None
+    if not isinstance(j, dict) or str(j.get("code") or "") not in ("PGRST204", "42703"):
+        return None
+    m = _KOMPAKT_KOLON_RE.search(str(j.get("message") or ""))
+    ad = m.group(1) if m else None
+    return ad if ad in KOMPAKT_OPSIYONEL else None
 
 
 def ilan_kompakt_ekle(item: dict, dry_run: bool) -> dict | None:
@@ -512,9 +990,10 @@ def ilan_kompakt_ekle(item: dict, dry_run: bool) -> dict | None:
     if not ikn:
         return None
     try:
-        from ekap_scraper import kategori_tur, tur_donustur  # aynı klasör, sadece saf fonksiyonlar
+        # aynı klasör, sadece saf fonksiyonlar
+        from ekap_scraper import kategori_tur, tur_donustur, usul_donustur
     except Exception:
-        kategori_tur = tur_donustur = None
+        kategori_tur = tur_donustur = usul_donustur = None
 
     tur = tur_donustur(item.get("ihaleTipAciklama")) if tur_donustur else None
     okas = item.get("okas")
@@ -528,23 +1007,43 @@ def ilan_kompakt_ekle(item: dict, dry_run: bool) -> dict | None:
         "kaynak": "ekap",  # ilanlar.kaynak NOT NULL — ana scraper da 'ekap' yazıyor
         "ekap_id": str(item.get("ikn") or item.get("id") or ""),
         "ikn": str(ikn),
+        # ── ZATEN ÇEKİLEN ama atılan liste alanları (29 Tem 2026) ────────────────
+        # Hepsi elimizdeki `item` sözlüğünün içinde; yazmak EK İSTEK MALİYETİ GETİRMEZ.
+        # ekap_ihale_id = EKAP iç hash'i → resmî doküman sayfası linki bununla üretilir.
+        # usul / son_teklif_tarihi = filtre ve "ihale tarihi" yüzeyleri; kompakt satırlarda
+        # boş kaldıkları için 1,6M ihale arama filtrelerine hiç girmiyordu.
+        "ekap_ihale_id": str(item.get("id") or "") or None,
+        "usul": usul_donustur(item.get("ihaleUsulAciklama")) if usul_donustur else None,
+        "son_teklif_tarihi": tarih_iso(item.get("ihaleTarihSaat")),
         "baslik": baslik,
         "idare": mojibake_duzelt((item.get("idareAdi") or "").strip()) or None,
         "il": mojibake_duzelt((item.get("ihaleIlAdi") or "").strip()) or None,
         "tur": tur,
         "okas": okas,
         "kategori": kategori,
+        # Liste durum=5 ile filtrelendiği için sonuç garantili — durum sabit doğru.
         "durum": "sonuclandi",
         "ilan_metni": None,
     }
     if dry_run:
         print(f"    [DRY-RUN] kompakt ilan eklenecek: {ikn} — {kayit['baslik']}")
         return {"id": None, "ikn": ikn, "yaklasik_maliyet_min": None, "tahmini_bedel": None}
+    for alan in _kompakt_dusen:          # bu koşuda yokluğu kanıtlanmış alanlar
+        kayit.pop(alan, None)
     with httpx.Client(timeout=30.0) as c:
-        r = c.post(f"{SUPABASE_URL}/rest/v1/ilanlar", json=kayit,
-                    params={"on_conflict": "ekap_id"},
-                    headers={**sb_headers(), "Prefer": "resolution=merge-duplicates,return=representation"})
-        if r.status_code >= 300:
+        while True:
+            r = c.post(f"{SUPABASE_URL}/rest/v1/ilanlar", json=kayit,
+                        params={"on_conflict": "ekap_id"},
+                        headers={**sb_headers(), "Prefer": "resolution=merge-duplicates,return=representation"})
+            if r.status_code < 300:
+                break
+            alan = kompakt_eksik_kolon(r)
+            if alan and alan not in _kompakt_dusen:   # her alan için EN FAZLA bir tekrar
+                _kompakt_dusen.add(alan)
+                kayit.pop(alan, None)
+                print(f"    ⚠ '{alan}' kolonu yok (migration uygulanmamış) — alan düşürüldü, "
+                      f"kompakt yazma sürüyor. migration_ilanlar_liste_alanlari.sql koşulunca geri gelir.")
+                continue
             print(f"    ✗ kompakt ilan yazma hatası: {r.status_code} {r.text[:200]}")
             return None
         rows = r.json()
@@ -636,7 +1135,8 @@ async def detay_cek_retry(havuz, ihale_id: str):
 
 async def calis(max_pages: int, dry_run: bool, start_skip: int | None, tum_kayitlar: bool = False,
                 eszamanli: int = 8,
-                no_checkpoint: bool = False, no_plato: bool = False):
+                no_checkpoint: bool = False, no_plato: bool = False,
+                zenginlestir: bool = True):
     """
     EKAP'ın 'Result Announcement Published' (durum filtresi=5) listesini baştan/kaldığı
     yerden sayfalar, kendi ilanlar tablomuzdaki IKN'lerle eşleşenleri bulur, detayını
@@ -653,6 +1153,20 @@ async def calis(max_pages: int, dry_run: bool, start_skip: int | None, tum_kayit
         print("✗ SUPABASE_URL / SUPABASE_SERVICE_KEY eksik (.env kontrol et)")
         return
 
+    # Zenginleştirme kolonlarını TEK KEZ sapta: migration_ilanlar_detay_alanlari.sql
+    # uygulanmamışsa yeni kolonlar burada elenir → yazımda 42703 seli olmaz, sonuç
+    # yazımı (asıl iş) hiç etkilenmez.
+    if not zenginlestir:
+        print("→ ilan alan zenginleştirmesi KAPALI (--zenginlestirme-kapali)")
+    elif not kolonlari_sapta:
+        zenginlestir = False          # modül yüklenemedi (korumalı import yukarıda uyardı)
+    else:
+        try:
+            kolonlari_sapta(SUPABASE_URL, sb_headers())
+        except Exception as e:
+            print(f"  ⚠ zenginleştirme şema saptaması atlandı ({type(e).__name__}: {e})")
+            zenginlestir = False
+
     print("→ Kendi ilanlar tablomuz indeksleniyor…")
     harita = bizim_ilanlar_haritasi()
     print(f"  {len(harita)} benzersiz IKN indekslendi.")
@@ -665,6 +1179,7 @@ async def calis(max_pages: int, dry_run: bool, start_skip: int | None, tum_kayit
     print(f"→ EKAP sonuçlanmış ihale listesi taranıyor (başlangıç skip={skip})…\n")
 
     taranan, eslesen, yazilan, hata = 0, 0, 0, 0
+    zengin_yazildi = 0        # aynı yanıttan `ilanlar`a ek alan yazılan ihale sayısı (29 Tem)
     cekilemedi = 0            # GEÇİCİ hatayla çekilemeyen eşleşen ilan (SESSİZ değil — sayılır)
     bos_delik = 0             # sona gelinmeden art arda dönen boş sayfa (delik) sayacı
     ardisik_detay_hata = 0    # üst üste başarısız detay çekimi (EKAP'ı dövmeme güvenliği)
@@ -792,6 +1307,17 @@ async def calis(max_pages: int, dry_run: bool, start_skip: int | None, tum_kayit
                 hata += 1
                 print(f"  ✗ {ikn} (kayıt oluşturma/yazma): {e}")
 
+            # ── AYNI yanıttan `ilanlar` zenginleştirmesi (29 Tem) ──────────────
+            # ASIL İŞTEN SONRA ve TAMAMEN AYRI: burada oluşan hiçbir hata sonuç yazımını
+            # geri almaz, `hata` sayacına girmez, turu durdurmaz. Zenginleştirme
+            # "olursa kâr" katmanıdır; migration uygulanmamışsa kendiliğinden susar.
+            if zenginlestir:
+                try:
+                    if ilan_alanlarini_guncelle(ilan, detay, dry_run):
+                        zengin_yazildi += 1
+                except Exception as e:
+                    print(f"  ⚠ {ikn} (ilan alan zenginleştirme atlandı): {type(e).__name__}: {e}")
+
         # ── Sayfa sonu ──
         if durduruldu:
             # Erken durma: checkpoint İLERLETİLMEZ. skip sayfa başında kalır → sonraki tur
@@ -835,6 +1361,9 @@ async def calis(max_pages: int, dry_run: bool, start_skip: int | None, tum_kayit
     else:
         print("Tamamlandı (liste sonuna gelindi)")
     print(f"  {taranan} kayıt tarandı, {eslesen} bizim DB'de eşleşti, {yazilan} sonuç yazıldı")
+    if zenginlestir:
+        print(f"  {zengin_yazildi} ilan AYNI yanıttan zenginleştirildi "
+              "(okas / işin yeri / iptal / idare iletişim / kalemler)")
     if cekilemedi:
         print(f"  ⚠ {cekilemedi} eşleşen ilan GEÇİCİ hatayla ÇEKİLEMEDİ — sessiz kayıp DEĞİL, "
               "sonraki turda tekrar denenecek")
@@ -865,11 +1394,17 @@ def main():
                      help="Plato erken-çıkışını KAPAT. 26 Tem bulgusu: liste TEK kuru bölge değil — "
                           "skip~860K'da 100 boş sayfa var ama 1.1M'de %98 YENİ eşleşme. 100-sayfa "
                           "plato march'ı kuru bölgede durduruyordu → tüm arşivi taramak için bunu aç.")
+    ap.add_argument("--zenginlestirme-kapali", action="store_true",
+                     help="AYNI detay yanıtından `ilanlar`a ek alan (okas/işin yeri/iptal/idare "
+                          "iletişim/kalemler) YAZMA. Normalde gerekmez — kolonlar şemada yoksa "
+                          "zaten otomatik düşürülür; bu bayrak yalnız eşleşme başına 1 ek PATCH'i "
+                          "de istemediğiniz hız-kritik turlar için.")
     args = ap.parse_args()
     start_skip = 0 if args.reset else args.start_skip
     asyncio.run(calis(args.max_pages, args.dry_run, start_skip, args.tum_kayitlar,
                       eszamanli=args.eszamanli, no_checkpoint=args.no_checkpoint,
-                      no_plato=args.no_plato))
+                      no_plato=args.no_plato,
+                      zenginlestir=not args.zenginlestirme_kapali))
 
 
 if __name__ == "__main__":

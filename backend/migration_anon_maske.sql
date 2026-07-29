@@ -35,12 +35,30 @@
 -- semantik_skor_batch (skor döner; ilanlar'ın İZİNLİ kolonlarını okur → kırılmaz).
 --
 -- Çalıştır: docker exec -i supabase-db psql -U postgres -d postgres < backend/migration_anon_maske.sql
+--
+-- ⚠️ SIRA BAĞIMLILIĞI (29 Tem): bu dosya artık migration_ekap_hasat.sql ile gelen
+--    kolonlara da GRANT veriyor. ÖNCE migration_ekap_hasat.sql koşulmalıdır; aksi
+--    halde bu dosya "column ... does not exist" ile ABORT eder (tek işlem — hiçbir
+--    şey uygulanmaz, maske bozulmaz). Sessiz bozulma yerine gürültülü durma tercih
+--    edildi: eksik GRANT misafir sayfasını 42501 ile öldürürdü.
 -- Geri alma: GRANT SELECT ON <tablo> TO anon;  (tablo-geneli yetkiyi geri verir)
 -- ============================================================================
 
 BEGIN;
 
 -- ── 1) ilanlar: tablo-geneli anon SELECT → izinli kolon listesi
+--
+-- ⚠️⚠️ BU LİSTE SABİTTİR ve yukarıdaki REVOKE TABLO DÜZEYİNDEDİR: bu dosya her
+--    koşulduğunda anon'un ilanlar üzerindeki TÜM kolon yetkileri silinir ve YALNIZ
+--    aşağıdaki liste geri verilir. Yani ilanlar'a sonradan eklenip misafire açılan
+--    bir kolon BURAYA DA YAZILMAZSA, bu dosyanın bir sonraki koşusunda SESSİZCE
+--    kapanır ve o kolona dokunan misafir sorgusu 42501 ile sayfayı ÖLDÜRÜR
+--    ([[anon-maske-iki-kok-neden]] kök-neden C). YENİ KOLON AÇAN HERKES BURAYI GÜNCELLESİN.
+--
+-- 29 Tem denetimi — listede EKSİK olduğu için bu tuzağa düşecek 5 KOLON bulundu
+-- ve eklendi (hepsi canlıda anon'a AÇIKTI, yani bu dosya koşulsa misafir bozulurdu):
+--     ekap_ihale_id, kalemler, teklif_elektronik, teklif_kismi, etkin_tarih
+-- Ayrıca migration_ekap_hasat.sql ile gelen 9 yeni ihale-niteliği kolonu eklendi.
 REVOKE SELECT ON public.ilanlar FROM anon;
 GRANT SELECT (
   id, kaynak, baslik, aciklama, il, ulke, tur, usul, durum,
@@ -48,7 +66,15 @@ GRANT SELECT (
   hedef_sektorler, gizli_fiyat, goruntulenme, ekap_guncelleme, olusturulma,
   kategori, itiraz_bedeli, yaklasik_maliyet_min, yaklasik_maliyet_max,
   isin_yapilacagi_yer, ihale_yeri, okas, belgeler, ekler, pdf_url,
-  esik_katsayi, analiz_tarihi, analiz_pdf_turu, embedding, embedding_guncelleme
+  esik_katsayi, analiz_tarihi, analiz_pdf_turu, embedding, embedding_guncelleme,
+  -- 29 Tem: listede EKSİK kalmış ama canlıda anon'a AÇIK olan kolonlar
+  ekap_ihale_id, kalemler, teklif_elektronik, teklif_kismi, etkin_tarih,
+  -- 29 Tem: migration_ekap_hasat.sql — EKAP detay yanıtından gelen ihale nitelikleri.
+  -- (idare kökenli 8 kolon — ekap_idare_id, idare_telefon, idare_faks, ust_idare,
+  --  en_ust_idare_kod, en_ust_idare_adi, idare_il, idare_ilce — BİLEREK YOK: `idare`
+  --  ile aynı sınıf kimlik verisi, misafire KAPALI kalmalı.)
+  yasa_kapsami, istisna_usul, iptal_tarihi, iptal_nedeni, iptal_madde,
+  yeterlik_tarihi, ilk_teklif_tarihi, ihale_tarih_saatleri, ihale_ozellikleri
 ) ON public.ilanlar TO anon;
 
 -- ── 2) ihale_sonuclari
@@ -58,7 +84,12 @@ GRANT SELECT (
   en_dusuk_teklif, en_yuksek_teklif, ortalama_teklif, sonuc_tarihi, olusturulma,
   sozlesme_bedeli, sozlesme_tarihi, tenzilat_yuzde, yaklasik_maliyet,
   katilimci_sayisi, gecerli_teklif_sayisi, is_baslama_tarihi, is_bitis_tarihi,
-  is_suresi_gun, karar_tarihi, sonuc_tur, scrape_tarihi, kisim_no
+  is_suresi_gun, karar_tarihi, sonuc_tur, scrape_tarihi, kisim_no,
+  -- 29 Tem: migration_ekap_hasat.sql — SONUÇ İLANI HTML'inden çıkarılan alanlar.
+  -- (yuklenici_adres / yuklenici_uyruk / usul_gerekce / ham_json BİLEREK YOK:
+  --  adres şahıs firmalarında kişisel veri, ham_json içinde yüklenici adı+adresi var.)
+  ihale_usulu, yasa_madde_kodu, isin_yeri, ihale_tarihi,
+  dokuman_indiren_sayisi, yerli_fiyat_avantaji
 ) ON public.ihale_sonuclari TO anon;
 
 -- ── 3) yukleniciler
@@ -99,13 +130,28 @@ DO $$
 DECLARE
   kolonlar text;
   -- anon'a KAPALI kolonlar (kimlik/altyapı + onlardan türetilmiş kopyalar)
-  anon_yasak        text[] := ARRAY['idare', 'dt_ihale_token', 'dt_idare_token', 'arama_fold'];
+  --
+  -- 29 Tem — ÜÇ KOLON EKLENDİ (migration_dt_detay.sql, dtDetayGetir'in atılan blokları):
+  --   · en_ust_idare_adi / ust_idare — idarenin üst kurum zinciri. `idare` ile AYNI SINIF
+  --     kimlik verisi; hatta daha keskin: "SAĞLIK BAKANLIĞI > BAKAN YARDIMCILIKLARI"
+  --     zinciri, maskelenen idare adını daraltıp geri okumaya yarayan bir oracle olurdu.
+  --   · dt_ilanlar — IlanBilgileri jsonb'si; her ilan için EncIlanId (64 haneli EKAP
+  --     erişim hash'i) taşır → dt_ihale_token ile aynı sınıf, saf altyapı.
+  -- NOT: kolon adı 29 Tem birleştirmesinde `en_ust_idare` → `en_ust_idare_adi` olarak
+  -- `ilanlar` tarafıyla hizalandı (migration_ekap_hasat.sql). Eski ad da listede
+  -- BIRAKILDI: zararsız (yoksa eşleşmez) ama migration bu dosyadan ÖNCE koşulmuş bir
+  -- ortamda eski adlı kolon kalmışsa yine de kapalı kalsın.
+  anon_yasak        text[] := ARRAY['idare', 'dt_ihale_token', 'dt_idare_token', 'arama_fold',
+                                    'en_ust_idare', 'en_ust_idare_adi', 'ust_idare', 'dt_ilanlar'];
   -- anon'a bilinçli AÇIK bırakılmış türev kolonlar. baslik_fold = tr_fold(baslik);
   -- baslik zaten misafire açık olduğu için ek ifşa yok (migration_dt_arama.sql:41-44).
   anon_serbest_fold text[] := ARRAY['baslik_fold'];
+  -- Adında 'idare' geçtiği hâlde misafire AÇIK kalması BİLİNÇLİ olan kolonlar.
+  -- Şu an boş: DT tarafında idare kimliğinin misafire açık hiçbir türevi yok.
+  anon_serbest_idare text[] := ARRAY[]::text[];
   siniflanmamis     text;
 BEGIN
-  -- BEKÇİ: her `*_fold` kolonu ya yasak ya serbest listesinde OLMALI.
+  -- BEKÇİ 1: her `*_fold` kolonu ya yasak ya serbest listesinde OLMALI.
   -- NOT: column_name `sql_identifier` (name üzerinde domain) — text[] ile
   -- karşılaştırmadan önce açıkça ::text'e indiriliyor.
   SELECT string_agg(column_name::text, ', ' ORDER BY column_name::text)
@@ -119,6 +165,26 @@ BEGIN
   IF siniflanmamis IS NOT NULL THEN
     RAISE EXCEPTION
       'ABORT: siniflandirilmamis fold kolonu (%). Icinde idare/kimlik geciyorsa anon_yasak, gecmiyorsa anon_serbest_fold listesine EKLEYIN — aksi halde anon a sessizce acilir.',
+      siniflanmamis;
+  END IF;
+
+  -- BEKÇİ 2 (29 Tem eklendi): adında 'idare' geçen her kolon da sınıflandırılmış OLMALI.
+  -- GEREKÇE: bu blok KARA LİSTE, yani AÇIK YÖNE arızalanır — sonradan eklenen her kolon
+  -- bu dosya yeniden koşturulduğunda anon'a sessizce açılır. `*_fold` bekçisi bu tuzağın
+  -- yalnız BİR sınıfını kapatıyordu; en_ust_idare_adi/ust_idare fold DEĞİL, düz kimlik
+  -- kolonlarıydı ve eski bekçiden sızarlardı. 'idare' özellikle seçildi çünkü bu tabloda
+  -- maskenin ASIL konusu odur (dosya başlığı: "idare + ondan TÜRETİLEN kolonlar").
+  SELECT string_agg(column_name::text, ', ' ORDER BY column_name::text)
+    INTO siniflanmamis
+  FROM information_schema.columns
+  WHERE table_schema = 'public' AND table_name = 'dogrudan_temin_ilanlari'
+    AND column_name::text LIKE '%idare%'
+    AND NOT (column_name::text = ANY (anon_yasak))
+    AND NOT (column_name::text = ANY (anon_serbest_idare));
+
+  IF siniflanmamis IS NOT NULL THEN
+    RAISE EXCEPTION
+      'ABORT: siniflandirilmamis idare kolonu (%). Kimlik ifsa ediyorsa anon_yasak, etmiyorsa anon_serbest_idare listesine EKLEYIN — aksi halde anon a sessizce acilir.',
       siniflanmamis;
   END IF;
 

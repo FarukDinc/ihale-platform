@@ -37,10 +37,21 @@ düşüyordu. Artık:
 DEPOLAMA: yalnız ilan_metni yazılır (ilan_html DEĞİL) — metin arama/embedding için yeterli,
 depolamayı ~yarıya indirir ve ham HTML'i saklamamak XSS yüzeyini de küçültür.
 
+── 29 TEM: AYNI YANITTAN GERİ KALAN HER ŞEY DE YAZILIR ────────────────────────────────
+Denetim: bu script `GetByIhaleIdIhaleDetay` yanıtını çekip İÇİNDEN YALNIZ `ilanList[0].veriHtml`
+alıyor, `ihaleBilgi` (okas, işin yapılacağı yer, ihale yeri, yasa kapsamı, iptal bilgisi,
+ihale/yeterlik/ilk-teklif tarihleri), `idare` bloğu (telefon, faks, üst idare, il/ilçe) ve
+ihtiyaç kalemi listesini ÇÖPE ATIYORDU. Ölçüm: ilanlar.okas %0,62, kalem listesi %0,41 dolu.
+Artık aynı yanıttan `ekap_detay_alanlar.detay_ilan_alanlari()` ile hepsi çıkarılıp AYNI PATCH
+gövdesine ekleniyor → SIFIR ek EKAP isteği, sıfır ek DB çağrısı.
+Geriye uyum: migration uygulanmamışsa fazladan alanlar sessizce düşürülür ve YALNIZ
+ilan_metni yazılır (eski davranış birebir korunur) — bkz. ekap_detay_alanlar modül başlığı.
+
 Kullanım:
   python ilan_metni_backfill.py --max-pages 5 --dry-run   # yazmadan dene
   python ilan_metni_backfill.py --max-pages 200           # kaldığı yerden devam (checkpoint)
   python ilan_metni_backfill.py --reset                   # baştan başla
+  python ilan_metni_backfill.py --zenginlestirme-kapali   # yalnız ilan_metni yaz (eski davranış)
 Env: SUPABASE_URL, SUPABASE_SERVICE_KEY (backend/.env)
 """
 import argparse
@@ -56,6 +67,8 @@ from dotenv import load_dotenv
 sys.path.insert(0, os.path.dirname(__file__))
 from ekap_scraper import post, html_temizle                      # imzalı POST + HTML→metin
 from ekap_sonuc_backfill import ssl_ctx, sb_headers  # rastgele_proxy_url ARTIK KULLANILMIYOR
+from ekap_detay_alanlar import (detay_ilan_alanlari, ilan_alanlarini_yaz,
+                                kolonlari_sapta)     # aynı yanıttan atılan alanlar
 from proxy_havuz import async_havuz_al, ekap_ssl_baglami
 
 load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), ".env"))
@@ -158,22 +171,30 @@ def eksik_olanlar(ikn_listesi: list) -> dict:
         return {str(row["ikn"]): row["id"] for row in r.json() if row.get("ikn")}
 
 
-def metni_yaz(ilan_id: str, metin: str) -> bool:
-    with httpx.Client(timeout=30.0) as c:
-        r = c.patch(f"{SUPABASE_URL}/rest/v1/ilanlar",
-                    params={"id": f"eq.{ilan_id}"},
-                    json={"ilan_metni": metin},
-                    headers={**sb_headers(), "Prefer": "return=minimal"})
-        if r.status_code >= 300:
-            print(f"    ✗ yazma hatası ({ilan_id}): {r.status_code} {r.text[:120]}")
-            return False
-        return True
+def metni_yaz(ilan_id: str, metin: str | None, alanlar: dict | None = None) -> bool:
+    """
+    ilan_metni'ni (ve varsa aynı yanıttan çıkan zenginleştirme alanlarını) TEK PATCH'te yazar.
+    Döner: ilan_metni yazıldı mı (metin None ise: en az bir alan yazıldı mı).
+
+    ⚠️ GERİYE UYUM: `zorunlu` gövdesi ilan_metni'dir. Zenginleştirme kolonları şemada yoksa
+    ekap_detay_alanlar onları düşürür ve YALNIZ ilan_metni yazılır — yani migration
+    uygulanmamış bir VDS'te bu fonksiyonun davranışı eski haliyle BİREBİR aynıdır.
+    """
+    return ilan_alanlarini_yaz(
+        SUPABASE_URL, sb_headers(), ilan_id, alanlar or {},
+        zorunlu=({"ilan_metni": metin} if metin else None),
+    )
 
 
-async def bir_ihale(havuz, sem, ikn: str, ic_id, ilan_id: str, dry_run: bool) -> str:
+async def bir_ihale(havuz, sem, ikn: str, ic_id, ilan_id: str, dry_run: bool,
+                    zenginlestir: bool = True) -> str:
     """Tek ihale: detay çek → ilan HTML'ini metne çevir → yaz. Döner: 'yazildi'|'bos'|'hata'.
     'bos'  = EKAP'ta gerçekten metin yok (≤50 char) → KALICI, yeniden denenmez.
-    'hata' = detay çekilemedi (post() {} döndü) veya DB yazımı başarısız → GEÇİCİ, yeniden denenir."""
+    'hata' = detay çekilemedi (post() {} döndü) veya DB yazımı başarısız → GEÇİCİ, yeniden denenir.
+
+    29 Tem: aynı yanıttan `ihaleBilgi`/`idare`/kalem alanları da çıkarılıp AYNI PATCH'e eklenir.
+    Dönüş değeri KURALI DEĞİŞMEDİ: 'bos'/'hata' kararı hâlâ YALNIZ ilan metnine ve zorunlu
+    yazımın sonucuna bakar — zenginleştirme başarısız olsa bile kayıt 'hata'ya düşmez."""
     async with sem:
         veri = await post(havuz, DETAY_ENDPOINT, {"ihaleId": ic_id})
         await asyncio.sleep(0.35)          # EKAP'a nazik ol (eşzamanlılıkla birlikte etkin hız düşük)
@@ -182,12 +203,28 @@ async def bir_ihale(havuz, sem, ikn: str, ic_id, ilan_id: str, dry_run: bool) ->
     ilan_list = ((veri.get("item") or {}).get("ilanList") or [])
     html = (ilan_list[0].get("veriHtml") if ilan_list else "") or ""
     metin = (html_temizle(html) or "").strip() if html else ""
+
+    alanlar = {}
+    if zenginlestir:
+        try:
+            alanlar = detay_ilan_alanlari(veri)
+        except Exception as e:
+            # Ayrıştırma hatası ASLA ana işi düşürmez (EKAP alan şeklini değiştirse bile).
+            print(f"    ⚠ {ikn}: alan ayrıştırma atlandı ({type(e).__name__}: {e})")
+            alanlar = {}
+
     if len(metin) <= 50:
+        # EKAP'ta ilan HTML'i yok → 'bos' (KALICI, yeniden denenmez) — ESKİ DAVRANIŞ.
+        # Ama ihaleBilgi/idare alanları YİNE DE gelmiş olabilir; onları atmak yerine yaz.
+        if alanlar and not dry_run:
+            metni_yaz(ilan_id, None, alanlar)
+        elif alanlar and dry_run:
+            print(f"    [DRY-RUN] {ikn} → metin yok, {len(alanlar)} zenginleştirme alanı yazılacaktı")
         return "bos"
     if dry_run:
-        print(f"    [DRY-RUN] {ikn} → {len(metin)} char yazılacaktı")
+        print(f"    [DRY-RUN] {ikn} → {len(metin)} char + {len(alanlar)} ek alan yazılacaktı")
         return "yazildi"
-    return "yazildi" if metni_yaz(ilan_id, metin) else "hata"
+    return "yazildi" if metni_yaz(ilan_id, metin, alanlar) else "hata"
 
 
 async def sayfa_getir(havuz, skip: int):
@@ -217,7 +254,8 @@ async def sayfa_getir(havuz, skip: int):
     return "bos", veri, []
 
 
-async def sayfa_detaylari_isle(havuz, sem, hedefler: list, eksik: dict, dry_run: bool):
+async def sayfa_detaylari_isle(havuz, sem, hedefler: list, eksik: dict, dry_run: bool,
+                               zenginlestir: bool = True):
     """Sayfadaki eksik ihalelerin detayını çeker; GEÇİCİ 'hata'ları bu tur içinde sınırlı kez yeniden dener.
     Döner (yazildi, bos, kalan): kalan = DETAY_RETRY sonrası HÂLÂ başarısız olanlar (kuyruğa gider)."""
     yazildi = bos = 0
@@ -227,7 +265,7 @@ async def sayfa_detaylari_isle(havuz, sem, hedefler: list, eksik: dict, dry_run:
             break
         sonuclar = await asyncio.gather(*[
             bir_ihale(havuz, sem, str(it.get("ikn")), it.get("id"),
-                      eksik[str(it.get("ikn"))], dry_run)
+                      eksik[str(it.get("ikn"))], dry_run, zenginlestir)
             for it in kalan
         ])
         yeniden = []
@@ -244,7 +282,7 @@ async def sayfa_detaylari_isle(havuz, sem, hedefler: list, eksik: dict, dry_run:
     return yazildi, bos, kalan
 
 
-async def kuyrugu_isle(havuz, sem, dry_run: bool):
+async def kuyrugu_isle(havuz, sem, dry_run: bool, zenginlestir: bool = True):
     """Önceki turlardan kalan başarısız (geçici) detayları yeniden dener.
     Döner (yazildi, bos, kalici). Çözülemeyenler deneme sayısı artırılarak kuyrukta bırakılır;
     KUYRUK_MAX_DENEME'yi aşan kayıt kalıcı sayılıp düşürülür (kurtarma ayrı iş — rule 7)."""
@@ -254,7 +292,8 @@ async def kuyrugu_isle(havuz, sem, dry_run: bool):
     print(f"→ Yeniden-dene kuyruğu: {len(kuyruk)} bekleyen başarısız detay işleniyor…")
     yazildi = bos = kalici = 0
     sonuclar = await asyncio.gather(*[
-        bir_ihale(havuz, sem, str(k.get("ikn")), k.get("ic_id"), str(k.get("ilan_id")), dry_run)
+        bir_ihale(havuz, sem, str(k.get("ikn")), k.get("ic_id"), str(k.get("ilan_id")),
+                  dry_run, zenginlestir)
         for k in kuyruk
     ])
     yeni_kuyruk = []
@@ -278,7 +317,15 @@ async def kuyrugu_isle(havuz, sem, dry_run: bool):
     return yazildi, bos, kalici
 
 
-async def calis(max_pages: int, dry_run: bool, start_skip, eszamanli: int):
+async def calis(max_pages: int, dry_run: bool, start_skip, eszamanli: int,
+                zenginlestir: bool = True):
+    # Şemayı TEK KEZ sapta: migration uygulanmamışsa yeni kolonlar burada elenir ve
+    # yazım katmanı otomatik olarak eski davranışa (yalnız ilan_metni) düşer.
+    if zenginlestir:
+        kolonlari_sapta(SUPABASE_URL, sb_headers())
+    else:
+        print("→ zenginleştirme KAPALI (--zenginlestirme-kapali): yalnız ilan_metni yazılacak")
+
     cp = checkpoint_oku()
     if start_skip is not None:
         skip = start_skip
@@ -306,7 +353,7 @@ async def calis(max_pages: int, dry_run: bool, start_skip, eszamanli: int):
             checkpoint_yaz(yeni_skip, tk, ts)
 
     # 0) Önce önceki turlardan kalan başarısız detayları dene.
-    ky, kb, kk = await kuyrugu_isle(havuz, sem, dry_run)
+    ky, kb, kk = await kuyrugu_isle(havuz, sem, dry_run, zenginlestir)
     kuyruktan_yazildi += ky
     kuyruk_bos += kb
     kalici_basarisiz += kk
@@ -368,7 +415,8 @@ async def calis(max_pages: int, dry_run: bool, start_skip, eszamanli: int):
         hedefler = [it for it in lst if str(it.get("ikn") or "") in eksik]
         hedef += len(hedefler)
 
-        sayfa_yazildi, sayfa_bos, kalan = await sayfa_detaylari_isle(havuz, sem, hedefler, eksik, dry_run)
+        sayfa_yazildi, sayfa_bos, kalan = await sayfa_detaylari_isle(
+            havuz, sem, hedefler, eksik, dry_run, zenginlestir)
         yazildi += sayfa_yazildi
         bos += sayfa_bos
         if kalan:
@@ -407,6 +455,10 @@ def main():
     ap.add_argument("--start-skip", type=int, default=None, help="checkpoint yerine bu offset'ten başla")
     ap.add_argument("--reset", action="store_true", help="checkpoint'i sıfırla (baştan)")
     ap.add_argument("--dry-run", action="store_true", help="DB'ye yazma, sadece raporla")
+    ap.add_argument("--zenginlestirme-kapali", action="store_true",
+                    help="Aynı yanıttan çıkan ihaleBilgi/idare/kalem alanlarını YAZMA "
+                         "(eski davranış: yalnız ilan_metni). Normalde gerekmez — kolon yoksa "
+                         "zaten otomatik düşürülür.")
     args = ap.parse_args()
 
     if not SUPABASE_URL or not SUPABASE_KEY:
@@ -425,7 +477,8 @@ def main():
         print("checkpoint ve yeniden-dene kuyruğu sıfırlandı")
 
     start = 0 if args.reset else args.start_skip
-    asyncio.run(calis(args.max_pages, args.dry_run, start, args.eszamanli))
+    asyncio.run(calis(args.max_pages, args.dry_run, start, args.eszamanli,
+                      zenginlestir=not args.zenginlestirme_kapali))
 
 
 if __name__ == "__main__":

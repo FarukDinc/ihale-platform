@@ -55,6 +55,7 @@ Env: SUPABASE_URL, SUPABASE_SERVICE_KEY, PROXY_* (backend/.env)
 import argparse
 import json
 import os
+import re
 import sys
 import time
 from collections import Counter
@@ -135,6 +136,11 @@ def satir_uret(i):
     return {
         "ekap_id":           ekap_id,
         "ikn":               str(ikn) if ikn else None,
+        # EKAP iç hash'i (liste yanıtındaki `id`, 64-hane). Resmî doküman sayfası
+        # (VatandasIlanGoruntuleme.aspx?ihaleId=…) İKN ile DEĞİL bununla açılıyor.
+        # Alan ZATEN elimizdeki yanıtın içinde — yazmak EK İSTEK MALİYETİ GETİRMEZ.
+        # ⚠️ Bunu atmak kalıcı kayıptır: aynı liste sayfası bir daha çekilmez.
+        "ekap_ihale_id":     str(i.get("id") or "") or None,
         "baslik":            baslik,
         "idare":             mojibake_duzelt((i.get("idareAdi") or "").strip()),
         "il":                mojibake_duzelt((i.get("ihaleIlAdi") or "").strip()),
@@ -152,19 +158,61 @@ def satir_uret(i):
     }
 
 
+# ── Şema-güvenli yazma (migration UYGULANMAMIŞ olabilir) ────────────────────
+# Backfill KOŞARKEN `git pull` yapılabiliyor: kod yeni kolonları göndermeye başlar
+# ama migration henüz çalışmamış olabilir. PostgREST bilinmeyen bir gövde anahtarında
+# TÜM parti'yi reddeder (PGRST204 "Could not find the 'x' column…" ya da ham 42703)
+# → migration'ı unutmak sessiz bir eksiklik değil, TOPYEKÛN yazma kaybı olurdu.
+#
+# Çare: yalnız AŞAĞIDAKİ opsiyonel alanlar düşürülüp parti bir kez yeniden denenir;
+# düşen alan hatırlanır (sonraki partiler baştan onsuz gider). Zorunlu bir kolon
+# eksikse (baslik, ekap_id…) hiçbir şey düşürülmez, GÜRÜLTÜYLE patlar.
+# Migration koşulduğunda bir sonraki koşuda alanlar kendiliğinden geri gelir.
+OPSIYONEL_ALANLAR = {"ekap_ihale_id"}
+_dusen_alanlar = set()
+_KOLON_RE = re.compile(r"['\"]([A-Za-z0-9_]+)['\"]")
+
+
+def eksik_kolon(r):
+    """PostgREST 'kolon yok' yanıtından, YALNIZ opsiyonel alanlar için kolon adı döner."""
+    try:
+        j = r.json()
+    except Exception:
+        return None
+    if not isinstance(j, dict) or str(j.get("code") or "") not in ("PGRST204", "42703"):
+        return None
+    m = _KOLON_RE.search(str(j.get("message") or ""))
+    ad = m.group(1) if m else None
+    return ad if ad in OPSIYONEL_ALANLAR else None
+
+
 def yaz(client, satirlar):
     """ON CONFLICT DO NOTHING — mevcut kayıtlara DOKUNMAZ (detay katmanı korunur)."""
     eklenen = 0
     for i in range(0, len(satirlar), YAZ_CHUNK):
         dilim = satirlar[i:i + YAZ_CHUNK]
-        r = client.post(f"{SUPABASE_URL}/rest/v1/ilanlar",
-                        params={"on_conflict": "ekap_id"},
-                        headers={"apikey": SUPABASE_KEY,
-                                 "Authorization": f"Bearer {SUPABASE_KEY}",
-                                 "Content-Type": "application/json",
-                                 "Prefer": "resolution=ignore-duplicates,return=minimal"},
-                        json=dilim)
-        if r.status_code >= 300:
+        for alan in _dusen_alanlar:      # bu koşuda yokluğu kanıtlanmış alanlar
+            for s in dilim:
+                s.pop(alan, None)
+        while True:
+            r = client.post(f"{SUPABASE_URL}/rest/v1/ilanlar",
+                            params={"on_conflict": "ekap_id"},
+                            headers={"apikey": SUPABASE_KEY,
+                                     "Authorization": f"Bearer {SUPABASE_KEY}",
+                                     "Content-Type": "application/json",
+                                     "Prefer": "resolution=ignore-duplicates,return=minimal"},
+                            json=dilim)
+            if r.status_code < 300:
+                break
+            alan = eksik_kolon(r)
+            if alan and alan not in _dusen_alanlar:   # her alan için EN FAZLA bir tekrar
+                _dusen_alanlar.add(alan)
+                for s in dilim:
+                    s.pop(alan, None)
+                print(f"    ⚠ '{alan}' kolonu yok (migration uygulanmamış) — alan düşürüldü, "
+                      f"yazma sürüyor. migration_ilanlar_liste_alanlari.sql koşulunca geri gelir.",
+                      flush=True)
+                continue
             print(f"    ! yazma {r.status_code}: {r.text[:220]}", flush=True)
             r.raise_for_status()
         eklenen += len(dilim)

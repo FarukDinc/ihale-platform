@@ -16,6 +16,21 @@ yazar, ardından kazanan_denendi damgalar — bir daha seçilmez (idempotent,
 ai_kategori_backfill.py ile AYNI "her satır ömründe bir kez" tasarımı, burada token
 maliyeti sıfır olsa da EKAP'a gereksiz tekrar istek atmamak için aynı disiplin korunur).
 
+⚠️ 29 Tem — YANITIN 3/4'Ü ATILIYORDU: dtDetayGetir yanıtında DÖRT blok var
+(DogrudanTeminBilgileri / IdareBilgileri / IlanBilgileri / SozlesmeBilgileri) ama bu
+betik yalnız sonuncusunu okuyordu. Atılan 3 blok EK İSTEK GEREKTİRMİYOR — aynı yanıtın
+içindeler — ve içlerinde şunlar vardı:
+  · BransKodList  → DT'nin OKAS'ı (CPV kodu). DT'de OKAS YOK sanıldığı için kategori
+    bugüne dek yalnız başlıktan tahmin ediliyordu; kod ZATEN geliyormuş.
+  · YasaKapsamiTeminMaddesi → 22-d / 22-c ayrımı. KismiTeklif, KisimSayisi, EIhale,
+    IlaninSekli, IptalNedeni/IptalTarihi, istisna/mevzuat dayanağı.
+  · EnUstIdare / UstIdare → idarenin üç kademeli zinciri (idare-tür sınıflandırıcısının
+    elle kural yazarak çıkarmaya çalıştığı bilgi).
+  · IlanBilgileri → 4 ilan listesi + her birinde EncIlanId (EKAP belge/ilan hash'i).
+Artık üçü de yazılıyor (bkz. detay_cikar). Bir dt_no damgalanınca bir daha SEÇİLMEDİĞİ
+için bu düzeltme yalnız İLERİYE dönüktür; eski (detaysız) damgalı satırları geri
+kazanmak için backend/migration_dt_detay_kurtarma.sql var.
+
 ÖNKOŞUL: dt_ihale_token/dt_idare_token yalnız retrofit SONRASI scrape edilen satırlarda
 dolu. Tarihsel ~1.48M satırın E10/E11'ini almak için önce TAM yeniden-tarama gerekir:
     python ekap_dogrudan_temin_scraper.py --reset --max-pages <büyük>
@@ -39,6 +54,7 @@ Env: SUPABASE_URL, SUPABASE_SERVICE_KEY (backend/.env); DT_KAZANAN_ESZAMANLI (ö
 import argparse
 import asyncio
 import os
+import re
 import ssl
 import sys
 import time
@@ -98,6 +114,132 @@ def _headers():
 
 def _durum_filtre():
     return f"in.({','.join(DURUM_SONUC)})"
+
+
+# ── ŞEMA UYUMU: yeni detay kolonları canlıda VAR MI? ─────────────────────────
+# 29 Tem'de eklenen alanlar migration_dt_detay.sql'e bağlı. Ama kod ile migration
+# AYNI ANDA canlıya gitmeyebilir: backfill günlerce sürerken VDS'te `git pull`
+# yapılıyor. Migration henüz uygulanmamışken yeni alanları göndermek PostgREST'te
+# 400/PGRST204 verir ve TÜM yazımı düşürür → satırlar damgalanmaz, tur boşa gider
+# (ya da beteri: yaz_sonuclar patlayınca isaretle hiç çalışmaz, kuyruk hiç erimez).
+#
+# İKİ KATMANLI KORUMA — hangi şema canlıda olursa olsun kod ÇÖKMEZ:
+#   1) Tur başında BİR KEZ kolon sınaması (sema_sinama). Kolon yoksa bayrak kapalı
+#      kalır ve yeni alanlar gövdeye HİÇ konmaz → davranış BİREBİR eski sürüm.
+#   2) Çalışma anında ilk şema hatasında bayrak düşürülür ve istek ESKİ gövdeyle
+#      TEKRAR denenir (PostgREST şema önbelleği bayatsa, ya da migration tur
+#      ortasında geri alınırsa). Sınama başarısız olursa da TEMKİNLİ yön seçilir:
+#      "yok" say, yeni alan gönderme.
+# Bayraklar açılmadıkça hiçbir yeni kolon adı isteğe girmez; yani migration'ı
+# uygulamak ÖN KOŞUL DEĞİL, yalnız veriyi açan anahtardır.
+SEMA = {"ilan_detay": False, "sonuc_detay": False}
+
+# SEMA["sonuc_detay"] kapalıyken dogrudan_temin_sonuclari gövdesinden düşürülecek alanlar.
+SONUC_YENI_ALANLAR = ("para_birimi",)
+
+
+def _sema_hatasi_mi(r) -> bool:
+    """Yanıt "bu kolon/tablo yok" hatası mı? (migration uygulanmamış ya da
+    PostgREST şema önbelleği bayat). PGRST204 = gövdedeki kolon şema önbelleğinde
+    yok; 42703 = Postgres undefined_column (select listesinde).
+
+    DAR TUTULDU: başka hiçbir 4xx/5xx buraya girmemeli — RLS/yetki/ağ hatasını
+    "şema yok" sanıp sessizce veri düşürmek, düzeltmeye çalıştığımız sessiz
+    kayıp deseninin ta kendisi olurdu."""
+    if r is None or r.status_code not in (400, 404):
+        return False
+    try:
+        g = r.json()
+    except ValueError:
+        return False
+    if not isinstance(g, dict):
+        return False
+    kod = (g.get("code") or "").upper()
+    mesaj = f"{g.get('message') or ''} {g.get('details') or ''}".lower()
+    return kod in ("PGRST204", "42703") or "schema cache" in mesaj or "does not exist" in mesaj
+
+
+def _kolon_var(client, tablo, kolon) -> bool:
+    """Canlı şemada kolon var mı — service_role ile tek hafif SELECT.
+    service_role tüm kolonları görür, dolayısıyla 200 = kolon VAR demektir
+    (kolon-GRANT maskesi bu sınamayı yanıltmaz). Ağ hatasında TEMKİNLİ: False."""
+    try:
+        r = client.get(f"{SUPABASE_URL}/rest/v1/{tablo}",
+                       params={"select": kolon, "limit": "1"}, headers=_headers())
+    except httpx.HTTPError:
+        return False
+    return r.status_code < 300
+
+
+def sema_sinama(client):
+    """Tur başında BİR KEZ: yeni detay kolonları canlıda var mı? Her tablodan tek
+    temsilci kolon sorulur (aynı ALTER TABLE'da eklendikleri için hepsi ya var ya yok)."""
+    SEMA["ilan_detay"] = _kolon_var(client, "dogrudan_temin_ilanlari", "dt_brans_kodlari")
+    SEMA["sonuc_detay"] = _kolon_var(client, "dogrudan_temin_sonuclari", "para_birimi")
+    return SEMA
+
+
+# ── dtDetayGetir alan ayrıştırıcıları ────────────────────────────────────────
+# EKAP boş alanları "" olarak döndürür (None değil) ve bool alanları gerçek JSON
+# bool'dur. Hepsinde ortak ilke: DEĞER ÜRETME — ayrıştıramadığın alan NULL kalsın.
+
+def _metin(v):
+    """"" / boşluk → None (DB'de NULL); aksi halde kırpılmış metin."""
+    if v is None:
+        return None
+    s = str(v).strip()
+    return s or None
+
+
+def _bool(v):
+    """Gerçek JSON bool değilse None. EKAP bir gün "" ya da "False" döndürürse
+    bunu sessizce False'a çevirmek YANLIŞ VERİ olurdu."""
+    return v if isinstance(v, bool) else None
+
+
+def _tamsayi(v):
+    """'3' → 3; '' / None / sayı olmayan → None (KisimSayisi çoğu kayıtta boş)."""
+    s = _metin(v)
+    if s is None:
+        return None
+    try:
+        return int(float(s.replace(",", ".")))
+    except (ValueError, TypeError):
+        return None
+
+
+def _yasa_kodu(v):
+    """'22-d* (Parasal Limit Kapsamında)' → '22-d'. Filtrelenebilir kanonik kod.
+    Ham metin yasa_maddesi kolonunda AYRICA saklanır (kayıpsız); kalıp tutmazsa
+    None döner — tahmin yürütülmez."""
+    s = _metin(v)
+    if not s:
+        return None
+    m = re.match(r"^\s*(\d{1,2})\s*[-/]\s*([a-zçğıöşü])", s, re.IGNORECASE)
+    return f"{m.group(1)}-{m.group(2).lower()}" if m else None
+
+
+def _para_birimi(v):
+    """'6.200,00 TRY' → 'TRY', '1.234,00 TL' → 'TRY'. bedel_parse() para birimi
+    ekini SİLDİĞİ için TRY dışı bedel (USD/EUR) bugün NULL'a düşüyor ve hangi
+    para biriminde olduğu tümden kayboluyordu. Kod bulunamazsa None —
+    TRY VARSAYMAK yanlış bir TL değeri üretirdi."""
+    s = _metin(v)
+    if not s:
+        return None
+    ust = s.upper()
+    if ust.endswith("₺") or ust.endswith("TL"):
+        return "TRY"
+    m = re.search(r"([A-Z]{3})\s*$", ust)
+    return m.group(1) if m else None
+
+
+def _ilk_ilan_tarihi(liste):
+    """İlan listesindeki EN ERKEN IlanTarihi (ISO metin). Liste boş/bozuksa None.
+    ISO metinleri sözlük sırasıyla kronolojik sıralanır → min() doğrudur."""
+    tarihler = [t for t in (tarih_iso(x.get("IlanTarihi"))
+                            for x in (liste or []) if isinstance(x, dict)) if t]
+    return min(tarihler) if tarihler else None
 
 
 def kuyruk_say(client):
@@ -184,7 +326,8 @@ async def dt_detay_getir(havuz, dt_ihale_token, dt_idare_token):
 
 
 def sozlesmeleri_cikar(dt_no, veri):
-    """dtDetayGetir JSON'ından dogrudan_temin_sonuclari satırlarını üretir (0..N kalem)."""
+    """dtDetayGetir JSON'ının 4. bloğundan (SozlesmeBilgileri) dogrudan_temin_sonuclari
+    satırlarını üretir (0..N kalem). Blok 1/2/3 için bkz. detay_cikar()."""
     detay = (veri or {}).get("dogrudanTeminDetayResult") or {}
     sozlesmeler = (detay.get("SozlesmeBilgileri") or {}).get("SozlesmeBilgisiList") or []
     zaman = datetime.now(timezone.utc).isoformat()
@@ -199,16 +342,92 @@ def sozlesmeleri_cikar(dt_no, veri):
             "en_yuksek_teklif": bedel_parse(s.get("EnYuksekTeklif")),
             "en_dusuk_teklif": bedel_parse(s.get("EnDusukTeklif")),
             "sozlesme_mi": s.get("SozlesmeMi") if isinstance(s.get("SozlesmeMi"), bool) else None,
+            # 29 Tem: bedel_parse() 'TL'/'TRY' ekini siliyor → para birimi kayboluyordu.
+            # SEMA kapalıysa (migration yok) bu anahtar gövdeden düşürülür, bkz. _sonuc_govde.
+            "para_birimi": _para_birimi(s.get("SozlesmeBedeli")),
             "guncellenme": zaman,
         })
     return satirlar
 
 
-def yaz_sonuclar(client, satirlar):
+def detay_cikar(dt_no, veri, zaman):
+    """dtDetayGetir yanıtının BUGÜNE DEK ATILAN 3 bloğunu — DogrudanTeminBilgileri,
+    IdareBilgileri, IlanBilgileri — dogrudan_temin_ilanlari satırına çevirir (1:1).
+
+    Dönüş dogrudan PostgREST upsert gövdesidir: `dt_no` çakışma anahtarı,
+    `kazanan_denendi` ise eski isaretle()'nin yazdığı damganın ta kendisi — yani
+    damgalama ile detay yazımı TEK isteğe iner, fazladan tur yok.
+
+    ⚠️ ANAHTAR KÜMESİ SABİT: PostgREST toplu POST'ta partideki TÜM nesnelerin
+    anahtarları AYNI olmak zorundadır ("All object keys must match" hatası), bu
+    yüzden alan bulunamasa bile her anahtar None ile ÜRETİLİR (dict'ten atılmaz).
+
+    detay_cekildi: satırın YENİ kod yoluyla işlendiği damgası. kazanan_denendi'den
+    AYRI, çünkü 815.895 satır ESKİ (detaysız) kodla damgalandı ve ikisini ayırmanın
+    başka yolu yok. Gerçek 404'te (veri=None) bile damgalanır: "detay için EKAP'a
+    soruldu, cevap buydu" bilgisi de bir sonuçtur — aksi halde kurtarma sorgusu o
+    satırları sonsuza dek yeniden kuyruğa alırdı."""
+    detay = (veri or {}).get("dogrudanTeminDetayResult") or {}
+    dtb = detay.get("DogrudanTeminBilgileri") or {}
+    idb = detay.get("IdareBilgileri") or {}
+    ilb = detay.get("IlanBilgileri") or {}
+
+    # BransKodList = DT'nin OKAS'ı (CPV kodu). Alan DİZİ (bir DT'de birden çok kod
+    # olabilir) → text[] olarak saklanır; eşleştirme motoru dizi kesişimiyle sorgular.
+    # Boş dizi yerine NULL yazıyoruz: "kod yok" ile "hiç bakılmadı" ayrımı korunsun.
+    brans = [k for k in (_metin(x) for x in (dtb.get("BransKodList") or [])) if k]
+
+    # 4 ilan listesinin TAMAMI ham jsonb (EncIlanId hash'leri dahil — ileride belge
+    # linki üretmek için; `tum_teklifler` hash'inin 336K belge linkini doldurmasıyla
+    # aynı desen). Hepsi boşsa NULL yaz, boş liste kalabalığı saklama.
+    ilan_dolu = any(isinstance(v, list) and v for v in ilb.values())
+
+    return {
+        "dt_no": dt_no,
+        "kazanan_denendi": zaman,
+        "detay_cekildi": zaman,
+        # ── blok 1: DogrudanTeminBilgileri ───────────────────────────────────
+        "dt_brans_kodlari": brans or None,
+        "yasa_maddesi": _metin(dtb.get("YasaKapsamiTeminMaddesi")),
+        "yasa_madde_kodu": _yasa_kodu(dtb.get("YasaKapsamiTeminMaddesi")),
+        "kismi_teklif": _metin(dtb.get("KismiTeklif")),
+        "kisim_sayisi": _tamsayi(dtb.get("KisimSayisi")),
+        "e_ihale": _bool(dtb.get("EIhale")),
+        "ilan_sekli": _metin(dtb.get("IlaninSekli")),
+        "sozlesme_tasarisi_var": _bool(dtb.get("DogrudanTeminSozlesmeTasarisiVarMi")),
+        "sozlesme_veya_alim": _bool(dtb.get("SozlesmeVeyaAlimBilgisi")),
+        "istisna_dayanagi": _metin(dtb.get("IstisnaAliminDayanagi")),
+        "mevzuat_dayanagi": _metin(dtb.get("MevzuatDayanagi")),
+        "duyuru_yapilacak": _bool(dtb.get("DogrudanTeminDuyurusuYapilacakMi")),
+        "iptal_nedeni": _metin(dtb.get("IptalNedeni")),
+        "iptal_tarihi": tarih_iso(_metin(dtb.get("IptalTarihi"))),
+        # ── blok 2: IdareBilgileri (üst kurum zinciri) ───────────────────────
+        # Idare/Ili BİLEREK alınmıyor: ikisi de liste yanıtından (E3/E12) zaten
+        # geliyor ve detaydan tekrar yazmak mevcut veriyi tur ortasında oynatırdı.
+        # Kolon adları `ilanlar` tarafıyla ORTAK (ekap_detay_alanlar.py): aynı üst
+        # kurum zinciri iki tabloda AYNI adla dursun ki birlikte sorgulanabilsin.
+        # `ilanlar`da ayrıca en_ust_idare_kod var; DT yanıtı kod vermiyor, o yüzden
+        # burada yalnız _adi ucu doluyor.
+        "en_ust_idare_adi": _metin(idb.get("EnUstIdare")),
+        "ust_idare": _metin(idb.get("UstIdare")),
+        # ── blok 3: IlanBilgileri ────────────────────────────────────────────
+        "dt_ilanlar": ilb if ilan_dolu else None,
+        "dt_ilan_tarihi": _ilk_ilan_tarihi(ilb.get("DogrudanTeminIlanBilgisiList")),
+        "dt_sonuc_ilan_tarihi": _ilk_ilan_tarihi(ilb.get("SonucIlanBilgisiList")),
+    }
+
+
+def _sonuc_govde(satirlar):
+    """SEMA["sonuc_detay"] kapalıysa (migration uygulanmamış) yeni alanları gövdeden
+    DÜŞÜR → eski şemada 400/PGRST204 yerine bugünkü davranış aynen sürer."""
+    if SEMA["sonuc_detay"]:
+        return satirlar
+    return [{k: v for k, v in s.items() if k not in SONUC_YENI_ALANLAR} for s in satirlar]
+
+
+def _sonuc_gonder(client, satirlar):
     """enc_sozlesme_id dolu satırlar upsert (idempotent); nadir NULL'lı eski kayıtlar
     dedup anahtarı olmadığından düz INSERT (kazanan_denendi ile zaten bir daha denenmez)."""
-    if not satirlar:
-        return
     dolu = [s for s in satirlar if s["enc_sozlesme_id"]]
     bos = [s for s in satirlar if not s["enc_sozlesme_id"]]
     for i in range(0, len(dolu), CHUNK):
@@ -222,8 +441,65 @@ def yaz_sonuclar(client, satirlar):
         r.raise_for_status()
 
 
-def isaretle(client, dt_no_listesi, zaman):
-    """Tüm işlenen dt_no'ları (sözleşme bulunsun/bulunmasın) denendi damgalar."""
+def yaz_sonuclar(client, satirlar):
+    """Sözleşme kalemlerini yazar; şema uyumsuzluğunda yeni alanları düşürüp tekrar dener.
+
+    ÇİFT YAZIM RİSKİ YOK: şema hatası GÖVDE ŞEKLİNE bağlıdır, veriye değil — kolon
+    yoksa daha İLK istek reddedilir, dolayısıyla tekrar denemeden önce hiçbir satır
+    yazılmış olmaz. (İlk parti geçtiyse kolon vardır; o zaman sonraki partinin hatası
+    şema hatası olamaz ve _sema_hatasi_mi False döndürüp istisna yukarı fırlar.)
+    Ayrıca `dolu` kolu zaten enc_sozlesme_id üzerinde upsert — tekrarı idempotent."""
+    if not satirlar:
+        return
+    try:
+        _sonuc_gonder(client, _sonuc_govde(satirlar))
+    except httpx.HTTPStatusError as e:
+        if not (SEMA["sonuc_detay"] and _sema_hatasi_mi(e.response)):
+            raise
+        SEMA["sonuc_detay"] = False
+        print("  ⚠ dogrudan_temin_sonuclari.para_birimi canlı şemada yok "
+              "(migration_dt_detay.sql uygulanmamış) — o alan olmadan tekrar deneniyor.", flush=True)
+        _sonuc_gonder(client, _sonuc_govde(satirlar))
+
+
+def isaretle(client, dt_no_listesi, zaman, detaylar=None):
+    """Tüm işlenen dt_no'ları (sözleşme bulunsun/bulunmasın) denendi damgalar.
+
+    29 Tem: `detaylar` verilir VE canlı şemada yeni kolonlar varsa, damga ile
+    BİRLİKTE dtDetayGetir'in 3 atılan bloğu da yazılır — ayrı bir yazma turu YOK,
+    aynı istek. Yazım PATCH yerine upsert (on_conflict=dt_no, merge-duplicates)
+    çünkü PATCH tek bir ortak gövdeyi tüm satırlara uygular, oysa detay SATIR
+    BAŞINA farklıdır.
+
+    Upsert güvenli çünkü:
+      · Satırlar zaten BU tablodan SELECT edildi (secim_cek) → çakışma daima
+        UPDATE koluna düşer, hayalet INSERT olmaz.
+      · PostgREST `ON CONFLICT DO UPDATE SET` cümlesini YALNIZ gövdedeki kolonlar
+        için üretir → baslik/idare/kategori/tarih gibi mevcut veriler korunur
+        (ekap_dogrudan_temin_scraper.py aynı tabloda aynı deseni kullanıyor).
+      · baslik_fold/arama_fold GENERATED kolonları gövdede yok, yazılmaya çalışılmıyor.
+
+    ŞEMA YOKSA: SEMA["ilan_detay"] kapalıysa ya da yazım şema hatası verirse
+    BİREBİR eski davranışa düşülür (yalnız kazanan_denendi PATCH'i). Böylece
+    backfill sürerken `git pull` yapılsa bile tur çökmez; en kötü ihtimalle o tur
+    detaysız ilerler. Kısmi yazım riski yok: fallback'te PATCH aynı damgayı
+    yeniden yazar (idempotent)."""
+    if detaylar and SEMA["ilan_detay"]:
+        try:
+            for i in range(0, len(detaylar), CHUNK):
+                r = client.post(f"{SUPABASE_URL}/rest/v1/dogrudan_temin_ilanlari",
+                                headers={**_headers(),
+                                         "Prefer": "resolution=merge-duplicates,return=minimal"},
+                                params={"on_conflict": "dt_no"}, json=detaylar[i:i + CHUNK])
+                r.raise_for_status()
+            return
+        except httpx.HTTPStatusError as e:
+            if not _sema_hatasi_mi(e.response):
+                raise
+            SEMA["ilan_detay"] = False
+            print("  ⚠ DT detay kolonları canlı şemada yok (migration_dt_detay.sql uygulanmamış) — "
+                  "detaylar YAZILMADAN yalnız damgalamayla devam ediliyor.", flush=True)
+
     for i in range(0, len(dt_no_listesi), CHUNK):
         idliste = ",".join(dt_no_listesi[i:i + CHUNK])
         r = client.patch(f"{SUPABASE_URL}/rest/v1/dogrudan_temin_ilanlari",
@@ -325,6 +601,19 @@ async def main_async(args):
             print(f"→ {ESZAMANLI} eşzamanlı işçi ile paralel çekiliyor "
                   f"(küresel tavan: {'sınırsız' if args.rpm <= 0 else str(args.rpm) + '/dk'})")
 
+            # Yeni detay kolonları canlıda var mı — tur başında BİR KEZ. Yoksa betik
+            # ÇALIŞMAYA DEVAM EDER, yalnız 3 blok yazılmaz (eski davranış). Böylece
+            # kod ile migration'ın canlıya çıkış sırası önemsizleşir.
+            await asyncio.to_thread(sema_sinama, client)
+            if SEMA["ilan_detay"] and SEMA["sonuc_detay"]:
+                print("→ Detay şeması HAZIR: dtDetayGetir'in 4 bloğu da yazılacak "
+                      "(branş kodu / yasa maddesi / idare zinciri / ilan listeleri).")
+            else:
+                print(f"⚠ Detay şeması EKSİK (ilanlari={SEMA['ilan_detay']}, sonuclari={SEMA['sonuc_detay']}) — "
+                      f"backend/migration_dt_detay.sql uygulanmamış. Tur ESKİ davranışla sürüyor: "
+                      f"yalnız SozlesmeBilgisiList yazılacak, diğer 3 blok ATILACAK. "
+                      f"⏰ Damgalanan satır bir daha seçilmez; migration'ı önce uygulamanız önerilir.")
+
             if args.dry_run:
                 batch = await asyncio.to_thread(secim_cek, client, min(args.batch, 5))
                 if not batch:
@@ -335,11 +624,21 @@ async def main_async(args):
                     satirlar = sozlesmeleri_cikar(row["dt_no"], veri)
                     if satirlar:
                         for s in satirlar:
-                            print(f"   {row['dt_no']}: {s['kazanan_firma']!r} — {s['kazanan_bedel']} TL ({s['sozlesme_tarihi']})")
+                            print(f"   {row['dt_no']}: {s['kazanan_firma']!r} — {s['kazanan_bedel']} "
+                                  f"{s['para_birimi'] or '?'} ({s['sozlesme_tarihi']})")
                     elif not damgalanabilir:
                         print(f"   {row['dt_no']}: GEÇİCİ HATA (çekilemedi — canlıda damgalanmaz, tekrar denenir)")
                     else:
                         print(f"   {row['dt_no']}: sözleşme verisi yok/boş (veri={('yok/404' if veri is None else 'boş liste')})")
+                    # Eskiden ATILAN 3 blok — dry-run'da görünür olsun ki gerçekten
+                    # doluyor mu gözle doğrulanabilsin.
+                    d = detay_cikar(row["dt_no"], veri, zaman)
+                    print(f"      ↳ branş={d['dt_brans_kodlari']} · yasa={d['yasa_madde_kodu']!r} "
+                          f"({d['yasa_maddesi']!r}) · kısmi={d['kismi_teklif']!r} · kısım={d['kisim_sayisi']} "
+                          f"· e-ihale={d['e_ihale']} · ilan şekli={d['ilan_sekli']!r}")
+                    print(f"      ↳ zincir={d['en_ust_idare_adi']!r} > {d['ust_idare']!r} · "
+                          f"ilan={d['dt_ilan_tarihi']} · sonuç ilanı={d['dt_sonuc_ilan_tarihi']} · "
+                          f"iptal={d['iptal_nedeni']!r}/{d['iptal_tarihi']}")
                 print("\n(dry-run — yazma/işaretleme yapılmadı)")
                 return
 
@@ -366,7 +665,9 @@ async def main_async(args):
                 # istek en çok ESZAMANLI ile sınırlı. Havuzun RuntimeError emniyet supapları
                 # gather'dan sızarsa BİLEREK yakalanmaz → main_async'ten çıkıp turu durdurur.
                 sonuclar = await _parti_cek(havuz, batch, sem, kesici)
-                tum_satirlar, dt_no_listesi = [], []
+                # detaylar: dtDetayGetir'in 3 atılan bloğu, dt_no_listesi ile AYNI
+                # satırlar için (damgalama ile aynı upsert'te yazılır).
+                tum_satirlar, dt_no_listesi, detaylar = [], [], []
                 for row, veri, damgalanabilir, atlandi in sonuclar:
                     if atlandi:
                         # Devre kesici açıkken bu satıra EKAP isteği ATILMADI; damgalanmadı,
@@ -380,6 +681,7 @@ async def main_async(args):
                         continue
                     tum_satirlar.extend(sozlesmeleri_cikar(row["dt_no"], veri))
                     dt_no_listesi.append(row["dt_no"])
+                    detaylar.append(detay_cikar(row["dt_no"], veri, zaman))
                     # Elle sleep YOK: hız sınırı artık havuzda (IP başına soğuma +
                     # küresel tavan). Burada ayrıca beklemek ikisini üst üste bindirirdi.
                 try:
@@ -387,7 +689,9 @@ async def main_async(args):
                     # damgalama da atlanır, satırlar sonraki turda yeniden denenir.
                     # to_thread: senkron REST çağrıları event loop'u bloklamasın.
                     await asyncio.to_thread(yaz_sonuclar, client, tum_satirlar)
-                    await asyncio.to_thread(isaretle, client, dt_no_listesi, zaman)
+                    # detaylar: damga + 3 blok TEK upsert'te (şema yoksa isaretle
+                    # kendi içinde eski PATCH yoluna düşer — tur çökmez).
+                    await asyncio.to_thread(isaretle, client, dt_no_listesi, zaman, detaylar)
                 except httpx.HTTPError as e:
                     print(f"  ✗ Yazma hatası ({str(e)[:120]}) — tur durduruluyor (işaretlenmeyenler sonraki turda).")
                     break
@@ -406,13 +710,18 @@ async def main_async(args):
                 print(f"   … {damgalanan} dt_no damgalandı, {kazanim_sayisi} sözleşme kaydı yazıldı, "
                       f"{cekilemeyen} çekilemedi ({istek} EKAP isteği)")
 
+            # Dürüst özet: detay blokları gerçekten yazıldı mı? SEMA tur ortasında
+            # da düşmüş olabilir (bayat şema önbelleği) — o hâlde "yazıldı" DEME.
+            detay_notu = ("detay blokları da yazıldı" if SEMA["ilan_detay"]
+                          else "⚠ DETAY BLOKLARI YAZILMADI — migration_dt_detay.sql uygulanmamış; "
+                               "damgalanan bu satırlar bir daha SEÇİLMEZ")
             if cekilemeyen:
                 print(f"\n⚠ Tur bitti (EKSİK): {damgalanan} dt_no damgalandı, {kazanim_sayisi} sözleşme kaydı "
                       f"(kazanan+bedel) yazıldı, {cekilemeyen} dt_no ÇEKİLEMEDİ (geçici hata — damgalanmadı, "
-                      f"sonraki turda tekrar denenecek), {istek} EKAP isteği.")
+                      f"sonraki turda tekrar denenecek), {istek} EKAP isteği. [{detay_notu}]")
             else:
                 print(f"\n✓ Bitti: {damgalanan} dt_no işlendi, {kazanim_sayisi} sözleşme kaydı (kazanan+bedel) "
-                      f"yazıldı, {istek} EKAP isteği (CAPTCHA/Gemini kullanılmadı).")
+                      f"yazıldı, {istek} EKAP isteği (CAPTCHA/Gemini kullanılmadı). [{detay_notu}]")
     finally:
         # Hangi IP'ler kullanıldı, kaçı düştü, ne kadar hız sınırı beklendi —
         # blok yiyip yemediğimizi buradan görüyoruz. RuntimeError'la erken çıksak

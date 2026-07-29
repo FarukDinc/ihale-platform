@@ -33,6 +33,7 @@ import ssl
 import time
 import uuid
 from datetime import datetime, timezone
+from urllib.parse import quote
 
 import httpx
 from PIL import Image
@@ -465,8 +466,31 @@ def html_temizle(html):
     return txt.strip()
 
 
+# ── EKAP resmî doküman sayfası (KALICI link) ──────────────
+# ⚠️ ESKİDEN belge linki `{BASE}/b_ihalearama/api/Dokuman/GetFile?id=…` olarak
+#    ÜRETİLİYORDU. O bir API endpoint'i: crypto header'sız 401 döner, yani
+#    `ilanlar.belgeler` içindeki linkler kullanıcının TARAYICISINDA ÇALIŞMIYORDU.
+#    Çalışan uç EKAP'ın vatandaş doküman sayfası; ihale hash'iyle açılıyor,
+#    CAPTCHA'yı kullanıcı kendi çözüyor (bizde indirme/Storage maliyeti yok).
+#    Aynı şablonu ihale-detay.html zaten ekap_ihale_id'den üretiyor — tek kaynak.
+#
+# ⚠️ GetDokumanUrl'i ÇAĞIRIP dönen linki DB'YE YAZMAYIN. Ölçüldü (29 Tem 2026):
+#    aynı ihaleId + aynı islemId için ARDIŞIK üç çağrı üç FARKLI hash döndürdü
+#    (98348d88… / 55092996… / 3ffb8435…) → dönen hash oturumluk bir token,
+#    saklanırsa link bayatlar. KALICI olan, liste yanıtındaki `id` hash'idir
+#    (= ilanlar.ekap_ihale_id). Bu yüzden link artık İSTEK ATMADAN üretiliyor.
+DOKUMAN_SAYFA = ("https://ekap.kik.gov.tr/EKAP/Ortak/VatandasIlanGoruntuleme.aspx"
+                 "?ddac=true&aramaDownload=true&ihaleId={}&wots=false&Iszylnm=false")
+
+
+def dokuman_sayfa_url(ekap_ihale_id) -> str | None:
+    """Tarayıcıda açılan kalıcı belge linki. ekap_ihale_id = liste yanıtındaki `id`."""
+    h = str(ekap_ihale_id or "").strip()
+    return DOKUMAN_SAYFA.format(quote(h, safe="")) if h else None
+
+
 # ── Belge nesnesi normalleştirici ────────────────────────
-def belge_isle(b: dict) -> dict:
+def belge_isle(b: dict, ekap_ihale_id=None) -> dict:
     doc_id = b.get("id") or b.get("dokumanId") or b.get("belgId")
     ad = (
         b.get("dokumanAdi") or b.get("ad") or b.get("adi")
@@ -476,9 +500,11 @@ def belge_isle(b: dict) -> dict:
         b.get("dokumanTuru") or b.get("tur") or b.get("turu")
         or b.get("type") or b.get("fileType") or b.get("dosyaTuru") or ""
     ).strip() or None
+    # EKAP'ın kendi verdiği url varsa o kullanılır; yoksa GetFile UYDURMA yerine
+    # ihale hash'inden kalıcı doküman sayfası linki üretilir (yukarıdaki not).
     url = (
         b.get("url") or b.get("downloadUrl")
-        or (f"{BASE}/b_ihalearama/api/Dokuman/GetFile?id={doc_id}" if doc_id else None)
+        or dokuman_sayfa_url(ekap_ihale_id)
     )
     return {
         "id":    doc_id,
@@ -539,21 +565,23 @@ async def detay_cek(client, ihale_id: str, dokuman_sayisi: int = 0) -> dict:
             or veri.get("dokumanListe") or []
         )
         if raw:
-            sonuc["belgeler"] = [belge_isle(b) for b in raw]
+            sonuc["belgeler"] = [belge_isle(b, ihale_id) for b in raw]
 
     # NOT: GetDokumanListByIhaleId endpoint'i artık 404 veriyor (kaldırıldı).
-    # Belge bilgisi GetDokumanUrl linkinden (aşağıda) geliyor.
 
-    # 3) EKAP indirme linki (hafif — dosya indirmez, CAPTCHA çözmez).
+    # 3) EKAP doküman sayfası linki (hafif — dosya indirmez, CAPTCHA çözmez).
     #    Frontend bu linki "EKAP'ta Aç" olarak gösterir; kullanıcı CAPTCHA'yı kendi çözer.
     #    Ağır indirme (Gemini + Storage) ileride main()'de BELGE_INDIR ile ayrı yürür.
+    #    ⚠️ ESKİDEN burada `dokuman_url_al()` ile İSTEK ATILIP dönen link saklanıyordu;
+    #    o link oturumluk (bkz. DOKUMAN_SAYFA notu). Artık ihale hash'inden yerel
+    #    üretiliyor → hem kalıcı hem de ihale başına 1 EKAP isteği tasarrufu.
     if BELGE_LINK and dokuman_sayisi and not sonuc["belgeler"]:
-        link = await dokuman_url_al(client, ihale_id, "1")
+        link = dokuman_sayfa_url(ihale_id)
         if link:
             sonuc["belgeler"] = [{
                 "id": "1",
                 "tur": "İhale Dokümanı",
-                "ad": "İhale Dokümanı",
+                "ad": "İhale Dokümanı (İdari + Teknik Şartname)",
                 "url": link,            # frontend href: "EKAP'ta Aç"
                 "storage_url": None,    # ileride indirilirse doldurulur
             }]

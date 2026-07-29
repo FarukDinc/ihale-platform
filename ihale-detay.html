@@ -527,6 +527,16 @@
     jandarma: { ad: 'Jandarma Vatandaş İhale Sorgu',      eyebrow: '🪖 Jandarma · vatandas.jandarma.gov.tr',   ac: "↗ Jandarma'da Aç" },
   };
 
+  // EKAP'ın resmî vatandaş doküman sayfası — TARAYICIDA ÇALIŞAN tek uç.
+  // ⚠️ `…/b_ihalearama/api/Dokuman/GetFile?id=…` KULLANMAYIN: o bir API endpoint'i,
+  //    imzalı crypto header olmadan 401 döner (kullanıcıda sessizce boş sayfa).
+  //    Kalıcı anahtar ekap_ihale_id (liste hash'i); GetDokumanUrl'in döndürdüğü hash
+  //    oturumluk token olduğu için saklanmaz (backend ekap_scraper.DOKUMAN_SAYFA notu).
+  function ekapDokumanSayfasi(hash) {
+    if (!hash) return null;
+    return `https://ekap.kik.gov.tr/EKAP/Ortak/VatandasIlanGoruntuleme.aspx?ddac=true&aramaDownload=true&ihaleId=${encodeURIComponent(hash)}&wots=false&Iszylnm=false`;
+  }
+
   function sayfaOlustur(d) {
     const uyum = Uyum.hesapla(d, kullaniciProfil);
     const gun = gunHesapla(d.son_teklif_tarihi);
@@ -538,7 +548,7 @@
       belgeler.push({
         ad: 'İhale Dokümanı (İdari + Teknik Şartname)',
         tur: 'EKAP resmî doküman sayfası',
-        url: `https://ekap.kik.gov.tr/EKAP/Ortak/VatandasIlanGoruntuleme.aspx?ddac=true&aramaDownload=true&ihaleId=${encodeURIComponent(d.ekap_ihale_id)}&wots=false&Iszylnm=false`,
+        url: ekapDokumanSayfasi(d.ekap_ihale_id),
       });
     }
     const kalemler = Array.isArray(d.kalemler) ? d.kalemler : [];
@@ -686,12 +696,14 @@
           ${belgeler.length ? belgeler.map((b) => {
             const ad   = b.ad || b.tur || b.baslik || 'İhale Dokümanı';
             const tur  = b.tur && b.tur !== ad ? b.tur : '';
-            // Storage URL öncelikli, yoksa EKAP API, yoksa EKAP sayfası
+            // Storage URL öncelikli, yoksa kayıtlı url, yoksa EKAP doküman sayfası,
+            // en son çare EKAP ihale arama. ⚠️ b.id'den GetFile linki ÜRETME — 401 verir
+            // (bkz. ekapDokumanSayfasi notu); belge kimliği tarayıcıda kullanılabilir değil.
             const href = b.storage_url
               || b.url
-              || (b.id ? `https://ekapv2.kik.gov.tr/b_ihalearama/api/Dokuman/GetFile?id=${b.id}` : null)
+              || ekapDokumanSayfasi(d.ekap_ihale_id)
               || ekapLink(d.ikn, d.usul);
-            const direkt = !!(b.storage_url || b.url || b.id);
+            const direkt = !!(b.storage_url || b.url || d.ekap_ihale_id);
             const icon = /pdf/i.test(tur||ad) ? '📕'
               : /excel|xlsx/i.test(tur||ad) ? '📗'
               : /word|docx/i.test(tur||ad) ? '📘'

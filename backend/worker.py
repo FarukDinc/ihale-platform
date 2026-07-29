@@ -113,9 +113,10 @@ def belge_url_getir(ihale: dict) -> str | None:
     """
     ihale['belgeler']'de zaten indirilmiş (storage_url dolu) bir belge varsa onu döndürür.
     Yoksa gece turunun (EKAP_BELGE_LINK) sakladığı hazır CAPTCHA linkini (belgeler[0].url —
-    içinde EKAP'ın gerçek dahili ihaleId'si hex olarak gömülü; ilanlar.ekap_id bunun YERİNE
-    İKN'yi tutuyor, GetDokumanUrl'e tekrar sorarsak yanlış id ile 500 alırız — bu yüzden
-    dokuman_url_al'ı TEKRAR ÇAĞIRMIYORUZ, doğrudan zaten doğrulanmış linki kullanıyoruz)
+    VatandasIlanGoruntuleme.aspx?ihaleId=<hex>; ilanlar.ekap_id bunun YERİNE İKN'yi tutuyor).
+    ⚠️ 29 Tem 2026'dan itibaren o link EKAP'a SORULMADAN ilanlar.ekap_ihale_id'den (liste
+    hash'i) üretiliyor — GetDokumanUrl'in döndürdüğü hash her çağrıda DEĞİŞTİĞİ için
+    (ölçüldü) saklanabilir bir değer değildi. dokuman_url_al'ı burada da ÇAĞIRMIYORUZ.
     ekap_scraper.ekap_captcha_indir ile CAPTCHA çözüp indirir, Supabase Storage'a yükler,
     ilanlar.belgeler'i kalıcı günceller (sonraki analizler tekrar indirmez) ve storage_url
     döndürür.
