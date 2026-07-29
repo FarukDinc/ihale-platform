@@ -58,6 +58,15 @@
 
     /* Tablo yardımcıları */
     .v1-tablo td.sayi, .v1-tablo th.sayi { text-align:right; font-variant-numeric:tabular-nums; }
+    .v1-pencere-satir { display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-top:9px; }
+    .v1-pencere { display:inline-flex; flex-direction:column; background:#fff; border:1.5px solid var(--v1-mavi);
+      border-radius:9px; padding:7px 13px; line-height:1.35; }
+    .v1-pencere b { font-size:11.5px; color:var(--v1-mavi); text-transform:uppercase; letter-spacing:.04em; }
+    .v1-pencere i { font-style:normal; font-size:13px; font-weight:700; color:var(--v1-lacivert); white-space:nowrap; }
+    .v1-pencere-ok { font-size:12px; font-weight:700; color:var(--v1-muted); }
+    .v1-esik { display:inline-block; background:#fff; border:1px solid var(--v1-cizgi); border-radius:20px;
+      padding:3px 11px; margin:3px 5px 0 0; font-size:11.5px; color:var(--v1-metin); }
+    .v1-esik em { font-style:normal; color:var(--v1-muted); }
     .v1-buyume-poz { color:var(--v1-yesil); font-weight:800; }
     .v1-buyume-neg { color:var(--v1-kirmizi); font-weight:800; }
     .v1-firma-ad { color:var(--v1-mavi); font-weight:600; }
@@ -85,9 +94,28 @@
       </div>
 
       <div class="v1-bilgi-serit">
-        ⭐ <strong>Segmentler nasıl hesaplanır?</strong> Firmaların kamu ihalesi kazanç geçmişi (sonuç arşivi) üzerinden,
-        son 12 ay ve önceki 12 ay pencereleri karşılaştırılarak türetilir. Ek bir veri kazıması yapılmaz;
-        tüm rakamlar sistemdeki mevcut sonuç kayıtlarından hesaplanır.
+        ⭐ <strong>Segmentler nasıl hesaplanır?</strong> Firmaların kamu ihalesi kazanç geçmişi (sonuç arşivi) üzerinden
+        <strong>iki pencere karşılaştırılır</strong>:
+        <div class="v1-pencere-satir">
+          <span class="v1-pencere"><b>Son 12 ay</b><i id="v1-pencere-son">hesaplanıyor…</i></span>
+          <span class="v1-pencere-ok">↔ kıyaslanır ↔</span>
+          <span class="v1-pencere"><b>Önceki 12 ay</b><i id="v1-pencere-onceki">hesaplanıyor…</i></span>
+        </div>
+        <div style="margin-top:8px;">
+          ⏱️ Pencerelerin bitiş noktası <strong>bugünün tarihi değil</strong>, arşivdeki
+          <strong id="v1-ref-tarih">en güncel sonuç tarihi</strong>dir — böylece henüz işlenmemiş
+          son günler sahte düşüş üretmez.
+        </div>
+        <div style="margin-top:8px;">
+          📐 <strong>Eşikler:</strong>
+          <span class="v1-esik">Parlayan: <b>≥2 kat</b> artış <em>(son 12 ay ≥ 5 Mn ₺)</em></span>
+          <span class="v1-esik">Sönen: <b>≥%70</b> düşüş <em>(önceki 12 ay ≥ 5 Mn ₺)</em></span>
+          <span class="v1-esik">İlk Kez: toplam <b>≥ 100 B ₺</b></span>
+          <span class="v1-esik">150Mn+: kümülatif <b>≥ 150 Mn ₺</b></span>
+        </div>
+        <div style="margin-top:8px;color:var(--v1-muted);">
+          Ek bir veri kazıması yapılmaz; tüm rakamlar sistemdeki mevcut sonuç kayıtlarından hesaplanır.
+        </div>
       </div>
 
       <div id="v1-onizleme" class="v1-onizleme" style="display:none;">
@@ -106,25 +134,25 @@
             <div class="v1-seg-emoji">🌟</div>
             <div class="v1-seg-sayi" id="v1-c-parlayan">…</div>
             <div class="v1-seg-etiket">Parlayan Yıldızlar</div>
-            <div class="v1-seg-aciklama">Son 12 ayda kazançları hızla artan firmalar</div>
+            <div class="v1-seg-aciklama">Kazancı önceki 12 aya göre <b>en az 2 katına</b> çıkan firmalar</div>
           </div>
           <div class="v1-seg" role="button" tabindex="0" data-seg="ilk_kez">
             <div class="v1-seg-emoji">🆕</div>
             <div class="v1-seg-sayi" id="v1-c-ilk_kez">…</div>
             <div class="v1-seg-etiket">İlk Kez Kazananlar</div>
-            <div class="v1-seg-aciklama">İlk kamu ihalesini son 12 ayda kazanan firmalar</div>
+            <div class="v1-seg-aciklama">İlk kamu ihalesini <b>son 12 ayda</b> kazanan firmalar</div>
           </div>
           <div class="v1-seg" role="button" tabindex="0" data-seg="150mn">
             <div class="v1-seg-emoji">💰</div>
             <div class="v1-seg-sayi" id="v1-c-150mn">…</div>
             <div class="v1-seg-etiket">150Mn+ Kazananlar</div>
-            <div class="v1-seg-aciklama">Toplam kazancı 150 milyon TL'yi aşan firmalar</div>
+            <div class="v1-seg-aciklama">Tüm zamanlarda toplam kazancı <b>150 Mn ₺</b>'yi aşan firmalar</div>
           </div>
           <div class="v1-seg" role="button" tabindex="0" data-seg="sonen">
             <div class="v1-seg-emoji">📉</div>
             <div class="v1-seg-sayi" id="v1-c-sonen">…</div>
             <div class="v1-seg-etiket">Sönen Yıldızlar</div>
-            <div class="v1-seg-aciklama">Son 12 ayda kazançları belirgin düşen firmalar</div>
+            <div class="v1-seg-aciklama">Kazancı önceki 12 aya göre <b>%70+ düşen</b> firmalar</div>
           </div>
         </div>
 
@@ -170,6 +198,8 @@
 
   // ⚠️ Sayaç RPC'si '150mn' segmentini 'yuz50mn' anahtarıyla döner (migration_firma_segmentleri.sql)
   const SEGMENTLER = {
+    // ⚠️ buyume:true olan segmentlerde İKİ pencere de gösterilir — yoksa kullanıcı
+    //    "neyle kıyaslandığını" göremiyor (Sönen'de yalnız 'önceki 12 ay' görünüyordu).
     parlayan: { emoji:'🌟', ad:'Parlayan Yıldızlar', sayacAnahtar:'parlayan',
                 ciroBaslik:'Son 12 ay kazancı',     ciroAlan:'ciro_son_12ay',    buyume:true,  tarih:false },
     ilk_kez:  { emoji:'🆕', ad:'İlk Kez Kazananlar', sayacAnahtar:'ilk_kez',
@@ -219,6 +249,27 @@
     listeGetir().then(basaKaydir, basaKaydir);
   }
 
+  /**
+   * KIYAS PENCERELERİNİ SOMUT TARİHLE YAZ.
+   * Çapa `ref_tarih` = arşivdeki en güncel gerçek sonuç tarihi (BUGÜN DEĞİL) — sonuç
+   * backfill'i akarken son günler henüz işlenmemiş olabilir, bugünü çapa alsaydık her
+   * firma sahte düşüş gösterirdi. RPC'de ref_tarih yoksa (migration_segment_pencere.sql
+   * henüz uygulanmadıysa) jenerik metin olduğu gibi kalır — sayfa bozulmaz.
+   */
+  function pencereleriYaz(refTarih){
+    if(!refTarih) return;
+    const bit=new Date(refTarih);
+    if(isNaN(bit)) return;
+    const geri=(t,ay)=>{ const d=new Date(t); d.setMonth(d.getMonth()-ay); return d; };
+    const g=(d)=>d.toLocaleDateString('tr-TR',{year:'numeric',month:'short',day:'numeric'});
+    const sonEl=document.getElementById('v1-pencere-son');
+    const oncEl=document.getElementById('v1-pencere-onceki');
+    const refEl=document.getElementById('v1-ref-tarih');
+    if(sonEl) sonEl.textContent = g(geri(bit,12))+' – '+g(bit);
+    if(oncEl) oncEl.textContent = g(geri(bit,24))+' – '+g(geri(bit,12));
+    if(refEl) refEl.textContent = g(bit)+' (arşivdeki en güncel sonuç)';
+  }
+
   async function sayilariGetir(){
     try{
       const {data,error}=await sb.rpc('firma_segment_sayilari');
@@ -230,6 +281,7 @@
       });
       const tz=document.getElementById('v1-tazelik');
       if(tz) tz.textContent = d.guncellendi ? 'Segmentler son güncelleme: '+tamTarih(d.guncellendi) : '';
+      pencereleriYaz(d.ref_tarih);
     }catch(e){
       if(kilitliMi(e)){ kilidiGoster(); return; }
       Object.keys(SEGMENTLER).forEach(k=>{
@@ -244,14 +296,17 @@
       '<th style="width:56px;">#</th>'+
       '<th>Firma</th>'+
       '<th style="width:120px;">İl</th>'+
-      `<th class="sayi" style="width:170px;">${esc(cfg.ciroBaslik)}</th>`+
-      (cfg.buyume?'<th class="sayi" style="width:110px;">Büyüme</th>':'')+
+      (cfg.buyume
+        ? '<th class="sayi" style="width:150px;">Önceki 12 ay</th>'+
+          '<th class="sayi" style="width:150px;">Son 12 ay</th>'+
+          '<th class="sayi" style="width:110px;">Değişim</th>'
+        : `<th class="sayi" style="width:170px;">${esc(cfg.ciroBaslik)}</th>`)+
       (cfg.tarih?'<th class="sayi" style="width:140px;">İlk Kazanım</th>'
                 :'<th class="sayi" style="width:110px;">Sözleşme</th>')+
       '</tr>';
   }
 
-  function sutunSayisi(cfg){ return 4 + (cfg.buyume?1:0) + 1; }
+  function sutunSayisi(cfg){ return 3 + (cfg.buyume ? 3 : 1) + 1; }   // #|Firma|İl + (önceki,son,değişim | tek ciro) + son sütun
 
   async function listeGetir(){
     if(kilitli) return;                             // kilit gösterildiyse ikinci 42501 isteği atma
@@ -283,7 +338,10 @@
       tb.innerHTML=firmalar.map((f,i)=>{
         const sira=sayfa*SAYFA+i+1;
         const ad=f.ad||'—';
-        const ciroHucre=tl(f[cfg.ciroAlan]);
+        const ciroHucre = cfg.buyume
+          ? `<td class="sayi" style="color:var(--v1-muted);">${tl(f.ciro_onceki_12ay)}</td>`+
+            `<td class="sayi" style="font-weight:700;color:var(--v1-lacivert);">${tl(f.ciro_son_12ay)}</td>`
+          : tl(f[cfg.ciroAlan]);
         let hucreler='';
         if(cfg.buyume){
           const b=f.buyume_yuzde;
@@ -301,7 +359,7 @@
             <a class="v1-analiz-link" href="v1-firma-analiz?firma=${encodeURIComponent(ad)}" title="Firma analizi">📊</a>
           </td>
           <td style="font-size:13px;color:var(--v1-metin-2);">${esc(f.il||'—')}</td>
-          <td class="sayi" style="font-weight:700;color:var(--v1-mavi);">${ciroHucre}</td>
+          ${cfg.buyume ? ciroHucre : `<td class="sayi" style="font-weight:700;color:var(--v1-mavi);">${ciroHucre}</td>`}
           ${hucreler}
         </tr>`;
       }).join('');
