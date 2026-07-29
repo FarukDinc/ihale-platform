@@ -442,7 +442,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-<script src="js/v1-kabuk.js?v=6"></script>
+<script src="js/v1-kabuk.js?v=7"></script>
 <script>
 (() => {
   const SB_URL="https://ihaleglobal.com", SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzg0MzA3MTU4LCJleHAiOjE5NDE5ODcxNTh9.CjNKulvirotDD_y2oO2QKgo0kbqYvL0jUSV1RiDMoso";
@@ -782,13 +782,19 @@
     try {
       const { data: { user } } = await sb.auth.getUser();
       if (!user) { btn.textContent = '🔔 Kurumu Takip Et'; btn.dataset.takipte = ''; btn.classList.remove('secili'); return; }
-      const { data } = await sb.from('takip_idareler')
+      const { data, error } = await sb.from('takip_idareler')
         .select('id').eq('kullanici_id', user.id).eq('idare_ad', KURUM).limit(1);
+      if (error) throw error;
       const takipte = !!(data && data.length);
       btn.textContent = takipte ? '✓ Takip Ediliyor' : '🔔 Kurumu Takip Et';
       btn.dataset.takipte = takipte ? '1' : '';
       btn.classList.toggle('secili', takipte);
-    } catch (_) { /* tablo/yetki yoksa sessizce geç */ }
+    } catch (e) {
+      // Durum okunamadı: buton "İşleniyor…" gibi bir ara metinde ASILI KALMAMALI,
+      // güvenli varsayılana döner (takip iddiası uydurulmaz).
+      console.warn('Kurum takip durumu okunamadı:', (e && e.message) || e);
+      btn.textContent = '🔔 Kurumu Takip Et'; btn.dataset.takipte = ''; btn.classList.remove('secili');
+    }
   }
 
   async function takipToggle() {
@@ -796,17 +802,24 @@
     const btn = el('btn-takip');
     const { data: { user } } = await sb.auth.getUser();
     if (!user) { location.href = `login?donus=${encodeURIComponent(location.pathname + location.search)}`; return; }
+    // supabase-js YAZMA İŞLEMİ HATA FIRLATMAZ → {error} döner. Sadece try/catch'e
+    // güvenilirse RLS/yetki hatasında catch hiç çalışmaz, kullanıcı butona basar ve
+    // hiçbir şey olmaz (sessiz başarısızlık). {error} açıkça kontrol edilir.
+    const eskiMetin = btn.textContent;
+    btn.disabled = true; btn.textContent = 'İşleniyor…';
     try {
-      if (btn.dataset.takipte === '1') {
-        await sb.from('takip_idareler').delete().eq('kullanici_id', user.id).eq('idare_ad', KURUM);
-      } else {
-        await sb.from('takip_idareler').upsert(
-          { kullanici_id: user.id, idare_ad: KURUM },
-          { onConflict: 'kullanici_id,idare_ad', ignoreDuplicates: true }
-        );
-      }
-      takipDurumu();
-    } catch (_) {
+      const { error } = btn.dataset.takipte === '1'
+        ? await sb.from('takip_idareler').delete().eq('kullanici_id', user.id).eq('idare_ad', KURUM)
+        : await sb.from('takip_idareler').upsert(
+            { kullanici_id: user.id, idare_ad: KURUM },
+            { onConflict: 'kullanici_id,idare_ad', ignoreDuplicates: true }
+          );
+      if (error) throw error;
+      btn.disabled = false;
+      await takipDurumu();   // gerçek durumu DB'den okur (yerel tahmin yok)
+    } catch (e) {
+      console.error('Kurum takip işlemi başarısız:', e);
+      btn.disabled = false; btn.textContent = eskiMetin;
       alert('Takip işlemi şu an yapılamıyor, lütfen daha sonra tekrar deneyin.');
     }
   }
@@ -837,7 +850,10 @@
       return;
     }
 
-    el('btn-dt').href = `dogrudan-temin?idare=${encodeURIComponent(KURUM)}`;
+    // v1 sürümünde ayrı "dogrudan-temin" sayfası YOKTUR — DT evreni v1-ihaleler'in
+    // "Doğrudan Teminler" sekmesidir (?sekme=dt&idare= derin bağını destekler).
+    // v2 yolu bırakılırsa kullanıcı amber v2 arayüzüne düşüyordu.
+    el('btn-dt').href = `v1-ihaleler?sekme=dt&idare=${encodeURIComponent(KURUM)}`;
     takipDurumu();
 
     // Server-side aggregate: 8 kırılım + KPI tek RPC'de (client-load-all yok)

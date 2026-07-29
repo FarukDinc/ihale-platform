@@ -145,11 +145,11 @@
               <svg viewBox="0 0 24 24" width="20" height="20" fill="var(--v1-teal)"><path fill-rule="evenodd" d="M8 2h6.2L21 8.8V20a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2Zm5.6 8.4V3.9L20.1 10.4h-6.5ZM9 15.4h1.6v3.2H9v-3.2Zm2.6-2.2h1.6v5.4h-1.6v-5.4Zm2.6 3h1.6v2.4h-1.6v-2.4Z"/></svg>
               Raporlarım
             </span>
-            <a href="raporlar" style="font-size:12.5px;color:var(--v1-muted);">Tümü →</a>
+            <a href="v1-raporlar" style="font-size:12.5px;color:var(--v1-muted);">Tümü →</a>
           </div>
           <div class="v1-ikili">
-            <div class="v1-rapor-kart"><h4>İhale Raporu</h4><p>Kriterlerinize göre yayınlanan güncel ihaleleri listeleyen size özel raporlar.</p><a class="v1-rapor-btn" href="raporlar">Yeni Rapor</a></div>
-            <div class="v1-rapor-kart"><h4>İhale Sonuç Raporu</h4><p>Kriterlere göre sonuçlanan ihaleleri listeleyen size özel raporlar.</p><a class="v1-rapor-btn" href="raporlar">Yeni Rapor</a></div>
+            <div class="v1-rapor-kart"><h4>İhale Raporu</h4><p>Kriterlerinize göre yayınlanan güncel ihaleleri listeleyen size özel raporlar.</p><a class="v1-rapor-btn" href="v1-raporlar">Yeni Rapor</a></div>
+            <div class="v1-rapor-kart"><h4>İhale Sonuç Raporu</h4><p>Kriterlere göre sonuçlanan ihaleleri listeleyen size özel raporlar.</p><a class="v1-rapor-btn" href="v1-raporlar">Yeni Rapor</a></div>
           </div>
         </div>
 
@@ -172,7 +172,7 @@
               <svg viewBox="0 0 24 24" width="20" height="20" fill="var(--v1-teal)"><path d="M12 2a1.6 1.6 0 0 1 1.6 1.6v.62a6 6 0 0 1 4.4 5.78v3.2l1.42 2.46a1 1 0 0 1-.87 1.5H5.45a1 1 0 0 1-.87-1.5L6 13.2V10a6 6 0 0 1 4.4-5.78V3.6A1.6 1.6 0 0 1 12 2Z"/><path d="M9.6 18.5h4.8a2.4 2.4 0 0 1-4.8 0Z"/></svg>
               Takip Edilenlerde Son Güncellemeler
             </span>
-            <a href="bildirimler" style="font-size:12.5px;color:var(--v1-muted);">Tümü →</a>
+            <a href="v1-bildirimler" style="font-size:12.5px;color:var(--v1-muted);">Tümü →</a>
           </div>
           <div id="v1-bildirim"><div class="v1-bos">Yükleniyor…</div></div>
         </div>
@@ -214,7 +214,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/tr-harita.js?v=1"></script>
-<script src="js/v1-kabuk.js?v=6"></script>
+<script src="js/v1-kabuk.js?v=7"></script>
 <script>
 (() => {
   const SB_URL="https://ihaleglobal.com", SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzg0MzA3MTU4LCJleHAiOjE5NDE5ODcxNTh9.CjNKulvirotDD_y2oO2QKgo0kbqYvL0jUSV1RiDMoso";
@@ -229,7 +229,37 @@
     if(s<604800)return Math.floor(s/86400)+' gün önce'; return new Date(t).toLocaleDateString('tr-TR',{day:'2-digit',month:'short'}); };
   let uid=null;
 
+  // ── v1 yol eşleyici: DB'den/eski koddan gelen v2 sayfa adlarını v1 karşılığına çevirir ──
+  // (yalnız v1-*.html olarak GERÇEKTEN var olan sayfalar — `ls v1-*.html` ile doğrulandı)
+  const V1_SAYFALAR=new Set(['ajanda','analiz','bank','benim-sayfam','bildirimler','dis-ticaret','dokumanlar',
+    'dt-analiz','dt-detay','esatinalma','firma-analiz','firma-segmentleri','firmalar','global','harita',
+    'ihale-detay','ihaleler','ihalelerim','kararlar','kurum-analiz','kurumlar','ozel-ihale-detay','profil',
+    'raporlar','rekabet','sektorler','sozlesmeler','takipte','teklif-olustur','uyumluluk','yasakli']);
+  function v1Yol(url){
+    const s=String(url||'').trim();
+    if(!s || /^(https?:)?\/\//i.test(s) || s.startsWith('#') || s.startsWith('mailto:')) return s;
+    const kes=s.search(/[?#]/); const yol=kes<0?s:s.slice(0,kes); const kuyruk=kes<0?'':s.slice(kes);
+    const bas=yol.startsWith('/')?'/':''; const ad=yol.replace(/^\//,'').replace(/\.html$/i,'');
+    if(ad.startsWith('v1-')||!V1_SAYFALAR.has(ad)) return s;
+    return bas+'v1-'+ad+kuyruk;
+  }
+
   async function sayac(tablo,filtre){ let q=sb.from(tablo).select('id',{count:'exact',head:true}); if(filtre)q=filtre(q); const {count}=await q; return count||0; }
+
+  // ── Takip edilen ihale id'leri (tek sorgu, iki widget paylaşır) ──
+  let _takipIdSoz=null;
+  function takipIdleri(){
+    if(!_takipIdSoz){
+      _takipIdSoz=(async()=>{
+        if(!uid) return [];
+        const {data,error}=await sb.from('takipler').select('ilan_id').eq('kullanici_id',uid);
+        if(error) throw error;
+        return [...new Set((data||[]).map(r=>r.ilan_id).filter(Boolean))];
+      })();
+    }
+    return _takipIdSoz;
+  }
+  const TAKIP_YOK='<div class="v1-bos">Henüz ihale takip etmiyorsunuz — <a href="v1-ihaleler">İhalelere göz atın</a></div>';
 
   // ── KPI (ihalepro: 6 kutu, 2 sütun) ──
   const IK={
@@ -283,9 +313,20 @@
     const kart=(ikon,sayi,etiket)=>`<div class="v1-takip-kart"><span class="v1-takip-ikon">${ikon}</span>
       <span><span class="v1-takip-sayi">${sayi}</span><span class="v1-takip-et">${etiket}</span></span></div>`;
     let f=0,k=0,s=0;
-    try{ [f,k,s]=await Promise.all([
-      sayac('takip_firmalar'), sayac('takip_idareler'), sayac('takip_sektorler')
-    ]); }catch(_){}
+    // Birincil kaynak: takip_ozet() — sayımı auth.uid() ile sunucuda yapar (tek gidiş-dönüş).
+    try{
+      const {data,error}=await sb.rpc('takip_ozet');
+      if(error) throw error;
+      f=Number(data&&data.firma)||0; k=Number(data&&data.idare)||0; s=Number(data&&data.sektor)||0;
+    }catch(_){
+      // Yedek: tablo tablo say. kullanici_id filtresi ŞART (RLS'e güvenip filtresiz sayma),
+      // ve her sayım kendi hatasını yutsun — biri patlayınca üçü birden 0 görünmesin.
+      const say=async(t)=>{ try{
+        const {count,error}=await sb.from(t).select('id',{count:'exact',head:true}).eq('kullanici_id',uid);
+        return error?0:(count||0);
+      }catch(_e){ return 0; } };
+      [f,k,s]=await Promise.all([say('takip_firmalar'),say('takip_idareler'),say('takip_sektorler')]);
+    }
     el.innerHTML=kart(IK.firma,num(f),'Takip Ettiğim Firma')+kart(IK.idare,num(k),'Takip Ettiğim Kurum')+kart(IK.sektor,num(s),'Takip Ettiğim Sektör');
   }
 
@@ -306,14 +347,20 @@
     }catch(_){ el.innerHTML='<div class="v1-bos">Firmanızı seçin, size uygun ihaleleri bulalım. <a href="v1-analiz">Benim Firmam →</a></div>'; }
   }
 
+  // "Tarihi Yaklaşan İHALELERİM" — YALNIZ kullanıcının takip ettiği ihaleler.
+  // (Eskiden takip listesini hiç kullanmadan ilanlar'dan ilk 6 aktif kaydı çekiyordu:
+  //  hiç takibi olmayan kullanıcıya da dolu görünüyor ve gösterilenler onun değildi.)
   async function yaklasan(){
     const el=document.getElementById('v1-yaklasan');
     try{
+      const ids=await takipIdleri();
+      if(!ids.length){ el.innerHTML=TAKIP_YOK; return; }
       const {data,error}=await sb.from('ilanlar').select('id,baslik,il,tur,son_teklif_tarihi')
+        .in('id',ids.slice(0,200))
         .eq('durum','aktif').gte('son_teklif_tarihi',new Date().toISOString())
         .order('son_teklif_tarihi',{ascending:true}).limit(6);
       if(error) throw error;
-      if(!data||!data.length){ el.innerHTML='<div class="v1-bos">Yaklaşan aktif ihale bulunamadı.</div>'; return; }
+      if(!data||!data.length){ el.innerHTML='<div class="v1-bos">Takip ettiğiniz ihaleler arasında teklif tarihi yaklaşan yok. <a href="v1-takipte">Takip listem →</a></div>'; return; }
       el.innerHTML=data.map(i=>{ const g=kalanGun(i.son_teklif_tarihi);
         return `<a class="v1-satir" href="v1-ihale-detay?id=${i.id}">
           <div class="v1-satir-govde"><div class="v1-satir-ad">${esc(i.baslik||'İhale')}</div>
@@ -325,12 +372,11 @@
   async function takipIhaleler(){
     const el=document.getElementById('v1-takip-ihale'), sayEl=document.getElementById('v1-takip-say');
     try{
-      let q=sb.from('takipler').select('ilan_id'); if(uid) q=q.eq('kullanici_id',uid);
-      const {data:tr,error}=await q; if(error) throw error;
-      const ids=[...new Set((tr||[]).map(r=>r.ilan_id))];
+      const ids=await takipIdleri();
       if(sayEl) sayEl.innerHTML=ids.length?`<span class="v1-rozet" style="margin-left:4px;">${ids.length}</span>`:'';
-      if(!ids.length){ el.innerHTML='<div class="v1-bos">Veri bulunamadı! İlgilendiğiniz ihaleleri takip ederek burada görebilirsiniz.</div>'; return; }
-      const {data}=await sb.from('ilanlar').select('id,baslik,il,tur,durum,son_teklif_tarihi').in('id',ids.slice(0,50)).limit(12);
+      if(!ids.length){ el.innerHTML=TAKIP_YOK; return; }
+      const {data,error}=await sb.from('ilanlar').select('id,baslik,il,tur,durum,son_teklif_tarihi').in('id',ids.slice(0,50)).limit(12);
+      if(error) throw error;
       const DUR={aktif:['Aktif','yesil'],kapali:['Kapalı','gri'],sonuclandi:['Sonuçlandı',''],iptal:['İptal','acil']};
       el.innerHTML=(data||[]).map(i=>{ const d=DUR[i.durum]||['—','gri'];
         return `<a class="v1-satir" href="v1-ihale-detay?id=${i.id}">
@@ -347,7 +393,7 @@
         .eq('kullanici_id',uid).order('olusturulma',{ascending:false}).limit(6);
       if(error) throw error;
       if(!data||!data.length){ el.innerHTML='<div class="v1-bos">Firmaları takibe al, gelişmelerden haberdar ol! <a href="v1-firmalar">Yüklenici Firmaları Keşfet →</a></div>'; return; }
-      el.innerHTML=data.map(b=>{ const url=b.aksiyon_url||(b.ilan_id?('v1-ihale-detay?id='+b.ilan_id):'bildirimler');
+      el.innerHTML=data.map(b=>{ const url=v1Yol(b.aksiyon_url)||(b.ilan_id?('v1-ihale-detay?id='+b.ilan_id):'v1-bildirimler');
         return `<a class="v1-satir" href="${esc(url)}">
           <div class="v1-satir-govde"><div class="v1-satir-ad">${b.okundu?'':'<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--v1-teal);margin-right:7px;vertical-align:middle;"></span>'}${esc(b.baslik||'Bildirim')}</div>
           ${b.icerik?`<div class="v1-satir-alt">${esc(b.icerik.slice(0,90))}</div>`:''}</div>
@@ -364,13 +410,77 @@
       <div class="v1-satir-alt">${esc(i.il||'')}</div></div></a>`).join('');
   }
 
+  // ── Favori Aramalarım ──
+  // GERÇEK şema (anon 42501 üstünden kolon kolon doğrulandı): id, yerel_id, ad, params, user_id, olusturulma.
+  // ⚠️ Kullanıcı anahtarı `user_id` — bu tabloda `kullanici_id` YOK.
+  // params → v1-ihaleler'in okuduğu URL anahtarları (ara / il / kategori / idare / sekme) ile bağlanır.
+  // params jsonb olarak nesne döner; eski kayıtlarda metin olarak saklanmış olabilir → ikisini de kabul et.
+  function paramNesne(params){
+    if(params&&typeof params==='object') return params;
+    if(typeof params==='string'&&params.trim()){ try{ const o=JSON.parse(params); return (o&&typeof o==='object')?o:{}; }catch(_){ return {}; } }
+    return {};
+  }
+  // params anahtarları GERÇEK yazıcıdan gelir — uydurma değil, zincir şu:
+  //   ihaleler.html mevcutFiltreleriOku() → KayitliArama.ekle() → js/kullanici-veri.js aramaEkle()
+  //   → kayitli_aramalar.params (jsonb). Ürettiği anahtarlar:
+  //   arama, il, kategori, tur, usul, kaynak, idare_tur, minBedel, maxBedel, minUyum, idare,
+  //   yayinBas, yayinBit, teklifBas, teklifBit, esikKatsayi, okas, kurumDetsis, kurumAd, sekme
+  // ⚠️ Kelime anahtarı `arama` — 'ara'/'kelime'/'q' DEĞİL. Bu atlanırsa kayıtlı aramanın EN
+  //    belirleyici filtresi sessizce düşer, link "tüm ihaleler"e gider. Eski adlar yine de
+  //    yedekte tutuluyor (v1-ihaleler.html'in kendi kaydedicisi 'f-*' üretir).
+  const alan=(p,...adlar)=>{ for(const a of adlar){ const v=p[a]; if(v!=null&&String(v).trim()!=='') return String(v).trim(); } return ''; };
+  function aramaLinki(params){
+    const p=paramNesne(params);
+    const q=new URLSearchParams();
+    // v1-ihaleler.html'in URL'den GERÇEKTEN okuduğu anahtarlar: ara, il, kategori, idare,
+    // sekme(=sonuc), tur(=dt). Başka anahtar eklemek sessizce yok sayılır → eklemiyoruz.
+    const kelime=alan(p,'arama','ara','kelime','q','f-kelime');   if(kelime) q.set('ara',kelime);
+    const il=alan(p,'il','f-il');                                 if(il) q.set('il',il);
+    const kat=alan(p,'kategori','sektor','f-kategori');           if(kat) q.set('kategori',kat);
+    const idare=alan(p,'idare','kurumAd','f-idare');              if(idare) q.set('idare',idare);
+    // Sekme değerleri 'guncel'/'gecmis'/'sonuc'; v1-ihaleler yalnız 'sonuc'u anlar,
+    // diğerleri zaten varsayılan sekme → yalnız 'sonuc' geçirilir.
+    // (v1-ihaleler ayrıca ?tur=dt okur ama hiçbir kaydedici 'dt' üretmiyor —
+    //  tur=Mal/Hizmet/Yapım…, kaynak=ekap/ilan_gov/dmo/jandarma → eşleme yazılmadı.)
+    if(alan(p,'sekme')==='sonuc') q.set('sekme','sonuc');
+    const s=q.toString();
+    return 'v1-ihaleler'+(s?'?'+s:'');
+  }
+  // Özet: params'ın TÜM değerlerini dökmek yerine etiketli beyaz liste. (Ham döküm, her kayıtta
+  // bulunan sekme='guncel' ve kurumDetsis kodu gibi filtre olmayan alanları kullanıcıya
+  // anlamsız metin olarak gösteriyordu; jsonb anahtar sırası da eklenme sırası değildir.)
+  const OZET=[['Kelime','arama','ara','kelime','q','f-kelime'],['İl','il','f-il'],
+    ['Sektör','kategori','sektor','f-kategori'],['İdare','idare','kurumAd','f-idare'],
+    ['Tip','tur','f-tur'],['Usul','usul','f-usul'],['OKAS','okas']];
+  function aramaOzeti(params){
+    const p=paramNesne(params);
+    const parca=OZET.map(([et,...adlar])=>{ const v=alan(p,...adlar); return v?et+': '+v:''; }).filter(Boolean);
+    if(alan(p,'sekme')==='sonuc') parca.unshift('Sonuçlanmış');
+    return parca.length?parca.slice(0,4).join(' · '):'Tüm ihaleler';
+  }
   async function favoriler(){
     const el=document.getElementById('v1-favori');
+    let liste=[];
     try{
-      const {data}=await sb.from('kayitli_aramalar').select('id,ad').order('olusturulma',{ascending:false}).limit(6);
-      if(!data||!data.length){ el.innerHTML='<div class="v1-bos">Kayıtlı aramanız yok.</div>'; return; }
-      el.innerHTML=data.map(a=>`<a class="v1-satir" href="v1-ihaleler"><div class="v1-satir-govde"><div class="v1-satir-ad">⭐ ${esc(a.ad||'Arama')}</div></div></a>`).join('');
-    }catch(_){ el.innerHTML='<div class="v1-bos">Kayıtlı aramanız yok.</div>'; }
+      const {data,error}=await sb.from('kayitli_aramalar')
+        .select('id,yerel_id,ad,params,olusturulma')
+        .eq('user_id',uid).order('olusturulma',{ascending:false}).limit(20);
+      if(error) throw error;
+      liste=(data||[]).map(a=>({anahtar:String(a.yerel_id||a.id),ad:a.ad,params:a.params}));
+    }catch(_){ el.innerHTML='<div class="v1-bos">Kayıtlı aramalar yüklenemedi.</div>'; return; }
+    // Yedek: çevrimdışı/giriş öncesi kaydedilmiş yerel aramalar (KullaniciVeri ile aynı anahtar)
+    try{
+      const yerel=JSON.parse(localStorage.getItem('ihale_kayitli_aramalar_v1')||'[]');
+      const varOlan=new Set(liste.map(a=>a.anahtar));
+      (Array.isArray(yerel)?yerel:[]).forEach(y=>{
+        const k=String(y&&y.id); if(!k||k==='undefined'||varOlan.has(k)) return;
+        varOlan.add(k); liste.push({anahtar:k,ad:y.ad,params:y.params});
+      });
+    }catch(_){}
+    if(!liste.length){ el.innerHTML='<div class="v1-bos">Kayıtlı aramanız yok. <a href="v1-ihaleler">İhale ara ve “⭐ Aramayı Kaydet” de →</a></div>'; return; }
+    el.innerHTML=liste.slice(0,6).map(a=>`<a class="v1-satir" href="${esc(aramaLinki(a.params))}">
+      <div class="v1-satir-govde"><div class="v1-satir-ad">⭐ ${esc(a.ad||'Arama')}</div>
+      <div class="v1-satir-alt">${esc(aramaOzeti(a.params))}</div></div></a>`).join('');
   }
 
   // ── Başlat ──

@@ -74,7 +74,7 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-<script src="js/v1-kabuk.js?v=6"></script>
+<script src="js/v1-kabuk.js?v=7"></script>
 <script>
 (() => {
   const SB_URL="https://ihaleglobal.com", SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzg0MzA3MTU4LCJleHAiOjE5NDE5ODcxNTh9.CjNKulvirotDD_y2oO2QKgo0kbqYvL0jUSV1RiDMoso";
@@ -82,35 +82,73 @@
   const num=(n)=>(Number(n)||0).toLocaleString('tr-TR');
   const esc=(s)=>(s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
   const tl=(v)=>v==null?'—':'₺'+Number(v).toLocaleString('tr-TR',{maximumFractionDigits:0});
-  const trFold=(s)=>(s||'').toLocaleLowerCase('tr').replace(/i̇/g,'i').replace(/ç/g,'c').replace(/ğ/g,'g')
-    .replace(/ö/g,'o').replace(/ş/g,'s').replace(/ü/g,'u');
+  // ⚠️ Türkçe arama: burada KENDİ fold fonksiyonumuzu yazmıyoruz. js/v1-kabuk.js
+  //    window.trFold + window.v1Ara sunuyor ve SQL tr_fold() ile birebir aynı katlamayı
+  //    yapıyor (ı→i dahil). Sayfa-içi kopya "IŞIK"ı "isik"e katlamadığı için sessizce
+  //    0 sonuç döndürüyordu.
   const P=new URLSearchParams(location.search);
   const BOY=25;
-  let sayfa=1, uyeMi=false, mod='tum', takipli=new Set(), aramaT;
+  let sayfa=1, uyeMi=false, uid=null, mod='tum', takipli=new Set(), aramaT, istekNo=0;
+
+  // v1-kabuk topbar'ı DOMContentLoaded'da monte eder; getSession() localStorage'dan
+  // mikrotaskta dönüp ondan ÖNCE bitince v1PaketYaz hedef elemanı bulamıyor ve rozet
+  // "—" kalıyordu (v1-firma-analiz.html:1839'daki çarenin aynısı).
+  function paketYaz(ad){
+    const yaz=()=>{ if(window.v1PaketYaz) window.v1PaketYaz(ad); };
+    if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',yaz);
+    else yaz();
+  }
 
   async function yukle(){
     const tb=document.getElementById('v1-tbody');
+    // Her yükleme bir sıra numarası alır: arama debounce'u/sekme değişimi üst üste
+    // binince ESKİ isteğin geç dönen cevabı yeniyi ezmesin.
+    const benim=++istekNo;
+    const bosalt=()=>{ document.getElementById('v1-sayi').textContent='';
+      document.getElementById('v1-sayfalama').innerHTML=''; };
     tb.innerHTML='<tr><td colspan="6" class="v1-bos">Yükleniyor…</td></tr>';
     if(!uyeMi){
       document.getElementById('v1-misafir').style.display='block';
       tb.innerHTML='<tr><td colspan="6" class="v1-bos">🔒 Firma listesi üyelere özeldir. <a href="login">Giriş yapın →</a></td></tr>';
-      document.getElementById('v1-sayi').textContent='';
+      bosalt();
       return;
     }
     try{
       const q=(document.getElementById('v1-ara-liste').value||'').trim();
-      let sorgu=sb.from('yukleniciler').select('id,ad,il,toplam_sozlesme_sayisi,toplam_ciro');
-      if(mod==='takip'){
-        const ids=[...takipli]; if(!ids.length){ tb.innerHTML='<tr><td colspan="6" class="v1-bos">Henüz firma takip etmiyorsunuz.</td></tr>'; document.getElementById('v1-sayi').textContent=''; return; }
-        sorgu=sorgu.in('ad',ids);
+      if(mod==='takip' && !takipli.size){
+        tb.innerHTML='<tr><td colspan="6" class="v1-bos">Henüz firma takip etmiyorsunuz.</td></tr>';
+        bosalt(); return;
       }
-      if(q) sorgu=sorgu.ilike('arama_fold','%'+trFold(q)+'%');
       // Parlayan Yıldızlar: son dönemde yükselen — ciroya göre değil sözleşme sayısına göre (proxy)
       const sirala = (mod==='yildiz') ? 'toplam_sozlesme_sayisi' : 'toplam_ciro';
       const bas=(sayfa-1)*BOY;
-      const {data,error}=await sorgu.order(sirala,{ascending:false,nullsFirst:false}).range(bas,bas+BOY-1);
+      // Her deneme için TAZE builder: supabase-js builder'ı bir kez await edildikten sonra
+      // yeniden filtrelenip çalıştırılamaz.
+      const temel=()=>{
+        let s=sb.from('yukleniciler').select('id,ad,il,toplam_sozlesme_sayisi,toplam_ciro');
+        if(mod==='takip') s=s.in('ad',[...takipli]);
+        return s;
+      };
+      const calistir=(s)=>s.order(sirala,{ascending:false,nullsFirst:false}).range(bas,bas+BOY-1);
+      // yukleniciler.arama_fold = tr_fold(ad) — GENERATED kolon, trigram indeksli.
+      // Tüm tablo anon'a kapalı (42501) zaten; bu dal yalnızca üyede çalışıyor.
+      let sorgu=temel();
+      if(q){
+        if(!window.v1Ara) throw new Error('Arama modülü yüklenemedi, sayfayı yenileyin.');
+        sorgu=window.v1Ara(sorgu,'arama_fold',q);
+      }
+      let {data,error}=await calistir(sorgu);
+      if(benim!==istekNo) return;   // daha yeni bir yükleme başladı, bu cevabı yazma
+      // Emniyet (firma-analiz.html:1191 ile aynı desen): arama_fold prod'da yoksa sayfayı
+      // öldürme, düz ad ILIKE'a düş — bu yedek Türkçe İ/ı'da eksik sonuç verir, uyarı bırak.
+      if(error && q && /arama_fold/.test(error.message||'')){
+        console.warn('yukleniciler.arama_fold okunamadı, düz ad ILIKE yedeğine düşüldü:',error.message);
+        // virgül/parantez PostgREST sorgu ayrıştırıcısını bozar → temizle
+        ({data,error}=await calistir(temel().ilike('ad','*'+q.replace(/[,()*]/g,' ').trim()+'*')));
+        if(benim!==istekNo) return;
+      }
       if(error) throw error;
-      if(!data||!data.length){ tb.innerHTML='<tr><td colspan="6" class="v1-bos">Sonuç bulunamadı.</td></tr>'; document.getElementById('v1-sayi').textContent=''; return; }
+      if(!data||!data.length){ tb.innerHTML='<tr><td colspan="6" class="v1-bos">Sonuç bulunamadı.</td></tr>'; bosalt(); return; }
       document.getElementById('v1-sayi').innerHTML=`Sayfa <strong>${sayfa}</strong> · ${data.length} firma gösteriliyor`;
       tb.innerHTML=data.map((r,i)=>{
         const t=takipli.has(r.ad);
@@ -125,9 +163,13 @@
               border:1.5px solid var(--v1-mavi);border-radius:8px;padding:6px 12px;font-family:var(--v1-font);
               font-size:12.5px;font-weight:700;cursor:pointer;white-space:nowrap;">${t?'✓ Takipte':'+ Takip Et'}</button></td></tr>`;
       }).join('');
-      tb.querySelectorAll('.v1-tk').forEach(b=>b.addEventListener('click',()=>takipToggle(b.dataset.ad)));
+      tb.querySelectorAll('.v1-tk').forEach(b=>b.addEventListener('click',()=>takipToggle(b)));
       sayfalama(data.length);
-    }catch(e){ tb.innerHTML=`<tr><td colspan="6" class="v1-bos">Liste yüklenemedi. ${esc(e.message||'')}</td></tr>`; }
+    }catch(e){
+      if(benim!==istekNo) return;
+      tb.innerHTML=`<tr><td colspan="6" class="v1-bos">Liste yüklenemedi. ${esc(e.message||'')}</td></tr>`;
+      bosalt();   // yoksa "Yükleniyor…" sayacı ve ESKİ sayfalama düğmeleri ekranda kalıyordu
+    }
   }
 
   function sayfalama(adet){
@@ -140,25 +182,74 @@
     }));
   }
 
-  async function takipToggle(ad){
-    if(!uyeMi){ alert('Firma takibi için giriş yapmalısınız.'); return; }
+  function tkBoya(btn,t){
+    btn.style.background=t?'var(--v1-mavi)':'#fff';
+    btn.style.color=t?'#fff':'var(--v1-mavi)';
+    btn.textContent=t?'✓ Takipte':'+ Takip Et';
+  }
+
+  // ⛔ İKİ SESSİZ HATA VARDI:
+  //    1) kolon adı `firma_adi` idi — canlı şema `firma_ad` (REST: 42703 "does not exist"),
+  //    2) `kullanici_id` NOT NULL + default YOK → gönderilmeyince satır hiç yazılmıyordu.
+  //    Üstüne supabase-js yazma çağrıları HATA FIRLATMAZ, {error} döndürür; try/catch boş
+  //    geçiyor ve düğme koşulsuz "✓ Takipte" oluyordu. Artık her çağrıda {error} kontrol
+  //    ediliyor, hata varsa düğme eski haline dönüyor ve kullanıcıya söyleniyor.
+  async function takipToggle(btn){
+    const ad=btn.dataset.ad;
+    if(!uyeMi||!uid){ alert('Firma takibi için giriş yapmalısınız.'); return; }
+    const oncekiDurum=takipli.has(ad);
+    btn.disabled=true; btn.style.opacity='.6'; btn.textContent='…';
     try{
-      if(takipli.has(ad)){ await sb.from('takip_firmalar').delete().eq('firma_adi',ad); takipli.delete(ad); }
-      else { await sb.from('takip_firmalar').insert({firma_adi:ad}); takipli.add(ad); }
-      yukle();
-    }catch(e){ alert('İşlem başarısız: '+(e.message||'')); }
+      if(oncekiDurum){
+        const {error}=await sb.from('takip_firmalar').delete()
+          .eq('kullanici_id',uid).eq('firma_ad',ad);
+        if(error) throw error;
+        takipli.delete(ad);
+      } else {
+        // UNIQUE(kullanici_id,firma_ad) migration_takip_firmalar.sql:22'de var AMA canlıda
+        // olduğu anon anahtarla doğrulanamıyor (INSERT 42501). Uygulanmamışsa on_conflict
+        // 42P10 ile HER takip denemesini öldürürdü → düz insert'e düş; 23505 (zaten takipte)
+        // hata değil, başarı sayılır.
+        let {error}=await sb.from('takip_firmalar').upsert(
+          {kullanici_id:uid, firma_ad:ad},
+          {onConflict:'kullanici_id,firma_ad', ignoreDuplicates:true});
+        if(error && error.code==='42P10'){
+          console.warn('takip_firmalar UNIQUE kısıtı canlıda yok, düz insert:',error.message);
+          ({error}=await sb.from('takip_firmalar').insert({kullanici_id:uid, firma_ad:ad}));
+        }
+        if(error && error.code!=='23505') throw error;
+        takipli.add(ad);
+      }
+      // "Takip Ettiklerim" sekmesinde liste üyeliği değişti → yeniden çiz
+      if(mod==='takip'){ yukle(); return; }
+      btn.disabled=false; btn.style.opacity='';
+      tkBoya(btn,takipli.has(ad));
+    }catch(e){
+      btn.disabled=false; btn.style.opacity='';
+      tkBoya(btn,oncekiDurum);
+      alert('Takip işlemi kaydedilemedi: '+(e.message||'bilinmeyen hata'));
+    }
   }
 
   (async()=>{
     try{ const {data}=await sb.auth.getSession(); uyeMi=!!(data&&data.session);
+      uid=uyeMi?data.session.user.id:null;
       if(uyeMi){
-        try{ const {data:t}=await sb.from('takip_firmalar').select('firma_adi'); (t||[]).forEach(r=>takipli.add(r.firma_adi)); }catch(_){}
-        const {data:k}=await sb.from('kullanici_krediler').select('plan').eq('kullanici_id',data.session.user.id).maybeSingle();
-        if(window.v1PaketYaz) v1PaketYaz(['standart','kurumsal'].includes(k?.plan)?'Pro':'Temel');
-      } else if(window.v1PaketYaz) v1PaketYaz('Misafir');
-    }catch(_){}
-    if(P.get('ara')) document.getElementById('v1-ara-liste').value=P.get('ara');
-    document.getElementById('v1-ara-liste').addEventListener('input',()=>{clearTimeout(aramaT); aramaT=setTimeout(()=>{sayfa=1;yukle();},350);});
+        // takip_firmalar.firma_ad (firma_adi DEĞİL) + kendi satırların
+        const {data:t,error:tHata}=await sb.from('takip_firmalar')
+          .select('firma_ad').eq('kullanici_id',uid);
+        if(tHata) console.warn('Takip listesi okunamadı:',tHata.message);
+        else (t||[]).forEach(r=>takipli.add(r.firma_ad));
+        const {data:k}=await sb.from('kullanici_krediler').select('plan').eq('kullanici_id',uid).maybeSingle();
+        paketYaz(['standart','kurumsal'].includes(k?.plan)?'Pro':'Temel');
+      } else paketYaz('Misafir');
+    }catch(_){ if(!uyeMi) paketYaz('Misafir'); }
+    const araEl=document.getElementById('v1-ara-liste');
+    // Misafirde yukleniciler tablosunun tamamı anon'a kapalı (42501) → arama kutusu ölü,
+    // boşuna yazdırmak yerine kilitli göster.
+    if(!uyeMi){ araEl.disabled=true; araEl.placeholder='Arama üyelere özel'; araEl.style.cursor='not-allowed'; }
+    if(P.get('ara')) araEl.value=P.get('ara');
+    araEl.addEventListener('input',()=>{clearTimeout(aramaT); aramaT=setTimeout(()=>{sayfa=1;yukle();},350);});
     const sek=(id,m,baslik)=>document.getElementById(id).addEventListener('click',()=>{
       mod=m; sayfa=1;
       ['s-tum','s-takip','s-yildiz'].forEach(x=>document.getElementById(x).classList.toggle('aktif',x===id));

@@ -44,6 +44,7 @@
     .v1-sw span::before { content:''; position:absolute; width:19px; height:19px; left:3px; top:3px; background:#fff; border-radius:50%; transition:.18s; }
     .v1-sw input:checked + span { background:var(--v1-teal); }
     .v1-sw input:checked + span::before { transform:translateX(21px); }
+    .v1-sw input:disabled + span { cursor:default; opacity:.6; }
     .v1-sec { border:1.5px solid var(--v1-cizgi); border-radius:9px; padding:8px 11px; background:#fff;
       font-family:var(--v1-font); font-size:13px; outline:none; cursor:pointer; }
     .v1-kucuk-btn { background:#fff; border:1.5px solid var(--v1-mavi); color:var(--v1-mavi); border-radius:8px;
@@ -84,10 +85,15 @@
         <div id="v1-tercih-blok" style="display:none;">
           <div class="v1-kart">
             <div class="v1-kart-baslik">Bildirim Tercihleri</div>
+            <!-- Bu tercihin karşılığı canlı şemada YOK (profil.bildirim_yeni_ihale uygulanmamış).
+                 Açılır-kapanır gösterilirse kullanıcı kaydettiğini sanır ama hiçbir şey saklanmaz;
+                 bildirim zaten profilinizdeki sektör/kurum/firma takiplerine göre üretilir. -->
             <div class="v1-terc">
               <div><div class="v1-terc-ad">Yeni ihale bildirimi</div>
-                <div class="v1-terc-alt">Takip ettiğiniz sektör/kurum/firmada yeni ihale çıkınca haber ver.</div></div>
-              <label class="v1-sw"><input type="checkbox" id="t-yeni"><span></span></label>
+                <div class="v1-terc-alt">Takip ettiğiniz sektör, kurum ve firmalarda yeni ihale çıkınca haber verilir.
+                  <b>Her zaman açıktır</b> — takip listeniz boşsa bildirim gelmez.</div></div>
+              <label class="v1-sw" title="Takipleriniz için her zaman açıktır">
+                <input type="checkbox" id="t-yeni" checked disabled><span></span></label>
             </div>
             <div class="v1-terc">
               <div><div class="v1-terc-ad">Son teklif tarihi hatırlatması</div>
@@ -127,7 +133,7 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-<script src="js/v1-kabuk.js?v=6"></script>
+<script src="js/v1-kabuk.js?v=7"></script>
 <script>
 (() => {
   const SB_URL="https://ihaleglobal.com", SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzg0MzA3MTU4LCJleHAiOjE5NDE5ODcxNTh9.CjNKulvirotDD_y2oO2QKgo0kbqYvL0jUSV1RiDMoso";
@@ -137,9 +143,57 @@
   const zamanFmt=(t)=>{ if(!t)return''; const s=(Date.now()-new Date(t))/1000;
     if(s<3600)return Math.max(1,Math.floor(s/60))+' dk önce'; if(s<86400)return Math.floor(s/3600)+' sa önce';
     if(s<604800)return Math.floor(s/86400)+' gün önce'; return new Date(t).toLocaleDateString('tr-TR',{day:'2-digit',month:'short',year:'2-digit'}); };
-  // tür → ikon/renk
-  const IK={ yeni_ihale:['📄',''], son_teklif:['⏰','sari'], sonuc:['🏆','yesil'],
-    kredi:['💳','yesil'], firma:['🏢',''], kurum:['🏛️',''], sistem:['🔔',''], uyari:['⚠️','kirmizi'] };
+  // tür → ikon/renk. Yazan yerler ve YAZDIKLARI DEĞER (birebir doğrulandı):
+  //   notify.py:210 + worker.py:321 → 'ihale'
+  //   idare_bildirim.py:207        → 'kurum_takip'
+  //   rakip_bildirim.py:242        → 'rakip_hareketi'
+  //   rapor_bildirim.py:101        → 'rapor'
+  //   payment.py:246 / :362        → 'kredi' / 'sistem'
+  //   migration_bildirim_uret.sql:66 → 'eslestirme'  ⚠️ fonksiyon adı yeni_rfq_bildirim_uret
+  //     ama tur sütununa 'rfq' DEĞİL 'eslestirme' yazar; 'rfq' hiçbir zaman üretilmez.
+  // Port sırasında yalnız v2'de kullanılmayan takma adlar taşınmıştı → her bildirim jenerik 🔔 çiziyordu.
+  const IK={ ihale:['📄',''], eslestirme:['📨',''], kurum_takip:['🏛️',''], rakip_hareketi:['🏆','yesil'],
+    rapor:['📊','yesil'], kredi:['💳','yesil'], sistem:['🔔',''], rfq:['📨',''], email:['📧',''],
+    // eski/olası takma adlar (veri tarafında görülürse doğru ikonu alsın)
+    yeni_ihale:['📄',''], son_teklif:['⏰','sari'], sonuc:['🏆','yesil'],
+    firma:['🏢',''], kurum:['🏛️',''], uyari:['⚠️','kirmizi'] };
+
+  // ── aksiyon_url → v1 rotası ────────────────────────────────────────────────
+  // Backend v2 yollarını yazar ('/ihale-detay?id=', '/kurum-analiz?kurum=',
+  // '/firma-analiz?firma=', 'raporlar', 'ozel-ihale-detay?id=' …). Ham kullanılınca
+  // v1 kullanıcısı v2 (amber) sayfasına düşüyordu. Çeviri YALNIZ gösterim katmanında
+  // yapılır; DB'ye/backend'e dokunulmaz.
+  const V1_SAYFALAR=new Set(['ajanda','analiz','bank','benim-sayfam','bildirimler','dis-ticaret',
+    'dokumanlar','dt-analiz','dt-detay','esatinalma','firma-analiz','firma-segmentleri','firmalar',
+    'global','harita','ihale-detay','ihaleler','ihalelerim','kararlar','kurum-analiz','kurumlar',
+    'ozel-ihale-detay','profil','raporlar','rekabet','sektorler','sozlesmeler','takipte',
+    'teklif-olustur','uyumluluk','yasakli']);
+  // v1'de birebir dosyası olmayan v2 sayfaları → en yakın v1 rotası
+  const V1_ESLEK={ 'dogrudan-temin':'v1-ihaleler?sekme=dt', 'sonuclananlar':'v1-ihaleler?sekme=sonuc',
+    'kamu-ihaleleri':'v1-ihaleler', 'ozel-ihaleler':'v1-ihaleler', 'idareler':'v1-kurumlar',
+    'kik-kararlar':'v1-kararlar', 'rekabet-analizi':'v1-rekabet', 'ticaret-analiz':'v1-dis-ticaret',
+    'uluslararasi':'v1-global', 'dashboard':'v1-benim-sayfam' };
+  function v1Yol(u){
+    const ham=String(u==null?'':u).trim();
+    if(!ham || ham==='#') return '#';
+    if(/^(https?:)?\/\//i.test(ham) || /^(mailto|tel):/i.test(ham)) return ham;   // dış bağlantı
+    const kokten=ham.startsWith('/');
+    const yol=kokten?ham.slice(1):ham;
+    const kes=yol.search(/[?#]/);
+    const kuyruk=kes<0?'':yol.slice(kes);
+    const sayfa=(kes<0?yol:yol.slice(0,kes)).replace(/\.html$/i,'');
+    if(!sayfa || sayfa.startsWith('v1-')) return ham;                             // zaten v1
+    let yeni;
+    if(V1_SAYFALAR.has(sayfa)) yeni='v1-'+sayfa+kuyruk;
+    else if(V1_ESLEK[sayfa]){
+      const hedef=V1_ESLEK[sayfa];
+      if(!kuyruk) yeni=hedef;
+      else if(kuyruk[0]==='?') yeni=hedef+(hedef.includes('?')?'&':'?')+kuyruk.slice(1);
+      else yeni=hedef+kuyruk;                                                     // #fragman
+    } else return ham;                                                            // v1 karşılığı yok
+    return (kokten?'/':'')+yeni;
+  }
+
   let uid=null, sekme='tumu', hepsi=[];
 
   async function yukle(){
@@ -150,11 +204,11 @@
         .eq('kullanici_id',uid).order('olusturulma',{ascending:false}).limit(100);
       if(error) throw error;
       hepsi=data||[];
-      const okunmamis=hepsi.filter(b=>!b.okundu).length;
-      document.getElementById('v1-okunmadi-say').innerHTML = okunmamis
-        ? `<span style="background:var(--v1-teal);color:#fff;font-size:11px;font-weight:800;padding:1px 8px;border-radius:20px;margin-left:4px;">${okunmamis}</span>` : '';
+      rozetTazele();
       ciz();
-    }catch(e){ el.innerHTML=`<div class="v1-bos">Bildirimler yüklenemedi. ${esc(e.message||'')}</div>`; }
+    }catch(e){   // ham Postgres mesajı ekrana basılmaz
+      console.error('Bildirimler yüklenemedi:', e);
+      el.innerHTML='<div class="v1-bos">Bildirimler yüklenemedi, lütfen sayfayı yenileyin.</div>'; }
   }
 
   function ciz(){
@@ -164,8 +218,12 @@
       ? `<strong>${num(d.length)}</strong> bildirim${sekme==='okunmadi'?' (okunmamış)':''}` : '';
     if(!d.length){ el.innerHTML=`<div class="v1-bos">${sekme==='okunmadi'?'Okunmamış bildiriminiz yok. 🎉':'Henüz bildiriminiz yok. Sektör, kurum veya firma takibi ekleyin — fırsat çıkınca haber verelim.'}</div>`; return; }
     el.innerHTML=d.map(b=>{
-      const [ik,rk]=IK[b.tur]||IK.sistem;
-      const url=b.aksiyon_url||(b.ilan_id?('v1-ihale-detay?id='+b.ilan_id):'#');
+      // hasOwnProperty: b.tur 'constructor' gibi bir değer taşırsa IK[b.tur] fonksiyon döner
+      // ve dizi ataması patlardı → tüm liste çizilmezdi
+      const [ik,rk]=(Object.prototype.hasOwnProperty.call(IK,b.tur)?IK[b.tur]:IK.sistem);
+      // v1Yol boş girdide '#' döner ('#' truthy → '||' zinciri ilan_id yedeğini yutardı)
+      const url=b.aksiyon_url ? v1Yol(b.aksiyon_url)
+        : (b.ilan_id ? ('v1-ihale-detay?id='+encodeURIComponent(b.ilan_id)) : '#');
       return `<a class="v1-bd${b.okundu?'':' okunmadi'}" href="${esc(url)}" data-id="${b.id}">
         <span class="v1-bd-ikon ${rk}">${ik}</span>
         <span class="v1-bd-govde">
@@ -174,57 +232,115 @@
         </span>
         <span class="v1-bd-zaman">${zamanFmt(b.olusturulma)}</span></a>`;
     }).join('');
-    // Tıklayınca okundu işaretle
+    // Tıklayınca okundu işaretle. supabase-js yazma işlemi HATA FIRLATMAZ, {error} döner →
+    // try/catch boş geçer. Hatayı açıkça yakalıyoruz; başarıda yerel durumu da güncelliyoruz
+    // (aksiyon_url '#' ise sayfa değişmez, rozet/nokta bayat kalırdı).
     el.querySelectorAll('.v1-bd').forEach(a=>a.addEventListener('click',async()=>{
-      const id=a.dataset.id; try{ await sb.from('bildirimler').update({okundu:true}).eq('id',id); }catch(_){}
+      const id=a.dataset.id;
+      try{
+        // .select('id'): {error} TEK BAŞINA yetmez — RLS satırı gizlerse PostgREST
+        // error:null + 0 satır döner, arayüz yine "okundu" yalanı söylerdi.
+        const {data:yaz,error}=await sb.from('bildirimler').update({okundu:true})
+          .eq('id',id).eq('kullanici_id',uid).select('id');
+        if(error) throw error;
+        if(!yaz||!yaz.length) throw new Error('Kayıt güncellenemedi (0 satır)');
+        const kayit=hepsi.find(b=>String(b.id)===String(id));
+        if(kayit) kayit.okundu=true;
+        a.classList.remove('okunmadi');
+        rozetTazele();
+      }catch(err){ console.warn('Bildirim okundu işaretlenemedi:', (err&&err.message)||err); }
     }));
+  }
+
+  function rozetTazele(){
+    const n=hepsi.filter(b=>!b.okundu).length;
+    document.getElementById('v1-okunmadi-say').innerHTML = n
+      ? `<span style="background:var(--v1-teal);color:#fff;font-size:11px;font-weight:800;padding:1px 8px;border-radius:20px;margin-left:4px;">${n}</span>` : '';
   }
 
   async function tumunuOkundu(){
     const ids=hepsi.filter(b=>!b.okundu).map(b=>b.id);
     if(!ids.length) return;
-    try{ await sb.from('bildirimler').update({okundu:true}).in('id',ids);
-      hepsi=hepsi.map(b=>({...b,okundu:true})); document.getElementById('v1-okunmadi-say').innerHTML=''; ciz();
-    }catch(e){ alert('İşlem başarısız: '+(e.message||'')); }
+    const btn=document.getElementById('v1-tumu-okundu');
+    const eski=btn.textContent; btn.disabled=true; btn.textContent='İşleniyor…';
+    try{
+      // {error} kontrolü ŞART: yoksa yazma başarısızken bile arayüz "okundu" gösterirdi.
+      // .select('id') ayrıca RLS'in sessizce 0 satır güncellediği durumu yakalar
+      // (o halde error:null döner ve tek başına {error} kontrolü kanmaya devam ederdi).
+      const {data:yaz,error}=await sb.from('bildirimler').update({okundu:true})
+        .in('id',ids).eq('kullanici_id',uid).select('id');
+      if(error) throw error;
+      if(!yaz||!yaz.length) throw new Error('Kayıt güncellenemedi (0 satır)');
+      const yazilan=new Set(yaz.map(r=>String(r.id)));
+      // yalnız GERÇEKTEN güncellenenler okundu sayılır
+      hepsi=hepsi.map(b=>yazilan.has(String(b.id))?{...b,okundu:true}:b);
+      rozetTazele(); ciz();
+    }catch(e){ alert('İşlem başarısız, lütfen tekrar deneyin.'); console.error(e); }
+    finally{ btn.disabled=false; btn.textContent=eski; }
   }
 
   // ── Tercihler ──
+  // ⚠️ CANLI ŞEMA: profil'de YALNIZ bildirim_son_teklif / bildirim_gun_oncesi / bildirim_email var
+  // (migration_bildirim_tercihleri.sql uygulandı). migration_bildirimler.sql'deki
+  // `bildirim_yeni_ihale` prod'a HİÇ uygulanmamış — canlı REST 42703 veriyor.
+  // Tek kolon bile yoksa PostgREST TÜM select'i/upsert'i düşürür: eskiden hem yükleme
+  // sessizce varsayılana düşüyor hem de "Tercihleri Kaydet" her seferinde ham Postgres
+  // hatasıyla ("column profil.bildirim_yeni_ihale does not exist") başarısız oluyordu.
   async function tercihYukle(){
+    const d=document.getElementById('t-durum');
+    if(d) d.textContent='';   // sekmeye her dönüşte eski uyarı temizlenir
     try{
-      const {data}=await sb.from('profil')
-        .select('bildirim_yeni_ihale,bildirim_son_teklif,bildirim_gun_oncesi,bildirim_email')
+      const {data,error}=await sb.from('profil')
+        .select('bildirim_son_teklif,bildirim_gun_oncesi,bildirim_email')
         .eq('user_id',uid).maybeSingle();
+      if(error) throw error;
       const p=data||{};
-      document.getElementById('t-yeni').checked = p.bildirim_yeni_ihale!==false;
       document.getElementById('t-son').checked  = p.bildirim_son_teklif!==false;
       document.getElementById('t-email').checked= p.bildirim_email===true;
       document.getElementById('t-gun').value    = String(p.bildirim_gun_oncesi||3);
-    }catch(_){}
+    }catch(e){
+      console.warn('Bildirim tercihleri okunamadı:', (e&&e.message)||e);
+      if(d){ d.textContent='Mevcut tercihler okunamadı — varsayılanlar gösteriliyor.'; d.style.color='var(--v1-muted)'; }
+    }
     // Bültenler
+    // ⚠️ CANLI ŞEMA (REST ile kolon kolon doğrulandı): bultenler = id · kullanici_id · ad ·
+    // filtre · frekans · olusturulma · son_gonderim. `aciklama` / `tip` / `aktif` kolonları
+    // YOKTUR (42703) — porttan kalan bu alanlar her satıra boş alt yazı + uydurma yeşil
+    // "Aktif" rozeti bastırıyordu. Ayrıca select('*') dar-select kuralına aykırıydı.
     const bl=document.getElementById('v1-bulten');
+    const FREK={ gunluk:'Günlük', haftalik:'Haftalık', aylik:'Aylık', anlik:'Anlık' };
     try{
-      const {data}=await sb.from('bultenler').select('*').eq('kullanici_id',uid).limit(20);
+      const {data,error}=await sb.from('bultenler')
+        .select('id,ad,frekans,son_gonderim').eq('kullanici_id',uid).limit(20);
+      if(error) throw error;   // {error} kontrolü: hata "bülteniniz yok" gibi gösterilmemeli
       if(!data||!data.length){ bl.innerHTML='<div class="v1-bos">Kayıtlı bülteniniz yok. Rapor oluşturup günlük e-posta alabilirsiniz.</div>'; return; }
-      bl.innerHTML=data.map(b=>`<div class="v1-terc">
-        <div><div class="v1-terc-ad">${esc(b.ad||b.baslik||'Bülten')}</div>
-        <div class="v1-terc-alt">${esc(b.aciklama||b.tip||'')}</div></div>
-        <span style="font-size:12px;font-weight:700;color:${b.aktif===false?'var(--v1-muted)':'var(--v1-teal)'};">${b.aktif===false?'Pasif':'Aktif'}</span>
-      </div>`).join('');
-    }catch(_){ bl.innerHTML='<div class="v1-bos">Bültenler yüklenemedi.</div>'; }
+      bl.innerHTML=data.map(b=>{
+        const f=b.frekans?(FREK[b.frekans]||b.frekans):'';
+        const sg=b.son_gonderim?('son gönderim: '+new Date(b.son_gonderim).toLocaleDateString('tr-TR')):'henüz gönderilmedi';
+        return `<div class="v1-terc">
+        <div><div class="v1-terc-ad">${esc(b.ad||'Bülten')}</div>
+        <div class="v1-terc-alt">${esc([f,sg].filter(Boolean).join(' · '))}</div></div>
+      </div>`;}).join('');
+    }catch(e){ console.warn('Bültenler yüklenemedi:',(e&&e.message)||e);
+      bl.innerHTML='<div class="v1-bos">Bültenler yüklenemedi.</div>'; }
   }
 
   async function tercihKaydet(){
     const d=document.getElementById('t-durum'); d.textContent='Kaydediliyor…'; d.style.color='var(--v1-muted)';
     try{
+      // Yalnız canlıda VAR OLAN kolonlar yazılır (bkz. tercihYukle notu)
       const kayit={ user_id:uid,
-        bildirim_yeni_ihale:document.getElementById('t-yeni').checked,
         bildirim_son_teklif:document.getElementById('t-son').checked,
         bildirim_email:document.getElementById('t-email').checked,
         bildirim_gun_oncesi:Number(document.getElementById('t-gun').value)||3 };
       const {error}=await sb.from('profil').upsert(kayit,{onConflict:'user_id'});
       if(error) throw error;
       d.textContent='Kaydedildi ✓'; d.style.color='var(--v1-yesil)';
-    }catch(e){ d.textContent='Kaydedilemedi: '+(e.message||''); d.style.color='var(--v1-kirmizi)'; }
+    }catch(e){
+      // Ham Postgres mesajı kullanıcıya gösterilmez (konsola yazılır)
+      console.error('Tercih kaydı başarısız:', e);
+      d.textContent='Kaydedilemedi, lütfen tekrar deneyin.'; d.style.color='var(--v1-kirmizi)';
+    }
     setTimeout(()=>{d.textContent='';},4000);
   }
 

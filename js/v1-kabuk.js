@@ -13,6 +13,30 @@
 (() => {
   'use strict';
 
+  /**
+   * ── TÜRKÇE ARAMA YARDIMCISI (tüm v1 sayfaları buradan kullanır) ─────────
+   * ⛔ PostgREST `ilike` Türkçe İ/ı'da SESSİZCE 0 döndürür: kullanıcı "insaat"
+   *    yazınca "İnşaat" kayıtları hiç gelmez — hata da vermez, liste boş çıkar.
+   *    Çözüm: karşılaştırmayı katlanmış (fold) kolon üzerinden yap.
+   *
+   *    v1Ara(sorgu, 'baslik_fold', kullaniciMetni)   →  düz ilike YERİNE bunu çağır
+   *
+   * ⚠️ Kolon seçimi maskelemeyi etkiler: `baslik_fold` misafire AÇIK (başlık zaten
+   *    açık), `arama_fold` idare adını da içerdiği için anon'a KAPALI (401) —
+   *    misafir dalında arama_fold KULLANMA.
+   */
+  const trFold = (s) => (s || '').toLocaleLowerCase('tr')
+    .replace(/i̇/g, 'i').replace(/ı/g, 'i').replace(/İ/g, 'i')
+    .replace(/ç/g, 'c').replace(/ğ/g, 'g').replace(/ö/g, 'o')
+    .replace(/ş/g, 's').replace(/ü/g, 'u');
+  window.trFold = trFold;
+  // PostgREST kalıbı: * joker, virgül/parantez sorgu ayrıştırıcısını bozar → temizle
+  window.v1AramaKalibi = (metin) => '*' + trFold(metin).replace(/[,()*]/g, ' ').trim() + '*';
+  window.v1Ara = (sorgu, kolon, metin) => {
+    const m = (metin || '').trim();
+    return m ? sorgu.ilike(kolon, window.v1AramaKalibi(m)) : sorgu;
+  };
+
   // ── İkonlar (dolu/filled — ihalepro kurumsal his) ──────────────────────
   const I = {
     home:   '<svg viewBox="0 0 24 24"><path d="M12 3 2.5 11.1h2.6V21h5.1v-5.9h3.6V21h5.1v-9.9h2.6L12 3Z"/></svg>',

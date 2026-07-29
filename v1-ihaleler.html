@@ -62,11 +62,10 @@
             Filtrele
           </div>
 
-          <label class="v1-toggle-satir">Sadece E-İhale İlanlı
+          <!-- Sadece E-İhale: ilanlar.teklif_elektronik (canlı doğrulandı: aktifte 4.152 true / 292 false).
+               Doğrudan Temin tablosunda bu kolon YOK → DT sekmesinde gizlenir. -->
+          <label class="v1-toggle-satir" id="f-eihale-satir">Sadece E-İhale İlanlı
             <span class="v1-sw"><input type="checkbox" id="f-eihale"><span></span></span>
-          </label>
-          <label class="v1-toggle-satir vurgu">Yapay Zekâ ile Önerilen İhaleler
-            <span class="v1-sw"><input type="checkbox" id="f-ai"><span></span></span>
           </label>
 
           <div id="v1-filtre-gruplar"></div>
@@ -89,21 +88,23 @@
                   <svg viewBox="0 0 24 24" width="15" height="15" fill="var(--v1-muted)"><path fill-rule="evenodd" d="M10.5 3a7.5 7.5 0 1 0 4.55 13.46l4.24 4.25 1.42-1.42-4.25-4.24A7.5 7.5 0 0 0 10.5 3Zm0 2a5.5 5.5 0 1 1 0 11 5.5 5.5 0 0 1 0-11Z"/></svg>
                   <input type="text" id="v1-listede-ara" placeholder="Listede Ara">
                 </div>
-                <button class="v1-excel" id="v1-excel">
-                  <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path fill-rule="evenodd" d="M8 2h6.2L21 8.8V20a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2Zm5.6 8.4V3.9L20.1 10.4h-6.5Z"/></svg>
-                  Excel
-                </button>
               </div>
             </div>
+
+            <!-- ?ara= ile gelen metnin nasıl yorumlandığını gösteren şerit (bkz. araParametresiniYerlestir) -->
+            <div id="v1-ara-not" style="display:none;margin:2px 0 12px;padding:9px 12px;border-radius:8px;
+              background:var(--v1-teal-acik);border:1px solid var(--v1-teal);font-size:12.5px;color:var(--v1-lacivert);"></div>
 
             <div style="overflow-x:auto;">
               <table class="v1-tablo" id="v1-tablo">
                 <thead>
                   <tr>
-                    <th style="width:130px;cursor:pointer;" data-sirala="son_teklif_tarihi">İhale Tarihi ⇅</th>
-                    <th style="cursor:pointer;" data-sirala="baslik">İKN / İhale Adı ⇅</th>
+                    <!-- data-sirala sekmeye göre değişir: ilanlar→son_teklif_tarihi, DT→tarih/yayin_tarihi
+                         (DT tablosunda son_teklif_tarihi kolonu YOK → 42703). bkz. basliklariAyarla() -->
+                    <th id="th-tarih" style="width:130px;cursor:pointer;" data-sirala="son_teklif_tarihi">İhale Tarihi ⇅</th>
+                    <th id="th-baslik" style="cursor:pointer;" data-sirala="baslik">İKN / İhale Adı ⇅</th>
                     <th style="width:150px;">İhale Tipi<br>Usulü</th>
-                    <th style="width:110px;cursor:pointer;" data-sirala="il">İhale İli ⇅</th>
+                    <th id="th-il" style="width:110px;cursor:pointer;" data-sirala="il">İhale İli ⇅</th>
                     <th style="width:100px;"></th>
                   </tr>
                 </thead>
@@ -124,7 +125,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/kategoriler.js?v=1"></script>
-<script src="js/v1-kabuk.js?v=6"></script>
+<script src="js/v1-kabuk.js?v=7"></script>
 <script>
 (() => {
   const SB_URL="https://ihaleglobal.com", SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzg0MzA3MTU4LCJleHAiOjE5NDE5ODcxNTh9.CjNKulvirotDD_y2oO2QKgo0kbqYvL0jUSV1RiDMoso";
@@ -134,34 +135,82 @@
   const tl=(v)=>v==null?'—':'₺'+Number(v).toLocaleString('tr-TR',{maximumFractionDigits:0});
   const P=new URLSearchParams(location.search);
   const SAYFA_BOY=20;
+  // Filtre kutusu okuma/yazma — TEK yerden. Sorgu SADECE kutuları okur; URL parametreleri
+  // açılışta kutulara yazılır (eskiden hem kutu hem `P.get(...)` dalı vardı → ikisi
+  // çakışınca filtre sessizce iki kez uygulanıyordu).
+  const val=(id)=>{const e=document.getElementById(id); return e&&e.value?e.value.trim():'';};
+  const isaretli=(id)=>{const e=document.getElementById(id); return !!(e&&e.checked);};
+  const setVal=(id,v)=>{const e=document.getElementById(id); if(e) e.value=v;};
   // ⚠️ SIRALAMA YÖNÜ İNDEKSLE EŞLEŞMELİ: idx_ilanlar_durum_son_teklif = (durum, son_teklif_tarihi DESC NULLS LAST).
   //    Btree ters taranır → ASC için NULLS FIRST şart. 'ASC NULLS LAST' istersek planner indeksi
   //    kullanamaz, 1,6M satır tarar (ölçüm: 7064ms → 0,79ms). Bu yüzden nullsFirst = ascending.
-  let sayfa=1, toplam=0, sekme=(P.get('sekme')==='sonuc')?'sonuc':((P.get('sekme')==='dt'||P.get('tur')==='dt')?'dt':'aktif'), uyeMi=false, sirala='son_teklif_tarihi', yon=true;
+  let sayfa=1, toplam=0, sekme=(P.get('sekme')==='sonuc')?'sonuc':((P.get('sekme')==='dt'||P.get('tur')==='dt')?'dt':'aktif'),
+      uyeMi=false, uid=null, sirala='son_teklif_tarihi', yon=true;
 
   const ILLER=["ADANA","ADIYAMAN","AFYONKARAHİSAR","AĞRI","AKSARAY","AMASYA","ANKARA","ANTALYA","ARDAHAN","ARTVİN","AYDIN","BALIKESİR","BARTIN","BATMAN","BAYBURT","BİLECİK","BİNGÖL","BİTLİS","BOLU","BURDUR","BURSA","ÇANAKKALE","ÇANKIRI","ÇORUM","DENİZLİ","DİYARBAKIR","DÜZCE","EDİRNE","ELAZIĞ","ERZİNCAN","ERZURUM","ESKİŞEHİR","GAZİANTEP","GİRESUN","GÜMÜŞHANE","HAKKARİ","HATAY","IĞDIR","ISPARTA","İSTANBUL","İZMİR","KAHRAMANMARAŞ","KARABÜK","KARAMAN","KARS","KASTAMONU","KAYSERİ","KIRIKKALE","KIRKLARELİ","KIRŞEHİR","KİLİS","KOCAELİ","KONYA","KÜTAHYA","MALATYA","MANİSA","MARDİN","MERSİN","MUĞLA","MUŞ","NEVŞEHİR","NİĞDE","ORDU","OSMANİYE","RİZE","SAKARYA","SAMSUN","SİİRT","SİNOP","SİVAS","ŞANLIURFA","ŞIRNAK","TEKİRDAĞ","TOKAT","TRABZON","TUNCELİ","UŞAK","VAN","YALOVA","YOZGAT","ZONGULDAK"];
   const TURLER=["Mal","Hizmet","Yapım","Danışmanlık","Kiraya Verme","Satış"];
-  const USULLER=["Açık İhale","Belli İstekliler","Pazarlık","Doğrudan Temin"];
+  /* ⚠️ USUL: seçenek ETİKETİ ile DB'deki DEĞER aynı değil — ve TEK ilike kalıbı YETMİYOR.
+     `ilanlar.usul` aktif ilanlarda 23 farklı değer taşıyor (canlı sayıldı, 5.520 satır):
+        4624 Açık                                  ·  209 4734 Sayılı KİK, Açık İhale Usulü
+         198 2886 Sayılı DİK, Açık Teklif Usulü    ·  105 İstisna ve Kapsam Dışı İhaleler
+          95 Elektrik Dağıtım Şirketleri … Yön.    ·   70 2886 Sayılı DİK, Kapalı Teklif Usulü
+          37 Vakıf Yükseköğretim Kurumları Yön.    ·   30 Belli İstekliler Arasında
+          17 Açık İhale · 25 Pazarlık (MD 21 A/B/E/F, Hepsi) · 4 2886 Sayılı DİK, Pazarlık Usulü
+           8 TİGEM · 8 6183 AATUHK Satış · 8 Diğer · 2 Tasarım Yarışması · 1 EGM · 1 Kültür Varlıkları
+     İKİ TUZAK:
+      (1) Etiketi ("Açık İhale") olduğu gibi ilike'a vermek → 5.126 yerine 227 satır (eski hata).
+      (2) Düz '%Açık%' İKİ AYRI MEVZUATI birleştiriyor: 4734/KİK açık ihale usulü ile
+          2886/DİK "Açık Teklif Usulü" (taşınmaz satış/kiralama) aynı kelimeyi kullanıyor →
+          "Açık İhale" seçen kullanıcının listesine 198 satış/kiralama ilanı sızıyordu
+          (Pazarlık'ta da 4 adet). Bu yüzden KİK dallarında 2886 DIŞLANIYOR ve 2886 kendi
+          seçeneği oluyor. Dropdown'da karşılığı olmayan 161 satır da "Diğer mevzuat"a düşüyor;
+          eskiden hiçbir seçenekle erişilemiyordu. */
+  const USUL_HARIC=['%Açık%','%Belli İstekliler%','%Pazarlık%','%İstisna%','%2886%'];
+  const USULLER=[
+    {v:'acik',    ad:'Açık İhale (4734 / KİK)',
+     uygula:q=>q.ilike('usul','%Açık%').not('usul','ilike','%2886%')},
+    {v:'belli',   ad:'Belli İstekliler Arasında',
+     uygula:q=>q.ilike('usul','%Belli İstekliler%')},
+    {v:'pazarlik',ad:'Pazarlık',
+     uygula:q=>q.ilike('usul','%Pazarlık%').not('usul','ilike','%2886%')},
+    {v:'istisna', ad:'İstisna / Kapsam Dışı',
+     uygula:q=>q.ilike('usul','%İstisna%')},
+    {v:'dik2886', ad:'2886 Sayılı DİK (satış / kiraya verme)',
+     uygula:q=>q.ilike('usul','%2886%')},
+    {v:'diger',   ad:'Diğer mevzuat (Elektrik Dağıtım, Vakıf Üniv., TİGEM…)',
+     uygula:q=>USUL_HARIC.reduce((a,p)=>a.not('usul','ilike',p),q).not('usul','is',null)},
+  ];
+  // ilanlar.teklif_fiyat_turu canlı değerleri: 'birim' | 'goturu' | 'karma' (etiketler farklı)
+  const SOZ_TURLERI=[{v:'birim',ad:'Birim Fiyat'},{v:'goturu',ad:'Götürü Bedel'},{v:'karma',ad:'Karma'}];
   // ⚠️ window.KATEGORILER = [{kod,emoji,aciklama,eski}, …] — string DEĞİL, .kod al.
   const KATEGORILER=(window.KATEGORILER||[]).map(k=>(typeof k==='string'?k:(k&&k.kod)||'')).filter(Boolean);
 
-  // ── Sol filtre grupları (ihalepro sırası birebir) ──
+  // ── Sol filtre grupları ────────────────────────────────────────────────
+  // ⛔ KALDIRILAN KONTROLLER (karşılığı olan kolon canlı REST'te YOK, ölü kontrol bırakılmaz):
+  //    · "Yapay Zekâ ile Önerilen"  → ilanlar'da öneri/skor kolonu yok (kullanıcıya göre eşleştirme
+  //      motoru bu sayfada kurulu değil).
+  //    · "İşin Yapılacağı İl"       → il kolonu yok; `isin_yapilacagi_yer` serbest metin ve il adı
+  //      çoğu kayıtta hiç geçmiyor (ANKARA: il=618 kayda karşılık metinde 160 → %26). Bağlansaydı
+  //      kullanıcıya sessizce eksik liste gösterirdi.
+  //    · "Benzer İş"                → benzer_is kolonu yok (42703).
+  //    · "Düzeltme İlanı"           → düzeltme bilgisi tutan kolon yok (42703).
   const GRUPLAR=[
     {id:'kelime', ad:'Kelime Arama', html:`<input class="v1-f-input" id="f-kelime" placeholder="İhale adında ara…">`},
     {id:'yayin',  ad:'Yayın Tarihi', html:`<div class="v1-f-ikili"><div><span class="v1-f-etiket">Başlangıç</span><input type="date" class="v1-f-input" id="f-yayin1"></div><div><span class="v1-f-etiket">Bitiş</span><input type="date" class="v1-f-input" id="f-yayin2"></div></div>`},
     {id:'ihaleT', ad:'İhale Tarihi', html:`<div class="v1-f-ikili"><div><span class="v1-f-etiket">Başlangıç</span><input type="date" class="v1-f-input" id="f-tarih1"></div><div><span class="v1-f-etiket">Bitiş</span><input type="date" class="v1-f-input" id="f-tarih2"></div></div>`},
     {id:'maliyet',ad:'Yaklaşık Maliyet', html:`<div class="v1-f-ikili"><div><span class="v1-f-etiket">Min ₺</span><input type="number" class="v1-f-input" id="f-min" placeholder="0"></div><div><span class="v1-f-etiket">Max ₺</span><input type="number" class="v1-f-input" id="f-max" placeholder="—"></div></div>`},
     {id:'tip',    ad:'İhale Tipi', html:`<select class="v1-f-select" id="f-tur"><option value="">Tümü</option>${TURLER.map(t=>`<option>${t}</option>`).join('')}</select>`},
-    {id:'usul',   ad:'İhale Usulü', html:`<select class="v1-f-select" id="f-usul"><option value="">Tümü</option>${USULLER.map(t=>`<option>${t}</option>`).join('')}</select>`},
-    {id:'idare',  ad:'İhale Yapan İdare', html:`<input class="v1-f-input" id="f-idare" placeholder="İdare adı…">`},
+    {id:'usul',   ad:'İhale Usulü', html:`<select class="v1-f-select" id="f-usul"><option value="">Tümü</option>${USULLER.map(u=>`<option value="${esc(u.v)}">${esc(u.ad)}</option>`).join('')}</select>`},
+    {id:'idare',  ad:'İhale Yapan İdare', html:`<input class="v1-f-input" id="f-idare" placeholder="İdare adı…"><span class="v1-f-etiket" id="f-idare-not"></span>`},
     {id:'sektor', ad:'Sektörler', html:`<select class="v1-f-select" id="f-kategori"><option value="">Tümü</option>${KATEGORILER.map(k=>`<option>${esc(k)}</option>`).join('')}</select>`},
     {id:'il',     ad:'İhalenin Yapılacağı İl', html:`<select class="v1-f-select" id="f-il"><option value="">Tümü</option>${ILLER.map(i=>`<option>${i}</option>`).join('')}</select>`},
-    {id:'isil',   ad:'İşin Yapılacağı İl', html:`<select class="v1-f-select" id="f-isil"><option value="">Tümü</option>${ILLER.map(i=>`<option>${i}</option>`).join('')}</select>`},
-    {id:'benzer', ad:'Benzer İş', html:`<input class="v1-f-input" id="f-benzer" placeholder="Benzer iş tanımı…">`},
-    {id:'sozT',   ad:'Sözleşme Tipi', html:`<select class="v1-f-select" id="f-sozt"><option value="">Tümü</option><option>Birim Fiyat</option><option>Götürü Bedel</option><option>Karma</option></select>`},
-    {id:'duzelt', ad:'Düzeltme İlanı', html:`<select class="v1-f-select" id="f-duzelt"><option value="">Tümü</option><option value="1">Yalnız düzeltme ilanları</option><option value="0">Düzeltmesiz</option></select>`},
+    {id:'sozT',   ad:'Sözleşme / Teklif Fiyat Türü', html:`<select class="v1-f-select" id="f-sozt"><option value="">Tümü</option>${SOZ_TURLERI.map(s=>`<option value="${s.v}">${s.ad}</option>`).join('')}</select><span class="v1-f-etiket">Bu bilgi yalnızca ilanda yayımlandığında kayıtlıdır; seçim yapıldığında bilgisi olmayan ilanlar listeden çıkar.</span>`},
     {id:'diger',  ad:'Diğer Filtreler', html:`<label style="display:flex;gap:8px;align-items:center;font-size:13px;"><input type="checkbox" id="f-maliyetli"> Yalnız yaklaşık maliyeti ilan edilenler</label>`},
   ];
+  // "Aramayı Kaydet" ve temizleme bu listeyi kullanır (tek kaynak).
+  const FILTRE_IDLER=['f-kelime','f-yayin1','f-yayin2','f-tarih1','f-tarih2','f-min','f-max',
+                      'f-tur','f-usul','f-idare','f-kategori','f-il','f-sozt','f-eihale','f-maliyetli'];
+
   function filtreleriKur(){
     document.getElementById('v1-filtre-gruplar').innerHTML = GRUPLAR.map(g=>
       `<div class="v1-filtre-grup" data-g="${g.id}">
@@ -177,26 +226,49 @@
     document.getElementById('f-kaydet').addEventListener('click',aramaKaydet);
   }
 
+  /* ── DOĞRUDAN TEMİN'de Türkçe kelime araması ───────────────────────────────
+     `dogrudan_temin_ilanlari` tablosunda `baslik_fold` KOLONU YOK (canlı REST: 42703 —
+     backend/migration_dt_arama.sql prod'a uygulanmamış) → window.v1Ara burada kullanılamaz.
+     Düz `ilike('baslik','%insaat%')` ise İKİ AYRI şekilde bozuk (ikisi de canlı ölçüldü):
+       · Türkçe katlamıyor  → "insaat" 0 satır, "asansor" 0 satır
+       · 1,49M satırda tam tabloda 57014 statement timeout → sayfa "Liste yüklenemedi" diyor
+     Çözüm: PostgREST `imatch` (POSIX ~*) + Türkçe harf sınıfları.
+     Ölçüm: "insaat" → 200/0,52sn ve 126 doğru satır, 0 yanlış eşleşme; "asansor" → 0,26sn.
+     ⚠️ Regex meta karakterleri kaçırılmazsa PostgreSQL 2201B ("invalid regular expression")
+        döndürüp sorguyu düşürüyor → beyaz liste dışındaki her karakter `.` yapılır. */
+  const TR_SINIF={ i:'[iıİI]', c:'[cçCÇ]', g:'[gğGĞ]', o:'[oöOÖ]', s:'[sşSŞ]', u:'[uüUÜ]' };
+  function dtRegex(metin){
+    const f=(window.trFold?window.trFold(metin):(metin||'').toLocaleLowerCase('tr')).trim();
+    if(f.length<2) return '';
+    return f.split('').map(ch=>{
+      if(TR_SINIF[ch]) return TR_SINIF[ch];
+      if(ch===' ') return '\\s+';
+      if(/[a-z0-9]/.test(ch)) return ch;
+      return '.';                       // nokta/parantez/virgül vb. → tek karakter jokeri
+    }).join('');
+  }
+
   // ── Sorgu ──
   // ⚠️ 1,96M satırda select+count:'exact'+order+range BİRLİKTE statement_timeout'a takılıyor.
   //    Sayımı AYRI hafif sorguya böldük (head:true — KPI'da çalışan desen), veri sorgusu count'suz.
   function sorguKur(sayimIcin){
     // ── DOĞRUDAN TEMİN sekmesi: AYRI tablo (dogrudan_temin_ilanlari), farklı kolonlar ──
     if (sekme==='dt') {
-      const dtKolon = sayimIcin ? 'id' : 'id,dt_no,baslik,idare,tur,il,tarih,durum,kategori,yayin_tarihi';
+      // ⛔ `idare` anon'a KAPALI (42501). Koşulsuz select'e konursa TÜM sorgu düşer ve
+      //    misafirde DT sekmesi hiç açılmaz — bu yüzden üyelik dallanması ŞART.
+      const dtKolon = sayimIcin ? 'id'
+        : ('id,dt_no,baslik,tur,il,tarih,durum,kategori,yayin_tarihi'+(uyeMi?',idare':''));
       let d = sb.from('dogrudan_temin_ilanlari').select(dtKolon, sayimIcin?{count:'exact',head:true}:undefined);
-      const dv=(id)=>{const e=document.getElementById(id); return e&&e.value?e.value.trim():'';};
-      if(dv('f-kelime')) d=d.ilike('baslik','%'+dv('f-kelime')+'%');
-      if(dv('f-tarih1')) d=d.gte('tarih',dv('f-tarih1'));
-      if(dv('f-tarih2')) d=d.lte('tarih',dv('f-tarih2')+'T23:59:59');
-      if(dv('f-tur'))    d=d.eq('tur',dv('f-tur'));
-      if(dv('f-il'))     d=d.eq('il',dv('f-il'));
-      if(dv('f-kategori')) d=d.eq('kategori',dv('f-kategori'));
-      if(uyeMi && dv('f-idare')) d=d.ilike('idare','%'+dv('f-idare')+'%');
-      if(P.get('il') && !dv('f-il')) d=d.eq('il',P.get('il').toLocaleUpperCase('tr'));
-      if(P.get('ara') && !dv('f-kelime')) d=d.ilike('baslik','%'+P.get('ara')+'%');
-      if(P.get('kategori') && !dv('f-kategori')) d=d.eq('kategori',P.get('kategori'));
-      if(uyeMi && P.get('idare') && !dv('f-idare')) d=d.ilike('idare','%'+P.get('idare')+'%');
+      const kw=val('f-kelime');
+      if(kw){ const rgx=dtRegex(kw); if(rgx) d=d.filter('baslik','imatch',rgx); }
+      if(val('f-tarih1')) d=d.gte('tarih',val('f-tarih1'));
+      if(val('f-tarih2')) d=d.lte('tarih',val('f-tarih2')+'T23:59:59');
+      if(val('f-yayin1')) d=d.gte('yayin_tarihi',val('f-yayin1'));
+      if(val('f-yayin2')) d=d.lte('yayin_tarihi',val('f-yayin2')+'T23:59:59');
+      if(val('f-tur'))    d=d.eq('tur',val('f-tur'));
+      if(val('f-il'))     d=d.eq('il',val('f-il'));
+      if(val('f-kategori')) d=d.eq('kategori',val('f-kategori'));
+      if(uyeMi && val('f-idare')) d=d.ilike('idare','%'+val('f-idare')+'%');
       return d;
     }
     const kolon = sayimIcin ? 'id' : (uyeMi
@@ -209,36 +281,83 @@
       // ayrıca NULL tarihli eski kayıtları da eler (NULLS FIRST yan etkisi).
       q=q.eq('durum','aktif').gte('son_teklif_tarihi', new Date().toISOString());
     } else q=q.eq('durum','sonuclandi');
-    const v=(id)=>{const e=document.getElementById(id); return e&&e.value?e.value.trim():'';};
-    if(v('f-kelime')) q=q.ilike('baslik','%'+v('f-kelime')+'%');
-    if(v('f-tarih1')) q=q.gte('son_teklif_tarihi',v('f-tarih1'));
-    if(v('f-tarih2')) q=q.lte('son_teklif_tarihi',v('f-tarih2')+'T23:59:59');
-    if(v('f-yayin1')) q=q.gte('ilan_tarihi',v('f-yayin1'));
-    if(v('f-yayin2')) q=q.lte('ilan_tarihi',v('f-yayin2')+'T23:59:59');
-    if(v('f-min'))    q=q.gte('yaklasik_maliyet_min',v('f-min'));
-    if(v('f-max'))    q=q.lte('yaklasik_maliyet_max',v('f-max'));
-    if(v('f-tur'))    q=q.eq('tur',v('f-tur'));
-    if(v('f-usul'))   q=q.ilike('usul','%'+v('f-usul')+'%');
-    if(v('f-il'))     q=q.eq('il',v('f-il'));
-    if(v('f-kategori')) q=q.eq('kategori',v('f-kategori'));
-    if(uyeMi && v('f-idare')) q=q.ilike('idare','%'+v('f-idare')+'%');
-    const mc=document.getElementById('f-maliyetli'); if(mc&&mc.checked) q=q.not('yaklasik_maliyet_min','is',null);
-    // URL'den gelen il/ara
-    if(P.get('il') && !v('f-il')) q=q.eq('il',P.get('il').toLocaleUpperCase('tr'));
-    if(P.get('ara') && !v('f-kelime')) q=q.ilike('baslik','%'+P.get('ara')+'%');
-    if(P.get('kategori') && !v('f-kategori')) q=q.eq('kategori',P.get('kategori'));
-    if(uyeMi && P.get('idare') && !v('f-idare')) q=q.ilike('idare','%'+P.get('idare')+'%');
+    // ⛔ Düz `.ilike('baslik','%insaat%')` Türkçe İ/ı'da SESSİZCE 0 döner. Katlanmış
+    //    `baslik_fold` kolonu misafire de AÇIK ve trgm indeksli (ölçüm: 0,18sn).
+    q = window.v1Ara ? window.v1Ara(q,'baslik_fold',val('f-kelime'))
+                     : (val('f-kelime') ? q.ilike('baslik','%'+val('f-kelime')+'%') : q);
+    if(val('f-tarih1')) q=q.gte('son_teklif_tarihi',val('f-tarih1'));
+    if(val('f-tarih2')) q=q.lte('son_teklif_tarihi',val('f-tarih2')+'T23:59:59');
+    if(val('f-yayin1')) q=q.gte('ilan_tarihi',val('f-yayin1'));
+    if(val('f-yayin2')) q=q.lte('ilan_tarihi',val('f-yayin2')+'T23:59:59');
+    if(val('f-min'))    q=q.gte('yaklasik_maliyet_min',val('f-min'));
+    if(val('f-max'))    q=q.lte('yaklasik_maliyet_max',val('f-max'));
+    if(val('f-tur'))    q=q.eq('tur',val('f-tur'));
+    if(val('f-usul')){ const u=USULLER.find(x=>x.v===val('f-usul')); if(u) q=u.uygula(q); }  // bkz. USULLER
+    if(val('f-il'))     q=q.eq('il',val('f-il'));
+    if(val('f-kategori')) q=q.eq('kategori',val('f-kategori'));
+    if(val('f-sozt'))   q=q.eq('teklif_fiyat_turu',val('f-sozt'));
+    if(uyeMi && val('f-idare')) q=q.ilike('idare','%'+val('f-idare')+'%');
+    if(isaretli('f-eihale'))   q=q.is('teklif_elektronik',true);
+    if(isaretli('f-maliyetli')) q=q.not('yaklasik_maliyet_min','is',null);
     return q;
+  }
+
+  // DT'de listelenen/sıralanan tarih kolonu. Yayın tarihi filtresi açıkken `order=tarih.desc`
+  // ile birlikte kullanmak 57014 timeout veriyordu (ölçüm: 500/3,16sn); aynı sorgu
+  // `order=yayin_tarihi.desc` ile 200/0,20sn. Bu yüzden yayın filtresi açılınca sıralama da
+  // yayın tarihine geçer ve ilk sütun yayın tarihini gösterir (kullanıcı ne olduğunu görsün).
+  function dtSiralamaTazele(){
+    if(sekme!=='dt') return;
+    const yayinFiltre = !!(val('f-yayin1')||val('f-yayin2'));
+    if(yayinFiltre && sirala==='tarih') sirala='yayin_tarihi';
+    else if(!yayinFiltre && sirala==='yayin_tarihi') sirala='tarih';
+  }
+  /* ⚠️ BOŞ DEĞERİN YERİ İNDEKSLE EŞLEŞMELİ — yoksa planner indeksi kullanamaz ve
+     tablo baştan taranıp 57014 gelir. Kural KOLONA GÖRE DEĞİŞİYOR (hepsi canlı ölçüldü):
+       ilanlar.son_teklif_tarihi  → nullsFirst = ascending      (idx … DESC NULLS LAST)
+       dogrudan_temin.tarih       → nullsFirst = ascending      (asc 0,22sn · desc 0,22sn)
+       dogrudan_temin.yayin_tarihi→ nullsFirst = !ascending
+         (desc.nullsfirst 0,17sn / desc.nullslast 3,17sn-500 · asc.nullslast 0,21sn / asc.nullsfirst 3,16sn-500)
+     Genel `nullsFirst: yon` kuralı yayın tarihine uygulanınca yayın filtresi
+     her seferinde "zaman aşımı" veriyordu. */
+  const NULL_ONCE_TERS={ yayin_tarihi:true };
+  const nullsIlk=(kolon,asc)=> NULL_ONCE_TERS[kolon] ? !asc : asc;
+
+  /* DT tablosu 2,95M satır ve `baslik` / `il` için sıralama indeksi YOK → o başlıklara
+     tıklamak garantili 57014 (ölçüldü: 500/3,2sn ve 3,3sn). Aynı sıralama `ilanlar`da
+     sorunsuz (aktif 0,38sn / 0,28sn — sonuç 1,57sn). Bu yüzden yalnız DT sekmesinde
+     bu iki başlık pasifleşir; kullanıcı tıklayıp hata ekranı görmesin. */
+  const DT_SIRALANAMAZ=['baslik','il'];
+  const TH_ETIKET={'th-baslik':'İKN / İhale Adı','th-il':'İhale İli'};
+  function basliklariAyarla(){
+    const th=document.getElementById('th-tarih');
+    if(th){
+      if(sekme!=='dt'){ th.dataset.sirala='son_teklif_tarihi'; th.textContent='İhale Tarihi ⇅'; }
+      else{
+        const yayin = sirala==='yayin_tarihi';
+        th.dataset.sirala = yayin ? 'yayin_tarihi' : 'tarih';
+        th.textContent    = (yayin ? 'Yayın Tarihi' : 'DT Tarihi')+' ⇅';
+      }
+    }
+    Object.keys(TH_ETIKET).forEach(id=>{
+      const e=document.getElementById(id); if(!e) return;
+      const kapali = sekme==='dt' && DT_SIRALANAMAZ.includes(e.dataset.sirala);
+      e.dataset.kapali = kapali ? '1' : '';
+      e.style.cursor   = kapali ? 'default' : 'pointer';
+      e.title          = kapali ? 'Doğrudan temin listesi çok büyük olduğu için bu sütuna göre sıralama kapalı.' : '';
+      e.textContent    = TH_ETIKET[id] + (kapali ? '' : ' ⇅');
+    });
   }
 
   async function yukle(){
     const tb=document.getElementById('v1-tbody');
     tb.innerHTML='<tr><td colspan="5" class="v1-bos">Yükleniyor…</td></tr>';
+    dtSiralamaTazele(); basliklariAyarla();
     try{
       const bas=(sayfa-1)*SAYFA_BOY;
       // Veri + sayım PARALEL, ayrı sorgular (sayım head:true → satır indirmez)
       const [veriRes, sayimRes] = await Promise.all([
-        sorguKur(false).order(sirala,{ascending:yon,nullsFirst:yon}).range(bas,bas+SAYFA_BOY-1),
+        sorguKur(false).order(sirala,{ascending:yon,nullsFirst:nullsIlk(sirala,yon)}).range(bas,bas+SAYFA_BOY-1),
         sorguKur(true).then(r=>r).catch(()=>({count:null})),
       ]);
       const {data,error}=veriRes;
@@ -250,14 +369,24 @@
       if(!data||!data.length){ tb.innerHTML='<tr><td colspan="5" class="v1-bos">Kayıt bulunamadı. Filtreleri değiştirip tekrar deneyin.</td></tr>'; sayfalamaKur(); return; }
       tb.innerHTML=data.map(r=>satir(r)).join('');
       tb.querySelectorAll('[data-genislet]').forEach(b=>b.addEventListener('click',()=>genislet(b)));
+      tb.querySelectorAll('[data-takvim]').forEach(b=>b.addEventListener('click',()=>
+        window.v1Takvim(b.dataset.takvim, b.dataset.ad, b.dataset.tarih, b.dataset.yol)));
       sayfalamaKur();
-    }catch(e){ tb.innerHTML=`<tr><td colspan="5" class="v1-bos">Liste yüklenemedi. ${esc(e.message||'')}</td></tr>`; }
+    }catch(e){
+      // 57014 = statement timeout: çok geniş tarama. Kullanıcıya "bozuk" değil "daralt" de.
+      const mesaj = (e&&e.code==='57014')
+        ? 'Bu arama zaman aşımına uğradı. Daha belirgin bir kelime yazın veya tarih / il gibi bir filtre ekleyin.'
+        : 'Liste yüklenemedi. '+esc((e&&e.message)||'');
+      tb.innerHTML=`<tr><td colspan="5" class="v1-bos">${mesaj}</td></tr>`;
+      document.getElementById('v1-sayi').textContent='—';
+    }
   }
 
   function satir(r){
-    // DT sekmesinde tarih alanı 'tarih', kimlik 'dt_no' (ilan tablosunda son_teklif_tarihi / ekap_id)
+    // DT sekmesinde tarih alanı 'tarih' (yayın filtresi açıkken 'yayin_tarihi'), kimlik 'dt_no';
+    // ilan tablosunda 'son_teklif_tarihi' / 'ekap_id'.
     const dtMi = sekme==='dt';
-    const ham = dtMi ? r.tarih : r.son_teklif_tarihi;
+    const ham = dtMi ? (sirala==='yayin_tarihi' ? r.yayin_tarihi : r.tarih) : r.son_teklif_tarihi;
     const t=ham?new Date(ham):null;
     const kalan=t?Math.ceil((t-new Date())/86400000):null;
     const tarih=t?t.toLocaleDateString('tr-TR',{day:'numeric',month:'long',year:'numeric'}):'—';
@@ -269,7 +398,16 @@
       <td style="font-size:12.5px;color:var(--v1-metin-2);">${esc(r.tur||'—')}<br><span style="color:var(--v1-muted);">${esc(dtMi?(r.kategori||''):(r.usul||''))}</span></td>
       <td style="font-size:13px;">${esc(r.il||'—')}</td>
       <td><div class="v1-t-islem">
-        <button class="v1-yuvarlak-btn" title="Takvime ekle" onclick="v1Takvim('${r.id}','${esc((r.baslik||'').slice(0,60))}','${ham||''}')">
+        <!-- ⛔ INLINE onclick KULLANILMAZ. Öznitelik değeri, JS olarak derlenmeden ÖNCE HTML
+             varlık çözümlemesinden geçiyor: başlıktaki kesme işareti için üretilen &#39;
+             gerçek ' karakterine dönüşüp dizgiyi erkenden kapatıyordu. Tarayıcıda ölçüldü:
+             tıklamada "Uncaught SyntaxError: missing ) after argument list" → düğme ölü.
+             Aktif ihalelerin %2,4'ünde (5.604'te 136 — "Enerya Karaman'dan …") ve DT'de
+             ("PLASTİK BARDAK (100'lü PAKET)") vuruyordu. Veri artık data-* ile taşınıyor;
+             data-genislet düğmesindeki desenin aynısı. -->
+        <button class="v1-yuvarlak-btn" title="Takvime ekle" data-takvim="${r.id}"
+                data-ad="${esc((r.baslik||'').slice(0,60))}" data-tarih="${ham||''}"
+                data-yol="${esc(detayHref)}">
           <svg viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" d="M7 2v2H5.5A2.5 2.5 0 0 0 3 6.5v13A2.5 2.5 0 0 0 5.5 22h13a2.5 2.5 0 0 0 2.5-2.5v-13A2.5 2.5 0 0 0 18.5 4H17V2h-2v2H9V2H7Zm12 8H5v9.5c0 .28.22.5.5.5h13a.5.5 0 0 0 .5-.5V10Z"/></svg>
         </button>
         <button class="v1-yuvarlak-btn" title="Detay" data-genislet="${r.id}" style="background:#fff;color:var(--v1-mavi);border:1.5px solid var(--v1-cizgi);">
@@ -286,29 +424,35 @@
     d.innerHTML=`<td colspan="5" class="v1-detay"><div class="v1-detay-grid" id="d-${id}">Yükleniyor…</div></td>`;
     tr.after(d);
     (async()=>{
+      const kutu=document.getElementById('d-'+id);
+      const kilit='<span class="v1-kilit">••••• 🔒</span>';
+      const alan=(b,v)=>`<div><b>${b}</b>${v||'—'}</div>`;
       try{
         if(sekme==='dt'){   // DT ayrı tablo — kendi alanları
-          const {data}=await sb.from('dogrudan_temin_ilanlari').select('idare,kategori,tur,il,yayin_tarihi,dt_no').eq('id',id).limit(1);
+          // ⛔ `idare` anon'a kapalı → misafir dalında select'e KONMAZ (yoksa 42501 ile
+          //    tüm detay sorgusu düşer ve "Detay yüklenemedi" çıkar).
+          const dtKolon=(uyeMi?'idare,':'')+'kategori,tur,il,yayin_tarihi,dt_no';
+          const {data,error}=await sb.from('dogrudan_temin_ilanlari').select(dtKolon).eq('id',id).limit(1);
+          if(error) throw error;
           const r=(data||[])[0]||{};
-          const alan=(b,v)=>`<div><b>${b}</b>${v||'—'}</div>`;
-          document.getElementById('d-'+id).innerHTML=
-            alan('İdare',esc(r.idare||(uyeMi?'—':'<span class="v1-kilit">••••• 🔒</span>')))+
+          kutu.innerHTML=
+            alan('İdare',uyeMi?esc(r.idare||'—'):kilit)+
             alan('Sektör',esc(r.kategori))+alan('Tür',esc(r.tur))+alan('İl',esc(r.il))+
             alan('Yayın Tarihi',r.yayin_tarihi?new Date(r.yayin_tarihi).toLocaleDateString('tr-TR'):'—')+
-            `<div><b>İşlem</b><a href="v1-dt-detay?id=${id}">Doğrudan temin detayına git →</a></div>`;
+            `<div><b>İşlem</b><a href="v1-dt-detay?dt_no=${encodeURIComponent(r.dt_no||'')}&id=${id}">Doğrudan temin detayına git →</a></div>`;
           return;
         }
         const kolon = uyeMi ? 'idare,kategori,yaklasik_maliyet_min,yaklasik_maliyet_max,ilan_tarihi,ekap_id' : 'kategori,ilan_tarihi';
-        const {data}=await sb.from('ilanlar').select(kolon).eq('id',id).limit(1);
+        const {data,error}=await sb.from('ilanlar').select(kolon).eq('id',id).limit(1);
+        if(error) throw error;
         const r=(data||[])[0]||{};
-        const alan=(b,v)=>`<div><b>${b}</b>${v||'—'}</div>`;
-        document.getElementById('d-'+id).innerHTML=
-          alan('İdare',esc(r.idare||(uyeMi?'—':'<span class="v1-kilit">••••• 🔒</span>')))+
+        kutu.innerHTML=
+          alan('İdare',uyeMi?esc(r.idare||'—'):kilit)+
           alan('Sektör',esc(r.kategori))+
           alan('İlan Tarihi',r.ilan_tarihi?new Date(r.ilan_tarihi).toLocaleDateString('tr-TR'):'—')+
-          alan('Yaklaşık Maliyet',uyeMi?(r.yaklasik_maliyet_min?tl(r.yaklasik_maliyet_min)+(r.yaklasik_maliyet_max?' – '+tl(r.yaklasik_maliyet_max):''):'İlan edilmemiş'):'<span class="v1-kilit">••••• 🔒</span>')+
+          alan('Yaklaşık Maliyet',uyeMi?(r.yaklasik_maliyet_min?tl(r.yaklasik_maliyet_min)+(r.yaklasik_maliyet_max?' – '+tl(r.yaklasik_maliyet_max):''):'İlan edilmemiş'):kilit)+
           `<div><b>İşlem</b><a href="v1-ihale-detay?id=${id}">İhale detayına git →</a> · <a href="v1-teklif-olustur?ihale_id=${id}">Teklif oluştur →</a></div>`;
-      }catch(_){ document.getElementById('d-'+id).textContent='Detay yüklenemedi.'; }
+      }catch(e){ if(kutu) kutu.textContent='Detay yüklenemedi. '+((e&&e.message)||''); }
     })();
   }
 
@@ -335,93 +479,161 @@
     }));
   }
 
-  // ── Excel (üye + plan kontrolü) ──
-  async function excelIndir(){
-    if(!uyeMi){ alert('Excel indirme üyelere özeldir. Giriş yapın.'); return; }
-    const btn=document.getElementById('v1-excel'); const eski=btn.innerHTML; btn.innerHTML='⏳ Hazırlanıyor…'; btn.disabled=true;
-    try{
-      const {data}=await sorguKur(false).order(sirala,{ascending:yon,nullsFirst:yon}).limit(1000);
-      const satirlar=(data||[]).map(r=>[r.ekap_id||'',r.baslik||'',r.tur||'',r.usul||'',r.il||'',r.kategori||'',
-        r.son_teklif_tarihi?new Date(r.son_teklif_tarihi).toLocaleString('tr-TR'):'']);
-      const csv=['İKN;İhale Adı;Tip;Usul;İl;Sektör;Son Teklif Tarihi',
-        ...satirlar.map(s=>s.map(x=>String(x).replace(/;/g,',')).join(';')),
-        '', 'Kaynak: ihaleglobal.com — © Ömer Faruk Dinç'].join('\r\n');
-      const blob=new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8;'});
-      const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
-      a.download=`ihaleglobal-${sekme}-${new Date().toISOString().slice(0,10)}.csv`;
-      document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(a.href);
-    }catch(e){ alert('Dışa aktarım başarısız: '+(e.message||'')); }
-    finally{ btn.innerHTML=eski; btn.disabled=false; }
-  }
-
+  // ── Aramayı kaydet ────────────────────────────────────────────────────────
+  // ⚠️ İKİ HATA VARDI: (1) tabloda `kriter` diye kolon yok — şema `kayitli_aramalar
+  //    (user_id, yerel_id, ad, params jsonb)`; (2) supabase-js yazma işlemi HATA FIRLATMAZ,
+  //    `{error}` döndürür → try/catch boş geçiyor ve kod her koşulda "kaydedildi ✓" diyordu.
+  //    user_id NOT NULL ve RLS `user_id = auth.uid()` istiyor → elle gönderilmek ZORUNDA.
   async function aramaKaydet(){
-    if(!uyeMi){ alert('Arama kaydetmek için giriş yapın.'); return; }
-    const ad=prompt('Bu aramaya bir ad verin:'); if(!ad) return;
-    const kriter={}; ['f-kelime','f-tur','f-usul','f-il','f-kategori','f-min','f-max','f-tarih1','f-tarih2']
-      .forEach(id=>{const e=document.getElementById(id); if(e&&e.value)kriter[id]=e.value;});
-    try{ await sb.from('kayitli_aramalar').insert({ad,kriter}); alert('Arama kaydedildi ✓'); }
-    catch(e){ alert('Kaydedilemedi: '+(e.message||'')); }
+    if(!uyeMi||!uid){ alert('Arama kaydetmek için giriş yapın.'); return; }
+    const ad=(prompt('Bu aramaya bir ad verin:')||'').trim(); if(!ad) return;
+    const params={sekme};
+    FILTRE_IDLER.forEach(id=>{
+      const e=document.getElementById(id); if(!e) return;
+      if(e.type==='checkbox'){ if(e.checked) params[id]=true; }
+      else if(e.value&&e.value.trim()) params[id]=e.value.trim();
+    });
+    const btn=document.getElementById('f-kaydet'); const eski=btn.textContent;
+    btn.textContent='Kaydediliyor…'; btn.disabled=true;
+    const {error}=await sb.from('kayitli_aramalar')
+      .insert({ user_id: uid, yerel_id: Date.now(), ad, params });
+    btn.textContent=eski; btn.disabled=false;
+    if(error){ alert('Arama kaydedilemedi: '+(error.message||error.code||'bilinmeyen hata')); return; }
+    alert('Arama kaydedildi ✓');
   }
 
   // Takvime ekle (ICS)
-  window.v1Takvim=(id,baslik,tarih)=>{
-    if(!tarih){ alert('Bu ihalede son teklif tarihi yok.'); return; }
+  // ⚠️ URL satırı SEKMEYE göre kurulur: DT kaydının id'si `dogrudan_temin_ilanlari`ye ait,
+  //    sabit `/ihale-detay?id=` bağlantısı o id'yi ihale tablosunda arayıp boş sayfa açıyordu.
+  //    Satırın kendi detay yolu (`data-yol`) taşınıyor.
+  window.v1Takvim=(id,baslik,tarih,yol)=>{
+    if(!tarih){ alert('Bu kayıtta tarih bilgisi yok.'); return; }
     const d=new Date(tarih); const f=(x)=>x.toISOString().replace(/[-:]/g,'').split('.')[0]+'Z';
+    const dtMi = sekme==='dt';
     const ics=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//ihaleglobal//TR','BEGIN:VEVENT',
       'UID:'+id+'@ihaleglobal.com','DTSTAMP:'+f(new Date()),'DTSTART:'+f(d),'DTEND:'+f(new Date(d.getTime()+36e5)),
-      'SUMMARY:'+baslik.replace(/[,;]/g,' '),'DESCRIPTION:İhaleGlobal — son teklif tarihi',
-      'URL:https://ihaleglobal.com/ihale-detay?id='+id,'END:VEVENT','END:VCALENDAR'].join('\r\n');
+      'SUMMARY:'+String(baslik).replace(/[,;]/g,' '),
+      'DESCRIPTION:İhaleGlobal — '+(dtMi?'doğrudan temin tarihi':'son teklif tarihi'),
+      'URL:https://ihaleglobal.com/'+(yol||('v1-ihale-detay?id='+id)),'END:VEVENT','END:VCALENDAR'].join('\r\n');
     const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([ics],{type:'text/calendar'}));
     a.download='ihale.ics'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(a.href);
   };
 
+  /* ── ?ara= parametresinin yorumu ───────────────────────────────────────────
+     v1-bank.html `v1-ihaleler?ara=<İDARE ADI>` linki üretiyor. Metin ihale BAŞLIĞINDA
+     arandığı için "Sağlık Bakanlığı" gibi bir bağlantı alakasız/boş sonuç döndürüyordu.
+     Karar: gelen metin kurum adı kalıbına uyuyorsa arama İDARE alanına yazılır (üyelik
+     gerekir — `idare` anon'a kapalı), aksi halde kelime kutusuna. Hangi yorumun
+     seçildiği kullanıcıya şeritte gösterilir ve tek tıkla diğerine çevrilebilir —
+     tahmin sessizce dayatılmaz. */
+  // ⚠️ SON EKE BAKILIR, gövdeye DEĞİL. Aynı `?ara=` parametresini üst bardaki serbest arama
+  //    kutusu da üretiyor; "hastane"/"kurumu" gibi parçalar gövdede arandığında
+  //    "Hastane Malzemesi Alımı" gibi MEŞRU bir kelime aramasını idare aramasına çevirirdi.
+  //    Kurum adları neredeyse daima kurumsal ekle BİTER → yanlış pozitif yerine yanlış
+  //    negatifi seçiyoruz (yanlış negatifin bedeli: eski davranış olan kelime araması).
+  const IDARE_SON_EK=/(bakanligi|mudurlugu|baskanligi|belediyesi|universitesi|hastanesi|komutanligi|valiligi|kaymakamligi|rektorlugu|genel sekreterligi|idaresi|kurumu|kurulu|enstitusu)$/;
+  function idareAdiMi(m){
+    const f=(window.trFold?window.trFold(m):String(m).toLocaleLowerCase('tr')).replace(/[\s.]+$/,'');
+    return f.length>=15 && IDARE_SON_EK.test(f);
+  }
+  function araNotYaz(html){
+    const el=document.getElementById('v1-ara-not');
+    if(!el) return;
+    if(!html){ el.style.display='none'; el.innerHTML=''; return; }
+    el.innerHTML=html; el.style.display='';
+  }
+  // Şeridi HER yazdığında değiştir düğmesini yeniden bağlar — tek seferlik olmasın diye.
+  function araSeridiCiz(metin, idareModu){
+    const dugme='<button id="v1-ara-degistir" style="background:none;border:none;padding:0 0 0 6px;'+
+      'font-family:inherit;font-size:12.5px;font-weight:700;color:var(--v1-mavi);cursor:pointer;'+
+      'text-decoration:underline;">'+(idareModu?'Bunun yerine ihale adında ara':'Bunun yerine idare adında ara')+'</button>';
+    araNotYaz(idareModu
+      ? `<strong>${esc(metin)}</strong> bir kurum adı gibi göründüğü için <strong>İdare</strong> alanında arandı.`+dugme
+      : `<strong>${esc(metin)}</strong> ihale <strong>adında</strong> arandı.`+dugme);
+    const dgs=document.getElementById('v1-ara-degistir');
+    if(dgs) dgs.addEventListener('click',()=>{
+      const yeniIdareModu=!idareModu;
+      setVal('f-idare', yeniIdareModu?metin:'');
+      setVal('f-kelime',yeniIdareModu?'':metin);
+      araSeridiCiz(metin,yeniIdareModu);
+      sayfa=1; yukle();
+    });
+  }
+  function araParametresiniYerlestir(){
+    const metin=(P.get('ara')||'').trim();
+    if(!metin) return;
+    if(idareAdiMi(metin) && uyeMi){
+      setVal('f-idare',metin); setVal('f-kelime','');
+      araSeridiCiz(metin,true);
+    }else if(idareAdiMi(metin)){
+      // Misafirde idare filtresi kullanılamaz (ilanlar.idare anon'a kapalı, 42501) → şerit
+      // yalnız bilgilendirir, çevirme düğmesi verilmez.
+      setVal('f-kelime',metin);
+      araNotYaz(`<strong>${esc(metin)}</strong> ihale <strong>adında</strong> arandı. İdare adına göre arama üyelere özeldir — `+
+        `<a href="login" style="color:var(--v1-mavi);font-weight:700;">giriş yapın</a>.`);
+    }else{
+      setVal('f-kelime',metin);
+    }
+  }
+
   // ── Başlat ──
   (async()=>{
     filtreleriKur();
-    try{ const {data}=await sb.auth.getSession(); uyeMi=!!(data&&data.session);
-      if(uyeMi){ const {data:k}=await sb.from('kullanici_krediler').select('plan').eq('kullanici_id',data.session.user.id).maybeSingle();
+    try{ const {data}=await sb.auth.getSession();
+      uyeMi=!!(data&&data.session); uid=uyeMi?data.session.user.id:null;
+      if(uyeMi){ const {data:k}=await sb.from('kullanici_krediler').select('plan').eq('kullanici_id',uid).maybeSingle();
         if(window.v1PaketYaz) v1PaketYaz(['standart','kurumsal'].includes(k?.plan)?'Pro':'Temel'); }
       else if(window.v1PaketYaz) v1PaketYaz('Misafir');
     }catch(_){}
 
-    // URL'den gelen kelime/il filtre kutusuna yaz
-    if(P.get('ara')) { const e=document.getElementById('f-kelime'); if(e) e.value=P.get('ara'); }
-    if(P.get('il'))  { const e=document.getElementById('f-il'); if(e) e.value=P.get('il').toLocaleUpperCase('tr'); }
+    // İdare filtresi yalnız üyede çalışır (anon'a kapalı kolon) — kutuyu buna göre işaretle.
+    if(!uyeMi){
+      const e=document.getElementById('f-idare');
+      if(e){ e.disabled=true; e.placeholder='Üyelere özel'; }
+      const n=document.getElementById('f-idare-not');
+      if(n) n.textContent='İdare adına göre filtreleme üyelere özeldir.';
+    }
 
-    // sekme
+    // ── URL parametreleri → filtre kutuları (sorgu SADECE kutuları okur) ──
+    // ⚠️ SIRA ÖNEMLİ: sekmeAyarla() yukle() çağırdığı için parametreler ONDAN ÖNCE yazılmalı.
+    //    Eskiden ?kategori / ?idare sekme kurulduktan SONRA yazılıyordu → ilk yüklemede yok sayılıyordu.
+    araParametresiniYerlestir();
+    if(P.get('il'))       setVal('f-il',P.get('il').toLocaleUpperCase('tr'));
+    if(P.get('kategori')) setVal('f-kategori',P.get('kategori'));
+    if(uyeMi && P.get('idare')) setVal('f-idare',P.get('idare'));
+
     const sekmeAyarla=(s)=>{ sekme=s; sayfa=1;
       ['aktif','sonuc','dt'].forEach(x=>document.getElementById('sekme-'+x).classList.toggle('aktif',s===x));
-      // DT ayrı tabloda → sıralama kolonu da farklı
+      // DT ayrı tabloda → sıralama kolonu da farklı (DT'de son_teklif_tarihi YOK: 42703)
       sirala = (s==='dt') ? 'tarih' : 'son_teklif_tarihi';
       yon = (s==='aktif');   // aktifte en yakın tarih önce, diğerlerinde en yeni önce
       const bas = s==='aktif' ? 'Aktif İhaleler' : (s==='sonuc' ? 'Sonuçlanan İhaleler' : 'Doğrudan Teminler');
       document.getElementById('v1-baslik').textContent=bas;
       document.getElementById('v1-liste-baslik').textContent=bas;
       document.title=bas+' — İhaleGlobal';
-      // DT'de anlamsız filtreleri gizle (usul / yaklaşık maliyet / benzer iş / sözleşme tipi / düzeltme)
-      ['usul','maliyet','benzer','sozT','duzelt'].forEach(g=>{
+      // DT tablosunda karşılığı OLMAYAN filtreleri gizle:
+      //   usul / yaklaşık maliyet / teklif fiyat türü / "yaklaşık maliyeti ilan edilenler"
+      ['usul','maliyet','sozT','diger'].forEach(g=>{
         const el=document.querySelector(`.v1-filtre-grup[data-g="${g}"]`);
         if(el) el.style.display = (s==='dt') ? 'none' : '';
       });
+      // E-İhale anahtarı da yalnız ilanlar tablosunda var (teklif_elektronik)
+      const eih=document.getElementById('f-eihale-satir');
+      if(eih) eih.style.display = (s==='dt') ? 'none' : '';
+      basliklariAyarla();
       yukle();
     };
     document.getElementById('sekme-aktif').addEventListener('click',()=>sekmeAyarla('aktif'));
     document.getElementById('sekme-sonuc').addEventListener('click',()=>sekmeAyarla('sonuc'));
     document.getElementById('sekme-dt').addEventListener('click',()=>sekmeAyarla('dt'));
-    if(sekme==='sonuc') sekmeAyarla('sonuc');
-    else if(sekme==='dt') sekmeAyarla('dt');   // ?sekme=dt / ?tur=dt ile derin bag (v1-dt-detay, v1-rekabet)
-    // URL'den gelen kategori/idare filtre kutusuna yaz
-    if(P.get('kategori')) { const e=document.getElementById('f-kategori'); if(e) e.value=P.get('kategori'); }
-    if(P.get('idare'))    { const e=document.getElementById('f-idare');    if(e) e.value=P.get('idare'); }
-    else if(P.get('tur')==='dt'){ sekme='dt'; sekmeAyarla('dt'); }
 
     document.getElementById('f-uygula').addEventListener('click',()=>{sayfa=1;yukle();});
     document.getElementById('f-temizle').addEventListener('click',()=>{
       document.querySelectorAll('.v1-f-input,.v1-f-select').forEach(e=>e.value='');
       document.querySelectorAll('.v1-filtre input[type=checkbox]').forEach(e=>e.checked=false);
+      araNotYaz('');
       sayfa=1; yukle();
     });
-    document.getElementById('v1-excel').addEventListener('click',excelIndir);
     // Listede ara (client-side, mevcut sayfada)
     document.getElementById('v1-listede-ara').addEventListener('input',(e)=>{
       const q=e.target.value.toLocaleLowerCase('tr');
@@ -429,12 +641,13 @@
         tr.style.display = tr.textContent.toLocaleLowerCase('tr').includes(q) ? '' : 'none';
       });
     });
-    // Sıralama
+    // Sıralama (th'nin data-sirala'sı ve pasifliği sekmeye göre basliklariAyarla() ile güncelleniyor)
     document.querySelectorAll('[data-sirala]').forEach(th=>th.addEventListener('click',()=>{
+      if(th.dataset.kapali==='1') return;      // DT'de baslik/il sıralaması kapalı
       const k=th.dataset.sirala; if(sirala===k) yon=!yon; else {sirala=k; yon=true;} sayfa=1; yukle();
     }));
 
-    if(sekme==='aktif') yukle();   // sonuc/dt sekmesi sekmeAyarla içinde zaten yükledi
+    sekmeAyarla(sekme);   // tek giriş noktası: başlıkları/gizlemeleri kurar ve yukle() çağırır
   })();
 })();
 </script>
