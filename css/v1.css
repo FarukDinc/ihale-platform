@@ -157,7 +157,12 @@
 /* ── Liste sayfası: sol filtre + sağ tablo ─────────────────────────────── */
 .v1-liste-duzen { display: grid; grid-template-columns: 260px 1fr; gap: 18px; align-items: start; }
 @media (max-width: 1000px) { .v1-liste-duzen { grid-template-columns: 1fr; } }
-.v1-filtre { background: #fff; border: 1px solid var(--v1-cizgi); border-radius: var(--v1-radius-lg); box-shadow: var(--v1-golge); overflow: hidden; position: sticky; top: 78px; }
+/* ⚠️ `overflow: hidden` İDİ ve içindeki `.v1-filtre-uygula { position:sticky; bottom:0 }`
+   BU YÜZDEN ÇALIŞMIYORDU: overflow:hidden kaydırma bağlamı açar ama kaydırılamaz, sticky
+   tutunacak yer bulamaz. Panel viewport'tan uzun olduğunda "Filtreyi Uygula" ekranın altında
+   kalıp görünmez oluyordu (kullanıcı butonu bulamadı). max-height + overflow-y:auto ile panel
+   kendi içinde kayar, buton altta SABİT durur. */
+.v1-filtre { background: #fff; border: 1px solid var(--v1-cizgi); border-radius: var(--v1-radius-lg); box-shadow: var(--v1-golge); overflow-y: auto; overflow-x: hidden; max-height: calc(100vh - 96px); position: sticky; top: 78px; }
 .v1-filtre-bas { padding: 14px 16px; font-weight: 700; color: var(--v1-lacivert); display: flex; align-items: center; gap: 8px; border-bottom: 1px solid var(--v1-cizgi); }
 .v1-filtre-grup { border-bottom: 1px solid var(--v1-cizgi); }
 .v1-filtre-btn { width: 100%; background: none; border: none; padding: 12px 16px; text-align: left; font-family: var(--v1-font); font-size: 13.5px; font-weight: 600; color: var(--v1-metin); cursor: pointer; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
