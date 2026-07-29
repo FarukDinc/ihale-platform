@@ -19,6 +19,43 @@
     .v1-firma-ad { color:var(--v1-mavi); font-weight:600; }
     .v1-uyari { background:var(--v1-mavi-acik); border:1px solid #CFE2F5; border-radius:12px; padding:16px 18px;
       font-size:13.5px; color:var(--v1-metin); margin-bottom:16px; }
+
+    /* ── Filtre çubuğu (il + segment) ─────────────────────────────────── */
+    .v1-fc { display:flex; align-items:center; gap:18px; flex-wrap:wrap; background:#fff;
+      border:1px solid var(--v1-cizgi); border-radius:var(--v1-radius-lg); box-shadow:var(--v1-golge);
+      padding:12px 16px; margin-bottom:14px; }
+    .v1-fc-alan { display:flex; align-items:center; gap:9px; flex-wrap:wrap; }
+    .v1-fc-etiket { font-size:11px; font-weight:800; letter-spacing:.07em; text-transform:uppercase; color:var(--v1-muted); }
+    .v1-fc select { font-family:var(--v1-font); font-size:13.5px; font-weight:600; color:var(--v1-lacivert);
+      background:#fff; border:1.5px solid var(--v1-cizgi); border-radius:var(--v1-radius);
+      padding:8px 10px; outline:none; cursor:pointer; max-width:260px; }
+    .v1-fc select:focus { border-color:var(--v1-mavi); }
+    .v1-fc select:disabled { color:var(--v1-muted); background:#F6F8FB; cursor:not-allowed; }
+    .v1-cipler { display:flex; gap:7px; flex-wrap:wrap; }
+    .v1-cip { background:#fff; border:1.5px solid var(--v1-cizgi); border-radius:20px; padding:7px 13px;
+      font-family:var(--v1-font); font-size:12.5px; font-weight:700; color:var(--v1-metin-2); cursor:pointer;
+      white-space:nowrap; transition:border-color .15s, background .15s, color .15s; }
+    .v1-cip:hover { border-color:var(--v1-mavi); color:var(--v1-mavi); }
+    .v1-cip.aktif { background:var(--v1-mavi); border-color:var(--v1-mavi); color:#fff; }
+    .v1-fc-temizle { background:none; border:none; font-family:var(--v1-font); font-size:12.5px; font-weight:700;
+      color:var(--v1-mavi); cursor:pointer; padding:7px 4px; }
+    .v1-seg-ipucu { background:var(--v1-mavi-acik); border:1px solid #CFE2F5; border-radius:10px;
+      padding:10px 14px; font-size:12.5px; color:var(--v1-metin-2); margin-bottom:14px; }
+
+    /* ── Tıklanabilir sıralama başlıkları ─────────────────────────────── */
+    .v1-th-sirala { cursor:pointer; user-select:none; white-space:nowrap; }
+    .v1-th-sirala:hover { color:var(--v1-mavi); }
+    .v1-th-sirala.aktif { color:var(--v1-mavi); }
+    .v1-ok { font-size:10px; color:var(--v1-cizgi); margin-left:3px; }
+    .v1-th-sirala:hover .v1-ok { color:var(--v1-mavi); }
+    .v1-th-sirala.aktif .v1-ok { color:var(--v1-mavi); }
+    /* ⚠️ css/v1.css'teki `.v1-tablo th{text-align:left}` özgüllüğü (0,1,1) — düz
+       `.v1-sayi-h` (0,1,0) ONU YENEMEZ, başlıklar sola yapışık kalırdı. Sütun
+       adıyla birlikte yazıp (0,2,1)'e çıkıyoruz. */
+    .v1-tablo th.v1-sayi-h { text-align:right; }
+    .v1-tablo td.v1-sayi   { text-align:right; }
+    .v1-buyume-poz { color:var(--v1-yesil); font-weight:800; }
+    .v1-buyume-neg { color:var(--v1-kirmizi); font-weight:800; }
   </style>
 </head>
 <body class="v1" data-v1-aktif="firmalar" data-v1-kirinti="İhaleGlobal > Firmalar">
@@ -26,13 +63,12 @@
   <div class="v1-main">
     <div class="v1-govde">
       <div class="v1-sayfa-baslik">Yüklenici Firmalar</div>
-      <div class="v1-sayfa-alt">Kamu ihalesi kazanan firmalar — sözleşme sayısı ve toplam ciroya göre sıralı.</div>
+      <div class="v1-sayfa-alt">Kamu ihalesi kazanan firmalar — il, segment, ciro ve sözleşme sayısına göre süzülüp sıralanabilir.</div>
 
       <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
         <div class="v1-sekmeler" style="margin:0;">
           <button class="v1-sekme aktif" id="s-tum">Tüm Firmalar</button>
           <button class="v1-sekme" id="s-takip">Takip Ettiklerim</button>
-          <button class="v1-sekme" id="s-yildiz">Parlayan Yıldızlar</button>
         </div>
         <span style="flex:1;"></span>
         <a href="v1-firma-segmentleri" style="display:inline-flex;align-items:center;gap:6px;background:#fff;color:var(--v1-mavi);
@@ -43,6 +79,21 @@
         🔒 Firma listesi ve ciro verileri <strong>üyelere özeldir</strong>.
         <a href="login">Giriş yapın</a> veya <a href="fiyatlandirma_odeme_bolumu">üye olun</a> →
       </div>
+
+      <!-- Filtre çubuğu: il her zaman görünür (misafirde kilitli), segment YALNIZ üyede -->
+      <div class="v1-fc">
+        <div class="v1-fc-alan">
+          <span class="v1-fc-etiket">İl</span>
+          <select id="v1-il" title="İle göre süz"><option value="">Tüm iller</option></select>
+        </div>
+        <div class="v1-fc-alan" id="v1-segment-alan" style="display:none;">
+          <span class="v1-fc-etiket">Segment</span>
+          <div class="v1-cipler" id="v1-cipler"></div>
+        </div>
+        <span style="flex:1;"></span>
+        <button class="v1-fc-temizle" id="v1-temizle" style="display:none;">✕ Filtreleri temizle</button>
+      </div>
+      <div class="v1-seg-ipucu" id="v1-seg-ipucu" style="display:none;"></div>
 
       <div class="v1-kart" style="padding:18px 20px;">
         <div class="v1-tablo-bas">
@@ -57,13 +108,7 @@
         </div>
         <div style="overflow-x:auto;">
           <table class="v1-tablo" id="v1-tablo">
-            <thead><tr>
-              <th style="width:44px;">#</th><th>Firma</th>
-              <th style="width:100px;">İl</th>
-              <th style="width:120px;">Sözleşme</th>
-              <th style="width:160px;">Toplam Ciro</th>
-              <th style="width:120px;"></th>
-            </tr></thead>
+            <thead id="v1-thead"></thead>
             <tbody id="v1-tbody"><tr><td colspan="6" class="v1-bos">Yükleniyor…</td></tr></tbody>
           </table>
         </div>
@@ -80,7 +125,7 @@
   const SB_URL="https://ihaleglobal.com", SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzg0MzA3MTU4LCJleHAiOjE5NDE5ODcxNTh9.CjNKulvirotDD_y2oO2QKgo0kbqYvL0jUSV1RiDMoso";
   const sb=window.supabase.createClient(SB_URL,SB_KEY);
   const num=(n)=>(Number(n)||0).toLocaleString('tr-TR');
-  const esc=(s)=>(s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  const esc=(s)=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
   const tl=(v)=>v==null?'—':'₺'+Number(v).toLocaleString('tr-TR',{maximumFractionDigits:0});
   // ⚠️ Türkçe arama: burada KENDİ fold fonksiyonumuzu yazmıyoruz. js/v1-kabuk.js
   //    window.trFold + window.v1Ara sunuyor ve SQL tr_fold() ile birebir aynı katlamayı
@@ -88,7 +133,49 @@
   //    0 sonuç döndürüyordu.
   const P=new URLSearchParams(location.search);
   const BOY=25;
+
+  /**
+   * ── SIRALANABİLİR SÜTUNLAR ───────────────────────────────────────────────
+   * uyeOzel:true  → kolon anon'a KAPALI (REST 401/42501). Misafirde başlığı bile
+   *                 basmıyoruz; yoksa misafir tıklayıp sayfayı öldürebilirdi.
+   * bosOlabilir:true → kolonda NULL var (segment tazelemesi eşleşmeyen firmayı
+   *                 atlıyor). Bu kolonlarla sıralarken NULL satırları sorgudan
+   *                 DÜŞÜRÜYORUZ (.not(...is null)): yoksa "Son 12 Ay ▼" ilk sayfası
+   *                 baştan aşağı "—" geliyordu. toplam_ciro / toplam_sozlesme_sayisi'nda
+   *                 203.784 satırın TAMAMI dolu (ölçüldü: is.null → 0 satır).
+   */
+  const SIRALANABILIR = {
+    toplam_sozlesme_sayisi: { ad:'Sözleşme',    genislik:'120px', uyeOzel:false, bosOlabilir:false },
+    toplam_ciro:            { ad:'Toplam Ciro', genislik:'160px', uyeOzel:false, bosOlabilir:false },
+    ciro_son_12ay:          { ad:'Son 12 Ay',   genislik:'150px', uyeOzel:true,  bosOlabilir:true  },
+    buyume_yuzde:           { ad:'Büyüme',      genislik:'110px', uyeOzel:true,  bosOlabilir:true  },
+  };
+  const VARSAYILAN_SIRALA='toplam_ciro', VARSAYILAN_YON='desc';
+
+  /**
+   * ── SEGMENTLER ───────────────────────────────────────────────────────────
+   * Eşikler backend/migration_firma_segmentleri.sql ile birebir. `dogalSirala`
+   * o segmentin kısmi indeksiyle (ix_yuk_seg_*) uyumlu sütun — segment seçilince
+   * kullanıcı kendi sıralamasını seçmediyse buna geçiyoruz.
+   */
+  const SEGMENTLER = {
+    parlayan: { emoji:'🌟', ad:'Parlayan Yıldızlar', kolon:'seg_parlayan', dogalSirala:'ciro_son_12ay', dogalYon:'desc',
+      ipucu:'Son 12 ayda en az 5 Mn ₺ kazanıp önceki 12 aya göre cirosunu en az 2 katına çıkaran firmalar — ya da ilk kez kazanıp 20 Mn ₺ ve üzeri iş alanlar.' },
+    sonen:    { emoji:'📉', ad:'Sönen Yıldızlar',    kolon:'seg_sonen',    dogalSirala:'buyume_yuzde',  dogalYon:'asc',
+      ipucu:'Önceki 12 ayda en az 5 Mn ₺ kazanmışken son 12 ayda cirosu %70 ve üzeri düşen firmalar.' },
+    ilk_kez:  { emoji:'🆕', ad:'İlk Kez Kazananlar', kolon:'seg_ilk_kez',  dogalSirala:'toplam_ciro',   dogalYon:'desc',
+      ipucu:'İlk kamu kazanımı son 12 ay içinde olan ve toplamda en az 100 B ₺ iş alan firmalar.' },
+    '150mn':  { emoji:'💰', ad:'150Mn+ Kazananlar',  kolon:'seg_150mn',    dogalSirala:'toplam_ciro',   dogalYon:'desc',
+      ipucu:'Kümülatif kamu kazancı 150 Mn ₺ ve üzeri olan firmalar.' },
+  };
+
   let sayfa=1, uyeMi=false, uid=null, mod='tum', takipli=new Set(), aramaT, istekNo=0;
+  let il='', segment='', sirala=VARSAYILAN_SIRALA, yon=VARSAYILAN_YON, siralaSecildi=false;
+  const ilAdet=new Map();          // il → firma adedi (il_firma_dagilimi'nden)
+
+  const el=(id)=>document.getElementById(id);
+  const artanMi=()=>yon==='asc';
+  const kolonSayisi=()=>uyeMi?8:6;   // #|Firma|İl|Sözleşme|Ciro(+Son12Ay|Büyüme)|takip
 
   // v1-kabuk topbar'ı DOMContentLoaded'da monte eder; getSession() localStorage'dan
   // mikrotaskta dönüp ondan ÖNCE bitince v1PaketYaz hedef elemanı bulamıyor ve rozet
@@ -99,37 +186,189 @@
     else yaz();
   }
 
+  // ── URL (derin link) ────────────────────────────────────────────────────
+  /**
+   * `sirala`/`yon` URL'e YALNIZ kullanıcı bir başlığa tıkladıysa yazılır. Sebep:
+   * segment seçiliyken sıralama segmentin doğal sütununa kayıyor; bunu URL'e
+   * yazmazsak link açıldığında aynı türetme tekrar çalışıp AYNI sonucu verir.
+   * Kullanıcı elle seçtiyse yazıyoruz ki türetme onu EZMESİN.
+   */
+  function urlYaz(){
+    const p=new URLSearchParams();
+    const q=(el('v1-ara-liste').value||'').trim();
+    if(q) p.set('ara',q);
+    if(il) p.set('il',il);
+    if(segment) p.set('segment',segment);
+    if(siralaSecildi){ p.set('sirala',sirala); p.set('yon',yon); }
+    const s=p.toString();
+    try{ history.replaceState(null,'',location.pathname+(s?'?'+s:'')); }catch(_){}
+  }
+
+  function urlOku(){
+    const s=P.get('sirala');
+    if(s && Object.prototype.hasOwnProperty.call(SIRALANABILIR,s)){ sirala=s; siralaSecildi=true; }
+    const y=(P.get('yon')||'').toLowerCase();
+    if(y==='asc'||y==='desc') yon=y;
+    const g=P.get('segment')||P.get('seg')||'';   // segmentler sayfası ?seg= kullanıyor
+    if(Object.prototype.hasOwnProperty.call(SEGMENTLER,g)) segment=g;
+    il=(P.get('il')||'').trim();
+  }
+
+  /** Misafirde üyeye özel sütun/segment seçilemez — URL'den gelse bile geri al. */
+  function yetkiyeGoreKirp(){
+    if(uyeMi) return;
+    segment='';
+    // ⚠️ `il` de düşmeli: misafirde il açılır listesi doldurulmuyor (illeriYukle
+    //    yalnız üyede çağrılıyor) ve disabled. Bırakılırsa liste başlığı
+    //    "Tüm Firmalar — ANKARA" ve "✕ Filtreleri temizle" görünüyor, yani
+    //    misafire UYGULANMAMIŞ bir süzgeç uygulanmış gibi gösteriliyordu.
+    il='';
+    if(SIRALANABILIR[sirala] && SIRALANABILIR[sirala].uyeOzel){
+      sirala=VARSAYILAN_SIRALA; yon=VARSAYILAN_YON; siralaSecildi=false;
+    }
+  }
+
+  // ── Başlıklar (tıklanabilir sıralama) ───────────────────────────────────
+  function siralaTh(alan){
+    const c=SIRALANABILIR[alan];
+    const a=(sirala===alan);
+    const ok=a?(artanMi()?'▲':'▼'):'↕';
+    return `<th class="v1-th-sirala v1-sayi-h${a?' aktif':''}" data-sirala="${alan}" style="width:${c.genislik};"
+      title="${esc(c.ad)} sütununa göre sırala" aria-sort="${a?(artanMi()?'ascending':'descending'):'none'}"
+      >${esc(c.ad)} <span class="v1-ok">${ok}</span></th>`;
+  }
+
+  function basliklariYaz(){
+    const alanlar=Object.keys(SIRALANABILIR).filter(k=>uyeMi || !SIRALANABILIR[k].uyeOzel);
+    el('v1-thead').innerHTML='<tr>'+
+      '<th style="width:44px;">#</th><th>Firma</th><th style="width:100px;">İl</th>'+
+      alanlar.map(siralaTh).join('')+
+      '<th style="width:120px;"></th></tr>';
+    el('v1-thead').querySelectorAll('[data-sirala]').forEach(th=>{
+      th.addEventListener('click',()=>{
+        const alan=th.dataset.sirala;
+        if(sirala===alan) yon=artanMi()?'desc':'asc';
+        else { sirala=alan; yon='desc'; }
+        siralaSecildi=true; sayfa=1;
+        basliklariYaz(); urlYaz(); yukle();
+      });
+    });
+  }
+
+  // ── İl açılır listesi (il_firma_dagilimi RPC — anon'a AÇIK) ─────────────
+  async function illeriYukle(){
+    const sec=el('v1-il');
+    try{
+      const {data,error}=await sb.rpc('il_firma_dagilimi');
+      if(error) throw error;
+      const liste=(Array.isArray(data)?data:[])
+        .filter(r=>r && r.il)
+        .sort((a,b)=>String(a.il).localeCompare(String(b.il),'tr'));
+      liste.forEach(r=>ilAdet.set(r.il,Number(r.adet)||0));
+      sec.innerHTML='<option value="">Tüm iller</option>'+
+        liste.map(r=>`<option value="${esc(r.il)}">${esc(r.il)} (${num(r.adet)})</option>`).join('');
+      // URL'den gelen il listede yoksa seçim boşta kalır → filtreyi de düşür
+      if(il && !ilAdet.has(il)){ il=''; urlYaz(); }
+      sec.value=il;
+    }catch(e){
+      console.warn('İl listesi alınamadı:',e.message||e);
+      sec.innerHTML='<option value="">Tüm iller</option>';
+      sec.value='';
+    }
+  }
+
+  // ── Segment çipleri ─────────────────────────────────────────────────────
+  function cipleriYaz(){
+    el('v1-cipler').innerHTML=
+      `<button class="v1-cip${segment?'':' aktif'}" data-seg="">Tümü</button>`+
+      Object.keys(SEGMENTLER).map(k=>
+        `<button class="v1-cip${segment===k?' aktif':''}" data-seg="${esc(k)}">${SEGMENTLER[k].emoji} ${esc(SEGMENTLER[k].ad)}</button>`
+      ).join('');
+    el('v1-cipler').querySelectorAll('[data-seg]').forEach(b=>{
+      b.addEventListener('click',()=>{
+        const s=b.dataset.seg||'';
+        if(s===segment) return;
+        segment=s;
+        // Kullanıcı kendi sıralamasını seçmediyse segmentin doğal (indeksli) sütununa geç
+        if(!siralaSecildi && segment){
+          sirala=SEGMENTLER[segment].dogalSirala; yon=SEGMENTLER[segment].dogalYon;
+        } else if(!siralaSecildi){
+          sirala=VARSAYILAN_SIRALA; yon=VARSAYILAN_YON;
+        }
+        sayfa=1; cipleriYaz(); basliklariYaz(); ipucuYaz(); temizleGoster(); urlYaz(); yukle();
+      });
+    });
+  }
+
+  function ipucuYaz(){
+    const e=el('v1-seg-ipucu');
+    if(segment && SEGMENTLER[segment]){
+      e.innerHTML=`${SEGMENTLER[segment].emoji} <strong>${esc(SEGMENTLER[segment].ad)}</strong> — ${esc(SEGMENTLER[segment].ipucu)}`;
+      e.style.display='block';
+    } else e.style.display='none';
+  }
+
+  function temizleGoster(){
+    // Misafirde il/arama kutuları disabled, segment çipi hiç basılmıyor → temizlenecek
+    // hiçbir şey YOK. ?ara= disabled kutuya yine de yazılıyor (link neyi arıyordu
+    // görünsün diye); düğmeyi ona bakarak açarsak hiçbir şey yapmayan düğme çıkıyordu.
+    if(!uyeMi){ el('v1-temizle').style.display='none'; return; }
+    const q=(el('v1-ara-liste').value||'').trim();
+    el('v1-temizle').style.display=(il||segment||q)?'inline-block':'none';
+  }
+
+  function listeBasligiYaz(){
+    let b = (mod==='takip') ? 'Takip Ettiğim Firmalar'
+          : (segment && SEGMENTLER[segment]) ? SEGMENTLER[segment].emoji+' '+SEGMENTLER[segment].ad
+          : 'Tüm Firmalar';
+    if(il) b+=' — '+il;
+    el('v1-liste-baslik').textContent=b;
+  }
+
+  // ── Liste ───────────────────────────────────────────────────────────────
   async function yukle(){
-    const tb=document.getElementById('v1-tbody');
+    const tb=el('v1-tbody');
+    const KS=kolonSayisi();
     // Her yükleme bir sıra numarası alır: arama debounce'u/sekme değişimi üst üste
     // binince ESKİ isteğin geç dönen cevabı yeniyi ezmesin.
     const benim=++istekNo;
-    const bosalt=()=>{ document.getElementById('v1-sayi').textContent='';
-      document.getElementById('v1-sayfalama').innerHTML=''; };
-    tb.innerHTML='<tr><td colspan="6" class="v1-bos">Yükleniyor…</td></tr>';
+    const bosalt=()=>{ el('v1-sayi').textContent=''; el('v1-sayfalama').innerHTML=''; };
+    listeBasligiYaz();
+    tb.innerHTML=`<tr><td colspan="${KS}" class="v1-bos">Yükleniyor…</td></tr>`;
     if(!uyeMi){
-      document.getElementById('v1-misafir').style.display='block';
-      tb.innerHTML='<tr><td colspan="6" class="v1-bos">🔒 Firma listesi üyelere özeldir. <a href="login">Giriş yapın →</a></td></tr>';
+      el('v1-misafir').style.display='block';
+      tb.innerHTML=`<tr><td colspan="${KS}" class="v1-bos">🔒 Firma listesi üyelere özeldir. <a href="login">Giriş yapın →</a></td></tr>`;
       bosalt();
       return;
     }
     try{
-      const q=(document.getElementById('v1-ara-liste').value||'').trim();
+      const q=(el('v1-ara-liste').value||'').trim();
       if(mod==='takip' && !takipli.size){
-        tb.innerHTML='<tr><td colspan="6" class="v1-bos">Henüz firma takip etmiyorsunuz.</td></tr>';
+        tb.innerHTML=`<tr><td colspan="${KS}" class="v1-bos">Henüz firma takip etmiyorsunuz.</td></tr>`;
         bosalt(); return;
       }
-      // Parlayan Yıldızlar: son dönemde yükselen — ciroya göre değil sözleşme sayısına göre (proxy)
-      const sirala = (mod==='yildiz') ? 'toplam_sozlesme_sayisi' : 'toplam_ciro';
       const bas=(sayfa-1)*BOY;
+      const cfg=SIRALANABILIR[sirala]||SIRALANABILIR[VARSAYILAN_SIRALA];
       // Her deneme için TAZE builder: supabase-js builder'ı bir kez await edildikten sonra
       // yeniden filtrelenip çalıştırılamaz.
       const temel=()=>{
-        let s=sb.from('yukleniciler').select('id,ad,il,toplam_sozlesme_sayisi,toplam_ciro');
+        let s=sb.from('yukleniciler')
+          .select('id,ad,il,toplam_sozlesme_sayisi,toplam_ciro,ciro_son_12ay,ciro_onceki_12ay,buyume_yuzde');
         if(mod==='takip') s=s.in('ad',[...takipli]);
+        if(il) s=s.eq('il',il);
+        if(segment && SEGMENTLER[segment]) s=s.eq(SEGMENTLER[segment].kolon,true);
+        if(cfg.bosOlabilir) s=s.not(sirala,'is',null);
         return s;
       };
-      const calistir=(s)=>s.order(sirala,{ascending:false,nullsFirst:false}).range(bas,bas+BOY-1);
+      /**
+       * ⚠️ NULL YÖNÜ İNDEKSE GÖRE: btree indeksi ancak "ASC NULLS LAST" ya da
+       *    "DESC NULLS FIRST" istendiğinde okunabilir (ikisi aynı indeksin ileri/geri
+       *    taraması). Yani nullsFirst = !ascending. Ters yazılırsa planlayıcı indeksi
+       *    bırakıp tüm tabloyu sıralar. Zaten NULL'lu sütunlarda satırları yukarıda
+       *    eleyip bu seçimi tamamen etkisiz hâle getiriyoruz.
+       */
+      const artan=artanMi();
+      const calistir=(s)=>s.order(sirala,{ascending:artan,nullsFirst:!artan}).range(bas,bas+BOY-1);
       // yukleniciler.arama_fold = tr_fold(ad) — GENERATED kolon, trigram indeksli.
       // Tüm tablo anon'a kapalı (42501) zaten; bu dal yalnızca üyede çalışıyor.
       let sorgu=temel();
@@ -148,16 +387,36 @@
         if(benim!==istekNo) return;
       }
       if(error) throw error;
-      if(!data||!data.length){ tb.innerHTML='<tr><td colspan="6" class="v1-bos">Sonuç bulunamadı.</td></tr>'; bosalt(); return; }
-      document.getElementById('v1-sayi').innerHTML=`Sayfa <strong>${sayfa}</strong> · ${data.length} firma gösteriliyor`;
+      if(!data||!data.length){ tb.innerHTML=`<tr><td colspan="${KS}" class="v1-bos">Sonuç bulunamadı.</td></tr>`; bosalt(); return; }
+
+      const kapsam = il
+        ? `${esc(il)} · <strong>${num(ilAdet.get(il)||0)}</strong> firma kayıtlı`
+        : 'Türkiye geneli';
+      const notlar=[];
+      if(cfg.bosOlabilir) notlar.push(`${esc(cfg.ad)} verisi olmayan firmalar bu sıralamada listelenmez`);
+      el('v1-sayi').innerHTML=
+        `${kapsam} · <strong>${esc(cfg.ad)}</strong> ${artan?'artan':'azalan'} · Sayfa <strong>${sayfa}</strong> · ${data.length} firma gösteriliyor`+
+        (notlar.length?`<br><span style="font-size:12px;">${notlar.join(' · ')}</span>`:'');
+
       tb.innerHTML=data.map((r,i)=>{
         const t=takipli.has(r.ad);
+        let ekstra='';
+        if(uyeMi){
+          const b=r.buyume_yuzde;
+          const bHucre=(b==null)
+            ? '<td class="v1-sayi" style="color:var(--v1-muted);">—</td>'
+            : `<td class="v1-sayi ${Number(b)>=0?'v1-buyume-poz':'v1-buyume-neg'}"`+
+              ` title="Önceki 12 ay: ${esc(tl(r.ciro_onceki_12ay))}">`+
+              `${Number(b)>=0?'+':''}${Number(b).toLocaleString('tr-TR',{maximumFractionDigits:1})}%</td>`;
+          ekstra=`<td class="v1-sayi" style="font-weight:700;color:var(--v1-lacivert);">${tl(r.ciro_son_12ay)}</td>`+bHucre;
+        }
         return `<tr>
           <td style="color:var(--v1-muted);font-weight:700;">${(sayfa-1)*BOY+i+1}</td>
           <td><a class="v1-firma-ad" href="v1-firma-analiz?ara=${encodeURIComponent(r.ad)}">${esc(r.ad)}</a></td>
           <td style="font-size:13px;">${esc(r.il||'—')}</td>
-          <td style="font-weight:700;color:var(--v1-lacivert);">${num(r.toplam_sozlesme_sayisi)}</td>
-          <td style="font-weight:700;color:var(--v1-mavi);">${tl(r.toplam_ciro)}</td>
+          <td class="v1-sayi" style="font-weight:700;color:var(--v1-lacivert);">${num(r.toplam_sozlesme_sayisi)}</td>
+          <td class="v1-sayi" style="font-weight:700;color:var(--v1-mavi);">${tl(r.toplam_ciro)}</td>
+          ${ekstra}
           <td style="text-align:right;">
             <button class="v1-tk" data-ad="${esc(r.ad)}" style="background:${t?'var(--v1-mavi)':'#fff'};color:${t?'#fff':'var(--v1-mavi)'};
               border:1.5px solid var(--v1-mavi);border-radius:8px;padding:6px 12px;font-family:var(--v1-font);
@@ -167,18 +426,19 @@
       sayfalama(data.length);
     }catch(e){
       if(benim!==istekNo) return;
-      tb.innerHTML=`<tr><td colspan="6" class="v1-bos">Liste yüklenemedi. ${esc(e.message||'')}</td></tr>`;
+      tb.innerHTML=`<tr><td colspan="${KS}" class="v1-bos">Liste yüklenemedi. ${esc(e.message||'')}</td></tr>`;
       bosalt();   // yoksa "Yükleniyor…" sayacı ve ESKİ sayfalama düğmeleri ekranda kalıyordu
     }
   }
 
   function sayfalama(adet){
-    const el=document.getElementById('v1-sayfalama');
-    el.innerHTML=`<button ${sayfa===1?'disabled':''} data-s="${sayfa-1}">‹ Önceki</button>`+
+    const e=el('v1-sayfalama');
+    e.innerHTML=`<button ${sayfa===1?'disabled':''} data-s="${sayfa-1}">‹ Önceki</button>`+
       `<button class="aktif" disabled>${sayfa}</button>`+
       `<button ${adet<BOY?'disabled':''} data-s="${sayfa+1}">Sonraki ›</button>`;
-    el.querySelectorAll('[data-s]').forEach(b=>b.addEventListener('click',()=>{
+    e.querySelectorAll('[data-s]').forEach(b=>b.addEventListener('click',()=>{
       const s=+b.dataset.s; if(s<1)return; sayfa=s; yukle(); window.scrollTo({top:0,behavior:'smooth'});
+      const m=document.querySelector('.v1-main'); if(m) m.scrollTop=0;
     }));
   }
 
@@ -231,7 +491,9 @@
     }
   }
 
+  // ── Açılış ──────────────────────────────────────────────────────────────
   (async()=>{
+    urlOku();
     try{ const {data}=await sb.auth.getSession(); uyeMi=!!(data&&data.session);
       uid=uyeMi?data.session.user.id:null;
       if(uyeMi){
@@ -244,18 +506,61 @@
         paketYaz(['standart','kurumsal'].includes(k?.plan)?'Pro':'Temel');
       } else paketYaz('Misafir');
     }catch(_){ if(!uyeMi) paketYaz('Misafir'); }
-    const araEl=document.getElementById('v1-ara-liste');
-    // Misafirde yukleniciler tablosunun tamamı anon'a kapalı (42501) → arama kutusu ölü,
-    // boşuna yazdırmak yerine kilitli göster.
-    if(!uyeMi){ araEl.disabled=true; araEl.placeholder='Arama üyelere özel'; araEl.style.cursor='not-allowed'; }
+
+    yetkiyeGoreKirp();
+    // Segment URL'den geldiyse ve kullanıcı sıralama seçmediyse doğal sütuna geç
+    if(segment && !siralaSecildi){
+      sirala=SEGMENTLER[segment].dogalSirala; yon=SEGMENTLER[segment].dogalYon;
+    }
+
+    const araEl=el('v1-ara-liste');
+    const ilEl=el('v1-il');
+    // ⚠️ ?ara= kutuya illeriYukle()'DEN ÖNCE yazılmalı: geçersiz bir ?il= geldiğinde
+    //    illeriYukle onu düşürüp urlYaz() çağırıyor, urlYaz da arama kutusunu okuyor.
+    //    Kutu henüz boşken çalışırsa ?ara= URL'den sessizce siliniyordu.
     if(P.get('ara')) araEl.value=P.get('ara');
-    araEl.addEventListener('input',()=>{clearTimeout(aramaT); aramaT=setTimeout(()=>{sayfa=1;yukle();},350);});
-    const sek=(id,m,baslik)=>document.getElementById(id).addEventListener('click',()=>{
-      mod=m; sayfa=1;
-      ['s-tum','s-takip','s-yildiz'].forEach(x=>document.getElementById(x).classList.toggle('aktif',x===id));
-      document.getElementById('v1-liste-baslik').textContent=baslik; yukle();
+    // Misafirde yukleniciler tablosunun tamamı anon'a kapalı (42501) → arama kutusu ve
+    // il süzgeci ölü, boşuna çalıştırmak yerine kilitli göster. Segment çipleri seg_*
+    // kolonlarını okuduğu için misafire HİÇ basılmaz.
+    if(!uyeMi){
+      araEl.disabled=true; araEl.placeholder='Arama üyelere özel'; araEl.style.cursor='not-allowed';
+      ilEl.disabled=true; ilEl.title='İl süzgeci üyelere özel';
+      el('v1-segment-alan').style.display='none';
+    } else {
+      el('v1-segment-alan').style.display='flex';
+      cipleriYaz();
+      // Normalde await YOK — liste il açılır listesini beklemesin. AMA derin linkte
+      // (?il=ANKARA) sayaç satırı ilAdet'ten besleniyor; beklemezsek "0 firma kayıtlı"
+      // yazıp öyle kalıyor (ikinci bir çizim yok). Ayrıca URL'deki il geçersizse
+      // illeriYukle onu düşürüyor; bunu yukle()'den ÖNCE öğrenmemiz gerekiyor.
+      if(il) await illeriYukle(); else illeriYukle();
+    }
+
+    araEl.addEventListener('input',()=>{clearTimeout(aramaT); aramaT=setTimeout(()=>{
+      sayfa=1; temizleGoster(); urlYaz(); yukle();
+    },350);});
+
+    ilEl.addEventListener('change',()=>{
+      il=ilEl.value||''; sayfa=1; temizleGoster(); urlYaz(); yukle();
     });
-    sek('s-tum','tum','Tüm Firmalar'); sek('s-takip','takip','Takip Ettiğim Firmalar'); sek('s-yildiz','yildiz','Parlayan Yıldızlar');
+
+    el('v1-temizle').addEventListener('click',()=>{
+      il=''; segment=''; araEl.value='';
+      if(!siralaSecildi){ sirala=VARSAYILAN_SIRALA; yon=VARSAYILAN_YON; }
+      ilEl.value=''; sayfa=1;
+      if(uyeMi) cipleriYaz();
+      basliklariYaz(); ipucuYaz(); temizleGoster(); urlYaz(); yukle();
+    });
+
+    const sek=(id,m)=>el(id).addEventListener('click',()=>{
+      if(mod===m) return;
+      mod=m; sayfa=1;
+      ['s-tum','s-takip'].forEach(x=>el(x).classList.toggle('aktif',x===id));
+      urlYaz(); yukle();
+    });
+    sek('s-tum','tum'); sek('s-takip','takip');
+
+    basliklariYaz(); ipucuYaz(); temizleGoster();
     yukle();
   })();
 })();
