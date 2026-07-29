@@ -1,5 +1,10 @@
 # Ä°halePlatform â€” YapÄ±lacaklar Listesi
 
+> ## 🌉 29 TEM — YENİ ÜRÜN: **KÖPRÜ** (hesap verebilirlik & eskalasyon katmanı)
+> Kuyruğu ve karar defteri ayrı dosyada: **`KOPRU.md`**.
+> ⛔ İSİM ÇAKIŞMASI: mevcut `js/kopru.js` (ihaleglobal↔fasonda veri köprüsü) ile ad çakışıyor — KOPRU.md §0'da karar bekliyor.
+> V0 kod yazımı, pilot sözleşmesi + KPI baseline formülü imzalanana kadar BAŞLAMAZ (KOPRU.md K-1/K-2).
+
 > ## 🎯 26 TEM — "BANA ÖZEL" ZENGİNLEŞTİRME (ihalepro paritesi, kullanıcı vizyonu)
 > Kullanıcı ihalepro Bana Özel'in güçlü yanlarını istedi. 6 özellik (mevcut altyapı notlarıyla):
 > 1. **"Benim Firmam" → kişisel eşleşme akışı:** dashboard'da firma seç → o firmanın GEÇMİŞ
@@ -6429,3 +6434,22 @@ sızıntısı · uydurma kolon/RPC · JS sözdizimi · kırık link) — 11/11 t
   kolonu DB'de YOK (42703); doğrusu `idare_ad` + `kullanici_id`. delete/upsert artık
   `kullanici_id` filtreli. **DERS: yazma işlemi hata yutan try/catch içindeyse sessizce ölür —
   yeni sayfa yazarken her INSERT/DELETE kolonunu canlı REST'e sorarak doğrula.**
+
+## ✅ 29 Tem — AI sağlayıcı geçişi + EKAP hasadı (BİTTİ, canlıda doğrulandı)
+- **`backend/ai_ortak.py`** (YENİ): sağlayıcı-bağımsız tek chat kapısı. `AI_SAGLAYICI` env'i,
+  otomatik yedeğe düşme, DeepSeek JSON modu. Taşınanlar: ai_kategori_backfill · firma_ai_yorum ·
+  analyzer.metin_pdf_analiz_et · ted_scraper çeviri (+georgia dolaylı) · teklif_ai.
+  **Gemini'de kalanlar:** embedding (embed_ortak/ilan_embed_uret/api) + CAPTCHA + PDF vision.
+  ⇒ `GEMINI_API_KEY` .env'de KALMALI.
+- ⛔ **DeepSeek düşünme tuzağı** (canlı ölçüm): v4-* varsayılan reasoning yapıyor, düşünme
+  token'ı `max_tokens`'tan harcanıyor → content BOŞ, `finish_reason='length'`, iş sessizce
+  0 satır yazıyor. Çözüm `thinking={"type":"disabled"}`. `reasoning_effort:none` → 400,
+  `enable_thinking:false` → sessizce yok sayılıyor. Bkz. [[ai-saglayici-katmani]].
+  Test: 5/5 satır sınıflandı, $0.0001 → 173.742 satırlık kuyruk ≈ $3,5.
+- **migration_ekap_hasat.sql UYGULANDI** (kullanıcı koştu): 47 yeni kolon, maske sağlam
+  (5/5 hassas kolon 42501, açık kolonlar 200, misafir sayfaları regresyonsuz).
+- ⏳ **AÇIK:** iki backfill'in yeni kodla RESTART'ı — süreçler şemayı başlangıçta bir kez
+  önbelleğe aldığı için restart edilmezse yeni 47 kolonu ömürleri boyunca yazmazlar.
+  Süreç öldürme sınıflandırıcı tarafından bloklu → komut kullanıcıda.
+- **Nöbetçi hedefi** 2.400.000 → 3.200.000 (aşıldığı için sonuç backfill'i bir daha
+  kendiliğinden başlamayacaktı).
