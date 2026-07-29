@@ -22,6 +22,13 @@
 -- ⚠️ Hesaplama mantığı DEĞİŞMİYOR — yalnızca zaten kullanılan çapa dışarıya açılıyor.
 --    ref_tarih ifadesi yuklenici_segment_yenile() satır 38-40 ile BİREBİR aynı olmalı;
 --    ayrışırsa arayüz yanlış pencere gösterir (sessiz tutarsızlık).
+--
+-- ⛔ NASIL ÇALIŞTIRILIR — `-U postgres` İLE ÇALIŞMAZ:
+--      ERROR: must be owner of function firma_segment_sayilari
+--    Bu kurulumda `postgres` SUPERUSER DEĞİL; fonksiyonun sahibi `supabase_admin`.
+--    (Tablo/kolon migration'ları `-U postgres` ile geçiyor — bu yüzden yanıltıcı.)
+--    DOĞRUSU:
+--      cat backend/migration_segment_pencere.sql | docker exec -i supabase-db psql -U supabase_admin -d postgres
 -- =============================================================================
 
 CREATE OR REPLACE FUNCTION public.firma_segment_sayilari()
