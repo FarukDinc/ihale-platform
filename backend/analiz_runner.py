@@ -1,8 +1,18 @@
 """
 İhale AI Analiz Runner
 - Supabase'den ilan_metni olan ama yapay_zeka_ozeti olmayan ihaleleri çeker
-- Gemini ile analiz eder (ilan_metni metin → hızlı; belgeler PDF → ağır mod)
+- AI ile analiz eder (ilan_metni metin → hızlı; belgeler PDF → ağır mod)
 - Sonucu yapay_zeka_ozeti, analiz_tarihi, analiz_pdf_turu kolonlarına yazar
+
+SAĞLAYICI (29 Tem): Gemini servis hesabı 401 UNAUTHENTICATED verdiği için METİN analizi
+ai_ortak'a taşındı (birincil DeepSeek, yedek Gemini — env AI_SAGLAYICI ile ters çevrilir).
+  · analiz_et (ilan_metni)      → ai_ortak.ai_metin      [TAŞINDI]
+  · pdf_analiz_et_gemini (--pdf) → Gemini File API/Vision [AYNEN KALDI — DeepSeek'in metin
+    API'si PDF/görüntü kabul etmez, taşınsaydı bu akış sessizce ölürdü]
+PROMPT_TMPL ve "### başlıklı markdown" çıktı sözleşmesi DEĞİŞMEDİ.
+
+Geriye uyum: google-genai kurulu değilse ya da GEMINI_API_KEY boşsa script artık ÖLMEZ —
+sadece --pdf (Vision) yolu devre dışı kalır; metin analizi DeepSeek ile sürer.
 
 Kullanım:
     python analiz_runner.py              # limit=20, aktif ihaleler
@@ -10,6 +20,7 @@ Kullanım:
     python analiz_runner.py --ikn 2026/123456  # tek ihale (IKN ile)
     python analiz_runner.py --id abc123  # tek ihale (Supabase ID ile)
     python analiz_runner.py --yenile    # daha önce analiz edilmişleri de yenile
+    python analiz_runner.py --pdf       # ilan_metni yetersizse belgeleri Vision'a ver (Gemini)
 """
 
 import os
@@ -29,13 +40,19 @@ GEMINI_KEY   = os.environ.get("GEMINI_API_KEY", "")
 SUPA_URL     = os.environ.get("SUPABASE_URL", "")
 SUPA_SERVICE = os.environ.get("SUPABASE_SERVICE_KEY", "")
 
+# Metin analizi sağlayıcı-bağımsız tek kapıdan geçer (DeepSeek ↔ Gemini).
+from ai_ortak import ai_durum, ai_metin
+
 # ── SDK kontrolleri ───────────────────────────────────────
+# google-genai artık YALNIZ --pdf (Vision) yolu için gerekli. Metin analizi ai_ortak
+# üzerinden gittiğinden SDK yokluğu scripti ÖLDÜRMEZ, sadece PDF modunu kapatır.
 try:
     from google import genai
     from google.genai import types as gtypes
+    GENAI_VAR = True
 except ImportError:
-    print("✗ google-genai kurulu değil: pip install google-genai")
-    sys.exit(1)
+    genai = gtypes = None
+    GENAI_VAR = False
 
 try:
     from supabase import create_client
@@ -43,17 +60,39 @@ except ImportError:
     print("✗ supabase kurulu değil: pip install supabase")
     sys.exit(1)
 
-if not GEMINI_KEY:
-    print("✗ GEMINI_API_KEY boş — .env dosyasını kontrol edin")
-    sys.exit(1)
-
 if not SUPA_URL or not SUPA_SERVICE:
     print("✗ SUPABASE_URL veya SUPABASE_SERVICE_KEY boş")
     sys.exit(1)
 
-sb      = create_client(SUPA_URL, SUPA_SERVICE)
-gemini  = genai.Client(api_key=GEMINI_KEY)
-MODEL   = "gemini-2.5-flash"
+# Eskiden burada "GEMINI_API_KEY boşsa çık" vardı; artık HİÇBİR sağlayıcı anahtarı yoksa
+# çıkıyoruz (fail-fast korundu ama Gemini'ye özel değil — DeepSeek tek başına yeter).
+_AI = ai_durum()
+if not (_AI["deepseek_anahtar"] or _AI["gemini_anahtar"]):
+    print("✗ AI anahtarı yok — .env içinde DEEPSEEK_API_KEY (ya da GEMINI_API_KEY) tanımlayın")
+    sys.exit(1)
+
+sb = create_client(SUPA_URL, SUPA_SERVICE)
+
+# Yalnız Vision (PDF) yolunun modeli — metin dalının modelini ai_ortak/env belirler.
+VISION_MODEL = "gemini-2.5-flash"
+_gemini = None
+
+
+def gemini_istemci():
+    """
+    Vision (PDF) yolu için TEMBEL Gemini istemcisi. Modül seviyesinde kurmak, anahtar
+    yokken --pdf kullanılmasa bile scripti import anında çökertirdi (yeni SDK'da
+    Client(api_key="") doğrudan hata fırlatıyor). Eksiklikte RuntimeError → çağıran
+    fonksiyonun except dalı yakalar ve o ihaleyi atlar.
+    """
+    global _gemini
+    if _gemini is None:
+        if not GENAI_VAR:
+            raise RuntimeError("google-genai kurulu değil: pip install google-genai")
+        if not GEMINI_KEY:
+            raise RuntimeError("GEMINI_API_KEY boş — PDF/Vision analizi Gemini'ye bağlı")
+        _gemini = genai.Client(api_key=GEMINI_KEY)
+    return _gemini
 
 # ── Prompt ───────────────────────────────────────────────
 PROMPT_TMPL = """
@@ -92,25 +131,29 @@ Sen bir kamu ihalesi uzmanısın. Aşağıdaki ihale ilanını Türkçe olarak a
 """
 
 def analiz_et(ilan_metni: str, baslik: str) -> str | None:
-    """Gemini ile ilan metnini analiz et, formatlanmış markdown döndür."""
+    """
+    İlan METNİNİ analiz et, formatlanmış markdown döndür (sağlayıcı: ai_ortak → DeepSeek/Gemini).
+    Görüntü yok, saf metin → taşınabilir dal. Hata/boş yanıtta None döner ve nedeni ai_ortak
+    stderr'e basar (sessiz yutma yok); çağıran taraf eskisi gibi "analiz üretilemedi" sayar.
+    """
     metin_kisaltilmis = ilan_metni[:40000]  # token limiti
     prompt = PROMPT_TMPL.format(ilan_metni=metin_kisaltilmis)
-    try:
-        resp = gemini.models.generate_content(
-            model=MODEL,
-            contents=prompt,
-            config=gtypes.GenerateContentConfig(
-                temperature=0.2,
-                max_output_tokens=4096,
-            ),
-        )
-        return (resp.text or "").strip() or None
-    except Exception as e:
-        print(f"  ✗ Gemini hata: {e}")
-        return None
+    # sistem="": eski çağrıda system_instruction yoktu, prompt tek parça gidiyordu.
+    # max_tokens/temperature eski Gemini config'iyle BİREBİR aynı (4096 / 0.2) — çıktı
+    # sözleşmesi (### başlıklı markdown) korunsun diye json_mod KAPALI.
+    # zaman_asimi=180: 40.000 karakterlik girdi + uzun markdown çıktı 60sn'yi aşabilir.
+    # deneme=3: toplu/gece işi — 429/5xx/ağ hatasında satır kaybetmek yerine tekrar dene.
+    return ai_metin(
+        "", prompt,
+        max_tokens=4096, temperature=0.2,
+        zaman_asimi=180, deneme=3, nerede="analiz_runner/ilan_metni",
+    )
 
 def pdf_analiz_et_gemini(pdf_url: str) -> str | None:
-    """Storage URL'den PDF indir ve Gemini File API ile analiz et."""
+    """
+    Storage URL'den PDF indir ve Gemini File API ile analiz et.
+    ⛔ GEMİNİ'DE KALIR: girdi ham PDF, DeepSeek'in metin API'si görüntü/dosya kabul etmez.
+    """
     import tempfile, requests
     try:
         print(f"  → PDF indiriliyor: {pdf_url[:60]}...")
@@ -123,21 +166,21 @@ def pdf_analiz_et_gemini(pdf_url: str) -> str | None:
 
         print("  → Gemini File API'ye yükleniyor...")
         with open(tmp.name, "rb") as f:
-            dosya = gemini.files.upload(
+            dosya = gemini_istemci().files.upload(
                 file=f,
                 config={"mime_type": "application/pdf", "display_name": "ihale.pdf"},
             )
 
         # İşlenene kadar bekle
         for _ in range(30):
-            durum = gemini.files.get(name=dosya.name)
+            durum = gemini_istemci().files.get(name=dosya.name)
             if durum.state.name == "ACTIVE":
                 break
             time.sleep(2)
 
         prompt = PROMPT_TMPL.format(ilan_metni="[PDF dosyası Gemini'ye gönderildi, içeriği oku ve analiz et]")
-        resp = gemini.models.generate_content(
-            model=MODEL,
+        resp = gemini_istemci().models.generate_content(
+            model=VISION_MODEL,
             contents=[prompt, gtypes.Part.from_uri(file_uri=dosya.uri, mime_type="application/pdf")],
             config=gtypes.GenerateContentConfig(temperature=0.2, max_output_tokens=4096),
         )
@@ -148,7 +191,7 @@ def pdf_analiz_et_gemini(pdf_url: str) -> str | None:
         return None
     finally:
         try:
-            gemini.files.delete(name=dosya.name)
+            gemini_istemci().files.delete(name=dosya.name)
         except Exception:
             pass
         try:
@@ -209,8 +252,14 @@ def main():
     args = parser.parse_args()
 
     print(f"\n{'='*60}")
-    print(f"İhale AI Analiz Runner — {MODEL}")
+    # Model ADI değil sağlayıcı basılıyor: metin dalı artık env'e göre DeepSeek ya da Gemini.
+    print(f"İhale AI Analiz Runner — metin: {_AI['birincil']} (yedek: {_AI['yedek']})")
     print(f"Limit: {args.limit} | Yenile: {args.yenile} | PDF: {args.pdf}")
+    if args.pdf and not (GENAI_VAR and GEMINI_KEY):
+        # Sessiz arıza yok: --pdf istendi ama Vision yolu kurulamaz durumda.
+        print("  ⚠ --pdf istendi ama Gemini yolu kapalı "
+              f"({'google-genai kurulu değil' if not GENAI_VAR else 'GEMINI_API_KEY boş'}) "
+              "— PDF adımı atlanacak")
     print(f"{'='*60}\n")
 
     ihaleler = ihaleleri_cek(args.limit, args.yenile, args.ikn, args.id)

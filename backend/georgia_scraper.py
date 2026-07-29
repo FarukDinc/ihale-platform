@@ -10,11 +10,13 @@ API (reverse-engineer edildi): POST /public/library/controller.php
   Procuring category (CPV kodu + açıklama), Estimated value + para birimi (GEL).
 
 Detay/kaynak linki: /public/?lang=en#app_id (ShowApp app_id + key).
-Çeviri: kategori açıklaması → Türkçe (Gemini, ted_scraper.gemini_cevir ile ortak). kategori: CPV'den.
-Dedup: publication_no = Announcment number (upsert on_conflict).
+Çeviri: kategori açıklaması → Türkçe (ted_scraper.baslik_cevir ile ORTAK; o da 29 Tem 2026'dan
+beri Gemini SDK yerine `ai_ortak` üzerinden gider — sağlayıcı env ile seçilir, öntanım DeepSeek).
+kategori: CPV'den. Dedup: publication_no = Announcment number (upsert on_conflict).
 
 Kullanım: python georgia_scraper.py [--dry-run] [--no-translate]
-Env: SUPABASE_URL, SUPABASE_SERVICE_KEY, GEMINI_API_KEY (backend/.env)
+Env: SUPABASE_URL, SUPABASE_SERVICE_KEY + AI anahtarı (AI_SAGLAYICI / DEEPSEEK_API_KEY /
+     GEMINI_API_KEY — ai_ortak okur), tümü backend/.env
 """
 
 import os
@@ -28,7 +30,7 @@ from dotenv import load_dotenv
 
 sys.path.insert(0, os.path.dirname(__file__))
 from kategori_siniflandir import kategori_belirle
-from ted_scraper import gemini_cevir  # aynı toplu-çeviri yardımcısı
+from ted_scraper import baslik_cevir  # aynı toplu-çeviri yardımcısı (ai_ortak üzerinden)
 
 load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), ".env"))
 
@@ -153,9 +155,30 @@ def main():
     print(f"→ {len(satirlar)} Gürcistan ihalesi toplandı.")
 
     if not args.no_translate and satirlar:
-        cevrili = gemini_cevir([s["orijinal_baslik"] or "" for s in satirlar])
-        for s, tr in zip(satirlar, cevrili):
-            s["baslik"] = tr
+        # DİKKAT: baslik_cevir **(liste, basarili) TUPLE'ı** döner. Burada eskiden tuple tek
+        # değişkene alınıp doğrudan zip'leniyordu → ilk satırın başlığına TÜM LİSTE, ikinci
+        # satırınkine `True/False` yazılıyor, kalan satırlar hiç çevrilmiyordu. Sözleşme
+        # ted_scraper tarafında değiştiğinde bu çağrı yeri güncellenmemişti (29 Tem düzeltildi).
+        #
+        # ⚠ 29 Tem ÇAPRAZ DENETİM: çeviri 25'erli GRUPLARA bölündü (ted_scraper ile aynı boy).
+        # Sebep: sağlayıcı taşımasıyla birlikte baslik_cevir'e bir ÇIKTI TAVANI geldi
+        # (max_tokens ≤ 8000). Tüm liste TEK çağrıda gönderilirse uzun bir günde yanıt
+        # finish_reason='length' ile kesilir, json.loads patlar ve "hepsi ya da hiçbiri"
+        # mantığı yüzünden O GÜNKÜ TÜM başlıklar İngilizce kalırdı. Gruplama ile bir grubun
+        # düşmesi yalnız o 25 satırı etkiler.
+        cevrilecek = [s for s in satirlar if (s["orijinal_baslik"] or "").strip()]
+        basarisiz_grup = 0
+        for i in range(0, len(cevrilecek), 25):
+            grup = cevrilecek[i:i + 25]
+            cevrili, basarili = baslik_cevir([s["orijinal_baslik"] for s in grup])
+            if basarili:
+                for s, tr in zip(grup, cevrili):
+                    s["baslik"] = tr
+            else:
+                basarisiz_grup += 1
+        if basarisiz_grup:
+            print(f"  ⚠ {basarisiz_grup} grup çevrilemedi — o satırların başlıkları İngilizce kaldı "
+                  "(DB'deki mevcut Türkçe başlık upsert ile ezilebilir, sonraki koşuda düzelir)")
 
     for s in satirlar:
         s["kategori"] = kategori_belirle(s.get("cpv"), s.get("tur"), s.get("baslik"))

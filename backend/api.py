@@ -4,6 +4,23 @@ Frontend'den gelen istekleri karşılar
 
 Çalıştırma:
     uvicorn api:app --reload
+
+AI SINIRI (29 Tem — sağlayıcı taşıması)
+---------------------------------------
+Bu dosya HİÇBİR AI sağlayıcısını doğrudan çağırmaz; iki farklı katmana devreder:
+
+  · METİN/CHAT  → worker.kullanici_analiz_isle · firma_ai_yorum.firma_yorum_uret ·
+    teklif_ai.teklif_taslak_uret / teklif_strateji_uret. Bu modüller metni artık
+    ai_ortak (ai_metin/ai_cagir) üzerinden üretir: sağlayıcı env ile seçilir
+    (AI_SAGLAYICI, öntanım DeepSeek; Gemini yedek). api.py yalnız bu fonksiyonların
+    SÖZLEŞMESİNE bağlıdır — sağlayıcı değişimi buradaki kodu etkilemez:
+        firma_yorum_uret   -> {"basari", "metin", "hata"}
+        teklif_taslak_uret -> {"basari", "kapsam", "neden", "yontem", "hata"}
+        teklif_strateji_uret -> {"basari", "metin", "hata"}
+    ⚠️ Bu anahtarlar endpoint yanıt şemalarına birebir yansıyor; değiştirilirse frontend kırılır.
+
+  · EMBEDDING   → embed_ortak.embed_uret (PUT /profil içinde). ⛔ GEMİNİ'DE KALIR,
+    ai_ortak'a TAŞINMAZ (bkz. aşağıdaki not).
 """
 
 import os
@@ -151,7 +168,9 @@ def analiz_et(
 ):
     """
     Kullanıcı 'Analiz Et' butonuna bastığında çağrılır.
-    Kredi kontrolü, cache, Gemini analizi.
+    Kredi kontrolü, cache, AI analizi (worker → analyzer).
+    NOT: analyzer'ın METİN dalı ai_ortak üzerinden gider (DeepSeek/Gemini env ile);
+    taranmış PDF'in VISION dalı Gemini'de kalır. Bu endpoint'in davranışı ikisinde de aynı.
     """
     kullanici_id = kullanici_dogrula(authorization)
 
@@ -206,6 +225,10 @@ def profil_guncelle(
             "id", kullanici_id
         ).execute()
 
+        # ⛔ EMBEDDING DALI — AI sağlayıcı taşımasının DIŞINDA. embed_ortak (Gemini,
+        # models/gemini-embedding-001, 768 boyut) AYNEN kalır; ai_ortak'a bağlanmaz.
+        # Vektör uzayı değişirse kullanici_profiller.embedding / ilanlar.embedding
+        # (vector(768) + hnsw) ve uygun_firmalar_v3 semantik eşleme RPC'leri bozulur.
         # Faz D3 — semantik eşleşme: profil değiştiğinde firma embedding'ini tazele.
         # embedding kolonu (migration_semantik_esleme.sql) yoksa sessizce geç, kaydı bozmaz.
         # ⚠️ Bu istek PARÇALI bir güncelleme olabilir (sadece 1-2 alan gönderilmiş) — embedding'i
@@ -347,7 +370,8 @@ def firma_ai_yorum(
 ):
     """
     ÖNCELİK 10 Faz D1 — bir firma için AI rekabet yorumu üretir.
-    Sayılar analiz_pivot RPC'sinden (SQL), yorum Gemini'den. 7 gün cache'lenir
+    Sayılar analiz_pivot RPC'sinden (SQL), yorum AI'dan (firma_ai_yorum → ai_ortak:
+    DeepSeek birincil, Gemini yedek — sağlayıcı env ile). 7 gün cache'lenir
     (yukleniciler.ai_yorum / ai_yorum_tarih — bkz. migration_yuklenici_agg.sql).
     ⚠️ Bu endpoint, analiz_pivot RPC'si ve yukleniciler.ai_yorum kolonları DB'de
     kurulana kadar 500 döner (migration bekliyor, bkz. YAPILACAKLAR.md ÖNCELİK 10 Faz C/D).
@@ -391,7 +415,7 @@ def firma_ai_yorum(
             r = supabase.rpc("analiz_pivot", {"p_grup": grup, "p_firma": firma}).execute()
             kirilimlar[grup] = (r.data or [])[:8]
 
-        # 4. Gemini yorumu üret
+        # 4. AI yorumu üret (sağlayıcıyı firma_ai_yorum/ai_ortak seçer)
         sonuc = firma_yorum_uret(firma_adi=firma, kirilimlar=kirilimlar)
         if not sonuc["basari"]:
             raise HTTPException(status_code=500, detail=sonuc["hata"])
@@ -438,7 +462,8 @@ def teklif_olustur(
     """
     Faz D4 — AI teklif taslağı üretir (teklif-olustur.html "✨ AI ile Oluştur" butonu).
     İhale detayı + kullanıcının firma profili + aynı idare/kategoride geçmişte kazanan
-    firmaların ortalama tenzilatı (analiz_pivot) Gemini'ye bağlam olarak veriliyor —
+    firmaların ortalama tenzilatı (analiz_pivot) AI'ya bağlam olarak veriliyor
+    (teklif_ai → ai_ortak; sağlayıcı env ile: DeepSeek birincil, Gemini yedek) —
     "piyasa farkında" taslak (bkz. YAPILACAKLAR.md Faz D4).
     """
     kullanici_id = kullanici_dogrula(authorization)
@@ -520,9 +545,10 @@ def ai_teklif_strateji(
     authorization: str = Header(None)
 ):
     """
-    AI Fiyat/Teklif Stratejisi (DeepSeek) — teklif-olustur.html fiyat paneli için.
+    AI Fiyat/Teklif Stratejisi — teklif-olustur.html fiyat paneli için.
     İhalenin kategori/il kırılımındaki GERÇEK ortalama tenzilatı (analiz_pivot, tek-lot filtreli)
-    DeepSeek'e bağlam verip veri-temelli bir TEKLİF BANDI önerir. 1 kredi (teklif_strateji).
+    AI'ya bağlam verip veri-temelli bir TEKLİF BANDI önerir. 1 kredi (teklif_strateji).
+    (Metin teklif_ai → ai_ortak'tan gelir: DeepSeek birincil, Gemini yedek — env ile seçilir.)
     """
     kullanici_id = kullanici_dogrula(authorization)
     ihale_id = istek.ihale_id

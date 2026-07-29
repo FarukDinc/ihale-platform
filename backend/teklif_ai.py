@@ -11,24 +11,31 @@ Kullanım (api.py içinden):
     from teklif_ai import teklif_taslak_uret
     sonuc = teklif_taslak_uret(ilan=ilan_dict, firma_profil=profil_dict, piyasa_baglami=[...])
 
-Env: GEMINI_API_KEY (backend/.env) — analyzer.py ile aynı konfigürasyon.
+SAĞLAYICI (29 Tem): iki metin işi de artık ai_ortak.ai_cagir üzerinden gidiyor — birincil
+DeepSeek, yedek Gemini (AI_SAGLAYICI ile ters çevrilebilir). Gemini servis hesabı 401
+UNAUTHENTICATED verdiği için doğrudan Gemini çağrıları buradan kaldırıldı. Prompt'lar,
+ayrıştırma ve dönüş sözleşmesi ({basari, metin/kapsam/neden/yontem, hata}) AYNEN korundu;
+değişen tek şey taşıma katmanı.
 
-SDK: google-genai (Backlog #34). Eski google.generativeai bırakıldı. İstemci gemini_ortak
-üzerinden TEMBEL kurulur — api.py bu modülü top-level import ettiği için, anahtar yokken
-modül seviyesinde Client() kurmak tüm API'yi import anında çökertirdi.
+Env: DEEPSEEK_API_KEY / DEEPSEEK_MODEL (birincil) · GEMINI_API_KEY (yedek) — bkz. ai_ortak.py.
 """
 
 import json
 import os
 
-import requests
 from dotenv import load_dotenv
 
-from gemini_ortak import VARSAYILAN_MODEL, gemini_hata_logla, istemci_al, yanit_metni
+from ai_ortak import ai_cagir
 
 load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), ".env"))
 
-GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
+# Prompt'un "rol" kısmı sistem mesajına taşındı (metin BİREBİR aynı) — OpenAI-uyumlu
+# sağlayıcılarda system/user ayrımı talimatlara daha iyi uyulmasını sağlıyor.
+_TASLAK_SISTEM = (
+    "Sen bir kamu ihalesi teklif metni yazarısın. Sana verilen GERÇEK verilere dayanarak bir "
+    "teknik teklif taslağı yazacaksın. Uydurma teknik detay/sertifika/proje adı EKLEME — sadece "
+    "verilen firma bilgilerini ve genel iyi-uygulama ifadelerini kullan."
+)
 
 
 def _prompt_olustur(ilan: dict, firma_profil: dict, piyasa_baglami: list) -> str:
@@ -61,11 +68,7 @@ def _prompt_olustur(ilan: dict, firma_profil: dict, piyasa_baglami: list) -> str
         ]
         piyasa_metni = "Bu idare/sektörde geçmişte kazanan firmalar ve ortalama tenzilatları:\n" + "\n".join(satirlar)
 
-    return f"""Sen bir kamu ihalesi teklif metni yazarısın. Aşağıdaki GERÇEK verilere dayanarak bir
-teknik teklif taslağı yazacaksın. Uydurma teknik detay/sertifika/proje adı EKLEME — sadece verilen
-firma bilgilerini ve genel iyi-uygulama ifadelerini kullan.
-
-İHALE:
+    return f"""İHALE:
 {ihale_json}
 
 TEKLİF VEREN FİRMA:
@@ -94,13 +97,15 @@ def teklif_taslak_uret(ilan: dict, firma_profil: dict, piyasa_baglami: list) -> 
         return {"basari": False, "hata": "İhale bilgisi eksik.", "kapsam": None, "neden": None, "yontem": None}
     try:
         prompt = _prompt_olustur(ilan, firma_profil or {}, piyasa_baglami or [])
-        response = istemci_al().models.generate_content(model=VARSAYILAN_MODEL, contents=prompt)
-        # Boş yanıtı sessizce "veri yok" saymıyoruz: güvenlik bloğu/token limiti nedeni log'a düşsün.
-        metin, bos_neden = yanit_metni(response)
-        if not metin:
-            gemini_hata_logla("teklif_taslak_uret/boş yanıt", bos_neden)
-            return {"basari": False, "hata": f"Gemini boş yanıt döndü ({bos_neden}).",
+        # max_tokens CÖMERT: üç bölümlü (KAPSAM/NEDEN/YONTEM) uzun metin — kısa tutulursa
+        # yanıt ortadan kesilir ve ### ayrıştırması eksik bölüm döndürür.
+        sonuc = ai_cagir(_TASLAK_SISTEM, prompt, max_tokens=2500,
+                         nerede="teklif_taslak_uret")
+        # Boş/hatalı yanıtı sessizce "veri yok" saymıyoruz: neden ai_ortak tarafında log'a düşer.
+        if not sonuc["basari"]:
+            return {"basari": False, "hata": f"AI yanıt üretemedi ({sonuc['hata']}).",
                     "kapsam": None, "neden": None, "yontem": None}
+        metin = sonuc["metin"]
 
         bolumler = {"kapsam": "", "neden": "", "yontem": ""}
         for parca in metin.split("###"):
@@ -114,25 +119,21 @@ def teklif_taslak_uret(ilan: dict, firma_profil: dict, piyasa_baglami: list) -> 
 
         return {"basari": True, "hata": None, **bolumler}
     except Exception as e:
-        # google.genai.errors.APIError de Exception türevi — mevcut yakalama korunuyor.
-        return {"basari": False, "hata": gemini_hata_logla("teklif_taslak_uret", e),
+        return {"basari": False, "hata": f"{type(e).__name__}: {e}",
                 "kapsam": None, "neden": None, "yontem": None}
 
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# AI FİYAT/TEKLİF STRATEJİSİ — DeepSeek (OpenAI-uyumlu API)
+# AI FİYAT/TEKLİF STRATEJİSİ
 # ───────────────────────────────────────────────────────────────────────────────
-# Taslak yazarından (Gemini, yukarıda) AYRI bir iş: bu ihale için ne kadar teklif
-# vermeli sorusuna, BENZER geçmiş ihalelerin GERÇEK tenzilat istatistiğiyle (analiz_pivot,
-# tek-lot filtreli) grounded bir FİYAT BANDI önerir. Ucuz model yeter (deepseek-chat) —
-# ağır muhakeme yok, sadece SQL sayılarını Türkçe öneriye çevirmek.
+# Taslak yazarından (yukarıda) AYRI bir iş: bu ihale için ne kadar teklif vermeli
+# sorusuna, BENZER geçmiş ihalelerin GERÇEK tenzilat istatistiğiyle (analiz_pivot,
+# tek-lot filtreli) grounded bir FİYAT BANDI önerir. Ucuz model yeter — ağır muhakeme
+# yok, sadece SQL sayılarını Türkçe öneriye çevirmek.
 # KVKK: yalnız kamuya açık ihale meta + toplu tenzilat gider; PII/gizli veri gitmez.
-# Env: DEEPSEEK_API_KEY (zorunlu) · DEEPSEEK_MODEL (öntanım 'deepseek-chat').
+# Taşıma: ai_ortak.ai_cagir (birincil DeepSeek, yedek Gemini). Buradaki eski yerel
+# DeepSeek istemcisi (_deepseek) ai_ortak._deepseek_cagir'a TAŞINDI — tek kopya kaldı.
 # ═══════════════════════════════════════════════════════════════════════════════
-
-DEEPSEEK_API_KEY = os.environ.get("DEEPSEEK_API_KEY", "")
-DEEPSEEK_MODEL = os.environ.get("DEEPSEEK_MODEL", "deepseek-chat")
-DEEPSEEK_URL = "https://api.deepseek.com/chat/completions"
 
 _STRATEJI_SISTEM = (
     "Sen İhaleGlobal'de bir kamu ihale TEKLİF/FİYAT DANIŞMANISIN. Sana verilen GERÇEK "
@@ -140,33 +141,6 @@ _STRATEJI_SISTEM = (
     "Kesin sonuç değil, VERİ TEMELLİ bir tahmin sunduğunu belirt. Yanıt Türkçe, kısa "
     "(4-6 cümle), düz metin (başlık/madde/markdown yok)."
 )
-
-
-def _deepseek(sistem: str, kullanici: str, max_tokens: int = 700) -> dict:
-    """DeepSeek chat completion (OpenAI-uyumlu). Döner: {basari, metin, hata}."""
-    if not DEEPSEEK_API_KEY:
-        return {"basari": False, "metin": None, "hata": "DEEPSEEK_API_KEY eksik (.env)"}
-    try:
-        r = requests.post(
-            DEEPSEEK_URL,
-            headers={"Authorization": f"Bearer {DEEPSEEK_API_KEY}", "Content-Type": "application/json"},
-            json={
-                "model": DEEPSEEK_MODEL, "temperature": 0.4, "max_tokens": max_tokens, "stream": False,
-                "messages": [
-                    {"role": "system", "content": sistem},
-                    {"role": "user", "content": kullanici},
-                ],
-            },
-            timeout=60,
-        )
-        if r.status_code != 200:
-            return {"basari": False, "metin": None, "hata": f"DeepSeek {r.status_code}: {r.text[:180]}"}
-        metin = ((r.json().get("choices") or [{}])[0].get("message") or {}).get("content", "").strip()
-        if not metin:
-            return {"basari": False, "metin": None, "hata": "DeepSeek boş yanıt döndü"}
-        return {"basari": True, "metin": metin, "hata": None}
-    except Exception as e:
-        return {"basari": False, "metin": None, "hata": f"DeepSeek hata: {e}"}
 
 
 def _strateji_prompt(ihale: dict, kirilimlar: dict) -> str:
@@ -201,4 +175,6 @@ def teklif_strateji_uret(ihale: dict, kirilimlar: dict) -> dict:
     if not any((kirilimlar or {}).values()):
         return {"basari": False, "metin": None,
                 "hata": "Benzer geçmiş tenzilat verisi bulunamadı."}
-    return _deepseek(_STRATEJI_SISTEM, _strateji_prompt(ihale, kirilimlar))
+    # max_tokens=700: eski _deepseek varsayılanıyla aynı (istenen çıktı 4-6 cümle).
+    return ai_cagir(_STRATEJI_SISTEM, _strateji_prompt(ihale, kirilimlar),
+                    max_tokens=700, nerede="teklif_strateji_uret")

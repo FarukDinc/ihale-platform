@@ -61,7 +61,17 @@ Geriye dönük uyumlu: --max-pages/--limit bayrakları duruyor, tabloya yazan up
     ÇÖZÜM: checkpoint yazma `checkpoint_ilerlet()` içine alındı ve erken dönüş dahil
     TÜM çıkış yollarında çağrılıyor.
 
-Çeviri: İngilizce başlık → Türkçe (Gemini gemini-2.5-flash, TOPLU — N başlık tek çağrıda).
+--------------------------------------------------------------------------------------
+29 Tem 2026 — ÇEVİRİ GEMINI'DEN AI ORTAK KATMANINA TAŞINDI
+--------------------------------------------------------------------------------------
+Gemini servis hesabı öldü (401 UNAUTHENTICATED) ve metin işleri DeepSeek'e alındı.
+`baslik_cevir` artık doğrudan google-genai çağırmıyor, `ai_ortak.ai_cagir` üzerinden
+gidiyor: sağlayıcı `AI_SAGLAYICI` env'i ile seçilir (öntanım DeepSeek), birincil sağlayıcı
+düşerse ortak katman diğerine düşer, ikisi de yoksa çeviri sessizce atlanır (DB'deki
+Türkçe başlıklar korunur — eski davranışın aynısı). PROMPT ve ÇIKTI SÖZLEŞMESİ AYNI.
+Eski ad `gemini_cevir` takma ad olarak duruyor (georgia_scraper onu import ediyordu).
+
+Çeviri: İngilizce başlık → Türkçe (ai_ortak, TOPLU — N başlık tek çağrıda).
 Kategori: kategori_belirle (CPV + Türkçe başlık). Ülke: ISO→Türkçe. Tür: CPV'den (45→Yapım, 5-9→Hizmet).
 Dedup: publication_no (upsert on_conflict).
 
@@ -71,8 +81,9 @@ Kullanım:
   python ted_scraper.py --baslangic 2026-06-01 --bitis 2026-06-30
   python ted_scraper.py --backfill --gun 5       # checkpoint'ten geriye 5 gün
   python ted_scraper.py --gun 1 --dry-run --no-translate
-  python ted_scraper.py --gun 2 --rpm 15         # Gemini free tier hız sınırı (varsayılan)
-Env: SUPABASE_URL, SUPABASE_SERVICE_KEY, GEMINI_API_KEY (backend/.env)
+  python ted_scraper.py --gun 2 --rpm 15         # AI hız sınırı (varsayılan)
+Env: SUPABASE_URL, SUPABASE_SERVICE_KEY + AI anahtarı (AI_SAGLAYICI / DEEPSEEK_API_KEY /
+     GEMINI_API_KEY — ai_ortak okur), tümü backend/.env
 """
 
 import os
@@ -93,7 +104,8 @@ load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), ".env"))
 
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "").rstrip("/")
 SUPABASE_KEY = os.environ.get("SUPABASE_SERVICE_KEY", "")
-GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
+# AI anahtarları artık burada okunmuyor: çeviri `ai_ortak` üzerinden gidiyor ve anahtarı
+# (DEEPSEEK_API_KEY / GEMINI_API_KEY) ÇAĞRI ANINDA kendisi okuyor.
 
 TED_API = "https://api.ted.europa.eu/v3/notices/search"
 FIELDS = ["publication-number", "notice-title", "buyer-country",
@@ -323,34 +335,41 @@ def ted_gun_cek(client, gun, limit, max_sayfa):
     return toplanan, True
 
 
-# ---------------------------------------------------------------- Gemini çeviri
-def gemini_cevir(basliklar, deneme=4):
-    """İngilizce başlık listesini Türkçe'ye çevirir (TOPLU, tek Gemini çağrısı).
+# ------------------------------------------------------------------- AI çevirisi
+def baslik_cevir(basliklar, deneme=4):
+    """İngilizce başlık listesini Türkçe'ye çevirir (TOPLU, tek AI çağrısı).
+
+    29 Tem 2026 — SAĞLAYICI TAŞINDI: doğrudan Gemini SDK çağrısı yerine `ai_ortak.ai_cagir`
+    kullanılıyor (Gemini servis hesabı 401 UNAUTHENTICATED verdi + maliyet). Sağlayıcı env
+    ile seçilir (`AI_SAGLAYICI`, öntanım DeepSeek) ve birincil sağlayıcı düşerse ortak katman
+    kendiliğinden diğerine düşer. **PROMPT AYNEN KORUNDU** — çıktı sözleşmesi (girişle aynı
+    sıra/sayıda JSON dizisi) ve aşağıdaki ayrıştırma değişmedi. Çeviri SAF METİN işidir;
+    embedding/görsel akışlarıyla ilgisi yoktur.
 
     Döner: **(liste, basarili)**. Başarısızlıkta (ORİJİNAL liste, False) döner — çağıran
     bunu görüp satırın DB'deki başlığına DOKUNMAMALIDIR. Tek liste dönseydi çağıran
     başarıyı başarısızlıktan ayırt edemez, başarısız çeviri İngilizce başlık olarak
     DB'ye yazılır ve satır "DB'de var" sayıldığı için bir daha hiç denenmezdi.
 
-    Kota hatasında tek denemede pes edilmesin diye üstel backoff var — aynı depoda
-    ai_kategori_backfill.py `--rpm 15` ile koşuyor, yani Gemini kotası bu projede bilinen
-    bir darboğaz ve bu betiğin gecelik çağrı sayısı ~12'den ~52-103'e çıktı.
+    Kota/geçici hatada tek denemede pes edilmesin diye üstel backoff var; artık ortak
+    katmanın içinde (`ai_cagir(deneme=...)`, aynı 2**k*5 formülü). Yanıt ALINDIĞI hâlde
+    ayrıştırılamıyorsa tekrar denenmez (token harcandı, israf) — eskisi gibi.
 
-    SDK: google-genai (Backlog #34). İki paralel iş bu fonksiyonu ayrı ayrı değiştirdi
-    (biri SDK'yı taşıdı, diğeri tuple sözleşmesi + backoff ekledi); burada İKİSİ birleşik.
-    Import fonksiyon içinde: çeviri opsiyonel bir adım, SDK kurulu değilse scraper'ın
-    tamamı düşmemeli (ekap_scraper.py'deki aynı desen).
+    Import fonksiyon içinde: çeviri opsiyonel bir adım, ortak katman/bağımlılık eksikse
+    scraper'ın tamamı düşmemeli (ekap_scraper.py'deki aynı desen).
     """
     if not basliklar:
         return basliklar, True
-    if not GEMINI_API_KEY:
-        print("  ⚠ GEMINI_API_KEY yok — başlıklar çevrilmedi (DB'deki Türkçe başlıklar korunacak)", flush=True)
-        return basliklar, False
 
     try:
-        from gemini_ortak import VARSAYILAN_MODEL, gemini_hata_logla, istemci_al, yanit_metni
+        from ai_ortak import ai_cagir, deepseek_anahtar_var, gemini_anahtar_var
     except Exception as e:
-        print(f"  ✗ Gemini istemcisi kurulamadı: {type(e).__name__}: {str(e)[:120]}", flush=True)
+        print(f"  ✗ AI katmanı (ai_ortak) yüklenemedi: {type(e).__name__}: {str(e)[:120]}", flush=True)
+        return basliklar, False
+
+    if not (deepseek_anahtar_var() or gemini_anahtar_var()):
+        print("  ⚠ AI anahtarı yok (DEEPSEEK_API_KEY / GEMINI_API_KEY) — başlıklar çevrilmedi "
+              "(DB'deki Türkçe başlıklar korunacak)", flush=True)
         return basliklar, False
 
     prompt = (
@@ -360,34 +379,45 @@ def gemini_cevir(basliklar, deneme=4):
         + json.dumps(basliklar, ensure_ascii=False)
     )
 
-    for k in range(deneme):
-        try:
-            resp = istemci_al().models.generate_content(model=VARSAYILAN_MODEL, contents=prompt)
-        except Exception as e:
-            if k == deneme - 1:
-                print(f"  ✗ çeviri kalıcı hata: {str(e)[:120]} — bu grup yazılmayacak, sonraki koşuda yeniden denenir", flush=True)
-                return basliklar, False
-            bekle = min(2 ** k * 5, 60)
-            print(f"  ⚠ çeviri hatası ({str(e)[:80]}); {bekle}s bekle (tekrar {k + 1}/{deneme - 1})", flush=True)
-            time.sleep(bekle)
-            continue
-        # Yanıt ALINDI → token harcandı. Ayrıştırılamıyorsa tekrar denemek israf; başarısız say.
-        metin, bos_neden = yanit_metni(resp)
-        if not metin:
-            gemini_hata_logla("ted_cevir/boş yanıt", bos_neden)
-            return basliklar, False
-        try:
-            metin = re.sub(r"^```(?:json)?|```$", "", metin, flags=re.MULTILINE).strip()
-            cevrilmis = json.loads(metin)
-            if isinstance(cevrilmis, list) and len(cevrilmis) == len(basliklar):
-                return [str(x) for x in cevrilmis], True
-            print(f"  ⚠ çeviri şekli hatalı (beklenen {len(basliklar)} elemanlı liste, gelen "
-                  f"{type(cevrilmis).__name__}/{len(cevrilmis) if isinstance(cevrilmis, list) else '-'}) "
-                  f"— grup atlandı", flush=True)
-        except Exception as e:
-            print(f"  ⚠ çeviri yanıtı ayrıştırılamadı ({str(e)[:80]}) — grup atlandı", flush=True)
+    # ÇIKTI BÜTÇESİ (yeni ve ŞART): eski Gemini yolunda max_output_tokens verilmiyordu, ortak
+    # katmanın öntanımı ise 700 — 25 başlıklık grup için ÇOK küçük. Kısa kalırsa yanıt ortadan
+    # kesilir (finish_reason='length') ve json.loads patlar → grup her gece atlanır. Türkçe
+    # çıktı İngilizce girdiden uzun olur, o yüzden girdi uzunluğuna göre cömert hesaplanıyor.
+    girdi_karakter = sum(len(b or "") for b in basliklar)
+    cikti_tavani = max(1000, min(8000, girdi_karakter // 2 + 400))
+
+    # json_mod BİLEREK KAPALI: prompt bir JSON *dizisi* istiyor, DeepSeek'in json_object modu
+    # ise nesne bekliyor — açılırsa model diziyi sarmalayıp sözleşmeyi bozabilir. Düşük
+    # temperature çeviride sadakat için (prompt'a dokunmayan, yalnız çağrı katmanı ayarı).
+    sonuc = ai_cagir("", prompt, max_tokens=cikti_tavani, temperature=0.2,
+                     deneme=deneme, nerede="ted_cevir")
+    if not sonuc["basari"]:
+        print(f"  ✗ çeviri kalıcı hata: {(sonuc['hata'] or '')[:140]} — bu grup yazılmayacak, "
+              f"sonraki koşuda yeniden denenir", flush=True)
         return basliklar, False
+
+    try:
+        metin = re.sub(r"^```(?:json)?|```$", "", sonuc["metin"], flags=re.MULTILINE).strip()
+        cevrilmis = json.loads(metin)
+        # Bazı modeller diziyi tek anahtarlı bir nesneye sarar ({"ceviriler": [...]}).
+        # Prompt'u değiştirmeden sarmalı aç; sıra/sayı şartı yine aranır.
+        if isinstance(cevrilmis, dict):
+            for deger in cevrilmis.values():
+                if isinstance(deger, list) and len(deger) == len(basliklar):
+                    cevrilmis = deger
+                    break
+        if isinstance(cevrilmis, list) and len(cevrilmis) == len(basliklar):
+            return [str(x) for x in cevrilmis], True
+        print(f"  ⚠ çeviri şekli hatalı (beklenen {len(basliklar)} elemanlı liste, gelen "
+              f"{type(cevrilmis).__name__}/{len(cevrilmis) if isinstance(cevrilmis, list) else '-'}) "
+              f"— grup atlandı", flush=True)
+    except Exception as e:
+        print(f"  ⚠ çeviri yanıtı ayrıştırılamadı ({str(e)[:80]}) — grup atlandı", flush=True)
     return basliklar, False
+
+
+# Geriye uyum: eski ad (georgia_scraper ve dışarıdaki çağrılar bunu import ediyordu).
+gemini_cevir = baslik_cevir
 
 
 def notice_donustur(n):
@@ -501,14 +531,15 @@ def main():
     ap.add_argument("--sadece-acik", action="store_true",
                     help="Son teklif tarihi geçmiş ilanları yazma (ekranda yalnız teklif verilebilir ihaleler)")
     ap.add_argument("--dry-run", action="store_true")
-    ap.add_argument("--no-translate", action="store_true", help="Gemini çevirisini atla (test / büyük backfill için)")
+    ap.add_argument("--no-translate", action="store_true", help="AI çevirisini atla (test / büyük backfill için)")
     ap.add_argument("--yeniden-cevir", action="store_true",
                     help="DB'de zaten ÇEVRİLMİŞ kayıtları da yeniden çevir "
                          "(varsayılan: yalnız çevrilmemiş/başarısız kayıtlar çevrilir)")
     ap.add_argument("--rpm", type=int, default=15,
-                    help="Gemini için dakika başına azami çağrı (0=sınırsız; free tier ~15). "
-                         "Gecelik çağrı sayısı gün-gün pencereleme sonrası ~52-103'e çıktı, "
-                         "arka arkaya atılırsa kota duvarına toslar.")
+                    help="AI için dakika başına azami çağrı (0=sınırsız). Varsayılan 15, Gemini "
+                         "free tier'ından kalma temkinli değer; DeepSeek'te daha yükseği "
+                         "kaldırır. Gecelik çağrı sayısı gün-gün pencereleme sonrası ~52-103'e "
+                         "çıktı, arka arkaya atılırsa kota duvarına toslar.")
     args = ap.parse_args()
 
     if not args.dry_run and (not SUPABASE_URL or not SUPABASE_KEY):
@@ -579,7 +610,7 @@ def main():
         for i in range(0, len(cevrilecek), 25):
             grup = cevrilecek[i:i + 25]
             orijinaller = [s["orijinal_baslik"] or "" for s in grup]
-            cevrilmis, basarili = gemini_cevir(orijinaller)
+            cevrilmis, basarili = baslik_cevir(orijinaller)
             if basarili:
                 for s, tr in zip(grup, cevrilmis):
                     s["baslik"] = tr
@@ -587,7 +618,7 @@ def main():
             print(f"  … çeviri {min(i+25, len(cevrilecek))}/{len(cevrilecek)}"
                   f"{'' if basarili else ' (BAŞARISIZ — grup atlandı)'}")
             if bekle_s and i + 25 < len(cevrilecek):
-                time.sleep(bekle_s)   # Gemini hız sınırı (--rpm)
+                time.sleep(bekle_s)   # AI hız sınırı (--rpm)
     elif args.no_translate:
         print("  · --no-translate: çeviri atlandı (DB'deki mevcut Türkçe başlıklar korunacak)")
 

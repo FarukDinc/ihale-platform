@@ -1,16 +1,23 @@
 """
 İhale Şartname Analizörü - Tam Versiyon
-- Metin PDF: pdfplumber → Gemini text
-- Taranmış PDF: Gemini Vision (File API)
+- Metin PDF: pdfplumber → ai_ortak (birincil DeepSeek, yedek Gemini)
+- Taranmış PDF: Gemini Vision (File API) — GÖRSEL olduğu için Gemini'de KALIR
 - Dinamik kredi sistemi
 - Kırmızı alarm motoru
 - Güvenli JSON parse
+
+SAĞLAYICI (29 Tem): Gemini servis hesabı 401 UNAUTHENTICATED verdiği için METİN işleri
+DeepSeek'e taşındı. Bu dosyada YALNIZ metin dalı taşındı:
+  · metin_pdf_analiz_et  → ai_ortak.ai_cagir  (saf metin, görüntü yok)
+  · taranmis_pdf_analiz_et → Gemini Vision AYNEN kaldı; DeepSeek'in metin API'si
+    görüntü kabul etmez, taşınsaydı taranmış PDF akışı SESSİZCE ölürdü.
+Prompt (prompt_olustur) ve JSON çıktı sözleşmesi DEĞİŞMEDİ — değişen tek şey taşıma katmanı.
 
 Kurulum:
     pip install google-genai pdfplumber requests python-dotenv
 
 Kullanım:
-    GEMINI_API_KEY=xxx python analyzer.py
+    python analyzer.py            # metin dalı DEEPSEEK_API_KEY, Vision dalı GEMINI_API_KEY ister
 
 SDK: google-genai (Backlog #34). Eski google.generativeai bırakıldı — "support ended"
 durumdaydı ve File API'si canlıda kırıktı (bkz. taranmis_pdf_analiz_et notu).
@@ -28,12 +35,15 @@ from pathlib import Path
 from dotenv import load_dotenv
 from google.genai import types
 
+from ai_ortak import ai_cagir, ai_hata_logla
 from gemini_ortak import VARSAYILAN_MODEL, gemini_hata_logla, istemci_al, yanit_metni
 
 load_dotenv()
 
 # ── Yapılandırma ──────────────────────────────────────────
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "xxxgeminikeyxxx")
+# MODEL ve gemini_ortak yardımcıları YALNIZ Vision (taranmış PDF) dalında kullanılıyor;
+# metin dalı sağlayıcısını ai_ortak (env: AI_SAGLAYICI / DEEPSEEK_MODEL) belirler.
 MODEL = VARSAYILAN_MODEL
 # İstemci gemini_ortak.istemci_al() ile TEMBEL kurulur: worker.py bu modülü top-level
 # import ediyor, anahtar yokken modül seviyesinde Client() kurmak worker'ı import
@@ -164,8 +174,9 @@ def pdf_analiz_et(dosya_yolu: str) -> dict:
 # ── Güvenli JSON Parse ────────────────────────────────────
 def json_parse_et(yanit_metni: str) -> dict:
     """
-    Gemini'nin döndürdüğü metinden JSON'u güvenle çıkarır.
-    ```json ... ``` bloğu olsa da olmasa da çalışır.
+    AI'nın döndürdüğü metinden JSON'u güvenle çıkarır (sağlayıcı fark etmez).
+    ```json ... ``` bloğu olsa da olmasa da çalışır: DeepSeek json_object modunda çıplak
+    JSON, Gemini/Vision dalı ise bazen ``` çitli döndürüyor — ikisi de bu fonksiyondan geçer.
     """
     # Önce ```json bloğu ara
     eslesme = re.search(r"```json\s*(.*?)\s*```", yanit_metni, re.DOTALL)
@@ -240,21 +251,44 @@ MÜŞTERİ PROFİLİ:
 """
 
 
-# ── Gemini Analiz — Metin PDF ─────────────────────────────
+# ── AI Analiz — Metin PDF (saf metin → ai_ortak) ──────────
 def metin_pdf_analiz_et(metin: str, sirket_profili: dict) -> dict:
+    """
+    Metin PDF analizi — SAĞLAYICI-BAĞIMSIZ (ai_ortak: birincil DeepSeek, yedek Gemini).
+    Girdi saf metindir (pdfplumber çıkarımı), görüntü YOKTUR — bu yüzden taşınabilir.
+    Prompt prompt_olustur'dan AYNEN gelir; dönüş sözleşmesi de aynı: başarıda ayrıştırılmış
+    rapor sözlüğü, hatada {"hata": ...} (ihale_analiz_et bunu görünce KREDİ DÜŞMEZ).
+    """
     try:
         prompt = prompt_olustur(sirket_profili, metin)
-        response = istemci_al().models.generate_content(model=MODEL, contents=prompt)
-        yanit, bos_neden = yanit_metni(response)
-        if not yanit:
-            # Boş yanıt json_parse_et'e girip sessizce boş/None analize dönüşmesin.
-            return {"hata": gemini_hata_logla("metin_pdf_analiz/boş yanıt", bos_neden)}
-        return json_parse_et(yanit)
+        # sistem="": eski Gemini çağrısında system_instruction YOKTU, prompt tek parça
+        #   gidiyordu — çıktı sözleşmesi bozulmasın diye rol metni ayrıştırılmadı.
+        # json_mod=False (BİLEREK): prompt zaten "SADECE JSON" diyor ve json_parse_et hem
+        #   ```json çitli hem çıplak yanıtı ayrıştırıyor. response_format'ı zorlamak, modelin
+        #   json_object desteklememesi hâlinde 400 (kalıcı hata) üretip TÜM metin analizini
+        #   düşürürdü; kazancı yok, riski var. Gerekirse tek satırla açılabilir.
+        # max_tokens=4096: rapor JSON'u uzun; kısa verilirse yanıt ORTADAN kesilir ve
+        #   ayrıştırma patlar (ai_ortak finish_reason='length' uyarısı basar).
+        # temperature=0.2: yapılandırılmış çıkarım işi — düşük sıcaklık format sadakati için.
+        # zaman_asimi=180: girdi 50.000 karaktere kadar çıkıyor, 60sn'lik öntanım yetmeyebilir.
+        # deneme=2: 429/5xx/ağ gibi GEÇİCİ hatada bir kez daha dene — kullanıcı analizi
+        #   boşuna kaybetmesin (kalıcı hatada zaten tekrar denenmez, doğrudan yedeğe düşülür).
+        sonuc = ai_cagir(
+            "", prompt,
+            max_tokens=4096, temperature=0.2,
+            zaman_asimi=180, deneme=2, nerede="metin_pdf_analiz",
+        )
+        if not sonuc["basari"]:
+            # Boş/hatalı yanıt json_parse_et'e girip sessizce boş/None analize dönüşmesin.
+            return {"hata": sonuc["hata"] or "AI yanıt üretemedi"}
+        return json_parse_et(sonuc["metin"])
     except Exception as e:
-        return {"hata": gemini_hata_logla("metin_pdf_analiz", e)}
+        return {"hata": ai_hata_logla("metin_pdf_analiz", e)}
 
 
 # ── Gemini Analiz — Taranmış PDF (Vision) ────────────────
+# ⛔ BU DAL GEMİNİ'DE KALIR (29 Tem taşıma kararı): girdi ham PDF BAYTI/görüntüdür,
+#    DeepSeek'in metin API'si görüntü kabul etmez — taşınsaydı akış sessizce ölürdü.
 INLINE_LIMIT_BYTES = 18 * 1024 * 1024  # ~18MB ham dosya (base64 + prompt ile 20MB istek sınırına yaklaşmadan)
 
 def taranmis_pdf_analiz_et(dosya_yolu: str, sirket_profili: dict) -> dict:
@@ -379,14 +413,14 @@ def ihale_analiz_et(
                 "pdf_turu": pdf_bilgi["durum"]
             }
 
-        # 4. Gemini analizi
-        print(f"3. Gemini analiz ediyor ({pdf_bilgi['durum']} modu)...")
+        # 4. AI analizi (metin → ai_ortak/DeepSeek · taranmış → Gemini Vision)
+        print(f"3. AI analiz ediyor ({pdf_bilgi['durum']} modu)...")
         if pdf_bilgi["durum"] == "metin":
             rapor = metin_pdf_analiz_et(pdf_bilgi["metin"], sirket_profili)
         else:
             rapor = taranmis_pdf_analiz_et(dosya_yolu, sirket_profili)
 
-        # metin_pdf_analiz_et/taranmis_pdf_analiz_et/json_parse_et Gemini hatasında
+        # metin_pdf_analiz_et/taranmis_pdf_analiz_et/json_parse_et AI hatasında
         # {"hata": "..."} döner — bu ÖNCEDEN kontrol edilmeden "başarılı" sayılıp kredi
         # düşülüyordu (kullanıcı boş/hatalı rapor için ücretlendiriliyordu). Artık engelleniyor.
         if rapor.get("hata") and not any(k for k in rapor if k != "hata" and k != "ham_yanit"):

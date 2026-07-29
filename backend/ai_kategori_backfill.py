@@ -1,6 +1,11 @@
 # -*- coding: utf-8 -*-
 """
-ai_kategori_backfill.py — JENERİK kova ilanlarını Gemini ile 41 kanonik kategoriye oturtur.
+ai_kategori_backfill.py — JENERİK kova ilanlarını AI ile 41 kanonik kategoriye oturtur.
+
+SAĞLAYICI (29 Tem): Gemini servis hesabı öldü (401 UNAUTHENTICATED) → metin/sınıflandırma
+işleri ai_ortak.py üzerinden DeepSeek'e taşındı. Bu dosya artık Gemini SDK'sını doğrudan
+ÇAĞIRMAZ; tek kapı `ai_ortak.ai_cagir`. Anahtar varsa Gemini otomatik YEDEK olarak kalır.
+(Bu dosyada embedding/görsel çağrısı YOKTU — tek çağrı türü metin sınıflandırmaydı.)
 
 NEDEN: Eşleştirme motorunun (uygun-firma/benzer-ihale) asıl körlüğü OKAS değil (OKAS %2,8) —
 ilanların %58'i "Mal Alımı"/"Hizmet Alımı"/"Diğer" JENERİK kovada; bunlar EKAP'ın satınalma
@@ -16,15 +21,25 @@ TASARIM (maliyet güvenliği):
     yazılan değer daima geçerli bir filtre seçeneğidir. 0/kararsız → satır 'Diğer' kalır ama denendi işaretlenir.
   • --limit ile üst sınır; paket başına 50 başlık (tek istek) → ~2K istek/100K satır.
 
-MALİYET (yaklaşık, gemini-2.5-flash): ~5K girdi + ~0.4K çıktı tokeni/istek. 100K satır tek-seferlik
-temizlik ≈ birkaç $ (bir kez). Günlük cron (yeni Diğer'ler, ~birkaç istek) fiilen ücretsiz kotaya sığar.
+⛔ ÇIKTI SÖZLEŞMESİ DOKUNULMAZ: prompt metni ve "başlık no → kategori no" JSON biçimi
+   sağlayıcı geçişinde HARFİ HARFİNE korundu. Numaralandırma kayarsa ayrıştırma sessizce
+   yanlış kategori yazar (veriyi BOZAN hata). Numara doğrulaması (1..41 aralık kontrolü)
+   ikinci savunma hattıdır: aralık dışı/çöp yanıt kategori YAZDIRAMAZ, satır jenerik kalır.
+
+MALİYET (yaklaşık, DeepSeek V4-Flash $0.14/M girdi · $0.28/M çıktı): ~5K girdi + ~0.4K çıktı
+tokeni/istek ≈ $0.0008/istek. 173K satırlık birikmiş kuyruk (~3.5K istek) ≈ $3 (tek seferlik).
+Günlük cron (--limit 400 → ~8 istek) fiilen bedava.
+⚠ Token sayıları TAHMİNİdir (bkz. _tahmini_tok): ai_ortak sağlayıcı-bağımsız olduğu için
+  usage_metadata dönmüyor. Rapor edilen $ FATURA DEĞİL, tavan/projeksiyon içindir.
 
 KULLANIM:
   python ai_kategori_backfill.py --dry-run              # 1 paketi sınıflandır, YAZMA, kuyruk+maliyet projeksiyonu
   python ai_kategori_backfill.py --limit 500            # 500 satır işle (nightly cron için tipik)
-  python ai_kategori_backfill.py --limit 100000         # birikmiş kuyruğu boşalt (paid key önerilir)
-Env: SUPABASE_URL, SUPABASE_SERVICE_KEY, GEMINI_API_KEY (backend/.env).
-     AI_KATEGORI_MODEL (öntanım gemini-2.5-flash), AI_FIYAT_GIRDI/AI_FIYAT_CIKTI (USD/1M, projeksiyon için).
+  python ai_kategori_backfill.py --limit 100000         # birikmiş kuyruğu boşalt
+Env: SUPABASE_URL, SUPABASE_SERVICE_KEY (backend/.env).
+     AI sağlayıcı anahtarları ai_ortak'tan: DEEPSEEK_API_KEY / GEMINI_API_KEY, AI_SAGLAYICI, DEEPSEEK_MODEL.
+     AI_KATEGORI_MODEL (İSTEĞE BAĞLI model ezmesi — boşsa sağlayıcının öntanımı kullanılır),
+     AI_FIYAT_GIRDI/AI_FIYAT_CIKTI (USD/1M, projeksiyon için).
 """
 import argparse
 import json
@@ -36,26 +51,31 @@ from datetime import datetime, timezone
 
 import httpx
 from dotenv import load_dotenv
-from google import genai
-from google.genai import types
 
 sys.path.insert(0, os.path.dirname(__file__))
+from ai_ortak import ai_cagir, ai_durum, saglayici_sirasi
 from kategori_siniflandir import KANONIK_KATEGORILER
 
 load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), ".env"))
 SUPABASE_URL = os.environ.get("SUPABASE_URL", "").rstrip("/")
 SUPABASE_KEY = os.environ.get("SUPABASE_SERVICE_KEY", "")
-GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
 
-MODEL = os.environ.get("AI_KATEGORI_MODEL", "gemini-2.5-flash")
+# Model ezmesi İSTEĞE BAĞLI. Boşsa None → ai_ortak sağlayıcının kendi env'inden seçer
+# (DEEPSEEK_MODEL / GEMINI_MODEL). Eskiden burada 'gemini-2.5-flash' ÖNTANIMLIYDI; o sabit
+# DeepSeek'e gönderilse 400 döndürürdü — bkz. _model_sec() güvenlik ağı.
+_MODEL_EZME = os.environ.get("AI_KATEGORI_MODEL", "").strip() or None
 BATCH_VARSAYILAN = 50
 CHUNK = 60  # tek PATCH'te kaç UUID (id ~36 char; 60×~40≈2.4KB URL, nginx 414 altı — kategori_backfill ile aynı)
 # Yaklaşık fiyat (USD / 1M token) — SADECE rapor/projeksiyon için; sağlayıcı güncellerse env'den ez.
-FIYAT_GIRDI_1M = float(os.environ.get("AI_FIYAT_GIRDI", "0.30"))
-FIYAT_CIKTI_1M = float(os.environ.get("AI_FIYAT_CIKTI", "2.50"))
+# Öntanım DeepSeek V4-Flash (29 Tem): $0.14/M girdi, $0.28/M çıktı. (Gemini yedeğine düşülürse
+# rapor edilen $ hafif düşük kalır; tavan yine de bir üst sınır uygular.)
+FIYAT_GIRDI_1M = float(os.environ.get("AI_FIYAT_GIRDI", "0.14"))
+FIYAT_CIKTI_1M = float(os.environ.get("AI_FIYAT_CIKTI", "0.28"))
 
 # Günlük harcama defteri: {"2026-07-23": 0.4213, ...}. Aynı günde birden fazla tur
 # (cron + elle) koşulsa bile tavan GÜN TOPLAMINA uygulanır — tek tur değil.
+# ⚠ Dosya adı BİLEREK 'gemini' kaldı: yeniden adlandırmak DeepSeek'e geçiş günü defteri
+# sıfırlar ve o gün tavan iki kez harcanabilirdi. İçerik sağlayıcıdan bağımsızdır.
 HARCAMA_DEFTER = os.path.join(os.path.dirname(__file__), ".gemini_gunluk_harcama.json")
 
 
@@ -97,20 +117,67 @@ def _headers():
     return {"apikey": SUPABASE_KEY, "Authorization": f"Bearer {SUPABASE_KEY}", "Content-Type": "application/json"}
 
 
-def _client_al():
-    # embed_ortak.py ile aynı güncel SDK (google.genai). Eski google.generativeai artık desteklenmiyor.
-    return genai.Client(api_key=GEMINI_API_KEY)
+_model_onbellek = []  # [deger] — uyarı paket başına DEĞİL, tur başına bir kez basılsın
 
 
-# response_mime_type=json → model geçerli JSON döndürmeye zorlanır (fence-strip'e gerek yok).
-# temperature=0 → deterministik, tutarlı sınıflandırma.
-# thinking_budget=0 → gemini-2.5-flash'ın varsayılan AÇIK düşünme modu kapatılır: 1-41 numara seçimi gibi
-# basit bir görev için gereksiz "thoughts" tokeni harcanmasın (bu tokenler çıktı fiyatından faturalanır ve
-# thinking açıksa raporlanan $ maliyeti gerçeğin altında kalırdı — 16 Tem incelemesinde bulundu).
-_URETIM_CONFIG = types.GenerateContentConfig(
-    response_mime_type="application/json", temperature=0,
-    thinking_config=types.ThinkingConfig(thinking_budget=0),
-)
+def _model_sec():
+    """AI_KATEGORI_MODEL ezmesini YALNIZ aktif sağlayıcıya aitse uygular, aksi halde None.
+
+    Geriye uyum güvenlik ağı: eski .env/cron satırlarında bu değişken 'gemini-2.5-flash'
+    YAZILI kalmış olabilir. Onu olduğu gibi DeepSeek'e yollamak 400 döndürür ve tur ölür →
+    yabancı sağlayıcıya ait model adını sessizce değil, UYARIYLA yok say."""
+    if _model_onbellek:
+        return _model_onbellek[0]
+    if not _MODEL_EZME:
+        _model_onbellek.append(None)
+        return None
+    birincil = saglayici_sirasi()[0]
+    ad = _MODEL_EZME.lower()
+    yabanci = ("gemini" in ad and birincil != "gemini") or ("deepseek" in ad and birincil != "deepseek")
+    if yabanci:
+        print(f"  ⚠ AI_KATEGORI_MODEL='{_MODEL_EZME}' aktif sağlayıcı '{birincil}' ile uyumsuz "
+              f"— yok sayılıyor, sağlayıcının öntanım modeli kullanılacak.", file=sys.stderr, flush=True)
+        _model_onbellek.append(None)
+        return None
+    _model_onbellek.append(_MODEL_EZME)
+    return _MODEL_EZME
+
+
+# Üretim ayarları (sağlayıcı-bağımsız):
+#   json_mod=True   → DeepSeek response_format=json_object / Gemini response_mime_type=application/json.
+#   temperature=0   → deterministik, tutarlı sınıflandırma (eski davranışla aynı).
+#   dusunme=False   → YALNIZ Gemini yedeğinde etkili: thinking_budget=0 ile "thoughts" tokeni harcanmaz
+#                     (1-41 numara seçimi için düşünmeye gerek yok; thoughts çıktı fiyatından faturalanır).
+#                     DeepSeek'te düşünme bayrağı YOK — karşılığı düşük temperature + kısa max_tokens.
+_URETIM_TEMP = 0.0
+# Çıktı bütçesi: paket başına ~1 kısa JSON girdisi ("50": 41,) ≈ 8-10 token. CÖMERT ver —
+# max_tokens yetmezse DeepSeek yanıtı ORTADAN keser (finish_reason=length), JSON ayrıştırma
+# patlar ve paket 'denendi' damgalanıp boşa gider (ai_ortak bunu uyarı olarak loglar).
+def _cikti_butcesi(batch_boyu):
+    return max(400, batch_boyu * 14 + 200)
+
+
+def _tahmini_tok(metin):
+    """Kaba token tahmini: ~3 karakter/token (Türkçe sondan eklemeli → İngilizceden yoğun).
+
+    NEDEN TAHMİN: ai_ortak sağlayıcı-bağımsız tek arayüz olduğu için usage_metadata dönmüyor.
+    Bu sayı YALNIZCA maliyet projeksiyonu ve --gunluk-usd tavanı içindir, FATURA DEĞİLDİR.
+    Kasten hafif YÜKSEK tutuldu: tavan erken durur (aşım riski yerine erken duruş)."""
+    return max(1, len(metin or "") // 3)
+
+
+def _json_ayikla(metin):
+    """Yanıtı JSON'a çevirir. Sözleşmeyi DEĞİŞTİRMEZ — yalnız ```json ... ``` çitini soyar.
+
+    json_object/response_mime_type ikisi de temiz JSON vaat eder, ama sağlayıcı arada çit
+    ekleyebiliyor; çiti soymak ayrıştırmayı sağlamlaştırır, numaralandırmaya DOKUNMAZ.
+    (Yanlış kategori yazma riski yok: numaralar aşağıda ayrıca 1..41 aralığında doğrulanıyor.)"""
+    s = (metin or "").strip()
+    if s.startswith("```"):
+        s = s.split("\n", 1)[-1] if "\n" in s else ""
+        if s.rstrip().endswith("```"):
+            s = s.rstrip()[:-3]
+    return json.loads(s)
 
 
 # DMO/Jandarma satırları hariç: kategori_backfill.py bu kaynakları başlık-kelime tahmininin ezmesini
@@ -135,11 +202,19 @@ _KUYRUK_FILTRE = {"kategori": _KATEGORI_FILTRE, "ai_kategori_denendi": "is.null"
 def kuyruk_say(client):
     """Denenmemiş + gerçekten işlenebilir JENERİK-kova satır sayısı (kuyruk boyu) — secim_cek ile aynı filtre.
     Hata durumunda -1 döner (content-range yokluğunu SESSİZCE 0'a yorumlamaz — bir HTTP hatası "kuyruk boş"
-    ile karıştırılırsa migration eksikliği gibi gerçek sorunlar fark edilmeden geçerdi)."""
+    ile karıştırılırsa migration eksikliği gibi gerçek sorunlar fark edilmeden geçerdi).
+
+    ⚠ 29 Tem BULGU: bu fonksiyon başarısız olunca eskiden "migration uygulanmamış" diye SABİT bir
+    teşhis basılıyordu. Kolon canlıda DOĞRULANDI (PostgREST: order=ai_kategori_denendi.desc → 42501
+    'permission denied', 42703 DEĞİL; kontrol: uydurma kolon 42703 döndü) → migration UYGULANMIŞ.
+    Yani o mesaj yanlış yönlendiriyordu. Artık gerçek HTTP durumu + gövde basılıyor; en olası
+    gerçek sebep count=exact'in ifade zaman aşımına takılması (filtre eşleşmesi ~184K satır,
+    anon ölçümünde 1.8s — 3s tavanının kenarı) ya da /rest/v1 hız limiti."""
     r = client.get(f"{SUPABASE_URL}/rest/v1/ilanlar",
                    params={**_KUYRUK_FILTRE, "select": "id", "limit": "1"},
                    headers={**_headers(), "Prefer": "count=exact", "Range-Unit": "items", "Range": "0-0"})
     if r.status_code >= 300:
+        print(f"  ✗ Kuyruk sayımı HTTP {r.status_code}: {r.text[:300]}", file=sys.stderr, flush=True)
         return -1
     cr = r.headers.get("content-range", "*/0")
     try:
@@ -158,30 +233,19 @@ def secim_cek(client, n):
     return r.json()
 
 
-def _cagir_retry(client_ai, prompt, deneme=6):
-    """generate_content'i üstel backoff ile dener. 503 (model aşırı yük) GEÇİCİdir — daha çok/uzun
-    denenir (6 deneme, 120s'e kadar backoff) ki tek bir demand-spike koca turu öldürmesin.
-    Kalıcı hata (kota/anahtar) → None (tur durur)."""
-    for k in range(deneme):
-        try:
-            return client_ai.models.generate_content(model=MODEL, contents=prompt, config=_URETIM_CONFIG)
-        except Exception as e:
-            if k == deneme - 1:
-                print(f"  ✗ Gemini kalıcı hata ({str(e)[:120]}) — tur durduruluyor.")
-                return None
-            bekle = min(2 ** k * 5, 120)
-            print(f"  ⚠ Gemini hata ({str(e)[:80]}); {bekle}s bekle (tekrar {k + 1}/{deneme - 1})")
-            time.sleep(bekle)
-    return None
-
-
-def siniflandir(client_ai, batch):
-    """Paketi sınıflandırır. Döner: (atamalar {id: kategori_str}, usage).
-    (None, None) YALNIZCA resp is None (gerçek API hard-fail, TOKEN HARCANMADI) için — main() bunu görünce
-    işaretlemeden durur, sonraki tur bedavaya tekrar dener. Yanıt ALINDI ama ayrıştırılamadıysa/beklenmeyen
-    biçimdeyse (JSON hatası, güvenlik filtresi vb.) TOKEN ZATEN HARCANDI → boş atamalarla ({}, usage) döner,
+def siniflandir(batch):
+    """Paketi sınıflandırır. Döner: (atamalar {id: kategori_str}, (girdi_tok, cikti_tok)).
+    (None, None) YALNIZCA AI çağrısı hard-fail ettiğinde (her iki sağlayıcı da başarısız) — main() bunu
+    görünce işaretlemeden durur, sonraki tur tekrar dener. Yanıt ALINDI ama ayrıştırılamadıysa/beklenmeyen
+    biçimdeyse (JSON hatası, güvenlik filtresi vb.) TOKEN ZATEN HARCANDI → boş atamalarla ({}, tok) döner,
     main() paketin TÜMÜNÜ yine de 'denendi' damgalar (aksi halde aynı 'zehirli' paket her turda yeniden
-    seçilip yeniden faturalanır ve kuyruktaki sonraki satırlar hiç işlenmezdi — 16 Tem incelemesinde bulundu)."""
+    seçilip yeniden faturalanır ve kuyruktaki sonraki satırlar hiç işlenmezdi — 16 Tem incelemesinde bulundu).
+
+    ⛔ PROMPT METNİ SAĞLAYICI GEÇİŞİNDE HARFİ HARFİNE KORUNDU. Tamamı `kullanici` rolüne gider,
+    `sistem` BİLEREK boş: sistem/kullanıcı diye bölmek modelin numaralandırmayı yorumlayışını
+    değiştirebilir ve çıktı sözleşmesi sessizce kayabilirdi. (ai_ortak'ın json_mod'u prompt'ta
+    "json" kelimesi arar; metinde "JSON biçiminde" geçtiği için ek not ENJEKTE EDİLMEZ — prompt
+    bayt bayt aynı kalır.)"""
     satir_blok = "\n".join(
         f'{i + 1}) {(b.get("baslik") or "").strip()[:180]}' + (f'  [OKAS: {b["okas"]}]' if b.get("okas") else "")
         for i, b in enumerate(batch)
@@ -199,20 +263,26 @@ BAŞLIKLAR:
 Yanıtı SADECE şu JSON biçiminde ver (başka metin yok): başlık numarası → kategori numarası.
 Örnek: {{"1": 30, "2": 0, "3": 12}}"""
 
-    resp = _cagir_retry(client_ai, prompt)
-    if resp is None:
-        return None, None  # gerçek hard-fail (kota/anahtar) — token harcanmadı, bedava retry
+    # deneme=6: geçici hatalarda (429/5xx/ağ) üstel backoff — tek bir yoğunluk dalgası koca turu
+    # öldürmesin (eski _cagir_retry ile aynı sayı). Birincil sağlayıcı tümden düşerse ai_ortak
+    # otomatik olarak yedeğe (Gemini) geçer ve bunu log'a düşer.
+    s = ai_cagir("", prompt, max_tokens=_cikti_butcesi(len(batch)), json_mod=True,
+                 temperature=_URETIM_TEMP, model=_model_sec(), deneme=6,
+                 nerede="ai_kategori_backfill")
+    if not s["basari"]:
+        print(f"  ✗ AI kalıcı hata ({str(s['hata'])[:160]}) — tur durduruluyor.")
+        return None, None  # hard-fail — işaretleme yok, sonraki tur aynı satırları tekrar dener
 
-    usage = getattr(resp, "usage_metadata", None)
+    tok = (_tahmini_tok(prompt), _tahmini_tok(s["metin"]))
     try:
-        data = json.loads(resp.text or "")
+        data = _json_ayikla(s["metin"])
     except (json.JSONDecodeError, TypeError):
-        print(f"  ⚠ JSON ayrıştırılamadı (yanıt: {str(getattr(resp, 'text', ''))[:100]!r}) "
+        print(f"  ⚠ JSON ayrıştırılamadı (yanıt: {str(s['metin'])[:100]!r}) "
               f"— bu paket 'denendi' işaretlenip atlanacak (token harcandı, tekrar denenmeyecek).")
-        return {}, usage
+        return {}, tok
     if not isinstance(data, dict):
         print("  ⚠ Beklenen JSON nesnesi gelmedi — bu paket 'denendi' işaretlenip atlanacak.")
-        return {}, usage
+        return {}, tok
 
     atamalar = {}
     for i, b in enumerate(batch):
@@ -222,7 +292,7 @@ Yanıtı SADECE şu JSON biçiminde ver (başka metin yok): başlık numarası �
             no = 0
         if 1 <= no <= len(KANONIK_KATEGORILER):
             atamalar[b["id"]] = KANONIK_KATEGORILER[no - 1]
-    return atamalar, usage
+    return atamalar, tok
 
 
 def yaz_kategoriler(client, atamalar):
@@ -254,11 +324,14 @@ def _maliyet(gt, ct):
 
 
 def _usage_tok(usage):
-    """(girdi, çıktı) tokeni. Çıktı, candidates + thoughts'u kapsar (thinking_budget=0 olsa da bazı
-    modeller birkaç 'thoughts' tokeni yazabilir; ikisi de çıktı fiyatından faturalanır — dahil etmezsek
-    rapor edilen $ gerçek harcamanın altında kalır)."""
-    gt = usage.prompt_token_count or 0
-    ct = (usage.candidates_token_count or 0) + (getattr(usage, "thoughts_token_count", 0) or 0)
+    """(girdi, çıktı) tokeni. Artık siniflandir'dan gelen TAHMİNİ 2'li demet (bkz. _tahmini_tok).
+    Eskiden Gemini usage_metadata nesnesiydi; ai_ortak sağlayıcı-bağımsız olduğu için gerçek
+    sayaç dönmüyor. Eski nesne biçimi de kabul edilir (elle/eski çağrı yerleri kırılmasın)."""
+    if isinstance(usage, (tuple, list)):
+        return int(usage[0] or 0), int(usage[1] or 0)
+    gt = getattr(usage, "prompt_token_count", 0) or 0
+    ct = ((getattr(usage, "candidates_token_count", 0) or 0)
+          + (getattr(usage, "thoughts_token_count", 0) or 0))
     return gt, ct
 
 
@@ -280,30 +353,39 @@ def main():
     if not SUPABASE_URL or not SUPABASE_KEY:
         print("✗ SUPABASE_URL / SUPABASE_SERVICE_KEY eksik (.env — VDS'te çalıştırın, yerel .env ölü)")
         sys.exit(1)
-    if not GEMINI_API_KEY:
-        print("✗ GEMINI_API_KEY eksik (.env)")
+    # Geriye uyum: yeni env yoksa çökme YOK. DEEPSEEK_API_KEY tanımsızsa ai_ortak Gemini'ye düşer;
+    # yalnızca HİÇBİR sağlayıcı anahtarı yoksa durulur (aksi halde tur boşuna kuyruğu tarardı).
+    durum = ai_durum()
+    if not (durum["deepseek_anahtar"] or durum["gemini_anahtar"]):
+        print("✗ AI anahtarı yok — DEEPSEEK_API_KEY ya da GEMINI_API_KEY gerekli (backend/.env)")
         sys.exit(1)
 
-    client_ai = _client_al()
     zaman = datetime.now(timezone.utc).isoformat()
     bekle_s = 60.0 / args.rpm if args.rpm > 0 else 0.0
 
     with httpx.Client(timeout=60) as client:
         kuyruk = kuyruk_say(client)
         if kuyruk < 0:
-            print("✗ Kuyruk sayımı başarısız (HTTP hatası) — muhtemelen migration_ai_kategori.sql henüz "
-                  "uygulanmamış (ai_kategori_denendi kolonu yok) ya da SUPABASE_URL yanlış/erişilemez.\n"
-                  "  Önce çalıştırın: docker exec -i supabase-db psql -U postgres -d postgres "
-                  "< backend/migration_ai_kategori.sql")
+            # ⚠ Eskiden burada SABİT olarak "migration uygulanmamış" yazıyordu. 29 Tem'de canlıda
+            # doğrulandı: ai_kategori_denendi kolonu VAR (PostgREST 42501 döndü, 42703 değil) →
+            # o teşhis YANLIŞ yönlendiriyordu. Gerçek durum kodu/gövde yukarıda basıldı; ona bakın.
+            print("✗ Kuyruk sayımı başarısız — yukarıdaki HTTP durumu/gövdesine bakın. Olası sebepler:\n"
+                  "  · count=exact ifade zaman aşımı (jenerik kuyruk ~184K satır, 3s tavanının kenarında)\n"
+                  "  · /rest/v1 hız limiti (429) ya da SUPABASE_URL yanlış/erişilemez\n"
+                  "  · 42703 (kolon yok) görürseniz O ZAMAN migration eksiktir: "
+                  "backend/migration_ai_kategori_jenerik.sql")
             sys.exit(1)
-        print(f"→ Kuyruk (denenmemiş jenerik: {', '.join(_JENERIK_KOVALAR)}): {kuyruk} satır | model={MODEL}")
+        model_adi = _model_sec() or (durum["deepseek_model"] if durum["birincil"] == "deepseek"
+                                     else "sağlayıcı öntanımı")
+        print(f"→ Kuyruk (denenmemiş jenerik: {', '.join(_JENERIK_KOVALAR)}): {kuyruk} satır | "
+              f"sağlayıcı={durum['birincil']} (yedek: {durum['yedek']}) | model={model_adi}")
 
         if args.dry_run:
             batch = secim_cek(client, args.batch)
             if not batch:
                 print("  Kuyruk boş — sınıflanacak satır yok.")
                 return
-            atamalar, usage = siniflandir(client_ai, batch)
+            atamalar, usage = siniflandir(batch)
             if atamalar is None:
                 print("  (AI çağrısı başarısız — yukarıdaki hataya bakın)")
                 return
@@ -314,7 +396,7 @@ def main():
             if usage:
                 gt, ct = _usage_tok(usage)
                 istek_tahmini = (kuyruk + args.batch - 1) // args.batch if kuyruk > 0 else 0
-                print(f"\n→ Bu istek: {gt} girdi + {ct} çıktı tokeni ≈ ${_maliyet(gt, ct):.4f}")
+                print(f"\n→ Bu istek: ~{gt} girdi + ~{ct} çıktı tokeni (TAHMİNİ) ≈ ${_maliyet(gt, ct):.4f}")
                 print(f"→ Tüm kuyruk projeksiyonu (~{istek_tahmini} istek): "
                       f"≈ ${_maliyet(gt * istek_tahmini, ct * istek_tahmini):.2f} (tek seferlik, yaklaşık)")
             print("\n(dry-run — yazma/işaretleme yapılmadı)")
@@ -343,7 +425,7 @@ def main():
             batch = secim_cek(client, min(args.batch, kalan))
             if not batch:
                 break
-            atamalar, usage = siniflandir(client_ai, batch)
+            atamalar, usage = siniflandir(batch)
             if atamalar is None:
                 break  # gerçek hard-fail (kota/anahtar) — işaretlemeden dur; sonraki tur aynı satırları bedava dener
             istek += 1
@@ -370,10 +452,11 @@ def main():
               f"{islenen - siniflanan} jenerik kaldı (denendi işaretli).")
         if istek:
             tur_maliyet = _maliyet(girdi_tok, cikti_tok)
-            print(f"  {istek} istek · {girdi_tok} girdi + {cikti_tok} çıktı tokeni ≈ ${tur_maliyet:.4f}")
+            print(f"  {istek} istek · ~{girdi_tok} girdi + ~{cikti_tok} çıktı tokeni (TAHMİNİ) "
+                  f"≈ ${tur_maliyet:.4f}")
             # Bu turun maliyetini günlük deftere işle → sonraki tur (aynı gün) tavanı bilerek başlar.
             gun_toplam = harcama_ekle(tur_maliyet)
-            print(f"  📒 Bugünkü toplam Gemini harcaması: ${gun_toplam:.4f}"
+            print(f"  📒 Bugünkü toplam AI harcaması (tahmini): ${gun_toplam:.4f}"
                   + (f" / ${args.gunluk_usd:.2f} tavan" if args.gunluk_usd > 0 else ""))
 
 

@@ -120,6 +120,10 @@ def old_ekap_ssl():
 
 
 # ── Gemini CAPTCHA çözücü ─────────────────────────────────
+# ⚠️ GÖRSEL (multimodal) ÇAĞRI — DeepSeek'e TAŞINMAZ, ai_ortak.ai_metin'e BAĞLANMAZ.
+# Buradaki tek AI kullanımı CAPTCHA resmini okumaktır (image/png byte girdisi).
+# DeepSeek'in metin API'si görüntü kabul etmez; taşınırsa belge indirme akışı
+# (EKAP_BELGE_INDIR=1) sessizce ölür. Metin/chat göçünde bu blok OLDUĞU GİBİ kalır.
 def _captcha_temizle(img_bytes: bytes) -> bytes:
     """
     EKAP CAPTCHA'sını gürültüden arındırır.
