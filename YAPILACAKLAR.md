@@ -6415,3 +6415,17 @@ büyüklükleri (mevcut veri): 150Mn+ 4.954 · ilk-kez-1y 12.803 · aktif-1y 35.
   (`rekabet_ozet`; ⚠️ `trend` ve `butce` DİZİ DEĞİL — trend `{"2025-01":n}` objesi, butce
   `{b0..b5,byok}`). Anon'da ham Postgres 42501 mesajı yerine üyelik kilidi gösteriliyor.
 - v1-analiz'e analiz sayfaları arası hızlı bağlantı şeridi. Tüm v1 sayfalarında `v1-kabuk.js?v=5`.
+
+## ✅ v1 — 29 Tem: v2'de olup v1'de OLMAYAN 11 sayfa portlandi (BİTTİ, canlıda 200)
+`v1-teklif-olustur` (6 adımlı AI'lı sihirbaz) · `v1-firma-analiz` · `v1-kurum-analiz` ·
+`v1-dt-analiz` · `v1-dt-detay` · `v1-ozel-ihale-detay` · `v1-uyumluluk` · `v1-dokumanlar` ·
+`v1-firma-segmentleri` · `v1-ihalelerim` · `v1-takipte`.
+Her sayfa yazıldıktan sonra ayrı bir denetçi ajan tarafından kontrol edildi (amber/v2 renk
+sızıntısı · uydurma kolon/RPC · JS sözdizimi · kırık link) — 11/11 temiz.
+- **Menü** 14 → 17: Takibim (⭐), Dökümanlar (📁), İhalelerim eklendi; `js/v1-kabuk.js?v=6`.
+- **Bağlantı temizliği:** v1 sayfalarında v2'ye kaçan İÇ LİNK KALMADI (grep ile doğrulandı).
+  `v1-ihaleler`e `?sekme=dt` / `?tur=dt` / `?idare=` / `?kategori=` URL parametreleri eklendi.
+- ⛔ **FIX (sessiz hata):** `v1-kurumlar` kurum TAKİBİ hiç çalışmıyordu — `takip_idareler.idare`
+  kolonu DB'de YOK (42703); doğrusu `idare_ad` + `kullanici_id`. delete/upsert artık
+  `kullanici_id` filtreli. **DERS: yazma işlemi hata yutan try/catch içindeyse sessizce ölür —
+  yeni sayfa yazarken her INSERT/DELETE kolonunu canlı REST'e sorarak doğrula.**
