@@ -34,7 +34,15 @@ Konsol temiz; değerler üye girişinde dolar. → `v1-benim-sayfam.html` `kpiYu
   = DT+ilanlar mı, DT+ihale_sonuclari mı?
 → `v1-benim-sayfam.html` `kpiYukle()` (~273)
 
-## MADDE 4 — Haritayı v2 davranışına taşı (BÜYÜK) 📋
+## MADDE 4 — Dashboard haritası v2 davranışına taşındı (Leaflet) 🟡 kod hazır, canlı test bekliyor
+`js/harita.js` `window.HARITA_CFG` ile parametrik yapıldı (renkler/kayitYok/hrefIhale/hrefDt/lejantRenk;
+CFG yoksa v2 amber → dashboard.html DEĞİŞMEDEN çalışır). Lejant başlığı rengi CFG'ye bağlandı.
+`v1-benim-sayfam.html`: eski SVG harita (`renderHarita`+tr-harita.js) KALDIRILDI → Leaflet iskeleti
+(#turkiye-harita/#harita-yukleniyor/#harita-legend) + unpkg Leaflet CSS/JS + js/harita.js?v=4 +
+HARITA_CFG (v1 mavi palet, hedef v1-ihaleler?il= / v1-ihaleler?tur=dt&il=) + v1 CSS
+(il-tooltip/il-popup/legend açık tema). Yerel: Leaflet+CFG+haritaModSec yüklü, konsol temiz.
+Artık: zoom, hover'da İhale+DT+Toplam, tıkla→popup (Güncel İhaleler/Doğrudan Temin), quantile lejant.
+**Pull yeterli (migration yok); canlıda üye girişiyle doğrulanacak.** → `js/harita.js`, `v1-benim-sayfam.html`
 Şu an v1'de basit satır-içi SVG choropleth var (`renderHarita()`), yalnız aktif İHALE sayısına
 göre renk, hover'da düz title. v2 anasayfa haritası (`js/harita.js`, Leaflet) aynısı yapılacak:
 - Leaflet tabanlı (zoom +/−, kaydırma).

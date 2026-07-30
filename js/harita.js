@@ -30,7 +30,13 @@
   // İlk eşik medyan (q0.50) olduğundan illerin YARISI (42/82) daima kova-0'a düşer;
   // eski #243b5e boş renge çok yakındı → 14 bin kayıtlı il (Kırklareli 14.205,
   // Tokat 14.134) haritada "kayıt yok" gibi görünüyordu. Belirgin şekilde açıldı.
-  const RENKLER = ['#3a6bb5', '#7a5c1e', '#b07d08', '#e09600', '#f0a500', '#ef4444'];
+  // Sayfa window.HARITA_CFG ile paleti/hedefleri/lejant rengini geçersiz kılabilir (v1 mavi
+  // tema); yoksa v2 amber varsayılanları — v2 dashboard.html DEĞİŞMEDEN çalışır.
+  const CFG = (typeof window !== 'undefined' && window.HARITA_CFG) || {};
+  const RENKLER = CFG.renkler || ['#3a6bb5', '#7a5c1e', '#b07d08', '#e09600', '#f0a500', '#ef4444'];
+  const KAYIT_YOK = CFG.kayitYok || '#16233d';
+  const HREF_IHALE = CFG.hrefIhale || 'ihaleler?il=';
+  const HREF_DT = CFG.hrefDt || 'dogrudan-temin?il=';
 
   // İl bazlı sayım — önce tek istekli RPC (hızlı), yoksa sayfalı fallback. rpcAdi/tabloAdi
   // parametreli: aynı fonksiyon hem ilanlar/il_sayim hem dogrudan_temin_ilanlari/dt_il_sayim için.
@@ -77,7 +83,7 @@
     return [q(0.50), q(0.70), q(0.85), q(0.93), q(0.98)];
   }
   function renkSec(n, esik) {
-    if (!n) return '#16233d';
+    if (!n) return KAYIT_YOK;
     for (let i = 0; i < esik.length; i++) if (n <= esik[i]) return RENKLER[i];
     return RENKLER[RENKLER.length - 1];
   }
@@ -98,13 +104,13 @@
     if (!lg) return;
     const fmt = n => n >= 1000 ? (n / 1000).toFixed(1).replace('.0', '') + 'b' : String(n);
     // renkSec ile birebir eşleşir: 0 → #16233d, [1,e0] → RENKLER[0], (e0,e1] → RENKLER[1], … , e4+ → RENKLER[5]
-    const kutular = [['#16233d', 'Kayıt yok']];
+    const kutular = [[KAYIT_YOK, 'Kayıt yok']];
     for (let i = 0; i < RENKLER.length; i++) {
       const alt = i === 0 ? 1 : esik[i - 1] + 1;
       kutular.push([RENKLER[i], i < esik.length ? `${fmt(alt)}–${fmt(esik[i])}` : `${fmt(esik[esik.length - 1] + 1)}+`]);
     }
     lg.innerHTML =
-      `<span style="margin-right:6px;font-size:11px;font-weight:600;color:var(--white,#e2e8f0);">${MOD_BASLIK[mod] || MOD_BASLIK.toplam}</span>` +
+      `<span style="margin-right:6px;font-size:11px;font-weight:600;color:${CFG.lejantRenk || 'var(--white,#e2e8f0)'};">${MOD_BASLIK[mod] || MOD_BASLIK.toplam}</span>` +
       kutular.map(([c, t]) => `<span class="lg-item"><span class="lg-box" style="background:${c}"></span>${t}</span>`).join('') +
       `<span class="lg-item" style="gap:5px;">Az <span style="width:56px;height:8px;border-radius:4px;display:inline-block;background:linear-gradient(90deg,${RENKLER.join(',')});"></span> Çok</span>`;
   }
@@ -119,8 +125,8 @@
     return `<div class="il-popup">
       <b class="il-popup-ad">📍 ${ad}</b>
       <div class="il-popup-row">
-        ${btn(nIhale > 0, 'ihaleler?il=' + encodeURIComponent(k), '📋 Güncel İhaleler', nIhale)}
-        ${btn(nDt > 0, 'dogrudan-temin?il=' + encodeURIComponent(k), '⚡ Doğrudan Temin', nDt)}
+        ${btn(nIhale > 0, HREF_IHALE + encodeURIComponent(k), '📋 Güncel İhaleler', nIhale)}
+        ${btn(nDt > 0, HREF_DT + encodeURIComponent(k), '⚡ Doğrudan Temin', nDt)}
       </div>
     </div>`;
   }
@@ -158,7 +164,7 @@
         const etiket = mod === 'ihale' ? '📋 İhale' : '⚡ Doğrudan Temin';
         layer.bindTooltip(`<b>${ad}</b> ${etiket}: <span class="tt-sayi">${n.toLocaleString('tr')}</span>`,
           { className: 'il-tooltip', sticky: true });
-        const hedef = mod === 'ihale' ? 'ihaleler?il=' : 'dogrudan-temin?il=';
+        const hedef = mod === 'ihale' ? HREF_IHALE : HREF_DT;
         layer.on('click', () => { window.location.href = hedef + encodeURIComponent(k); });
       }
     });

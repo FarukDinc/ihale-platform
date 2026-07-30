@@ -10,6 +10,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
   <link rel="stylesheet" href="css/v1.css?v=7" />
   <style>
     /* Sayfaya özel — ihalepro Bana Özel düzeni */
@@ -26,6 +27,34 @@
     .v1-harita-svg a path { stroke:#fff; stroke-width:.6; cursor:pointer; transition:opacity .15s; }
     .v1-harita-svg a:hover path { opacity:.72; }
     .v1-harita-yukleniyor { text-align:center; color:var(--v1-muted); padding:60px 10px; font-size:13.5px; }
+    /* Leaflet interaktif harita (v2 davranışı, v1 mavi/açık tema) */
+    .harita-wrap { position:relative; }
+    #turkiye-harita { height:380px; border-radius:12px; overflow:hidden; z-index:0; }
+    @media(max-width:640px){ #turkiye-harita { height:320px; } }
+    .leaflet-container { font-family:var(--v1-font); background:#EAF1F8; }
+    .harita-yukleniyor-lf { position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+      color:var(--v1-muted); font-size:13.5px; background:#EAF1F8; border-radius:12px; z-index:500; }
+    .leaflet-tooltip.il-tooltip { background:#fff; border:1px solid var(--v1-cizgi); color:var(--v1-metin);
+      font-size:12px; box-shadow:var(--v1-golge); border-radius:8px; padding:7px 10px; }
+    .leaflet-tooltip.il-tooltip::before { display:none; }
+    .il-tooltip .tt-sayi { color:var(--v1-mavi); font-weight:700; margin-left:4px; }
+    .il-popup-wrap .leaflet-popup-content-wrapper { background:#fff; color:var(--v1-metin);
+      border:1px solid var(--v1-cizgi); border-radius:12px; box-shadow:var(--v1-golge-lg); }
+    .il-popup-wrap .leaflet-popup-content { margin:12px 14px; }
+    .il-popup-wrap .leaflet-popup-tip { background:#fff; }
+    .il-popup-wrap .leaflet-popup-close-button { color:var(--v1-muted) !important; }
+    .il-popup-ad { display:block; font-size:13px; color:var(--v1-lacivert); margin-bottom:8px; font-weight:700; }
+    .il-popup-row { display:flex; flex-direction:column; gap:6px; }
+    .il-popup-btn { display:flex; justify-content:space-between; align-items:center; gap:14px; padding:8px 12px;
+      border:1.5px solid var(--v1-cizgi); border-radius:9px; color:var(--v1-metin); text-decoration:none;
+      font-size:12.5px; font-weight:600; }
+    .il-popup-btn:hover { border-color:var(--v1-mavi); color:var(--v1-mavi); text-decoration:none; }
+    .il-popup-btn b { color:var(--v1-mavi); font-weight:800; }
+    .il-popup-btn.disabled { opacity:.4; pointer-events:none; }
+    .harita-legend { display:flex; flex-wrap:wrap; align-items:center; gap:2px 4px; margin-top:10px;
+      font-size:11px; color:var(--v1-metin-2); }
+    .harita-legend .lg-item { display:flex; align-items:center; gap:4px; margin-right:10px; }
+    .harita-legend .lg-box { width:22px; height:12px; border-radius:2px; flex-shrink:0; }
     /* Takip listem */
     .v1-takip-uc { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; }
     @media(max-width:760px){ .v1-takip-uc{ grid-template-columns:1fr; } }
@@ -100,7 +129,13 @@
 
         <!-- HERO: Türkiye haritası + 6 KPI -->
         <div class="v1-hero">
-          <div id="v1-harita" class="v1-harita-yukleniyor">Türkiye haritası yükleniyor…</div>
+          <div>
+            <div class="harita-wrap">
+              <div id="turkiye-harita"></div>
+              <div id="harita-yukleniyor" class="harita-yukleniyor-lf">Türkiye haritası yükleniyor…</div>
+            </div>
+            <div class="harita-legend" id="harita-legend"></div>
+          </div>
           <div>
             <div class="v1-slogan">Güncel, doğru ve kapsamlı veri havuzu ile kararlarınızı güvenle alın!</div>
             <div class="v1-kpi" id="v1-kpi"></div>
@@ -213,7 +248,18 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-<script src="js/tr-harita.js?v=1"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+<script>
+  // v1 MAVİ tema + v1 hedefleri — js/harita.js bunu okur (yoksa v2 amber). harita.js'ten ÖNCE gelmeli.
+  window.HARITA_CFG = {
+    renkler: ['#C3D8EF','#9CC4E8','#6BA6DD','#4A8FD0','#2C6FB5','#0C3E70'],
+    kayitYok: '#DBE1E9',
+    hrefIhale: 'v1-ihaleler?il=',
+    hrefDt: 'v1-ihaleler?tur=dt&il=',
+    lejantRenk: '#495057'
+  };
+</script>
+<script src="js/harita.js?v=4"></script>
 <script src="js/v1-kabuk.js?v=10"></script>
 <script>
 (() => {
@@ -291,24 +337,8 @@
     set('Sektörde Fırsat','41');
   }
 
-  // ── Türkiye haritası (MAVİ choropleth — v1 paleti) ──
-  const foldKey=(s)=>(s||'').toLocaleLowerCase('tr').replace(/i̇/g,'i').replace(/ç/g,'c').replace(/ğ/g,'g')
-    .replace(/ö/g,'o').replace(/ş/g,'s').replace(/ü/g,'u').replace(/[^a-z]/g,'');
-  async function renderHarita(){
-    const el=document.getElementById('v1-harita'); const TR=window.TR_HARITA;
-    if(!TR){ el.textContent='Harita verisi yüklenemedi.'; return; }
-    let rows=[];
-    try{ const {data}=await sb.rpc('il_sayim_aktif'); rows=data||[]; }catch(_){}
-    const cnt={}; rows.forEach(r=>{cnt[foldKey(r.il)]=r.adet||0;});
-    const max=Math.max(1,...rows.map(r=>r.adet||0));
-    const renk=(c)=>{ if(!c)return '#C4DAF0'; const r=c/max;
-      return r>0.6?'#0C3E70':r>0.33?'#135EAA':r>0.16?'#4A8FD0':r>0.06?'#7FB2E0':'#AECEEE'; };
-    el.className='';
-    el.innerHTML=`<svg viewBox="${TR.viewBox}" xmlns="http://www.w3.org/2000/svg" class="v1-harita-svg" role="img" aria-label="İllere göre açık ihale yoğunluğu">`+
-      TR.iller.map(il=>{const c=cnt[il.key]||0;
-        return `<a href="v1-ihaleler?il=${encodeURIComponent(il.ad)}"><path d="${il.d}" fill="${renk(c)}"><title>${esc(il.ad)}: ${num(c)} açık ihale</title></path></a>`;
-      }).join('')+`</svg>`;
-  }
+  // ── Türkiye haritası: js/harita.js (Leaflet, interaktif — hover+popup, İhale+DT toplam).
+  //    Kendi kendine başlar (IntersectionObserver #turkiye-harita); window.HARITA_CFG v1 paletini verir. ──
 
   // ── Takip Listem (3 kart) ──
   async function takipListem(){
@@ -497,7 +527,7 @@
     try{ const {data:k}=await sb.from('kullanici_krediler').select('plan').eq('kullanici_id',uid).maybeSingle();
       const PRO=['standart','kurumsal']; if(window.v1PaketYaz) v1PaketYaz(PRO.includes(k?.plan)?'Pro':'Temel');
     }catch(_){ if(window.v1PaketYaz) v1PaketYaz('Temel'); }
-    renderHarita(); kpiYukle(); takipListem(); eslesme(); takipIhaleler(); bildirimler(); yaklasan(); sonIncelenen(); favoriler();
+    kpiYukle(); takipListem(); eslesme(); takipIhaleler(); bildirimler(); yaklasan(); sonIncelenen(); favoriler();
   })();
 })();
 </script>
