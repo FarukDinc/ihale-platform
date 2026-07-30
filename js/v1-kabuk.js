@@ -89,7 +89,7 @@
   const ray = document.createElement('aside');
   ray.className = 'v1-ray';
   ray.innerHTML =
-    '<a class="v1-ray-logo" href="v1-benim-sayfam" title="İhaleGlobal"><img src="/favicon.svg?v=4" alt="İhaleGlobal"></a>' +
+    '<a class="v1-ray-logo" href="v1-benim-sayfam" title="İhaleGlobal"><img src="/favicon-v1.svg?v=1" alt="İhaleGlobal"></a>' +
     '<nav class="v1-ray-nav">' +
     MENU.map(m =>
       `<button class="v1-ray-item${m.id === aktif ? ' aktif' : ''}" data-href="${m.href}" title="${m.ad}">${m.ikon}<span>${m.ad}</span></button>`

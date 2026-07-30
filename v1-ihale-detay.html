@@ -7,7 +7,7 @@
   <title>İhale Detayı — İhaleGlobal</title>
   <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=4" />
   <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/v1.css?v=6" />
+  <link rel="stylesheet" href="css/v1.css?v=7" />
   <style>
     .v1-d-bant { background:var(--v1-lacivert); border-radius:var(--v1-radius-lg); padding:24px 26px; color:#fff; margin-bottom:18px; }
     .v1-d-ikn { font-size:12.5px; color:rgba(255,255,255,.72); font-weight:600; letter-spacing:.04em; }
@@ -71,7 +71,7 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-<script src="js/v1-kabuk.js?v=9"></script>
+<script src="js/v1-kabuk.js?v=10"></script>
 <script>
 (() => {
   const SB_URL="https://ihaleglobal.com", SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzg0MzA3MTU4LCJleHAiOjE5NDE5ODcxNTh9.CjNKulvirotDD_y2oO2QKgo0kbqYvL0jUSV1RiDMoso";
@@ -155,6 +155,10 @@
     const maliyet = uyeMi
       ? (r.yaklasik_maliyet_min ? tl(r.yaklasik_maliyet_min)+(r.yaklasik_maliyet_max&&r.yaklasik_maliyet_max!==r.yaklasik_maliyet_min?' – '+tl(r.yaklasik_maliyet_max):'') : 'İlan edilmemiş')
       : kilit;
+    // EKAP public deep-link YOK (IKN'ye özel sayfa oturum ister → 406). Doğru EKAP modülüne
+    // yönlendir (DT ayrı modül), kullanıcı sayfada görünen IKN ile kendisi aratır/giriş yapar.
+    const dtMi = (((r.usul||'')+' '+(r.tur||'')).toLocaleLowerCase('tr').includes('doğrudan temin'));
+    const ekapUrl = dtMi ? 'https://ekapv2.kik.gov.tr/ekap-dt/search' : 'https://ekapv2.kik.gov.tr/ekap/search';
 
     G().innerHTML=`
       <div class="v1-d-bant">
@@ -171,6 +175,8 @@
           <button class="v1-d-btn hayalet" id="d-takvim">📅 Takvime Ekle</button>
           <a class="v1-d-btn teal" href="v1-teklif-olustur?ihale_id=${r.id}">📝 Teklif Oluştur</a>
           <a class="v1-d-btn hayalet" href="v1-teklif-olustur?ihale_id=${r.id}#fiyat">💡 AI Fiyat Stratejisi</a>
+          <a class="v1-d-btn hayalet" href="${ekapUrl}" target="_blank" rel="noopener"
+             title="EKAP ${dtMi?'Doğrudan Temin':'İhale'} arama sayfası — bu ihalenin IKN'si (${esc(r.ikn||r.ekap_id||'')}) ile aratın">🔗 EKAP'a Git</a>
         </div>
       </div>
 

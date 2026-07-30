@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/v1.css?v=6" />
+  <link rel="stylesheet" href="css/v1.css?v=7" />
   <style>
     /* Sayfaya özel — ihalepro Bana Özel düzeni */
     .v1-selam { font-size: 34px; font-weight: 800; color: var(--v1-lacivert); line-height: 1.05; }
@@ -214,7 +214,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/tr-harita.js?v=1"></script>
-<script src="js/v1-kabuk.js?v=9"></script>
+<script src="js/v1-kabuk.js?v=10"></script>
 <script>
 (() => {
   const SB_URL="https://ihaleglobal.com", SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzg0MzA3MTU4LCJleHAiOjE5NDE5ODcxNTh9.CjNKulvirotDD_y2oO2QKgo0kbqYvL0jUSV1RiDMoso";
@@ -298,8 +298,8 @@
     try{ const {data}=await sb.rpc('il_sayim_aktif'); rows=data||[]; }catch(_){}
     const cnt={}; rows.forEach(r=>{cnt[foldKey(r.il)]=r.adet||0;});
     const max=Math.max(1,...rows.map(r=>r.adet||0));
-    const renk=(c)=>{ if(!c)return '#EDF1F6'; const r=c/max;
-      return r>0.6?'#0C3E70':r>0.33?'#135EAA':r>0.16?'#4A8FD0':r>0.06?'#9CC4E8':'#D6E6F5'; };
+    const renk=(c)=>{ if(!c)return '#C4DAF0'; const r=c/max;
+      return r>0.6?'#0C3E70':r>0.33?'#135EAA':r>0.16?'#4A8FD0':r>0.06?'#7FB2E0':'#AECEEE'; };
     el.className='';
     el.innerHTML=`<svg viewBox="${TR.viewBox}" xmlns="http://www.w3.org/2000/svg" class="v1-harita-svg" role="img" aria-label="İllere göre açık ihale yoğunluğu">`+
       TR.iller.map(il=>{const c=cnt[il.key]||0;

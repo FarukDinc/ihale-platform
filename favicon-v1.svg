@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <!-- İhaleGlobal v1 logosu — koyu lacivert menüye uyumlu "iG" monogramı (kare-nokta i + G).
+       Zemin: mavi→teal gradyan (v1 paleti). Monogram: beyaz. Beyaz daireye gerek yok. -->
+  <defs>
+    <linearGradient id="v1lg" x1="0" y1="0" x2="64" y2="64" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#135EAA"/>
+      <stop offset="1" stop-color="#00A19A"/>
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="15" fill="url(#v1lg)"/>
+  <rect x="9" y="13" width="8" height="8" rx="2.5" fill="#FFFFFF"/>
+  <rect x="9" y="24.5" width="8" height="26.5" rx="4" fill="#FFFFFF"/>
+  <path d="M49.1 19.7 A15 15 0 1 0 51.1 42.6 L51.1 32 L40.5 32" fill="none" stroke="#FFFFFF" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>

@@ -7,7 +7,7 @@
   <title>Firma Analizi — İhaleGlobal</title>
   <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=4" />
   <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/v1.css?v=6" />
+  <link rel="stylesheet" href="css/v1.css?v=7" />
   <style>
     /* ── Sayfa başlığı / üst şerit ─────────────────────────────────────── */
     .v1-sayfa-baslik { font-size:22px; font-weight:800; color:var(--v1-lacivert); margin-bottom:4px; }
@@ -541,7 +541,7 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/kategoriler.js?v=1"></script>
-<script src="js/v1-kabuk.js?v=9"></script>
+<script src="js/v1-kabuk.js?v=10"></script>
 <script>
 (() => {
   const SB_URL="https://ihaleglobal.com", SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzg0MzA3MTU4LCJleHAiOjE5NDE5ODcxNTh9.CjNKulvirotDD_y2oO2QKgo0kbqYvL0jUSV1RiDMoso";
@@ -1470,8 +1470,8 @@
   /* ══════════════ 🗺️ HARİTA GÖRÜNÜMÜ ══════════════
      Veri üçlüsü MV'li (il_firma_dagilimi / il_sektor_ozet / il_sektor_firmalar) → etkileşimler ~ms.
      tr-harita.js + svg-zoom.js YALNIZ harita ilk açıldığında yüklenir. */
-  const H_RENK = ['#E3EBF3','#CBDEF0','#9CC4E8','#5E9AD5','#2C6FB5','#0C3E70'];
-  const H_BOS  = '#F1F4F8';
+  const H_RENK = ['#C3D8EF','#9CC4E8','#6BA6DD','#4A8FD0','#2C6FB5','#0C3E70'];
+  const H_BOS  = '#DBE1E9';   // iş olmayan il — bembeyaz DEĞİL: zeminle karışmayan nötr gri-mavi
   const H_ALIAS = { afyon:'afyonkarahisar' };
   function hFold(s){
     const m = {'İ':'i','I':'i','ı':'i','Ş':'s','ş':'s','Ğ':'g','ğ':'g','Ü':'u','ü':'u','Ö':'o','ö':'o','Ç':'c','ç':'c'};

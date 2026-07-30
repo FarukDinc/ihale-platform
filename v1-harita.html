@@ -7,7 +7,7 @@
   <title>Harita — İhaleGlobal</title>
   <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=4" />
   <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/v1.css?v=6" />
+  <link rel="stylesheet" href="css/v1.css?v=7" />
   <style>
     .v1-sayfa-baslik { font-size:22px; font-weight:800; color:var(--v1-lacivert); margin-bottom:4px; }
     .v1-sayfa-alt { font-size:13.5px; color:var(--v1-muted); margin-bottom:16px; }
@@ -121,7 +121,7 @@
           <span class="v1-kpi-govde"><span class="v1-kpi-sayi" id="k-yogun">…</span><span class="v1-kpi-etiket" id="k-yogun-et">En Yoğun İl</span></span></div>
         <a class="v1-kpi-kart" href="v1-esatinalma"><span class="v1-kpi-ikon">
           <svg viewBox="0 0 24 24" fill="currentColor"><path d="M2 3h3.1l.9 3H21a1 1 0 0 1 .96 1.28l-2.2 7.4A2 2 0 0 1 17.84 16H9.1a2 2 0 0 1-1.93-1.47L4.4 5H2V3Z"/><path d="M9.5 18.5a2 2 0 1 1 0 4 2 2 0 0 1 0-4ZM17.5 18.5a2 2 0 1 1 0 4 2 2 0 0 1 0-4Z"/></svg></span>
-          <span class="v1-kpi-govde"><span class="v1-kpi-sayi" id="k-rfq">…</span><span class="v1-kpi-etiket" id="k-rfq-et">Açık Talep (RFQ)</span></span></a>
+          <span class="v1-kpi-govde"><span class="v1-kpi-sayi" id="k-rfq">…</span><span class="v1-kpi-etiket" id="k-rfq-et">Açık Talepler</span></span></a>
         <div class="v1-kpi-kart" style="cursor:default;"><span class="v1-kpi-ikon">
           <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3 20.5V9.8l5.5-3.2v2.5l5.5-3.2v3.2L21 5.8v14.7H3Zm3-2.2h2.6v-3H6v3Zm5.5 0h2.6v-3h-2.6v3Zm5.5 0h2.6v-3H17v3Z"/></svg></span>
           <span class="v1-kpi-govde"><span class="v1-kpi-sayi" id="k-il">…</span><span class="v1-kpi-etiket" id="k-il-et">Kapsanan İl</span></span></div>
@@ -155,7 +155,7 @@
 <script src="js/tr-harita.js?v=1"></script>
 <script src="js/kategoriler.js?v=1"></script>
 <script src="js/harita-zoom.js?v=1"></script>
-<script src="js/v1-kabuk.js?v=9"></script>
+<script src="js/v1-kabuk.js?v=10"></script>
 <script>
 (() => {
   const SB_URL="https://ihaleglobal.com", SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzg0MzA3MTU4LCJleHAiOjE5NDE5ODcxNTh9.CjNKulvirotDD_y2oO2QKgo0kbqYvL0jUSV1RiDMoso";
@@ -196,8 +196,8 @@
   }
 
   // ── v1 MAVİ choropleth rampası (amber/v2 rengi YOK) ───────────────────────
-  const RAMPA=['#DCEAF8','#B4D3EF','#87B7E4','#5593D1','#2A6CB5','#0C3E70'];
-  const VERI_YOK='#EAEFF5';
+  const RAMPA=['#C3D8EF','#9CC4E8','#6BA6DD','#4A8FD0','#2C6FB5','#0C3E70'];
+  const VERI_YOK='#DBE1E9';   // talep/firma yok — bembeyaz DEĞİL: zeminle karışmayan nötr gri-mavi
 
   let katman='firma';
   let firmaVeri={};        // key -> {adet, ciro, ad}
@@ -259,7 +259,7 @@
     const el=document.getElementById('h-lejant');
     const ad=sektorSecili ? `${sektorEmoji(sektorSecili)} ${sektorSecili} — ` : '';
     // Genel katman il_firma_dagilimi (KAYITLI firma), sektör katmanı il_sektor_ozet (o sektörde KAZANAN firma)
-    const baslik = katman==='rfq' ? `${ad}açık talep (RFQ) sayısı:`
+    const baslik = katman==='rfq' ? `${ad}açık talep sayısı:`
                  : sektorSecili ? `${ad}kazanan firma sayısı:` : 'Kayıtlı firma sayısı:';
     const yok = katman==='firma' ? 'Firma yok' : 'Talep yok';
     let html=`<span class="lj-baslik">${esc(baslik)}</span>`+
@@ -351,7 +351,7 @@
     yg.style.fontSize='20px';
     yaz('k-yogun-et', sm?'En Yoğun İl · sektör':'En Yoğun İl');
     yaz('k-rfq', num(toplamRfq));
-    yaz('k-rfq-et', sm?'Açık Talep · sektör':'Açık Talep (RFQ)');
+    yaz('k-rfq-et', sm?'Açık Talep · sektör':'Açık Talepler');
     yaz('k-il', kapsanan+' / 81');
     document.getElementById('k-il').style.fontSize='24px';
   }
@@ -455,7 +455,7 @@
         `<div class="v1-p-kpi">
            <div class="k"><div class="kl">Firma</div><div class="kv">${num(f.adet)}</div></div>
            <div class="k"><div class="kl">Toplam Ciro</div><div class="kv">${paraKisa(f.ciro)}</div></div>
-           <div class="k"><div class="kl">Açık RFQ</div><div class="kv">${num(r)}</div></div>
+           <div class="k"><div class="kl">Açık Talepler</div><div class="kv">${num(r)}</div></div>
            <div class="k"><div class="kl">Türkiye Payı</div><div class="kv">${yuzde(f.adet||0, toplamFirma)}</div></div>
          </div>
          <div class="v1-pay">🇹🇷 Türkiye'deki kayıtlı firmaların <b>${yuzde(f.adet||0, toplamFirma)}</b> kadarı bu ilde.</div>
@@ -584,7 +584,7 @@
       el.innerHTML=baslik+liste.map(t=>{
         const govde=
           `<span class="v1-t-ust">
-             <span class="v1-t-rozet ${t.tip}">${t.tip==='ka'?'🏛️ KA':'🤝 RFQ'}</span>
+             <span class="v1-t-rozet ${t.tip}">${t.tip==='ka'?'🏛️ KA':'🤝 Talep'}</span>
              ${t.gun==null?'<span class="v1-t-gun">Süresiz</span>'
                           :`<span class="v1-t-gun${t.gun<=3?' acil':''}">Son ${t.gun} gün</span>`}
              ${t.tip==='ka'?'<span class="v1-t-dis">↗ dış bağlantı</span>':''}
