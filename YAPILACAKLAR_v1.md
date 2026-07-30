@@ -348,7 +348,7 @@ satırları eklendi (dt_analiz_mv zaten vardı). MV sahipleri supabase_admin old
 Kullanıcı: firma dizini/haritasında sıralamayı İHALE ile yapabiliyoruz ama DT ve İkisi'de yapamıyoruz;
 ayrıca haritada il-bazlı firma sıralaması İhale/DT ayrı seçilebilmeli + sektör + ölçüt.
 
-**PARÇA A — LİSTE: DT & İkisi modlarında sıralama** (orta efor)
+**PARÇA A — LİSTE: DT & İkisi modlarında sıralama** ✅ YAPILDI (`migration_firma_dizin_sort.sql`)
 - İhale modu: sıralama zaten var (en çok ciro/sözleşme/son iş/isim).
 - DT modu: `firma_dizin_dt`'ye p_sort ekle (dt_bedel / dt_sozlesme). Sort dropdown DT'de aktif.
 - İkisi modu: `firma_dizin_birlikte`'ye p_sort ekle (toplam bedel / toplam sözleşme).

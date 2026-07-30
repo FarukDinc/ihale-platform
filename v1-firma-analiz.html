@@ -741,9 +741,11 @@
     let data, count = null, error;
     if (dzMod !== 'ihale' && uyeMi){
       const rpc = dzMod === 'dt' ? 'firma_dizin_dt' : 'firma_dizin_birlikte';
+      const SORT_MAP = { ciro_desc:'bedel', sayi_desc:'sozlesme', tarih_desc:'tarih', ad_asc:'ad' };
+      const pSort = SORT_MAP[$('dz-sirala').value] || 'bedel';
       const params = dzMod === 'dt'
-        ? { p_ara: aramaRaw || null, p_limit: DZ_BOYUT, p_offset: dzSayfaNo*DZ_BOYUT }
-        : { p_ara: aramaRaw || null, p_il: ilVal || null, p_limit: DZ_BOYUT, p_offset: dzSayfaNo*DZ_BOYUT };
+        ? { p_ara: aramaRaw || null, p_limit: DZ_BOYUT, p_offset: dzSayfaNo*DZ_BOYUT, p_sort: pSort }
+        : { p_ara: aramaRaw || null, p_il: ilVal || null, p_limit: DZ_BOYUT, p_offset: dzSayfaNo*DZ_BOYUT, p_sort: pSort };
       ({ data, error } = await sb.rpc(rpc, params));
     } else {
       let [alan, asc] = DZ_ALAN[$('dz-sirala').value] || DZ_ALAN.ciro_desc;
@@ -769,7 +771,7 @@
     const rpcMod = (dzMod !== 'ihale');
     dzToplam = count || 0;
     $('dz-say').textContent = rpcMod
-      ? (dzMod === 'dt' ? 'DT bedeline göre sıralı' : 'İhale + DT toplamına göre sıralı')
+      ? (dzMod === 'dt' ? 'Doğrudan Temin' : 'İhale + DT (birlikte)')
       : num(dzToplam) + ' firma';
     const rows = data || [];
     if (!rows.length){
@@ -1842,7 +1844,7 @@
     const ciroTh = $('dz-srt-ciro');
     if (ciroTh) ciroTh.textContent = dzMod === 'dt' ? 'Toplam DT Bedeli'
                                    : dzMod === 'birlikte' ? 'Toplam (İhale + DT)' : 'Toplam Ciro (İhale)';
-    $('dz-sirala').disabled = (dzMod !== 'ihale');   // RPC modunda sıralama sabit
+    $('dz-sirala').disabled = false;   // MADDE 20-A: DT & İkisi modunda da sıralanabilir
     dzYukle(true);
   });
   $('dz-srt-sayi').addEventListener('click', () => dzSirala('sayi_desc'));
