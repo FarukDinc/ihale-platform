@@ -377,6 +377,24 @@ ile aynı şekil); frontend dzIstatistik moda göre RPC seçer + rozet/etiketler
 (yalnız ihaleler / yalnız DT / ihale + DT). İkisi'de firma = normalize isim BİRLEŞİMİ (çift saymaz).
 → `v1-firma-analiz.html`, `backend/migration_firma_ozet_modlar.sql`
 
+## MADDE 23 — İhaleler: Geçmiş sekmesi + Sonuç/Geçmiş'te İhale/DT seçici + enum bug ✅
+Kullanıcı: (a) "zamanı geçmiş ama sonucu açıklanmamış" ihaleler nerede? → **Geçmiş** sekmesi
+(durum='aktif' AND son_teklif<now = 299 ihale). (b) DT sonuçları neden Sonuçlar'da yok? →
+Sonuçlar + Geçmiş sekmelerine "Sadece E-İhale"nin üstüne **İhale / Doğrudan Temin** segment
+seçicisi; DT seçilince ayrı tablodan (dogrudan_temin_ilanlari) durum'a göre çekilir — böylece
+ayrı "Geçmiş DT" / "DT Sonuçları" sekmesine gerek yok.
+  - **Sonuçlar+DT** = durum='Sonuç Duyurusu Yayımlanmış' (2,55M); kazanan_bedel sayfa başına
+    dogrudan_temin_sonuclari'den dt_no ile eşleştirilir (kazanan ADI anon'a kapalı, bedel açık;
+    kapsam ~%33 — backfill sürüyor).
+  - **Geçmiş+DT** = durum='Doğrudan Temin Duyurusu Yayımlanmış' (84.785, henüz sonuçlanmamış).
+  - **Enum bug** (kullanıcı fark etti): `ilanlar.usul`'de 1.296 kayıtta ham i18n anahtarı
+    ("TENDER_SEARCH…SEARCH_METHOD.OPEN"). Kök neden: bu kayıtlar ekap_scraper.usul_donustur()
+    guard'ından ÖNCE, Angular çeviri sözlüğü uygulanmadan yakalanmış. Düzeltme: data-fix
+    migration (usul_donustur ile aynı eşleme) + frontend `usulTemiz()` son savunması.
+  - Canlı doğrulandı (localhost:3737, prod REST): Geçmiş 299 · Geçmiş+DT 84.785 · Sonuçlar+DT
+    2,55M · guard "…OPEN"→"Açık İhale" · Aktif/DT sekmeleri sağlam · 0 konsol hatası.
+→ `v1-ihaleler.html`, `backend/migration_usul_i18n_temizlik.sql`
+
 # UZUN VADE (ayrı seri — "uzun vade" dendiğinde bu liste çıkarılır)
 
 ## UV-1 — AI Teklif/Fiyat Asistanı revizyonu: teknik şartname okuması 📋

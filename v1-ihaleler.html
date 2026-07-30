@@ -40,6 +40,11 @@
     .v1-detay-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:10px 20px; }
     .v1-detay b { color:var(--v1-lacivert); display:block; font-size:11.5px; text-transform:uppercase; letter-spacing:.04em; }
     .v1-giris { text-align:center; padding:80px 20px; color:var(--v1-muted); }
+    /* İhale / Doğrudan Temin segment seçici (Sonuçlar & Geçmiş sekmelerinde) */
+    .v1-tip-secim { display:inline-flex; background:#fff; border:1px solid var(--v1-teal); border-radius:8px; overflow:hidden; }
+    .v1-tip-btn { border:none; background:none; padding:6px 12px; font-family:var(--v1-font); font-size:12.5px;
+      font-weight:700; color:var(--v1-muted); cursor:pointer; transition:.15s; white-space:nowrap; }
+    .v1-tip-btn.aktif { background:var(--v1-teal); color:#fff; }
   </style>
 </head>
 <body class="v1" data-v1-aktif="ihaleler" data-v1-kirinti="Kamu > İhaleler">
@@ -51,6 +56,7 @@
       <div class="v1-sekmeler">
         <button class="v1-sekme aktif" id="sekme-aktif">Aktif İhaleler</button>
         <button class="v1-sekme" id="sekme-sonuc">Sonuçlar</button>
+        <button class="v1-sekme" id="sekme-gecmis">Geçmiş</button>
         <button class="v1-sekme" id="sekme-dt">Doğrudan Teminler</button>
       </div>
 
@@ -62,8 +68,19 @@
             Filtrele
           </div>
 
+          <!-- Sonuç türü: yalnız SONUÇLAR ve GEÇMİŞ sekmelerinde görünür (kaynakKur ile).
+               İhale → ilanlar tablosu · Doğrudan Temin → dogrudan_temin_ilanlari (durum'a göre).
+               Böylece ayrı "Geçmiş DT" / "DT Sonuçları" sekmesine gerek kalmaz. -->
+          <div class="v1-toggle-satir vurgu" id="sonuc-tip-satir" style="display:none;">
+            <span>Sonuç Türü</span>
+            <div class="v1-tip-secim">
+              <button type="button" class="v1-tip-btn aktif" data-tip="ihale">İhale</button>
+              <button type="button" class="v1-tip-btn" data-tip="dt">Doğrudan Temin</button>
+            </div>
+          </div>
+
           <!-- Sadece E-İhale: ilanlar.teklif_elektronik (canlı doğrulandı: aktifte 4.152 true / 292 false).
-               Doğrudan Temin tablosunda bu kolon YOK → DT sekmesinde gizlenir. -->
+               Doğrudan Temin tablosunda bu kolon YOK → DT modunda gizlenir. -->
           <label class="v1-toggle-satir" id="f-eihale-satir">Sadece E-İhale İlanlı
             <span class="v1-sw"><input type="checkbox" id="f-eihale"><span></span></span>
           </label>
@@ -133,6 +150,21 @@
   const num=(n)=>(Number(n)||0).toLocaleString('tr-TR');
   const esc=(s)=>(s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
   const tl=(v)=>v==null?'—':'₺'+Number(v).toLocaleString('tr-TR',{maximumFractionDigits:0});
+  /* Ham i18n anahtarı sızıntısına karşı son savunma (bkz. migration_usul_i18n_temizlik.sql +
+     ekap_scraper.usul_donustur). Veri temizlense de scraper hıçkırığı tekrarlarsa kullanıcı
+     "TENDER_SEARCH.…OPEN" görmesin diye aynı eşlemeyi burada da uygularız. */
+  const usulTemiz=(u)=>{
+    if(!u) return '';
+    const U=u.toUpperCase();
+    if(!/TENDER_SEARCH|PAGEITEM|ENUMERATIONS/.test(U)) return u;
+    if(U.includes('AMONG_CERTAIN_BIDDERS')) return 'Belli İstekliler Arasında';
+    if(U.includes('OPEN'))               return 'Açık İhale';
+    if(U.includes('BARGAIN'))            return 'Pazarlık Usulü';
+    if(U.includes('DESIGN_COMPETITION')) return 'Tasarım Yarışması';
+    if(U.includes('DIRECT_PROCUREMENT')) return 'Doğrudan Temin';
+    if(U.includes('FRAMEWORK_AGREEMENT'))return 'Çerçeve Anlaşma';
+    return 'Diğer / İstisna';
+  };
   const P=new URLSearchParams(location.search);
   const SAYFA_BOY=20;
   // Filtre kutusu okuma/yazma — TEK yerden. Sorgu SADECE kutuları okur; URL parametreleri
@@ -144,8 +176,20 @@
   // ⚠️ SIRALAMA YÖNÜ İNDEKSLE EŞLEŞMELİ: idx_ilanlar_durum_son_teklif = (durum, son_teklif_tarihi DESC NULLS LAST).
   //    Btree ters taranır → ASC için NULLS FIRST şart. 'ASC NULLS LAST' istersek planner indeksi
   //    kullanamaz, 1,6M satır tarar (ölçüm: 7064ms → 0,79ms). Bu yüzden nullsFirst = ascending.
-  let sayfa=1, toplam=0, sekme=(P.get('sekme')==='sonuc')?'sonuc':((P.get('sekme')==='dt'||P.get('tur')==='dt')?'dt':'aktif'),
+  const _sekmeP=P.get('sekme');
+  let sayfa=1, toplam=0,
+      sekme=['sonuc','gecmis','dt'].includes(_sekmeP)?_sekmeP:((P.get('tur')==='dt')?'dt':'aktif'),
+      sonucTip=(P.get('tip')==='dt')?'dt':'ihale',   // Sonuçlar/Geçmiş sekmelerinde İhale mi DT mi
       uyeMi=false, uid=null, sirala='son_teklif_tarihi', yon=true;
+  // Efektif veri kaynağı DT tablosu mu? (dt sekmesi VEYA sonuç/geçmiş + Doğrudan Temin seçili)
+  const dtModu=()=> sekme==='dt' || ((sekme==='sonuc'||sekme==='gecmis') && sonucTip==='dt');
+  // "… listeleniyor" sayacındaki kayıt adı (moda göre).
+  const kayitEtiketi=()=>{
+    if(sekme==='aktif') return 'ihale ilanı';
+    if(sekme==='dt')    return 'doğrudan temin ilanı';
+    if(sekme==='sonuc') return dtModu()?'doğrudan temin sonucu':'sonuçlanan ihale';
+    return dtModu()?'sonuçlanmamış doğrudan temin':'geçmiş ihale';   // gecmis
+  };
 
   const ILLER=["ADANA","ADIYAMAN","AFYONKARAHİSAR","AĞRI","AKSARAY","AMASYA","ANKARA","ANTALYA","ARDAHAN","ARTVİN","AYDIN","BALIKESİR","BARTIN","BATMAN","BAYBURT","BİLECİK","BİNGÖL","BİTLİS","BOLU","BURDUR","BURSA","ÇANAKKALE","ÇANKIRI","ÇORUM","DENİZLİ","DİYARBAKIR","DÜZCE","EDİRNE","ELAZIĞ","ERZİNCAN","ERZURUM","ESKİŞEHİR","GAZİANTEP","GİRESUN","GÜMÜŞHANE","HAKKARİ","HATAY","IĞDIR","ISPARTA","İSTANBUL","İZMİR","KAHRAMANMARAŞ","KARABÜK","KARAMAN","KARS","KASTAMONU","KAYSERİ","KIRIKKALE","KIRKLARELİ","KIRŞEHİR","KİLİS","KOCAELİ","KONYA","KÜTAHYA","MALATYA","MANİSA","MARDİN","MERSİN","MUĞLA","MUŞ","NEVŞEHİR","NİĞDE","ORDU","OSMANİYE","RİZE","SAKARYA","SAMSUN","SİİRT","SİNOP","SİVAS","ŞANLIURFA","ŞIRNAK","TEKİRDAĞ","TOKAT","TRABZON","TUNCELİ","UŞAK","VAN","YALOVA","YOZGAT","ZONGULDAK"];
   const TURLER=["Mal","Hizmet","Yapım","Danışmanlık","Kiraya Verme","Satış"];
@@ -252,13 +296,17 @@
   // ⚠️ 1,96M satırda select+count:'exact'+order+range BİRLİKTE statement_timeout'a takılıyor.
   //    Sayımı AYRI hafif sorguya böldük (head:true — KPI'da çalışan desen), veri sorgusu count'suz.
   function sorguKur(sayimIcin){
-    // ── DOĞRUDAN TEMİN sekmesi: AYRI tablo (dogrudan_temin_ilanlari), farklı kolonlar ──
-    if (sekme==='dt') {
+    // ── DOĞRUDAN TEMİN kaynağı: AYRI tablo (dogrudan_temin_ilanlari), farklı kolonlar ──
+    if (dtModu()) {
       // ⛔ `idare` anon'a KAPALI (42501). Koşulsuz select'e konursa TÜM sorgu düşer ve
       //    misafirde DT sekmesi hiç açılmaz — bu yüzden üyelik dallanması ŞART.
       const dtKolon = sayimIcin ? 'id'
         : ('id,dt_no,baslik,tur,il,tarih,durum,kategori,yayin_tarihi'+(uyeMi?',idare':''));
       let d = sb.from('dogrudan_temin_ilanlari').select(dtKolon, sayimIcin?{count:'exact',head:true}:undefined);
+      // durum'a göre daralt: Sonuçlar → sonucu duyurulmuş DT, Geçmiş → henüz sonuçlanmamış DT.
+      // (dt sekmesi: tümü.) Canlı doğrulandı: "Sonuç Duyurusu…" 2,55M · "Doğrudan Temin Duyurusu…" 408K.
+      if (sekme==='sonuc')       d=d.eq('durum','Sonuç Duyurusu Yayımlanmış');
+      else if (sekme==='gecmis') d=d.eq('durum','Doğrudan Temin Duyurusu Yayımlanmış');
       const kw=val('f-kelime');
       if(kw){ const rgx=dtRegex(kw); if(rgx) d=d.filter('baslik','imatch',rgx); }
       if(val('f-tarih1')) d=d.gte('tarih',val('f-tarih1'));
@@ -280,6 +328,10 @@
       // gte, indeksin 2. kolonunda aralık koşulu → idx_ilanlar_durum_son_teklif ile uyumlu,
       // ayrıca NULL tarihli eski kayıtları da eler (NULLS FIRST yan etkisi).
       q=q.eq('durum','aktif').gte('son_teklif_tarihi', new Date().toISOString());
+    } else if (sekme==='gecmis') {
+      // Zamanı geçmiş ama sonucu açıklanmamış ihaleler: hâlâ 'aktif' ama son teklif tarihi
+      // geçmiş. lt → indeksin 2. kolonunda aralık koşulu, NULL'lar da elenir (idx uyumlu).
+      q=q.eq('durum','aktif').lt('son_teklif_tarihi', new Date().toISOString());
     } else q=q.eq('durum','sonuclandi');
     // ⛔ Düz `.ilike('baslik','%insaat%')` Türkçe İ/ı'da SESSİZCE 0 döner. Katlanmış
     //    `baslik_fold` kolonu misafire de AÇIK ve trgm indeksli (ölçüm: 0,18sn).
@@ -307,7 +359,7 @@
   // `order=yayin_tarihi.desc` ile 200/0,20sn. Bu yüzden yayın filtresi açılınca sıralama da
   // yayın tarihine geçer ve ilk sütun yayın tarihini gösterir (kullanıcı ne olduğunu görsün).
   function dtSiralamaTazele(){
-    if(sekme!=='dt') return;
+    if(!dtModu()) return;
     const yayinFiltre = !!(val('f-yayin1')||val('f-yayin2'));
     if(yayinFiltre && sirala==='tarih') sirala='yayin_tarihi';
     else if(!yayinFiltre && sirala==='yayin_tarihi') sirala='tarih';
@@ -332,7 +384,7 @@
   function basliklariAyarla(){
     const th=document.getElementById('th-tarih');
     if(th){
-      if(sekme!=='dt'){ th.dataset.sirala='son_teklif_tarihi'; th.textContent='İhale Tarihi ⇅'; }
+      if(!dtModu()){ th.dataset.sirala='son_teklif_tarihi'; th.textContent='İhale Tarihi ⇅'; }
       else{
         const yayin = sirala==='yayin_tarihi';
         th.dataset.sirala = yayin ? 'yayin_tarihi' : 'tarih';
@@ -341,7 +393,7 @@
     }
     Object.keys(TH_ETIKET).forEach(id=>{
       const e=document.getElementById(id); if(!e) return;
-      const kapali = sekme==='dt' && DT_SIRALANAMAZ.includes(e.dataset.sirala);
+      const kapali = dtModu() && DT_SIRALANAMAZ.includes(e.dataset.sirala);
       e.dataset.kapali = kapali ? '1' : '';
       e.style.cursor   = kapali ? 'default' : 'pointer';
       e.title          = kapali ? 'Doğrudan temin listesi çok büyük olduğu için bu sütuna göre sıralama kapalı.' : '';
@@ -364,9 +416,21 @@
       if(error) throw error;
       toplam = (sayimRes && sayimRes.count!=null) ? sayimRes.count : null;
       document.getElementById('v1-sayi').innerHTML = toplam!=null
-        ? `Arama kriterinize uygun <strong>${num(toplam)}</strong> ${sekme==='aktif'?'ihale ilanı':(sekme==='dt'?'doğrudan temin ilanı':'sonuçlanan ihale')} listeleniyor`
+        ? `Arama kriterinize uygun <strong>${num(toplam)}</strong> ${kayitEtiketi()} listeleniyor`
         : `<strong>${(data||[]).length}</strong> kayıt gösteriliyor`;
       if(!data||!data.length){ tb.innerHTML='<tr><td colspan="5" class="v1-bos">Kayıt bulunamadı. Filtreleri değiştirip tekrar deneyin.</td></tr>'; sayfalamaKur(); return; }
+      // Doğrudan Temin SONUÇLARI: kazanan bedeli ayrı tablodan (dogrudan_temin_sonuclari) sayfa
+      // başına dt_no ile eşleştir (kazanan ADI anon'a kapalı; bedel açık ve kamuya açık veri).
+      if(sekme==='sonuc' && dtModu()){
+        try{
+          const nos=data.map(r=>r.dt_no).filter(Boolean);
+          if(nos.length){
+            const {data:bd}=await sb.from('dogrudan_temin_sonuclari').select('dt_no,kazanan_bedel').in('dt_no',nos);
+            const m={}; (bd||[]).forEach(x=>{ if(m[x.dt_no]==null) m[x.dt_no]=x.kazanan_bedel; });
+            data.forEach(r=>{ r._bedel=m[r.dt_no]; });
+          }
+        }catch(_){}
+      }
       tb.innerHTML=data.map(r=>satir(r)).join('');
       tb.querySelectorAll('[data-genislet]').forEach(b=>b.addEventListener('click',()=>genislet(b)));
       tb.querySelectorAll('[data-takvim]').forEach(b=>b.addEventListener('click',()=>
@@ -387,7 +451,7 @@
   function satir(r){
     // DT sekmesinde tarih alanı 'tarih' (yayın filtresi açıkken 'yayin_tarihi'), kimlik 'dt_no';
     // ilan tablosunda 'son_teklif_tarihi' / 'ekap_id'.
-    const dtMi = sekme==='dt';
+    const dtMi = dtModu();
     const ham = dtMi ? (sirala==='yayin_tarihi' ? r.yayin_tarihi : r.tarih) : r.son_teklif_tarihi;
     const t=ham?new Date(ham):null;
     const kalan=t?Math.ceil((t-new Date())/86400000):null;
@@ -397,7 +461,7 @@
     return `<tr data-id="${r.id}">
       <td class="v1-t-tarih">${tarih}<br><span class="saat">${saat}</span>${kalan!=null&&kalan>=0?`<br><span class="kalan">Son ${kalan} gün</span>`:''}</td>
       <td><div class="v1-t-ikn">${esc((dtMi?r.dt_no:r.ekap_id)||'—')}</div><a class="v1-t-ad" href="${detayHref}">${esc(r.baslik||'—')}</a></td>
-      <td style="font-size:12.5px;color:var(--v1-metin-2);">${esc(r.tur||'—')}<br><span style="color:var(--v1-muted);">${esc(dtMi?(r.kategori||''):(r.usul||''))}</span></td>
+      <td style="font-size:12.5px;color:var(--v1-metin-2);">${esc(r.tur||'—')}<br><span style="color:var(--v1-muted);">${esc(dtMi?(r.kategori||''):usulTemiz(r.usul||''))}</span>${(dtMi&&r._bedel!=null)?`<br><span style="color:var(--v1-teal);font-weight:700;">${tl(r._bedel)}</span>`:''}</td>
       <td style="font-size:13px;">${esc(r.il||'—')}</td>
       <td><div class="v1-t-islem">
         ${!dtMi?`<button class="v1-yuvarlak-btn" title="Takip et" data-takip="${r.id}"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.4 14.72 8.79 21.65 9.39 16.4 13.94 17.97 20.7 12 17.11 6.03 20.7 7.6 13.94 2.35 9.39 9.28 8.79 12 2.4Z"/></svg></button>`:''}
@@ -431,7 +495,7 @@
       const kilit='<span class="v1-kilit">••••• 🔒</span>';
       const alan=(b,v)=>`<div><b>${b}</b>${v||'—'}</div>`;
       try{
-        if(sekme==='dt'){   // DT ayrı tablo — kendi alanları
+        if(dtModu()){   // DT ayrı tablo — kendi alanları
           // ⛔ `idare` anon'a kapalı → misafir dalında select'e KONMAZ (yoksa 42501 ile
           //    tüm detay sorgusu düşer ve "Detay yüklenemedi" çıkar).
           const dtKolon=(uyeMi?'idare,':'')+'kategori,tur,il,yayin_tarihi,dt_no';
@@ -541,7 +605,7 @@
   window.v1Takvim=(id,baslik,tarih,yol)=>{
     if(!tarih){ alert('Bu kayıtta tarih bilgisi yok.'); return; }
     const d=new Date(tarih); const f=(x)=>x.toISOString().replace(/[-:]/g,'').split('.')[0]+'Z';
-    const dtMi = sekme==='dt';
+    const dtMi = dtModu();
     const ics=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//ihaleglobal//TR','BEGIN:VEVENT',
       'UID:'+id+'@ihaleglobal.com','DTSTAMP:'+f(new Date()),'DTSTART:'+f(d),'DTEND:'+f(new Date(d.getTime()+36e5)),
       'SUMMARY:'+String(baslik).replace(/[,;]/g,' '),
@@ -634,12 +698,22 @@
     if(P.get('kategori')) setVal('f-kategori',P.get('kategori'));
     if(uyeMi && P.get('idare')) setVal('f-idare',P.get('idare'));
 
-    const sekmeAyarla=(s)=>{ sekme=s; sayfa=1;
-      ['aktif','sonuc','dt'].forEach(x=>document.getElementById('sekme-'+x).classList.toggle('aktif',s===x));
+    // Sekme + Sonuç Türü seçiminden efektif kaynağı kurar: başlık / filtre görünürlüğü /
+    // sıralama ayarlar ve listeyi yükler. Hem sekme düğmeleri hem İhale/DT seçicisi buraya düşer.
+    const kaynakKur=()=>{ sayfa=1;
+      const dt=dtModu();
+      ['aktif','sonuc','gecmis','dt'].forEach(x=>document.getElementById('sekme-'+x).classList.toggle('aktif',sekme===x));
+      // İhale/DT seçicisi yalnız Sonuçlar ve Geçmiş sekmelerinde görünür
+      const sec=document.getElementById('sonuc-tip-satir');
+      if(sec) sec.style.display=(sekme==='sonuc'||sekme==='gecmis')?'':'none';
+      document.querySelectorAll('.v1-tip-btn').forEach(b=>b.classList.toggle('aktif',b.dataset.tip===sonucTip));
       // DT ayrı tabloda → sıralama kolonu da farklı (DT'de son_teklif_tarihi YOK: 42703)
-      sirala = (s==='dt') ? 'tarih' : 'son_teklif_tarihi';
-      yon = (s==='aktif');   // aktifte en yakın tarih önce, diğerlerinde en yeni önce
-      const bas = s==='aktif' ? 'Aktif İhaleler' : (s==='sonuc' ? 'Sonuçlanan İhaleler' : 'Doğrudan Teminler');
+      sirala = dt ? 'tarih' : 'son_teklif_tarihi';
+      yon = (sekme==='aktif');   // aktifte en yakın tarih önce, diğerlerinde en yeni/en son önce
+      const bas = sekme==='aktif' ? 'Aktif İhaleler'
+                : sekme==='dt'    ? 'Doğrudan Teminler'
+                : sekme==='sonuc' ? (dt?'Doğrudan Temin Sonuçları':'Sonuçlanan İhaleler')
+                :                   (dt?'Sonuçlanmamış Doğrudan Teminler':'Geçmiş İhaleler');  // gecmis
       document.getElementById('v1-baslik').textContent=bas;
       document.getElementById('v1-liste-baslik').textContent=bas;
       document.title=bas+' — İhaleGlobal';
@@ -647,17 +721,23 @@
       //   usul / yaklaşık maliyet / teklif fiyat türü / "yaklaşık maliyeti ilan edilenler"
       ['usul','maliyet','sozT','diger'].forEach(g=>{
         const el=document.querySelector(`.v1-filtre-grup[data-g="${g}"]`);
-        if(el) el.style.display = (s==='dt') ? 'none' : '';
+        if(el) el.style.display = dt ? 'none' : '';
       });
       // E-İhale anahtarı da yalnız ilanlar tablosunda var (teklif_elektronik)
       const eih=document.getElementById('f-eihale-satir');
-      if(eih) eih.style.display = (s==='dt') ? 'none' : '';
+      if(eih) eih.style.display = dt ? 'none' : '';
       basliklariAyarla();
       yukle();
     };
+    const sekmeAyarla=(s)=>{ sekme=s; kaynakKur(); };
     document.getElementById('sekme-aktif').addEventListener('click',()=>sekmeAyarla('aktif'));
     document.getElementById('sekme-sonuc').addEventListener('click',()=>sekmeAyarla('sonuc'));
+    document.getElementById('sekme-gecmis').addEventListener('click',()=>sekmeAyarla('gecmis'));
     document.getElementById('sekme-dt').addEventListener('click',()=>sekmeAyarla('dt'));
+    // İhale / Doğrudan Temin seçicisi (Sonuçlar & Geçmiş) → aynı sayfada kaynak değiştirir
+    document.querySelectorAll('.v1-tip-btn').forEach(b=>b.addEventListener('click',()=>{
+      if(sonucTip===b.dataset.tip) return; sonucTip=b.dataset.tip; kaynakKur();
+    }));
 
     document.getElementById('f-uygula').addEventListener('click',()=>{sayfa=1;yukle();});
     document.getElementById('f-temizle').addEventListener('click',()=>{
