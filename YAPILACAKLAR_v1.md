@@ -92,7 +92,11 @@ Sonra AKTİF ihaleleri (durum='aktif', son teklif ≥ bugün) şöyle eşler/pua
 - Bkz. hafıza: eşleştirme-motoru-v3 (OKAS %2,8 ölü, jenerik kova %58).
 → `backend/migration_firmam_eslesme.sql`, `v1-benim-sayfam.html` (`eslesme()` ~334)
 
-## MADDE 7 — Sonuç Raporu "statement timeout" hatası (BUG) 📋
+## MADDE 7 — Sonuç Raporu "statement timeout" hatası (BUG) 🟡 migration hazır, UYGULANACAK
+DÜZELTME YAZILDI: `backend/migration_rapor_sonuc_timeout_fix.sql` — `rapor_sonuc` artık
+ÖNCE ilanlar'ı (il+kategori+başlık trigram) süzüp SONRA ihale_sonuclari'na ilan_id ile join
+ediyor (rapor_ihale ile aynı hızlı desen) + `idx_ihale_sonuclari_ilan_id` indeksi.
+Frontend değişmez (imza aynı). **VDS'te uygulanacak** (psql). Semantik: kelime artık başlıkta aranır.
 **Belirti:** Raporlarım → "İhale Sonuç Raporlarım", Kelime="belpa", İl=ANKARA →
 > "Rapor alınamadı. canceling statement due to statement timeout"
 
