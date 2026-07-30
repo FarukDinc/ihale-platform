@@ -20,7 +20,12 @@ Global tarayıcı favicon'u (amber marka) korundu. Tüm v1 sayfalarında `?v` bu
 Canlı doğrulandı (DOM: src=favicon-v1.svg, daire bg=transparent).
 → `favicon-v1.svg`, `js/v1-kabuk.js`, `css/v1.css`
 
-## MADDE 3 — KPI kartları düzeni ⏳
+## MADDE 3 — KPI kartları düzeni ✅
+"Doğrudan Temin" (tüm geçmiş) → **Aktif Doğrudan Temin** (harita ile aynı aktif tanımı:
+durum IN duyuru-yayımlanmış/teklifler-değerlendiriliyor). "Sözleşme" kartı SİLİNDİ → yerine
+**Toplam DT + İhale** (tüm dogrudan_temin_ilanlari + tüm ilanlar sayısı). "Aktif İhale" aynı kaldı.
+Konsol temiz; değerler üye girişinde dolar. → `v1-benim-sayfam.html` `kpiYukle()`
+--- eski açık sorular kapandı: (a) aktif DT = harita tanımı; (b) toplam = DT(hepsi)+ilanlar(hepsi).
 6 KPI kartı yeniden kurgulanacak:
 - "Aktif İhale 6.226" → doğrudan teminler dahil DEĞİL, kalsın.
 - "Doğrudan Temin 3 Mn" → şu an TÜM geçmiş DT sayısı (yanlış). **AKTİF DT sayısı** göstersin.
@@ -105,7 +110,13 @@ sürücü tabloyu ters çevir. Tarih boşken 1 yıl tavanı tek başına yeterin
   yalnız çalıştırınca güncelleniyor) — küçük etiket düzeltmesi.
 → `backend/migration_rapor.sql` (`rapor_sonuc`), `v1-raporlar.html`
 
-## MADDE 8 — İhale listesinde satır aksiyonu: "Takvime Ekle" → "Takip Et" 📋
+## MADDE 8 — İhale listesinde satır aksiyonu: "Takip Et" eklendi ✅
+İhale satırlarına BİRİNCİL yuvarlak "Takip Et" (yıldız) butonu eklendi (Takvime Ekle + Detay
+korundu). Takip edilince altın renkli, tıklayınca `takipler` tablosuna upsert/delete (detay
+sayfasıyla aynı kanıtlı mantık); misafirde login'e yönlendirir; sayfa yüklenince mevcut takipler
+işaretlenir. DT satırlarında yok (takipler ilan_id'ye bağlı). Canlı doğrulandı (sıra: Takip et ·
+Takvime ekle · Detay). → `v1-ihaleler.html`
+--- ESKİ PLAN NOTU:
 İhaleler listesinde (Aktif İhaleler) her satırdaki belirgin yuvarlak buton "Takvime ekle"
 (takvim ikonu). Kullanıcı: yanlış — orada **kolay erişilebilir "Takip Et"** (yıldız) olmalı.
 - Birincil yuvarlak buton "Takip Et" (yıldız, takibe al/çıkar toggle) olsun; "Takvime ekle"
@@ -231,12 +242,10 @@ doğru değerlendiririz.
 ölçek farkı (DT medyanı ≈ ₺37 bin) → "birlikte" modda toplama değil, AYRI kolon/rozetle sun.
 → `v1-firma-analiz.html`, DT firma RPC'si (MADDE 16)
 
-## MADDE 19 — Diğer analiz alt sayfalarından da sayfa-içi nav'ı kaldır 📋
-MADDE 17 ile Analiz sayfası tek gezinme merkezi oldu (9 sekme) ve DT sayfasından nav kaldırıldı.
-KALAN: diğer analiz alt sayfaları (Rekabet, Firma Analizi, Sektörler, Kurumlar, Harita, Dış
-Ticaret, Uyumluluk, Firma Segmentleri) — sayfa-içi tekrar nav varsa onları da kaldır ki her
-sayfa "başlı başına bir analiz" ilkesine uysun. (v1-rekabet'te zaten yok; diğerlerini tara.)
-→ analiz alt sayfaları
+## MADDE 19 — Diğer analiz alt sayfalarından sayfa-içi nav kaldır ✅
+Tarandı: firma-analiz, uyumluluk, firma-segmentleri, harita, sektorler, kurumlar sayfalarında
+çok-sekmeli sayfa-içi analiz nav'ı YOK (yalnız başlık/breadcrumb/tekil buton). Kaldırılacak
+fazla nav kalmadı — DT sayfasındaki tek istisnaydı (MADDE 17'de kaldırıldı). Prensip sağlandı.
 
 ---
 

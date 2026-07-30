@@ -275,13 +275,16 @@
       <span class="v1-kpi-govde"><span class="v1-kpi-sayi" data-k="${etiket}">…</span><span class="v1-kpi-etiket">${etiket}</span></span></a>`;
     const el=document.getElementById('v1-kpi');
     el.innerHTML = kart('v1-ihaleler',IK.ihale,'Aktif İhale')+kart('v1-kurumlar',IK.idare,'İşveren İdare')
-      +kart('v1-ihaleler?tur=dt',IK.dt,'Doğrudan Temin')+kart('v1-sektorler',IK.sektor,'Sektörde Fırsat')
-      +kart('v1-sozlesmeler',IK.soz,'Sözleşme')+kart('v1-firmalar',IK.firma,'Yüklenici Firma');
+      +kart('v1-ihaleler?tur=dt',IK.dt,'Aktif Doğrudan Temin')+kart('v1-sektorler',IK.sektor,'Sektörde Fırsat')
+      +kart('v1-ihaleler',IK.soz,'Toplam DT + İhale')+kart('v1-firmalar',IK.firma,'Yüklenici Firma');
     const set=(l,v)=>{const n=el.querySelector(`[data-k="${l}"]`); if(n)n.textContent=v;};
+    // Aktif DT tanımı harita ile AYNI (dt_il_sayim_aktif): duyuru yayımlanmış / teklifler değerlendiriliyor.
+    const DT_AKTIF=['Doğrudan Temin Duyurusu Yayımlanmış','Teklifler Değerlendiriliyor'];
     Promise.all([
       sayac('ilanlar',q=>q.eq('durum','aktif')).then(v=>set('Aktif İhale',num(v))),
-      sayac('dogrudan_temin_ilanlari').then(v=>set('Doğrudan Temin',kisalt(v))),
-      sayac('ihale_sonuclari').then(v=>set('Sözleşme',kisalt(v))),
+      sayac('dogrudan_temin_ilanlari',q=>q.in('durum',DT_AKTIF)).then(v=>set('Aktif Doğrudan Temin',kisalt(v))),
+      // Toplam geçmiş hacim = TÜM doğrudan temin + TÜM ihale ilanı (yayınlanmış her şey).
+      Promise.all([sayac('dogrudan_temin_ilanlari'),sayac('ilanlar')]).then(([a,b])=>set('Toplam DT + İhale',kisalt(a+b))),
       sayac('yukleniciler').then(v=>set('Yüklenici Firma',num(v))),
       sb.rpc('idare_sayim',{},{count:'exact',head:true}).then(({count})=>set('İşveren İdare',num(count||0))).catch(()=>set('İşveren İdare','—')),
     ]);
