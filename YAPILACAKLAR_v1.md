@@ -119,8 +119,9 @@ VDS'te `-U supabase_admin` ile UYGULANDI (postgres sahibi değildi). **Canlı te
 → timeout GİTTİ, anında 0 kayıt döndü (eskiden timeout). ✅
 KALAN EDGE: kelime TEK BAŞINA (il/kategori/tarih filtresiz) hâlâ yavaş olabilir — ilanlar
 trigram taraması tek başına yetmiyor. (Regresyon değil; eskiden de yavaştı.) İyileştirme
-adayı: filtresiz kelimede ilanlar'ı ilan_tarihi son 1 yıl ile de daralt, ya da en az bir
-filtre zorunlu kıl. → sonraki tur.
+adayı: STORED `baslik_fold` kolonu + idx_ilanlar_baslik_fold_trgm2. ✅ YAPILDI:
+`backend/migration_rapor_sonuc_edge_fix.sql` — kelime filtresi `tr_fold(baslik)` ifadesi yerine
+STORED `baslik_fold` (misafir aramasının hızlı yolu) → kelime-tek indeksli/hızlı. supabase_admin ile uygulanacak.
 **Belirti:** Raporlarım → "İhale Sonuç Raporlarım", Kelime="belpa", İl=ANKARA →
 > "Rapor alınamadı. canceling statement due to statement timeout"
 
