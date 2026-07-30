@@ -123,7 +123,7 @@
           </div>
           <a href="v1-analiz" class="v1-firmam-btn">
             <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M12 12a4.6 4.6 0 1 0 0-9.2 4.6 4.6 0 0 0 0 9.2Zm0 2c-3.6 0-8 1.8-8 4.4V21h16v-2.6c0-2.6-4.4-4.4-8-4.4Z"/></svg>
-            Benim Firmam
+            Benim Firmam &amp; Referans Firmam
           </a>
         </div>
 
@@ -369,7 +369,7 @@
     try{
       const {data,error}=await sb.rpc('firmam_acik_ihaleler',{p_limit:6});
       if(error) throw error;
-      if(!data||!data.length){ el.innerHTML='<div class="v1-bos">Firmanızı seçin, geçmiş kazanımlarınıza benzeyen açık ihaleleri getirelim. <a href="v1-analiz">Benim Firmam →</a></div>'; return; }
+      if(!data||!data.length){ el.innerHTML='<div class="v1-bos">Kendi firmanızı ya da bir <b>referans/rakip firma</b> seçin; onun kazanımlarına benzeyen açık ihaleleri getirelim. <a href="v1-analiz">Firma Seç →</a></div>'; return; }
       el.innerHTML=data.map(i=>{
         const g=i.son_teklif_tarihi?kalanGun(i.son_teklif_tarihi):null;
         return `<a class="v1-satir" href="v1-ihale-detay?id=${i.id}">
@@ -377,7 +377,7 @@
           <div class="v1-satir-alt">${esc(i.idare||'—')} · ${esc(i.il||'')}${i.son_teklif_tarihi?' · Son teklif: '+gunFmt(i.son_teklif_tarihi):''}</div></div>
           ${g!=null?`<span class="v1-rozet${g<=3?' acil':''}">Son ${g} gün</span>`:''}</a>`;
       }).join('');
-    }catch(_){ el.innerHTML='<div class="v1-bos">Firmanızı seçin, size uygun ihaleleri bulalım. <a href="v1-analiz">Benim Firmam →</a></div>'; }
+    }catch(_){ el.innerHTML='<div class="v1-bos">Kendi firmanızı ya da bir referans/rakip firma seçin, size uygun ihaleleri bulalım. <a href="v1-analiz">Firma Seç →</a></div>'; }
   }
 
   // "Tarihi Yaklaşan İHALELERİM" — YALNIZ kullanıcının takip ettiği ihaleler.

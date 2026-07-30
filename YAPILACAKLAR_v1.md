@@ -64,7 +64,14 @@ Uygulama (v2'yi bozmadan, tek kaynak):
 5. Palet: v1 mavi sequential (açık→koyu), "kayıt yok"=açık nötr gri-mavi (v2 amber kalır).
 → `js/harita.js`, `v1-benim-sayfam.html`, `css/v1.css`
 
-## MADDE 5 — "Benim Firmam" → "Benim Firmam & Referans Firmam" 📋
+## MADDE 5 — "Benim Firmam & Referans Firmam" ✅ (frontend)
+Mekanizma ZATEN vardı: `firmami_belirle(p_yuklenici_id)` + `firma_icin_acik_ihaleler` herhangi
+bir firmayı kabul ediyor → kullanıcı kendi yerine referans/rakip firma seçebiliyordu, ama
+yüzeyde yoktu. Yapılan: dashboard butonu "Benim Firmam"→"Benim Firmam & Referans Firmam";
+firma seçim ekranı (v1-analiz onboarding) metni "kendi ya da referans/rakip firma" olarak
+güncellendi; "Katılabileceğiniz İhaleler" boş-durum metinleri referans firmayı öneriyor.
+**Pull yeterli (migration yok).** → `v1-benim-sayfam.html`, `v1-analiz.html`
+--- ESKİ PLAN:
 Bana Özel'deki "Benim Firmam" butonu, kullanıcının kendi firması yanında bir **referans firma**
 (yakın gördüğü / rakip) seçmesini de kapsayacak.
 **Neden:** Kullanıcı ihale takibine yeni başlamış, henüz ihaleye girmemiş olabilir → kendi geçmişi
