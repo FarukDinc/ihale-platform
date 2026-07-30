@@ -119,6 +119,10 @@
     try{
       const p={p_kelime:v('r-kelime'),p_il:v('r-il'),p_kategori:v('r-kategori'),
                p_bas:v('r-bas'),p_bit:v('r-bit'),p_min:v('r-min')?Number(v('r-min')):null,p_limit:200,p_offset:0};
+      // Geniş kelime-tek SONUÇ araması (il/kategori/tarih yok) çok sonuç eşleyip yavaşlayabilir → yönlendir.
+      if(tip==='sonuc' && p.p_kelime && !p.p_il && !p.p_kategori && !p.p_bas && !p.p_bit){
+        document.getElementById('r-tbody').innerHTML='<tr><td colspan="6" class="v1-bos">⏳ Geniş kelime araması — daha hızlı sonuç için bir <b>il</b> veya <b>tarih</b> filtresi ekleyin. Hesaplanıyor…</td></tr>';
+      }
       const {data,error}=await sb.rpc(tip==='ihale'?'rapor_ihale':'rapor_sonuc',p);
       if(error) throw error;
       const r=data||{};
