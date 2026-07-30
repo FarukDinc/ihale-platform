@@ -374,7 +374,8 @@
         const g=i.son_teklif_tarihi?kalanGun(i.son_teklif_tarihi):null;
         return `<a class="v1-satir" href="v1-ihale-detay?id=${i.id}">
           <div class="v1-satir-govde"><div class="v1-satir-ad">${esc(i.baslik||'İhale')}</div>
-          <div class="v1-satir-alt">${esc(i.idare||'—')} · ${esc(i.il||'')}${i.son_teklif_tarihi?' · Son teklif: '+gunFmt(i.son_teklif_tarihi):''}</div></div>
+          <div class="v1-satir-alt">${esc(i.idare||'—')} · ${esc(i.il||'')}${i.son_teklif_tarihi?' · Son teklif: '+gunFmt(i.son_teklif_tarihi):''}</div>
+          ${i.eslesme_nedeni?`<div class="v1-satir-alt" style="color:var(--v1-teal);font-weight:600;">🎯 ${esc(i.eslesme_nedeni)}</div>`:''}</div>
           ${g!=null?`<span class="v1-rozet${g<=3?' acil':''}">Son ${g} gün</span>`:''}</a>`;
       }).join('');
     }catch(_){ el.innerHTML='<div class="v1-bos">Kendi firmanızı ya da bir referans/rakip firma seçin, size uygun ihaleleri bulalım. <a href="v1-analiz">Firma Seç →</a></div>'; }
