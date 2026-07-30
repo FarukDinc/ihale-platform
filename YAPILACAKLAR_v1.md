@@ -343,6 +343,24 @@ satırları eklendi (dt_analiz_mv zaten vardı). MV sahipleri supabase_admin old
 `-U postgres` refresh edemez → `backend/migration_mv_owner_fix.sql` ile sahip postgres'e devrediliyor.
 **Uygula:** owner-fix migration (supabase_admin) + pull (cron yeni script'i ertesi gece alır).
 
+
+## MADDE 20 — Firma dizini & haritada tam sıralama (DT/İhale/İkisi + sektör + ölçüt + son 1 yıl) 📋
+Kullanıcı: firma dizini/haritasında sıralamayı İHALE ile yapabiliyoruz ama DT ve İkisi'de yapamıyoruz;
+ayrıca haritada il-bazlı firma sıralaması İhale/DT ayrı seçilebilmeli + sektör + ölçüt.
+
+**PARÇA A — LİSTE: DT & İkisi modlarında sıralama** (orta efor)
+- İhale modu: sıralama zaten var (en çok ciro/sözleşme/son iş/isim).
+- DT modu: `firma_dizin_dt`'ye p_sort ekle (dt_bedel / dt_sozlesme). Sort dropdown DT'de aktif.
+- İkisi modu: `firma_dizin_birlikte`'ye p_sort ekle (toplam bedel / toplam sözleşme).
+- (Son-1-yıl list sort DT'de yıl-boyutu gerektiriyor → Parça B'deki MV ile.)
+
+**PARÇA B — HARİTA: il bazında firma sıralaması, İhale/DT bazlı + sektör + ölçüt + son 1 yıl** (BÜYÜK)
+- Harita panelinde İhale/DT toggle → il bazında firmalar o baza göre.
+- Sektör seç (var) → sonra ölçüt: en çok ciro · en çok sözleşme · son 1 yıl ciro · son 1 yıl sözleşme.
+- Gerektirir: il×sektör×firma + YIL agregasyonu. İhale için il_yil_firma var ama sektör+son-1-yıl
+  için genişletme; DT için il×sektör×yıl×firma yeni MV. Panel UI (toggle+ölçüt seçici).
+→ `v1-firma-analiz.html` (dizin+harita), yeni MV/RPC'ler
+
 # UZUN VADE (ayrı seri — "uzun vade" dendiğinde bu liste çıkarılır)
 
 ## UV-1 — AI Teklif/Fiyat Asistanı revizyonu: teknik şartname okuması 📋
