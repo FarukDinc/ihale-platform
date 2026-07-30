@@ -85,7 +85,7 @@ yoksa, referans bir firmayı seçip **ona uygun ihaleleri** kovalayabilir.
 v3 (`migration_firmam_eslesme_v3.sql`): kullanıcı 'il kötü referans' dedi → KESİN KATMAN skoru:
 Sektör 100 / Kurum 30 / İl 10 → Sektör+Kurum(130)>Sektör+İl(110)>Sektör(100)>Kurum(30)>İl(10).
 Bedel-yakınlığı artık katman DEĞİL, aynı katman içi tiebreaker; ±%500 hard bant KALDIRILDI.
-Sektör=kategori VEYA başlık kelimesi. İl gerekçede yalnız TEK sinyalse. (v2: idare sinyali+±%300.)
+Sektör=kategori VEYA başlık kelimesi. İl gerekçede yalnız TEK sinyalse. **v4** (`migration_firmam_eslesme_v4.sql`): FREKANS-AĞIRLIKLI — Sektör 100+50×pay (firma o kategoride ne kadar iş almışsa öne) + Kurum 30 + İl 10 + TAKİP bonusu (takip sektör/kurum +15, takip firma 0). Wrapper takip_sektorler/takip_idareler'i geçirir.
 `backend/migration_firmam_eslesme_v2.sql` — firma_icin_acik_ihaleler'e **IDARE sinyali** (en çok
 iş aldığı ilk 8 idare → +25 puan + OR filtresi + "sık çalıştığınız idare" gerekçesi); **bant
 ±%500→±%300** (p_bant 5→3, wrapper da 3). Frontend eslesme()'ye 🎯 gerekçe satırı (deploy-güvenli).
