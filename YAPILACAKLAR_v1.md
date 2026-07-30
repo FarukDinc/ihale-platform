@@ -226,7 +226,7 @@ ihale ise `ekapv2.kik.gov.tr/ekap/search`. Kullanıcı sayfada görünen IKN ile
 DT/ihale ayrımı usul+tur metninden. (v2 `ihale-detay.html` `ekapLink` mantığıyla aynı.)
 → `v1-ihale-detay.html` (`ciz`, aksiyon çubuğu)
 
-## MADDE 14 — Doğrudan Temin Analizi'ne YIL filtresi 🟡 migration hazır
+## MADDE 14 — Doğrudan Temin Analizi'ne YIL filtresi ✅ CANLI (MV, 12.4s→6.6ms)
 `backend/migration_dt_analiz_yil.sql` — `_dt_ozet_json`+`dt_analiz_ozet`'e `p_yil` eklendi (sargable
 tarih aralığı; imza 3→4 arg → MV+fonksiyonlar DROP+recreate). Filtresiz→MV, yıllı→canlı (15s).
 `v1-dt-analiz.html`: filtre barına "Tüm Yıllar + 2004→bugün" seçici; p_yil YALNIZ yıl seçiliyken
