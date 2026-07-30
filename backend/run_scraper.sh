@@ -46,10 +46,12 @@ echo "[$(date +'%Y-%m-%d %H:%M:%S')] === Yuklenici tazeleme ===" >> /opt/ihale-p
 # Diğer tazelemeler (idare_tur_tazele, MV refresh) gibi DOĞRUDAN psql: gateway yok, yalnız
 # fonksiyonun statement_timeout'u geçerli. yuklenici_yenile_calistir.py artık kullanılmıyor.
 docker exec -i supabase-db psql -U postgres -d postgres -c "SELECT public.yuklenici_yenile();" >> /opt/ihale-platform/logs/scraper.log 2>&1
+docker exec -i supabase-db psql -U postgres -d postgres -c "SELECT public.yuklenici_segment_yenile() AS segment_tazeleme;" >> /opt/ihale-platform/logs/scraper.log 2>&1
 $VENV/python rakip_bildirim.py >> /opt/ihale-platform/logs/scraper.log 2>&1
+$VENV/python rapor_bildirim.py >> /opt/ihale-platform/logs/scraper.log 2>&1
 $VENV/python ilan_embed_uret.py --max 300 >> /opt/ihale-platform/logs/scraper.log 2>&1
 echo "[$(date +'%Y-%m-%d %H:%M:%S')] === Dogrudan Temin listesi ===" >> /opt/ihale-platform/logs/scraper.log
-$VENV/python ekap_dogrudan_temin_scraper.py --max-pages 20 >> /opt/ihale-platform/logs/scraper.log 2>&1
+$VENV/python ekap_dogrudan_temin_scraper.py --max-pages 60 >> /opt/ihale-platform/logs/scraper.log 2>&1
 # DT kazanan/bedel backfill — 18 Tem bulgusu: dtDetayGetir CAPTCHA'sız açık API, Gemini/token
 # maliyeti YOK. --limit 2000/--rpm 300: günlük yeni "sonuç" durumuna geçenleri rahat karşılar.
 # BİRİKMİŞ ~1.3M kayıtlık geçmiş kuyruk BU satırla temizlenmez — ayrı, yüksek --limit'li tek
@@ -214,7 +216,7 @@ docker exec -i supabase-db psql -U postgres -d postgres -tAc   "SELECT 'eksik id
 # eşzamanlılık 2 + istek arası uyku + checkpoint ile devam + ardışık hatada kendini durdurma.
 # Kabaca 25-35 gecede tamamlanır. Blok görülmezse --max-pages artırılabilir.
 echo "[$(date +'%Y-%m-%d %H:%M:%S')] === ilan_metni backfill ===" >> /opt/ihale-platform/logs/scraper.log
-$VENV/python ilan_metni_backfill.py --max-pages 200 --eszamanli 2 >> /opt/ihale-platform/logs/scraper.log 2>&1
+pgrep -f ilan_metni_backfill.py >/dev/null && echo "  ilan_metni zaten calisiyor (watchdog) - atlaniyor" >> /opt/ihale-platform/logs/scraper.log || $VENV/python ilan_metni_backfill.py --max-pages 200 --eszamanli 2 >> /opt/ihale-platform/logs/scraper.log 2>&1
 
 # Teklif türü parse — ilan_metni'nden e-ihale/kısmi teklif/fiyat türü/istekli türü çıkarır (ihaleler.html
 # filtreleri bunları kullanır). ilan_metni backfill'den SONRA: aynı gece yeni dolan metinler işlenir.
