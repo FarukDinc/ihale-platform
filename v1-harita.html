@@ -203,7 +203,7 @@
   let firmaVeri={};        // key -> {adet, ciro, ad}
   let rfqVeri={};          // key -> adet (sayı)
   let ilAd={};             // key -> görünen ad (harita verisinden)
-  let uyeMi=false, seciliKey=null;
+  let uyeMi=false, seciliKey=null, seciliYil='';   // seciliYil='' → Tüm Yıllar (MADDE 12)
   // Panel nesli: her yeni panel çizimi sayacı artırır. Geciken async yazıcılar (firma /
   // talep listesi) kendi nesillerini taşır; nesil eskimişse HİÇBİR ŞEY yazmazlar.
   // Düğüm kimliği kontrolü tek başına YETMİYORDU: A ilinin firma isteği sürerken B'ye
@@ -429,8 +429,17 @@
     yaz('h-yan-baslik','📍 '+ad);
 
     // RFQ katmanında panel talep-öncelikli: firma bloğu hiç çizilmez (istek de atılmaz).
+    // Yıl seçici (MADDE 12): "Tüm Yıllar" + 2004→bugün. Seçilince o yıla göre firma sıralaması.
+    const buYil=new Date().getFullYear();
+    const yilSecici = katman==='rfq' ? '' :
+      `<select id="h-yil" style="font-size:11.5px;font-weight:600;color:var(--v1-metin);border:1px solid var(--v1-cizgi);
+        border-radius:7px;padding:3px 6px;background:#fff;cursor:pointer;">`+
+      ['<option value="">Tüm Yıllar</option>'].concat(
+        Array.from({length:buYil-2004+1},(_,i)=>{const y=buYil-i; return `<option value="${y}"${String(y)===seciliYil?' selected':''}>${y}</option>`;})
+      ).join('')+`</select>`;
     const firmaBloku = katman==='rfq' ? '' :
-      `<div class="v1-blok-baslik">Bu ilde ${sm?'bu sektörde ':''}öne çıkan firmalar</div>
+      `<div class="v1-blok-baslik" style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
+         <span>Bu ilde ${sm?'bu sektörde ':''}öne çıkan firmalar</span>${yilSecici}</div>
        <div id="h-firmalar"><div class="v1-mini-spin"></div></div>`;
 
     if(sm){
@@ -465,6 +474,13 @@
     }
     const geri=document.getElementById('h-geri');
     if(geri) geri.addEventListener('click', panelVarsayilan);
+    // Yıl değişince yalnız firma listesini yeniden çek (panel bütünü değil).
+    const yilSel=document.getElementById('h-yil');
+    if(yilSel) yilSel.addEventListener('change',()=>{
+      seciliYil=yilSel.value;
+      const fl=document.getElementById('h-firmalar'); if(fl) fl.innerHTML='<div class="v1-mini-spin"></div>';
+      firmaListesi(key, ad, nesil);
+    });
     // SIRALI çağrı: /rest/v1'de 2 istek/sn limiti var. Firma listesi bitmeden talep
     // listesini başlatma — yoksa tek il tıklamasında 3 eşzamanlı istek gider.
     // Firma isteği sürerken başka ile tıklanmışsa talep isteğini HİÇ AÇMA (hem yanlış
@@ -487,7 +503,15 @@
     // Panel await sırasında yeniden çizilirse hem nesil eskir hem düğüm kopar → yazma.
     const guncelMi=()=>nesil===panelNesil && el===document.getElementById('h-firmalar');
     try{
-      if(sm){
+      if(seciliYil){   // MADDE 12: belirli yıl → il_firma_yil (sektörden bağımsız, il+yıl)
+        const {data,error}=await sb.rpc('il_firma_yil',
+          { p_il_folds: foldVaryantlari(key), p_yil: Number(seciliYil), p_limit: 8 });
+        if(error) throw error;
+        if(!guncelMi()) return;
+        if(!data||!data.length){ el.innerHTML=`<div class="v1-bos">${esc(seciliYil)} yılında bu ilde firma kaydı yok.</div>`; return; }
+        el.innerHTML=data.map((y,i)=>firmaSatiri(i+1, y.ad,
+          `${num(y.sozlesme)} sözleşme · ${paraKisa(y.toplam_bedel)} (${esc(seciliYil)})`)).join('');
+      } else if(sm){
         const {data,error}=await sb.rpc('il_sektor_firmalar',
           { p_il_folds: foldVaryantlari(key), p_kategori: sektorSecili, p_limit: 8 });
         if(error) throw error;

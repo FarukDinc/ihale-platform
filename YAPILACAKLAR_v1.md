@@ -185,7 +185,12 @@ satır rozeti "🤝 Talep". Kod içi `rfq` anahtarları/id'ler ve yorumlar korun
 → `v1-harita.html`
 (NOT: "Bu ilde öne çıkan firmalar" kategori bazlı sıralama önerisi — kullanıcı ES GEÇ dedi, iptal.)
 
-## MADDE 12 — "Bu ilde öne çıkan firmalar": YIL bazlı sıralama/filtre 📋
+## MADDE 12 — "Bu ilde öne çıkan firmalar": YIL bazlı sıralama 🟡 migration hazır
+YAZILDI: `backend/migration_il_firma_yil.sql` — `il_firma_yil(p_il_folds,p_yil,p_limit)` RPC
+(il_sektor_firmalar deseninin yıl varyantı; idx_ilanlar_il_fold_kategori kullanır, statement_timeout
+15s, normalize_firma grup). `v1-harita.html`: panele "Tüm Yıllar + 2004→bugün" yıl seçici (24 opt);
+yıl seçilince il_firma_yil'e geçer (sektörden bağımsız il+yıl), "Tüm Yıllar"=mevcut davranış.
+Yerel: seçici render + konsol temiz. **VDS'te supabase_admin ile uygulanacak, sonra canlı ölç.**
 (Kategori sıralaması yerine — kullanıcı bunu istedi.)
 ⚠️ BULGU (30 Tem canlı probe): dinamik en-eski-yıl KIRILGAN — ihale_sonuclari sonuc_tarihi
 sıralaması TIMEOUT (indekssiz tam-tablo); DT'de en eski tarih 1926-01-22 = ÇÖP veri.
