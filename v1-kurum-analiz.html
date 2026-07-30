@@ -19,6 +19,11 @@
       border:1.5px solid var(--v1-cizgi); color:var(--v1-muted); cursor:pointer; font-family:var(--v1-font); transition:all .15s; }
     .v1-gor-btn:hover { border-color:var(--v1-mavi); color:var(--v1-mavi); }
     .v1-gor-btn.aktif { background:var(--v1-mavi-acik); border-color:var(--v1-mavi); color:var(--v1-mavi); }
+    /* Diğer dizin sayfasına (menüdeki "Kurumlar") köprü — buton görünümlü <a>, sağa yaslı.
+       Görünüm anahtarı DEĞİL: .aktif sınıfı hiç almaz, tıklayınca sayfa değişir. */
+    .v1-gor-link { margin-left:auto; text-decoration:none; }
+    .v1-gor-link:hover { text-decoration:none; }
+    @media (max-width:760px) { .v1-gor-link { margin-left:0; } }
 
     /* ── Form öğeleri ─────────────────────────────────────────────── */
     .v1-sec { border:1.5px solid var(--v1-cizgi); border-radius:9px; padding:9px 12px; background:#fff;
@@ -124,6 +129,25 @@
     .k-pager { display:flex; justify-content:center; align-items:center; gap:8px; margin-top:18px; flex-wrap:wrap; }
     .k-pager-bilgi { font-size:13px; color:var(--v1-muted); padding:0 6px; }
 
+    /* ── Sonuçlar & Sözleşmeler tablosu ───────────────────────────────
+       Satır = SÖZLEŞME (kısım) KAYDI. Çok kısımlı bir ihalenin her kısmı
+       ayrı satırdır; aynı ihalenin satırları üstten çizgiyle gruplanır. */
+    .sz-tab td { vertical-align:top; }
+    .sz-ilk > td { border-top:2px solid var(--v1-cizgi); }
+    .sz-ad { font-size:13.5px; font-weight:700; color:var(--v1-lacivert); text-decoration:none; }
+    .sz-ad:hover { color:var(--v1-mavi); text-decoration:underline; }
+    .sz-devam { font-size:12.5px; color:var(--v1-muted); }
+    .sz-firma { font-size:13px; font-weight:700; color:var(--v1-mavi); text-decoration:none; }
+    .sz-firma:hover { text-decoration:underline; color:var(--v1-mavi); }
+    .sz-bedel { font-weight:800; color:var(--v1-lacivert); white-space:nowrap; }
+    .sz-tenz { font-weight:800; color:var(--v1-yesil); white-space:nowrap; }
+    .sz-yok { color:var(--v1-muted); }
+    .sz-kisim { display:inline-block; font-size:10.5px; font-weight:800; padding:2px 8px; border-radius:20px;
+      background:#EEF2F7; color:var(--v1-muted); white-space:nowrap; margin-left:6px; }
+    .sz-not { font-size:12px; color:var(--v1-muted); line-height:1.65; margin-top:14px;
+      border-top:1px solid var(--v1-cizgi); padding-top:12px; }
+    @media (max-width:900px) { .sz-dar { display:none; } }
+
     /* ── İdare dizini tablosu ─────────────────────────────────────── */
     .v1-tablo tbody tr.tiklanir { cursor:pointer; }
     .iz-srt { cursor:pointer; user-select:none; }
@@ -227,6 +251,8 @@
         <div class="v1-gor">
           <button class="v1-gor-btn aktif" id="gor-liste">📋 Dizin Listesi</button>
           <button class="v1-gor-btn" id="gor-agac">🌳 Kurum Ağacı</button>
+          <a class="v1-gor-btn v1-gor-link" href="v1-kurumlar"
+             title="Menüdeki Kurumlar sayfası — il süzgeci, tıklanabilir sıralama ve “Takip Ettiklerim” sekmesi orada">📇 Kurumlar Sayfası →</a>
         </div>
 
         <!-- ── Liste görünümü ── -->
@@ -373,6 +399,7 @@
           <button class="v1-sekme aktif" data-sek="genel">Genel Bakış</button>
           <button class="v1-sekme" data-sek="dagilim">Dağılım Analizi</button>
           <button class="v1-sekme" data-sek="liste">İhale Listesi</button>
+          <button class="v1-sekme" data-sek="sonuc">Sonuçlar &amp; Sözleşmeler</button>
         </div>
 
         <!-- GENEL BAKIŞ -->
@@ -432,6 +459,27 @@
             <span class="k-pager-bilgi" id="pg-info"></span>
             <button class="v1-mini-btn" id="pg-next">Sonraki ›</button>
             <button class="v1-mini-btn" id="pg-son">Son »</button>
+          </div>
+        </div>
+
+        <!-- SONUÇLAR & SÖZLEŞMELER -->
+        <div id="sek-sonuc" class="v1-panel">
+          <div class="v1-kart" style="padding:18px 20px;">
+            <div class="v1-tablo-bas">
+              <div>
+                <div style="font-size:17px;font-weight:800;color:var(--v1-lacivert);">Sonuçlar &amp; Sözleşmeler</div>
+                <!-- Satır anlamı burada AÇIKÇA yazılır: bir ihalenin birden çok kısmı
+                     olabilir ve her kısım ayrı satırdır; sayfalama ise İHALE bazlıdır. -->
+                <div class="v1-tablo-sayi" id="sonuc-bilgi">Yükleniyor…</div>
+              </div>
+            </div>
+            <div id="sonuc-kap"><div class="v1-bos">Yükleniyor…</div></div>
+            <div class="k-pager" id="sonuc-pager" style="display:none;">
+              <button class="v1-mini-btn" id="sz-ilk">« İlk</button>
+              <button class="v1-mini-btn" id="sz-prev">‹ Önceki</button>
+              <span class="k-pager-bilgi" id="sz-info"></span>
+              <button class="v1-mini-btn" id="sz-next">Sonraki ›</button>
+            </div>
           </div>
         </div>
       </div><!-- /root-content -->
@@ -538,12 +586,19 @@
   let listeIstek = 0;    // hızlı sayfa geçişlerinde eski cevap yenisini ezmesin
   let gAylik = null, gYillik = null, gDurum = null;
 
+  // Sonuçlar & Sözleşmeler sekmesi
+  const SZ_PER = 20;     // sayfa başına İHALE sayısı (satır sayısı bundan FAZLA olabilir)
+  let szSayfa = 1, szIstek = 0, szDahaVar = false, szYuklendi = false;
+
   function sekmeAc(id) {
     document.querySelectorAll('#root-content .v1-panel').forEach(p => p.classList.remove('aktif'));
     document.querySelectorAll('#root-content .v1-sekme').forEach(b => b.classList.toggle('aktif', b.dataset.sek === id));
     const p = el('sek-' + id);
     if (p) p.classList.add('aktif');
     if (id === 'liste') listeSayfa(sayfa);
+    // Sonuç sekmesi sekme her tıklandığında DEĞİL, ilk açılışta çekilir
+    // (/rest/v1 2 r/s limiti — kurum değişince szYuklendi sıfırlanır).
+    if (id === 'sonuc' && !szYuklendi) { szYuklendi = true; sonucSayfa(szSayfa); }
   }
 
   function sayfaGit(s) {
@@ -627,6 +682,186 @@
     el('pg-prev').disabled = s <= 1;
     el('pg-next').disabled = s >= topSayfa;
     el('pg-son').disabled = s >= topSayfa;
+  }
+
+  // ══════════════════ SONUÇLAR & SÖZLEŞMELER ══════════════════
+  // SATIR ANLAMI: her satır bir SÖZLEŞME (kısım) KAYDIdır — ihale_sonuclari'ndaki
+  // bir satır. Çok kısımlı bir ihalenin her kısmı ayrı satır olarak görünür.
+  // SAYFALAMA ise İHALE bazlıdır (sayfa başına SZ_PER ihale) → bir sayfadaki satır
+  // sayısı 20'den fazla olabilir; başlıkta ikisi de ayrı ayrı yazılır.
+  //
+  // Sorgu neden `ilanlar` üzerinden kurulur?
+  //  · ihale_sonuclari'nda idare kolonu YOK (42703 — curl ile doğrulandı), süzgeç
+  //    ancak ilanlar üzerinden kurulabilir.
+  //  · ihale_sonuclari'nı sozlesme_tarihi/sonuc_tarihi ile SIRALAMAK 539K satırda
+  //    statement timeout veriyor (57014 — curl ile doğrulandı, indeks yok).
+  //  Bu yüzden çapa `ilanlar` + etkin_tarih DESC / id ASC, yani "İhale Listesi"
+  //  sekmesiyle AYNI indeks yolu. !inner = yalnız sonucu/sözleşmesi olan ihaleler.
+  //
+  // count=exact KULLANILMAZ (bu boyutta sayım timeout riski) → SZ_PER+1 satır
+  // istenir, fazlası varsa "Sonraki" açılır.
+  const SZ_SELECT = 'id,baslik,il,tur,etkin_tarih,' +
+    'ihale_sonuclari!inner(kisim_no,lot_sayisi,kazanan_firma,kazanan_teklif,' +
+    'sozlesme_bedeli,sozlesme_tarihi,sonuc_tarihi,tenzilat_yuzde,kazanan_teklif_farki_yuzde)';
+
+  const SZ_ARSIV_NOT = 'Sonuç arşivi geriye dönük doldurulmaya devam ediyor (yaklaşık %93 tamam); ' +
+    'çok eski bazı ihalelerin sonuç kaydı henüz aktarılmamış olabilir.';
+
+  // ⛔ TENZİLAT KURALI (proje kuralı): çok kısımlı ihalede ihalenin TOPLAM yaklaşık
+  // maliyeti HER KISMA kopyalanıyor → kısım bazlı tenzilat sahte (%95'lere çıkıyor).
+  // Bu yüzden tenzilat YALNIZ lot_sayisi === 1 iken gösterilir.
+  function tenzilatHucre(so) {
+    const lot = Number(so.lot_sayisi);
+    if (lot > 1) {
+      return `<span class="k-rozet" title="Çok kısımlı ihale (${sayi(lot)} kısım): ihalenin TOPLAM yaklaşık maliyeti her kısma kopyalandığı için kısım bazlı tenzilat yanıltıcı olur — bilerek gösterilmiyor.">çok kısımlı</span>`;
+    }
+    if (lot !== 1) {
+      return '<span class="sz-yok" title="Bu kaydın kısım sayısı bilinmiyor; doğrulanmadan tenzilat gösterilmez.">—</span>';
+    }
+    const t = so.tenzilat_yuzde != null ? so.tenzilat_yuzde : so.kazanan_teklif_farki_yuzde;
+    if (t == null || !isFinite(Number(t))) return '<span class="sz-yok">—</span>';
+    return `<span class="sz-tenz" title="Yaklaşık maliyete göre indirim oranı">%${Number(t).toLocaleString('tr-TR', { maximumFractionDigits: 1 })}</span>`;
+  }
+
+  function szHata(mesaj) {
+    el('sonuc-kap').innerHTML = `<div class="v1-bos">${mesaj}</div>`;
+    el('sonuc-bilgi').textContent = '';
+    el('sonuc-pager').style.display = 'none';
+    szYuklendi = false;   // sekmeye tekrar tıklayınca YENİDEN denensin
+  }
+
+  async function sonucSayfa(s) {
+    const istek = ++szIstek;
+    szSayfa = Math.max(1, s);
+    const bas = (szSayfa - 1) * SZ_PER;
+    const kap = el('sonuc-kap');
+    kap.innerHTML = '<div class="v1-bos">Yükleniyor…</div>';
+    el('sonuc-pager').style.display = 'none';
+
+    const { data, error } = await sb.from('ilanlar')
+      .select(SZ_SELECT)
+      .ilike('idare', `%${KURUM}%`)
+      .order('etkin_tarih', { ascending: false, nullsFirst: false })
+      .order('id', { ascending: true })
+      .range(bas, bas + SZ_PER);      // +1 satır = "sonraki sayfa var mı" yoklaması
+    if (istek !== szIstek) return;    // araya yeni istek girdi
+
+    if (error) {
+      console.error('Sonuç listesi:', error);
+      if (kilitliMi(error)) {
+        kap.innerHTML = kilitHtml('Sonuçlar &amp; sözleşmeler üyelere özel',
+          'Bu idarenin sonuçlanmış ihalelerini ve sözleşme bedellerini görmek için hesabınızla giriş yapın.');
+        el('sonuc-bilgi').textContent = '';
+        el('sonuc-pager').style.display = 'none';
+        // PGRST301 (oturum jetonu süresi doldu) da kilitliMi'ye takılır: ÜYE olan
+        // kullanıcıya "üyelere özel" demek YANLIŞ bilgidir. Tekrar denemeye izin ver —
+        // jeton yenilendikten sonra sekmeye basınca veri gelir. (Misafir bu sekmeye
+        // zaten ulaşamaz: analizYukle root-content'i hiç göstermez.)
+        szYuklendi = false;
+        return;
+      }
+      szHata(error.code === '57014'
+        ? 'Sonuç listesi bu kurum için şu an hesaplanamadı (sorgu zaman aşımına uğradı). Lütfen tekrar deneyin.'
+        : 'Sonuç listesi yüklenemedi, lütfen tekrar deneyin.');
+      return;
+    }
+
+    const hepsi = data || [];
+    szDahaVar = hepsi.length > SZ_PER;
+    const ihaleler = hepsi.slice(0, SZ_PER);
+
+    if (!ihaleler.length) {
+      kap.innerHTML = `<div class="v1-bos">${szSayfa > 1
+        ? 'Bu sayfada kayıt yok — önceki sayfaya dönün.'
+        : 'Bu kurumun sonuçlanmış ihalesi bulunamadı.'}<div class="sz-not" style="border:none;margin-top:10px;padding:0;">${SZ_ARSIV_NOT}</div></div>`;
+      el('sonuc-bilgi').textContent = szSayfa > 1 ? '' : 'Sonuçlanmış ihale kaydı yok.';
+      if (szSayfa > 1) szPagerCiz();
+      return;
+    }
+
+    // İhale → kısım satırlarını düzleştir (satır = sözleşme kaydı)
+    let satirSayisi = 0;
+    const govde = ihaleler.map(i => {
+      const ham = Array.isArray(i.ihale_sonuclari) ? i.ihale_sonuclari
+                : (i.ihale_sonuclari ? [i.ihale_sonuclari] : []);
+      // !inner olduğu için ham boş gelmemeli; yine de savunmacı davran
+      if (!ham.length) return '';
+      const sonuclar = ham.slice().sort((a, b) => (Number(a.kisim_no) || 0) - (Number(b.kisim_no) || 0));
+      satirSayisi += sonuclar.length;
+      const cok = sonuclar.length > 1;
+      return sonuclar.map((so, ix) => {
+        const tarih = so.sozlesme_tarihi || so.sonuc_tarihi || i.etkin_tarih;
+        const tarihEtiket = so.sozlesme_tarihi ? 'Sözleşme' : (so.sonuc_tarihi ? 'Sonuç' : 'İhale');
+        const bedelHam = so.sozlesme_bedeli != null ? so.sozlesme_bedeli : so.kazanan_teklif;
+        const bedel = (bedelHam != null && Number(bedelHam) > 0)
+          ? `<span class="sz-bedel">${paraFormat(bedelHam)}</span>`
+          : '<span class="sz-yok">—</span>';
+        const kisimRozet = (cok || Number(so.lot_sayisi) > 1) && so.kisim_no != null
+          ? `<span class="sz-kisim">Kısım ${sayi(so.kisim_no)}${Number(so.lot_sayisi) > 1 ? '/' + sayi(so.lot_sayisi) : ''}</span>` : '';
+        // İhale adı yalnız grubun İLK satırında tam yazılır; devam satırları "↳"
+        const adHucre = ix === 0
+          ? `<a class="sz-ad" href="v1-ihale-detay?id=${encodeURIComponent(i.id)}">${esc(i.baslik) || '—'}</a>${kisimRozet}
+             <div class="k-etiketler sz-dar" style="margin-top:6px;">
+               ${i.tur ? `<span class="k-et k-et-tur">${esc(i.tur)}</span>` : ''}
+               ${i.il ? `<span class="k-et k-et-il">📍 ${esc(i.il)}</span>` : ''}
+             </div>`
+          : `<span class="sz-devam" title="${esc(i.baslik)}">↳ aynı ihalenin diğer kısmı</span>${kisimRozet}`;
+        const firma = so.kazanan_firma
+          ? `<a class="sz-firma" href="v1-firma-analiz?firma=${encodeURIComponent(so.kazanan_firma)}">${esc(so.kazanan_firma)}</a>`
+          : '<span class="sz-yok">Kazanan bilgisi yok</span>';
+        return `<tr class="${ix === 0 ? 'sz-ilk' : ''}">
+          <td style="white-space:nowrap;">
+            <div style="font-weight:700;color:var(--v1-lacivert);">${tarihFormat(tarih)}</div>
+            <div style="font-size:11px;color:var(--v1-muted);">${tarihEtiket}</div>
+          </td>
+          <td>${adHucre}</td>
+          <td>${firma}</td>
+          <td style="text-align:right;">${bedel}</td>
+          <td style="text-align:right;">${tenzilatHucre(so)}</td>
+        </tr>`;
+      }).join('');
+    }).join('');
+
+    kap.innerHTML = `<div style="overflow-x:auto;">
+      <table class="v1-tablo sz-tab">
+        <thead><tr>
+          <th style="width:110px;">TARİH</th>
+          <th>İHALE</th>
+          <th style="width:26%;">KAZANAN FİRMA</th>
+          <th style="width:150px;text-align:right;">SÖZLEŞME BEDELİ</th>
+          <th style="width:120px;text-align:right;">TENZİLAT</th>
+        </tr></thead>
+        <tbody>${govde}</tbody>
+      </table></div>
+      <div class="sz-not">
+        <strong>Satır = sözleşme (kısım) kaydı.</strong> Bir ihale birden çok kısma bölünmüşse her kısım ayrı satırdır;
+        aynı ihalenin satırları üstteki çizgiyle gruplanır. Sayfalama <strong>ihale</strong> bazlıdır.
+        Tenzilat yalnız <strong>tek kısımlı</strong> ihalelerde gösterilir — çok kısımlı ihalede yaklaşık maliyet
+        kısım bazında ayrıştırılamadığı için oran yanıltıcı olur. ${SZ_ARSIV_NOT}
+      </div>`;
+
+    el('sonuc-bilgi').innerHTML =
+      `Sayfa <strong>${sayi(szSayfa)}</strong> · bu sayfada <strong>${sayi(ihaleler.length)}</strong> ihale / ` +
+      `<strong>${sayi(satirSayisi)}</strong> sözleşme kaydı · en yeni ihale önce`;
+    szPagerCiz();
+  }
+
+  function szPagerCiz() {
+    const pager = el('sonuc-pager');
+    if (szSayfa <= 1 && !szDahaVar) { pager.style.display = 'none'; return; }
+    pager.style.display = 'flex';
+    // Toplam sayfa sayısı BİLİNMİYOR (count=exact yok) → "Son »" butonu da yok
+    el('sz-info').textContent = `Sayfa ${sayi(szSayfa)}`;
+    el('sz-ilk').disabled = szSayfa <= 1;
+    el('sz-prev').disabled = szSayfa <= 1;
+    el('sz-next').disabled = !szDahaVar;
+  }
+
+  function szSayfaGit(s) {
+    if (s < 1) return;
+    if (s > szSayfa && !szDahaVar) return;
+    sonucSayfa(s);
+    el('sek-sonuc').scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
   // trend: kurum_ozet.aylik_trend — DİZİ DEĞİL, {'YYYY-MM': n} OBJESİ (son 24 ay)
@@ -836,6 +1071,12 @@
     // hub içi ikinci açılış: sekme + liste durumu sıfırla
     sayfa = 1; listeIstek++;
     el('liste-kap').innerHTML = '';
+    // Sonuç sekmesi de sıfırlanmalı — yoksa yeni kurumda ÖNCEKİ kurumun
+    // sözleşmeleri ekranda kalır (szYuklendi true iken yeniden çekilmez).
+    szSayfa = 1; szIstek++; szDahaVar = false; szYuklendi = false;
+    el('sonuc-kap').innerHTML = '<div class="v1-bos">Yükleniyor…</div>';
+    el('sonuc-bilgi').textContent = '';
+    el('sonuc-pager').style.display = 'none';
     el('kart-kazanan').style.display = 'none';
     document.querySelectorAll('#root-content .v1-panel').forEach(p => p.classList.remove('aktif'));
     document.querySelectorAll('#root-content .v1-sekme').forEach(b => b.classList.toggle('aktif', b.dataset.sek === 'genel'));
@@ -1028,12 +1269,39 @@
   let agTumIhale = 0, agTumDt = 0;
   const agCocukYuklendi = new Set();   // detsis → çocukları çekildi (tekrar RPC yok)
 
-  function dizinGorunum(g) {
-    el('gor-liste').classList.toggle('aktif', g === 'liste');
-    el('gor-agac').classList.toggle('aktif', g === 'agac');
-    el('liste-gorunum').style.display = g === 'liste' ? '' : 'none';
-    el('agac-gorunum').style.display = g === 'agac' ? '' : 'none';
-    if (g === 'agac' && !agKuruldu) { agKuruldu = true; agacBaslat().catch(agacHata); }
+  // Dizin görünümü ('liste' | 'agac') — URL'deki ?gorunum= ile çift yönlü bağlı.
+  // Ağaç yalnız butonla açılabildiği için kullanıcı "ağaç yok" sanıyordu; artık
+  // v1-kurum-analiz?gorunum=agac doğrudan ağacı açar ve paylaşılabilir.
+  let dizinGor = 'liste';
+
+  function gorunumOku(varsayilan) {
+    const g = new URLSearchParams(location.search).get('gorunum');
+    return (g === 'agac' || g === 'liste') ? g : varsayilan;
+  }
+
+  function gorunumUrlYaz() {
+    // Kurum analizi açıkken URL ?kurum=... olarak kalmalı — gorunum yazılmaz,
+    // aksi halde derin bağlantı ve "Paylaş" butonu yanlış adres üretir.
+    if (KURUM) return;
+    try {
+      const p = new URLSearchParams(location.search);
+      p.set('gorunum', dizinGor);
+      history.replaceState(history.state, '', location.pathname + '?' + p.toString() + location.hash);
+    } catch (_) { /* file:// testi */ }
+  }
+
+  // yaz=false → yalnız ekranı ayarla (açılış / popstate: URL zaten doğru)
+  function dizinGorunum(g, yaz) {
+    dizinGor = (g === 'agac') ? 'agac' : 'liste';
+    el('gor-liste').classList.toggle('aktif', dizinGor === 'liste');
+    el('gor-agac').classList.toggle('aktif', dizinGor === 'agac');
+    el('liste-gorunum').style.display = dizinGor === 'liste' ? '' : 'none';
+    el('agac-gorunum').style.display = dizinGor === 'agac' ? '' : 'none';
+    if (yaz !== false) gorunumUrlYaz();
+    // Ağaç RPC'leri YALNIZ dizin ekranda görünürken kurulur: ?kurum= ile gelen derin
+    // bağlantıda 2 RPC boşuna harcanmasın (/rest/v1 2 r/s). Kullanıcı "Dizine Dön"
+    // deyince dizinGoster() bu fonksiyonu tekrar çağırır ve ağaç orada kurulur.
+    if (dizinGor === 'agac' && !KURUM && !agKuruldu) { agKuruldu = true; agacBaslat().catch(agacHata); }
   }
 
   // Kapsama payı: dalın toplamı / TÜM kayıtlar (bağlantısızlar dahil payda)
@@ -1342,6 +1610,9 @@
     document.title = 'Kurum Analizi — İhaleGlobal';
     kirintiYaz('Kurum Analizi');
     if (!izKuruldu) { izKuruldu = true; izVeriCek().catch(izHata); }
+    // Görünümü URL'den tazele (geri tuşu / "Dizine Dön" ağaçtan geldiyse ağaçta kalır).
+    // KURUM artık boş olduğu için ağaç gerekiyorsa BURADA kurulur.
+    dizinGorunum(gorunumOku(dizinGor), false);
   }
 
   function analizAc(kurum) {
@@ -1361,15 +1632,18 @@
   }
 
   function dizineDon() {
-    try { history.pushState({}, '', 'v1-kurum-analiz'); } catch (_) { /* file:// test */ }
+    // Hangi görünümden gelindiyse oraya dönülür: ağaçtan bir kuruma girip geri
+    // dönen kullanıcı liste görünümüne DÜŞMEMELİ (URL de ağacı göstermeli).
+    const hedef = 'v1-kurum-analiz?gorunum=' + dizinGor;
+    try { history.pushState({}, '', hedef); } catch (_) { /* file:// test */ }
     dizinGoster();   // dizin DOM'u korunur: arama/filtre/sayfa aynen kalır
   }
 
   // ══════════════════ Olay bağlama ══════════════════
   function olaylariBagla() {
-    // görünüm anahtarı
-    el('gor-liste').addEventListener('click', () => dizinGorunum('liste'));
-    el('gor-agac').addEventListener('click', () => dizinGorunum('agac'));
+    // görünüm anahtarı (URL'e de yazar → paylaşılabilir / yenilemede korunur)
+    el('gor-liste').addEventListener('click', () => dizinGorunum('liste', true));
+    el('gor-agac').addEventListener('click', () => dizinGorunum('agac', true));
 
     // dizin filtreleri
     let zaman;
@@ -1422,9 +1696,14 @@
     el('pg-next').addEventListener('click', () => sayfaGit(sayfa + 1));
     el('pg-son').addEventListener('click', () => sayfaGit(topSayfa));
 
+    // sonuçlar & sözleşmeler sayfalama (toplam sayfa bilinmiyor → "Son »" yok)
+    el('sz-ilk').addEventListener('click', () => szSayfaGit(1));
+    el('sz-prev').addEventListener('click', () => szSayfaGit(szSayfa - 1));
+    el('sz-next').addEventListener('click', () => szSayfaGit(szSayfa + 1));
+
     window.addEventListener('popstate', () => {
       const k = new URLSearchParams(location.search).get('kurum') || '';
-      if (k) analizAc(k); else dizinGoster();
+      if (k) analizAc(k); else dizinGoster();   // dizinGoster ?gorunum= değerini uygular
     });
   }
 
@@ -1445,10 +1724,12 @@
     } catch (_) { /* oturum okunamadı → misafir gibi davran */ }
 
     olaylariBagla();
-    // Açılış rotası: ?kurum= → analiz (deep-link), yoksa dizin
+    // Görünüm ÖNCE ayarlanır (URL'e yazmadan): ?kurum= ile birlikte gelse bile ağaç
+    // arka planda seçili kalır, böylece "← Dizine Dön" ağaca döner.
+    dizinGorunum(gorunumOku('liste'), false);
+    // Açılış rotası: ?kurum= → analiz (deep-link) ÖNCELİKLİ, yoksa dizin.
+    // dizinGoster() görünümü tekrar uygular ve gerekiyorsa ağacı kurar.
     if (KURUM) analizAc(KURUM); else dizinGoster();
-    // Derin bağlantı: v1-kurum-analiz?gorunum=agac → Kurum Ağacı görünümüyle açılır
-    if (!KURUM && P.get('gorunum') === 'agac') dizinGorunum('agac');
   })();
 })();
 </script>

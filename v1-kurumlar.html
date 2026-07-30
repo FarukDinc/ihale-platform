@@ -29,6 +29,14 @@
     .v1-mini-btn { background:#fff; border:1.5px solid var(--v1-cizgi); color:var(--v1-muted); border-radius:9px;
       padding:9px 12px; font-family:var(--v1-font); font-size:12.5px; font-weight:700; cursor:pointer; white-space:nowrap; }
     .v1-mini-btn:hover { border-color:var(--v1-mavi); color:var(--v1-mavi); }
+    /* Diğer kurum dizinine köprü — v1-kurum-analiz'deki görünüm anahtarıyla aynı
+       görünüm (css/v1.css PAYLAŞILAN, dokunulmadı). Burada AĞAÇ KOPYALANMAZ:
+       çalışan tek ağaç v1-kurum-analiz'dedir, buradan oraya yönlendirilir. */
+    .v1-gor { display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap; }
+    .v1-gor-btn { padding:9px 16px; border-radius:9px; font-size:13px; font-weight:700; background:#fff;
+      border:1.5px solid var(--v1-cizgi); color:var(--v1-muted); cursor:pointer; font-family:var(--v1-font);
+      text-decoration:none; display:inline-flex; align-items:center; transition:all .15s; }
+    .v1-gor-btn:hover { border-color:var(--v1-mavi); color:var(--v1-mavi); text-decoration:none; }
     /* Tıklanabilir sütun başlıkları */
     .v1-tablo th.v1-sr { cursor:pointer; user-select:none; }
     .v1-tablo th.v1-sr:hover { color:var(--v1-mavi); }
@@ -41,7 +49,15 @@
   <div class="v1-main">
     <div class="v1-govde">
       <div class="v1-sayfa-baslik">İşveren Kurumlar</div>
-      <div class="v1-sayfa-alt">İhale açan idareler — hangi kurum kaç ihale açmış, kaçı şu an aktif.</div>
+      <div class="v1-sayfa-alt">İhale açan idareler — hangi kurum kaç ihale açmış, kaçı şu an aktif.
+        Bakanlıktan il müdürlüğüne uzanan hiyerarşi için <strong>Kurum Ağacı</strong> görünümünü kullanın.</div>
+
+      <div class="v1-gor">
+        <a class="v1-gor-btn" href="v1-kurum-analiz?gorunum=agac"
+           title="DETSİS hiyerarşisi — bakanlık › genel müdürlük › il müdürlüğü; kuruma tıklayınca analizi doğrudan açılır">🌳 Kurum Ağacı</a>
+        <a class="v1-gor-btn" href="v1-kurum-analiz?gorunum=liste"
+           title="İdare Dizini — KPI şeridi, aktiflik süzgeci ve tıklayınca aynı ekranda açılan kurum analizi">🏛️ İdare Dizini</a>
+      </div>
 
       <div class="v1-sekmeler">
         <button class="v1-sekme aktif" id="s-tum">Tüm Kurumlar</button>
