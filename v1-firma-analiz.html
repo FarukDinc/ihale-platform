@@ -373,7 +373,8 @@
           </div>
           <div class="fa-toolbar">
             <div class="fa-ara"><span style="color:var(--v1-muted);">🔍</span>
-              <input type="text" id="dz-arama" placeholder="Firma adı ara…" autocomplete="off"></div>
+              <input type="text" id="dz-arama" placeholder="Firma adı ara… (en az 3 harf)" autocomplete="off"></div>
+            <button class="fa-btn" id="dz-ara-btn" type="button" style="white-space:nowrap;">🔍 Ara</button>
             <select class="fa-sel" id="dz-il"><option value="">Tüm İller</option></select>
             <select class="fa-sel" id="dz-sirala">
               <option value="ciro_desc">En Çok Ciro</option>
@@ -1827,10 +1828,17 @@
     }
   });
 
+  // MADDE 21: min 3 harf + 500ms debounce + Enter/Ara butonu → boşa sorguyu kes.
+  function dzAra(){ clearTimeout(dzAramaTimer); dzYukle(true); }
   $('dz-arama').addEventListener('input', () => {
     clearTimeout(dzAramaTimer);
-    dzAramaTimer = setTimeout(() => dzYukle(true), 300);
+    const q = ($('dz-arama').value || '').trim();
+    if (q.length > 0 && q.length < 3) return;   // 1-2 harf: sorgu YOK. 0: tüm liste. ≥3: ara.
+    dzAramaTimer = setTimeout(() => dzYukle(true), 500);
   });
+  $('dz-arama').addEventListener('keydown', (e) => { if (e.key === 'Enter') dzAra(); });
+  const dzAraBtn = document.getElementById('dz-ara-btn');
+  if (dzAraBtn) dzAraBtn.addEventListener('click', dzAra);
   $('dz-il').addEventListener('change', () => dzYukle(true));
   $('dz-sirala').addEventListener('change', () => dzSirala($('dz-sirala').value));
   // MADDE 18-B: sıralama modu (İhale / DT / İkisi) — ciro kolonu başlığı moda göre değişir.

@@ -361,6 +361,14 @@ ayrıca haritada il-bazlı firma sıralaması İhale/DT ayrı seçilebilmeli + s
   için genişletme; DT için il×sektör×yıl×firma yeni MV. Panel UI (toggle+ölçüt seçici).
 → `v1-firma-analiz.html` (dizin+harita), yeni MV/RPC'ler
 
+
+## MADDE 21 — Arama: min 3 harf + debounce + Ara butonu (boşa sorguyu kes) 🟡
+Kullanıcı: her harfte DB sorgusu (a/ah/ahm...) boşa yük. Standart: min 3 harf + 500ms debounce +
+Enter + "🔍 Ara" butonu. **YAPILDI:** v1-firma-analiz dizin araması (dz-arama).
+KALAN (aynı deseni uygula): v1-analiz onboarding firma araması (v1-ac), üst-bar global arama,
+v1-kurumlar / v1-sektorler arama kutuları. (v1-ihaleler "Listede Ara" client-side, DB'ye gitmiyor.)
+→ ilgili arama ekranları
+
 # UZUN VADE (ayrı seri — "uzun vade" dendiğinde bu liste çıkarılır)
 
 ## UV-1 — AI Teklif/Fiyat Asistanı revizyonu: teknik şartname okuması 📋
