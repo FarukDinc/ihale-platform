@@ -249,7 +249,15 @@ KALAN: diğer analiz alt sayfalarında (varsa) benzer sayfa-içi nav'ları da ka
 1. İhale Analizi (aktif) 2. Doğrudan Temin Analizi 3. Türkiye Haritası 4. Sektör 5. Firma Analizi
 6. Kurum Analizi 7. Uyumluluk 8. Firma Segmentleri 9. Dış Ticaret Analizi (en son). Canlı doğrulandı.
 
-## MADDE 18 — Firma Analizi: 3 alt-mod (İhale / DT / İkisi birlikte) 📋
+## MADDE 18 — Firma Analizi: DT kazanımları görünür 🟡 Phase-A yapıldı
+**Phase-A YAPILDI:** Firma detayına "⚡ Doğrudan Temin Kazanımları" bloğu eklendi (ihale
+KPI'larının altında, "yalnız DT" rozetli, altın çerçeve) — `firma_dt_ozet(y.ad)` ile:
+DT sözleşme sayısı + toplam/medyan bedel + DT il/kategori dağılımı. Firma adı normalize eşleşme
+uyarısı da var. DT kazanımı yoksa blok hiç açılmaz. → `v1-firma-analiz.html`
+Canlı doğrulanacak (ÜNTES: 42 DT / ₺13,65M).
+**KALAN Phase-B:** firma LİSTESİNİ 3 moda göre SIRALAMA (① ihale ② DT ③ birlikte) — bu, tüm
+firmalar genelinde DT toplamı gerektirir (top-firmalar-by-DT RPC / MV). Ayrı iş.
+--- ESKİ PLAN:
 Firma Analizi'nde firmaları 3 farklı temele göre sıralayan/gösteren alt sekme:
 1. **Sadece İhaleler** (mevcut davranış — ihale_sonuclari).
 2. **Sadece Doğrudan Teminler** (DT kazanan verisi — MADDE 16'ya BAĞLI).
