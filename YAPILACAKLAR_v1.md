@@ -185,7 +185,7 @@ satır rozeti "🤝 Talep". Kod içi `rfq` anahtarları/id'ler ve yorumlar korun
 → `v1-harita.html`
 (NOT: "Bu ilde öne çıkan firmalar" kategori bazlı sıralama önerisi — kullanıcı ES GEÇ dedi, iptal.)
 
-## MADDE 12 — "Bu ilde öne çıkan firmalar": YIL bazlı sıralama 🟡 migration hazır
+## MADDE 12 — "Bu ilde öne çıkan firmalar": YIL bazlı sıralama ✅ CANLI (MV, 20sn→109ms)
 YAZILDI: `backend/migration_il_firma_yil.sql` — `il_firma_yil(p_il_folds,p_yil,p_limit)` RPC
 (il_sektor_firmalar deseninin yıl varyantı; idx_ilanlar_il_fold_kategori kullanır, statement_timeout
 15s, normalize_firma grup). `v1-harita.html`: panele "Tüm Yıllar + 2004→bugün" yıl seçici (24 opt);
