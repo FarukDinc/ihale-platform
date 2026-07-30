@@ -132,7 +132,14 @@ Takvime ekle · Detay). → `v1-ihaleler.html`
 - Takip durumu satırda görünsün (dolu/boş yıldız). Giriş yoksa login'e yönlendir.
 → `v1-ihaleler.html` (satır aksiyonu, ~408 `data-takvim`; `takipler` tablosu + `v1-ihale-detay`'daki takip mantığı örnek)
 
-## MADDE 9 — "Benzer İhaleler" algoritması: kategori + şehir + idare + daha iyi kategorizasyon 📋
+## MADDE 9 — "Benzer İhaleler" skorlu (kategori + şehir + idare + başlık kelimesi) 🟡 migration hazır
+YAZILDI: `backend/migration_benzer_ihaleler.sql` — `benzer_ihaleler(p_ilan_id,p_limit)` skorlu
+RPC (aynı idare +35, il +20, kategori +20, başlık konu-kelimesi +8/kelime; tur ön-eleme).
+SECURITY DEFINER (idare içeride skorlar, döndürmez → misafire sızmaz). `v1-ihale-detay.html`
+`benzerYukle` RPC'ye geçirildi + "neden" alt satırı (Aynı idare/kategori/il) + RPC yoksa eski
+filtreye düşen fallback (deploy penceresi güvenli). **VDS'te supabase_admin ile uygulanacak.**
+Balık↔un sorununu başlık kelimesi ("balik" vs "un") ayırır.
+--- ESKİ PLAN:
 **Mevcut** (`v1-ihale-detay.html` `benzerYukle` ~367): yalnız `kategori` = aynı VE `tur` = aynı
 sabit filtre (`.eq`). İl yok, idare yok, başlık kelimesi yok.
 **Sorun (kullanıcı örneği):** İstanbul'daki BALIK ihalesine, Aksaray'daki EKMEKLİK UN ihalesi

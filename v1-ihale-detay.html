@@ -370,33 +370,38 @@
     }
   }
 
-  // ── Benzer ihaleler (aynı kategori + il) ──
+  // ── Benzer ihaleler — skorlu RPC (idare+il+kategori+başlık kelimesi); RPC yoksa eski filtreye düşer ──
   async function benzerYukle(r){
     const el=document.getElementById('d-benzer');
-    try{
-      let q=sb.from('ilanlar').select('id,baslik,il,tur,son_teklif_tarihi')
-        .eq('durum','aktif').gte('son_teklif_tarihi',new Date().toISOString()).neq('id',r.id);
-      // Kategori TEK BAŞINA yetmiyor: sınıflandırıcı bazı ilanları yanlış kovaya atıyor
-      // (ör. "Canlı Hayvan Borsası işletme hakkı" → İnşaat). İhale TİPİ de eşleşsin ki
-      // Yapım ihalesine Satış/Kiraya Verme ilanı benzer diye çıkmasın.
-      if(r.kategori) q=q.eq('kategori',r.kategori);
-      if(r.tur) q=q.eq('tur',r.tur);
-      // supabase-js hatayı FIRLATMAZ, {error} döner → kontrol edilmezse başarısız sorgu
-      // "benzer ihale bulunamadı" diye SESSİZCE yanlış bilgi olarak sunulur.
-      const {data,error}=await q.order('son_teklif_tarihi',{ascending:true,nullsFirst:true}).limit(6);
-      if(error) throw error;
+    const ciz=(data)=>{
       if(!data||!data.length){ el.innerHTML='<div class="v1-bos">Benzer açık ihale bulunamadı.</div>'; return; }
       el.innerHTML=data.map(i=>{
-        const g=Math.max(0,Math.ceil((new Date(i.son_teklif_tarihi)-new Date())/86400000));
+        const g=i.son_teklif_tarihi?Math.max(0,Math.ceil((new Date(i.son_teklif_tarihi)-new Date())/86400000)):null;
+        const alt=[esc(i.il||'—'), i.tur?esc(i.tur):null, i.neden?esc(i.neden):null].filter(Boolean).join(' · ');
         return `<a class="v1-satir" href="v1-ihale-detay?id=${i.id}" style="display:flex;align-items:center;gap:12px;padding:11px 0;border-top:1px solid var(--v1-cizgi);text-decoration:none;color:inherit;">
           <div style="flex:1;min-width:0;">
             <div style="font-size:13.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(i.baslik||'İhale')}</div>
-            <div style="font-size:11.5px;color:var(--v1-muted);margin-top:2px;">${esc(i.il||'—')}${i.tur?' · '+esc(i.tur):''}</div>
+            <div style="font-size:11.5px;color:var(--v1-muted);margin-top:2px;">${alt}</div>
           </div>
-          <span style="flex-shrink:0;font-size:12px;font-weight:700;padding:4px 11px;border-radius:20px;
-            background:${g<=3?'#FDECEE':'var(--v1-mavi-acik)'};color:${g<=3?'var(--v1-kirmizi)':'var(--v1-mavi)'};">Son ${g} gün</span></a>`;
+          ${g!=null?`<span style="flex-shrink:0;font-size:12px;font-weight:700;padding:4px 11px;border-radius:20px;
+            background:${g<=3?'#FDECEE':'var(--v1-mavi-acik)'};color:${g<=3?'var(--v1-kirmizi)':'var(--v1-mavi)'};">Son ${g} gün</span>`:''}</a>`;
       }).join('');
-    }catch(_){ el.innerHTML='<div class="v1-bos">Yüklenemedi.</div>'; }
+    };
+    try{
+      const {data,error}=await sb.rpc('benzer_ihaleler',{p_ilan_id:r.id,p_limit:6});
+      if(error) throw error;
+      ciz(data);
+    }catch(_){
+      // RPC henüz uygulanmadıysa/hata: eski kategori+tur filtresine düş (bölüm bozulmasın)
+      try{
+        let q=sb.from('ilanlar').select('id,baslik,il,tur,son_teklif_tarihi')
+          .eq('durum','aktif').gte('son_teklif_tarihi',new Date().toISOString()).neq('id',r.id);
+        if(r.kategori) q=q.eq('kategori',r.kategori);
+        if(r.tur) q=q.eq('tur',r.tur);
+        const {data}=await q.order('son_teklif_tarihi',{ascending:true,nullsFirst:true}).limit(6);
+        ciz(data);
+      }catch(_e){ el.innerHTML='<div class="v1-bos">Yüklenemedi.</div>'; }
+    }
   }
 
   // ── Takip ──
