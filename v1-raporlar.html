@@ -119,16 +119,17 @@
     try{
       const p={p_kelime:v('r-kelime'),p_il:v('r-il'),p_kategori:v('r-kategori'),
                p_bas:v('r-bas'),p_bit:v('r-bit'),p_min:v('r-min')?Number(v('r-min')):null,p_limit:200,p_offset:0};
-      // Geniş kelime-tek SONUÇ araması (il/kategori/tarih yok) çok sonuç eşleyip yavaşlayabilir → yönlendir.
-      if(tip==='sonuc' && p.p_kelime && !p.p_il && !p.p_kategori && !p.p_bas && !p.p_bit){
-        document.getElementById('r-tbody').innerHTML='<tr><td colspan="6" class="v1-bos">⏳ Geniş kelime araması — daha hızlı sonuç için bir <b>il</b> veya <b>tarih</b> filtresi ekleyin. Hesaplanıyor…</td></tr>';
+      // Geniş kelime-tek SONUÇ araması (il/kategori/tarih yok) → backend varsayılan SON 6 AY gösterir.
+      const genisKelime = (tip==='sonuc' && p.p_kelime && !p.p_il && !p.p_kategori && !p.p_bas && !p.p_bit);
+      if(genisKelime){
+        document.getElementById('r-tbody').innerHTML='<tr><td colspan="6" class="v1-bos">⏳ Geniş kelime araması — varsayılan olarak <b>son 6 ay</b> gösterilir. Daha eskisi için tarih aralığı girin. Hesaplanıyor…</td></tr>';
       }
       const {data,error}=await sb.rpc(tip==='ihale'?'rapor_ihale':'rapor_sonuc',p);
       if(error) throw error;
       const r=data||{};
       sonSatirlar=r.satirlar||[];
       document.getElementById('r-sonuc-baslik').textContent = tip==='ihale'?'İhale Raporu':'İhale Sonuç Raporu';
-      document.getElementById('r-sayi').innerHTML=`<strong>${num(r.toplam||0)}</strong> kayıt bulundu · ${num(sonSatirlar.length)} tanesi listeleniyor`;
+      document.getElementById('r-sayi').innerHTML=`<strong>${num(r.toplam||0)}</strong> kayıt bulundu · ${num(sonSatirlar.length)} tanesi listeleniyor`+(genisKelime?' · <span style="color:var(--v1-muted);">son 6 ay (daha eskisi için tarih ekleyin)</span>':'');
       const thead=document.getElementById('r-thead'), tbody=document.getElementById('r-tbody');
       if(tip==='ihale'){
         thead.innerHTML='<tr><th style="width:105px;">Tarih</th><th>İhale Adı</th><th style="width:150px;">İdare</th><th style="width:95px;">İl</th><th style="width:140px;">Bedel</th></tr>';

@@ -121,7 +121,7 @@ KALAN EDGE: kelime TEK BAŞINA (il/kategori/tarih filtresiz) hâlâ yavaş olabi
 trigram taraması tek başına yetmiyor. (Regresyon değil; eskiden de yavaştı.) İyileştirme
 adayı: STORED `baslik_fold` kolonu + idx_ilanlar_baslik_fold_trgm2. ✅ YAPILDI:
 `backend/migration_rapor_sonuc_edge_fix.sql` — kelime filtresi `tr_fold(baslik)` ifadesi yerine
-STORED `baslik_fold` (idx_ilanlar_baslik_fold_trgm2) → SPESİFİK/nadir kelime artık hızlı (belpa-tipi=asıl hata). CANLI: 'okul' gibi ÇOK YAYGIN kelime tek başına hâlâ ağır (17K sonuç — indeks değil HACİM sorunu; gerçek çözüm arama-motoru altyapısı, kapsam dışı). UX: v1-raporlar'da geniş kelime-tek sonuç aramasında 'il/tarih filtresi ekleyin' ipucu. ✅ (nadir kelime + reported bug) / yaygın kelime = filtre gerektirir (beklenen rapor davranışı).
+STORED `baslik_fold` (idx_ilanlar_baslik_fold_trgm2) → SPESİFİK/nadir kelime artık hızlı (belpa-tipi=asıl hata). CANLI: 'okul' gibi ÇOK YAYGIN kelime tek başına hâlâ ağır (17K sonuç — indeks değil HACİM sorunu; gerçek çözüm arama-motoru altyapısı, kapsam dışı). UX: v1-raporlar'da geniş kelime-tek sonuç aramasında 'il/tarih filtresi ekleyin' ipucu. ✅ (nadir kelime + reported bug) / yaygın kelime = filtre gerektirir. **B UYGULANDI** (`migration_rapor_sonuc_6ay.sql`): kelime-tek geniş aramada varsayılan pencere son 6 AY (kullanıcı tarih girerse COALESCE onun değerini kullanır → seçtiğine dokunmaz); frontend 'son 6 ay' notu.
 **Belirti:** Raporlarım → "İhale Sonuç Raporlarım", Kelime="belpa", İl=ANKARA →
 > "Rapor alınamadı. canceling statement due to statement timeout"
 
