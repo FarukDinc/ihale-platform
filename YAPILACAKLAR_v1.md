@@ -34,7 +34,7 @@ Konsol temiz; değerler üye girişinde dolar. → `v1-benim-sayfam.html` `kpiYu
   = DT+ilanlar mı, DT+ihale_sonuclari mı?
 → `v1-benim-sayfam.html` `kpiYukle()` (~273)
 
-## MADDE 4 — Dashboard haritası v2 davranışına taşındı (Leaflet) 🟡 kod hazır, canlı test bekliyor
+## MADDE 4 — Dashboard haritası interaktif Leaflet ✅ CANLI DOĞRULANDI (81 il, zoom, toplam renk, lejant)
 `js/harita.js` `window.HARITA_CFG` ile parametrik yapıldı (renkler/kayitYok/hrefIhale/hrefDt/lejantRenk;
 CFG yoksa v2 amber → dashboard.html DEĞİŞMEDEN çalışır). Lejant başlığı rengi CFG'ye bağlandı.
 `v1-benim-sayfam.html`: eski SVG harita (`renderHarita`+tr-harita.js) KALDIRILDI → Leaflet iskeleti
@@ -147,7 +147,7 @@ Takvime ekle · Detay). → `v1-ihaleler.html`
 - Takip durumu satırda görünsün (dolu/boş yıldız). Giriş yoksa login'e yönlendir.
 → `v1-ihaleler.html` (satır aksiyonu, ~408 `data-takvim`; `takipler` tablosu + `v1-ihale-detay`'daki takip mantığı örnek)
 
-## MADDE 9 — "Benzer İhaleler" skorlu (kategori + şehir + idare + başlık kelimesi) 🟡 migration hazır
+## MADDE 9 — "Benzer İhaleler" skorlu ✅ CANLI DOĞRULANDI (balık→balık, "Aynı idare/il")
 YAZILDI: `backend/migration_benzer_ihaleler.sql` — `benzer_ihaleler(p_ilan_id,p_limit)` skorlu
 RPC (aynı idare +35, il +20, kategori +20, başlık konu-kelimesi +8/kelime; tur ön-eleme).
 SECURITY DEFINER (idare içeride skorlar, döndürmez → misafire sızmaz). `v1-ihale-detay.html`
