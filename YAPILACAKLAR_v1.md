@@ -215,6 +215,11 @@ bir sayfa → alt sayfada tekrar nav OLMAZ.
 → `v1-dt-analiz.html`, `v1-analiz.html`
 KALAN: diğer analiz alt sayfalarında (varsa) benzer sayfa-içi nav'ları da kaldır (MADDE 19).
 
+**Sonradan (isim + sıra):** "Rekabet Analizi" → "**İhale Analizi**" olarak yeniden adlandırıldı
+(nav + sayfa başlığı `v1-rekabet.html` + kirinti + DT sayfasındaki metin göndermesi). Nav sırası:
+1. İhale Analizi (aktif) 2. Doğrudan Temin Analizi 3. Türkiye Haritası 4. Sektör 5. Firma Analizi
+6. Kurum Analizi 7. Uyumluluk 8. Firma Segmentleri 9. Dış Ticaret Analizi (en son). Canlı doğrulandı.
+
 ## MADDE 18 — Firma Analizi: 3 alt-mod (İhale / DT / İkisi birlikte) 📋
 Firma Analizi'nde firmaları 3 farklı temele göre sıralayan/gösteren alt sekme:
 1. **Sadece İhaleler** (mevcut davranış — ihale_sonuclari).
