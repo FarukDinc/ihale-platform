@@ -205,7 +205,17 @@ DT/ihale ayrımı usul+tur metninden. (v2 `ihale-detay.html` `ekapLink` mantığ
 "📋 DT Listesi" ayrı kısayol olarak eklendi. Canlı doğrulandı (aktif = "⚡ DT Analizi").
 → `v1-dt-analiz.html` (`v1-kisayol`)
 
-## MADDE 16 — DT kazanan firma analizi (firma bazında DT istatistiği) 📋
+## MADDE 16 — DT kazanan firma analizi (firma bazında DT istatistiği) 🟡 part-1 migration hazır
+**KEŞİF (canlı):** Kazanan verisi `dogrudan_temin_ilanlari`'nda DEĞİL → ayrı tablo
+`dogrudan_temin_sonuclari` (**853.170 satır**): kazanan_firma, kazanan_bedel, dt_no,
+sozlesme_tarihi, yuklenici_id (boş, bilerek). İl/kategori dogrudan_temin_ilanlari'nda (dt_no join).
+kazanan_firma anon'a KAPALI.
+**PART-1 YAZILDI:** `backend/migration_dt_firma_ozet.sql` — `firma_dt_ozet(p_firma_ad)` RPC
+(SECURITY DEFINER, authenticated) + `idx_dt_sonuc_kazanan_fold` fonksiyonel indeksi. tr_fold ile
+tutucu isim-eşitliği (sahte pozitif yok). Döndürür: dt_sayisi, bedelli, toplam/medyan bedel,
+il+kategori kırılımı. **VDS'te `-U supabase_admin` ile uygulanacak.**
+KALAN (part-2): opsiyonel yukleniciler.id bağlama; il bazında DT firma sıralaması (harita paneli).
+--- ESKİ PLAN:
 **Boşluk:** Firma Analizi yalnız ihale evrenini (`yukleniciler`+`ihale_sonuclari`) gösteriyor →
 bir firmanın **doğrudan temin kazanımları hiç görünmüyor**. Oysa veri VAR:
 `dogrudan_temin_ilanlari.kazanan_firma` (isim) + `kazanan_bedel`, ~853K sonuçlanmış DT kaydı.
