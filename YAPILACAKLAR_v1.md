@@ -81,7 +81,12 @@ yoksa, referans bir firmayı seçip **ona uygun ihaleleri** kovalayabilir.
 - MADDE 6 ile doğrudan bağlantılı (eşleşme algoritması referans firmayı da beslemeli).
 → `v1-benim-sayfam.html` (`.v1-firmam-btn` ~95) + `v1-analiz.html` akışı + backend eşleşme.
 
-## MADDE 6 — "Sizin İçin Katılabileceğiniz İhaleleri Bulduk" algoritması: analiz + iyileştir 📋
+## MADDE 6 — Eşleşme algoritması iyileştirme 🟡 migration hazır
+`backend/migration_firmam_eslesme_v2.sql` — firma_icin_acik_ihaleler'e **IDARE sinyali** (en çok
+iş aldığı ilk 8 idare → +25 puan + OR filtresi + "sık çalıştığınız idare" gerekçesi); **bant
+±%500→±%300** (p_bant 5→3, wrapper da 3). Frontend eslesme()'ye 🎯 gerekçe satırı (deploy-güvenli).
+**VDS'te supabase_admin ile uygulanacak.**
+--- ESKİ ANALİZ:
 Bu bölüm `firmam_acik_ihaleler()` RPC'sini çağırıyor (→ `firma_icin_acik_ihaleler`).
 **Mevcut algoritma** (kaynak: `backend/migration_firmam_eslesme.sql`):
 Kullanıcının SEÇTİĞİ firmanın GEÇMİŞ KAZANIMLARINDAN profil çıkarır:
