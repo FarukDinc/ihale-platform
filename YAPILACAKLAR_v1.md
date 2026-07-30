@@ -231,7 +231,10 @@ DT/ihale ayrımı usul+tur metninden. (v2 `ihale-detay.html` `ekapLink` mantığ
 tarih aralığı; imza 3→4 arg → MV+fonksiyonlar DROP+recreate). Filtresiz→MV, yıllı→canlı (15s).
 `v1-dt-analiz.html`: filtre barına "Tüm Yıllar + 2004→bugün" seçici; p_yil YALNIZ yıl seçiliyken
 gönderilir (deploy-güvenli: migration'dan önce yıl seçilmedikçe eski RPC ile çalışır). Yerel: seçici
-render + konsol temiz. **VDS'te supabase_admin ile uygulanacak.**
+render + konsol temiz.
+⚠️ PERF: yıl-tek ~12.4s (2024 DT=305K) → çözüm `backend/migration_dt_analiz_yil_mv.sql`:
+idx_dt_ilanlari_tarih + `dt_analiz_yil_mv` (yıl başına özet, ~23 satır). Yıl-tek→MV anlık,
+yıl+il→canlı. **VDS'te supabase_admin ile uygulanacak; gece refresh cron'a.**
 ⚠️ Yıl aralığı SABİT 2004→currentYear (MADDE 12 ile aynı bulgu: çöp 1926 + timeout).
 **Neden:** Yüksek enflasyonlu bir ülke → "Ort./Medyan Kazanan Bedel" gibi ₺ metrikleri yıla göre
 çok değişken; tüm-zaman ortalaması yanıltıcı. Yıl bazlı süzme gerekli.
