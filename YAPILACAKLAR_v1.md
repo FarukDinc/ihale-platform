@@ -369,6 +369,14 @@ KALAN (aynı deseni uygula): v1-analiz onboarding firma araması (v1-ac), üst-b
 v1-kurumlar / v1-sektorler arama kutuları. (v1-ihaleler "Listede Ara" client-side, DB'ye gitmiyor.)
 → ilgili arama ekranları
 
+
+## MADDE 22 — Firma dizini KPI'ları mod-duyarlı 🟡
+Kullanıcı: üst KPI'lar (Toplam Firma/Sözleşme/Ciro/İş Ortaklığı) hep "yalnız ihaleler" →
+mod değişince değişsin. YAPILDI: `firma_ozet_dt()` + `firma_ozet_birlikte()` RPC (yuklenici_ozet
+ile aynı şekil); frontend dzIstatistik moda göre RPC seçer + rozet/etiketleri günceller
+(yalnız ihaleler / yalnız DT / ihale + DT). İkisi'de firma = normalize isim BİRLEŞİMİ (çift saymaz).
+→ `v1-firma-analiz.html`, `backend/migration_firma_ozet_modlar.sql`
+
 # UZUN VADE (ayrı seri — "uzun vade" dendiğinde bu liste çıkarılır)
 
 ## UV-1 — AI Teklif/Fiyat Asistanı revizyonu: teknik şartname okuması 📋

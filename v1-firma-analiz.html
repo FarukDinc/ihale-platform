@@ -315,15 +315,15 @@
           <div class="fa-k">
             <div class="fa-k-et">Toplam Firma</div>
             <div class="fa-k-v mavi" id="dz-st-firma">—</div>
-            <div class="fa-k-alt">ihale kazanmış</div>
+            <div class="fa-k-alt" id="dz-st-firma-alt">ihale kazanmış</div>
           </div>
           <div class="fa-k">
-            <div class="fa-k-et">Toplam Sözleşme <span class="fa-rozet" title="Yalnız ihaleler — doğrudan temin sözleşmeleri dahil değil">yalnız ihaleler</span></div>
+            <div class="fa-k-et">Toplam Sözleşme <span class="fa-rozet" id="dz-st-soz-badge" title="Yalnız ihaleler — doğrudan temin sözleşmeleri dahil değil">yalnız ihaleler</span></div>
             <div class="fa-k-v" id="dz-st-soz">—</div>
-            <div class="fa-k-alt">EKAP ihale sonuç kaydı</div>
+            <div class="fa-k-alt" id="dz-st-soz-alt">EKAP ihale sonuç kaydı</div>
           </div>
           <div class="fa-k">
-            <div class="fa-k-et">Toplam Ciro <span class="fa-rozet" title="Yalnız ihaleler — firmaların doğrudan temin kazanımları bu toplama girmez">yalnız ihaleler</span></div>
+            <div class="fa-k-et">Toplam Ciro <span class="fa-rozet" id="dz-st-ciro-badge" title="Yalnız ihaleler — firmaların doğrudan temin kazanımları bu toplama girmez">yalnız ihaleler</span></div>
             <div class="fa-k-v" id="dz-st-ciro">—</div>
             <div class="fa-k-alt" id="dz-st-ciro-alt">kazanılan ihale bedelleri toplamı</div>
           </div>
@@ -689,16 +689,26 @@
   /* ══════════════ DİZİN ══════════════ */
   async function dzIstatistik(){
     try{
-      const { data, error } = await sb.rpc('yuklenici_ozet');
+      // MADDE 20: KPI'lar moda göre — ihale / DT / ikisi birlikte.
+      const rpc = dzMod==='dt' ? 'firma_ozet_dt' : dzMod==='birlikte' ? 'firma_ozet_birlikte' : 'yuklenici_ozet';
+      const { data, error } = await sb.rpc(rpc);
       if (error) throw error;
       const r = (data && data[0]) || {};
       $('dz-st-firma').textContent = num(r.toplam);
       $('dz-st-soz').textContent   = num(r.toplam_sozlesme);
       $('dz-st-ciro').textContent  = paraKisa(r.toplam_ciro);
       $('dz-st-ortak').textContent = num(r.ortak_sayisi);
-      // Paydayı görünür kıl: bu ciro kaç sözleşme / kaç firma üzerinden toplandı?
+      const rozet = dzMod==='dt' ? 'yalnız DT' : dzMod==='birlikte' ? 'ihale + DT' : 'yalnız ihaleler';
+      if($('dz-st-soz-badge'))  $('dz-st-soz-badge').textContent  = rozet;
+      if($('dz-st-ciro-badge')) $('dz-st-ciro-badge').textContent = rozet;
+      if($('dz-st-firma-alt'))  $('dz-st-firma-alt').textContent  =
+        dzMod==='dt' ? 'doğrudan temin kazanmış' : dzMod==='birlikte' ? 'ihale veya DT kazanmış' : 'ihale kazanmış';
+      if($('dz-st-soz-alt'))    $('dz-st-soz-alt').textContent    =
+        dzMod==='dt' ? 'DT sonuç kaydı' : dzMod==='birlikte' ? 'ihale + DT kaydı' : 'EKAP ihale sonuç kaydı';
       $('dz-st-ciro-alt').textContent =
-        `${num(r.toplam_sozlesme)} ihale sözleşmesi · ${num(r.toplam)} firma üzerinden`;
+        dzMod==='dt' ? `${num(r.toplam_sozlesme)} DT · ${num(r.toplam)} firma üzerinden`
+        : dzMod==='birlikte' ? `${num(r.toplam_sozlesme)} sözleşme (ihale+DT) · ${num(r.toplam)} firma`
+        : `${num(r.toplam_sozlesme)} ihale sözleşmesi · ${num(r.toplam)} firma üzerinden`;
     }catch(e){
       ['dz-st-firma','dz-st-soz','dz-st-ciro','dz-st-ortak'].forEach(i => { $(i).textContent='—'; });
     }
@@ -1854,6 +1864,7 @@
                                    : dzMod === 'birlikte' ? 'Toplam (İhale + DT)' : 'Toplam Ciro (İhale)';
     $('dz-sirala').disabled = false;   // MADDE 20-A: DT & İkisi modunda da sıralanabilir
     dzYukle(true);
+    dzIstatistik();   // MADDE 20: üst KPI'lar da moda göre değişsin
   });
   $('dz-srt-sayi').addEventListener('click', () => dzSirala('sayi_desc'));
   $('dz-srt-ciro').addEventListener('click', () => dzSirala('ciro_desc'));
