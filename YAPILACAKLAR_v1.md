@@ -203,11 +203,14 @@ tek join anahtarı normalize isim (bulanık).
 (bkz. hafıza `vkn-yok-beyan-rozet` — beyan≠doğrulanmış).
 → yeni `backend/migration_dt_firma.sql`, `v1-firma-analiz.html` (DT bloğu)
 
-## MADDE 17 — DT Analizi sekme çubuğu yeniden düzenlendi ✅
-"DT Listesi" (afaki) ve "Sektörler" (ana analiz nav'ında zaten var, gereksiz) kaldırıldı;
-"Kurumlar" → "Kurum Analizi"; etiket "⚡ Doğrudan Temin Analizi". Yeni sıra:
-📊 Rekabet Analizi · ⚡ Doğrudan Temin Analizi (aktif) · 🏢 Firma Analizi · 🏛️ Kurum Analizi.
-Canlı doğrulandı. → `v1-dt-analiz.html` (`v1-kisayol`)
+## MADDE 17 — DT Analizi: ortak analiz nav'ına hizalandı ✅
+(DÜZELTME: önce yanlışlıkla kısaltılmış 4 sekmeli ayrı bar yapılmıştı — kullanıcı "kategorileri
+silme, hepsini TEK ortak nav'da birleştir" dedi.) DT sayfası artık `v1-analiz.html` ile BİREBİR
+aynı 7 sekmeli nav'ı kullanıyor, "Doğrudan Temin Analizi" aktif:
+📊 Rekabet · 🗺️ Türkiye Haritası · 🏭 Sektör · 🌍 Dış Ticaret · ⚡ **Doğrudan Temin (aktif)** ·
+🎯 Uyumluluk · ⭐ Firma Segmentleri. Canlı doğrulandı. → `v1-dt-analiz.html`
+NOT: Bu ortak nav'da "Firma Analizi" ve "Kurum Analizi" sekmeleri YOK (fotoğrafta da yok).
+İstenirse MADDE 19'da tüm analiz sayfalarına tutarlı biçimde eklenebilir.
 
 ## MADDE 18 — Firma Analizi: 3 alt-mod (İhale / DT / İkisi birlikte) 📋
 Firma Analizi'nde firmaları 3 farklı temele göre sıralayan/gösteren alt sekme:
