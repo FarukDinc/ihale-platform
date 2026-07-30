@@ -365,6 +365,12 @@
 
         <!-- LİSTE GÖRÜNÜMÜ -->
         <div id="fa-liste-alan">
+          <!-- MADDE 18-B: sıralama modu — İhale / DT / İkisi birlikte -->
+          <div id="dz-mod" style="display:inline-flex;border:1px solid var(--v1-cizgi);border-radius:9px;overflow:hidden;margin-bottom:10px;">
+            <button type="button" class="dz-mod-btn" data-mod="ihale" style="border:none;padding:8px 14px;font-family:inherit;font-size:12.5px;font-weight:700;cursor:pointer;background:var(--v1-mavi);color:#fff;">📋 İhale</button>
+            <button type="button" class="dz-mod-btn" data-mod="dt" style="border:none;border-left:1px solid var(--v1-cizgi);padding:8px 14px;font-family:inherit;font-size:12.5px;font-weight:700;cursor:pointer;background:#fff;color:var(--v1-mavi);">⚡ Doğrudan Temin</button>
+            <button type="button" class="dz-mod-btn" data-mod="birlikte" style="border:none;border-left:1px solid var(--v1-cizgi);padding:8px 14px;font-family:inherit;font-size:12.5px;font-weight:700;cursor:pointer;background:#fff;color:var(--v1-mavi);">🔗 İkisi Birlikte</button>
+          </div>
           <div class="fa-toolbar">
             <div class="fa-ara"><span style="color:var(--v1-muted);">🔍</span>
               <input type="text" id="dz-arama" placeholder="Firma adı ara…" autocomplete="off"></div>
@@ -602,6 +608,7 @@
   let ORNEKLEM_KESIK = false;   // sonucVeri limite dayandı mı
   let sayfa = 1, topSayfa = 1;
   let dzSayfaNo = 0, dzToplam = 0, dzAramaTimer = null, _dizinKuruldu = false;
+  let dzMod = 'ihale';   // MADDE 18-B: ihale | dt | birlikte
   let _pivotYuklendi = false, _yilChart = null;
   let ilDagilimVeri = null;     // il_firma_dagilimi sonucu (dizin il filtresi + harita ortak kullanır)
 
@@ -724,25 +731,33 @@
 
   async function dzYukle(reset){
     if (reset) dzSayfaNo = 0;
-    const arama = trFold(($('dz-arama').value || '').trim());
+    const aramaRaw = ($('dz-arama').value || '').trim();
+    const arama = trFold(aramaRaw);
     const ilVal = $('dz-il').value;
-    let [alan, asc] = DZ_ALAN[$('dz-sirala').value] || DZ_ALAN.ciro_desc;
-    // ad kolonu anon'a kapalı — ORDER BY de SELECT yetkisi ister
-    if (!uyeMi && alan === 'ad') [alan, asc] = DZ_ALAN.ciro_desc;
     const govde = $('dz-govde');
     if (reset) govde.innerHTML = '<tr><td colspan="6"><div class="v1-bos">Yükleniyor…</div></td></tr>';
 
-    let q = sb.from('yukleniciler').select(
-      uyeMi ? 'id,ad,normalize_ad,il,toplam_sozlesme_sayisi,toplam_ciro,son_sozlesme_tarihi,ortak_girisim'
-            : 'id,il,toplam_sozlesme_sayisi,toplam_ciro,son_sozlesme_tarihi,ortak_girisim',
-      { count:'exact' });
-    if (arama && uyeMi) q = q.ilike('arama_fold', '%'+arama+'%');   // arama_fold anon'a kapalı
-    if (ilVal) q = q.eq('il', ilVal);
-    // ⚠️ Yön indeksle eşleşmezse sorgu çok yavaşlar — nullsFirst daima yön ile aynı mantıkta
-    q = q.order(alan, { ascending: asc, nullsFirst: false })
-         .range(dzSayfaNo*DZ_BOYUT, dzSayfaNo*DZ_BOYUT + DZ_BOYUT - 1);
-
-    const { data, count, error } = await q;
+    // MADDE 18-B: mod=dt/birlikte → RPC (DT bedeli / ihale+DT toplamı). mod=ihale → yukleniciler.
+    let data, count = null, error;
+    if (dzMod !== 'ihale' && uyeMi){
+      const rpc = dzMod === 'dt' ? 'firma_dizin_dt' : 'firma_dizin_birlikte';
+      const params = dzMod === 'dt'
+        ? { p_ara: aramaRaw || null, p_limit: DZ_BOYUT, p_offset: dzSayfaNo*DZ_BOYUT }
+        : { p_ara: aramaRaw || null, p_il: ilVal || null, p_limit: DZ_BOYUT, p_offset: dzSayfaNo*DZ_BOYUT };
+      ({ data, error } = await sb.rpc(rpc, params));
+    } else {
+      let [alan, asc] = DZ_ALAN[$('dz-sirala').value] || DZ_ALAN.ciro_desc;
+      if (!uyeMi && alan === 'ad') [alan, asc] = DZ_ALAN.ciro_desc;   // ad kolonu anon'a kapalı
+      let q = sb.from('yukleniciler').select(
+        uyeMi ? 'id,ad,normalize_ad,il,toplam_sozlesme_sayisi,toplam_ciro,son_sozlesme_tarihi,ortak_girisim'
+              : 'id,il,toplam_sozlesme_sayisi,toplam_ciro,son_sozlesme_tarihi,ortak_girisim',
+        { count:'exact' });
+      if (arama && uyeMi) q = q.ilike('arama_fold', '%'+arama+'%');
+      if (ilVal) q = q.eq('il', ilVal);
+      q = q.order(alan, { ascending: asc, nullsFirst: false })
+           .range(dzSayfaNo*DZ_BOYUT, dzSayfaNo*DZ_BOYUT + DZ_BOYUT - 1);
+      ({ data, count, error } = await q);
+    }
     if (error){
       govde.innerHTML = `<tr><td colspan="6"><div class="v1-bos">${
         kilitliMi(error)
@@ -751,8 +766,11 @@
       $('dz-pager').style.display = 'none';
       return;
     }
+    const rpcMod = (dzMod !== 'ihale');
     dzToplam = count || 0;
-    $('dz-say').textContent = num(dzToplam) + ' firma';
+    $('dz-say').textContent = rpcMod
+      ? (dzMod === 'dt' ? 'DT bedeline göre sıralı' : 'İhale + DT toplamına göre sıralı')
+      : num(dzToplam) + ' firma';
     const rows = data || [];
     if (!rows.length){
       govde.innerHTML = '<tr><td colspan="6"><div class="v1-bos">Eşleşen firma bulunamadı.</div></td></tr>';
@@ -772,11 +790,19 @@
       </tr>`;
     }).join('');
 
-    const toplamSayfa = Math.max(1, Math.ceil(dzToplam / DZ_BOYUT));
-    $('dz-pager').style.display = toplamSayfa > 1 ? 'flex' : 'none';
-    $('dz-pinfo').textContent = `Sayfa ${dzSayfaNo+1} / ${num(toplamSayfa)}`;
-    $('dz-prev').disabled = dzSayfaNo <= 0;
-    $('dz-next').disabled = dzSayfaNo >= toplamSayfa - 1;
+    if (rpcMod){   // count yok → sayfa doluysa sonraki var say
+      const sonrakiVar = rows.length >= DZ_BOYUT;
+      $('dz-pager').style.display = (dzSayfaNo > 0 || sonrakiVar) ? 'flex' : 'none';
+      $('dz-pinfo').textContent = `Sayfa ${dzSayfaNo+1}`;
+      $('dz-prev').disabled = dzSayfaNo <= 0;
+      $('dz-next').disabled = !sonrakiVar;
+    } else {
+      const toplamSayfa = Math.max(1, Math.ceil(dzToplam / DZ_BOYUT));
+      $('dz-pager').style.display = toplamSayfa > 1 ? 'flex' : 'none';
+      $('dz-pinfo').textContent = `Sayfa ${dzSayfaNo+1} / ${num(toplamSayfa)}`;
+      $('dz-prev').disabled = dzSayfaNo <= 0;
+      $('dz-next').disabled = dzSayfaNo >= toplamSayfa - 1;
+    }
   }
 
   function dizinBaslat(){
@@ -1805,6 +1831,20 @@
   });
   $('dz-il').addEventListener('change', () => dzYukle(true));
   $('dz-sirala').addEventListener('change', () => dzSirala($('dz-sirala').value));
+  // MADDE 18-B: sıralama modu (İhale / DT / İkisi) — ciro kolonu başlığı moda göre değişir.
+  const dzModBar = $('dz-mod');
+  if (dzModBar) dzModBar.addEventListener('click', (e) => {
+    const b = e.target.closest('.dz-mod-btn'); if (!b) return;
+    dzMod = b.dataset.mod;
+    dzModBar.querySelectorAll('.dz-mod-btn').forEach(x => {
+      const on = x === b; x.style.background = on ? 'var(--v1-mavi)' : '#fff'; x.style.color = on ? '#fff' : 'var(--v1-mavi)';
+    });
+    const ciroTh = $('dz-srt-ciro');
+    if (ciroTh) ciroTh.textContent = dzMod === 'dt' ? 'Toplam DT Bedeli'
+                                   : dzMod === 'birlikte' ? 'Toplam (İhale + DT)' : 'Toplam Ciro (İhale)';
+    $('dz-sirala').disabled = (dzMod !== 'ihale');   // RPC modunda sıralama sabit
+    dzYukle(true);
+  });
   $('dz-srt-sayi').addEventListener('click', () => dzSirala('sayi_desc'));
   $('dz-srt-ciro').addEventListener('click', () => dzSirala('ciro_desc'));
   $('dz-prev').addEventListener('click', () => { if (dzSayfaNo > 0){ dzSayfaNo--; dzYukle(false); window.scrollTo({top:0,behavior:'smooth'}); } });

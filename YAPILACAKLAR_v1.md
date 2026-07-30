@@ -301,6 +301,11 @@ KALAN: diğer analiz alt sayfalarında (varsa) benzer sayfa-içi nav'ları da ka
 6. Kurum Analizi 7. Uyumluluk 8. Firma Segmentleri 9. Dış Ticaret Analizi (en son). Canlı doğrulandı.
 
 ## MADDE 18 — Firma Analizi: DT kazanımları görünür 🟡 Phase-A yapıldı
+**Phase-B YAZILDI (MADDE 18-B):** `backend/migration_firma_dt_toplam_mv.sql` — firma_dt_toplam MV
+(normalize_firma → DT sözleşme+bedel) + `firma_dizin_dt` (DT bedeline göre) + `firma_dizin_birlikte`
+(yukleniciler LEFT JOIN DT, normalize_ad=firma_norm KESİN eşitlik → ihale+DT toplamı). Firma dizinine
+3 mod toggle (📋 İhale/⚡ DT/🔗 İkisi); ciro kolon başlığı moda göre değişir; RPC modunda count-yok
+pager. MV sahibi postgres'e devredildi + run_scraper.sh gece refresh'e eklendi. **supabase_admin ile uygulanacak.**
 **Phase-A YAPILDI:** Firma detayına "⚡ Doğrudan Temin Kazanımları" bloğu eklendi (ihale
 KPI'larının altında, "yalnız DT" rozetli, altın çerçeve) — `firma_dt_ozet(y.ad)` ile:
 DT sözleşme sayısı + toplam/medyan bedel + DT il/kategori dağılımı. Firma adı normalize eşleşme
