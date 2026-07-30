@@ -203,14 +203,17 @@ tek join anahtarı normalize isim (bulanık).
 (bkz. hafıza `vkn-yok-beyan-rozet` — beyan≠doğrulanmış).
 → yeni `backend/migration_dt_firma.sql`, `v1-firma-analiz.html` (DT bloğu)
 
-## MADDE 17 — DT Analizi: ortak analiz nav'ına hizalandı ✅
-(DÜZELTME: önce yanlışlıkla kısaltılmış 4 sekmeli ayrı bar yapılmıştı — kullanıcı "kategorileri
-silme, hepsini TEK ortak nav'da birleştir" dedi.) DT sayfası artık `v1-analiz.html` ile BİREBİR
-aynı 7 sekmeli nav'ı kullanıyor, "Doğrudan Temin Analizi" aktif:
-📊 Rekabet · 🗺️ Türkiye Haritası · 🏭 Sektör · 🌍 Dış Ticaret · ⚡ **Doğrudan Temin (aktif)** ·
-🎯 Uyumluluk · ⭐ Firma Segmentleri. Canlı doğrulandı. → `v1-dt-analiz.html`
-NOT: Bu ortak nav'da "Firma Analizi" ve "Kurum Analizi" sekmeleri YOK (fotoğrafta da yok).
-İstenirse MADDE 19'da tüm analiz sayfalarına tutarlı biçimde eklenebilir.
+## MADDE 17 — Analiz gezinmesi tek merkezde; DT sayfasından nav kaldırıldı ✅
+**Nihai tasarım (kullanıcı):** Gezinme YALNIZ "Analiz" sayfasında (hub). Her analiz başlı başına
+bir sayfa → alt sayfada tekrar nav OLMAZ.
+- `v1-dt-analiz.html`: sayfa-içi analiz nav'ı TAMAMEN kaldırıldı (sadece başlık+içerik). ✓
+- `v1-analiz.html`: hub nav'a "🏢 Firma Analizi" + "🏛️ Kurum Analizi" eklendi → 9 sekme:
+  Rekabet · Türkiye Haritası · Sektör · Dış Ticaret · Doğrudan Temin · Uyumluluk · Firma Analizi ·
+  Kurum Analizi · Firma Segmentleri. Canlı doğrulandı.
+- (İki yanlış deneme düzeltildi: önce 4-sekme kısaltma, sonra 7-sekme sayfa-içi bar — ikisi de
+  kullanıcının istediği değildi; doğrusu: alt sayfada nav YOK.)
+→ `v1-dt-analiz.html`, `v1-analiz.html`
+KALAN: diğer analiz alt sayfalarında (varsa) benzer sayfa-içi nav'ları da kaldır (MADDE 19).
 
 ## MADDE 18 — Firma Analizi: 3 alt-mod (İhale / DT / İkisi birlikte) 📋
 Firma Analizi'nde firmaları 3 farklı temele göre sıralayan/gösteren alt sekme:
@@ -223,13 +226,12 @@ doğru değerlendiririz.
 ölçek farkı (DT medyanı ≈ ₺37 bin) → "birlikte" modda toplama değil, AYRI kolon/rozetle sun.
 → `v1-firma-analiz.html`, DT firma RPC'si (MADDE 16)
 
-## MADDE 19 — Analiz nav'ını birleştir (tek merkez: Analiz sayfası) 📋
-Hedef: tüm analiz alt sayfaları (Rekabet / DT / Firma / Kurum / Sektör / Harita / Dış Ticaret /
-Uyumluluk / Firma Segmentleri) 2. fotoğraftaki gibi TEK tutarlı üst nav ile "Analiz" sayfasında
-toplansın — ayrı bir dal gibi sınıflandırılmasın. İlk açılışta **Rekabet Analizi aktif**.
-- Mevcut zengin nav zaten `v1-analiz.html`'de var; alt sayfalar ona hizalanmalı (DT sayfasının
-  yerel `v1-kisayol`'u MADDE 17 ile sadeleşti — kalanı tutarlı hale getir).
-→ `v1-analiz.html` + tüm analiz alt sayfaları
+## MADDE 19 — Diğer analiz alt sayfalarından da sayfa-içi nav'ı kaldır 📋
+MADDE 17 ile Analiz sayfası tek gezinme merkezi oldu (9 sekme) ve DT sayfasından nav kaldırıldı.
+KALAN: diğer analiz alt sayfaları (Rekabet, Firma Analizi, Sektörler, Kurumlar, Harita, Dış
+Ticaret, Uyumluluk, Firma Segmentleri) — sayfa-içi tekrar nav varsa onları da kaldır ki her
+sayfa "başlı başına bir analiz" ilkesine uysun. (v1-rekabet'te zaten yok; diğerlerini tara.)
+→ analiz alt sayfaları
 
 ---
 
