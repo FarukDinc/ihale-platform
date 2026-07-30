@@ -321,6 +321,13 @@ fazla nav kalmadı — DT sayfasındaki tek istisnaydı (MADDE 17'de kaldırıld
 
 ---
 
+
+## GECE REFRESH (housekeeping) 🟡 uygulanacak
+3 yeni MV gece refresh gerektiriyor. `run_scraper.sh`'e il_yil_firma + dt_analiz_yil_mv REFRESH
+satırları eklendi (dt_analiz_mv zaten vardı). MV sahipleri supabase_admin olduğundan cron
+`-U postgres` refresh edemez → `backend/migration_mv_owner_fix.sql` ile sahip postgres'e devrediliyor.
+**Uygula:** owner-fix migration (supabase_admin) + pull (cron yeni script'i ertesi gece alır).
+
 # UZUN VADE (ayrı seri — "uzun vade" dendiğinde bu liste çıkarılır)
 
 ## UV-1 — AI Teklif/Fiyat Asistanı revizyonu: teknik şartname okuması 📋
