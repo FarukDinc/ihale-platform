@@ -81,7 +81,11 @@ yoksa, referans bir firmayı seçip **ona uygun ihaleleri** kovalayabilir.
 - MADDE 6 ile doğrudan bağlantılı (eşleşme algoritması referans firmayı da beslemeli).
 → `v1-benim-sayfam.html` (`.v1-firmam-btn` ~95) + `v1-analiz.html` akışı + backend eşleşme.
 
-## MADDE 6 — Eşleşme algoritması iyileştirme ✅ CANLI (idare sinyali + ±%300 + 🎯 gerekçe)
+## MADDE 6 — Eşleşme algoritması ✅ CANLI (v3: KATMANLI sektör-öncelikli)
+v3 (`migration_firmam_eslesme_v3.sql`): kullanıcı 'il kötü referans' dedi → KESİN KATMAN skoru:
+Sektör 100 / Kurum 30 / İl 10 → Sektör+Kurum(130)>Sektör+İl(110)>Sektör(100)>Kurum(30)>İl(10).
+Bedel-yakınlığı artık katman DEĞİL, aynı katman içi tiebreaker; ±%500 hard bant KALDIRILDI.
+Sektör=kategori VEYA başlık kelimesi. İl gerekçede yalnız TEK sinyalse. (v2: idare sinyali+±%300.)
 `backend/migration_firmam_eslesme_v2.sql` — firma_icin_acik_ihaleler'e **IDARE sinyali** (en çok
 iş aldığı ilk 8 idare → +25 puan + OR filtresi + "sık çalıştığınız idare" gerekçesi); **bant
 ±%500→±%300** (p_bant 5→3, wrapper da 3). Frontend eslesme()'ye 🎯 gerekçe satırı (deploy-güvenli).
