@@ -106,6 +106,7 @@
           </select>
           <select class="v1-sec" id="f-il"><option value="">Tüm İller</option></select>
           <select class="v1-sec" id="f-kategori"><option value="">Tüm Sektörler</option></select>
+          <select class="v1-sec" id="f-yil"><option value="">Tüm Yıllar</option></select>
           <button class="v1-mini-btn" id="f-sifirla">↺ Sıfırla</button>
           <button class="v1-mini-btn" id="f-paylas">🔗 Paylaş</button>
           <span class="v1-not" id="f-not"></span>
@@ -352,9 +353,13 @@
     // Hızlı filtre değişiminde ESKİ yanıt yenisini ezmesin: istek jetonu
     const benim=++istekNo;
     const tur=el('f-tur').value||null, il=el('f-il').value||null, kat=el('f-kategori').value||null;
+    const yil=el('f-yil')&&el('f-yil').value?Number(el('f-yil').value):null;
     el('f-not').textContent='Hesaplanıyor…';
     try{
-      const {data,error}=await sb.rpc('dt_analiz_ozet',{p_il:il,p_kategori:kat,p_tur:tur});
+      // p_yil YALNIZ yıl seçiliyken gönderilir → migration uygulanmadan da (yıl seçilmedikçe)
+      // eski 3-argümanlı RPC ile çalışır; yıl seçilince 4-argümanlı yeni RPC gerekir.
+      const p={p_il:il,p_kategori:kat,p_tur:tur}; if(yil) p.p_yil=yil;
+      const {data,error}=await sb.rpc('dt_analiz_ozet',p);
       if(benim!==istekNo) return;
       if(error) throw error;
       const d=data||{};
@@ -386,6 +391,7 @@
     if(el('f-tur').value) p.set('tur',el('f-tur').value);
     if(el('f-il').value) p.set('il',el('f-il').value);
     if(el('f-kategori').value) p.set('kategori',el('f-kategori').value);
+    if(el('f-yil')&&el('f-yil').value) p.set('yil',el('f-yil').value);
     const s=p.toString();
     const u=location.origin+location.pathname+(s?'?'+s:'');
     const btn=el('f-paylas');
@@ -428,8 +434,12 @@
     if(P.get('il')) si.value=P.get('il').toLocaleUpperCase('tr');
     if(P.get('kategori')) sk.value=P.get('kategori');
 
-    ['f-tur','f-il','f-kategori'].forEach(id=>el(id).addEventListener('change',yukle));
-    el('f-sifirla').addEventListener('click',()=>{ el('f-tur').value=''; si.value=''; sk.value=''; yukle(); });
+    // Yıl seçenekleri: Tüm Yıllar + 2004→bugün (MADDE 14; sabit aralık — çöp 1926/timeout nedeniyle)
+    const sy=el('f-yil'), buYil=new Date().getFullYear();
+    if(sy && sy.options.length<2){ for(let y=buYil;y>=2004;y--){ const o=document.createElement('option'); o.value=y; o.textContent=y; sy.appendChild(o); } }
+    if(P.get('yil') && sy) sy.value=P.get('yil');
+    ['f-tur','f-il','f-kategori','f-yil'].forEach(id=>el(id).addEventListener('change',yukle));
+    el('f-sifirla').addEventListener('click',()=>{ el('f-tur').value=''; si.value=''; sk.value=''; if(sy)sy.value=''; yukle(); });
     el('f-paylas').addEventListener('click',paylas);
 
     // ── Kapı: misafir → üyelik kilidi, üye ama Pro değil → Pro kilidi ───
