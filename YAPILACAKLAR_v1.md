@@ -187,6 +187,11 @@ satır rozeti "🤝 Talep". Kod içi `rfq` anahtarları/id'ler ve yorumlar korun
 
 ## MADDE 12 — "Bu ilde öne çıkan firmalar": YIL bazlı sıralama/filtre 📋
 (Kategori sıralaması yerine — kullanıcı bunu istedi.)
+⚠️ BULGU (30 Tem canlı probe): dinamik en-eski-yıl KIRILGAN — ihale_sonuclari sonuc_tarihi
+sıralaması TIMEOUT (indekssiz tam-tablo); DT'de en eski tarih 1926-01-22 = ÇÖP veri.
+→ KARAR: yıl aralığı SABİT **2004 → currentYear** (client-side üret; 4734 Kanunu 2003).
+Backend yeni RPC `il_firma_yil(p_il_folds, p_yil, p_limit)` — ihale_sonuclari (o yıl sonuc/
+sozlesme tarihi) → ilanlar (il) join → yuklenici bazında grupla. "Tüm Yıllar"=mevcut davranış.
 **Mevcut** (`v1-harita.html` `firmaListesi` ~478): sektörsüz modda firmalar
 `yukleniciler.toplam_ciro` (TÜM-ZAMAN toplam) ile sıralanıyor → hep toplam en yüksek çıkıyor.
 Bu alanlar önceden hesaplanmış toplam; yıla göre süzülemez.
@@ -212,6 +217,7 @@ DT/ihale ayrımı usul+tur metninden. (v2 `ihale-detay.html` `ekapLink` mantığ
 → `v1-ihale-detay.html` (`ciz`, aksiyon çubuğu)
 
 ## MADDE 14 — Doğrudan Temin Analizi'ne YIL filtresi 📋
+⚠️ Yıl aralığı SABİT 2004→currentYear (MADDE 12 ile aynı bulgu: çöp 1926 + timeout).
 **Neden:** Yüksek enflasyonlu bir ülke → "Ort./Medyan Kazanan Bedel" gibi ₺ metrikleri yıla göre
 çok değişken; tüm-zaman ortalaması yanıltıcı. Yıl bazlı süzme gerekli.
 **Mevcut** (`v1-dt-analiz.html`): filtreler Tüm Türler / Tüm İller / Tüm Sektörler — yıl YOK.
