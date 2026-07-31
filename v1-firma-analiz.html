@@ -1302,6 +1302,8 @@
         ${r.il ? `<span>📍 ${esc(r.il)}</span>` : ''}
         ${r.kazanan_bedel ? `<span class="fa-ik-bedel">${paraTam(r.kazanan_bedel)}</span>` : ''}
         ${r.tarih ? `<span>📅 ${tarihF(r.tarih)}</span>` : ''}
+        ${(Number(r.en_dusuk_teklif)>0 && Number(r.en_yuksek_teklif)>0)
+          ? `<span title="Doğrudan temine verilen tekliflerin en düşük–en yüksek aralığı">📊 ${paraTam(r.en_dusuk_teklif)} – ${paraTam(r.en_yuksek_teklif)}</span>` : ''}
         ${r.kategori ? `<span>${esc(r.kategori)}</span>` : ''}
       </div>
     </div>`;
