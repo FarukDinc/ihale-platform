@@ -62,6 +62,10 @@
   };
 
   // ── Menü (ihalepro nav'ıyla birebir sıra) ──────────────────────────────
+  // ⚠️ VERİ/SAYFA BÖLÜNMÜYOR — bu yalnızca GÖRSEL menü gruplaması. Çekirdek (kamu ihale işi)
+  //    üstte; kamu-ihale-dışı komşu alanlar (Global/Dış Ticaret/e-Satınalma/Bank) altta
+  //    "Keşfet" ayracının altında. Tüm sayfalar/RPC'ler/veriler aynen çalışır; sadece
+  //    ihale arayan firmanın gözü çekirdeğe odaklansın diye komşular ayrık gösterilir.
   const MENU = [
     { id: 'benim',      ad: 'Bana Özel',   ikon: I.home,   href: 'v1-benim-sayfam' },
     { id: 'takipte',    ad: 'Takibim',     ikon: I.yildiz, href: 'v1-takipte' },
@@ -74,12 +78,13 @@
     { id: 'firmalar',   ad: 'Firmalar',    ikon: I.firma,  href: 'v1-firmalar' },
     { id: 'kurumlar',   ad: 'Kurumlar',    ikon: I.kurum,  href: 'v1-kurumlar' },
     { id: 'sektorler',  ad: 'Sektörler',   ikon: I.sektor, href: 'v1-sektorler' },
-    { id: 'global',     ad: 'Global İhaleler', ikon: I.global, href: 'v1-global' },
-    { id: 'disticaret', ad: 'Dış Ticaret', ikon: I.ticaret, href: 'v1-dis-ticaret' },
-    { id: 'esatinalma', ad: 'e-Satınalma', ikon: I.sepet,  href: 'v1-esatinalma' },
     { id: 'ihalelerim', ad: 'İhalelerim',  ikon: I.rapor,  href: 'v1-ihalelerim' },
     { id: 'harita',     ad: 'Harita',      ikon: I.harita, href: 'v1-harita' },
-    { id: 'bank',       ad: 'Bank',        ikon: I.para,   href: 'v1-bank' },
+    // ── Keşfet — kamu ihale dışı komşu alanlar (yalnız menüde ayrık; sayfalar yerinde) ──
+    { id: 'global',     ad: 'Global İhaleler', ikon: I.global, href: 'v1-global',    kesfet: true },
+    { id: 'disticaret', ad: 'Dış Ticaret', ikon: I.ticaret, href: 'v1-dis-ticaret', kesfet: true },
+    { id: 'esatinalma', ad: 'e-Satınalma', ikon: I.sepet,  href: 'v1-esatinalma',   kesfet: true },
+    { id: 'bank',       ad: 'Bank',        ikon: I.para,   href: 'v1-bank',          kesfet: true },
   ];
 
   const aktif = document.body.getAttribute('data-v1-aktif') || '';
@@ -91,8 +96,12 @@
   ray.innerHTML =
     '<a class="v1-ray-logo" href="v1-benim-sayfam" title="İhaleGlobal"><img src="/favicon-v1.svg?v=1" alt="İhaleGlobal"></a>' +
     '<nav class="v1-ray-nav">' +
-    MENU.map(m =>
-      `<button class="v1-ray-item${m.id === aktif ? ' aktif' : ''}" data-href="${m.href}" title="${m.ad}">${m.ikon}<span>${m.ad}</span></button>`
+    MENU.map((m, i) =>
+      ((m.kesfet && (i === 0 || !MENU[i - 1].kesfet))
+        ? '<div class="v1-ray-ayrac" style="margin:12px 10px 4px;padding-top:9px;border-top:1px solid rgba(255,255,255,.14);'
+          + 'font-size:9.5px;font-weight:800;letter-spacing:.06em;color:rgba(255,255,255,.5);text-transform:uppercase;text-align:center;">Keşfet</div>'
+        : '')
+      + `<button class="v1-ray-item${m.id === aktif ? ' aktif' : ''}" data-href="${m.href}" title="${m.ad}">${m.ikon}<span>${m.ad}</span></button>`
     ).join('') +
     '</nav>';
 

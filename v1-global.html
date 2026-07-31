@@ -123,7 +123,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/dunya-harita.js?v=1"></script>
 <script src="js/harita-zoom.js?v=1"></script>
-<script src="js/v1-kabuk.js?v=11"></script>
+<script src="js/v1-kabuk.js?v=12"></script>
 <script>
 (() => {
   const SB_URL="https://ihaleglobal.com", SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzg0MzA3MTU4LCJleHAiOjE5NDE5ODcxNTh9.CjNKulvirotDD_y2oO2QKgo0kbqYvL0jUSV1RiDMoso";
@@ -181,10 +181,36 @@
     return '*'+(sabit(genis)>=4?genis:iAile)+'*';
   }
 
-  function sorgu(sayimIcin){
+  /**
+   * TAKEDOWN switch guard'ı: `yayinda` kolonu tabloda VAR MI?
+   * ── Neden guard? v1-global CANLI. `.eq('yayinda',true)`'yu KOŞULSUZ eklersek ve
+   *    HTML, migration_uluslararasi_yayin.sql UYGULANMADAN önce deploy olursa
+   *    (CF cache 4sa + migration'ı kullanıcı ayrıca -U supabase_admin ile koşuyor →
+   *    sıralama kırılgan) sorgu 42703 ile 400 döner ve TÜM liste "Liste yüklenemedi"
+   *    olur — çalışan bir sayfada canlı kesinti. Guard bunu tamamen ortadan kaldırır.
+   * ── Sızıntı riski YOK: gizlenecek satırlar (UNGM/AfDB, yayinda=false) ancak kolon
+   *    VARSA yazılabilir; kolon yokken gizli satır da yoktur → filtresiz mod güvenli.
+   * ── FAIL-CLOSED: yalnız KESİN "kolon yok" (42703) filtreyi kapatır. Ağ hatası /
+   *    başka hata → kolon VAR varsayılır (filtre AÇIK kalır) ki gerçek bir takedown
+   *    sırasında geçici bir hata gizli veriyi göstermesin. Sonuç bir kez sorgulanıp
+   *    cache'lenir (sayfa başına tek ek istek).
+   */
+  let _yayindaProbe=null;
+  function yayindaVarMi(){
+    if(_yayindaProbe) return _yayindaProbe;
+    _yayindaProbe=sb.from('uluslararasi_ihaleler').select('yayinda').limit(1)
+      .then(r=>!(r.error && r.error.code==='42703'))   // 42703 = kolon yok → false
+      .catch(()=>true);                                 // ağ hatası → fail-closed (süz)
+    return _yayindaProbe;
+  }
+
+  function sorgu(sayimIcin,yayindaVar){
     let q=sb.from('uluslararasi_ihaleler').select(
       sayimIcin?'id':'id,baslik,ulke,ulke_kodu,kategori,tur,tahmini_bedel,para_birimi,son_teklif_tarihi,orijinal_url,kaynak',
       sayimIcin?{count:'exact',head:true}:undefined);
+    // TAKEDOWN switch: misafir/üye YALNIZ yayinda=true görür. Kolon yoksa (migration
+    // uygulanmadan) filtre ATLANIR → sayfa 400 vermez, mevcut TED verisi görünür kalır.
+    if(yayindaVar) q=q.eq('yayinda',true);
     const v=(id)=>{const e=document.getElementById(id); return e&&e.value?e.value.trim():'';};
     // Başlık + orijinal (TED) başlık birlikte taranır: "software" tek başına
     // baslik'te 335, iki kolonda 936 satır buluyor (ölçüldü).
@@ -204,11 +230,12 @@
     tb.innerHTML='<tr><td colspan="5" class="v1-bos">Yükleniyor…</td></tr>';
     try{
       const bas=(sayfa-1)*BOY;
+      const yv=await yayindaVarMi();   // kolon var mı? (bir kez sorulur, cache'lenir)
       const [veri,sayim]=await Promise.all([
-        sorgu(false).order('son_teklif_tarihi',{ascending:true,nullsFirst:true}).range(bas,bas+BOY-1),
+        sorgu(false,yv).order('son_teklif_tarihi',{ascending:true,nullsFirst:true}).range(bas,bas+BOY-1),
         // ⚠️ supabase-js sorgu hatasında REDDETMEZ, {error} ile çözülür → .catch
         //    tek başına yetmez; sayım patlarsa toplamı gizleyip listeyi göster.
-        sorgu(true).then(r=>r&&r.error?{count:null}:r).catch(()=>({count:null})),
+        sorgu(true,yv).then(r=>r&&r.error?{count:null}:r).catch(()=>({count:null})),
       ]);
       if(veri.error) throw veri.error;
       const toplam=(sayim&&sayim.count!=null)?sayim.count:null;
@@ -283,7 +310,9 @@
       // RPC erişilemezse boş dropdown bırakmamak için daraltılmış yedek tarama.
       // (Yine 1.000 satır tavanına takılır — bilerek yalnızca yedek yol.)
       try{
-        const {data}=await sb.from('uluslararasi_ihaleler').select('ulke,kategori').limit(1000);
+        let fq=sb.from('uluslararasi_ihaleler').select('ulke,kategori');
+        if(await yayindaVarMi()) fq=fq.eq('yayinda',true);  // gizli kaynak dropdown'a düşmesin
+        const {data}=await fq.limit(1000);
         secenekDoldur((data||[]).map(r=>r.ulke),(data||[]).map(r=>r.kategori));
       }catch(_e){}
     }
