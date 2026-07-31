@@ -54,10 +54,6 @@
               <svg viewBox="0 0 24 24" width="15" height="15" fill="var(--v1-muted)"><path fill-rule="evenodd" d="M10.5 3a7.5 7.5 0 1 0 4.55 13.46l4.24 4.25 1.42-1.42-4.25-4.24A7.5 7.5 0 0 0 10.5 3Zm0 2a5.5 5.5 0 1 1 0 11 5.5 5.5 0 0 1 0-11Z"/></svg>
               <input type="text" id="v1-ara-liste" placeholder="Kazanan firma ara">
             </div>
-            <button class="v1-excel" id="v1-excel">
-              <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path fill-rule="evenodd" d="M8 2h6.2L21 8.8V20a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2Zm5.6 8.4V3.9L20.1 10.4h-6.5Z"/></svg>
-              Excel
-            </button>
           </div>
         </div>
         <div style="overflow-x:auto;">
@@ -165,34 +161,12 @@
     }));
   }
 
-  async function excel(){
-    if(!uyeMi){ alert('Excel indirme üyelere özeldir.'); return; }
-    const b=document.getElementById('v1-excel'); const e0=b.innerHTML; b.innerHTML='⏳'; b.disabled=true;
-    try{
-      const k=(document.getElementById('v1-ara-liste').value||'').trim();
-      let q=sb.from('ihale_sonuclari').select('kazanan_firma,kazanan_teklif,sozlesme_bedeli,sonuc_tarihi,tenzilat_yuzde,is_bitis_tarihi').not('kazanan_firma','is',null);
-      if(k) q=q.ilike('kazanan_firma','%'+k+'%');
-      const {data}=await q.order('sonuc_tarihi',{ascending:false,nullsFirst:false}).limit(1000);
-      const csv=['Sonuç Tarihi;Kazanan Firma;Sözleşme Bedeli;Tenzilat %;İş Bitiş',
-        ...(data||[]).map(r=>[r.sonuc_tarihi?new Date(r.sonuc_tarihi).toLocaleDateString('tr-TR'):'',
-          (r.kazanan_firma||'').replace(/;/g,','), (r.sozlesme_bedeli ?? r.kazanan_teklif) ?? '',
-          (r.tenzilat_yuzde!=null&&Math.abs(r.tenzilat_yuzde)<100)?r.tenzilat_yuzde:'',
-          r.is_bitis_tarihi?new Date(r.is_bitis_tarihi).toLocaleDateString('tr-TR'):''].join(';')),
-        '','Kaynak: ihaleglobal.com — © Ömer Faruk Dinç'].join('\r\n');
-      const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8;'}));
-      a.download='ihaleglobal-sozlesmeler-'+new Date().toISOString().slice(0,10)+'.csv';
-      document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(a.href);
-    }catch(e){ alert('Dışa aktarım başarısız: '+(e.message||'')); }
-    finally{ b.innerHTML=e0; b.disabled=false; }
-  }
-
   (async()=>{
     try{ const {data}=await sb.auth.getSession(); uyeMi=!!(data&&data.session);
       if(window.v1PaketYaz){ if(uyeMi){ const {data:k}=await sb.from('kullanici_krediler').select('plan').eq('kullanici_id',data.session.user.id).maybeSingle();
         v1PaketYaz(['standart','kurumsal'].includes(k?.plan)?'Pro':'Temel'); } else v1PaketYaz('Misafir'); }
     }catch(_){}
     document.getElementById('v1-ara-liste').addEventListener('input',()=>{clearTimeout(aramaT); aramaT=setTimeout(()=>{sayfa=1;yukle();},350);});
-    document.getElementById('v1-excel').addEventListener('click',excel);
     document.querySelectorAll('.v1-sekme').forEach(b=>b.addEventListener('click',()=>{
       document.querySelectorAll('.v1-sekme').forEach(x=>x.classList.remove('aktif')); b.classList.add('aktif');
       sekme=b.dataset.t; sayfa=1;

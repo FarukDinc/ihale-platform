@@ -55,7 +55,7 @@
     </div>
     <div class="page-body">
       <h1 style="font-size:22px;font-weight:800;color:var(--white);margin-bottom:4px;">Raporlarım</h1>
-      <p style="color:var(--muted);font-size:14px;margin-bottom:18px;">Kriter seçin, ihale ve sonuçları listeleyip <strong style="color:var(--white);">Excel'e aktarın</strong>. Excel dışa aktarım Premium (Kurumsal) üyelere özeldir.</p>
+      <p style="color:var(--muted);font-size:14px;margin-bottom:18px;">Kriter seçin, ihale ve sonuçları listeleyin. Kriterlerinizi kaydedip günlük yeni eşleşme bildirimi alın.</p>
 
       <div id="rp-giris" class="rp-giris" style="display:none;">🔒 Raporlar üyelere özeldir.<br><br><a href="login">Giriş yapın</a> veya <a href="fiyatlandirma_odeme_bolumu">üye olun</a> →</div>
 
@@ -77,7 +77,6 @@
           </div>
           <div class="rp-eylem">
             <button class="rp-btn" id="rp-olustur">Rapor Oluştur</button>
-            <button class="rp-btn ikincil" id="rp-excel">⬇ Excel İndir</button>
             <button class="rp-btn ikincil" id="rp-kaydet" title="Bu kriterleri kaydet, yeni eşleşenleri günlük bildirim/e-posta al">🔔 Raporu Kaydet</button>
             <span style="font-size:11.5px;color:var(--muted);" id="rp-not"></span>
           </div>
@@ -92,7 +91,6 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script src="js/kenar-menu.js?v=9"></script>
 <script src="js/sidebar-user.js?v=6"></script>
 <script src="js/plan.js?v=rot1"></script>
@@ -103,8 +101,8 @@
   const SB_URL="https://ihaleglobal.com", SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzg0MzA3MTU4LCJleHAiOjE5NDE5ODcxNTh9.CjNKulvirotDD_y2oO2QKgo0kbqYvL0jUSV1RiDMoso";
   const sb=window.supabase.createClient(SB_URL,SB_KEY);
   const ILLER=['ADANA','ADIYAMAN','AFYONKARAHİSAR','AĞRI','AKSARAY','AMASYA','ANKARA','ANTALYA','ARDAHAN','ARTVİN','AYDIN','BALIKESİR','BARTIN','BATMAN','BAYBURT','BİLECİK','BİNGÖL','BİTLİS','BOLU','BURDUR','BURSA','ÇANAKKALE','ÇANKIRI','ÇORUM','DENİZLİ','DİYARBAKIR','DÜZCE','EDİRNE','ELAZIĞ','ERZİNCAN','ERZURUM','ESKİŞEHİR','GAZİANTEP','GİRESUN','GÜMÜŞHANE','HAKKARİ','HATAY','IĞDIR','ISPARTA','İSTANBUL','İZMİR','KAHRAMANMARAŞ','KARABÜK','KARAMAN','KARS','KASTAMONU','KAYSERİ','KIRIKKALE','KIRKLARELİ','KIRŞEHİR','KİLİS','KOCAELİ','KONYA','KÜTAHYA','MALATYA','MANİSA','MARDİN','MERSİN','MUĞLA','MUŞ','NEVŞEHİR','NİĞDE','ORDU','OSMANİYE','RİZE','SAKARYA','SAMSUN','SİİRT','SİNOP','SİVAS','ŞANLIURFA','ŞIRNAK','TEKİRDAĞ','TOKAT','TRABZON','TUNCELİ','UŞAK','VAN','YALOVA','YOZGAT','ZONGULDAK'];
-  let tip='ihale', sayfa=0, sonToplam=0, sonKriter=null, kurumsal=false, pro=false;
-  const SAYFA=50, FREE_MAX_SAYFA=2, EXCEL_MAX=5000;
+  let tip='ihale', sayfa=0, sonToplam=0, sonKriter=null, pro=false;
+  const SAYFA=50, FREE_MAX_SAYFA=2;
 
   const tl=(v)=>v==null||v===0?'—':'₺'+Number(v).toLocaleString('tr-TR',{maximumFractionDigits:0});
   const gunAy=(t)=>t?new Date(t).toLocaleDateString('tr-TR'):'—';
@@ -139,7 +137,7 @@
   }
 
   function kilitGoster(){
-    document.getElementById('rp-sonuc').innerHTML=`<div class="rp-bos">🔒 İlk ${FREE_MAX_SAYFA} sayfa ücretsiz. Tam rapor + Excel için <a href="fiyatlandirma_odeme_bolumu" style="color:var(--amber);">Pro'ya geçin</a>.</div>`;
+    document.getElementById('rp-sonuc').innerHTML=`<div class="rp-bos">🔒 İlk ${FREE_MAX_SAYFA} sayfa ücretsiz. Tam rapor için <a href="fiyatlandirma_odeme_bolumu" style="color:var(--amber);">Pro'ya geçin</a>.</div>`;
   }
 
   function tabloCiz(satirlar,data){
@@ -168,25 +166,6 @@
     const o=document.getElementById('rp-onceki'),s=document.getElementById('rp-sonraki');
     if(o)o.onclick=()=>{sayfa--;sayfaGetir();window.scrollTo(0,0);};
     if(s)s.onclick=()=>{sayfa++;sayfaGetir();window.scrollTo(0,0);};
-  }
-
-  // ── Excel (yalnız kurumsal) ──
-  async function excelIndir(){
-    if(!kurumsal){ alert('Excel dışa aktarım Premium (Kurumsal) üyelere özeldir. Pro/Kurumsal pakete geçin.'); location.href='fiyatlandirma_odeme_bolumu'; return; }
-    const btn=document.getElementById('rp-excel'); btn.textContent='Hazırlanıyor…'; btn.disabled=true;
-    const k=kriter(); const tum=[]; let off=0;
-    while(off<EXCEL_MAX){
-      const {data,error}=await rpc(k,off); if(error||!data.satirlar||!data.satirlar.length)break;
-      tum.push(...data.satirlar); off+=SAYFA; if(data.satirlar.length<SAYFA)break;
-    }
-    if(!tum.length){ alert('Dışa aktarılacak kayıt yok.'); btn.textContent='⬇ Excel İndir'; btn.disabled=false; return; }
-    // filigran/kaynak satırı
-    const ust=[['İhaleGlobal — '+(tip==='ihale'?'İhale':'Sonuç')+' Raporu · Oluşturma: '+new Date().toLocaleString('tr-TR')+' · Kaynak: ihaleglobal.com · Yalnız üye kullanımı içindir.']];
-    const ws=XLSX.utils.aoa_to_sheet(ust);
-    XLSX.utils.sheet_add_json(ws,tum,{origin:'A3'});
-    const wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,'Rapor');
-    XLSX.writeFile(wb,'ihaleglobal-rapor-'+Date.now()+'.xlsx');
-    btn.textContent='⬇ Excel İndir'; btn.disabled=false;
   }
 
   // ── Rapor aboneliği: kaydet + günlük bildirim ──
@@ -227,13 +206,10 @@
     document.getElementById('f-il').insertAdjacentHTML('beforeend', ILLER.map(i=>`<option value="${i}">${i.charAt(0)+i.slice(1).toLocaleLowerCase('tr')}</option>`).join(''));
     (window.KATEGORILER||[]).forEach(k=>{const o=document.createElement('option');o.value=k.kod;o.textContent=k.kod;document.getElementById('f-kategori').appendChild(o);});
     // plan
-    try{ pro=await Plan.isPro(); kurumsal=await Plan.isKurumsal(); }catch(_){}
-    const excelBtn=document.getElementById('rp-excel');
-    if(!kurumsal){ excelBtn.classList.add('kilit'); excelBtn.textContent='⬇ Excel İndir 🔒 Premium'; }
-    document.getElementById('rp-not').textContent = kurumsal?'Excel dışa aktarım açık.' : pro?'Excel için Kurumsal pakete geçin.' : 'İlk 2 sayfa ücretsiz · tam rapor Pro · Excel Kurumsal.';
+    try{ pro=await Plan.isPro(); }catch(_){}
+    document.getElementById('rp-not').textContent = pro?'Tam rapor erişiminiz açık.' : 'İlk 2 sayfa ücretsiz · tam rapor için Pro pakete geçin.';
     document.querySelectorAll('.rp-tip button').forEach(b=>b.onclick=()=>tipSec(b.dataset.tip));
     document.getElementById('rp-olustur').onclick=olustur;
-    excelBtn.onclick=excelIndir;
     document.getElementById('rp-kaydet').onclick=kaydet;
     kayitliYukle();
   })();

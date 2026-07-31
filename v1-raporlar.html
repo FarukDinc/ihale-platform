@@ -37,7 +37,7 @@
   <div class="v1-main">
     <div class="v1-govde">
       <div class="v1-sayfa-baslik">Raporlarım</div>
-      <div class="v1-sayfa-alt">Kriterlerinize göre ihale ve sonuç raporları oluşturun, kaydedin, Excel'e aktarın.</div>
+      <div class="v1-sayfa-alt">Kriterlerinize göre ihale ve sonuç raporları oluşturun ve kaydedin.</div>
 
       <div id="v1-giris" style="display:none;text-align:center;padding:80px 20px;color:var(--v1-muted);">
         🔒 Raporlar üyelere özeldir.<br><br><a href="login">Giriş yapın</a> →
@@ -73,10 +73,6 @@
               <div style="font-size:17px;font-weight:800;color:var(--v1-lacivert);" id="r-sonuc-baslik">Rapor Sonucu</div>
               <div class="v1-tablo-sayi" id="r-sayi"></div>
             </div>
-            <button class="v1-excel" id="r-excel">
-              <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path fill-rule="evenodd" d="M8 2h6.2L21 8.8V20a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2Zm5.6 8.4V3.9L20.1 10.4h-6.5Z"/></svg>
-              Excel'e Aktar
-            </button>
           </div>
           <div style="overflow-x:auto;">
             <table class="v1-tablo"><thead id="r-thead"></thead><tbody id="r-tbody"></tbody></table>
@@ -108,7 +104,7 @@
   const ILLER=["ADANA","ANKARA","ANTALYA","AYDIN","BALIKESİR","BURSA","DENİZLİ","DİYARBAKIR","ERZURUM","ESKİŞEHİR","GAZİANTEP","HATAY","İSTANBUL","İZMİR","KAYSERİ","KOCAELİ","KONYA","MALATYA","MANİSA","MERSİN","MUĞLA","SAKARYA","SAMSUN","ŞANLIURFA","TEKİRDAĞ","TRABZON","VAN"];
   // ⚠️ window.KATEGORILER = [{kod,...}] — string DEĞİL
   const KATS=(window.KATEGORILER||[]).map(k=>(typeof k==='string'?k:(k&&k.kod)||'')).filter(Boolean);
-  let uid=null, tip='ihale', kurumsalMi=false, sonSatirlar=[];
+  let uid=null, tip='ihale', sonSatirlar=[];
 
   const v=(id)=>{const e=document.getElementById(id); return e&&e.value?e.value.trim():null;};
 
@@ -153,23 +149,10 @@
       const kilit=document.getElementById('r-kilit');
       if(r.tavan_asildi){ kilit.style.display='block';
         kilit.innerHTML=`⚠️ Sonuç kümesi çok büyük — ilk <strong>${num(sonSatirlar.length)}</strong> kayıt gösteriliyor.
-          Kriterleri daraltın ya da <a href="fiyatlandirma_odeme_bolumu">Kurumsal pakete</a> geçip tam listeyi Excel'e aktarın.`;
+          Daha isabetli sonuç için kriterleri daraltın.`;
       } else kilit.style.display='none';
     }catch(e){ document.getElementById('r-tbody').innerHTML=`<tr><td colspan="5" class="v1-bos">Rapor alınamadı. ${esc(e.message||'')}</td></tr>`; }
     finally{ btn.disabled=false; btn.textContent=e0; }
-  }
-
-  function excel(){
-    if(!kurumsalMi){ alert('Excel dışa aktarım Kurumsal pakete özeldir. Paketinizi yükseltin.'); return; }
-    if(!sonSatirlar.length){ alert('Önce raporu çalıştırın.'); return; }
-    const bas = tip==='ihale' ? 'Tarih;İhale Adı;İdare;İl;Bedel' : 'Sonuç Tarihi;İhale;Kazanan Firma;İl;Bedel;Tenzilat %';
-    const sat = sonSatirlar.map(s=> tip==='ihale'
-      ? [gun(s.etkin_tarih||s.son_teklif_tarihi),(s.baslik||'').replace(/;/g,','),(s.idare||'').replace(/;/g,','),s.il||'',s.bedel??''].join(';')
-      : [gun(s.sonuc_tarihi),(s.baslik||'').replace(/;/g,','),(s.kazanan_firma||'').replace(/;/g,','),s.il||'',(s.kazanan_teklif??s.bedel)??'',s.tenzilat_yuzde??''].join(';'));
-    const csv=[bas,...sat,'',`Kaynak: ihaleglobal.com — © Ömer Faruk Dinç · ${new Date().toLocaleString('tr-TR')}`].join('\r\n');
-    const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8;'}));
-    a.download=`ihaleglobal-rapor-${tip}-${new Date().toISOString().slice(0,10)}.csv`;
-    document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(a.href);
   }
 
   async function kaydet(){
@@ -215,7 +198,6 @@
     document.getElementById('v1-icerik').style.display='block';
     uid=data.session.user.id;
     try{ const {data:k}=await sb.from('kullanici_krediler').select('plan').eq('kullanici_id',uid).maybeSingle();
-      kurumsalMi = k?.plan==='kurumsal';
       if(window.v1PaketYaz) v1PaketYaz(['standart','kurumsal'].includes(k?.plan)?'Pro':'Temel'); }catch(_){}
     const si=document.getElementById('r-il'), sk=document.getElementById('r-kategori');
     ILLER.forEach(i=>si.insertAdjacentHTML('beforeend',`<option>${i}</option>`));
@@ -226,7 +208,6 @@
     }));
     document.getElementById('r-calistir').addEventListener('click',calistir);
     document.getElementById('r-kaydet').addEventListener('click',kaydet);
-    document.getElementById('r-excel').addEventListener('click',excel);
     kayitliYukle();
   })();
 })();
