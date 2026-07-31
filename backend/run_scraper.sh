@@ -83,6 +83,14 @@ $VENV/python georgia_scraper.py >> /opt/ihale-platform/logs/scraper.log 2>&1
 # NOT: AfDB scraper HAZIR ama VDS IP'si Cloudflare challenge yiyor (403) — proxy cozulunce eklenecek.
 echo "[$(date +'%Y-%m-%d %H:%M:%S')] === UNGM uluslararasi ===" >> /opt/ihale-platform/logs/scraper.log
 $VENV/python ungm_scraper.py --max-pages 20 >> /opt/ihale-platform/logs/scraper.log 2>&1
+# EBRD (Avrupa Imar ve Kalkinma Bankasi) — kaynak='EBRD'. Tek GET ~4000 ilan (UA sart, yoksa 403).
+echo "[$(date +'%Y-%m-%d %H:%M:%S')] === EBRD uluslararasi ===" >> /opt/ihale-platform/logs/scraper.log
+$VENV/python ebrd_scraper.py >> /opt/ihale-platform/logs/scraper.log 2>&1
+# World Bank (Dunya Bankasi) — kaynak='WorldBank'. En yeni ilanlar (noticedate desc), --max-pages 10 = son ~1000.
+echo "[$(date +'%Y-%m-%d %H:%M:%S')] === WorldBank uluslararasi ===" >> /opt/ihale-platform/logs/scraper.log
+$VENV/python worldbank_scraper.py --max-pages 10 >> /opt/ihale-platform/logs/scraper.log 2>&1
+# NOT: ADB + AfDB Cloudflare bot-korumasi kullaniyor (cloudscraper dahil 403) — headless (Playwright/
+# FlareSolverr) sart. Sunucu tasima YENI sunucuda kurulacak (bkz. sunucu-tasima-kontrol-listesi memory).
 # Kamu kurumu kaynakları (EKAP dışı, ANA ilanlar tablosuna kaynak='dmo'/'jandarma' ile yazar —
 # 16 Tem'de ayrı kamu_ihaleleri'nden buraya taşındı, İhaleler ekranında rozetle görünür): DMO + Jandarma
 echo "[$(date +'%Y-%m-%d %H:%M:%S')] === Kamu kurumu (DMO/Jandarma) ===" >> /opt/ihale-platform/logs/scraper.log
