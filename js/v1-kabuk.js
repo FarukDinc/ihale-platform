@@ -177,7 +177,13 @@
     const inp = topbar.querySelector('#v1-ara');
     const sel = topbar.querySelector('#v1-kapsam');
     const git = () => {
-      const q = inp.value.trim(); if (!q) return;
+      const q = inp.value.trim();
+      // MADDE 21: 1-2 harflik arama hedef sayfada tam-tablo taraması yapar → boşa yük. En az 3 harf.
+      if (q.length < 3) {
+        if (q.length) { inp.placeholder = 'En az 3 harf yazın…'; inp.style.borderColor = '#c0392b';
+          setTimeout(() => { inp.style.borderColor = ''; }, 1200); }
+        return;
+      }
       const e = encodeURIComponent(q);
       const rota = {
         ihale: 'v1-ihaleler?ara=' + e, firma: 'v1-firmalar?ara=' + e, idare: 'v1-kurumlar?ara=' + e,

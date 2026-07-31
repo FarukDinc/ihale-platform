@@ -362,12 +362,19 @@ ayrıca haritada il-bazlı firma sıralaması İhale/DT ayrı seçilebilmeli + s
 → `v1-firma-analiz.html` (dizin+harita), yeni MV/RPC'ler
 
 
-## MADDE 21 — Arama: min 3 harf + debounce + Ara butonu (boşa sorguyu kes) 🟡
+## MADDE 21 — Arama: min 3 harf + debounce + Ara butonu (boşa sorguyu kes) ✅
 Kullanıcı: her harfte DB sorgusu (a/ah/ahm...) boşa yük. Standart: min 3 harf + 500ms debounce +
-Enter + "🔍 Ara" butonu. **YAPILDI:** v1-firma-analiz dizin araması (dz-arama).
-KALAN (aynı deseni uygula): v1-analiz onboarding firma araması (v1-ac), üst-bar global arama,
-v1-kurumlar / v1-sektorler arama kutuları. (v1-ihaleler "Listede Ara" client-side, DB'ye gitmiyor.)
-→ ilgili arama ekranları
+Enter + "🔍 Ara" butonu. **YAPILDI:**
+- v1-firma-analiz dizin araması (dz-arama) — min3/500ms/Enter/Ara butonu.
+- **Üst-bar global arama** (js/v1-kabuk.js `git()`): zaten Enter/butonla çalışıyor (per-keystroke
+  DB yok); min-3 guard eklendi → 1-2 harf hedef sayfayı tam-tablo taramaya YOLLAMAZ (kırmızı
+  kenar + "En az 3 harf" uyarısı). 31 sayfada `?v=10→11` bump.
+- **v1-analiz onboarding (v1-ac)**: per-keystroke `yukleniciler` autocomplete'i min-2/300ms →
+  **min-3/500ms + Enter=hemen ara**; placeholder "(en az 3 harf)".
+- MUAF (client-side, DB'ye gitmiyor → min-3 sadece yavaşlatır): v1-kurumlar (tüm liste tek
+  seferde inip `suz()` filtreler), v1-sektorler (41 sabit kategori), v1-ihaleler "Listede Ara".
+Canlı doğrulandı: üst-bar 2 harf→nav yok/3 harf→`?ara=`; 0 konsol hatası.
+→ `js/v1-kabuk.js`, `v1-analiz.html`, 31× `?v` bump
 
 
 ## MADDE 22 — Firma dizini KPI'ları mod-duyarlı 🟡

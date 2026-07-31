@@ -103,7 +103,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/tr-harita.js?v=1"></script>
-<script src="js/v1-kabuk.js?v=10"></script>
+<script src="js/v1-kabuk.js?v=11"></script>
 <script>
 (() => {
   const SB_URL="https://ihaleglobal.com", SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzg0MzA3MTU4LCJleHAiOjE5NDE5ODcxNTh9.CjNKulvirotDD_y2oO2QKgo0kbqYvL0jUSV1RiDMoso";
@@ -128,15 +128,17 @@
           <div class="v1-ob-alt">Kendi firmanızı seçin; ya da henüz ihaleye girmediyseniz kendinize yakın gördüğünüz
             bir <b>referans / rakip firma</b> seçin — onun kamu kazanımlarına benzeyen, size uygun açık ihaleleri bulalım.</div>
           <div class="v1-ac-wrap">
-            <input type="text" class="v1-ac-input" id="v1-ac" placeholder="Firma ya da referans firma ara…" autocomplete="off">
+            <input type="text" class="v1-ac-input" id="v1-ac" placeholder="Firma ya da referans firma ara… (en az 3 harf)" autocomplete="off">
             <div id="v1-ac-liste"></div>
           </div>
         </div>
       </div>`;
     const inp=document.getElementById('v1-ac'); let t;
+    // MADDE 21: min 3 harf + 500ms debounce → boşa yukleniciler sorgusunu kes. Enter = hemen ara.
     inp.addEventListener('input',()=>{ clearTimeout(t); const q=inp.value.trim();
-      if(q.length<2){ document.getElementById('v1-ac-liste').innerHTML=''; return; }
-      t=setTimeout(()=>ara(q),300); });
+      if(q.length<3){ document.getElementById('v1-ac-liste').innerHTML=''; return; }
+      t=setTimeout(()=>ara(q),500); });
+    inp.addEventListener('keydown',(e)=>{ if(e.key==='Enter'){ clearTimeout(t); const q=inp.value.trim(); if(q.length>=3) ara(q); }});
     document.addEventListener('click',(e)=>{ if(!e.target.closest('.v1-ac-wrap')) document.getElementById('v1-ac-liste').innerHTML=''; });
   }
   async function ara(q){
