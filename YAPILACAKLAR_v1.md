@@ -427,6 +427,22 @@ Canlı (localhost): DT tab/panel/pager + kamu checkbox var, 0 konsol hatası; RP
 - NOT: DMO/cezaevi "veri hatası mı?" — HAYIR, gerçek kamu tedarikçileri (tarayıcı içerik-filtresi
   makine-doğrulamayı engelledi ama alan bilgisi kesin: DMO 4734/3-e, İşyurtları üretim-satış).
 
+## MADDE 25 — Teklif rekabeti + "önemli veriyi saklama" (direkt göster) ✅
+Kullanıcı: önemli veriyi tıklama arkasına saklama.
+- ihale-detay: kısım bazlı dağılım `<details open>` (varsayılan açık).
+- Teklif Rekabeti (mevcut kolonlar, migration YOK): yaklaşık maliyet + en düşük/en yüksek/ortalama
+  teklif — ihale-detay "İhale Sonucu" kartında + çok kısımlıda kısım tablosunda; firma-analiz
+  "Katıldığı İhaleler" kartlarında "3 teklif" yanında 📊 aralık + 🎯 yak.maliyet.
+  ⚠️ EKAP kişi-bazlı teklif listesi (kim ne verdi) YAYIMLAMAZ → yalnız zarf (aralık)+katılımcı;
+  tum_teklifler de yalnız bu zarfı taşıyor (kaynak kod doğrulandı).
+- firma-analiz: firma açılınca ÖZET yerine "Katıldığı İhaleler" (sözleşme listesi) karşılar.
+  Firmanın sözleşmeleri = Katıldığı İhaleler (ihale) + Katıldığı Doğrudan Teminler (DT) = zaten
+  iki ayrı tam sekme. "Sözleşmeler" ayrı veri DEĞİL (global Sözleşmeler de ihale_sonuclari okur).
+- DT-sınıflama şüphesi (belediye-şirketi küçük alımlar): yanlış-sınıflanmış DT DEĞİL — ilanlar'da
+  IKN'li + yaklaşık maliyet/tenzilat taşıyorlar (ihale evreni); DT kayıtları ayrı (dt_no).
+→ `v1-ihale-detay.html`, `v1-firma-analiz.html` (frontend-only, git pull)
+- ⚠️ İHLAL (ayrı task açıldı): v1-sozlesmeler.html CSV export → Veri Dışa Aktarım Yasağı'na aykırı.
+
 # UZUN VADE (ayrı seri — "uzun vade" dendiğinde bu liste çıkarılır)
 
 ## UV-1 — AI Teklif/Fiyat Asistanı revizyonu: teknik şartname okuması 📋
