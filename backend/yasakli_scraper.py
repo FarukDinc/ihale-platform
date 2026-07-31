@@ -78,12 +78,21 @@ yanıtındaki 250 kaydın HEPSİ, tam turun hasadında bulunmak ZORUNDADIR. Bulu
 varsa dilim listesi gerçekten eksiktir → exit 2. (main() içindeki `taban_eksik`.)
 
 ═══════════════════════════════════════════════════════════════════════════════
-DİLİMLEME — 3 katman, tavan ASLA "bitti" sayılmaz
+DİLİMLEME — 4 katman, tavan ASLA "bitti" sayılmaz
 ═══════════════════════════════════════════════════════════════════════════════
   1. katman  yasaklayanKurum          830 dilim   (birincil)
   2. katman  + yasaklamaDayanagi      6 anahtar   (1. katman 250 dönerse)
   3. katman  + iknYili                ~27 yıl     (2. katman da 250 dönerse)
+  4. katman  + yasaklananAdUnvan      ad PREFİX'i, ÖZYİNELEMELİ (3. katman da 250
+                                      döner VEYA İKN'siz kayıtları bölemezse)
   çözülemezse → `tavan_cozulmemis` listesine yazılır ve tur exit 2 ile kapanır.
+
+⚠ 4. KATMAN NEDEN GEREKLİ (CANLI ÖLÇÜLDÜ): 2886 sayılı Devlet İhale Kanunu
+(yasaklamaDayanagi=1) kayıtlarının İKN'si YOKTUR → 3. katman (iknYili) bu
+kayıtları HİÇ bölemez, dilim 250'de kırpık kalır. `yasaklananAdUnvan` bir PREFİX
+filtresidir (adı bu string ile BAŞLAYAN): {"yasaklananAdUnvan":"A"}→250 (tek harf
+çok geniş), "AB"→198 (çözüldü). Bir prefix 250 dönerse bir karakter daha eklenip
+ÖZYİNELEMELİ bölünür ("A"→"AA".."A9", "AB"→"ABA".."AB9"...), taban durum <250.
 
 ⛔ KURAL: len(kayit) == TAVAN "dilim bitti" değil "KIRPILDI" demektir. Bu projede
 sessiz kırpılma bir kez %93'te SAHTE tamamlanma üretti (ekap_sonuc_backfill).
@@ -188,6 +197,7 @@ EP_MADDELER = f"{API}/GetYasaklananKanunMaddeleri"
 ALAN_KURUM = "yasaklayanKurum"       # 1. katman — değer = ÜST kurum adı (hiyerarşik!)
 ALAN_DAYANAK = "yasaklamaDayanagi"   # 2. katman — değer = kanunAnahtar (1,2,3,4,5,8)
 ALAN_YIL = "iknYili"                 # 3. katman — değer = 'YYYY'
+ALAN_AD = "yasaklananAdUnvan"        # 4. katman — değer = ad/ünvan PREFİX'i (özyinelemeli)
 
 # Bilgi amaçlı: uç bunları da kabul ediyor ama dilimlemede kullanılmıyor.
 DTO_TUM_ALANLAR = (
@@ -223,6 +233,22 @@ MADDE_ANAHTARLARI = ("kanunAciklamalari", "KanunAciklamalari", "items", "list")
 # 3. katman yıl aralığı. 4734/4735 sayılı kanunlar 2003'te yürürlüğe girdi;
 # 2886 DİK kayıtları daha eski olabildiği için alt sınır geniş tutuldu.
 IKN_YIL_BASLANGIC = 2000
+
+# ── 4. katman: özyinelemeli ad-prefix ────────────────────────────────────────
+# yasaklananAdUnvan bir PREFİX filtresidir (adı bu string ile BAŞLAYAN — canlı
+# ölçüldü: {"yasaklananAdUnvan":"A"}→250, "AB"→198). 3. katman (iknYili) bir dilimi
+# çözemediğinde (ör. 2886 DİK kayıtlarının İKN'si YOK → hiçbir yıl dilimine düşmez)
+# bu katman devreye girer: prefix 250 dönerse bir karakter eklenip özyinelenir.
+#
+# Alfabe: ad/ünvan BÜYÜK harf VEYA rakamla başlar ("2C BİLGİ", "AHMET", "ÇAĞLAR").
+# Türkçe harfler + yabancı ünvanlar için Q/W/X + rakam + boşluk (çok kelimeli
+# prefix). Alfabede OLMAYAN bir karakterle başlayan ad, tavan_coz'daki dış `eksik`
+# denetimine takılır (o dilim tavan_cozulmemis olur) — sessiz kayıp YOK.
+AD_PREFIX_ALFABE = "ABCÇDEFGĞHIİJKLMNOÖPQRSŞTUÜVWXYZ0123456789 "
+
+# Özyineleme tavanı (prefix karakter sayısı). Bu derinlikte HÂLÂ 250 dönen prefix
+# `tavan_cozulmemis` sayılır (bugünkü davranış korunur, sessiz kırpılma YOK).
+AD_PREFIX_MAX_DERINLIK = 4
 
 CHECKPOINT = os.path.join(os.path.dirname(__file__), ".yasakli_checkpoint.json")
 
@@ -563,12 +589,61 @@ def yil_listesi() -> list[str]:
     return [str(y) for y in range(IKN_YIL_BASLANGIC, date.today().year + 2)]
 
 
+def _prefix_ozyinele(client: httpx.Client, taban_govde: dict, prefix: str,
+                     args, birlesim: dict, etiket: str) -> bool:
+    """
+    4. KATMAN çekirdeği — `taban_govde` + ALAN_AD prefix ile ÖZYİNELEMELİ tara.
+
+    Alfabedeki her karakteri `prefix`e ekler, sorgular. Bir prefix TAVAN dönerse
+    (KIRPILDI) bir karakter daha eklenip özyinelenir; <TAVAN ise o dal çözülmüştür.
+    ⚠ Her seviyede dönen kayıtlar (kırpık olsa bile) `birlesim`e eklenir → hiçbir
+    kayıt atılmaz (üst-dilim mantığının aynısı). max derinlikte hâlâ TAVAN dönen
+    dal cozulemedi=True yapar → çağıran `sorun` işaretler, sessiz kayıp olmaz.
+    """
+    cozulemedi = False
+    for ch in AD_PREFIX_ALFABE:
+        yeni = prefix + ch
+        try:
+            kayitlar = sorgula(client, {**taban_govde, ALAN_AD: yeni}, args.gecikme)
+        except Exception as e:
+            cozulemedi = True
+            log.warning(f"      ad-prefix {etiket}/{yeni!r} BAŞARISIZ: {e}")
+            continue
+        if not kayitlar:
+            continue
+        birlesim.update(_indeksle(kayitlar))          # kırpık olsa bile TUT
+        if len(kayitlar) < args.tavan:
+            continue
+        # Hâlâ tavan → bir karakter daha (derinlik izin veriyorsa).
+        if len(yeni) >= args.ad_max_derinlik:
+            cozulemedi = True
+            log.error(f"      ✗ ad-prefix {etiket}/{yeni!r} DE tavana çarptı "
+                      f"({len(kayitlar)}={args.tavan}) — max derinlik "
+                      f"{args.ad_max_derinlik}, daha ince anahtar YOK")
+            continue
+        if _prefix_ozyinele(client, taban_govde, yeni, args, birlesim, etiket):
+            cozulemedi = True
+    return cozulemedi
+
+
+def prefix_coz(client: httpx.Client, taban_govde: dict, args, birlesim: dict,
+               etiket: str) -> bool:
+    """
+    4. katman girişi. `taban_govde` (kurum[, dayanak][, yil]) 250'ye çarpmış ve
+    iknYili çözememişse çağrılır. Bulunan TÜM kayıtları `birlesim`e ekler; çözülemeyen
+    (max derinlikte hâlâ 250) dal kalırsa True döner (üst katman `sorun` yapar).
+    """
+    return _prefix_ozyinele(client, taban_govde, "", args, birlesim, etiket)
+
+
 def tavan_coz(client: httpx.Client, kurum: str, ust: list, maddeler: list[dict],
               args) -> tuple[list, bool]:
     """
     250'e çarpmış bir dilimi alt-dilimler. (birlesik_kayitlar, sorun_var) döner.
 
-    2. katman: yasaklamaDayanagi (6 anahtar) · 3. katman: iknYili.
+    2. katman: yasaklamaDayanagi (6 anahtar) · 3. katman: iknYili ·
+    4. katman: yasaklananAdUnvan prefix (özyinelemeli) — 3. katman bir dilimi
+    çözemezse (yıl da 250 döner VEYA İKN'siz kayıtları bölemez) devreye girer.
     ⚠ Alt anahtarların BOŞ dönmesi "bitti" DEMEK DEĞİL — ölçüldü ki
     {iknYili:2024, yasaklamaDayanagi:5} gerçekten 0 kayıt. Bu yüzden erken çıkış
     YOK, tüm anahtarlar taranır.
@@ -609,17 +684,29 @@ def tavan_coz(client: httpx.Client, kurum: str, ust: list, maddeler: list[dict],
                 sorun = True
                 log.warning(f"      yıl {y} BAŞARISIZ: {e}")
                 continue
-            if ucuncu_carpti:
-                sorun = True
-                log.error(f"      ✗ {kurum[:26]}/{m['aciklama'][:16]}/{y} DE tavana çarptı "
-                          f"({len(ucuncu)}) — daha ince dilim anahtarı YOK")
             yil_birlesim.update(_indeksle(ucuncu))
+            if ucuncu_carpti:
+                # ── 4. katman: yıl da tavana çarptı → ad-prefix özyineleme ──
+                log.warning(f"      ⚠ {kurum[:20]}/{m['aciklama'][:14]}/{y} DE tavana çarptı "
+                            f"({len(ucuncu)}) — {ALAN_AD} prefix ile 4. katman")
+                if prefix_coz(client, {ALAN_KURUM: kurum, ALAN_DAYANAK: m["anahtar"],
+                                       ALAN_YIL: y}, args, yil_birlesim,
+                              f"{kurum[:12]}/{m['anahtar']}/{y}"):
+                    sorun = True
 
+        # İKN'siz kayıtlar (ör. 2886 DİK — dosya başı KÖK NEDEN) hiçbir yıl dilimine
+        # düşmez → yıl birleşimi üst-dilimi kapsamaz. Onları 4. katman (ad-prefix,
+        # yıl FİLTRESİZ) bulur; alfabede olmayan karakterle başlayan ad kalırsa
+        # aşağıdaki dış `eksik` denetimi yakalar (sessiz kayıp YOK).
         eksik_yil = set(alt_idx) - set(yil_birlesim)
         if eksik_yil:
-            sorun = True
-            log.error(f"      ✗ {kurum[:26]}/{m['aciklama'][:16]}: alt dilimin {len(eksik_yil)} "
-                      f"kaydı yıl dilimlerinde YOK ({ALAN_YIL} bazı kayıtları düşürüyor)")
+            log.warning(f"      ⚠ {kurum[:26]}/{m['aciklama'][:16]}: {len(eksik_yil)} kayıt yıl "
+                        f"dilimlerinde YOK ({ALAN_YIL} İKN'siz kayıtları bölemiyor) — "
+                        f"{ALAN_AD} prefix ile 4. katman")
+            if prefix_coz(client, {ALAN_KURUM: kurum, ALAN_DAYANAK: m["anahtar"]},
+                          args, yil_birlesim, f"{kurum[:12]}/{m['anahtar']}"):
+                sorun = True
+
         alt_birlesim.update(alt_idx)          # kayıp olmasın diye ikisi de
         alt_birlesim.update(yil_birlesim)
 
@@ -806,6 +893,9 @@ def main():
                     help="İstekler arası bekleme sn (varsayılan 1.0 — EKAP'a nazik ol)")
     ap.add_argument("--tavan", type=int, default=TAVAN,
                     help=f"Kırpılma tavanı (varsayılan {TAVAN}; ölçülmüş değer)")
+    ap.add_argument("--ad-max-derinlik", type=int, default=AD_PREFIX_MAX_DERINLIK,
+                    help=f"4. katman ad-prefix özyineleme derinlik tavanı, karakter "
+                         f"(varsayılan {AD_PREFIX_MAX_DERINLIK})")
     ap.add_argument("--madde-kodu-yaz", action="store_true",
                     help="Kanun maddesi sözlüğe çevrilemezse çıplak kodu yaz "
                          "(VARSAYILAN: NULL — sayfada '5' gibi anlamsız kod göstermeyelim)")
