@@ -990,7 +990,7 @@
 
     // Kazandığı ihaleler — yuklenici_id ile kesin eşleşme + ilan başlık/idare embed'i
     const { data: sonucRaw, error: sErr } = await sb.from('ihale_sonuclari')
-      .select('ilan_id,ikn,kazanan_firma,kazanan_teklif,sozlesme_bedeli,kazanan_teklif_farki_yuzde,tenzilat_yuzde,toplam_teklif_sayisi,katilimci_sayisi,sonuc_tarihi,sozlesme_tarihi,kisim_no,lot_sayisi,ilanlar(id,baslik,idare,il,tur,kategori,ilan_tarihi,son_teklif_tarihi)')
+      .select('ilan_id,ikn,kazanan_firma,kazanan_teklif,sozlesme_bedeli,kazanan_teklif_farki_yuzde,tenzilat_yuzde,toplam_teklif_sayisi,katilimci_sayisi,yaklasik_maliyet,en_dusuk_teklif,en_yuksek_teklif,sonuc_tarihi,sozlesme_tarihi,kisim_no,lot_sayisi,ilanlar(id,baslik,idare,il,tur,kategori,ilan_tarihi,son_teklif_tarihi)')
       .eq('yuklenici_id', yid)
       .order('sonuc_tarihi', { ascending:false })
       .limit(SONUC_LIMIT);
@@ -1249,6 +1249,9 @@
         ${bedel ? `<span class="fa-ik-bedel">${paraTam(bedel)}</span>` : ''}
         ${s.sonuc_tarihi ? `<span>📅 ${tarihF(s.sonuc_tarihi)}</span>` : ''}
         ${teklifSay ? `<span>👥 ${num(teklifSay)} teklif</span>` : ''}
+        ${(Number(s.en_dusuk_teklif)>0 && Number(s.en_yuksek_teklif)>0)
+          ? `<span title="İhaleye verilen tekliflerin en düşük–en yüksek aralığı (EKAP kişi bazlı liste yayımlamaz)">📊 ${paraTam(s.en_dusuk_teklif)} – ${paraTam(s.en_yuksek_teklif)}</span>` : ''}
+        ${(Number(s.yaklasik_maliyet)>0) ? `<span title="Yaklaşık maliyet">🎯 ${paraTam(s.yaklasik_maliyet)}</span>` : ''}
       </div>
     </div>`;
   }

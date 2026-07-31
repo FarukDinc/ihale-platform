@@ -267,7 +267,8 @@
       const KISIM_TAVAN=500;
       const {data,error,count}=await sb.from('ihale_sonuclari')
         .select('kazanan_firma,kazanan_teklif,sozlesme_bedeli,tenzilat_yuzde,kazanan_teklif_farki_yuzde,'
-               +'sonuc_tarihi,katilimci_sayisi,gecerli_teklif_sayisi,is_bitis_tarihi,kisim_no,lot_sayisi,fesih_var,tasfiye_var',
+               +'sonuc_tarihi,katilimci_sayisi,gecerli_teklif_sayisi,is_bitis_tarihi,kisim_no,lot_sayisi,fesih_var,tasfiye_var,'
+               +'yaklasik_maliyet,en_dusuk_teklif,en_yuksek_teklif,ortalama_teklif',
                {count:'exact'})
         .eq('ilan_id',r.id).order('kisim_no',{ascending:true,nullsFirst:true}).limit(KISIM_TAVAN);
       if(error) throw error;
@@ -323,19 +324,40 @@
         ? `<div><b>Kısım Sayısı</b><span>${num(lot)}</span></div>`
         : `<div><b>Katılımcı</b><span>${s0.katilimci_sayisi!=null?num(s0.katilimci_sayisi):'—'}</span></div>`;
 
+      // Teklif Rekabeti (mevcut kolonlar): yaklaşık maliyet + verilen tekliflerin en düşük /
+      // en yüksek / ortalama ZARFI. EKAP kişi-bazlı teklif listesi (kim ne verdi) yayımlamaz —
+      // yalnız aralık + katılımcı sayısı vardır. Tek kısımda s0 doğrudan ihaleyi temsil eder;
+      // çok kısımlıda değerler kısım kısım değişir → aralık gösterilmez (kısım tablosuna bak).
+      const tekAlan=(b,v,ipucu)=> (v!=null && Number(v)>0)
+        ? `<div><b>${b}</b><span${ipucu?` title="${ipucu}"`:''}>${tl(Number(v))}</span></div>` : '';
+      const teklifKutu = !cokKisim
+        ? [tekAlan('Yaklaşık Maliyet', s0.yaklasik_maliyet),
+           tekAlan('En Düşük Teklif',  s0.en_dusuk_teklif,'İhaleye verilen en düşük teklif'),
+           tekAlan('En Yüksek Teklif', s0.en_yuksek_teklif,'İhaleye verilen en yüksek teklif'),
+           tekAlan('Ortalama Teklif',  s0.ortalama_teklif,'En düşük–en yüksek ortalaması')].filter(Boolean).join('')
+        : '';
+      const teklifHtml = teklifKutu
+        ? `<div style="margin-top:14px;padding-top:12px;border-top:1px dashed var(--v1-cizgi);">
+             <div style="font-size:12.5px;font-weight:800;color:var(--v1-lacivert);margin-bottom:8px;">Teklif Rekabeti
+               <span class="kucuk" style="font-weight:600;opacity:.7;" title="EKAP kişi bazlı teklif listesi (kim ne verdi) yayımlamaz; verilen tekliflerin en düşük–en yüksek aralığı ve katılımcı sayısı gösterilir">verilen tekliflerin aralığı</span></div>
+             <div class="v1-sonuc-grid">${teklifKutu}</div></div>`
+        : '';
+
       // Bedel etiketi: kesik veride "Toplam" DEMEK YASAK — eksik toplamı tam sanmak
       // düzelttiğimiz hatanın aynısı olurdu; etiket kapsamı kendisi yazar.
       const bedelEtiket = !cokKisim ? 'Sözleşme Bedeli'
         : kesik ? `İlk ${num(sat.length)} Kısmın Bedeli` : 'Toplam Sözleşme Bedeli';
 
       const kisimTablo = cokKisim ? `
-        <details class="v1-kisim-det">
+        <details class="v1-kisim-det" open>
           <summary>Kısım bazlı dağılım (${num(sat.length)}${kesik?' / '+num(kayitSayisi):''} kayıt)</summary>
           <div class="v1-kisim-sar"><table class="v1-kisim-tablo">
-            <thead><tr><th>Kısım</th><th>Kazanan</th><th class="sag">Bedel</th></tr></thead>
+            <thead><tr><th>Kısım</th><th>Kazanan</th><th class="sag">En Düşük</th><th class="sag">En Yüksek</th><th class="sag">Bedel</th></tr></thead>
             <tbody>${sat.map(x=>`<tr>
               <td>${x.kisim_no!=null?num(x.kisim_no):'—'}</td>
               <td>${esc(x.kazanan_firma||'—')}</td>
+              <td class="sag">${x.en_dusuk_teklif>0?tl(Number(x.en_dusuk_teklif)):'—'}</td>
+              <td class="sag">${x.en_yuksek_teklif>0?tl(Number(x.en_yuksek_teklif)):'—'}</td>
               <td class="sag">${bedelOf(x)?tl(bedelOf(x)):'—'}</td></tr>`).join('')}</tbody>
           </table></div>
         </details>` : '';
@@ -363,7 +385,7 @@
             ${katilimciHtml}
             <div><b>Sonuç Tarihi</b><span class="kucuk"${tarihKapsam}>${gun(ilkSonuc)||'—'}</span></div>
             ${sonBitis?`<div><b>İş Bitiş</b><span class="kucuk"${tarihKapsam}>${gun(sonBitis)}</span></div>`:''}
-          </div>${not}${uyari}${kisimTablo}</div></div>`;
+          </div>${teklifHtml}${not}${uyari}${kisimTablo}</div></div>`;
     }catch(e){
       kap.innerHTML=`<div class="v1-kart"><div class="v1-kart-baslik">İhale Sonucu</div>
         <div class="v1-bos">Sonuç bilgisi yüklenemedi. ${esc(e.message||'')}</div></div>`;
