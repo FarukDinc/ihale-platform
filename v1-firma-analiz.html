@@ -389,6 +389,10 @@
             <button type="button" class="dz-mod-btn" data-mod="dt" style="border:none;border-left:1px solid var(--v1-cizgi);padding:8px 14px;font-family:inherit;font-size:12.5px;font-weight:700;cursor:pointer;background:#fff;color:var(--v1-mavi);">⚡ Doğrudan Temin</button>
             <button type="button" class="dz-mod-btn" data-mod="birlikte" style="border:none;border-left:1px solid var(--v1-cizgi);padding:8px 14px;font-family:inherit;font-size:12.5px;font-weight:700;cursor:pointer;background:#fff;color:var(--v1-mavi);">🔗 İkisi Birlikte</button>
           </div>
+          <!-- DT/İkisi'de DMO/cezaevi/PTT gibi kamu kuruluşları varsayılan gizli (rakip analizi temiz kalsın) -->
+          <label id="dz-kamu-satir" style="display:none;align-items:center;gap:6px;font-size:12px;color:var(--v1-muted);cursor:pointer;margin:0 0 10px 2px;" title="DMO, cezaevi/İşyurtları, PTT gibi kamu kuruluşları da DT/ihale kazanır; rakip firma dizininde varsayılan gizlenir.">
+            <input type="checkbox" id="dz-kamu"> Kamu kuruluşlarını da göster
+          </label>
           <div class="fa-toolbar">
             <div class="fa-ara"><span style="color:var(--v1-muted);">🔍</span>
               <input type="text" id="dz-arama" placeholder="Firma adı ara… (en az 3 harf)" autocomplete="off"></div>
@@ -647,6 +651,7 @@
   let sayfa = 1, topSayfa = 1;
   let dzSayfaNo = 0, dzToplam = 0, dzAramaTimer = null, _dizinKuruldu = false;
   let dzMod = 'ihale';   // MADDE 18-B: ihale | dt | birlikte
+  let dzKamu = false;    // kamu kuruluşlarını (DMO/cezaevi/PTT) dizinde göster? varsayılan GİZLİ (DT/İkisi)
   let _pivotYuklendi = false, _yilChart = null;
   let ilDagilimVeri = null;     // il_firma_dagilimi sonucu (dizin il filtresi + harita ortak kullanır)
 
@@ -792,8 +797,8 @@
       const SORT_MAP = { ciro_desc:'bedel', sayi_desc:'sozlesme', tarih_desc:'tarih', ad_asc:'ad' };
       const pSort = SORT_MAP[$('dz-sirala').value] || 'bedel';
       const params = dzMod === 'dt'
-        ? { p_ara: aramaRaw || null, p_limit: DZ_BOYUT, p_offset: dzSayfaNo*DZ_BOYUT, p_sort: pSort }
-        : { p_ara: aramaRaw || null, p_il: ilVal || null, p_limit: DZ_BOYUT, p_offset: dzSayfaNo*DZ_BOYUT, p_sort: pSort };
+        ? { p_ara: aramaRaw || null, p_limit: DZ_BOYUT, p_offset: dzSayfaNo*DZ_BOYUT, p_sort: pSort, p_kamu_dahil: dzKamu }
+        : { p_ara: aramaRaw || null, p_il: ilVal || null, p_limit: DZ_BOYUT, p_offset: dzSayfaNo*DZ_BOYUT, p_sort: pSort, p_kamu_dahil: dzKamu };
       ({ data, error } = await sb.rpc(rpc, params));
     } else {
       let [alan, asc] = DZ_ALAN[$('dz-sirala').value] || DZ_ALAN.ciro_desc;
@@ -2010,9 +2015,15 @@
     if (ciroTh) ciroTh.textContent = dzMod === 'dt' ? 'Toplam DT Bedeli'
                                    : dzMod === 'birlikte' ? 'Toplam (İhale + DT)' : 'Toplam Ciro (İhale)';
     $('dz-sirala').disabled = false;   // MADDE 20-A: DT & İkisi modunda da sıralanabilir
+    // Kamu-kuruluşu toggle'ı yalnız DT/İkisi'de anlamlı (İhale modu doğrudan yukleniciler sorgular)
+    const kamuSatir = $('dz-kamu-satir');
+    if (kamuSatir) kamuSatir.style.display = (dzMod !== 'ihale') ? 'flex' : 'none';
     dzYukle(true);
     dzIstatistik();   // MADDE 20: üst KPI'lar da moda göre değişsin
   });
+  // Kamu kuruluşlarını göster/gizle (DT & İkisi dizin)
+  const dzKamuEl = $('dz-kamu');
+  if (dzKamuEl) dzKamuEl.addEventListener('change', (e) => { dzKamu = !!e.target.checked; dzYukle(true); });
   $('dz-srt-sayi').addEventListener('click', () => dzSirala('sayi_desc'));
   $('dz-srt-ciro').addEventListener('click', () => dzSirala('ciro_desc'));
   $('dz-prev').addEventListener('click', () => { if (dzSayfaNo > 0){ dzSayfaNo--; dzYukle(false); window.scrollTo({top:0,behavior:'smooth'}); } });

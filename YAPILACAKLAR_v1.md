@@ -424,6 +424,10 @@ Kullanıcı 2 gözlem:
   `v1-dt-detay?dt_no=`'ya link, sayaç firma_dt_ozet.dt_sayisi'nden, sayfalama.
 Canlı (localhost): DT tab/panel/pager + kamu checkbox var, 0 konsol hatası; RPC'ler deploy sonrası.
 → `v1-firma-analiz.html`, `backend/migration_firma_dt_liste_kamu.sql`
+- EK (31 Tem): kamu-kuruluşu filtresi firma DİZİNİNE de taşındı (DT & İkisi modları) —
+  firma_dizin_dt/birlikte'ye `p_kamu_dahil` (varsayılan gizle, filtre LIMIT'ten ÖNCE) + dizine
+  "Kamu kuruluşlarını da göster" checkbox'ı (yalnız DT/İkisi'de görünür; İhale modu doğrudan
+  yukleniciler sorgular, kirlilik az → dokunulmadı). → `backend/migration_firma_dizin_kamu.sql`
 - NOT: DMO/cezaevi "veri hatası mı?" — HAYIR, gerçek kamu tedarikçileri (tarayıcı içerik-filtresi
   makine-doğrulamayı engelledi ama alan bilgisi kesin: DMO 4734/3-e, İşyurtları üretim-satış).
 
