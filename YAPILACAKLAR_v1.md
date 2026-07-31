@@ -362,8 +362,11 @@ ayrıca haritada il-bazlı firma sıralaması İhale/DT ayrı seçilebilmeli + s
   DT yıl kaynağı i.tarih (~%100 dolu). Firma listesi RPC'leri isim döndüğü için authenticated.
 - Choropleth yoğunluğu tüm-zaman; son-1-yıl+ölçüt yalnız FİRMA LİSTESİNİ etkiler (cold-start timeout
   kesildi — MV'de önceden hesaplı). ANON MASKE KORUNDU (yeni firma-adı MV'lerinde REVOKE anon,public).
-- Canlı (localhost, frontend): toggle/ölçüt/graceful-degrade doğrulandı, 0 konsol hatası.
-  ⚠️ Tam veri doğrulaması migration deploy SONRASI (RPC/MV'ler henüz canlıda yok).
+- ✅ DEPLOY EDİLDİ + CANLI DOĞRULANDI: İhale MV 731.185 / DT MV 399.433 satır; DT yoğunluk
+  anon'a açık gerçek veri; İhale+DT firma MV'leri anon'a `permission denied` (maske ✅); harita
+  81 il DT'ye göre boyanıyor; panel KPI baz-duyarlı (Ankara Gıda 1.698 firma/8.168 söz.). Auth
+  firma-listesi sıralaması: RPC var+auth-gated+MV dolu ama claude-in-chrome içerik-filtresi
+  firma-adı sayfasını bloklayıp makine-doğrulamayı engelledi (giriş yapmış haritada gözle görülür).
 → `v1-firma-analiz.html` (harita), `backend/migration_harita_20b.sql`, `backend/run_scraper.sh` (2 yeni MV refresh)
 - Not: Parça A (dizin listesi DT/İkisi sıralama) daha önce ✅ (migration_firma_dizin_sort.sql).
 
