@@ -627,6 +627,14 @@
   // Üyeye özel RPC/tablo → 42501. Ham Postgres mesajı kullanıcıya GÖSTERİLMEZ.
   const kilitliMi = (e) => !!(e && (e.code==='42501' || /permission denied/i.test(e.message||'')));
 
+  /* Kamu kuruluşu rozeti — SQL public.firma_kurum_mu ile AYNI mantık (aynala; filtreleme
+     zaten SQL'de, bu yalnız kozmetik rozet — küçük drift zarar vermez). Kamu kuruluşları
+     varsayılan gizli; "Kamu kuruluşlarını da göster" açıkken bu rozetle işaretlenir. */
+  const KURUM_SONEK = /(mudurlugu|baskanligi|bakanligi|belediyesi|belediye baskanligi|universitesi|rektorlugu|valiligi|kaymakamligi|komutanligi|genel sekreterligi|il ozel idaresi|hastanesi|cezaevi|muftulugu|il saglik mudurlugu|halk sagligi merkezi)$/;
+  const KURUM_AD = /(devlet malzeme ofisi|ceza infaz kurumu|isyurtlari|isyurdu|posta ve telgraf|kizilay|orman genel mudurlugu|makina ve kimya endustrisi|turkiye seker fabrikalari|sumer holding|turkiye komur isletmeleri|turkiye taskomuru|devlet demiryollari|turkiye radyo televizyon|sosyal guvenlik kurumu|turkiye elektrik|boru hatlari ile petrol|turkiye petrolleri|toprak mahsulleri ofisi|tarim isletmeleri|cay isletmeleri|eti maden|devlet hava meydanlari)/;
+  const kurumMu = (ad) => { if (!ad) return false; const f = trFold(ad); return KURUM_SONEK.test(f) || KURUM_AD.test(f); };
+  const KURUM_ROZET = '<span class="fa-badge" style="background:#EEF2F7;color:#5A6B7E;" title="Kamu kuruluşu — rakip firma değil">🏛️ Kamu</span>';
+
   /* ── v1 sabit renk paleti (Chart.js CSS değişkeni okumaz) ──────────── */
   const C = { mavi:'#135EAA', lacivert:'#0C3E70', teal:'#00A19A', acik:'#9CC4E8',
               cizgi:'#DCE5EF', muted:'#6C757D', yesil:'#1E9E57', kirmizi:'#D64550', ikinci:'#4A8FD0' };
@@ -836,7 +844,7 @@
       const ad = f.ad || f.normalize_ad || '—';
       return `<tr data-yid="${esc(f.id)}">
         <td><span class="fa-t-ad" title="${uyeMi ? esc(ad) : 'Üyelere özel'}">${uyeMi ? esc(ad) : MASKE_ROZET}</span>${
-          f.ortak_girisim ? '<span class="fa-badge">İŞ ORT.</span>' : ''}</td>
+          f.ortak_girisim ? '<span class="fa-badge">İŞ ORT.</span>' : ''}${uyeMi && kurumMu(ad) ? KURUM_ROZET : ''}</td>
         <td class="gizli-m fa-t-sonuc">${esc(f.il || '—')}</td>
         <td class="fa-t-sayi">${num(f.toplam_sozlesme_sayisi)}</td>
         <td class="fa-t-ciro">${paraTam(f.toplam_ciro)}</td>
@@ -1816,7 +1824,7 @@
       el.innerHTML = data.map((y,i) => `<div class="fa-h-firma">
         <span style="width:16px;flex-shrink:0;font-size:11px;font-weight:800;color:var(--v1-muted);">${i+1}</span>
         <div style="flex:1;min-width:0;">
-          <div class="pf-ad" data-h-firma="${esc(y.ad)}">${esc(y.ad)}</div>
+          <div class="pf-ad" data-h-firma="${esc(y.ad)}">${esc(y.ad)}${kurumMu(y.ad) ? ' '+KURUM_ROZET : ''}</div>
           <div class="pf-meta">${num(y.sozlesme)} sözleşme · ${paraKisa(y.toplam_bedel)}${
             hSektorSecili ? ' (bu il + sektörde)' : ' (bu ilde)'}</div>
         </div></div>`).join('');

@@ -702,7 +702,8 @@
   // istenir, fazlası varsa "Sonraki" açılır.
   const SZ_SELECT = 'id,baslik,il,tur,etkin_tarih,' +
     'ihale_sonuclari!inner(kisim_no,lot_sayisi,kazanan_firma,kazanan_teklif,' +
-    'sozlesme_bedeli,sozlesme_tarihi,sonuc_tarihi,tenzilat_yuzde,kazanan_teklif_farki_yuzde)';
+    'sozlesme_bedeli,sozlesme_tarihi,sonuc_tarihi,tenzilat_yuzde,kazanan_teklif_farki_yuzde,' +
+    'en_dusuk_teklif,en_yuksek_teklif,katilimci_sayisi)';
 
   const SZ_ARSIV_NOT = 'Sonuç arşivi geriye dönük doldurulmaya devam ediyor (yaklaşık %93 tamam); ' +
     'çok eski bazı ihalelerin sonuç kaydı henüz aktarılmamış olabilir.';
@@ -817,6 +818,11 @@
           <td>${adHucre}</td>
           <td>${firma}</td>
           <td style="text-align:right;">${bedel}</td>
+          <td style="text-align:right;font-size:12px;">${
+            (Number(so.en_dusuk_teklif) > 0 && Number(so.en_yuksek_teklif) > 0)
+              ? `<span title="İhaleye verilen tekliflerin en düşük–en yüksek aralığı (EKAP kişi bazlı liste yayımlamaz)">${paraFormat(so.en_dusuk_teklif)} – ${paraFormat(so.en_yuksek_teklif)}</span>`
+              : '<span class="sz-yok">—</span>'
+          }${so.katilimci_sayisi ? `<div style="font-size:10.5px;color:var(--v1-muted);">👥 ${sayi(so.katilimci_sayisi)} teklif</div>` : ''}</td>
           <td style="text-align:right;">${tenzilatHucre(so)}</td>
         </tr>`;
       }).join('');
@@ -827,9 +833,10 @@
         <thead><tr>
           <th style="width:110px;">TARİH</th>
           <th>İHALE</th>
-          <th style="width:26%;">KAZANAN FİRMA</th>
-          <th style="width:150px;text-align:right;">SÖZLEŞME BEDELİ</th>
-          <th style="width:120px;text-align:right;">TENZİLAT</th>
+          <th style="width:22%;">KAZANAN FİRMA</th>
+          <th style="width:140px;text-align:right;">SÖZLEŞME BEDELİ</th>
+          <th style="width:150px;text-align:right;">TEKLİF ARALIĞI</th>
+          <th style="width:110px;text-align:right;">TENZİLAT</th>
         </tr></thead>
         <tbody>${govde}</tbody>
       </table></div>
