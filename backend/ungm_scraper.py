@@ -460,6 +460,7 @@ def main():
     if args.max_pages < 1:
         args.max_pages = 1
     print(f"→ UNGM taraması: en çok {args.max_pages} sayfa "
+          f"({'DRY-RUN — yazma yok' if args.dry_run else 'yazma AÇIK'})")
 
     satirlar, toplam = ilanlari_topla(args.max_pages)
     print(f"→ {len(satirlar)} benzersiz UNGM ihalesi toplandı "
