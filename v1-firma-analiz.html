@@ -347,13 +347,27 @@
             <div class="fa-h-kart">
               <div class="fa-h-toolbar">
                 <div class="fa-h-baslik" id="fa-h-baslik">Firma Yoğunluğu — il bazında</div>
-                <select id="fa-h-sektor" class="fa-sel" style="min-width:210px;max-width:260px;" title="Sektöre göre filtrele">
-                  <option value="">🏭 Tüm Sektörler</option>
-                </select>
+                <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+                  <!-- MADDE 20-B: İhale / DT bazı — choropleth yoğunluğu + firma listesi kaynağını değiştirir -->
+                  <div id="fa-h-baz" style="display:inline-flex;border:1px solid var(--v1-mavi);border-radius:8px;overflow:hidden;">
+                    <button type="button" class="fa-h-baz-btn" data-baz="ihale" style="border:none;background:var(--v1-mavi);color:#fff;padding:6px 12px;font-family:var(--v1-font);font-size:12.5px;font-weight:700;cursor:pointer;">İhale</button>
+                    <button type="button" class="fa-h-baz-btn" data-baz="dt" style="border:none;background:#fff;color:var(--v1-mavi);padding:6px 12px;font-family:var(--v1-font);font-size:12.5px;font-weight:700;cursor:pointer;">Doğrudan Temin</button>
+                  </div>
+                  <select id="fa-h-sektor" class="fa-sel" style="min-width:190px;max-width:240px;" title="Sektöre göre filtrele">
+                    <option value="">🏭 Tüm Sektörler</option>
+                  </select>
+                  <!-- MADDE 20-B: firma listesi sıralama ölçütü (tüm-zaman / son-1-yıl × ciro / sözleşme) -->
+                  <select id="fa-h-olcut" class="fa-sel" style="min-width:180px;max-width:220px;" title="Firma sıralama ölçütü">
+                    <option value="bedel|0">💰 En çok ciro (tüm zaman)</option>
+                    <option value="sozlesme|0">📑 En çok sözleşme (tüm zaman)</option>
+                    <option value="bedel|1">💰 Son 1 yıl — ciro</option>
+                    <option value="sozlesme|1">📑 Son 1 yıl — sözleşme</option>
+                  </select>
+                </div>
               </div>
               <div class="fa-h-svg-wrap" id="fa-h-svg-wrap"><div class="fa-mini-spin"></div></div>
               <div class="fa-h-lejant" id="fa-h-lejant"></div>
-              <div style="font-size:11px;color:var(--v1-muted);margin-top:8px;line-height:1.55;">
+              <div id="fa-h-not" style="font-size:11px;color:var(--v1-muted);margin-top:8px;line-height:1.55;">
                 Ciro ve bedel değerleri <b style="color:var(--v1-lacivert);">yalnız ihale</b> kazanımlarından hesaplanır — doğrudan temin dahil değildir.
               </div>
             </div>
@@ -1563,12 +1577,21 @@
   let hEsikler = [], hFirmaMap = {}, hToplamFirma = 0, hIlAdMap = {};
   let hSektorSecili = null, hSektorVeri = null, hSektorTopSoz = 0, hSeciliIl = null;
   let hKurulum = null, hSektorIstek = 0;
-  const hSektorMap = () => (hSektorSecili && hSektorVeri && hSektorVeri[hSektorSecili]) || null;
+  // MADDE 20-B: İhale/DT bazı + ölçüt (son-1-yıl & ciro/sözleşme). DT verisi lazy.
+  let hBaz = 'ihale', hSonYil = false, hOlcut = 'bedel';
+  let hSektorVeriDt = null, hFirmaMapDt = {}, hToplamFirmaDt = 0;
+  const hDt = () => hBaz === 'dt';
+  const hSektorMap = () => { const sv = hDt() ? hSektorVeriDt : hSektorVeri;
+    return (hSektorSecili && sv && sv[hSektorSecili]) || null; };
+  const hIlTotal = () => hDt() ? hFirmaMapDt : hFirmaMap;         // sektörsüz yoğunluk kaynağı
+  const hToplam  = () => hDt() ? hToplamFirmaDt : hToplamFirma;   // Türkiye payı paydası
+  const hBazEt   = () => hDt() ? 'DT' : 'ihale';
+  const hOlcutEt = () => (hSonYil ? 'Son 1 yıl ' : '') + (hOlcut === 'sozlesme' ? 'sözleşme sayısı' : 'ciro');
   const hSektorEmoji = kod => { const k = (window.KATEGORILER || []).find(x => x.kod === kod); return k ? k.emoji : '🏭'; };
 
   function hEsikHesapla(){
     const sm = hSektorMap();
-    const vals = (sm ? Object.values(sm).map(v => v.firma) : Object.values(hFirmaMap).map(v => v.adet))
+    const vals = (sm ? Object.values(sm).map(v => v.firma) : Object.values(hIlTotal()).map(v => v.adet))
       .filter(a => a > 0).sort((a,b) => a-b);
     hEsikler = [];
     if (!vals.length) return;
@@ -1601,7 +1624,7 @@
     const sm = hSektorMap();
     document.querySelectorAll('#fa-h-svg-wrap path.il').forEach(p => {
       const k = p.dataset.key;
-      p.setAttribute('fill', hRenk(sm ? ((sm[k]||{}).firma || 0) : ((hFirmaMap[k]||{}).adet || 0)));
+      p.setAttribute('fill', hRenk(sm ? ((sm[k]||{}).firma || 0) : ((hIlTotal()[k]||{}).adet || 0)));
     });
     hLejant();
   }
@@ -1625,7 +1648,7 @@
     const k = p.dataset.key, sm = hSektorMap(), tt = $('fa-h-tip');
     const ana = sm
       ? (d => `<div>${hSektorEmoji(hSektorSecili)} ${num(d.firma)} firma · ${num(d.soz)} sözleşme${d.bedel ? ' · '+paraKisa(d.bedel) : ''}</div>`)(sm[k] || {})
-      : (f => `<div>🏢 ${num(f.adet)} firma${f.ciro ? ' · '+paraKisa(f.ciro)+' ciro' : ''}</div>`)(hFirmaMap[k] || {});
+      : (f => `<div>🏢 ${num(f.adet)} firma${f.ciro ? ' · '+paraKisa(f.ciro)+(hDt()?' bedel':' ciro') : ''}</div>`)(hIlTotal()[k] || {});
     tt.innerHTML = `<div class="t-ad">${esc(p.dataset.ad)}</div>${ana}`;
     tt.style.display = 'block';
     tt.style.left = Math.min(e.clientX + 14, window.innerWidth - 260) + 'px';
@@ -1647,20 +1670,20 @@
         <div class="fa-h-panel-kpi">
           <div class="k"><div class="kl">Firma</div><div class="kv">${num(d.firma)}</div></div>
           <div class="k"><div class="kl">Sözleşme</div><div class="kv">${num(d.soz)}</div></div>
-          <div class="k"><div class="kl" title="Yalnız ihaleler — doğrudan temin dahil değil">Toplam Bedel (ihale)</div><div class="kv">${paraKisa(d.bedel)}</div></div>
+          <div class="k"><div class="kl">Toplam Bedel (${hBazEt()})</div><div class="kv">${paraKisa(d.bedel)}</div></div>
           <div class="k"><div class="kl">Sektör Payı</div><div class="kv">${hSektorTopSoz ? ((d.soz||0)/hSektorTopSoz*100).toFixed(1)+'%' : '—'}</div></div>
         </div>
-        <div class="fa-h-sec-baslik">Bu ilde bu sektörde öne çıkan firmalar</div>`;
+        <div class="fa-h-sec-baslik">Bu ilde bu sektörde öne çıkan firmalar · <span style="color:var(--v1-mavi);">${esc(hOlcutEt())}</span></div>`;
     } else {
-      const f = hFirmaMap[key] || {};
+      const f = hIlTotal()[key] || {};
       kpi = `<div class="fa-h-panel-il">📍 ${esc(ad)}</div>
         <div class="fa-h-panel-kpi">
           <div class="k"><div class="kl">Firma</div><div class="kv">${num(f.adet)}</div></div>
-          <div class="k"><div class="kl" title="Yalnız ihaleler — doğrudan temin kazanımları bu ciroya girmez">Toplam Ciro (ihale)</div><div class="kv">${paraKisa(f.ciro)}</div></div>
-          <div class="k"><div class="kl">Türkiye Payı</div><div class="kv">${hToplamFirma ? ((f.adet||0)/hToplamFirma*100).toFixed(1)+'%' : '—'}</div></div>
-          <div class="k"><div class="kl">Sıralama Ölçütü</div><div class="kv" style="font-size:12px;">Sözleşme bedeli</div></div>
+          <div class="k"><div class="kl">Toplam ${hDt()?'Bedel':'Ciro'} (${hBazEt()})</div><div class="kv">${paraKisa(f.ciro)}</div></div>
+          <div class="k"><div class="kl">Türkiye Payı</div><div class="kv">${hToplam() ? ((f.adet||0)/hToplam()*100).toFixed(1)+'%' : '—'}</div></div>
+          <div class="k"><div class="kl">Sıralama Ölçütü</div><div class="kv" style="font-size:12px;">${esc(hOlcutEt())}</div></div>
         </div>
-        <div class="fa-h-sec-baslik">Bu ilde en çok iş kazanan firmalar</div>`;
+        <div class="fa-h-sec-baslik">Bu ilde en çok iş kazanan firmalar · <span style="color:var(--v1-mavi);">${esc(hOlcutEt())}</span></div>`;
     }
     panel.innerHTML = kpi + '<div id="fa-h-firmalar"><div class="fa-mini-spin"></div></div>' +
       '<div style="font-size:11px;color:var(--v1-muted);margin-top:12px;">Firmaya tıklayın — analizi bu sayfada açılır.</div>';
@@ -1672,8 +1695,8 @@
       return;
     }
     try{
-      const { data, error } = await sb.rpc('il_sektor_firmalar',
-        { p_il_folds: hFoldVaryant(key), p_kategori: hSektorSecili, p_limit: 8 });
+      const { data, error } = await sb.rpc(hDt() ? 'il_sektor_firmalar_dt' : 'il_sektor_firmalar',
+        { p_il_folds: hFoldVaryant(key), p_kategori: hSektorSecili, p_limit: 8, p_son_yil: hSonYil, p_olcut: hOlcut });
       if (error) throw error;
       const el = $('fa-h-firmalar');
       if (!el || hSeciliIl !== key) return;
@@ -1712,16 +1735,21 @@
   }
 
   // il × sektör özeti — harita.html ile AYNI sessionStorage anahtarı (sayfalar arası ortak 6h önbellek)
-  async function hSektorVeriYukle(){
-    const CK = 'harita_sektor_v1';
+  async function hSektorVeriYukle(baz){
+    baz = baz || hBaz;
+    const dt = baz === 'dt';
+    if (dt ? hSektorVeriDt : hSektorVeri) return;              // zaten yüklü
+    const CK = dt ? 'harita_sektor_dt_v1' : 'harita_sektor_v1';
     try{
       const c = JSON.parse(sessionStorage.getItem(CK) || 'null');
-      if (c && c.t && (Date.now() - c.t) < 6*3600e3 && c.v){ hSektorVeri = c.v; return; }
+      if (c && c.t && (Date.now() - c.t) < 6*3600e3 && c.v){
+        if (dt) hSektorVeriDt = c.v; else hSektorVeri = c.v; hIlToplamTuret(dt); return;
+      }
     }catch(_){}
     const sel = $('fa-h-sektor');
     sel.disabled = true;
     try{
-      const { data, error } = await sb.rpc('il_sektor_ozet');
+      const { data, error } = await sb.rpc(dt ? 'il_sektor_ozet_dt' : 'il_sektor_ozet');
       if (error) throw error;
       const v = {};
       (data || []).forEach(r => {
@@ -1732,20 +1760,34 @@
         t.soz   += Number(r.sozlesme_adet) || 0;
         t.bedel += Number(r.toplam_bedel) || 0;
       });
-      hSektorVeri = v;
+      if (dt) hSektorVeriDt = v; else hSektorVeri = v;
+      hIlToplamTuret(dt);
       try{ sessionStorage.setItem(CK, JSON.stringify({ t:Date.now(), v })); }catch(_){}
-    }catch(err){ hSektorVeri = null; }
+    }catch(err){ if (dt) hSektorVeriDt = null; else hSektorVeri = null; }
     finally{ sel.disabled = false; }
+  }
+  // Sektör verisinden il-toplam yoğunluk türet (sektörsüz choropleth için). İhale'nin
+  // gerçek distinct il-toplamı il_firma_dagilimi'nden (hFirmaMap) gelir; DT için sektör
+  // toplamı kullanılır (çok-sektörlü firma ± sayılır — yoğunluk RENGİ için kabul edilebilir).
+  function hIlToplamTuret(dt){
+    if (!dt) return;   // İhale hFirmaMap'i hVeriYukle kurar
+    const sv = hSektorVeriDt; if (!sv) return;
+    const m = {}; let top = 0;
+    Object.values(sv).forEach(iller => Object.entries(iller).forEach(([key,d]) => {
+      const t = (m[key] = m[key] || { adet:0, ciro:0 });
+      t.adet += d.firma || 0; t.ciro += d.bedel || 0; top += d.firma || 0;
+    }));
+    hFirmaMapDt = m; hToplamFirmaDt = top;
   }
 
   async function hSektorSec(kod){
     const istek = ++hSektorIstek;
     hSektorSecili = kod || null;
-    if (hSektorSecili && !hSektorVeri){
+    if (hSektorSecili && !(hDt() ? hSektorVeriDt : hSektorVeri)){
       $('fa-h-lejant').innerHTML = '<span class="fa-mini-spin" style="margin:4px 8px;width:14px;height:14px;border-width:2px;display:inline-block;"></span> Sektör verisi yükleniyor…';
       await hSektorVeriYukle();
       if (istek !== hSektorIstek) return;
-      if (!hSektorVeri){
+      if (!(hDt() ? hSektorVeriDt : hSektorVeri)){
         $('fa-h-sektor').value = '';
         hSektorSecili = null;
         $('fa-h-lejant').innerHTML = '⚠️ Sektör verisi yüklenemedi.';
@@ -1874,6 +1916,43 @@
   $('fa-gbtn-liste').addEventListener('click', () => gorunumSec('liste'));
   $('fa-gbtn-harita').addEventListener('click', () => gorunumSec('harita'));
   $('fa-h-sektor').addEventListener('change', e => hSektorSec(e.target.value));
+
+  // MADDE 20-B: İhale / Doğrudan Temin bazı — yoğunluk + firma listesi kaynağını değiştirir.
+  async function hBazSec(baz){
+    if (baz === hBaz) return;
+    hBaz = baz;
+    document.querySelectorAll('.fa-h-baz-btn').forEach(b => {
+      const on = b.dataset.baz === baz;
+      b.style.background = on ? 'var(--v1-mavi)' : '#fff';
+      b.style.color      = on ? '#fff' : 'var(--v1-mavi)';
+    });
+    const not = $('fa-h-not');
+    if (not) not.innerHTML = hDt()
+      ? 'Değerler <b style="color:var(--v1-lacivert);">yalnız doğrudan temin</b> kazanımlarından hesaplanır. Kazanan firma adları üyelere özeldir.'
+      : 'Ciro ve bedel değerleri <b style="color:var(--v1-lacivert);">yalnız ihale</b> kazanımlarından hesaplanır — doğrudan temin dahil değildir.';
+    // DT verisini (yoğunluk + sektör) garanti et
+    if (hDt()){
+      $('fa-h-lejant').innerHTML = '<span class="fa-mini-spin" style="margin:4px 8px;width:14px;height:14px;border-width:2px;display:inline-block;"></span> Doğrudan temin verisi yükleniyor…';
+      await hSektorVeriYukle('dt');
+    }
+    $('fa-h-baslik').textContent = hSektorSecili
+      ? `${hSektorEmoji(hSektorSecili)} ${hSektorSecili} — il yoğunluğu`
+      : `Firma Yoğunluğu — il bazında (${hBazEt()})`;
+    const sm = hSektorMap();
+    hSektorTopSoz = sm ? Object.values(sm).reduce((a,v) => a + v.soz, 0) : 0;
+    hEsikHesapla(); hBoya();
+    if (hSeciliIl) hIlSec(hSeciliIl); else hPanelVarsayilan();
+  }
+  $('fa-h-baz').addEventListener('click', e => {
+    const b = e.target.closest('.fa-h-baz-btn'); if (b) hBazSec(b.dataset.baz);
+  });
+  // MADDE 20-B: ölçüt (tüm-zaman/son-1-yıl × ciro/sözleşme) — yalnız firma listesini etkiler.
+  $('fa-h-olcut').addEventListener('change', e => {
+    const [ol, yil] = (e.target.value || 'bedel|0').split('|');
+    hOlcut = (ol === 'sozlesme') ? 'sozlesme' : 'bedel';
+    hSonYil = (yil === '1');
+    if (hSeciliIl) hIlSec(hSeciliIl);
+  });
 
   $('liste-yeni-arama').addEventListener('click', dizineDon);
   $('btn-yeni-arama').addEventListener('click', dizineDon);

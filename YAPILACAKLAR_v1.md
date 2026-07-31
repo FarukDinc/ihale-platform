@@ -344,7 +344,7 @@ satırları eklendi (dt_analiz_mv zaten vardı). MV sahipleri supabase_admin old
 **Uygula:** owner-fix migration (supabase_admin) + pull (cron yeni script'i ertesi gece alır).
 
 
-## MADDE 20 — Firma dizini & haritada tam sıralama (DT/İhale/İkisi + sektör + ölçüt + son 1 yıl) 📋
+## MADDE 20 — Firma dizini & haritada tam sıralama (DT/İhale/İkisi + sektör + ölçüt + son 1 yıl) ✅
 Kullanıcı: firma dizini/haritasında sıralamayı İHALE ile yapabiliyoruz ama DT ve İkisi'de yapamıyoruz;
 ayrıca haritada il-bazlı firma sıralaması İhale/DT ayrı seçilebilmeli + sektör + ölçüt.
 
@@ -354,12 +354,18 @@ ayrıca haritada il-bazlı firma sıralaması İhale/DT ayrı seçilebilmeli + s
 - İkisi modu: `firma_dizin_birlikte`'ye p_sort ekle (toplam bedel / toplam sözleşme).
 - (Son-1-yıl list sort DT'de yıl-boyutu gerektiriyor → Parça B'deki MV ile.)
 
-**PARÇA B — HARİTA: il bazında firma sıralaması, İhale/DT bazlı + sektör + ölçüt + son 1 yıl** (BÜYÜK)
-- Harita panelinde İhale/DT toggle → il bazında firmalar o baza göre.
-- Sektör seç (var) → sonra ölçüt: en çok ciro · en çok sözleşme · son 1 yıl ciro · son 1 yıl sözleşme.
-- Gerektirir: il×sektör×firma + YIL agregasyonu. İhale için il_yil_firma var ama sektör+son-1-yıl
-  için genişletme; DT için il×sektör×yıl×firma yeni MV. Panel UI (toggle+ölçüt seçici).
-→ `v1-firma-analiz.html` (dizin+harita), yeni MV/RPC'ler
+**PARÇA B — HARİTA: il bazında firma sıralaması, İhale/DT bazlı + sektör + ölçüt + son 1 yıl** ✅ (deploy bekliyor)
+- Harita paneline İhale/DT toggle + ölçüt seçici (4: tüm-zaman & son-1-yıl × ciro & sözleşme).
+- MİMARİ: İhale büyük MV il_sektor_firma_mv'ye `sozlesme_1y`/`bedel_1y` FILTER kolonları (REBUILD;
+  CASCADE düşen mini il_sektor_ozet_mv yeniden kuruldu). DT için AYNI ikili: il_sektor_firma_dt_mv
+  (anon KAPALI, isim) + il_sektor_ozet_dt_mv (anon açık, yoğunluk). now() refresh anında = rolling 1y.
+  DT yıl kaynağı i.tarih (~%100 dolu). Firma listesi RPC'leri isim döndüğü için authenticated.
+- Choropleth yoğunluğu tüm-zaman; son-1-yıl+ölçüt yalnız FİRMA LİSTESİNİ etkiler (cold-start timeout
+  kesildi — MV'de önceden hesaplı). ANON MASKE KORUNDU (yeni firma-adı MV'lerinde REVOKE anon,public).
+- Canlı (localhost, frontend): toggle/ölçüt/graceful-degrade doğrulandı, 0 konsol hatası.
+  ⚠️ Tam veri doğrulaması migration deploy SONRASI (RPC/MV'ler henüz canlıda yok).
+→ `v1-firma-analiz.html` (harita), `backend/migration_harita_20b.sql`, `backend/run_scraper.sh` (2 yeni MV refresh)
+- Not: Parça A (dizin listesi DT/İkisi sıralama) daha önce ✅ (migration_firma_dizin_sort.sql).
 
 
 ## MADDE 21 — Arama: min 3 harf + debounce + Ara butonu (boşa sorguyu kes) ✅
