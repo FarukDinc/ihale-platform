@@ -78,6 +78,11 @@ $VENV/python ilan_gov_scraper.py --max-pages 100 >> /opt/ihale-platform/logs/scr
 echo "[$(date +'%Y-%m-%d %H:%M:%S')] === TED uluslararasi ===" >> /opt/ihale-platform/logs/scraper.log
 $VENV/python ted_scraper.py --gun 2 >> /opt/ihale-platform/logs/scraper.log 2>&1
 $VENV/python georgia_scraper.py >> /opt/ihale-platform/logs/scraper.log 2>&1
+# UNGM (BM Kuresel Pazar Yeri) — uluslararasi_ihaleler'e kaynak='UNGM'. Deadline'a gore sirali,
+# --max-pages 20 = ~300 en yakin acik ilan/gece guncellenir. Baslik cevirisi DeepSeek (ai_ortak).
+# NOT: AfDB scraper HAZIR ama VDS IP'si Cloudflare challenge yiyor (403) — proxy cozulunce eklenecek.
+echo "[$(date +'%Y-%m-%d %H:%M:%S')] === UNGM uluslararasi ===" >> /opt/ihale-platform/logs/scraper.log
+$VENV/python ungm_scraper.py --max-pages 20 >> /opt/ihale-platform/logs/scraper.log 2>&1
 # Kamu kurumu kaynakları (EKAP dışı, ANA ilanlar tablosuna kaynak='dmo'/'jandarma' ile yazar —
 # 16 Tem'de ayrı kamu_ihaleleri'nden buraya taşındı, İhaleler ekranında rozetle görünür): DMO + Jandarma
 echo "[$(date +'%Y-%m-%d %H:%M:%S')] === Kamu kurumu (DMO/Jandarma) ===" >> /opt/ihale-platform/logs/scraper.log
