@@ -210,9 +210,12 @@ def kuyruk_say(client):
     Yani o mesaj yanlış yönlendiriyordu. Artık gerçek HTTP durumu + gövde basılıyor; en olası
     gerçek sebep count=exact'in ifade zaman aşımına takılması (filtre eşleşmesi ~184K satır,
     anon ölçümünde 1.8s — 3s tavanının kenarı) ya da /rest/v1 hız limiti."""
+    # ⛔ count=exact ~184K satırlık filtrede 3s statement_timeout'a takılıyordu (57014) → tur her
+    #    gece AI'ya HİÇ gelmeden ölüyordu. count=estimated planlayıcı istatistiğinden ANINDA döner
+    #    (~%5 hata payı, kuyruk boyutu bilgisi için fazlasıyla yeter). İşlevsel karar buna bağlı değil.
     r = client.get(f"{SUPABASE_URL}/rest/v1/ilanlar",
                    params={**_KUYRUK_FILTRE, "select": "id", "limit": "1"},
-                   headers={**_headers(), "Prefer": "count=exact", "Range-Unit": "items", "Range": "0-0"})
+                   headers={**_headers(), "Prefer": "count=estimated", "Range-Unit": "items", "Range": "0-0"})
     if r.status_code >= 300:
         print(f"  ✗ Kuyruk sayımı HTTP {r.status_code}: {r.text[:300]}", file=sys.stderr, flush=True)
         return -1
