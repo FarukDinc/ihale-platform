@@ -240,8 +240,8 @@
   //    · "Düzeltme İlanı"           → düzeltme bilgisi tutan kolon yok (42703).
   const GRUPLAR=[
     {id:'kelime', ad:'Kelime Arama', html:`<input class="v1-f-input" id="f-kelime" placeholder="İhale adında ara…">`},
-    {id:'yayin',  ad:'Yayın Tarihi', html:`<div class="v1-f-ikili"><div><span class="v1-f-etiket">Başlangıç</span><input type="date" class="v1-f-input" id="f-yayin1"></div><div><span class="v1-f-etiket">Bitiş</span><input type="date" class="v1-f-input" id="f-yayin2"></div></div>`},
-    {id:'ihaleT', ad:'İhale Tarihi', html:`<div class="v1-f-ikili"><div><span class="v1-f-etiket">Başlangıç</span><input type="date" class="v1-f-input" id="f-tarih1"></div><div><span class="v1-f-etiket">Bitiş</span><input type="date" class="v1-f-input" id="f-tarih2"></div></div>`},
+    {id:'yayin',  ad:'Yayın Tarihi', html:`<div class="v1-f-ikili"><div><span class="v1-f-etiket">Başlangıç</span><input type="date" class="v1-f-input" id="f-yayin1" autocomplete="off"></div><div><span class="v1-f-etiket">Bitiş</span><input type="date" class="v1-f-input" id="f-yayin2" autocomplete="off"></div></div>`},
+    {id:'ihaleT', ad:'İhale Tarihi', html:`<div class="v1-f-ikili"><div><span class="v1-f-etiket">Başlangıç</span><input type="date" class="v1-f-input" id="f-tarih1" autocomplete="off"></div><div><span class="v1-f-etiket">Bitiş</span><input type="date" class="v1-f-input" id="f-tarih2" autocomplete="off"></div></div>`},
     {id:'maliyet',ad:'Yaklaşık Maliyet', html:`<div class="v1-f-ikili"><div><span class="v1-f-etiket">Min ₺</span><input type="number" class="v1-f-input" id="f-min" placeholder="0"></div><div><span class="v1-f-etiket">Max ₺</span><input type="number" class="v1-f-input" id="f-max" placeholder="—"></div></div>`},
     {id:'tip',    ad:'İhale Tipi', html:`<select class="v1-f-select" id="f-tur"><option value="">Tümü</option>${TURLER.map(t=>`<option>${t}</option>`).join('')}</select>`},
     {id:'usul',   ad:'İhale Usulü', html:`<select class="v1-f-select" id="f-usul"><option value="">Tümü</option>${USULLER.map(u=>`<option value="${esc(u.v)}">${esc(u.ad)}</option>`).join('')}</select>`},
@@ -329,9 +329,11 @@
       // ayrıca NULL tarihli eski kayıtları da eler (NULLS FIRST yan etkisi).
       q=q.eq('durum','aktif').gte('son_teklif_tarihi', new Date().toISOString());
     } else if (sekme==='gecmis') {
-      // Zamanı geçmiş ama sonucu açıklanmamış ihaleler: hâlâ 'aktif' ama son teklif tarihi
-      // geçmiş. lt → indeksin 2. kolonunda aralık koşulu, NULL'lar da elenir (idx uyumlu).
-      q=q.eq('durum','aktif').lt('son_teklif_tarihi', new Date().toISOString());
+      // Geçmiş = süresi geçmiş, SONUCU AÇIKLANMAMIŞ ihaleler = durum 'kapali' (~1,6M).
+      // ⛔ ESKİ HATA: yalnız 'aktif ama son_teklif geçmiş' (~271) alınıyordu → 1,6M kapalı ihale
+      //    hiçbir sekmede görünmüyordu. 'kapali' = teklif süresi bitmiş, EKAP'ta sonuç ilanı
+      //    yayımlanmamış (sonuclandi'ye geçmemiş) ihaleler. idx_ilanlar_durum_son_teklif ile uyumlu.
+      q=q.eq('durum','kapali');
     } else q=q.eq('durum','sonuclandi');
     // ⛔ Düz `.ilike('baslik','%insaat%')` Türkçe İ/ı'da SESSİZCE 0 döner. Katlanmış
     //    `baslik_fold` kolonu misafire de AÇIK ve trgm indeksli (ölçüm: 0,18sn).
