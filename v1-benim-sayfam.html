@@ -331,8 +331,21 @@
       sayac('dogrudan_temin_ilanlari',q=>q.in('durum',DT_AKTIF)).then(v=>set('Aktif Doğrudan Temin',kisalt(v))),
       // Toplam geçmiş hacim = TÜM doğrudan temin + TÜM ihale ilanı (yayınlanmış her şey).
       Promise.all([sayac('dogrudan_temin_ilanlari'),sayac('ilanlar')]).then(([a,b])=>set('Toplam DT + İhale',kisalt(a+b))),
-      sayac('yukleniciler').then(v=>set('Yüklenici Firma',num(v))),
-      sb.rpc('idare_sayim',{},{count:'exact',head:true}).then(({count})=>set('İşveren İdare',num(count||0))).catch(()=>set('İşveren İdare','—')),
+      // Yüklenici Firma = İhale + DT BİRLEŞİK (union distinct) — dashboard geneli birleşik
+      // gösterdiği için (harita İhale+DT toplam, "Toplam DT+İhale"). yukleniciler tek başına
+      // yalnız ihale kazananları (~220K); firma_ozet_birlikte DT-only tedarikçileri de sayar
+      // (~336K). RPC düşerse ihale-only sayıma geri düş.
+      sb.rpc('firma_ozet_birlikte').then(({data,error})=>{
+        if(error||!data||!data[0]) throw error||new Error('bos');
+        set('Yüklenici Firma',num(data[0].toplam));
+      }).catch(()=>sayac('yukleniciler').then(v=>set('Yüklenici Firma',num(v)))),
+      // İşveren İdare = İhale + DT BİRLEŞİK (idare_ozet_mv ∪ dt_idare_ozet_mv distinct).
+      // idare_sayim (İhale-only, ~42K) yerine idare_sayim_birlikte. RPC düşerse İhale-only'ye dön.
+      sb.rpc('idare_sayim_birlikte').then(({data,error})=>{
+        if(error||data==null) throw error||new Error('bos');
+        set('İşveren İdare',num(data));
+      }).catch(()=>sb.rpc('idare_sayim',{},{count:'exact',head:true})
+        .then(({count})=>set('İşveren İdare',num(count||0))).catch(()=>set('İşveren İdare','—'))),
     ]);
     set('Sektörde Fırsat','41');
   }
