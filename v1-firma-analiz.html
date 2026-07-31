@@ -1050,6 +1050,15 @@
       if (_yilChart){ _yilChart.destroy(); _yilChart = null; }
     }
 
+    // (a) Firma açılınca ÖZET yerine SÖZLEŞME LİSTESİ karşılasın — derin analiz yapan
+    //     doğrudan "Katıldığı İhaleler"i görsün (Genel Bakış tek tık uzakta). DT sekmesindeyken
+    //     firma değiştiyse o sekmede kal (aşağıdaki dal tazeler).
+    if (!$('tab-dt').classList.contains('aktif')){
+      document.querySelectorAll('.fa-panel').forEach(p => p.classList.remove('aktif'));
+      document.querySelectorAll('.fa-tab').forEach(x => x.classList.remove('aktif'));
+      $('tab-sonuclar').classList.add('aktif');
+      const stb = document.querySelector('.fa-tab[data-sekme="sonuclar"]'); if (stb) stb.classList.add('aktif');
+    }
     if ($('tab-sonuclar').classList.contains('aktif')) sonuclariGoster();
     // DT sekmesi açıkken firma değişirse listeyi tazele. dtBlokYukle DT_SAYISI'yi asenkron
     // set eder → kısa gecikmeyle yeniden çağır (sayaç güncel olsun).
