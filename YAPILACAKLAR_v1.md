@@ -411,6 +411,22 @@ ayrı "Geçmiş DT" / "DT Sonuçları" sekmesine gerek yok.
     2,55M · guard "…OPEN"→"Açık İhale" · Aktif/DT sekmeleri sağlam · 0 konsol hatası.
 → `v1-ihaleler.html`, `backend/migration_usul_i18n_temizlik.sql`
 
+## MADDE 24 — Kamu kuruluşu filtresi (harita) + firma-analiz "Katıldığı DT" sekmesi ✅ (deploy bekliyor)
+Kullanıcı 2 gözlem:
+- (a) Harita firma sıralamasında DMO / cezaevi (İşyurtları) / PTT gibi **kamu kuruluşları** kazanan
+  çıkıyor. Veri DOĞRU (bunlar DT'de gerçek tedarikçi) ama rakip analizinde gürültü. Karar (onaylı):
+  **varsayılan gizle + toggle**. → `firma_kurum_mu(ad)` sınıflandırıcı (kurumsal sonek + DMO/PTT/İşyurtları
+  ad-içi) + `il_sektor_firmalar(_dt)`'ye `p_kamu_dahil` (default false, agregasyon SONRASI süzer) +
+  haritada "Kamu kuruluşlarını da göster" checkbox'ı (yalnız firma listesini etkiler).
+- (b) firma-analiz'de ihale ve DT kazanımları AYRI ekranlarda olsun; tıklanınca detayına gitsin. →
+  "Katıldığı İhaleler" (var) yanında **"Katıldığı Doğrudan Teminler"** sekmesi; `firma_dt_liste` RPC
+  (dt_no/başlık/il/tür/tarih/bedel/idare, tr_fold eşleşme + idx_dt_sonuc_kazanan_fold) → satır
+  `v1-dt-detay?dt_no=`'ya link, sayaç firma_dt_ozet.dt_sayisi'nden, sayfalama.
+Canlı (localhost): DT tab/panel/pager + kamu checkbox var, 0 konsol hatası; RPC'ler deploy sonrası.
+→ `v1-firma-analiz.html`, `backend/migration_firma_dt_liste_kamu.sql`
+- NOT: DMO/cezaevi "veri hatası mı?" — HAYIR, gerçek kamu tedarikçileri (tarayıcı içerik-filtresi
+  makine-doğrulamayı engelledi ama alan bilgisi kesin: DMO 4734/3-e, İşyurtları üretim-satış).
+
 # UZUN VADE (ayrı seri — "uzun vade" dendiğinde bu liste çıkarılır)
 
 ## UV-1 — AI Teklif/Fiyat Asistanı revizyonu: teknik şartname okuması 📋

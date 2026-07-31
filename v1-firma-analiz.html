@@ -363,6 +363,10 @@
                     <option value="bedel|1">💰 Son 1 yıl — ciro</option>
                     <option value="sozlesme|1">📑 Son 1 yıl — sözleşme</option>
                   </select>
+                  <!-- MADDE: DMO/cezaevi/PTT gibi kamu kuruluşları varsayılan GİZLİ (rakip analizi temiz kalsın) -->
+                  <label style="display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--v1-muted);cursor:pointer;white-space:nowrap;" title="DMO, cezaevi/İşyurtları, PTT gibi kamu kuruluşları da doğrudan temin/ihale kazanır; rakip firma analizinde varsayılan gizlenir.">
+                    <input type="checkbox" id="fa-h-kamu"> Kamu kuruluşlarını da göster
+                  </label>
                 </div>
               </div>
               <div class="fa-h-svg-wrap" id="fa-h-svg-wrap"><div class="fa-mini-spin"></div></div>
@@ -494,6 +498,7 @@
           <div class="fa-tabs">
             <button class="fa-tab aktif" data-sekme="genel">Genel Bakış</button>
             <button class="fa-tab" data-sekme="sonuclar">Katıldığı İhaleler</button>
+            <button class="fa-tab" data-sekme="dt">Katıldığı Doğrudan Teminler</button>
           </div>
 
           <!-- GENEL BAKIŞ -->
@@ -537,6 +542,23 @@
             </div>
             <div id="pivot-kaplayici"></div>
             <div id="ai-kaplayici"></div>
+          </div>
+
+          <!-- KATILDIĞI DOĞRUDAN TEMİNLER (firma_dt_liste) — ihaleden AYRI ekran -->
+          <div id="tab-dt" class="fa-panel">
+            <div id="dt-liste-kaplayici">
+              <div class="fa-bos-kart">
+                <div class="fa-spin"></div>
+                <div style="font-size:13px;color:var(--v1-muted);">Doğrudan temin verisi yükleniyor…</div>
+              </div>
+            </div>
+            <div class="fa-pager" id="dt-pager" style="display:none;">
+              <button class="fa-pbtn" data-yon="ilk">« İlk</button>
+              <button class="fa-pbtn" data-yon="prev">‹ Önceki</button>
+              <span class="fa-pinfo" id="dt-pinfo"></span>
+              <button class="fa-pbtn" data-yon="next">Sonraki ›</button>
+              <button class="fa-pbtn" data-yon="son">Son »</button>
+            </div>
           </div>
 
         </div>
@@ -619,6 +641,7 @@
   let uyeMi = false, proMu = false;
   let FIRMA = '', AKTIF_YID = '';
   let sonucVeri = [], tumIhaleler = [];
+  let DT_SAYISI = 0, dtSayfa = 1;   // Katıldığı Doğrudan Teminler sekmesi (firma_dt_liste)
   let RESMI_SOZLESME = null;    // yukleniciler.toplam_sozlesme_sayisi — kesilmemiş gerçek toplam
   let ORNEKLEM_KESIK = false;   // sonucVeri limite dayandı mı
   let sayfa = 1, topSayfa = 1;
@@ -977,6 +1000,7 @@
     }
 
     sonucVeri = (sonucRaw || []).map(s => ({ ...s, ilan: s.ilanlar || null }));
+    dtSayfa = 1; DT_SAYISI = 0;   // yeni firma → DT sekmesi baştan
     RESMI_SOZLESME = (y && y.toplam_sozlesme_sayisi != null) ? Number(y.toplam_sozlesme_sayisi) : null;
     ORNEKLEM_KESIK = sonucVeri.length >= SONUC_LIMIT;
     // "Katıldığı İhaleler" = kazandığı ihalelerin kendisi (EKAP kaybedeni yayınlamaz)
@@ -1027,6 +1051,9 @@
     }
 
     if ($('tab-sonuclar').classList.contains('aktif')) sonuclariGoster();
+    // DT sekmesi açıkken firma değişirse listeyi tazele. dtBlokYukle DT_SAYISI'yi asenkron
+    // set eder → kısa gecikmeyle yeniden çağır (sayaç güncel olsun).
+    if ($('tab-dt').classList.contains('aktif')){ dtListeGoster(); setTimeout(() => { if ($('tab-dt').classList.contains('aktif')) dtListeYukle(1); }, 700); }
   }
 
   // Fesih / tasfiye TAM sayımı (head:true → satır indirmez). Şerit yalnız sıfırdan büyükse açılır.
@@ -1066,6 +1093,7 @@
       if(error) throw error;
       const d = data || {};
       const n = Number(d.dt_sayisi) || 0;
+      DT_SAYISI = n;                                 // "Katıldığı DT" sekmesi sayfalaması bunu kullanır
       if(!n){ el.style.display = 'none'; return; }   // DT kazanımı yoksa blok hiç açılmaz
       const satirlar = (list, ikon) => (list||[]).slice(0,6).map(x =>
         `<div class="fa-satir"><span class="sol">${ikon}${esc(x.il || x.kategori)}</span><span class="sag">${num(x.sayi)}</span></div>`
@@ -1238,6 +1266,71 @@
     pg.querySelector('[data-yon="prev"]').disabled = sayfa <= 1;
     pg.querySelector('[data-yon="next"]').disabled = sayfa >= topSayfa;
     pg.querySelector('[data-yon="son"]').disabled  = sayfa >= topSayfa;
+  }
+
+  /* ── Katıldığı Doğrudan Teminler sekmesi (firma_dt_liste) — ihaleden AYRI ── */
+  function dtKartHtml(r){
+    const link = r.dt_no ? `v1-dt-detay?dt_no=${encodeURIComponent(r.dt_no)}` : null;
+    const baslik = r.baslik || (r.dt_no ? 'Doğrudan Temin ' + r.dt_no : 'DT kaydı');
+    const idareHtml = r.idare
+      ? `<a href="v1-kurum-analiz?kurum=${encodeURIComponent(r.idare)}" style="color:var(--v1-muted);">🏛️ ${esc(r.idare)}</a>` : '';
+    return `<div class="fa-ik">
+      <div class="fa-ik-ust">
+        ${link ? `<a class="fa-ik-bas" href="${link}">${esc(baslik)}</a>` : `<span class="fa-ik-bas">${esc(baslik)}</span>`}
+        ${r.dt_no ? `<span class="fa-durum notr">${esc(r.dt_no)}</span>` : ''}
+      </div>
+      <div class="fa-ik-satir">${idareHtml}</div>
+      <div class="fa-ik-meta">
+        ${r.tur ? `<span class="fa-etiket">${esc(r.tur)}</span>` : ''}
+        ${r.il ? `<span>📍 ${esc(r.il)}</span>` : ''}
+        ${r.kazanan_bedel ? `<span class="fa-ik-bedel">${paraTam(r.kazanan_bedel)}</span>` : ''}
+        ${r.tarih ? `<span>📅 ${tarihF(r.tarih)}</span>` : ''}
+        ${r.kategori ? `<span>${esc(r.kategori)}</span>` : ''}
+      </div>
+    </div>`;
+  }
+  async function dtListeGoster(){ if (FIRMA) dtListeYukle(dtSayfa); }
+  async function dtListeYukle(s){
+    const kap = $('dt-liste-kaplayici'), pg = $('dt-pager');
+    if (!kap) return;
+    dtSayfa = Math.max(1, Number(s) || 1);
+    kap.innerHTML = '<div class="fa-bos-kart"><div class="fa-spin"></div><div style="font-size:13px;color:var(--v1-muted);">Yükleniyor…</div></div>';
+    try{
+      const { data, error } = await sb.rpc('firma_dt_liste',
+        { p_firma_ad: FIRMA, p_limit: PER_PAGE, p_offset: (dtSayfa-1)*PER_PAGE });
+      if (error) throw error;
+      const rows = data || [];
+      if (!rows.length && dtSayfa === 1){
+        kap.innerHTML = `<div class="fa-bos-kart">
+          <div class="fa-bos-ikon">⚡</div>
+          <div class="fa-bos-bas">Doğrudan temin kazanımı bulunamadı</div>
+          <div class="fa-bos-alt">Bu firma adıyla eşleşen doğrudan temin kaydı henüz toplanmamış.</div></div>`;
+        if (pg) pg.style.display = 'none'; return;
+      }
+      const toplam = DT_SAYISI || rows.length;
+      kap.innerHTML = `
+        <div class="fa-kpi uclu" style="margin-bottom:14px;">
+          <div class="fa-k"><div class="fa-k-et">Kazanılan DT <span class="fa-rozet" style="background:#F5E6C0;color:#8A5A00;" title="4734/22 doğrudan temin — ihale evreninden AYRI">yalnız DT</span></div>
+            <div class="fa-k-v mavi">${num(toplam)}</div><div class="fa-k-alt">doğrudan temin sözleşmesi</div></div>
+          <div class="fa-k"><div class="fa-k-et">Bu Sayfada</div><div class="fa-k-v" style="font-size:17px;">${num(rows.length)}</div><div class="fa-k-alt">kayıt gösteriliyor</div></div>
+          <div class="fa-k"><div class="fa-k-et">Sıralama</div><div class="fa-k-v" style="font-size:15px;">Tarihe göre</div><div class="fa-k-alt">en yeni önce</div></div>
+        </div>
+        <div id="dt-liste"></div>`;
+      $('dt-liste').innerHTML = rows.map(dtKartHtml).join('');
+      const top = Math.max(1, Math.ceil(toplam / PER_PAGE));
+      if (pg){
+        pg.style.display = top > 1 ? 'flex' : 'none';
+        $('dt-pinfo').textContent = `${num(dtSayfa)} / ${num(top)}`;
+        pg.querySelector('[data-yon="ilk"]').disabled  = dtSayfa <= 1;
+        pg.querySelector('[data-yon="prev"]').disabled = dtSayfa <= 1;
+        pg.querySelector('[data-yon="next"]').disabled = dtSayfa >= top;
+        pg.querySelector('[data-yon="son"]').disabled  = dtSayfa >= top;
+      }
+    }catch(e){
+      kap.innerHTML = `<div class="fa-bos-kart"><div class="fa-bos-bas">Liste yüklenemedi</div>
+        <div class="fa-bos-alt">${esc((e && e.message) || '')}</div></div>`;
+      if (pg) pg.style.display = 'none';
+    }
   }
 
   /* ── analiz_pivot kırılımı (idare + sektör) ───────────────────────── */
@@ -1578,7 +1671,7 @@
   let hSektorSecili = null, hSektorVeri = null, hSektorTopSoz = 0, hSeciliIl = null;
   let hKurulum = null, hSektorIstek = 0;
   // MADDE 20-B: İhale/DT bazı + ölçüt (son-1-yıl & ciro/sözleşme). DT verisi lazy.
-  let hBaz = 'ihale', hSonYil = false, hOlcut = 'bedel';
+  let hBaz = 'ihale', hSonYil = false, hOlcut = 'bedel', hKamuDahil = false;
   let hSektorVeriDt = null, hFirmaMapDt = {}, hToplamFirmaDt = 0;
   const hDt = () => hBaz === 'dt';
   const hSektorMap = () => { const sv = hDt() ? hSektorVeriDt : hSektorVeri;
@@ -1696,7 +1789,7 @@
     }
     try{
       const { data, error } = await sb.rpc(hDt() ? 'il_sektor_firmalar_dt' : 'il_sektor_firmalar',
-        { p_il_folds: hFoldVaryant(key), p_kategori: hSektorSecili, p_limit: 8, p_son_yil: hSonYil, p_olcut: hOlcut });
+        { p_il_folds: hFoldVaryant(key), p_kategori: hSektorSecili, p_limit: 8, p_son_yil: hSonYil, p_olcut: hOlcut, p_kamu_dahil: hKamuDahil });
       if (error) throw error;
       const el = $('fa-h-firmalar');
       if (!el || hSeciliIl !== key) return;
@@ -1953,6 +2046,11 @@
     hSonYil = (yil === '1');
     if (hSeciliIl) hIlSec(hSeciliIl);
   });
+  // MADDE: kamu kuruluşlarını göster/gizle — yalnız firma listesini etkiler (yoğunluk değişmez)
+  $('fa-h-kamu').addEventListener('change', e => {
+    hKamuDahil = !!e.target.checked;
+    if (hSeciliIl) hIlSec(hSeciliIl);
+  });
 
   $('liste-yeni-arama').addEventListener('click', dizineDon);
   $('btn-yeni-arama').addEventListener('click', dizineDon);
@@ -1975,7 +2073,22 @@
     $('tab-' + b.dataset.sekme).classList.add('aktif');
     b.classList.add('aktif');
     if (b.dataset.sekme === 'sonuclar') sonuclariGoster();
+    if (b.dataset.sekme === 'dt') dtListeGoster();
   }));
+
+  // Katıldığı DT sayfalaması
+  $('dt-pager').addEventListener('click', e => {
+    const b = e.target.closest('[data-yon]');
+    if (!b || b.disabled) return;
+    const top = Math.max(1, Math.ceil((DT_SAYISI || 1) / PER_PAGE));
+    let hedef = dtSayfa;
+    if (b.dataset.yon === 'ilk') hedef = 1;
+    else if (b.dataset.yon === 'prev') hedef = dtSayfa - 1;
+    else if (b.dataset.yon === 'next') hedef = dtSayfa + 1;
+    else if (b.dataset.yon === 'son') hedef = top;
+    dtListeYukle(hedef);
+    const p = document.querySelector('.fa-tabs'); if (p) p.scrollIntoView({ behavior:'smooth', block:'center' });
+  });
 
   $('sonuc-pager').addEventListener('click', e => {
     const b = e.target.closest('[data-yon]');
