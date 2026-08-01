@@ -5,7 +5,7 @@
   <meta name="author" content="Ömer Faruk Dinç">
   <meta name="copyright" content="© 2026 Ömer Faruk Dinç — İhaleGlobal">
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Dökümanlar — İhaleGlobal</title>
+  <title>Dokümanlar — İhaleGlobal</title>
   <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=4" />
   <link rel="icon" type="image/png" sizes="48x48" href="/favicon-48.png?v=4" />
   <link rel="apple-touch-icon" sizes="180x180" href="/favicon-180.png?v=4" />
@@ -70,7 +70,7 @@
     .v1-dk-govde.acik { display:block; }
     .v1-dk-not { font-size:13px; color:var(--v1-muted); margin:0; }
 
-    /* Döküman ızgarası */
+    /* Doküman ızgarası */
     .v1-dok-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(270px,1fr)); gap:10px; }
     .v1-dok { background:#fff; border:1px solid var(--v1-cizgi); border-radius:var(--v1-radius);
       padding:12px 14px; display:flex; align-items:flex-start; gap:10px; text-decoration:none;
@@ -120,12 +120,12 @@
     }
   </style>
 </head>
-<body class="v1" data-v1-aktif="dokumanlar" data-v1-kirinti="İhaleler > Dökümanlar">
+<body class="v1" data-v1-aktif="dokumanlar" data-v1-kirinti="İhaleler > Dokümanlar">
 <div class="v1-app">
   <div class="v1-main">
     <div class="v1-govde">
-      <div class="v1-sayfa-baslik">Dökümanlar</div>
-      <div class="v1-sayfa-alt">Takip ettiğiniz ihalelerin dökümanlarını buradan görüntüleyin ve indirin.</div>
+      <div class="v1-sayfa-baslik">Dokümanlar</div>
+      <div class="v1-sayfa-alt">Takip ettiğiniz ihalelerin dokümanlarını buradan görüntüleyin ve indirin.</div>
 
       <div class="v1-ust-satir">
         <button class="v1-mini-btn dolu" id="tumunu-ac-btn" type="button">Tümünü Aç</button>
@@ -135,21 +135,21 @@
       </div>
 
       <div class="v1-sekme-bar" id="sekme-bar">
-        <button class="v1-sekme aktif" type="button" data-sekme="takip">Takip Dökümanları</button>
+        <button class="v1-sekme aktif" type="button" data-sekme="takip">Takip Dokümanları</button>
         <button class="v1-sekme" type="button" data-sekme="teknik">Teknik Şartnameler</button>
         <button class="v1-sekme" type="button" data-sekme="idari">İdari Şartnameler</button>
       </div>
 
       <div id="panel-takip">
         <div class="v1-bilgi-serit">
-          ℹ️ <strong>Dökümanlar EKAP'tan otomatik çekilir.</strong> Yeni ihaleler için dökümanlar 24 saat içinde
-          güncellenir. Döküman indirmek için EKAP hesabınızla giriş yapmanız gerekebilir.
+          ℹ️ <strong>Dokümanlar EKAP'tan otomatik çekilir.</strong> Yeni ihaleler için dokümanlar 24 saat içinde
+          güncellenir. Doküman indirmek için EKAP hesabınızla giriş yapmanız gerekebilir.
         </div>
 
         <div class="v1-ara-satir">
           <label class="v1-ara-alan">
             <span aria-hidden="true">🔍</span>
-            <input type="text" id="dok-ara" placeholder="Döküman veya ihale adı ara…" autocomplete="off" />
+            <input type="text" id="dok-ara" placeholder="Doküman veya ihale adı ara…" autocomplete="off" />
           </label>
           <span class="v1-ara-ipucu">Ctrl + K</span>
           <span class="v1-ara-ipucu">Alt + 1 / 2 / 3 sekme</span>
@@ -183,7 +183,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/takip.js?v=2"></script>
-<script src="js/v1-kabuk.js?v=22"></script>
+<script src="js/v1-kabuk.js?v=23"></script>
 <script>
 (() => {
   const SB_URL="https://ihaleglobal.com", SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzg0MzA3MTU4LCJleHAiOjE5NDE5ODcxNTh9.CjNKulvirotDD_y2oO2QKgo0kbqYvL0jUSV1RiDMoso";
@@ -231,7 +231,7 @@
     if(not) not.style.visibility = (id==='takip' ? '' : 'hidden');
   }
 
-  // ── Döküman türü → ikon ──────────────────────────────────────────────────
+  // ── Doküman türü → ikon ──────────────────────────────────────────────────
   function dokIkon(tur){
     const t=fold(tur);
     if(t.includes('pdf')) return '📕';
@@ -258,13 +258,13 @@
       : null;
 
     const govde = liste.length===0
-      ? `<p class="v1-dk-not">Bu ihale için döküman kaydı bulunamadı.
+      ? `<p class="v1-dk-not">Bu ihale için doküman kaydı bulunamadı.
            ${ekapUrl?`<br><a class="v1-btn-ekap" href="${esc(ekapUrl)}" target="_blank" rel="noopener">EKAP'ta Görüntüle ↗</a>`:''}</p>`
       : `<div class="v1-dok-grid">
            ${liste.map(d=>{
              // storage_url = EKAP belgesinin Supabase Storage aynası; url boşsa yedek kaynak.
              const url=guvenliUrl(d && (d.url || d.storage_url));
-             const ad=(d&&(d.ad||d.baslik))||'Döküman';
+             const ad=(d&&(d.ad||d.baslik))||'Doküman';
              const tur=(d&&(d.tur||d.type))||'';
              return `<a class="v1-dok${url?'':' pasif'}" href="${url?esc(url):'#'}"${url?' target="_blank" rel="noopener"':' onclick="return false;"'}>
                <span class="v1-dok-ikon">${dokIkon(tur||ad)}</span>
@@ -279,7 +279,7 @@
              <span class="v1-dok-ikon">🏛️</span>
              <span class="v1-dok-info">
                <span class="v1-dok-ad">EKAP'ta Görüntüle</span>
-               <span class="v1-dok-tur">Tüm dökümanlar için</span>
+               <span class="v1-dok-tur">Tüm dokümanlar için</span>
              </span>
              <span class="v1-dok-ok">↗</span>
            </a>`:''}
@@ -287,7 +287,7 @@
 
     const kid='kart-'+ihale.id;
     const idareHtml = uyeMi ? esc(ihale.idare||'—') : MASKE_ROZET;
-    // Arama anahtarı: ihale başlığı + (üyede) idare + il + döküman adları/türleri
+    // Arama anahtarı: ihale başlığı + (üyede) idare + il + doküman adları/türleri
     const araMetin = fold([ihale.baslik, uyeMi?ihale.idare:'', ihale.il,
       liste.map(d=>[(d&&(d.ad||d.baslik))||'', (d&&(d.tur||d.type))||''].join(' ')).join(' ')].join(' '));
 
@@ -298,7 +298,7 @@
           <div class="v1-dk-meta">${idareHtml}${ihale.il?' &nbsp;·&nbsp; '+esc(ihale.il):''}</div>
         </div>
         <div class="v1-dk-sag">
-          <span class="v1-dk-sayi${liste.length?'':' yok'}">${num(liste.length)} döküman</span>
+          <span class="v1-dk-sayi${liste.length?'':' yok'}">${num(liste.length)} doküman</span>
           <span class="v1-dk-ok" id="ok-${kid}">›</span>
         </div>
       </div>
@@ -342,7 +342,7 @@
   function notYaz(ihaleAdet, belgeAdet, filtreli){
     const el=document.getElementById('ust-not');
     if(!el) return;
-    el.innerHTML = `<strong>${num(ihaleAdet)}</strong> ihale · <strong>${num(belgeAdet)}</strong> döküman`
+    el.innerHTML = `<strong>${num(ihaleAdet)}</strong> ihale · <strong>${num(belgeAdet)}</strong> doküman`
       + (filtreli ? ' <span style="color:var(--v1-muted);">(filtreli)</span>' : '');
   }
 
@@ -363,7 +363,7 @@
 
     if(!ham.length){
       icerik.innerHTML=bosDurum('📁','Takip listesi boş',
-        'Dökümanları görmek için önce ihaleleri takip listesine ekleyin. İhale listesindeki ☆ butonuyla takibe alabilirsiniz.',
+        'Dokümanları görmek için önce ihaleleri takip listesine ekleyin. İhale listesindeki ☆ butonuyla takibe alabilirsiniz.',
         'İhalelere Göz At →','v1-ihaleler');
       notYaz(0,0,false);
       return;
@@ -393,9 +393,9 @@
       // Ham Postgres metni (kolon/rol/timeout ayrıntısı) kullanıcıya GÖSTERİLMEZ; konsola.
       console.error('v1-dokumanlar yükleme hatası:', error);
       icerik.innerHTML = kilit
-        ? `<div class="v1-kilit-kutu">🔒 İhale dökümanları üyelere özeldir.<br><br>
+        ? `<div class="v1-kilit-kutu">🔒 İhale dokümanları üyelere özeldir.<br><br>
              <a href="login">Giriş yapın</a> veya <a href="fiyatlandirma_odeme_bolumu">üye olun</a> →</div>`
-        : `<div class="v1-kilit-kutu">Dökümanlar şu an yüklenemedi.<br><br>
+        : `<div class="v1-kilit-kutu">Dokümanlar şu an yüklenemedi.<br><br>
              Lütfen birkaç saniye sonra sayfayı yenileyin.</div>`;
       notYaz(0,0,false);
       return;
@@ -412,7 +412,7 @@
       return;
     }
 
-    // Çok dökümanlı ihaleler üstte
+    // Çok dokümanlı ihaleler üstte
     tumVeriler.sort((a,b)=>b.belgeler.length-a.belgeler.length);
     icerik.innerHTML=tumVeriler.map(kartHtml).join('');
 

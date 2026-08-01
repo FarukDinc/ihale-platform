@@ -76,13 +76,12 @@
     { id: 'analiz',     ad: 'Analiz',      ikon: I.analiz, href: 'v1-analiz' },
     { id: 'ihaleler',   ad: 'İhaleler',    ikon: I.dosya,  href: 'v1-ihaleler' },
     { id: 'sonuclar',   ad: 'Sonuçlar',    ikon: I.bayrak, href: 'v1-ihaleler?sekme=sonuc' },
-    { id: 'dokumanlar', ad: 'Dökümanlar',  ikon: I.klasor, href: 'v1-dokumanlar' },
+    { id: 'dokumanlar', ad: 'Dokümanlar',  ikon: I.klasor, href: 'v1-dokumanlar' },
     { id: 'sozlesme',   ad: 'Sözleşmeler', ikon: I.para,   href: 'v1-sozlesmeler' },
     { id: 'kararlar',   ad: 'Kararlar',    ikon: I.tokmak, href: 'v1-kararlar' },
     { id: 'firmalar',   ad: 'Firmalar',    ikon: I.firma,  href: 'v1-firmalar' },
     { id: 'kurumlar',   ad: 'Kurumlar',    ikon: I.kurum,  href: 'v1-kurumlar' },
     { id: 'sektorler',  ad: 'Sektörler',   ikon: I.sektor, href: 'v1-sektorler' },
-    { id: 'ihalelerim', ad: 'İhalelerim',  ikon: I.rapor,  href: 'v1-ihalelerim' },
     { id: 'harita',     ad: 'Harita',      ikon: I.harita, href: 'v1-harita' },
   ];
   const MENU_GLOBAL = [
@@ -90,7 +89,8 @@
     { id: 'disticaret', ad: 'Dış Ticaret',     ikon: I.ticaret, href: 'v1-dis-ticaret' },
   ];
   const MENU_ESATINALMA = [
-    { id: 'esatinalma', ad: 'Satınalma', ikon: I.sepet, href: 'v1-esatinalma' },
+    { id: 'esatinalma', ad: 'Satınalma',  ikon: I.sepet, href: 'v1-esatinalma' },
+    { id: 'ihalelerim', ad: 'İhalelerim', ikon: I.rapor, href: 'v1-ihalelerim' },
     { id: 'bank',   ad: 'Bank',   ikon: I.para,   href: 'v1-bank' },
     { id: 'harita', ad: 'Harita', ikon: I.harita, href: 'v1-harita?dunya=esatinalma' },
   ];
@@ -100,7 +100,7 @@
     { ws: 'esatinalma', ad: 'E-Satınalma',     ikon: I.sepet,  landing: 'v1-esatinalma',   menu: MENU_ESATINALMA },
   ];
   // Aktif sayfa (data-v1-aktif) hangi dünyaya ait — eşleşmezse 'kamu'
-  const WS_OF = { global: 'global', disticaret: 'global', bank: 'esatinalma', esatinalma: 'esatinalma' };
+  const WS_OF = { global: 'global', disticaret: 'global', bank: 'esatinalma', esatinalma: 'esatinalma', ihalelerim: 'esatinalma' };
 
   const aktif = document.body.getAttribute('data-v1-aktif') || '';
   const kirinti = document.body.getAttribute('data-v1-kirinti') || '';
@@ -275,11 +275,12 @@
       const f = b.dataset.fn;
       if (f === 'v2') {
         // Kurumsal (v2) ŞİFRE KİLİDİ — geçici soft-gate (client-side; kalıcısı server-side rol olacak).
-        const _p = prompt('Kurumsal sürüm şifresi:');
-        if (_p === null) return;                              // iptal
-        if (_p !== 'Faruk.06!') { alert('Şifre hatalı.'); return; }
-        try { sessionStorage.setItem('kurumsal_v2', '1'); } catch (_) {}
-        localStorage.setItem('ihale_surum', 'v2'); location.href = 'benim-sayfam';
+        m.remove();
+        v2SifreModal((dogru) => {
+          if (!dogru) return;
+          try { sessionStorage.setItem('kurumsal_v2', '1'); } catch (_) {}
+          localStorage.setItem('ihale_surum', 'v2'); location.href = 'benim-sayfam';
+        });
       }
       else if (f === 'v1') { localStorage.setItem('ihale_surum', 'v1'); m.remove(); }
       else if (f === 'profil') location.href = 'v1-profil';
@@ -287,6 +288,37 @@
       else if (f === 'cikis') { try { localStorage.removeItem('ihale_token'); } catch (_) {} location.href = '/'; }
     }));
     setTimeout(() => document.addEventListener('click', function kapat() { m.remove(); document.removeEventListener('click', kapat); }), 0);
+  }
+
+  // ── Kurumsal (v2) şifre modalı (native prompt yerine stilize) ──────────
+  function v2SifreModal(cb) {
+    const ov = document.createElement('div');
+    ov.style.cssText = 'position:fixed;inset:0;z-index:100000;background:rgba(12,62,112,.32);display:flex;align-items:center;justify-content:center;font-family:var(--v1-font);padding:16px;';
+    ov.innerHTML =
+      '<div style="background:#fff;border-radius:16px;box-shadow:0 24px 60px rgba(12,62,112,.28);max-width:340px;width:100%;padding:22px;">' +
+        '<div style="font-size:16px;font-weight:800;color:var(--v1-metin);display:flex;align-items:center;gap:8px;">🔒 Kurumsal (v2) Girişi</div>' +
+        '<div style="font-size:12.5px;color:var(--v1-muted);margin:6px 0 14px;">Bu sürüm şifreyle korunmaktadır.</div>' +
+        '<input id="v2-sifre-inp" type="password" placeholder="Şifre" autocomplete="off" ' +
+          'style="width:100%;box-sizing:border-box;padding:11px 13px;border:1px solid var(--v1-cizgi);border-radius:10px;font-size:14px;font-family:inherit;outline:none;">' +
+        '<div id="v2-sifre-hata" style="color:var(--v1-kirmizi);font-size:12px;font-weight:600;height:16px;margin:6px 2px 0;"></div>' +
+        '<div style="display:flex;gap:8px;margin-top:12px;">' +
+          '<button id="v2-sifre-iptal" style="flex:1;padding:10px;border:1px solid var(--v1-cizgi);background:#fff;border-radius:10px;font-family:inherit;font-weight:700;font-size:13.5px;cursor:pointer;color:var(--v1-metin);">Vazgeç</button>' +
+          '<button id="v2-sifre-ok" style="flex:1;padding:10px;border:none;background:var(--v1-mavi);color:#fff;border-radius:10px;font-family:inherit;font-weight:700;font-size:13.5px;cursor:pointer;">Gir</button>' +
+        '</div>' +
+      '</div>';
+    document.body.appendChild(ov);
+    const inp = ov.querySelector('#v2-sifre-inp');
+    const hata = ov.querySelector('#v2-sifre-hata');
+    const kapat = (dogru) => { ov.remove(); cb(dogru); };
+    const dene = () => {
+      if (inp.value === 'Faruk.06!') { kapat(true); }
+      else { hata.textContent = 'Şifre hatalı.'; inp.select(); }
+    };
+    ov.querySelector('#v2-sifre-ok').addEventListener('click', dene);
+    ov.querySelector('#v2-sifre-iptal').addEventListener('click', () => kapat(false));
+    ov.addEventListener('click', (e) => { if (e.target === ov) kapat(false); });
+    inp.addEventListener('keydown', (e) => { if (e.key === 'Enter') dene(); if (e.key === 'Escape') kapat(false); });
+    setTimeout(() => inp.focus(), 30);
   }
 
   // ── Plan adını yaz (paket rozeti) ──────────────────────────────────────

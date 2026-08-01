@@ -466,6 +466,46 @@ Kullanıcı: önemli veriyi tıklama arkasına saklama.
 → `v1-ihale-detay.html`, `v1-firma-analiz.html` (frontend-only, git pull)
 - ⚠️ İHLAL (ayrı task açıldı): v1-sozlesmeler.html CSV export → Veri Dışa Aktarım Yasağı'na aykırı.
 
+## MADDE 26 — QA Turu Bulguları (34) — tam site denetimi (1 Ağu, claude-in-chrome)
+İki turlu tam denetim (her sayfa/sekme/filtre/analiz). Konsol hatası YOK. Önem sırası + fixability.
+Durum: ✅ bitti · ⏳ sıradaki · 📋 planlandı (FE=frontend/pull · DB=migration/scraper, ayrı onay)
+
+### 🔴 Önemli
+- [26-1] ✅ FE — Sözleşmeler "Excel" export butonu → Veri Dışa Aktarım Yasağı ihlali → KALDIR. (v1-sozlesmeler.html)
+- [26-2] 📋 DB — Firma cirosu trilyon anomali: YAMAN ENERJİ ₺1,111 Mr/47 söz. Bozuk sozlesme_bedeli → bul&düzelt (Bank 12,3Tn'i şişiriyor).
+- [26-3] 📋 DB — İmkânsız tenzilat (tek-kısımlı): %-268,7 / %97,4 / %55,7. yaklaşık maliyet parse hatası; lot filtresi yakalamıyor.
+- [26-4] ⏳ FE — Üst-bar arama "Aktif İhaleler" sekmesine düşüp aktif-dışı (2021-23) döndürüyor; İhale Tarihi "—"; başlık/kapsam çelişkili. (v1-ihaleler sorguKur/ara)
+- [26-21] 📋 FE — İhale Analizi (v1-rekabet) Bütçe histogramı bozuk: maliyetli tüm kayıt ₺10-50Mn kovasında; küçükler 0. Bucketing/ölçek.
+- [26-22] 📋 FE — Uyumluluk: tüm satır sabit %60 (profil tercihi boş); %75+/%85+ filtre + sıralama işlevsiz; eşleşme motoru tutarsız.
+- [26-23] 📋 DB/FE — Firmalar: DMO yüklenici firma olarak listeleniyor (alıcı idare) → firma_kurum_mu ile dizinde gizle/işaretle.
+- [26-24] 📋 DB/FE — DT Sonuçları ~640K satırda kazanan yok (sayaç 2,7M ama kazananlı 2,07M) → sonuç filtresi kazananlı DT'ye.
+
+### 🟠 Orta
+- [26-5] 📋 DB — DT ileri-tarih +1yıl (24 Kas 2028 / 23 Tem 2027); scraper yıl-parse; +test kaydı "denme". (bkz UV-5)
+- [26-6] 📋 DB/FE — İl dup "İZMIR (1)" vs "İZMİR (1.494)" (noktasız/noktalı İ) → il normalize.
+- [26-7] 📋 DB — Ad-ortası boşluk (ALTINPAR K / BET ON / STANBUL) = UV-4 ile aynı.
+- [26-8] 📋 DB/FE — Sektör taksonomi sızıntısı: "Mal Alımı"/"Hizmet Alımı"/"İnşaat & Yapım" 41 kanonik dışı.
+- [26-10] 📋 DB — Kararlar "Sonuç" hep "Belirtilmemiş"; Düzenleyici(0)+Mahkeme(0) kapsam ince.
+- [26-25] 📋 FE — Usul normalizasyon tutarsız ("Açık" + "4734 KİK Açık İhale" + "2886 Açık Teklif" ayrı) → usulTemiz() genişlet.
+- [26-26] 📋 DB — Firma Segmentleri üst özet rozetler "—/hesaplanıyor" takılı (aggregate timeout → MV).
+- [26-27] 📋 DB — Segment mantığı: "Parlayan Yıldızlar"a 0-taban ilk-kez JV karışıyor (+182.126%) → İlk Kez'e ayır.
+- [26-28] 📋 DB — Bağlantısız Kurumlar 17.329 (%41 DETSİS'e bağlanamamış).
+
+### 🟡 Düşük
+- [26-11] ⏳ FE — Arama/Analiz "katılabileceğiniz ihaleler" İhale Tarihi "—" → tarih fallback (26-4 ile beraber).
+- [26-12] ⏳ FE — Takibim'de "Takip Ettiğim Sektörler" bölümü yok (Bana Özel 1 sayıyor).
+- [26-13] ⏳ FE — İhalelerim breadcrumb "e-Satınalma" ama Kamu sidebar'ında.
+- [26-14] ⏳ FE — v2 Kurumsal kapısı native prompt() → styled modal.
+- [26-15] ⏳ FE — "Dökümanlar" → TDK "Dokümanlar" (sidebar + sayfa).
+- [26-16] 📋 FE — Bildirim "Standart Plan/50 kredi" ama paket Pro (kozmetik/tarihsel).
+- [26-17] ⏳ FE — UNGM global ilan sektör "—" (data); "Palestine, State of" TR çeviri.
+- [26-29] ⏳ FE — Firmalar segment sayacı il-toplamını gösteriyor (segmenti yansıtmıyor).
+- [26-30] ⏳ FE — Maliyet filtre çipi ham sayı ("50000000 – …") → ₺ format.
+- [26-31] ⏳ FE — Sayı flash/stale (filtre/sekme değişince bayat toplam) → yüklenirken gizle.
+- [26-32] ⏳ FE — Kurum Ağacı görünümünde başlık hâlâ "İdare Dizini".
+- [26-33] ⏳ FE — Büyüme kolonu tutarsız (₺0 son-12 → "—" vs "-100%").
+- [26-34] 📋 DB — Kategori misassignment (düzeltme ilanı/irtifak "İnşaat"a) = sınıflandırıcı kalitesi.
+
 # UZUN VADE (ayrı seri — "uzun vade" dendiğinde bu liste çıkarılır)
 
 ## UV-1 — AI Teklif/Fiyat Asistanı revizyonu: teknik şartname okuması 📋

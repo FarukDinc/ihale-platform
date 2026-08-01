@@ -251,7 +251,7 @@
 
       <!-- ══════════════ İDARE DİZİNİ (açılış görünümü) ══════════════ -->
       <div id="dizin-view" style="display:none;">
-        <div class="v1-sayfa-baslik">🏛️ İdare Dizini</div>
+        <div class="v1-sayfa-baslik" id="dizin-baslik">🏛️ İdare Dizini</div>
         <div class="v1-sayfa-alt">İhale açan kamu idarelerinin karnesi — idareye tıklayın, analizi aynı ekranda açılsın.</div>
 
         <!-- Görünüm anahtarı: kurum sekmelerinden (.v1-sekme) AYRI sınıf kullanılır;
@@ -516,7 +516,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-<script src="js/v1-kabuk.js?v=22"></script>
+<script src="js/v1-kabuk.js?v=23"></script>
 <script>
 (() => {
   const SB_URL="https://ihaleglobal.com", SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzg0MzA3MTU4LCJleHAiOjE5NDE5ODcxNTh9.CjNKulvirotDD_y2oO2QKgo0kbqYvL0jUSV1RiDMoso";
@@ -1476,6 +1476,7 @@
     el('gor-agac').classList.toggle('aktif', dizinGor === 'agac');
     el('liste-gorunum').style.display = dizinGor === 'liste' ? '' : 'none';
     el('agac-gorunum').style.display = dizinGor === 'agac' ? '' : 'none';
+    { const hb = el('dizin-baslik'); if (hb) hb.textContent = dizinGor === 'agac' ? '🌳 Kurum Ağacı' : '🏛️ İdare Dizini'; }
     if (yaz !== false) gorunumUrlYaz();
     // Ağaç RPC'leri YALNIZ dizin ekranda görünürken kurulur: ?kurum= ile gelen derin
     // bağlantıda 2 RPC boşuna harcanmasın (/rest/v1 2 r/s). Kullanıcı "Dizine Dön"

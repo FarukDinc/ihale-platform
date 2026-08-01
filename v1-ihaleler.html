@@ -158,7 +158,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/kategoriler.js?v=1"></script>
-<script src="js/v1-kabuk.js?v=22"></script>
+<script src="js/v1-kabuk.js?v=23"></script>
 <script>
 (() => {
   const SB_URL="https://ihaleglobal.com", SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzg0MzA3MTU4LCJleHAiOjE5NDE5ODcxNTh9.CjNKulvirotDD_y2oO2QKgo0kbqYvL0jUSV1RiDMoso";
@@ -444,7 +444,7 @@
     {ids:['f-kelime'], et:'Arama'},
     {ids:['f-yayin1','f-yayin2'], et:'Yayın Tarihi', aralik:true},
     {ids:['f-tarih1','f-tarih2'], et:'İhale Tarihi', aralik:true},
-    {ids:['f-min','f-max'], et:'Yaklaşık Maliyet', aralik:true},
+    {ids:['f-min','f-max'], et:'Yaklaşık Maliyet', aralik:true, para:true},
     {ids:['f-tur'], et:'İhale Tipi'},
     {ids:['f-usul'], et:'Usul', sel:true},
     {ids:['f-idare'], et:'İdare'},
@@ -455,7 +455,9 @@
   ];
   function cipDeger(t){
     if(t.onay){ const e=document.getElementById(t.ids[0]); return (e&&e.checked)?'Evet':''; }
-    if(t.aralik){ const a=val(t.ids[0]), b=val(t.ids[1]); return (!a&&!b)?'':((a||'…')+' – '+(b||'…')); }
+    if(t.aralik){ let a=val(t.ids[0]), b=val(t.ids[1]); if(!a&&!b) return '';
+      if(t.para){ a=a?tl(a):'…'; b=b?tl(b):'…'; } else { a=a||'…'; b=b||'…'; }
+      return a+' – '+b; }
     const e=document.getElementById(t.ids[0]);
     if(!e||!e.value) return '';
     if(t.sel){ return e.options[e.selectedIndex] ? e.options[e.selectedIndex].text : e.value; }
@@ -480,6 +482,15 @@
     tb.innerHTML='<tr><td colspan="5" class="v1-bos">Yükleniyor…</td></tr>';
     dtSiralamaTazele(); basliklariAyarla();
     filtreCipleriGoster();
+    // 26-4: Aktif sekmesinde kelime araması KAPSAMI TÜM ZAMANLARA genişliyor (sorguKur ~358);
+    //       başlık "Aktif İhaleler" kalırsa yanıltıcı → arama modunda başlığı netleştir.
+    if(sekme==='aktif'){
+      const _kw=val('f-kelime');
+      const _h = _kw ? ('“'+_kw+'” için İhaleler (tüm zamanlar)') : 'Aktif İhaleler';
+      const _b1=document.getElementById('v1-baslik'), _b2=document.getElementById('v1-liste-baslik');
+      if(_b1) _b1.textContent=_h; if(_b2) _b2.textContent=_h;
+      document.title=_h+' — İhaleGlobal';
+    }
     try{
       const bas=(sayfa-1)*SAYFA_BOY;
       // Veri + sayım PARALEL, ayrı sorgular (sayım head:true → satır indirmez)
@@ -540,7 +551,8 @@
     // DT sekmesinde tarih alanı 'tarih' (yayın filtresi açıkken 'yayin_tarihi'), kimlik 'dt_no';
     // ilan tablosunda 'son_teklif_tarihi' / 'ekap_id'.
     const dtMi = dtModu();
-    const ham = dtMi ? (sirala==='yayin_tarihi' ? r.yayin_tarihi : r.tarih) : r.son_teklif_tarihi;
+    // İhale modunda son_teklif_tarihi boşsa (eski/aranmış kayıtlar) ilan tarihine düş → "—" kalmasın.
+    const ham = dtMi ? (sirala==='yayin_tarihi' ? r.yayin_tarihi : r.tarih) : (r.son_teklif_tarihi || r.ilan_tarihi);
     const t=ham?new Date(ham):null;
     const kalan=t?Math.ceil((t-new Date())/86400000):null;
     const tarih=t?t.toLocaleDateString('tr-TR',{day:'numeric',month:'long',year:'numeric'}):'—';
