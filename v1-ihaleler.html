@@ -117,6 +117,17 @@
             <div id="v1-ara-not" style="display:none;margin:2px 0 12px;padding:9px 12px;border-radius:8px;
               background:var(--v1-teal-acik);border:1px solid var(--v1-teal);font-size:12.5px;color:var(--v1-lacivert);"></div>
 
+            <!-- Uygulanan filtreler EKAP gibi çip olarak; her çipin ✕'i o filtreyi kaldırır -->
+            <style>
+              .v1-cipler{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:2px 0 14px;}
+              .v1-cip{display:inline-flex;align-items:center;gap:6px;background:#EEF3FA;border:1px solid var(--v1-cizgi);color:var(--v1-lacivert);border-radius:16px;padding:5px 6px 5px 12px;font-size:12px;}
+              .v1-cip b{font-weight:700;}
+              .v1-cip-x{border:none;background:#D9E2EF;color:var(--v1-lacivert);width:18px;height:18px;border-radius:50%;cursor:pointer;font-size:11px;line-height:1;display:flex;align-items:center;justify-content:center;padding:0;}
+              .v1-cip-x:hover{background:var(--v1-kirmizi);color:#fff;}
+              .v1-cip-temizle{border:none;background:none;color:var(--v1-mavi);font-family:var(--v1-font);font-size:12.5px;font-weight:700;cursor:pointer;text-decoration:underline;padding:4px 8px;}
+            </style>
+            <div id="v1-cipler" class="v1-cipler" style="display:none;"></div>
+
             <div style="overflow-x:auto;">
               <table class="v1-tablo" id="v1-tablo">
                 <thead>
@@ -421,10 +432,46 @@
     });
   }
 
+  // ── Uygulanan filtre çipleri (EKAP tarzı) — her çip ✕ ile tek tek kaldırılır ──
+  const CIP_TANIM = [
+    {ids:['f-kelime'], et:'Arama'},
+    {ids:['f-yayin1','f-yayin2'], et:'Yayın Tarihi', aralik:true},
+    {ids:['f-tarih1','f-tarih2'], et:'İhale Tarihi', aralik:true},
+    {ids:['f-min','f-max'], et:'Yaklaşık Maliyet', aralik:true},
+    {ids:['f-tur'], et:'İhale Tipi'},
+    {ids:['f-usul'], et:'Usul', sel:true},
+    {ids:['f-idare'], et:'İdare'},
+    {ids:['f-kategori'], et:'Sektör'},
+    {ids:['f-il'], et:'İl'},
+    {ids:['f-sozt'], et:'Fiyat Türü', sel:true},
+    {ids:['f-maliyetli'], et:'Yalnız yaklaşık maliyetli', onay:true},
+  ];
+  function cipDeger(t){
+    if(t.onay){ const e=document.getElementById(t.ids[0]); return (e&&e.checked)?'Evet':''; }
+    if(t.aralik){ const a=val(t.ids[0]), b=val(t.ids[1]); return (!a&&!b)?'':((a||'…')+' – '+(b||'…')); }
+    const e=document.getElementById(t.ids[0]);
+    if(!e||!e.value) return '';
+    if(t.sel){ return e.options[e.selectedIndex] ? e.options[e.selectedIndex].text : e.value; }
+    return e.value.trim();
+  }
+  function filtreCipleriGoster(){
+    const kap=document.getElementById('v1-cipler');
+    if(!kap) return;
+    const cipler=[];
+    CIP_TANIM.forEach((t,i)=>{
+      const d=cipDeger(t);
+      if(d) cipler.push(`<span class="v1-cip" data-cip="${i}"><b>${esc(t.et)}:</b> ${esc(d)}<button class="v1-cip-x" data-cip-sil="${i}" title="Bu filtreyi kaldır">✕</button></span>`);
+    });
+    if(!cipler.length){ kap.style.display='none'; kap.innerHTML=''; return; }
+    kap.innerHTML = cipler.join('') + `<button class="v1-cip-temizle" id="v1-cip-temizle">Filtreleri Temizle</button>`;
+    kap.style.display='flex';
+  }
+
   async function yukle(){
     const tb=document.getElementById('v1-tbody');
     tb.innerHTML='<tr><td colspan="5" class="v1-bos">Yükleniyor…</td></tr>';
     dtSiralamaTazele(); basliklariAyarla();
+    filtreCipleriGoster();
     try{
       const bas=(sayfa-1)*SAYFA_BOY;
       // Veri + sayım PARALEL, ayrı sorgular (sayım head:true → satır indirmez)
@@ -765,6 +812,22 @@
       document.querySelectorAll('.v1-filtre input[type=checkbox]').forEach(e=>e.checked=false);
       araNotYaz('');
       sayfa=1; yukle();
+    });
+    // Filtre çipleri: ✕ tek filtreyi kaldırır, "Filtreleri Temizle" hepsini
+    document.getElementById('v1-cipler').addEventListener('click',(e)=>{
+      const sil=e.target.closest('[data-cip-sil]');
+      if(sil){
+        const t=CIP_TANIM[Number(sil.dataset.cipSil)];
+        if(t) t.ids.forEach(id=>{const el=document.getElementById(id); if(el){ if(el.type==='checkbox') el.checked=false; else el.value=''; }});
+        sayfa=1; yukle();
+        return;
+      }
+      if(e.target.closest('#v1-cip-temizle')){
+        document.querySelectorAll('.v1-f-input,.v1-f-select').forEach(el=>el.value='');
+        document.querySelectorAll('.v1-filtre input[type=checkbox]').forEach(el=>el.checked=false);
+        araNotYaz('');
+        sayfa=1; yukle();
+      }
     });
     // Listede ara (client-side, mevcut sayfada)
     document.getElementById('v1-listede-ara').addEventListener('input',(e)=>{
