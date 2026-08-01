@@ -496,6 +496,21 @@ kullanıcıdan alınacak). Mevcut: Comtrade/WITS tabanlı ticaret katmanı (haf�
 `ticaret_backfill.py` + `ticaret_yillar/harita/ulke/liste`). Yeni algoritma tanımı netleşecek.
 → `backend/ticaret_backfill.py`, `v1-dis-ticaret.html` / `ticaret-analiz.html`
 
+## UV-4 — İdare/kurum adlarında kelime-ortası boşluk (scraper metin çıkarımı) 📋
+**Sorun (canlı):** idare adları kelime ortasında boşlukla bozuk geliyor:
+"ANFA ANKARA ALTINPAR K İŞL.LTD.ŞTİ." (→ ALTINPARK), "ANFA GÜVENLİK HİZMET LERİ VE SİSTEMLE LTD.ŞTİ."
+(→ HİZMETLERİ VE SİSTEMLERİ). Bazı kurumlarda var. Ayrıca aynı idare hem bozuk hem DOĞRU adla ayrı
+satır olarak görünüyor (dedup sorunu) — ör. "…ALTINPAR K İŞL.LTD.ŞTİ." + "…ALTINPARK İŞLETMELERİ
+LİMİTED ŞİRKETİ MÜDÜRLÜĞÜ" ikisi de listede.
+**Kök neden (hipotez):** EKAP'ta idare adı satır kaydırmasıyla birden çok metin düğümüne/hücreye
+bölünmüş; scraper düğümleri boşlukla (join ' ') birleştirince WRAP noktalarında kelime ortasına
+boşluk giriyor.
+**Çözüm planı:** (a) `ekap_scraper.py` idare çıkarımını bul → adı tek düğümden al / normalize et
+(çoklu boşluk → tek, ama kelime-ortası wrap boşluğunu ayırt etmek zor). (b) Mevcut bozuk kayıtlar:
+DÜZ "boşlukları sil" YAPILAMAZ (meşru boşluklar var) → doğru varyantla fuzzy eşleştirip dedup
+(aynı idarenin doğru adı çoğu zaman zaten mevcut) VEYA hedefli düzeltme sözlüğü. (c) `idare_ozet_mv`
++ `ilanlar.idare` + `dogrudan_temin_ilanlari.idare` temizliği; DETSİS eşlemesi doğru ada bağlanmalı.
+→ `backend/ekap_scraper.py` (idare alanı), `ilanlar.idare`/`dogrudan_temin_ilanlari.idare`, `idare_ozet_mv`, dedup
 ---
 
 ### Sıradaki (kullanıcı söyleyecek)
