@@ -92,6 +92,7 @@
   ];
   const MENU_ESATINALMA = [
     { id: 'esatinalma', ad: 'Satınalma', ikon: I.sepet, href: 'v1-esatinalma' },
+    { id: 'harita', ad: 'Harita', ikon: I.harita, href: 'v1-harita?dunya=esatinalma' },
   ];
   const DUNYALAR = [
     { ws: 'kamu',       ad: 'Kamu',            ikon: I.kurum,  landing: 'v1-benim-sayfam', menu: MENU_KAMU },
@@ -104,7 +105,10 @@
   const aktif = document.body.getAttribute('data-v1-aktif') || '';
   const kirinti = document.body.getAttribute('data-v1-kirinti') || '';
   // Aktif dünya + o dünyanın sol menüsü (üst bar sekmesi buna göre vurgulanır)
-  const suWs = WS_OF[aktif] || 'kamu';
+  // ?dunya= paramı workspace'i override eder → aynı sayfa (ör. v1-harita) birden çok dünyada
+  // doğru sol menü + üst sekmeyle görünebilir. Yoksa aktif sayfanın WS_OF eşlemesi, o da yoksa Kamu.
+  const _dunyaParam = new URLSearchParams(location.search).get('dunya');
+  const suWs = (_dunyaParam && ['kamu','global','esatinalma'].includes(_dunyaParam)) ? _dunyaParam : (WS_OF[aktif] || 'kamu');
   const suDunya = DUNYALAR.find(d => d.ws === suWs) || DUNYALAR[0];
   const MENU = suDunya.menu;
 
