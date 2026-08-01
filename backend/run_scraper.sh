@@ -54,7 +54,11 @@ $VENV/python rakip_bildirim.py >> /opt/ihale-platform/logs/scraper.log 2>&1
 $VENV/python rapor_bildirim.py >> /opt/ihale-platform/logs/scraper.log 2>&1
 $VENV/python ilan_embed_uret.py --max 300 >> /opt/ihale-platform/logs/scraper.log 2>&1
 echo "[$(date +'%Y-%m-%d %H:%M:%S')] === Dogrudan Temin listesi ===" >> /opt/ihale-platform/logs/scraper.log
-$VENV/python ekap_dogrudan_temin_scraper.py --max-pages 60 >> /opt/ihale-platform/logs/scraper.log 2>&1
+# --max-pages 150 (150×128=19.200 kayıt): günlük DT hacmi 7.000-7.750'ye çıkıyor; eski 60 (7.680)
+# MARJSIZDI — yoğun günde cap aşılıp gün eksik kalıyor, bir gece kaçarsa eski gün kalıcı kayıp.
+# 150 → ~2,5 günlük tampon (kaçan gece toparlanır). Scraper her tur tam max-pages çeker ama sayfa
+# başına tek API çağrısı (128 kayıt) → maliyet ~+1,5 dk, önemsiz. bkz DT hacim teşhisi 1 Ağu.
+$VENV/python ekap_dogrudan_temin_scraper.py --max-pages 150 >> /opt/ihale-platform/logs/scraper.log 2>&1
 # DT kazanan/bedel backfill — 18 Tem bulgusu: dtDetayGetir CAPTCHA'sız açık API, Gemini/token
 # maliyeti YOK. --limit 2000/--rpm 300: günlük yeni "sonuç" durumuna geçenleri rahat karşılar.
 # BİRİKMİŞ ~1.3M kayıtlık geçmiş kuyruk BU satırla temizlenmez — ayrı, yüksek --limit'li tek
