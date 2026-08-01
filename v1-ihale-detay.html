@@ -152,8 +152,10 @@
     const kalan=t?Math.ceil((t-new Date())/86400000):null;
     const kilit='<span class="v1-kilit">••••• 🔒</span>';
     const alan=(b,v)=>`<div class="v1-bilgi"><b>${b}</b><span>${v||'—'}</span></div>`;
+    // Aktif ihalede EKAP yaklaşık maliyeti yayımlamaz → değer itiraz bedeli kademesinden
+    // türetilen TAHMİNİ BAND (bkz. ekap_scraper maliyet_araligi). Dürüst etiketle.
     const maliyet = uyeMi
-      ? (r.yaklasik_maliyet_min ? tl(r.yaklasik_maliyet_min)+(r.yaklasik_maliyet_max&&r.yaklasik_maliyet_max!==r.yaklasik_maliyet_min?' – '+tl(r.yaklasik_maliyet_max):'') : 'İlan edilmemiş')
+      ? (r.yaklasik_maliyet_min ? tl(r.yaklasik_maliyet_min)+(r.yaklasik_maliyet_max&&r.yaklasik_maliyet_max!==r.yaklasik_maliyet_min?' – '+tl(r.yaklasik_maliyet_max):'')+' <span style="font-size:11px;color:var(--v1-muted);" title="EKAP açık ihalede yaklaşık maliyeti yayımlamaz; bu değer itiraz bedeli kademesinden türetilen tahmini banddır. Kesin tutar sonuç ilanında açıklanır.">(tahmini band)</span>' : 'İlan edilmemiş')
       : kilit;
     // EKAP public deep-link YOK (IKN'ye özel sayfa oturum ister → 406). Doğru EKAP modülüne
     // yönlendir (DT ayrı modül), kullanıcı sayfada görünen IKN ile kendisi aratır/giriş yapar.
