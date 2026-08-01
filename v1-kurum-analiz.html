@@ -127,6 +127,7 @@
       display:flex; justify-content:space-between; align-items:baseline; gap:14px; flex-wrap:wrap; }
     .k-ih-kaz-sol { min-width:0; }
     .k-ih-tarih { color:var(--v1-muted); font-weight:600; white-space:nowrap; margin-left:auto; }
+    .k-ih-tutar { margin-left:auto; color:var(--v1-teal); font-weight:800; white-space:nowrap; }
     .k-etiketler { display:flex; gap:6px; flex-wrap:wrap; margin-top:8px; }
     .k-et { font-size:11px; padding:2px 9px; border-radius:20px; font-weight:700; }
     .k-et-tur { background:var(--v1-teal-acik); color:#0B6C67; }
@@ -640,9 +641,9 @@
   // idare ILIKE (idx_dt_idare_trgm ile hızlı). Kazanan firma/bedel dogrudan_temin_sonuclari'ndan (dt_no).
   function dtKurumSatir(i) {
     const d = durumSec(i.tarih);
-    const kaz = i._kazanan
-      ? `<div class="k-ih-kazanan"><span class="k-ih-kaz-sol">🏆 ${esc(i._kazanan)}${i._bedel != null ? ' · ' + paraFormat(i._bedel) : ''}</span>${i.tarih ? `<span class="k-ih-tarih">📅 ${tarihFormat(i.tarih)}</span>` : ''}</div>`
-      : (i._bedel != null ? `<div class="k-ih-kazanan"><span class="k-ih-kaz-sol">💰 ${paraFormat(i._bedel)}</span>${i.tarih ? `<span class="k-ih-tarih">📅 ${tarihFormat(i.tarih)}</span>` : ''}</div>` : '');
+    const kaz = (i._kazanan || i._bedel != null)
+      ? `<div class="k-ih-kazanan"><span class="k-ih-kaz-sol">${i._kazanan ? '🏆 ' + esc(i._kazanan) : '💰 Sonuçlandı'}</span>${i._bedel != null ? `<span class="k-ih-tutar">${paraFormat(i._bedel)}</span>` : ''}</div>`
+      : '';
     return `<div class="k-ihale">
       <div class="k-ih-ust">
         <a class="k-ih-bas" href="v1-dt-detay?dt_no=${encodeURIComponent(i.dt_no)}">${esc(i.baslik) || '—'}</a>
@@ -774,22 +775,20 @@
         : null;
       // Kazanan firma(lar) — ihale_sonuclari embed'i (çok kısımlı ihalede dizi döner)
       const sonuclar = Array.isArray(i.ihale_sonuclari) ? i.ihale_sonuclari : (i.ihale_sonuclari ? [i.ihale_sonuclari] : []);
-      let kazananBlok = '';
+      let kazananBlok = '', sonucTarih = null;
       if (sonuclar.length === 1) {
         const so = sonuclar[0];
-        const sol = [
-          `🏆 ${esc(so.kazanan_firma) || '—'}`,
-          so.kazanan_teklif ? paraFormat(so.kazanan_teklif) : null,
-          so.kazanan_teklif_farki_yuzde != null ? `tenzilat %${Number(so.kazanan_teklif_farki_yuzde).toFixed(1)}` : null,
+        sonucTarih = so.sonuc_tarihi || null;
+        const sol = ['🏆 ' + (esc(so.kazanan_firma) || '—'),
+          so.kazanan_teklif_farki_yuzde != null ? 'tenzilat %' + Number(so.kazanan_teklif_farki_yuzde).toFixed(1) : null
         ].filter(Boolean).join(' · ');
-        const tar = so.sonuc_tarihi ? `<span class="k-ih-tarih">📅 ${tarihFormat(so.sonuc_tarihi)}</span>` : '';
-        kazananBlok = `<div class="k-ih-kazanan"><span class="k-ih-kaz-sol">${sol}</span>${tar}</div>`;
+        const tut = so.kazanan_teklif ? `<span class="k-ih-tutar">${paraFormat(so.kazanan_teklif)}</span>` : '';
+        kazananBlok = `<div class="k-ih-kazanan"><span class="k-ih-kaz-sol">${sol}</span>${tut}</div>`;
       } else if (sonuclar.length > 1) {
         const toplam = sonuclar.reduce((t, so) => t + (Number(so.kazanan_teklif) || 0), 0);
         const tarihler = sonuclar.map(so => so.sonuc_tarihi).filter(Boolean).sort();
-        const sonTar = tarihler.length ? tarihler[tarihler.length - 1] : null;
-        const tar = sonTar ? `<span class="k-ih-tarih">📅 ${tarihFormat(sonTar)}</span>` : '';
-        kazananBlok = `<div class="k-ih-kazanan"><span class="k-ih-kaz-sol">🏆 ${sonuclar.length} kısım sonuçlandı${toplam ? ` · toplam ${paraFormat(toplam)}` : ''}</span>${tar}</div>`;
+        sonucTarih = tarihler.length ? tarihler[tarihler.length - 1] : null;
+        kazananBlok = `<div class="k-ih-kazanan"><span class="k-ih-kaz-sol">🏆 ${sonuclar.length} kısım sonuçlandı</span>${toplam ? `<span class="k-ih-tutar">Toplam: ${paraFormat(toplam)}</span>` : ''}</div>`;
       }
       return `<div class="k-ihale">
         <div class="k-ih-ust">
@@ -804,6 +803,7 @@
           ${i.ilan_tarihi ? `<span>📅 Yayın: ${tarihFormat(i.ilan_tarihi)}</span>` : ''}
           ${i.son_teklif_tarihi ? `<span>⏰ Son teklif: ${tarihFormat(i.son_teklif_tarihi)}</span>` : ''}
           ${i.ekap_id ? `<span>EKAP: ${esc(i.ekap_id)}</span>` : ''}
+          ${sonucTarih ? `<span>📅 Sonuç: ${tarihFormat(sonucTarih)}</span>` : ''}
         </div>
         ${bedel ? `<div class="k-ih-bedel">${bedel}</div>` : ''}
         ${kazananBlok}
