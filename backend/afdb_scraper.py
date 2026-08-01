@@ -107,9 +107,14 @@ BILINEN_TURLER = {
 
 
 def _norm(s):
-    """Aksanları sök + küçük harf + boşlukları tekle (ülke adı eşleştirme anahtarı)."""
+    """Aksanları sök + küçük harf + boşlukları tekle (ülke adı eşleştirme anahtarı).
+
+    Kesme işareti (düz ' ve kıvrık ’) boşluğa çevrilir: 'Côte d'Ivoire' → 'cote d ivoire'
+    (sözlükteki boşluklu anahtarla eşleşsin; yoksa ISO boş kalır).
+    """
     s = unicodedata.normalize("NFKD", s or "")
     s = "".join(c for c in s if not unicodedata.combining(c))
+    s = s.replace("'", " ").replace("’", " ")
     return re.sub(r"\s+", " ", s).strip().lower()
 
 
