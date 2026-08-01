@@ -261,7 +261,9 @@ yıl+il→canlı. **VDS'te supabase_admin ile uygulanacak; gece refresh cron'a.*
 "📋 DT Listesi" ayrı kısayol olarak eklendi. Canlı doğrulandı (aktif = "⚡ DT Analizi").
 → `v1-dt-analiz.html` (`v1-kisayol`)
 
-## MADDE 16 — DT kazanan firma analizi (firma bazında DT istatistiği) 🟡 part-1 migration hazır
+## MADDE 16 — DT kazanan firma analizi (firma bazında DT istatistiği) ✅ CANLI (part-2 opsiyonel)
+**✅ CANLI DENETİM (1 Ağu):** `firma_dt_ozet(p_firma_ad)` canlı (pg_proc doğrulandı). part-1 uygulanmış.
+part-2 (yukleniciler.id bağlama + il bazlı DT firma sıralaması harita paneli) OPSİYONEL — ayrı iş.
 **KEŞİF (canlı):** Kazanan verisi `dogrudan_temin_ilanlari`'nda DEĞİL → ayrı tablo
 `dogrudan_temin_sonuclari` (**853.170 satır**): kazanan_firma, kazanan_bedel, dt_no,
 sozlesme_tarihi, yuklenici_id (boş, bilerek). İl/kategori dogrudan_temin_ilanlari'nda (dt_no join).
@@ -305,7 +307,9 @@ KALAN: diğer analiz alt sayfalarında (varsa) benzer sayfa-içi nav'ları da ka
 1. İhale Analizi (aktif) 2. Doğrudan Temin Analizi 3. Türkiye Haritası 4. Sektör 5. Firma Analizi
 6. Kurum Analizi 7. Uyumluluk 8. Firma Segmentleri 9. Dış Ticaret Analizi (en son). Canlı doğrulandı.
 
-## MADDE 18 — Firma Analizi: DT kazanımları görünür 🟡 Phase-A yapıldı
+## MADDE 18 — Firma Analizi: DT kazanımları görünür ✅ CANLI (Phase-A + Phase-B)
+**✅ CANLI DENETİM (1 Ağu):** `firma_dt_toplam` MV (postgres sahipli) + `firma_dizin_dt`/`firma_dizin_birlikte`
+(p_kamu_dahil dahil) canlı. İki faz da uygulanmış — 🟡 bayat işaretti.
 **Phase-B ✅ CANLI DOĞRULANDI (MADDE 18-B):** 3 mod (İhale/DT/İkisi) canlı; dt 133ms, birlikte 614ms. `backend/migration_firma_dt_toplam_mv.sql` — firma_dt_toplam MV
 (normalize_firma → DT sözleşme+bedel) + `firma_dizin_dt` (DT bedeline göre) + `firma_dizin_birlikte`
 (yukleniciler LEFT JOIN DT, normalize_ad=firma_norm KESİN eşitlik → ihale+DT toplamı). Firma dizinine
@@ -337,11 +341,18 @@ fazla nav kalmadı — DT sayfasındaki tek istisnaydı (MADDE 17'de kaldırıld
 ---
 
 
-## GECE REFRESH (housekeeping) 🟡 uygulanacak
-3 yeni MV gece refresh gerektiriyor. `run_scraper.sh`'e il_yil_firma + dt_analiz_yil_mv REFRESH
-satırları eklendi (dt_analiz_mv zaten vardı). MV sahipleri supabase_admin olduğundan cron
-`-U postgres` refresh edemez → `backend/migration_mv_owner_fix.sql` ile sahip postgres'e devrediliyor.
-**Uygula:** owner-fix migration (supabase_admin) + pull (cron yeni script'i ertesi gece alır).
+## GECE REFRESH (housekeeping) ✅ CANLI DOĞRULANDI (1 Ağu — İKİ KATMANLI fix)
+**Sessiz-fail bug'ı denetimle bulundu ve kapatıldı.** 3 MV (dt_analiz_mv, dt_analiz_yil_mv,
+il_yil_firma) supabase_admin sahibiydi → cron `-U postgres` REFRESH'i her gece "permission denied"
+alıp SESSİZCE bayatlıyordu (MADDE 12/14 verisi eski kalıyordu). `backend/migration_mv_owner_fix.sql`
+ile İKİ KATMAN düzeltildi:
+- **Katman 1 (owner):** 3'ü de postgres'e devredildi (eski migration yalnız 2'ydi, dt_analiz_mv atlanmıştı).
+- **Katman 2 (grant):** owner devri, `_dt_ozet_json` (SECURITY DEFINER, ACL yalnız supabase_admin=X)
+  çağıran dt_analiz_mv + dt_analiz_yil_mv'yi bozdu (postgres superuser değil → çağıramaz). postgres'e
+  EXECUTE verildi (iç veri erişimi yine definer yetkisiyle; anon/authenticated etkilenmez).
+**KANIT (canlı):** GRANT sonrası 3 MV de `-U postgres` + CONCURRENTLY ile hatasız refresh oldu →
+cron artık gece bunları güncelleyecek. Unique index + SECURITY DEFINER denetimde doğrulandı.
+→ `backend/migration_mv_owner_fix.sql` (uygulandı, VDS'te canlı)
 
 
 ## MADDE 20 — Firma dizini & haritada tam sıralama (DT/İhale/İkisi + sektör + ölçüt + son 1 yıl) ✅
@@ -386,7 +397,8 @@ Canlı doğrulandı: üst-bar 2 harf→nav yok/3 harf→`?ara=`; 0 konsol hatas�
 → `js/v1-kabuk.js`, `v1-analiz.html`, 31× `?v` bump
 
 
-## MADDE 22 — Firma dizini KPI'ları mod-duyarlı 🟡
+## MADDE 22 — Firma dizini KPI'ları mod-duyarlı ✅ CANLI
+**✅ CANLI DENETİM (1 Ağu):** `firma_ozet_dt()` + `firma_ozet_birlikte()` canlı (pg_proc doğrulandı). Uygulanmış — 🟡 bayat.
 Kullanıcı: üst KPI'lar (Toplam Firma/Sözleşme/Ciro/İş Ortaklığı) hep "yalnız ihaleler" →
 mod değişince değişsin. YAPILDI: `firma_ozet_dt()` + `firma_ozet_birlikte()` RPC (yuklenici_ozet
 ile aynı şekil); frontend dzIstatistik moda göre RPC seçer + rozet/etiketleri günceller
@@ -411,7 +423,9 @@ ayrı "Geçmiş DT" / "DT Sonuçları" sekmesine gerek yok.
     2,55M · guard "…OPEN"→"Açık İhale" · Aktif/DT sekmeleri sağlam · 0 konsol hatası.
 → `v1-ihaleler.html`, `backend/migration_usul_i18n_temizlik.sql`
 
-## MADDE 24 — Kamu kuruluşu filtresi (harita) + firma-analiz "Katıldığı DT" sekmesi ✅ (deploy bekliyor)
+## MADDE 24 — Kamu kuruluşu filtresi (harita) + firma-analiz "Katıldığı DT" sekmesi ✅ CANLI (RPC'ler deploy edildi)
+**✅ CANLI DENETİM (1 Ağu):** `firma_kurum_mu`, `il_sektor_firmalar(_dt)` (p_kamu_dahil), `firma_dt_liste`,
+`firma_dizin_dt/birlikte` (p_kamu_dahil) hepsi canlı (pg_proc doğrulandı). "deploy bekliyor" notu kalktı.
 Kullanıcı 2 gözlem:
 - (a) Harita firma sıralamasında DMO / cezaevi (İşyurtları) / PTT gibi **kamu kuruluşları** kazanan
   çıkıyor. Veri DOĞRU (bunlar DT'de gerçek tedarikçi) ama rakip analizinde gürültü. Karar (onaylı):
