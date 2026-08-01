@@ -2,6 +2,10 @@
 <html lang="tr">
 <head>
   <meta charset="UTF-8" />
+  <script>
+    // KURUMSAL (v2) KİLİDİ — şifreyle açılmadıysa (sessionStorage kurumsal_v2) v1'e yönlendir.
+    if (sessionStorage.getItem('kurumsal_v2') !== '1') { window.location.replace('v1-benim-sayfam'); }
+  </script>
     <meta name="author" content="Ömer Faruk Dinç">
     <meta name="copyright" content="© 2026 Ömer Faruk Dinç — İhaleGlobal">
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />

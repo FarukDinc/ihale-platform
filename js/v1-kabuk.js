@@ -91,12 +91,12 @@
     { id: 'bank',       ad: 'Bank',            ikon: I.para,    href: 'v1-bank' },
   ];
   const MENU_ESATINALMA = [
-    { id: 'esatinalma', ad: 'e-Satınalma', ikon: I.sepet, href: 'v1-esatinalma' },
+    { id: 'esatinalma', ad: 'Satınalma', ikon: I.sepet, href: 'v1-esatinalma' },
   ];
   const DUNYALAR = [
-    { ws: 'kamu',       ad: 'Kamu',            landing: 'v1-benim-sayfam', menu: MENU_KAMU },
-    { ws: 'global',     ad: 'Global İhaleler', landing: 'v1-global',       menu: MENU_GLOBAL },
-    { ws: 'esatinalma', ad: 'E-Satınalma',     landing: 'v1-esatinalma',   menu: MENU_ESATINALMA },
+    { ws: 'kamu',       ad: 'Kamu',            ikon: I.kurum,  landing: 'v1-benim-sayfam', menu: MENU_KAMU },
+    { ws: 'global',     ad: 'Global İhaleler', ikon: I.global, landing: 'v1-global',       menu: MENU_GLOBAL },
+    { ws: 'esatinalma', ad: 'E-Satınalma',     ikon: I.sepet,  landing: 'v1-esatinalma',   menu: MENU_ESATINALMA },
   ];
   // Aktif sayfa (data-v1-aktif) hangi dünyaya ait — eşleşmezse 'kamu'
   const WS_OF = { global: 'global', disticaret: 'global', bank: 'global', esatinalma: 'esatinalma' };
@@ -119,7 +119,8 @@
     + '.v1-ray-item:hover,.v1-ray-item:visited:hover{color:#fff!important}'
     + '.v1-ray-item.aktif,.v1-ray-item.aktif:visited{color:var(--v1-lacivert)!important}'
     + '.v1-dunya-gecis{display:flex;gap:3px;background:#EAF1F8;border-radius:10px;padding:3px;margin-right:8px;}'
-    + '.v1-dunya-sekme{padding:8px 13px;border-radius:8px;font-family:var(--v1-font);font-size:12.5px;font-weight:700;color:var(--v1-muted);text-decoration:none;white-space:nowrap;}'
+    + '.v1-dunya-sekme{display:inline-flex;align-items:center;gap:6px;padding:8px 12px;border-radius:8px;font-family:var(--v1-font);font-size:12.5px;font-weight:700;color:var(--v1-muted);text-decoration:none;white-space:nowrap;}'
+    + '.v1-dunya-sekme svg{width:15px;height:15px;fill:currentColor;flex-shrink:0;}'
     + '.v1-dunya-sekme:hover{color:var(--v1-lacivert);text-decoration:none;}'
     + '.v1-dunya-sekme.aktif{background:#fff;color:var(--v1-lacivert);box-shadow:0 1px 3px rgba(12,62,112,.14);}'
     + '@media(max-width:900px){.v1-dunya-sekme{padding:7px 9px;font-size:11.5px;}}</style>' +
@@ -146,7 +147,7 @@
       <button class="v1-ara-btn" id="v1-ara-btn" aria-label="Ara">${I.ara}</button>
     </div>
     <div class="v1-top-sag">
-      <div class="v1-dunya-gecis">${DUNYALAR.map(d => `<a class="v1-dunya-sekme${d.ws === suWs ? ' aktif' : ''}" href="${d.landing}" title="${d.ad}">${d.ad}</a>`).join('')}</div>
+      <div class="v1-dunya-gecis">${DUNYALAR.map(d => `<a class="v1-dunya-sekme${d.ws === suWs ? ' aktif' : ''}" href="${d.landing}" title="${d.ad}">${d.ikon}<span>${d.ad}</span></a>`).join('')}</div>
       <a class="v1-fasonda" href="https://fasonda.com" target="_blank" rel="noopener"
          title="Fasonda.com — üretim & tedarik pazar yeri">
         <span class="v1-fasonda-ikon">🏭</span>

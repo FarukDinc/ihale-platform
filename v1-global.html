@@ -21,7 +21,7 @@
     .v1-kaynak { display:inline-block; font-size:10px; font-weight:800; padding:2px 7px; border-radius:5px;
       color:#fff; letter-spacing:.2px; vertical-align:middle; margin-right:7px; white-space:nowrap; }
     /* Dünya haritası — v1 mavi paleti */
-    .v1-dunya-wrap { position:relative; width:100%; background:var(--v1-zemin); border:1px solid var(--v1-cizgi);
+    .v1-dunya-wrap { position:relative; width:100%; max-width:820px; margin:0 auto; background:var(--v1-zemin); border:1px solid var(--v1-cizgi);
       border-radius:12px; overflow:hidden; }
     .v1-dunya-svg { width:100%; height:auto; display:block; }
     .v1-dunya-svg path { stroke:#fff; stroke-width:.35; cursor:pointer; transition:opacity .12s; }
@@ -126,7 +126,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/dunya-harita.js?v=1"></script>
 <script src="js/harita-zoom.js?v=1"></script>
-<script src="js/v1-kabuk.js?v=17"></script>
+<script src="js/v1-kabuk.js?v=18"></script>
 <script>
 (() => {
   const SB_URL="https://ihaleglobal.com", SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzg0MzA3MTU4LCJleHAiOjE5NDE5ODcxNTh9.CjNKulvirotDD_y2oO2QKgo0kbqYvL0jUSV1RiDMoso";
@@ -332,7 +332,7 @@
 
 
   // ── Dünya haritası: ülke bazlı ihale yoğunluğu, arşiv toplamı (v1 mavi rampası) ──
-  const MAVI=['#EDF1F6','#D6E6F5','#9CC4E8','#4A8FD0','#135EAA','#0C3E70'];
+  const MAVI=['#E1E9F2','#B4D0EB','#7FB0E0','#3B7EC2','#134E8C','#0A345E'];
   async function haritaCiz(){
     const el=document.getElementById('g-harita'); const D=window.DUNYA_HARITA;
     if(!D){ el.innerHTML='<div class="v1-bos">Harita verisi yüklenemedi.</div>'; return; }
