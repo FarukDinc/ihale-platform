@@ -1012,7 +1012,18 @@
       if (usulB) usulB.textContent = 'DT Türü Dağılımı';
       if (durumB) durumB.textContent = 'Açık vs Geçmiş Doğrudan Teminler';
       durumGrafik(_dtOzet.durum || {});
-      el('kart-kazanan').style.display = 'none';   // DT kazanan bu görünümde yok
+      // DT kazanan firmaları (kurum_dt_ozet.kazanan) — ihale kazananların yerine
+      const dk = _dtOzet.kazanan || [];
+      if (dk.length) {
+        const maxK = Math.max(1, ...dk.map(r => Number(r.ihale_sayisi) || 0));
+        el('l-kazanan').innerHTML = dk.map(r => {
+          const adet = Number(r.ihale_sayisi) || 0;
+          return `<a href="v1-firma-analiz?firma=${encodeURIComponent(r.grup_deger)}" class="k-cb-link" style="display:block;text-decoration:none;color:inherit;"><div class="k-cb"><div class="k-cb-bas"><span class="k-cb-ad" title="${esc(r.grup_deger)}">🏢 ${esc(r.grup_deger)}</span><span class="k-cb-say">${num(adet)} DT</span></div><div class="k-cb-yol"><span class="k-cb-dolu" style="width:${Math.max(2, Math.round(adet / maxK * 100))}%"></span></div></div></a>`;
+        }).join('');
+      } else {
+        el('l-kazanan').innerHTML = '<div class="v1-bos">Bu idarenin doğrudan temin kazanan firma verisi bulunamadı (bedel/kazanan backfill sürüyor).</div>';
+      }
+      el('kart-kazanan').style.display = 'block';
     } else {
       cubukListe('l-kategori', (_ihaleOzet && _ihaleOzet.kategori) || [], 'Kategori verisi yok.');
       cubukListe('l-usul', (_ihaleOzet && _ihaleOzet.usul) || [], 'Usul verisi yok.');

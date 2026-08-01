@@ -26,7 +26,9 @@ SET search_path = public, pg_temp
 SET statement_timeout = '25s'
 AS $$
   WITH f AS (
-    SELECT tur, il, kategori, durum, tarih
+    -- idare ILIKE: idx_dt_idare_trgm (GIN gin_trgm_ops) ile hızlı (bkz migration_dt_idare_trgm.sql).
+    -- O indeks OLMADAN 2,9M'de TIMEOUT verir — önce onu uygula.
+    SELECT dt_no, tur, il, kategori, durum, tarih
     FROM public.dogrudan_temin_ilanlari
     WHERE idare ILIKE '%' || p_idare || '%'
   )
@@ -46,7 +48,13 @@ AS $$
     'durum', jsonb_build_object(
       'aktif',   (SELECT count(*) FROM f WHERE durum = 'Doğrudan Temin Duyurusu Yayımlanmış' AND tarih >= now()),
       'kapandi', (SELECT count(*) FROM f WHERE NOT (durum = 'Doğrudan Temin Duyurusu Yayımlanmış' AND tarih >= now()))
-    )
+    ),
+    -- DT kazanan firmaları: dogrudan_temin_sonuclari.kazanan_firma (anon-kapalı; RPC SECURITY DEFINER)
+    'kazanan', (SELECT COALESCE(jsonb_agg(jsonb_build_object('grup_deger', k, 'ihale_sayisi', n) ORDER BY n DESC), '[]'::jsonb)
+                FROM (SELECT s.kazanan_firma k, count(*) n
+                      FROM f JOIN public.dogrudan_temin_sonuclari s ON s.dt_no = f.dt_no
+                      WHERE s.kazanan_firma IS NOT NULL AND s.kazanan_firma <> ''
+                      GROUP BY s.kazanan_firma ORDER BY count(*) DESC LIMIT 12) x)
   );
 $$;
 

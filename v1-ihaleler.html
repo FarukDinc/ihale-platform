@@ -338,9 +338,9 @@
       if(val('f-tur'))    d=d.eq('tur',val('f-tur'));
       if(val('f-il'))     d=d.eq('il',val('f-il'));
       if(val('f-kategori')) d=d.eq('kategori',val('f-kategori'));
-      // İdare filtresi: DT'de 2,9M satırda ilike('idare',...) 57014 TIMEOUT verir. arama_fold
-      // (tr_fold(baslik||idare), trigram-indeksli, üyeye açık) ile hızlı ara. bkz migration_dt_arama.
-      if(uyeMi && val('f-idare')) d = window.v1Ara ? window.v1Ara(d, 'arama_fold', val('f-idare')) : d.ilike('idare','%'+val('f-idare')+'%');
+      // İdare filtresi: idare GIN-trgm indeksi (idx_dt_idare_trgm) ile ilike hızlı. arama_fold
+      // DT'de YOK (migration_dt_arama prod'a uygulanmadı) — kullanma. bkz migration_dt_idare_trgm.
+      if(uyeMi && val('f-idare')) d = d.ilike('idare','%'+val('f-idare')+'%');
       return d;
     }
     const kolon = sayimIcin ? 'id' : (uyeMi
