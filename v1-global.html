@@ -17,6 +17,9 @@
     .v1-f-etiket { font-size:11.5px; color:var(--v1-muted); margin:6px 0 3px; display:block; }
     .v1-bayrak { display:inline-block; font-size:11.5px; font-weight:700; padding:3px 10px; border-radius:20px;
       background:var(--v1-mavi-acik); color:var(--v1-mavi); white-space:nowrap; }
+    /* Kaynak rozeti — hangi ilan hangi kurumdan (TED/UNGM/EBRD/ADB/AfDB/Dünya Bankası) */
+    .v1-kaynak { display:inline-block; font-size:10px; font-weight:800; padding:2px 7px; border-radius:5px;
+      color:#fff; letter-spacing:.2px; vertical-align:middle; margin-right:7px; white-space:nowrap; }
     /* Dünya haritası — v1 mavi paleti */
     .v1-dunya-wrap { position:relative; width:100%; background:var(--v1-zemin); border:1px solid var(--v1-cizgi);
       border-radius:12px; overflow:hidden; }
@@ -36,7 +39,7 @@
   <div class="v1-main">
     <div class="v1-govde">
       <div class="v1-sayfa-baslik">Global İhaleler</div>
-      <div class="v1-sayfa-alt">Avrupa Birliği (TED) kaynaklı uluslararası ihale ilanları — haritadan ülkeye tıklayın ya da aşağıdan süzün.</div>
+      <div class="v1-sayfa-alt">TED (AB), UNGM (BM), Dünya Bankası, EBRD, ADB ve AfDB gibi kaynaklardan derlenen uluslararası ihale ilanları — her ilanda kaynağı rozetiyle görürsünüz. Haritadan ülkeye tıklayın ya da aşağıdan süzün.</div>
 
       <!-- Dünya haritası: ülke bazlı ihale yoğunluğu (arşiv toplamı) -->
       <div class="v1-kart">
@@ -130,6 +133,15 @@
   const sb=window.supabase.createClient(SB_URL,SB_KEY);
   const num=(n)=>(Number(n)||0).toLocaleString('tr-TR');
   const esc=(s)=>(s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  // Kaynak rozeti — her ilanın hangi kurumdan geldiğini renkli etiketle gösterir (TED gibi)
+  const KAYNAK_ROZET={
+    ted:{e:'TED',r:'#1a4f9c'}, TED:{e:'TED',r:'#1a4f9c'},
+    UNGM:{e:'UNGM',r:'#009edb'}, EBRD:{e:'EBRD',r:'#00857d'},
+    ADB:{e:'ADB',r:'#d81e05'}, AfDB:{e:'AfDB',r:'#0a8f3c'},
+    WorldBank:{e:'Dünya Bankası',r:'#0a2f66'}, georgia:{e:'Georgia (ABD)',r:'#6b7280'}
+  };
+  const kaynakRozet=(k)=>{ const m=KAYNAK_ROZET[k]||{e:(k||'?').toUpperCase(),r:'#6b7280'};
+    return `<span class="v1-kaynak" style="background:${m.r};" title="Kaynak: ${esc(m.e)}">${esc(m.e)}</span>`; };
   const P=new URLSearchParams(location.search);
   const BOY=20;
   let sayfa=1;
@@ -251,7 +263,7 @@
         return `<tr>
           <td class="v1-t-tarih">${t?t.toLocaleDateString('tr-TR'):'—'}${g!=null&&g>=0?`<br><span class="kalan">Son ${g} gün</span>`:''}</td>
           <td><a class="v1-t-ad" href="${esc(r.orijinal_url||'#')}" target="_blank" rel="noopener">${esc(r.baslik||'—')}</a>
-            ${bedel?`<div class="v1-t-ikn">${esc(bedel)}</div>`:''}</td>
+            <div class="v1-t-ikn" style="margin-top:4px;">${kaynakRozet(r.kaynak)}${bedel?esc(bedel):''}</div></td>
           <td><span class="v1-bayrak">${esc(r.ulke||'—')}</span></td>
           <td style="font-size:12.5px;color:var(--v1-metin-2);">${esc(r.kategori||'—')}</td>
           <td style="text-align:right;">${r.orijinal_url?`<a class="v1-yuvarlak-btn" style="text-decoration:none;" href="${esc(r.orijinal_url)}" target="_blank" rel="noopener" title="Kaynak ilan">
