@@ -197,6 +197,7 @@
       sekme=['sonuc','gecmis','dt'].includes(_sekmeP)?_sekmeP:((P.get('tur')==='dt')?'dt':'aktif'),
       sonucTip=(P.get('tip')==='dt')?'dt':'ihale',   // Sonuçlar/Geçmiş sekmelerinde İhale mi DT mi
       uyeMi=false, uid=null, sirala='son_teklif_tarihi', yon=true;
+  let yukleIstek = 0;   // #15c: bayat async yukle cevabı taze olanı ezmesin (DT↔İhale tab yarışı)
   // Efektif veri kaynağı DT tablosu mu? (dt sekmesi VEYA sonuç/geçmiş + Doğrudan Temin seçili)
   const dtModu=()=> sekme==='dt' || ((sekme==='sonuc'||sekme==='gecmis') && sonucTip==='dt');
   // "… listeleniyor" sayacındaki kayıt adı (moda göre).
@@ -474,6 +475,7 @@
   }
 
   async function yukle(){
+    const istek = ++yukleIstek;
     const tb=document.getElementById('v1-tbody');
     tb.innerHTML='<tr><td colspan="5" class="v1-bos">Yükleniyor…</td></tr>';
     dtSiralamaTazele(); basliklariAyarla();
@@ -487,6 +489,7 @@
       ]);
       const {data,error}=veriRes;
       if(error) throw error;
+      if(istek !== yukleIstek) return;   // araya yeni yukle girdi (tab/filtre değişti) → bayat cevabı at
       toplam = (sayimRes && sayimRes.count!=null) ? sayimRes.count : null;
       document.getElementById('v1-sayi').innerHTML = toplam!=null
         ? `Arama kriterinize uygun <strong>${num(toplam)}</strong> ${kayitEtiketi()} listeleniyor`
@@ -515,6 +518,7 @@
           }
         }catch(_){}
       }
+      if(istek !== yukleIstek) return;   // bedel fetch'leri sırasında yeni yukle → bayat çizme
       tb.innerHTML=data.map(r=>satir(r)).join('');
       tb.querySelectorAll('[data-genislet]').forEach(b=>b.addEventListener('click',()=>genislet(b)));
       tb.querySelectorAll('[data-takvim]').forEach(b=>b.addEventListener('click',()=>

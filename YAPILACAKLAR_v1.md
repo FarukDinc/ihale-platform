@@ -519,15 +519,6 @@ varsa scraper tarih ayrıştırmasını düzelt (muhtemelen timezone/parse). Saa
 DB'de de saat kısmını sıfırlamak/temizlemek düşünülebilir.
 → `backend/ekap_scraper.py`, `backend/ekap_dogrudan_temin_scraper.py` (tarih parse), ilanlar/dogrudan_temin tarih alanları
 
-## UV-6 — Kurum Aktif İhaleler drill-down: NULL İKN/tarihli kayıtlar + 706↔27 tutarsızlığı 📋
-Belirti: kurum "BEL-PA … GENEL MÜDÜRLÜĞÜ" için v1-ihaleler Aktif İhaleler (idare drill-down, tüm durum)
-**706** kayıt gösteriyor ve satırlarda İKN(ekap_id) + İhale Tarihi(son_teklif) BOŞ ("—"); başlıklar DT
-tarzı ("… sözleşme kapsamında … alım işi"). Oysa kurum_ozet(BEL-PA) ilanlar sayısı = **27**. 706 = o
-idarenin DT sayısıyla AYNI → şüphe: (a) DT kayıtları ilanlar'a da sızmış (İKN/son_teklif NULL), veya
-(b) idare ILIKE beklenenden fazla eşleşiyor, veya (c) drill-down (idare filtresi → tüm durum) NULL-alanlı
-kayıtları yüzeye çıkardı. Araştır: `ilanlar` içinde idare ILIKE '%BEL-PA%' gerçek sayı + ekap_id/son_teklif
-NULL oranı; DT↔ilanlar dedup. Not: drill-down davranışı kullanıcı isteğiydi (idare seçilince tüm durum).
-→ `v1-ihaleler.html` (sorguKur aktif drill-down), `ilanlar` veri kalitesi / DT-ilanlar ayrımı
 ---
 
 ### Sıradaki (kullanıcı söyleyecek)
