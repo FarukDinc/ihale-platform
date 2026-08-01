@@ -321,8 +321,9 @@
       let d = sb.from('dogrudan_temin_ilanlari').select(dtKolon, sayimIcin?{count:'exact',head:true}:undefined);
       // durum'a göre daralt: Sonuçlar → sonucu duyurulmuş DT, Geçmiş → henüz sonuçlanmamış DT.
       // (dt sekmesi: tümü.) Canlı doğrulandı: "Sonuç Duyurusu…" 2,55M · "Doğrudan Temin Duyurusu…" 408K.
-      if (sekme==='sonuc')       d=d.eq('durum','Sonuç Duyurusu Yayımlanmış');
-      else if (sekme==='gecmis') d=d.eq('durum','Doğrudan Temin Duyurusu Yayımlanmış');
+      if (sekme==='sonuc')       d=d.in('durum',['Sonuç Duyurusu Yayımlanmış','Sonuç Bilgileri Gönderildi','Doğrudan Temin Sonuçlandırıldı']);
+      else if (sekme==='gecmis') d=d.in('durum',['Teklifler Değerlendiriliyor','Doğrudan Temin Duyurusu Yayımlanmış']).lt('tarih', new Date().toISOString());
+      else                       d=d.eq('durum','Doğrudan Temin Duyurusu Yayımlanmış').gte('tarih', new Date().toISOString());
       const kw=val('f-kelime');
       if(kw){
         // DT numarası (ör. 25DT2095274) → dt_no TAM eşleşme (indeksli, ~1sn). Prefix ilike
@@ -778,9 +779,9 @@
       sirala = dt ? 'tarih' : 'son_teklif_tarihi';
       yon = (sekme==='aktif');   // aktifte en yakın tarih önce, diğerlerinde en yeni/en son önce
       const bas = sekme==='aktif' ? 'Aktif İhaleler'
-                : sekme==='dt'    ? 'Doğrudan Teminler'
+                : sekme==='dt'    ? 'Açık Doğrudan Teminler'
                 : sekme==='sonuc' ? (dt?'Doğrudan Temin Sonuçları':'Sonuçlanan İhaleler')
-                :                   (dt?'Sonuçlanmamış Doğrudan Teminler':'Geçmiş İhaleler');  // gecmis
+                :                   (dt?'Geçmiş Doğrudan Teminler':'Geçmiş İhaleler');  // gecmis
       document.getElementById('v1-baslik').textContent=bas;
       document.getElementById('v1-liste-baslik').textContent=bas;
       document.title=bas+' — İhaleGlobal';

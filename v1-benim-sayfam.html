@@ -331,7 +331,9 @@
       // gecmemis. Ham durum='aktif' (14.143) suresi gecmis bayat kayitlari da sayiyordu; liste
       // (5.435) ile tutarsizdi. bkz backend/migration_idare_ozet_mv_aktif_deadline.sql
       sayac('ilanlar',q=>q.eq('durum','aktif').gte('son_teklif_tarihi', new Date().toISOString())).then(v=>set('Aktif İhale',num(v))),
-      sayac('dogrudan_temin_ilanlari',q=>q.in('durum',DT_AKTIF)).then(v=>set('Aktif Doğrudan Temin',kisalt(v))),
+      // Aktif DT = teklif vermeye AÇIK: durum açık + tarih (son teklif) geçmemiş. Yalnız durum
+      // (283.285) süresi geçmiş bayatları da sayıyordu; harita dt_il_sayim_aktif ile parite.
+      sayac('dogrudan_temin_ilanlari',q=>q.in('durum',DT_AKTIF).gte('tarih', new Date().toISOString())).then(v=>set('Aktif Doğrudan Temin',kisalt(v))),
       // Toplam geçmiş hacim = TÜM doğrudan temin + TÜM ihale ilanı (yayınlanmış her şey).
       Promise.all([sayac('dogrudan_temin_ilanlari'),sayac('ilanlar')]).then(([a,b])=>set('Toplam DT + İhale',kisalt(a+b))),
       // Yüklenici Firma = İhale + DT BİRLEŞİK (union distinct) — dashboard geneli birleşik
