@@ -531,7 +531,6 @@
           </div>
 
           <!-- MADDE 18: DT daÄŸÄ±lÄ±m tablolarÄ± (Ä°l/Kategori) â€” ParÃ§a 3'te DT Genel BakÄ±ÅŸ sekmesine taÅŸÄ±nacak. -->
-          <div id="fa-dt-blok" style="display:none;margin-bottom:16px;"></div>
 
           <!-- SÃ¶zleÅŸme risk ÅŸeridi â€” YALNIZ fesih/tasfiye varsa aÃ§Ä±lÄ±r (tam sayÄ±mdan) -->
           <div class="fa-risk" id="risk-serit" style="display:none;">
@@ -1157,39 +1156,54 @@
 
   // â”€â”€ MADDE 18: firmanÄ±n DOÄRUDAN TEMÄ°N kazanÄ±mlarÄ± (firma_dt_ozet) â€” ihale evreninden AYRI â”€â”€
   async function dtBlokYukle(firmaAd){
-    const el = $('fa-dt-blok'), kpiRow = $('fa-dt-kpi');
-    if(el) el.style.display = 'none';
+    const gEl = $('fa-dtgenel-icerik'), kpiRow = $('fa-dt-kpi');
     if(kpiRow) kpiRow.style.display = 'none';
-    if(!firmaAd) return;
+    if(!firmaAd){ if(gEl) gEl.innerHTML = '<div class="fa-bos-kart"><div class="v1-bos">Firma seçilmedi.</div></div>'; return; }
     try{
       const { data, error } = await sb.rpc('firma_dt_ozet', { p_firma_ad: firmaAd });
       if(error) throw error;
       const d = data || {};
       const n = Number(d.dt_sayisi) || 0;
-      DT_SAYISI = n;                                 // "KatÄ±ldÄ±ÄŸÄ± DT" sekmesi sayfalamasÄ± bunu kullanÄ±r
-      if(!n) return;                                 // DT kazanÄ±mÄ± yoksa satÄ±r+blok gizli kalÄ±r
-      // â”€â”€ DT KPI satÄ±rÄ± (Ä°hale aynasÄ±, 5 kart) â”€â”€
+      DT_SAYISI = n;                                 // "Katıldığı DT" sekmesi sayfalaması bunu kullanır
+      if(!n){                                        // DT kazanımı yoksa KPI satırı gizli, panelde boş durum
+        if(gEl) gEl.innerHTML = `<div class="fa-bos-kart">
+          <div class="fa-bos-ikon">⚡</div>
+          <div class="fa-bos-bas">Doğrudan temin kazanımı bulunamadı</div>
+          <div class="fa-bos-alt">Bu firma adıyla eşleşen doğrudan temin kaydı henüz toplanmamış.
+            Sistem her gece otomatik tarama yapar — yeni kayıtlar biriktiğinde burada görünür.</div>
+        </div>`;
+        return;
+      }
+      // ── DT KPI satırı (İhale aynası, 5 kart) ──
       $('kpi-dt-kayit').textContent     = num(n);
       $('kpi-dt-kazanilan').textContent = num(n);
       $('kpi-dt-bedel').textContent     = paraTam(Number(d.toplam_bedel)||0);
-      $('kpi-dt-bedel-alt').textContent = `${num(d.bedelli_sayisi||0)} bedelli Â· medyan ${d.medyan_bedel!=null?paraTam(Number(d.medyan_bedel)):'â€”'}`;
+      $('kpi-dt-bedel-alt').textContent = `${num(d.bedelli_sayisi||0)} bedelli · medyan ${d.medyan_bedel!=null?paraTam(Number(d.medyan_bedel)):'—'}`;
       $('kpi-dt-il').textContent        = num(d.il_sayisi||0);
       $('kpi-dt-sektor').textContent    = num(d.kategori_sayisi||0);
       if(kpiRow) kpiRow.style.display = '';
-      // â”€â”€ DT daÄŸÄ±lÄ±m tablolarÄ± (Ä°l/Kategori) â€” ParÃ§a 3'te DT Genel BakÄ±ÅŸ sekmesine taÅŸÄ±nacak â”€â”€
-      const satirlar = (list, ikon) => (list||[]).slice(0,6).map(x =>
-        `<div class="fa-satir"><span class="sol">${ikon}${esc(x.il || x.kategori)}</span><span class="sag">${num(x.sayi)}</span></div>`
-      ).join('') || '<div class="v1-bos">â€”</div>';
-      el.innerHTML = `
-        <div class="v1-kart" style="margin-bottom:0;border:1px solid #EFE3C4;background:#FFFBF0;">
-          <div class="fa-ikili">
-            <div><div class="v1-kart-baslik" style="font-size:13px;">âš¡ DT â€” Ä°l DaÄŸÄ±lÄ±mÄ±</div>${satirlar(d.iller,'ğŸ“ ')}</div>
-            <div><div class="v1-kart-baslik" style="font-size:13px;">âš¡ DT â€” Kategori DaÄŸÄ±lÄ±mÄ±</div>${satirlar(d.kategoriler,'')}</div>
+      // ── DT Genel Bakış paneli (İhaleler Genel Bakış aynası): İl + Kategori dağılımı ──
+      const ilRows = (d.iller||[]).map(x => `<div class="fa-satir"><span class="sol">📍 ${esc(x.il)}</span><span class="sag">${num(x.sayi)}</span></div>`).join('')
+        || '<div class="v1-bos">İl bilgisi yok.</div>';
+      const katList = (d.kategoriler||[]).map(x => [x.kategori || 'Kategorisiz', Number(x.sayi)||0]);
+      const katHtml = katList.length ? cubukHtml(katList, true) : '<div class="v1-bos">Kategori bilgisi yok.</div>';
+      if(gEl) gEl.innerHTML = `
+        <div class="fa-ikili">
+          <div class="v1-kart" style="margin-bottom:0;">
+            <div class="v1-kart-baslik">İl Bazlı Dağılım (DT)</div>
+            <div class="fa-kutucuk">${ilRows}</div>
           </div>
-          <div style="font-size:11px;color:var(--v1-muted);margin-top:10px;">EÅŸleÅŸme firma adÄ±na gÃ¶re (normalize) yapÄ±lÄ±r â€” resmÃ® VKN doÄŸrulamasÄ± deÄŸildir.</div>
-        </div>`;
-      el.style.display = '';
-    }catch(_){ if(el) el.style.display = 'none'; if(kpiRow) kpiRow.style.display = 'none'; }
+          <div class="v1-kart" style="margin-bottom:0;">
+            <div class="v1-kart-baslik">Sektör / Kategori Dağılımı (DT)</div>
+            ${katHtml}
+          </div>
+        </div>
+        <div style="font-size:11px;color:var(--v1-muted);margin-top:12px;">
+          ⚡ ${num(n)} doğrudan temin kaydı. Eşleşme firma adına göre (normalize) yapılır — resmî VKN doğrulaması değildir.</div>`;
+    }catch(_){
+      if(gEl) gEl.innerHTML = '<div class="fa-bos-kart"><div class="v1-bos">Doğrudan temin verisi yüklenemedi.</div></div>';
+      if(kpiRow) kpiRow.style.display = 'none';
+    }
   }
 
   function firmaIstatistikGoster(rows){
