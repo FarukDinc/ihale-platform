@@ -261,9 +261,14 @@ yıl+il→canlı. **VDS'te supabase_admin ile uygulanacak; gece refresh cron'a.*
 "📋 DT Listesi" ayrı kısayol olarak eklendi. Canlı doğrulandı (aktif = "⚡ DT Analizi").
 → `v1-dt-analiz.html` (`v1-kisayol`)
 
-## MADDE 16 — DT kazanan firma analizi (firma bazında DT istatistiği) ✅ CANLI (part-2 opsiyonel)
+## MADDE 16 — DT kazanan firma analizi (firma bazında DT istatistiği) ✅ CANLI (part-1 + part-2 bağlama)
 **✅ CANLI DENETİM (1 Ağu):** `firma_dt_ozet(p_firma_ad)` canlı (pg_proc doğrulandı). part-1 uygulanmış.
-part-2 (yukleniciler.id bağlama + il bazlı DT firma sıralaması harita paneli) OPSİYONEL — ayrı iş.
+**✅ PART-2 BAĞLAMA (1 Ağu):** `dogrudan_temin_sonuclari.yuklenici_id` dolduruldu (2M NULL'du).
+`dt_yuklenici_baglama()` (postgres sahipli INVOKER, normalize_firma=normalize_ad kesin eşitlik,
+IS DISTINCT guard) → **1.103.448 satır bağlandı (%54,5)**, 61.544 firma; kalan %45,5 = yalnız DT
+kazanmış (yukleniciler'de yok) → NULL DOĞRU. normalize_ad BENZERSIZ (220.181) → belirsizlik yok.
+Gece tazeleme run_scraper.sh'a eklendi (yuklenici_yenile'den sonra). `backend/migration_dt_yuklenici_baglama.sql`.
+KALAN (ayrı, opsiyonel): il bazında DT firma sıralaması (harita paneli).
 **KEŞİF (canlı):** Kazanan verisi `dogrudan_temin_ilanlari`'nda DEĞİL → ayrı tablo
 `dogrudan_temin_sonuclari` (**853.170 satır**): kazanan_firma, kazanan_bedel, dt_no,
 sozlesme_tarihi, yuklenici_id (boş, bilerek). İl/kategori dogrudan_temin_ilanlari'nda (dt_no join).
