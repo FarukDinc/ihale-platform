@@ -28,16 +28,16 @@ CREATE OR REPLACE FUNCTION public.idare_dal_son_dt(
   p_detsis text, p_limit integer DEFAULT 20
 )
 RETURNS TABLE (
-  dt_no text, baslik text, il text, usul text,
-  ilan_tarihi timestamptz, durum text
+  dt_no text, baslik text, il text, tur text,
+  tarih timestamptz, durum text
 )
 LANGUAGE sql STABLE
 AS $$
-  SELECT d.dt_no, d.baslik, d.il, d.usul, d.ilan_tarihi, d.durum
+  SELECT d.dt_no, d.baslik, d.il, d.tur, d.tarih, d.durum
     FROM public.idare_ata_torun at
     JOIN public.dogrudan_temin_ilanlari d ON d.detsis_no = at.torun_no
    WHERE at.ata_no = p_detsis
-   ORDER BY d.ilan_tarihi DESC NULLS LAST
+   ORDER BY d.tarih DESC NULLS LAST
    LIMIT LEAST(COALESCE(p_limit, 20), 100);
 $$;
 

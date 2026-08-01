@@ -673,7 +673,7 @@
           ${i.il ? `<span class="k-et k-et-il">ğŸ“ ${esc(i.il)}</span>` : ''}
         </div>
         <div class="k-ih-meta">
-          ${i.ilan_tarihi ? `<span>ğŸ“… YayÄ±n: ${tarihFormat(i.ilan_tarihi)}</span>` : ''}
+          ${i.tarih ? `<span>ğŸ“… YayÄ±n: ${tarihFormat(i.tarih)}</span>` : ''}
           ${i.son_teklif_tarihi ? `<span>â° Son teklif: ${tarihFormat(i.son_teklif_tarihi)}</span>` : ''}
           ${i.ekap_id ? `<span>EKAP: ${esc(i.ekap_id)}</span>` : ''}
         </div>
@@ -1654,9 +1654,9 @@
             ${rozet}
           </div>
           <div class="k-ih-meta">
-            ${i.usul ? `<span>${esc(i.usul)}</span>` : ''}
+            ${i.tur ? `<span>${esc(i.tur)}</span>` : ''}
             ${i.il ? `<span>📍 ${esc(i.il)}</span>` : ''}
-            ${i.ilan_tarihi ? `<span>📅 ${tarihFormat(i.ilan_tarihi)}</span>` : ''}
+            ${i.tarih ? `<span>📅 ${tarihFormat(i.tarih)}</span>` : ''}
           </div>
         </div>`;
       }).join('') + '<div class="v1-bos" style="padding:12px;">Dalın (kendisi + alt birimleri) en güncel 20 doğrudan temin kaydı gösterilir.</div>';
