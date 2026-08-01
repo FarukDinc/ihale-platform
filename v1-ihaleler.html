@@ -158,7 +158,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/kategoriler.js?v=1"></script>
-<script src="js/v1-kabuk.js?v=20"></script>
+<script src="js/v1-kabuk.js?v=21"></script>
 <script>
 (() => {
   const SB_URL="https://ihaleglobal.com", SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzg0MzA3MTU4LCJleHAiOjE5NDE5ODcxNTh9.CjNKulvirotDD_y2oO2QKgo0kbqYvL0jUSV1RiDMoso";
@@ -323,7 +323,8 @@
       // (dt sekmesi: tümü.) Canlı doğrulandı: "Sonuç Duyurusu…" 2,55M · "Doğrudan Temin Duyurusu…" 408K.
       if (sekme==='sonuc')       d=d.in('durum',['Sonuç Duyurusu Yayımlanmış','Sonuç Bilgileri Gönderildi','Doğrudan Temin Sonuçlandırıldı']);
       else if (sekme==='gecmis') d=d.in('durum',['Teklifler Değerlendiriliyor','Doğrudan Temin Duyurusu Yayımlanmış']).lt('tarih', new Date().toISOString());
-      else                       d=d.eq('durum','Doğrudan Temin Duyurusu Yayımlanmış').gte('tarih', new Date().toISOString());
+      // dt sekmesi: filtresiz → AÇIK DT; ama idare/kelime ile drill-down → TÜM durum (kurum 'DT Kayıtları' o idarenin hepsini görsün)
+      else if (!(uyeMi && val('f-idare')) && !val('f-kelime')) d=d.eq('durum','Doğrudan Temin Duyurusu Yayımlanmış').gte('tarih', new Date().toISOString());
       const kw=val('f-kelime');
       if(kw){
         // DT numarası (ör. 25DT2095274) → dt_no TAM eşleşme (indeksli, ~1sn). Prefix ilike
@@ -351,7 +352,9 @@
       // Teklif süresi DEVAM EDEN ihaleler (ihalepro "Aktif İhaleler" davranışı).
       // gte, indeksin 2. kolonunda aralık koşulu → idx_ilanlar_durum_son_teklif ile uyumlu,
       // ayrıca NULL tarihli eski kayıtları da eler (NULLS FIRST yan etkisi).
-      q=q.eq('durum','aktif').gte('son_teklif_tarihi', new Date().toISOString());
+      // idare/kelime ile drill-down (kurum→"Tüm İhaleleri" / dış bağlantı) → idarenin TÜM ihaleleri
+      // (tüm durum); filtresiz → yalnız teklif süresi devam edenler (klasik "Aktif İhaleler").
+      if (!(uyeMi && val('f-idare')) && !val('f-kelime')) q=q.eq('durum','aktif').gte('son_teklif_tarihi', new Date().toISOString());
     } else if (sekme==='gecmis') {
       // Geçmiş = süresi geçmiş, SONUCU AÇIKLANMAMIŞ ihaleler = durum 'kapali' (~1,6M).
       // ⛔ ESKİ HATA: yalnız 'aktif ama son_teklif geçmiş' (~271) alınıyordu → 1,6M kapalı ihale
@@ -495,9 +498,9 @@
         try{
           const nos=data.map(r=>r.dt_no).filter(Boolean);
           if(nos.length){
-            const {data:bd}=await sb.from('dogrudan_temin_sonuclari').select('dt_no,kazanan_bedel').in('dt_no',nos);
-            const m={}; (bd||[]).forEach(x=>{ if(m[x.dt_no]==null) m[x.dt_no]=x.kazanan_bedel; });
-            data.forEach(r=>{ r._bedel=m[r.dt_no]; });
+            const {data:bd}=await sb.from('dogrudan_temin_sonuclari').select('dt_no,kazanan_bedel'+(uyeMi?',kazanan_firma':'')).in('dt_no',nos);
+            const mB={},mF={}; (bd||[]).forEach(x=>{ if(mB[x.dt_no]==null) mB[x.dt_no]=x.kazanan_bedel; if(x.kazanan_firma&&mF[x.dt_no]==null) mF[x.dt_no]=x.kazanan_firma; });
+            data.forEach(r=>{ r._bedel=mB[r.dt_no]; r._kazanan=mF[r.dt_no]; });
           }
         }catch(_){}
       }
@@ -506,9 +509,9 @@
         try{
           const ids=data.map(r=>r.id).filter(Boolean);
           if(ids.length){
-            const {data:bd}=await sb.from('ihale_sonuclari').select('ilan_id,kazanan_teklif,sozlesme_bedeli').in('ilan_id',ids);
-            const m={}; (bd||[]).forEach(x=>{ const v=(x.sozlesme_bedeli!=null)?x.sozlesme_bedeli:x.kazanan_teklif; if(v!=null && m[x.ilan_id]==null) m[x.ilan_id]=v; });
-            data.forEach(r=>{ if(r._bedel==null) r._bedel=m[r.id]; });
+            const {data:bd}=await sb.from('ihale_sonuclari').select('ilan_id,kazanan_teklif,sozlesme_bedeli'+(uyeMi?',kazanan_firma':'')).in('ilan_id',ids);
+            const mB={},mF={}; (bd||[]).forEach(x=>{ const v=(x.sozlesme_bedeli!=null)?x.sozlesme_bedeli:x.kazanan_teklif; if(v!=null && mB[x.ilan_id]==null) mB[x.ilan_id]=v; if(x.kazanan_firma&&mF[x.ilan_id]==null) mF[x.ilan_id]=x.kazanan_firma; });
+            data.forEach(r=>{ if(r._bedel==null) r._bedel=mB[r.id]; if(r._kazanan==null) r._kazanan=mF[r.id]; });
           }
         }catch(_){}
       }
@@ -542,7 +545,7 @@
     return `<tr data-id="${r.id}">
       <td class="v1-t-tarih">${tarih}<br><span class="saat">${saat}</span>${kalan!=null&&kalan>=0?`<br><span class="kalan">Son ${kalan} gün</span>`:''}</td>
       <td><div class="v1-t-ikn">${esc((dtMi?r.dt_no:r.ekap_id)||'—')}</div><a class="v1-t-ad" href="${detayHref}">${esc(r.baslik||'—')}</a><div class="v1-t-idare" style="font-size:11.5px;margin-top:3px;line-height:1.3;">${r.idare?('🏛 <a href="v1-kurum-analiz?kurum='+encodeURIComponent(r.idare)+'" title="İdarenin analiz sayfasını aç" style="color:var(--v1-muted);text-decoration:none;border-bottom:1px dotted var(--v1-muted);">'+esc(r.idare)+'</a>'):''}</div></td>
-      <td style="font-size:12.5px;color:var(--v1-metin-2);">${esc(r.tur||'—')}<br><span style="color:var(--v1-muted);">${esc(dtMi?(r.kategori||''):usulTemiz(r.usul||''))}</span>${(r._bedel!=null)?`<br><span style="color:var(--v1-teal);font-weight:700;">${tl(r._bedel)}</span>`:''}</td>
+      <td style="font-size:12.5px;color:var(--v1-metin-2);">${esc(r.tur||'—')}<br><span style="color:var(--v1-muted);">${esc(dtMi?(r.kategori||''):usulTemiz(r.usul||''))}</span>${(r._bedel!=null)?`<br><span style="color:var(--v1-teal);font-weight:700;">${tl(r._bedel)}</span>`:''}${r._kazanan?`<br><span style="color:var(--v1-lacivert);font-weight:600;font-size:11.5px;">🏆 ${esc(r._kazanan)}</span>`:''}</td>
       <td style="font-size:13px;">${esc(r.il||'—')}</td>
       <td><div class="v1-t-islem">
         ${!dtMi?`<button class="v1-yuvarlak-btn" title="Takip et" data-takip="${r.id}"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.4 14.72 8.79 21.65 9.39 16.4 13.94 17.97 20.7 12 17.11 6.03 20.7 7.6 13.94 2.35 9.39 9.28 8.79 12 2.4Z"/></svg></button>`:''}

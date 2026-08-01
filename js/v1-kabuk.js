@@ -127,7 +127,12 @@
     + '.v1-dunya-sekme svg{width:15px;height:15px;fill:currentColor;flex-shrink:0;}'
     + '.v1-dunya-sekme:hover{color:var(--v1-lacivert);text-decoration:none;}'
     + '.v1-dunya-sekme.aktif{background:#fff;color:var(--v1-lacivert);box-shadow:0 1px 3px rgba(12,62,112,.14);}'
-    + '@media(max-width:900px){.v1-dunya-sekme{padding:7px 9px;font-size:11.5px;}}</style>' +
+    + '@media(max-width:900px){.v1-dunya-sekme{padding:7px 9px;font-size:11.5px;}}'
+    + '.v1-ara-btn-dolu{background:var(--v1-mavi);border-radius:8px;margin:3px;padding:0 16px;display:flex;align-items:center;gap:6px;}'
+    + '.v1-ara-btn-dolu svg{fill:#fff;}'
+    + '.v1-ara-btn-dolu .v1-ara-btn-yazi{color:#fff;font-family:var(--v1-font);font-size:13px;font-weight:700;}'
+    + '.v1-ara-btn-dolu:hover{background:var(--v1-lacivert);}'
+    + '@media(max-width:720px){.v1-ara-btn-dolu .v1-ara-btn-yazi{display:none;}}</style>' +
     '<a class="v1-ray-logo" href="v1-benim-sayfam" title="İhaleGlobal"><img src="/favicon-v1.svg?v=1" alt="İhaleGlobal"></a>' +
     '<nav class="v1-ray-nav">' +
     MENU.map((m) =>
@@ -148,7 +153,7 @@
         <option value="dt">Doğrudan Temin</option>
       </select>
       <input type="text" id="v1-ara" placeholder="İhale, firma, kurum, sonuç ara..">
-      <button class="v1-ara-btn" id="v1-ara-btn" aria-label="Ara">${I.ara}</button>
+      <button class="v1-ara-btn v1-ara-btn-dolu" id="v1-ara-btn" aria-label="Ara" title="Ara">${I.ara}<span class="v1-ara-btn-yazi">Ara</span></button>
     </div>
     <div class="v1-top-sag">
       <div class="v1-dunya-gecis">${DUNYALAR.map(d => `<a class="v1-dunya-sekme${d.ws === suWs ? ' aktif' : ''}" href="${d.landing}" title="${d.ad}">${d.ikon}<span>${d.ad}</span></a>`).join('')}</div>
