@@ -66,7 +66,11 @@
   //    üstte; kamu-ihale-dışı komşu alanlar (Global/Dış Ticaret/e-Satınalma/Bank) altta
   //    "Keşfet" ayracının altında. Tüm sayfalar/RPC'ler/veriler aynen çalışır; sadece
   //    ihale arayan firmanın gözü çekirdeğe odaklansın diye komşular ayrık gösterilir.
-  const MENU = [
+  // ── DÜNYALAR (üst bar sekmeleri) — her dünyanın KENDİ sol menüsü ──────────
+  // Kamu = çekirdek kamu ihale işi (varsayılan). Global İhaleler + E-Satınalma AYRI dünyalar;
+  // üst bardan geçilir, sidebar o dünyaya göre değişir. (Eski sidebar "Keşfet" grubu kaldırıldı;
+  // Global/Dış Ticaret/Bank → Global dünyasına, e-Satınalma → kendi dünyasına taşındı.)
+  const MENU_KAMU = [
     { id: 'benim',      ad: 'Bana Özel',   ikon: I.home,   href: 'v1-benim-sayfam' },
     { id: 'takipte',    ad: 'Takibim',     ikon: I.yildiz, href: 'v1-takipte' },
     { id: 'analiz',     ad: 'Analiz',      ikon: I.analiz, href: 'v1-analiz' },
@@ -80,15 +84,29 @@
     { id: 'sektorler',  ad: 'Sektörler',   ikon: I.sektor, href: 'v1-sektorler' },
     { id: 'ihalelerim', ad: 'İhalelerim',  ikon: I.rapor,  href: 'v1-ihalelerim' },
     { id: 'harita',     ad: 'Harita',      ikon: I.harita, href: 'v1-harita' },
-    // ── Keşfet — kamu ihale dışı komşu alanlar (yalnız menüde ayrık; sayfalar yerinde) ──
-    { id: 'global',     ad: 'Global İhaleler', ikon: I.global, href: 'v1-global',    kesfet: true },
-    { id: 'disticaret', ad: 'Dış Ticaret', ikon: I.ticaret, href: 'v1-dis-ticaret', kesfet: true },
-    { id: 'esatinalma', ad: 'e-Satınalma', ikon: I.sepet,  href: 'v1-esatinalma',   kesfet: true },
-    { id: 'bank',       ad: 'Bank',        ikon: I.para,   href: 'v1-bank',          kesfet: true },
   ];
+  const MENU_GLOBAL = [
+    { id: 'global',     ad: 'Global İhaleler', ikon: I.global,  href: 'v1-global' },
+    { id: 'disticaret', ad: 'Dış Ticaret',     ikon: I.ticaret, href: 'v1-dis-ticaret' },
+    { id: 'bank',       ad: 'Bank',            ikon: I.para,    href: 'v1-bank' },
+  ];
+  const MENU_ESATINALMA = [
+    { id: 'esatinalma', ad: 'e-Satınalma', ikon: I.sepet, href: 'v1-esatinalma' },
+  ];
+  const DUNYALAR = [
+    { ws: 'kamu',       ad: 'Kamu',            landing: 'v1-benim-sayfam', menu: MENU_KAMU },
+    { ws: 'global',     ad: 'Global İhaleler', landing: 'v1-global',       menu: MENU_GLOBAL },
+    { ws: 'esatinalma', ad: 'E-Satınalma',     landing: 'v1-esatinalma',   menu: MENU_ESATINALMA },
+  ];
+  // Aktif sayfa (data-v1-aktif) hangi dünyaya ait — eşleşmezse 'kamu'
+  const WS_OF = { global: 'global', disticaret: 'global', bank: 'global', esatinalma: 'esatinalma' };
 
   const aktif = document.body.getAttribute('data-v1-aktif') || '';
   const kirinti = document.body.getAttribute('data-v1-kirinti') || '';
+  // Aktif dünya + o dünyanın sol menüsü (üst bar sekmesi buna göre vurgulanır)
+  const suWs = WS_OF[aktif] || 'kamu';
+  const suDunya = DUNYALAR.find(d => d.ws === suWs) || DUNYALAR[0];
+  const MENU = suDunya.menu;
 
   // ── Sol ray ────────────────────────────────────────────────────────────
   const ray = document.createElement('aside');
@@ -99,15 +117,16 @@
     // kısıtlar → tıklanan öğe soluk kalır. Çözüm: SOLID renk (alfa yok) + !important.
     '<style>.v1-ray-item,.v1-ray-item:link,.v1-ray-item:visited{color:#E8EEF4!important}'
     + '.v1-ray-item:hover,.v1-ray-item:visited:hover{color:#fff!important}'
-    + '.v1-ray-item.aktif,.v1-ray-item.aktif:visited{color:var(--v1-lacivert)!important}</style>' +
+    + '.v1-ray-item.aktif,.v1-ray-item.aktif:visited{color:var(--v1-lacivert)!important}'
+    + '.v1-dunya-gecis{display:flex;gap:3px;background:#EAF1F8;border-radius:10px;padding:3px;margin-right:8px;}'
+    + '.v1-dunya-sekme{padding:8px 13px;border-radius:8px;font-family:var(--v1-font);font-size:12.5px;font-weight:700;color:var(--v1-muted);text-decoration:none;white-space:nowrap;}'
+    + '.v1-dunya-sekme:hover{color:var(--v1-lacivert);text-decoration:none;}'
+    + '.v1-dunya-sekme.aktif{background:#fff;color:var(--v1-lacivert);box-shadow:0 1px 3px rgba(12,62,112,.14);}'
+    + '@media(max-width:900px){.v1-dunya-sekme{padding:7px 9px;font-size:11.5px;}}</style>' +
     '<a class="v1-ray-logo" href="v1-benim-sayfam" title="İhaleGlobal"><img src="/favicon-v1.svg?v=1" alt="İhaleGlobal"></a>' +
     '<nav class="v1-ray-nav">' +
-    MENU.map((m, i) =>
-      ((m.kesfet && (i === 0 || !MENU[i - 1].kesfet))
-        ? '<div class="v1-ray-ayrac" style="margin:12px 10px 4px;padding-top:9px;border-top:1px solid rgba(255,255,255,.14);'
-          + 'font-size:9.5px;font-weight:800;letter-spacing:.06em;color:rgba(255,255,255,.5);text-transform:uppercase;text-align:center;">Keşfet</div>'
-        : '')
-      + `<a class="v1-ray-item${m.id === aktif ? ' aktif' : ''}" href="${m.href}" title="${m.ad}" style="text-decoration:none;">${m.ikon}<span>${m.ad}</span></a>`
+    MENU.map((m) =>
+      `<a class="v1-ray-item${m.id === aktif ? ' aktif' : ''}" href="${m.href}" title="${m.ad}" style="text-decoration:none;">${m.ikon}<span>${m.ad}</span></a>`
     ).join('') +
     '</nav>';
 
@@ -127,6 +146,7 @@
       <button class="v1-ara-btn" id="v1-ara-btn" aria-label="Ara">${I.ara}</button>
     </div>
     <div class="v1-top-sag">
+      <div class="v1-dunya-gecis">${DUNYALAR.map(d => `<a class="v1-dunya-sekme${d.ws === suWs ? ' aktif' : ''}" href="${d.landing}" title="${d.ad}">${d.ad}</a>`).join('')}</div>
       <a class="v1-fasonda" href="https://fasonda.com" target="_blank" rel="noopener"
          title="Fasonda.com — üretim & tedarik pazar yeri">
         <span class="v1-fasonda-ikon">🏭</span>
