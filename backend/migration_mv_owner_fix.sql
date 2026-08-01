@@ -21,6 +21,15 @@ ALTER MATERIALIZED VIEW public.il_yil_firma      OWNER TO postgres;
 ALTER MATERIALIZED VIEW public.dt_analiz_yil_mv  OWNER TO postgres;
 ALTER MATERIALIZED VIEW public.dt_analiz_mv      OWNER TO postgres;
 
+-- ⚠️ (1 Ağu KANIT — kritik ikinci adım): dt_analiz_mv ve dt_analiz_yil_mv tanımları
+-- `_dt_ozet_json()` (SECURITY DEFINER, ACL yalnız supabase_admin=X) ÇAĞIRIR. Sahip postgres'e
+-- geçince REFRESH artık postgres olarak çalışır → fonksiyonu ÇAĞIRMAK için EXECUTE ister; postgres
+-- superuser DEĞİL → "permission denied for function _dt_ozet_json" (owner devri TEK BAŞINA bu 2 MV'yi
+-- BOZAR — il_yil_firma bu fonksiyonu çağırmaz, o yüzden yalnız o düzelirdi). Çözüm: postgres'e EXECUTE
+-- ver. SECURITY DEFINER olduğundan İÇ veri erişimi yine supabase_admin yetkisiyle çalışır; bu grant
+-- SADECE çağrı iznini açar ve postgres iç roldür (anon/authenticated/service_role'e dokunmaz).
+GRANT EXECUTE ON FUNCTION public._dt_ozet_json(text, text, text, integer) TO postgres;
+
 -- Doğrulama:
 --   \dm+ public.il_yil_firma      -- Owner: postgres olmalı
 --   REFRESH MATERIALIZED VIEW CONCURRENTLY public.il_yil_firma;   -- postgres ile hatasız
