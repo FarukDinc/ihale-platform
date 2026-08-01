@@ -101,7 +101,7 @@
         ? '<div class="v1-ray-ayrac" style="margin:12px 10px 4px;padding-top:9px;border-top:1px solid rgba(255,255,255,.14);'
           + 'font-size:9.5px;font-weight:800;letter-spacing:.06em;color:rgba(255,255,255,.5);text-transform:uppercase;text-align:center;">Keşfet</div>'
         : '')
-      + `<button class="v1-ray-item${m.id === aktif ? ' aktif' : ''}" data-href="${m.href}" title="${m.ad}">${m.ikon}<span>${m.ad}</span></button>`
+      + `<a class="v1-ray-item${m.id === aktif ? ' aktif' : ''}" href="${m.href}" title="${m.ad}" style="text-decoration:none;">${m.ikon}<span>${m.ad}</span></a>`
     ).join('') +
     '</nav>';
 
@@ -178,9 +178,8 @@
     main.insertBefore(topbar, main.firstChild);
     if (kirintiEl) main.insertBefore(kirintiEl, topbar.nextSibling);
 
-    ray.querySelectorAll('.v1-ray-item').forEach(b => {
-      b.addEventListener('click', () => { location.href = b.dataset.href; });
-    });
+    // Menü öğeleri artık <a href> → tıklama NATİF gezinir; orta/Ctrl/sağ tık "yeni sekmede
+    // aç" da çalışır. Ayrı JS click handler'ı YOK (olursa yeni-sekme davranışını bozar).
 
     // Arama → kapsama göre v1 sayfasına yönlendir (?ara=)
     const inp = topbar.querySelector('#v1-ara');

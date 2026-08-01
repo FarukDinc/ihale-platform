@@ -142,7 +142,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/kategoriler.js?v=1"></script>
-<script src="js/v1-kabuk.js?v=12"></script>
+<script src="js/v1-kabuk.js?v=13"></script>
 <script>
 (() => {
   const SB_URL="https://ihaleglobal.com", SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzg0MzA3MTU4LCJleHAiOjE5NDE5ODcxNTh9.CjNKulvirotDD_y2oO2QKgo0kbqYvL0jUSV1RiDMoso";
@@ -239,7 +239,7 @@
   //    · "Benzer İş"                → benzer_is kolonu yok (42703).
   //    · "Düzeltme İlanı"           → düzeltme bilgisi tutan kolon yok (42703).
   const GRUPLAR=[
-    {id:'kelime', ad:'Kelime Arama', html:`<input class="v1-f-input" id="f-kelime" placeholder="İhale adında ara…">`},
+    {id:'kelime', ad:'Kelime Arama', html:`<input class="v1-f-input" id="f-kelime" placeholder="İhale adı, İKN veya DT no…">`},
     {id:'yayin',  ad:'Yayın Tarihi', html:`<div class="v1-f-ikili"><div><span class="v1-f-etiket">Başlangıç</span><input type="date" class="v1-f-input" id="f-yayin1" autocomplete="off"></div><div><span class="v1-f-etiket">Bitiş</span><input type="date" class="v1-f-input" id="f-yayin2" autocomplete="off"></div></div>`},
     {id:'ihaleT', ad:'İhale Tarihi', html:`<div class="v1-f-ikili"><div><span class="v1-f-etiket">Başlangıç</span><input type="date" class="v1-f-input" id="f-tarih1" autocomplete="off"></div><div><span class="v1-f-etiket">Bitiş</span><input type="date" class="v1-f-input" id="f-tarih2" autocomplete="off"></div></div>`},
     {id:'maliyet',ad:'Yaklaşık Maliyet', html:`<div class="v1-f-ikili"><div><span class="v1-f-etiket">Min ₺</span><input type="number" class="v1-f-input" id="f-min" placeholder="0"></div><div><span class="v1-f-etiket">Max ₺</span><input type="number" class="v1-f-input" id="f-max" placeholder="—"></div></div>`},
@@ -308,7 +308,12 @@
       if (sekme==='sonuc')       d=d.eq('durum','Sonuç Duyurusu Yayımlanmış');
       else if (sekme==='gecmis') d=d.eq('durum','Doğrudan Temin Duyurusu Yayımlanmış');
       const kw=val('f-kelime');
-      if(kw){ const rgx=dtRegex(kw); if(rgx) d=d.filter('baslik','imatch',rgx); }
+      if(kw){
+        // DT numarası (ör. 25DT2095274) → dt_no TAM eşleşme (indeksli, ~1sn). Prefix ilike
+        //   dt_no'da indekssiz → 57014 timeout, o yüzden YALNIZ eq. Aksi halde başlıkta regex.
+        if(/^\s*\d{2}\s*DT\s*\d+\s*$/i.test(kw)){ d=d.eq('dt_no', kw.replace(/\s+/g,'').toUpperCase()); }
+        else { const rgx=dtRegex(kw); if(rgx) d=d.filter('baslik','imatch',rgx); }
+      }
       if(val('f-tarih1')) d=d.gte('tarih',val('f-tarih1'));
       if(val('f-tarih2')) d=d.lte('tarih',val('f-tarih2')+'T23:59:59');
       if(val('f-yayin1')) d=d.gte('yayin_tarihi',val('f-yayin1'));
@@ -337,8 +342,16 @@
     } else q=q.eq('durum','sonuclandi');
     // ⛔ Düz `.ilike('baslik','%insaat%')` Türkçe İ/ı'da SESSİZCE 0 döner. Katlanmış
     //    `baslik_fold` kolonu misafire de AÇIK ve trgm indeksli (ölçüm: 0,18sn).
-    q = window.v1Ara ? window.v1Ara(q,'baslik_fold',val('f-kelime'))
-                     : (val('f-kelime') ? q.ilike('baslik','%'+val('f-kelime')+'%') : q);
+    // İKN / ekap_id ile arama: "2026/1224100", "ILN02520263", "DMO-17786" gibi kimlikler
+    //   başlıkta geçmez → ekap_id TAM eşleşme. ekap_id anon'a KAPALI → yalnız üyede. Aksi
+    //   halde başlıkta katlanmış arama (baslik_fold, trgm indeksli).
+    const ikw = val('f-kelime');
+    if (ikw && uyeMi && /^\s*(\d{4}\/\d+|ILN\d+|DMO[-\d]+)\s*$/i.test(ikw)) {
+      q = q.eq('ekap_id', ikw.trim().toUpperCase());
+    } else {
+      q = window.v1Ara ? window.v1Ara(q,'baslik_fold',ikw)
+                       : (ikw ? q.ilike('baslik','%'+ikw+'%') : q);
+    }
     if(val('f-tarih1')) q=q.gte('son_teklif_tarihi',val('f-tarih1'));
     if(val('f-tarih2')) q=q.lte('son_teklif_tarihi',val('f-tarih2')+'T23:59:59');
     if(val('f-yayin1')) q=q.gte('ilan_tarihi',val('f-yayin1'));
