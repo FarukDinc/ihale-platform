@@ -46,6 +46,9 @@ echo "[$(date +'%Y-%m-%d %H:%M:%S')] === Yuklenici tazeleme ===" >> /opt/ihale-p
 # Diğer tazelemeler (idare_tur_tazele, MV refresh) gibi DOĞRUDAN psql: gateway yok, yalnız
 # fonksiyonun statement_timeout'u geçerli. yuklenici_yenile_calistir.py artık kullanılmıyor.
 docker exec -i supabase-db psql -U postgres -d postgres -c "SELECT public.yuklenici_yenile();" >> /opt/ihale-platform/logs/scraper.log 2>&1
+# DT kazanan -> yukleniciler.id bagla (MADDE 16 part-2). yuklenici_yenile'den HEMEN SONRA (taze yukleniciler
+# gerekir); normalize_firma=normalize_ad kesin esitlik, IS DISTINCT guard'li -> gece yalniz DEGISENi yazar.
+docker exec -i supabase-db psql -U postgres -d postgres -c "SELECT public.dt_yuklenici_baglama() AS dt_yuklenici_baglama;" >> /opt/ihale-platform/logs/scraper.log 2>&1
 docker exec -i supabase-db psql -U postgres -d postgres -c "SELECT public.yuklenici_segment_yenile() AS segment_tazeleme;" >> /opt/ihale-platform/logs/scraper.log 2>&1
 $VENV/python rakip_bildirim.py >> /opt/ihale-platform/logs/scraper.log 2>&1
 $VENV/python rapor_bildirim.py >> /opt/ihale-platform/logs/scraper.log 2>&1
