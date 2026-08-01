@@ -327,7 +327,10 @@
     // Aktif DT tanımı harita ile AYNI (dt_il_sayim_aktif): duyuru yayımlanmış / teklifler değerlendiriliyor.
     const DT_AKTIF=['Doğrudan Temin Duyurusu Yayımlanmış','Teklifler Değerlendiriliyor'];
     Promise.all([
-      sayac('ilanlar',q=>q.eq('durum','aktif')).then(v=>set('Aktif İhale',num(v))),
+      // Aktif Ihale = "Aktif Ihaleler" LISTESIYLE ayni tanim: durum='aktif' AND son teklif
+      // gecmemis. Ham durum='aktif' (14.143) suresi gecmis bayat kayitlari da sayiyordu; liste
+      // (5.435) ile tutarsizdi. bkz backend/migration_idare_ozet_mv_aktif_deadline.sql
+      sayac('ilanlar',q=>q.eq('durum','aktif').gte('son_teklif_tarihi', new Date().toISOString())).then(v=>set('Aktif İhale',num(v))),
       sayac('dogrudan_temin_ilanlari',q=>q.in('durum',DT_AKTIF)).then(v=>set('Aktif Doğrudan Temin',kisalt(v))),
       // Toplam geçmiş hacim = TÜM doğrudan temin + TÜM ihale ilanı (yayınlanmış her şey).
       Promise.all([sayac('dogrudan_temin_ilanlari'),sayac('ilanlar')]).then(([a,b])=>set('Toplam DT + İhale',kisalt(a+b))),

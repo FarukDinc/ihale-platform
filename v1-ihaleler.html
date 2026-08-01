@@ -480,7 +480,7 @@
     const detayHref = dtMi ? `v1-dt-detay?dt_no=${encodeURIComponent(r.dt_no||"")}&id=${r.id}` : `v1-ihale-detay?id=${r.id}`;
     return `<tr data-id="${r.id}">
       <td class="v1-t-tarih">${tarih}<br><span class="saat">${saat}</span>${kalan!=null&&kalan>=0?`<br><span class="kalan">Son ${kalan} gün</span>`:''}</td>
-      <td><div class="v1-t-ikn">${esc((dtMi?r.dt_no:r.ekap_id)||'—')}</div><a class="v1-t-ad" href="${detayHref}">${esc(r.baslik||'—')}</a><div class="v1-t-idare" style="font-size:11.5px;color:var(--v1-muted);margin-top:3px;line-height:1.3;">${r.idare?('🏛 '+esc(r.idare)):''}</div></td>
+      <td><div class="v1-t-ikn">${esc((dtMi?r.dt_no:r.ekap_id)||'—')}</div><a class="v1-t-ad" href="${detayHref}">${esc(r.baslik||'—')}</a><div class="v1-t-idare" style="font-size:11.5px;margin-top:3px;line-height:1.3;">${r.idare?('🏛 <a href="v1-kurum-analiz?kurum='+encodeURIComponent(r.idare)+'" title="İdarenin analiz sayfasını aç" style="color:var(--v1-muted);text-decoration:none;border-bottom:1px dotted var(--v1-muted);">'+esc(r.idare)+'</a>'):''}</div></td>
       <td style="font-size:12.5px;color:var(--v1-metin-2);">${esc(r.tur||'—')}<br><span style="color:var(--v1-muted);">${esc(dtMi?(r.kategori||''):usulTemiz(r.usul||''))}</span>${(dtMi&&r._bedel!=null)?`<br><span style="color:var(--v1-teal);font-weight:700;">${tl(r._bedel)}</span>`:''}</td>
       <td style="font-size:13px;">${esc(r.il||'—')}</td>
       <td><div class="v1-t-islem">
