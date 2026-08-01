@@ -88,10 +88,10 @@
   const MENU_GLOBAL = [
     { id: 'global',     ad: 'Global İhaleler', ikon: I.global,  href: 'v1-global' },
     { id: 'disticaret', ad: 'Dış Ticaret',     ikon: I.ticaret, href: 'v1-dis-ticaret' },
-    { id: 'bank',       ad: 'Bank',            ikon: I.para,    href: 'v1-bank' },
   ];
   const MENU_ESATINALMA = [
     { id: 'esatinalma', ad: 'Satınalma', ikon: I.sepet, href: 'v1-esatinalma' },
+    { id: 'bank',   ad: 'Bank',   ikon: I.para,   href: 'v1-bank' },
     { id: 'harita', ad: 'Harita', ikon: I.harita, href: 'v1-harita?dunya=esatinalma' },
   ];
   const DUNYALAR = [
@@ -100,7 +100,7 @@
     { ws: 'esatinalma', ad: 'E-Satınalma',     ikon: I.sepet,  landing: 'v1-esatinalma',   menu: MENU_ESATINALMA },
   ];
   // Aktif sayfa (data-v1-aktif) hangi dünyaya ait — eşleşmezse 'kamu'
-  const WS_OF = { global: 'global', disticaret: 'global', bank: 'global', esatinalma: 'esatinalma' };
+  const WS_OF = { global: 'global', disticaret: 'global', bank: 'esatinalma', esatinalma: 'esatinalma' };
 
   const aktif = document.body.getAttribute('data-v1-aktif') || '';
   const kirinti = document.body.getAttribute('data-v1-kirinti') || '';

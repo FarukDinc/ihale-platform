@@ -34,6 +34,9 @@
       .hz-svg { cursor:grab; touch-action:pan-y; }
       .hz-svg.hz-tutuluyor { cursor:grabbing; }
       .hz-svg.hz-yakin path { transition:none; }
+      .hz-fs-host:fullscreen { max-width:none !important; width:100vw; height:100vh; background:#fff;
+        display:flex; align-items:center; justify-content:center; border-radius:0; margin:0; }
+      .hz-fs-host:fullscreen svg { width:auto !important; height:auto !important; max-width:100vw; max-height:100vh; }
     `;
     document.head.appendChild(s);
   }
@@ -94,11 +97,25 @@
       kutu.className = 'hz-araclar';
       kutu.innerHTML = '<button class="hz-btn" type="button" title="Yakınlaştır">+</button>' +
         '<button class="hz-btn" type="button" title="Uzaklaştır">−</button>' +
-        '<button class="hz-btn" type="button" title="Sıfırla" style="font-size:14px;">⟲</button>';
-      const [b1, b2, b3] = kutu.querySelectorAll('button');
+        '<button class="hz-btn" type="button" title="Sıfırla" style="font-size:14px;">⟲</button>' +
+        '<button class="hz-btn hz-fs" type="button" title="Tam ekran" style="font-size:15px;">⛶</button>';
+      const [b1, b2, b3, b4] = kutu.querySelectorAll('button');
       b1.addEventListener('click', () => merkezZoom(1.45));
       b2.addEventListener('click', () => merkezZoom(1 / 1.45));
       b3.addEventListener('click', sifirla);
+      // Tam ekran aç/kapa — sarmalı (harita kabı) ekranı kaplayacak şekilde
+      sarmal.classList.add('hz-fs-host');
+      if (b4) b4.addEventListener('click', () => {
+        if (document.fullscreenElement) document.exitFullscreen();
+        else if (sarmal.requestFullscreen) sarmal.requestFullscreen().catch(() => {});
+      });
+      document.addEventListener('fullscreenchange', () => {
+        if (!b4) return;
+        const tam = document.fullscreenElement === sarmal;
+        b4.textContent = tam ? '⤢' : '⛶';
+        b4.title = tam ? 'Tam ekrandan çık' : 'Tam ekran';
+        sifirla();
+      });
       btnEksi = b2; btnSifir = b3;
       sarmal.appendChild(kutu);
 
