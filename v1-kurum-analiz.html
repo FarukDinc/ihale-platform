@@ -94,6 +94,7 @@
     .k-cb { margin-bottom:11px; }
     .k-cb-bas { display:flex; justify-content:space-between; gap:10px; margin-bottom:4px; font-size:13px; }
     .k-cb-ad { color:var(--v1-metin); font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .k-cb-link { cursor:pointer; } .k-cb-link:hover .k-cb-ad { color:var(--v1-mavi); text-decoration:underline; }
     .k-cb-say { color:var(--v1-mavi); font-weight:800; white-space:nowrap; flex-shrink:0; }
     .k-cb-yol { height:7px; background:#EDF1F6; border-radius:4px; overflow:hidden; }
     .k-cb-dolu { display:block; height:100%; background:var(--v1-mavi); border-radius:4px; }
@@ -119,7 +120,10 @@
     .d-kapandi { background:#EEF2F7; color:var(--v1-muted); }
     .k-ih-meta { display:flex; gap:14px; margin-top:8px; font-size:12px; color:var(--v1-muted); flex-wrap:wrap; }
     .k-ih-bedel { font-size:13px; font-weight:800; color:var(--v1-mavi); margin-top:7px; }
-    .k-ih-kazanan { font-size:13px; font-weight:700; color:var(--v1-yesil); margin-top:4px; }
+    .k-ih-kazanan { font-size:13px; font-weight:700; color:var(--v1-yesil); margin-top:4px;
+      display:flex; justify-content:space-between; align-items:baseline; gap:14px; flex-wrap:wrap; }
+    .k-ih-kaz-sol { min-width:0; }
+    .k-ih-tarih { color:var(--v1-muted); font-weight:600; white-space:nowrap; margin-left:auto; }
     .k-etiketler { display:flex; gap:6px; flex-wrap:wrap; margin-top:8px; }
     .k-et { font-size:11px; padding:2px 9px; border-radius:20px; font-weight:700; }
     .k-et-tur { background:var(--v1-teal-acik); color:#0B6C67; }
@@ -652,16 +656,19 @@
       let kazananBlok = '';
       if (sonuclar.length === 1) {
         const so = sonuclar[0];
-        const parca = [
+        const sol = [
           `🏆 ${esc(so.kazanan_firma) || '—'}`,
           so.kazanan_teklif ? paraFormat(so.kazanan_teklif) : null,
           so.kazanan_teklif_farki_yuzde != null ? `tenzilat %${Number(so.kazanan_teklif_farki_yuzde).toFixed(1)}` : null,
-          so.sonuc_tarihi ? tarihFormat(so.sonuc_tarihi) : null,
         ].filter(Boolean).join(' · ');
-        kazananBlok = `<div class="k-ih-kazanan">${parca}</div>`;
+        const tar = so.sonuc_tarihi ? `<span class="k-ih-tarih">📅 ${tarihFormat(so.sonuc_tarihi)}</span>` : '';
+        kazananBlok = `<div class="k-ih-kazanan"><span class="k-ih-kaz-sol">${sol}</span>${tar}</div>`;
       } else if (sonuclar.length > 1) {
         const toplam = sonuclar.reduce((t, so) => t + (Number(so.kazanan_teklif) || 0), 0);
-        kazananBlok = `<div class="k-ih-kazanan">🏆 ${sonuclar.length} kısım sonuçlandı${toplam ? ` · toplam ${paraFormat(toplam)}` : ''}</div>`;
+        const tarihler = sonuclar.map(so => so.sonuc_tarihi).filter(Boolean).sort();
+        const sonTar = tarihler.length ? tarihler[tarihler.length - 1] : null;
+        const tar = sonTar ? `<span class="k-ih-tarih">📅 ${tarihFormat(sonTar)}</span>` : '';
+        kazananBlok = `<div class="k-ih-kazanan"><span class="k-ih-kaz-sol">🏆 ${sonuclar.length} kısım sonuçlandı${toplam ? ` · toplam ${paraFormat(toplam)}` : ''}</span>${tar}</div>`;
       }
       return `<div class="k-ihale">
         <div class="k-ih-ust">
@@ -673,7 +680,7 @@
           ${i.il ? `<span class="k-et k-et-il">📍 ${esc(i.il)}</span>` : ''}
         </div>
         <div class="k-ih-meta">
-          ${i.tarih ? `<span>📅 Yayın: ${tarihFormat(i.tarih)}</span>` : ''}
+          ${i.ilan_tarihi ? `<span>📅 Yayın: ${tarihFormat(i.ilan_tarihi)}</span>` : ''}
           ${i.son_teklif_tarihi ? `<span>⏰ Son teklif: ${tarihFormat(i.son_teklif_tarihi)}</span>` : ''}
           ${i.ekap_id ? `<span>EKAP: ${esc(i.ekap_id)}</span>` : ''}
         </div>
@@ -1008,13 +1015,13 @@
       el('l-kazanan').innerHTML = serit + data.slice(0, 12).map(r => {
         const adet = Number(r.ihale_sayisi) || 0;
         const tenz = r.ort_tenzilat != null ? ` · ort. %${Number(r.ort_tenzilat).toFixed(1)} tenz.` : '';
-        return `<div class="k-cb">
+        return `<a href="v1-firma-analiz?firma=${encodeURIComponent(r.grup_deger)}" class="k-cb-link" style="display:block;text-decoration:none;color:inherit;"><div class="k-cb">
           <div class="k-cb-bas">
             <span class="k-cb-ad" title="${esc(r.grup_deger)}">🏢 ${esc(r.grup_deger)}</span>
             <span class="k-cb-say">${num(adet)} iş${tenz}</span>
           </div>
           <div class="k-cb-yol"><span class="k-cb-dolu" style="width:${Math.max(2, Math.round(adet / max * 100))}%"></span></div>
-        </div>`;
+        </div></a>`;
       }).join('');
       el('kart-kazanan').style.display = 'block';
     } catch (err) {
