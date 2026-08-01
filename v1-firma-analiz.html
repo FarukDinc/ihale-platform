@@ -41,6 +41,11 @@
     @media(max-width:560px){ .fa-kpi { grid-template-columns:1fr; } }
     .fa-kpi.uclu { grid-template-columns:repeat(3,1fr); }
     @media(max-width:900px){ .fa-kpi.uclu { grid-template-columns:1fr; } }
+    .fa-kpi.besli { grid-template-columns:repeat(5,1fr); }
+    @media(max-width:1100px){ .fa-kpi.besli { grid-template-columns:repeat(3,1fr); } }
+    @media(max-width:640px){ .fa-kpi.besli { grid-template-columns:1fr; } }
+    /* DT KPI satırı — İhale satırının aynası, yalnız-DT vurgusu için hafif amber çerçeve */
+    .fa-kpi.dt-kpi .fa-k { background:#FFFBF0; border:1px solid #EFE3C4; }
     .fa-k { background:#fff; border:1px solid var(--v1-cizgi); border-radius:var(--v1-radius-lg);
       box-shadow:var(--v1-golge); padding:16px 18px; }
     .fa-k-et { font-size:10.5px; font-weight:800; color:var(--v1-muted); text-transform:uppercase;
@@ -466,7 +471,8 @@
             </div>
           </div>
 
-          <div class="fa-kpi">
+          <!-- İHALE KPI satırı (5 kart) — yalnız ihaleler -->
+          <div class="fa-kpi besli">
             <div class="fa-k">
               <div class="fa-k-et">Toplam Kayıt</div>
               <div class="fa-k-v mavi" id="kpi-katilan">—</div>
@@ -476,6 +482,11 @@
               <div class="fa-k-et">Kazanılan İhale <span class="fa-rozet" title="Yalnız ihaleler — bu firmanın doğrudan temin kazanımları burada sayılmaz/toplanmaz">yalnız ihaleler</span></div>
               <div class="fa-k-v" id="kpi-kazanilan">—</div>
               <div class="fa-k-alt" id="kpi-kazanilan-alt">EKAP ihale sonuç kaydı</div>
+            </div>
+            <div class="fa-k">
+              <div class="fa-k-et">Toplam İhale Bedeli <span class="fa-rozet" title="Yalnız ihaleler — doğrudan temin dahil değil">yalnız ihaleler</span></div>
+              <div class="fa-k-v mavi" id="kpi-ihale-bedel" style="font-size:17px;">—</div>
+              <div class="fa-k-alt">sözleşme bedeli toplamı</div>
             </div>
             <div class="fa-k">
               <div class="fa-k-et">Kapsanan İl</div>
@@ -489,7 +500,37 @@
             </div>
           </div>
 
-          <!-- MADDE 18: Doğrudan Temin kazanımları — ihale evreninden AYRI (yalnız DT). firma_dt_ozet RPC. -->
+          <!-- DOĞRUDAN TEMİN KPI satırı (5 kart) — İhale satırının aynası. firma_dt_ozet ile dolar
+               (dtBlokYukle). DT kazanımı yoksa gizli kalır. -->
+          <div class="fa-kpi besli dt-kpi" id="fa-dt-kpi" style="display:none;margin-bottom:18px;">
+            <div class="fa-k">
+              <div class="fa-k-et">Toplam DT Kaydı <span class="fa-rozet" style="background:#F5E6C0;color:#8A5A00;">yalnız DT</span></div>
+              <div class="fa-k-v mavi" id="kpi-dt-kayit">—</div>
+              <div class="fa-k-alt">eşleşen doğrudan temin</div>
+            </div>
+            <div class="fa-k">
+              <div class="fa-k-et">Kazanılan DT</div>
+              <div class="fa-k-v" id="kpi-dt-kazanilan">—</div>
+              <div class="fa-k-alt" id="kpi-dt-kazanilan-alt">doğrudan temin sözleşmesi</div>
+            </div>
+            <div class="fa-k">
+              <div class="fa-k-et">Toplam DT Bedeli</div>
+              <div class="fa-k-v mavi" id="kpi-dt-bedel" style="font-size:17px;">—</div>
+              <div class="fa-k-alt" id="kpi-dt-bedel-alt">bedelli kayıt</div>
+            </div>
+            <div class="fa-k">
+              <div class="fa-k-et">Kapsanan İl (DT)</div>
+              <div class="fa-k-v mavi" id="kpi-dt-il">—</div>
+              <div class="fa-k-alt">farklı şehir</div>
+            </div>
+            <div class="fa-k">
+              <div class="fa-k-et">Kapsanan Sektör (DT)</div>
+              <div class="fa-k-v" id="kpi-dt-sektor">—</div>
+              <div class="fa-k-alt">farklı kategori</div>
+            </div>
+          </div>
+
+          <!-- MADDE 18: DT dağılım tabloları (İl/Kategori) — Parça 3'te DT Genel Bakış sekmesine taşınacak. -->
           <div id="fa-dt-blok" style="display:none;margin-bottom:16px;"></div>
 
           <!-- Sözleşme risk şeridi — YALNIZ fesih/tasfiye varsa açılır (tam sayımdan) -->
@@ -1030,6 +1071,7 @@
     $('kpi-kazanilan').textContent = num(gosterAdet);
     $('kpi-il').textContent        = num(iller.size);
     $('kpi-sektor').textContent    = num(katlar.size);
+    $('kpi-ihale-bedel').textContent = toplamBedel ? paraTam(toplamBedel) : '—';   // yeni: Toplam İhale Bedeli kartı
     $('kpi-kazanilan-alt').textContent = toplamBedel
       ? paraTam(toplamBedel) + (ORNEKLEM_KESIK ? ` (son ${num(kayitSayisi)} kayıt, yalnız ihaleler)` : ' (yalnız ihaleler)')
       : 'EKAP ihale sonuç kaydı';
@@ -1108,37 +1150,39 @@
 
   // ── MADDE 18: firmanın DOĞRUDAN TEMİN kazanımları (firma_dt_ozet) — ihale evreninden AYRI ──
   async function dtBlokYukle(firmaAd){
-    const el = $('fa-dt-blok'); if(!el || !firmaAd) return;
-    el.style.display = 'none';
+    const el = $('fa-dt-blok'), kpiRow = $('fa-dt-kpi');
+    if(el) el.style.display = 'none';
+    if(kpiRow) kpiRow.style.display = 'none';
+    if(!firmaAd) return;
     try{
       const { data, error } = await sb.rpc('firma_dt_ozet', { p_firma_ad: firmaAd });
       if(error) throw error;
       const d = data || {};
       const n = Number(d.dt_sayisi) || 0;
       DT_SAYISI = n;                                 // "Katıldığı DT" sekmesi sayfalaması bunu kullanır
-      if(!n){ el.style.display = 'none'; return; }   // DT kazanımı yoksa blok hiç açılmaz
+      if(!n) return;                                 // DT kazanımı yoksa satır+blok gizli kalır
+      // ── DT KPI satırı (İhale aynası, 5 kart) ──
+      $('kpi-dt-kayit').textContent     = num(n);
+      $('kpi-dt-kazanilan').textContent = num(n);
+      $('kpi-dt-bedel').textContent     = paraTam(Number(d.toplam_bedel)||0);
+      $('kpi-dt-bedel-alt').textContent = `${num(d.bedelli_sayisi||0)} bedelli · medyan ${d.medyan_bedel!=null?paraTam(Number(d.medyan_bedel)):'—'}`;
+      $('kpi-dt-il').textContent        = num(d.il_sayisi||0);
+      $('kpi-dt-sektor').textContent    = num(d.kategori_sayisi||0);
+      if(kpiRow) kpiRow.style.display = '';
+      // ── DT dağılım tabloları (İl/Kategori) — Parça 3'te DT Genel Bakış sekmesine taşınacak ──
       const satirlar = (list, ikon) => (list||[]).slice(0,6).map(x =>
         `<div class="fa-satir"><span class="sol">${ikon}${esc(x.il || x.kategori)}</span><span class="sag">${num(x.sayi)}</span></div>`
       ).join('') || '<div class="v1-bos">—</div>';
       el.innerHTML = `
-        <div class="v1-kart" style="margin-bottom:0;border:1.5px solid #E8A400;background:#FFFBF0;">
-          <div class="v1-kart-baslik" style="justify-content:space-between;">
-            <span>⚡ Doğrudan Temin Kazanımları
-              <span class="fa-rozet" style="background:#F5E6C0;color:#8A5A00;" title="4734/22 doğrudan temin — ihale evreninden AYRI; ölçek farklı olduğu için ihale rakamlarıyla TOPLANMAZ">yalnız DT</span></span>
-          </div>
-          <div class="fa-kpi" style="margin-top:10px;">
-            <div class="fa-k"><div class="fa-k-et">DT Sözleşme</div><div class="fa-k-v mavi">${num(n)}</div><div class="fa-k-alt">kazanılan doğrudan temin</div></div>
-            <div class="fa-k"><div class="fa-k-et">Toplam DT Bedeli</div><div class="fa-k-v" style="font-size:17px;">${paraTam(Number(d.toplam_bedel)||0)}</div><div class="fa-k-alt">${num(d.bedelli_sayisi||0)} bedelli kayıt</div></div>
-            <div class="fa-k"><div class="fa-k-et">Medyan DT Bedeli</div><div class="fa-k-v mavi">${d.medyan_bedel!=null?paraTam(Number(d.medyan_bedel)):'—'}</div><div class="fa-k-alt">tipik DT büyüklüğü</div></div>
-          </div>
-          <div class="fa-ikili" style="margin-top:12px;">
-            <div><div class="v1-kart-baslik" style="font-size:13px;">DT — İl Dağılımı</div>${satirlar(d.iller,'📍 ')}</div>
-            <div><div class="v1-kart-baslik" style="font-size:13px;">DT — Kategori Dağılımı</div>${satirlar(d.kategoriler,'')}</div>
+        <div class="v1-kart" style="margin-bottom:0;border:1px solid #EFE3C4;background:#FFFBF0;">
+          <div class="fa-ikili">
+            <div><div class="v1-kart-baslik" style="font-size:13px;">⚡ DT — İl Dağılımı</div>${satirlar(d.iller,'📍 ')}</div>
+            <div><div class="v1-kart-baslik" style="font-size:13px;">⚡ DT — Kategori Dağılımı</div>${satirlar(d.kategoriler,'')}</div>
           </div>
           <div style="font-size:11px;color:var(--v1-muted);margin-top:10px;">Eşleşme firma adına göre (normalize) yapılır — resmî VKN doğrulaması değildir.</div>
         </div>`;
       el.style.display = '';
-    }catch(_){ el.style.display = 'none'; }
+    }catch(_){ if(el) el.style.display = 'none'; if(kpiRow) kpiRow.style.display = 'none'; }
   }
 
   function firmaIstatistikGoster(rows){
