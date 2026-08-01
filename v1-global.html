@@ -216,6 +216,19 @@
     return _yayindaProbe;
   }
 
+  // 26-17: kaynak (UNGM/TED) ülke adlarının çoğu Türkçe; birkaçı İngilizce sızıyor.
+  // Kalıcı çözüm scraper normalizasyonu; burada görünen İngilizce adlar için hafif eşleme.
+  const ULKE_TR = {
+    'Palestine, State of':'Filistin', 'State of Palestine':'Filistin', 'Palestine':'Filistin',
+    'Syrian Arab Republic':'Suriye', "Lao People's Democratic Republic":'Laos',
+    'Viet Nam':'Vietnam', 'Russian Federation':'Rusya', 'Republic of Korea':'Güney Kore',
+    'Iran (Islamic Republic of)':'İran', 'Bolivia (Plurinational State of)':'Bolivya',
+    'Venezuela (Bolivarian Republic of)':'Venezuela', 'Tanzania, United Republic of':'Tanzanya',
+    'Moldova, Republic of':'Moldova', 'Congo, Democratic Republic of the':'Kongo (DC)',
+    "Côte d'Ivoire":'Fildişi Sahili', 'Türkiye':'Türkiye', 'Turkey':'Türkiye'
+  };
+  const ulkeAd=(u)=> (u && ULKE_TR[u]) ? ULKE_TR[u] : (u||'—');
+
   function sorgu(sayimIcin,yayindaVar){
     let q=sb.from('uluslararasi_ihaleler').select(
       sayimIcin?'id':'id,baslik,ulke,ulke_kodu,kategori,tur,tahmini_bedel,para_birimi,son_teklif_tarihi,orijinal_url,kaynak',
@@ -264,7 +277,7 @@
           <td class="v1-t-tarih">${t?t.toLocaleDateString('tr-TR'):'—'}${g!=null&&g>=0?`<br><span class="kalan">Son ${g} gün</span>`:''}</td>
           <td><a class="v1-t-ad" href="${esc(r.orijinal_url||'#')}" target="_blank" rel="noopener">${esc(r.baslik||'—')}</a>
             <div class="v1-t-ikn" style="margin-top:4px;">${kaynakRozet(r.kaynak)}${bedel?esc(bedel):''}</div></td>
-          <td><span class="v1-bayrak">${esc(r.ulke||'—')}</span></td>
+          <td><span class="v1-bayrak">${esc(ulkeAd(r.ulke))}</span></td>
           <td style="font-size:12.5px;color:var(--v1-metin-2);">${esc(r.kategori||'—')}</td>
           <td style="text-align:right;">${r.orijinal_url?`<a class="v1-yuvarlak-btn" style="text-decoration:none;" href="${esc(r.orijinal_url)}" target="_blank" rel="noopener" title="Kaynak ilan">
             <svg viewBox="0 0 24 24" fill="currentColor"><path d="M14 3v2h3.6l-9.3 9.3 1.4 1.4L19 6.4V10h2V3h-7Z"/><path d="M5 5h5V3H3v18h18v-7h-2v5H5V5Z"/></svg></a>`:''}</td></tr>`;
@@ -308,7 +321,7 @@
     const su=document.getElementById('f-ulke'), sk=document.getElementById('f-kategori');
     const tr=(a,b)=>a.localeCompare(b,'tr');
     if(su) [...new Set(u)].filter(Boolean).sort(tr)
-      .forEach(x=>su.insertAdjacentHTML('beforeend',`<option>${esc(x)}</option>`));
+      .forEach(x=>su.insertAdjacentHTML('beforeend',`<option value="${esc(x)}">${esc(ulkeAd(x))}</option>`));
     if(sk) [...new Set(k)].filter(Boolean).sort(tr)
       .forEach(x=>sk.insertAdjacentHTML('beforeend',`<option>${esc(x)}</option>`));
   }

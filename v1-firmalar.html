@@ -389,8 +389,11 @@
       if(error) throw error;
       if(!data||!data.length){ tb.innerHTML=`<tr><td colspan="${KS}" class="v1-bos">Sonuç bulunamadı.</td></tr>`; bosalt(); return; }
 
+      // 26-29: ilAdet = ilin TOPLAM firma sayısı (segment/aramadan bağımsız). Bir segment ya da
+      //        arama daraltması varken "N firma kayıtlı" YANILTICI → yalnız filtresizken göster.
+      const daraltma = !!(segment || q);
       const kapsam = il
-        ? `${esc(il)} · <strong>${num(ilAdet.get(il)||0)}</strong> firma kayıtlı`
+        ? (daraltma ? `${esc(il)}` : `${esc(il)} · <strong>${num(ilAdet.get(il)||0)}</strong> firma kayıtlı`)
         : 'Türkiye geneli';
       const notlar=[];
       if(cfg.bosOlabilir) notlar.push(`${esc(cfg.ad)} verisi olmayan firmalar bu sıralamada listelenmez`);
@@ -404,7 +407,7 @@
         if(uyeMi){
           const b=r.buyume_yuzde;
           const bHucre=(b==null)
-            ? '<td class="v1-sayi" style="color:var(--v1-muted);">—</td>'
+            ? '<td class="v1-sayi" style="color:var(--v1-muted);" title="Önceki 12 ayda kazanç kaydı yok — büyüme kıyaslaması yapılamıyor">—</td>'
             : `<td class="v1-sayi ${Number(b)>=0?'v1-buyume-poz':'v1-buyume-neg'}"`+
               ` title="Önceki 12 ay: ${esc(tl(r.ciro_onceki_12ay))}">`+
               `${Number(b)>=0?'+':''}${Number(b).toLocaleString('tr-TR',{maximumFractionDigits:1})}%</td>`;

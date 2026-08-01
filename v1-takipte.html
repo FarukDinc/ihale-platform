@@ -263,6 +263,15 @@
         <div class="v1-tk-govde" id="v1-firma-liste"><div class="v1-bos">Yükleniyor…</div></div>
       </div>
 
+      <!-- TAKİP EDİLEN SEKTÖRLER -->
+      <div class="v1-tk-kart">
+        <div class="v1-tk-bas">
+          <div class="v1-tk-bas-ad">🏭 Takip Ettiğim Sektörler</div>
+          <span class="v1-tablo-sayi" id="v1-sektor-say"></span>
+        </div>
+        <div class="v1-tk-govde" id="v1-sektor-liste"><div class="v1-bos">Yükleniyor…</div></div>
+      </div>
+
     </div>
   </div>
 </div>
@@ -683,14 +692,16 @@
   }
 
   async function kurumFirmaYukle() {
-    const kEl = $('v1-kurum-liste'), fEl = $('v1-firma-liste');
-    const kSay = $('v1-kurum-say'), fSay = $('v1-firma-say');
+    const kEl = $('v1-kurum-liste'), fEl = $('v1-firma-liste'), sEl = $('v1-sektor-liste');
+    const kSay = $('v1-kurum-say'), fSay = $('v1-firma-say'), sSay = $('v1-sektor-say');
 
     if (!uyeMi) {
       kEl.innerHTML = KILIT('Kurum takibi');
       fEl.innerHTML = KILIT('Rakip firma takibi');
+      if (sEl) sEl.innerHTML = KILIT('Sektör takibi');
       if (kSay) kSay.textContent = '';
       if (fSay) fSay.textContent = '';
+      if (sSay) sSay.textContent = '';
       return;
     }
 
@@ -735,11 +746,30 @@
       fEl.innerHTML = kilitMi(e) ? KILIT('Rakip firma takibi')
         : '<div class="v1-bos">Firma takipleri şu an alınamadı. Lütfen birkaç saniye sonra sayfayı yenileyin.</div>';
     }
+
+    // Sektörler — takip_sektorler.sektor (KANONİK kategori; v1-sektorler / bildirim tercihleri yazar).
+    if (sEl) try {
+      const { data, error } = await sb.from('takip_sektorler').select('sektor').eq('kullanici_id', uid);
+      if (error) throw error;
+      if (!data || !data.length) {
+        sEl.innerHTML = `<div class="v1-bos">Henüz bir sektör takip etmiyorsunuz.
+          <a href="v1-sektorler">Sektörler</a> sayfasında bir sektörü takibe alarak ekleyin.</div>`;
+        if (sSay) sSay.textContent = '';
+      } else {
+        if (sSay) sSay.textContent = `${num(data.length)} sektör`;
+        sEl.innerHTML = data.map(s =>
+          takipSatiri(s.sektor, 'v1-ihaleler?kategori=' + encodeURIComponent(s.sektor), 'takip_sektorler')).join('');
+      }
+    } catch (e) {
+      console.error('v1-takipte sektör takipleri hatası:', e);
+      sEl.innerHTML = kilitMi(e) ? KILIT('Sektör takibi')
+        : '<div class="v1-bos">Sektör takipleri şu an alınamadı. Lütfen birkaç saniye sonra sayfayı yenileyin.</div>';
+    }
   }
 
   async function takipSil(tablo, ad, btn) {
     if (!uyeMi) return;
-    const kolon = tablo === 'takip_idareler' ? 'idare_ad' : 'firma_ad';
+    const kolon = tablo === 'takip_idareler' ? 'idare_ad' : (tablo === 'takip_sektorler' ? 'sektor' : 'firma_ad');
     try {
       const { error } = await sb.from(tablo).delete().eq('kullanici_id', uid).eq(kolon, ad);
       if (error) throw error;
@@ -755,8 +785,9 @@
     if (satir) satir.remove();
     if (kap) {
       const kalan = kap.querySelectorAll('[data-tk-satir]').length;
-      const sayEl = tablo === 'takip_idareler' ? $('v1-kurum-say') : $('v1-firma-say');
-      if (sayEl) sayEl.textContent = kalan ? `${num(kalan)} ${tablo === 'takip_idareler' ? 'kurum' : 'firma'}` : '';
+      const sayEl = tablo === 'takip_idareler' ? $('v1-kurum-say') : (tablo === 'takip_sektorler' ? $('v1-sektor-say') : $('v1-firma-say'));
+      const birim = tablo === 'takip_idareler' ? 'kurum' : (tablo === 'takip_sektorler' ? 'sektör' : 'firma');
+      if (sayEl) sayEl.textContent = kalan ? `${num(kalan)} ${birim}` : '';
       if (!kalan) kurumFirmaYukle();
     }
   }
