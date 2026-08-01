@@ -506,6 +506,15 @@ Durum: ✅ bitti · ⏳ sıradaki · 📋 planlandı (FE=frontend/pull · DB=mig
 - [26-33] ⏳ FE — Büyüme kolonu tutarsız (₺0 son-12 → "—" vs "-100%").
 - [26-34] 📋 DB — Kategori misassignment (düzeltme ilanı/irtifak "İnşaat"a) = sınıflandırıcı kalitesi.
 
+### İLERLEME (2 Ağu)
+**✅ FE batch-1 (commit a039532, CANLI):** 26-1 (Excel export kaldırıldı) · 26-4/26-11 (arama başlık+tarih fallback) ·
+26-13 (İhalelerim→E-Satınalma dünyası) · 26-14 (v2 stilize modal) · 26-15 (Dokümanlar) · 26-30 (maliyet çip ₺) · 26-32 (Kurum Ağacı başlık).
+**✅ FE batch-2 (commit 8dfb4f1, CANLI):** 26-12 (Takibim sektör bölümü) · 26-17 (global ülke TR) · 26-29 (firmalar segment sayaç) · 26-33 (büyüme tooltip).
+**⏸️ Bug DEĞİL / kaynak kısıtı:** 26-10 (Kurul liste'sinde sonuç yayımlanmıyor — kod yorumu doğrular) · 26-33 (semantik doğru, tooltip eklendi).
+**🔬 DB teşhis bekliyor** (`backend/qa_diagnostics.sql` — read-only, kullanıcı çalıştırıp çıktı verecek):
+26-2, 26-3, 26-21, 26-5, 26-6, 26-8, 26-24, 26-28, 26-23 → çıktıya göre kesin migration.
+**⏭️ Ayrı pas:** 26-22 (uyum skoru firma-profili fallback = MADDE 6 eşleşme motoru ailesi) · 26-25 (usul analitik normalizasyon) · 26-7 (=UV-4) · 26-34 (=sınıflandırıcı) · 26-16 (kozmetik).
+
 # UZUN VADE (ayrı seri — "uzun vade" dendiğinde bu liste çıkarılır)
 
 ## UV-1 — AI Teklif/Fiyat Asistanı revizyonu: teknik şartname okuması 📋
