@@ -1,16 +1,16 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="tr">
 <head>
   <meta charset="UTF-8" />
-  <meta name="author" content="Ömer Faruk Dinç">
-  <meta name="copyright" content="© 2026 Ömer Faruk Dinç — İhaleGlobal">
+  <meta name="author" content="Ã–mer Faruk DinÃ§">
+  <meta name="copyright" content="Â© 2026 Ã–mer Faruk DinÃ§ â€” Ä°haleGlobal">
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Firma Segmentleri — İhaleGlobal</title>
+  <title>Firma Segmentleri â€” Ä°haleGlobal</title>
   <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=4" />
   <link rel="icon" type="image/png" sizes="48x48" href="/favicon-48.png?v=4" />
   <link rel="apple-touch-icon" sizes="180x180" href="/favicon-180.png?v=4" />
   <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/v1.css?v=7" />
+  <link rel="stylesheet" href="css/v1.css?v=15" />
   <style>
     .v1-sayfa-baslik { font-size:22px; font-weight:800; color:var(--v1-lacivert); margin-bottom:4px; }
     .v1-sayfa-alt { font-size:13.5px; color:var(--v1-muted); margin-bottom:16px; }
@@ -26,18 +26,18 @@
       padding:14px 18px; font-size:13px; line-height:1.65; color:var(--v1-metin); margin-bottom:16px; }
     .v1-bilgi-serit strong { color:var(--v1-lacivert); }
 
-    /* Önizleme uyarısı — krem şerit (v1 paletinde uyarı tonu) */
+    /* Ã–nizleme uyarÄ±sÄ± â€” krem ÅŸerit (v1 paletinde uyarÄ± tonu) */
     .v1-onizleme { background:#FFF8E6; border:1px solid #F0DFA8; border-radius:12px;
       padding:12px 16px; font-size:12.5px; line-height:1.6; color:var(--v1-metin); margin-bottom:16px; }
     .v1-onizleme strong { color:var(--v1-lacivert); }
 
-    /* Üyelik kilidi */
+    /* Ãœyelik kilidi */
     .v1-kilit-kutu { background:#fff; border:1px solid var(--v1-cizgi); border-radius:var(--v1-radius-lg);
       box-shadow:var(--v1-golge); padding:56px 22px; text-align:center; font-size:14.5px;
       color:var(--v1-metin); line-height:1.8; }
     .v1-kilit-kutu a { font-weight:700; }
 
-    /* Segment kartları */
+    /* Segment kartlarÄ± */
     .v1-seg-grid { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:18px; }
     @media (max-width:1000px){ .v1-seg-grid{ grid-template-columns:repeat(2,1fr); } }
     @media (max-width:560px){ .v1-seg-grid{ grid-template-columns:1fr; } }
@@ -56,7 +56,7 @@
     .v1-seg-etiket { font-size:13px; font-weight:700; color:var(--v1-lacivert); margin-top:3px; }
     .v1-seg-aciklama { font-size:11px; color:var(--v1-muted); margin-top:4px; line-height:1.45; }
 
-    /* Tablo yardımcıları */
+    /* Tablo yardÄ±mcÄ±larÄ± */
     .v1-tablo td.sayi, .v1-tablo th.sayi { text-align:right; font-variant-numeric:tabular-nums; }
     .v1-pencere-satir { display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-top:9px; }
     .v1-pencere { display:inline-flex; flex-direction:column; background:#fff; border:1.5px solid var(--v1-mavi);
@@ -85,82 +85,82 @@
     <div class="v1-govde">
 
       <div class="v1-ust-bar">
-        <a class="v1-geri" href="v1-firmalar">← Firmalar</a>
+        <a class="v1-geri" href="v1-firmalar">â† Firmalar</a>
       </div>
 
       <div class="v1-sayfa-baslik">Firma Segmentleri</div>
       <div class="v1-sayfa-alt">
-        Kamu ihale kazanç geçmişinden türetilen firma segmentleri — yükselenler, sönenler, yeni oyuncular ve dev kazananlar.
+        Kamu ihale kazanÃ§ geÃ§miÅŸinden tÃ¼retilen firma segmentleri â€” yÃ¼kselenler, sÃ¶nenler, yeni oyuncular ve dev kazananlar.
       </div>
 
       <div class="v1-bilgi-serit">
-        ⭐ <strong>Segmentler nasıl hesaplanır?</strong> Firmaların kamu ihalesi kazanç geçmişi (sonuç arşivi) üzerinden
-        <strong>iki pencere karşılaştırılır</strong>:
+        â­ <strong>Segmentler nasÄ±l hesaplanÄ±r?</strong> FirmalarÄ±n kamu ihalesi kazanÃ§ geÃ§miÅŸi (sonuÃ§ arÅŸivi) Ã¼zerinden
+        <strong>iki pencere karÅŸÄ±laÅŸtÄ±rÄ±lÄ±r</strong>:
         <div class="v1-pencere-satir">
-          <span class="v1-pencere"><b>Son 12 ay</b><i id="v1-pencere-son">hesaplanıyor…</i></span>
-          <span class="v1-pencere-ok">↔ kıyaslanır ↔</span>
-          <span class="v1-pencere"><b>Önceki 12 ay</b><i id="v1-pencere-onceki">hesaplanıyor…</i></span>
+          <span class="v1-pencere"><b>Son 12 ay</b><i id="v1-pencere-son">hesaplanÄ±yorâ€¦</i></span>
+          <span class="v1-pencere-ok">â†” kÄ±yaslanÄ±r â†”</span>
+          <span class="v1-pencere"><b>Ã–nceki 12 ay</b><i id="v1-pencere-onceki">hesaplanÄ±yorâ€¦</i></span>
         </div>
         <div style="margin-top:8px;">
-          ⏱️ Pencerelerin bitiş noktası <strong>bugünün tarihi değil</strong>, arşivdeki
-          <strong id="v1-ref-tarih">en güncel sonuç tarihi</strong>dir — böylece henüz işlenmemiş
-          son günler sahte düşüş üretmez.
+          â±ï¸ Pencerelerin bitiÅŸ noktasÄ± <strong>bugÃ¼nÃ¼n tarihi deÄŸil</strong>, arÅŸivdeki
+          <strong id="v1-ref-tarih">en gÃ¼ncel sonuÃ§ tarihi</strong>dir â€” bÃ¶ylece henÃ¼z iÅŸlenmemiÅŸ
+          son gÃ¼nler sahte dÃ¼ÅŸÃ¼ÅŸ Ã¼retmez.
         </div>
         <div style="margin-top:8px;">
-          📐 <strong>Eşikler:</strong>
-          <span class="v1-esik">Parlayan: <b>≥2 kat</b> artış <em>(son 12 ay ≥ 5 Mn ₺)</em></span>
-          <span class="v1-esik">Sönen: <b>≥%70</b> düşüş <em>(önceki 12 ay ≥ 5 Mn ₺)</em></span>
-          <span class="v1-esik">İlk Kez: toplam <b>≥ 100 B ₺</b></span>
-          <span class="v1-esik">150Mn+: kümülatif <b>≥ 150 Mn ₺</b></span>
+          ğŸ“ <strong>EÅŸikler:</strong>
+          <span class="v1-esik">Parlayan: <b>â‰¥2 kat</b> artÄ±ÅŸ <em>(son 12 ay â‰¥ 5 Mn â‚º)</em></span>
+          <span class="v1-esik">SÃ¶nen: <b>â‰¥%70</b> dÃ¼ÅŸÃ¼ÅŸ <em>(Ã¶nceki 12 ay â‰¥ 5 Mn â‚º)</em></span>
+          <span class="v1-esik">Ä°lk Kez: toplam <b>â‰¥ 100 B â‚º</b></span>
+          <span class="v1-esik">150Mn+: kÃ¼mÃ¼latif <b>â‰¥ 150 Mn â‚º</b></span>
         </div>
         <div style="margin-top:8px;color:var(--v1-muted);">
-          Ek bir veri kazıması yapılmaz; tüm rakamlar sistemdeki mevcut sonuç kayıtlarından hesaplanır.
+          Ek bir veri kazÄ±masÄ± yapÄ±lmaz; tÃ¼m rakamlar sistemdeki mevcut sonuÃ§ kayÄ±tlarÄ±ndan hesaplanÄ±r.
         </div>
       </div>
 
       <div id="v1-onizleme" class="v1-onizleme" style="display:none;">
-        ⚠️ <strong>Önizleme:</strong> Sonuç arşivi henüz tamamlanıyor (%<span id="v1-onizleme-yuzde">?</span>).
-        Segment sayıları veri tamamlanınca kesinleşecek — özellikle “İlk Kez Kazananlar” bu aşamada olduğundan fazla görünebilir.
+        âš ï¸ <strong>Ã–nizleme:</strong> SonuÃ§ arÅŸivi henÃ¼z tamamlanÄ±yor (%<span id="v1-onizleme-yuzde">?</span>).
+        Segment sayÄ±larÄ± veri tamamlanÄ±nca kesinleÅŸecek â€” Ã¶zellikle â€œÄ°lk Kez Kazananlarâ€ bu aÅŸamada olduÄŸundan fazla gÃ¶rÃ¼nebilir.
       </div>
 
       <div id="v1-kilit" class="v1-kilit-kutu" style="display:none;">
-        🔒 Firma segmentleri üyelere özeldir.<br><br>
-        <a href="login">Giriş yapın</a> veya <a href="fiyatlandirma_odeme_bolumu">üye olun</a> →
+        ğŸ”’ Firma segmentleri Ã¼yelere Ã¶zeldir.<br><br>
+        <a href="login">GiriÅŸ yapÄ±n</a> veya <a href="fiyatlandirma_odeme_bolumu">Ã¼ye olun</a> â†’
       </div>
 
       <div id="v1-icerik" style="display:none;">
         <div class="v1-seg-grid" id="v1-seg-kartlar">
           <div class="v1-seg aktif" role="button" tabindex="0" data-seg="parlayan">
-            <div class="v1-seg-emoji">🌟</div>
-            <div class="v1-seg-sayi" id="v1-c-parlayan">…</div>
-            <div class="v1-seg-etiket">Parlayan Yıldızlar</div>
-            <div class="v1-seg-aciklama">Kazancı önceki 12 aya göre <b>en az 2 katına</b> çıkan firmalar</div>
+            <div class="v1-seg-emoji">ğŸŒŸ</div>
+            <div class="v1-seg-sayi" id="v1-c-parlayan">â€¦</div>
+            <div class="v1-seg-etiket">Parlayan YÄ±ldÄ±zlar</div>
+            <div class="v1-seg-aciklama">KazancÄ± Ã¶nceki 12 aya gÃ¶re <b>en az 2 katÄ±na</b> Ã§Ä±kan firmalar</div>
           </div>
           <div class="v1-seg" role="button" tabindex="0" data-seg="ilk_kez">
-            <div class="v1-seg-emoji">🆕</div>
-            <div class="v1-seg-sayi" id="v1-c-ilk_kez">…</div>
-            <div class="v1-seg-etiket">İlk Kez Kazananlar</div>
-            <div class="v1-seg-aciklama">İlk kamu ihalesini <b>son 12 ayda</b> kazanan firmalar</div>
+            <div class="v1-seg-emoji">ğŸ†•</div>
+            <div class="v1-seg-sayi" id="v1-c-ilk_kez">â€¦</div>
+            <div class="v1-seg-etiket">Ä°lk Kez Kazananlar</div>
+            <div class="v1-seg-aciklama">Ä°lk kamu ihalesini <b>son 12 ayda</b> kazanan firmalar</div>
           </div>
           <div class="v1-seg" role="button" tabindex="0" data-seg="150mn">
-            <div class="v1-seg-emoji">💰</div>
-            <div class="v1-seg-sayi" id="v1-c-150mn">…</div>
+            <div class="v1-seg-emoji">ğŸ’°</div>
+            <div class="v1-seg-sayi" id="v1-c-150mn">â€¦</div>
             <div class="v1-seg-etiket">150Mn+ Kazananlar</div>
-            <div class="v1-seg-aciklama">Tüm zamanlarda toplam kazancı <b>150 Mn ₺</b>'yi aşan firmalar</div>
+            <div class="v1-seg-aciklama">TÃ¼m zamanlarda toplam kazancÄ± <b>150 Mn â‚º</b>'yi aÅŸan firmalar</div>
           </div>
           <div class="v1-seg" role="button" tabindex="0" data-seg="sonen">
-            <div class="v1-seg-emoji">📉</div>
-            <div class="v1-seg-sayi" id="v1-c-sonen">…</div>
-            <div class="v1-seg-etiket">Sönen Yıldızlar</div>
-            <div class="v1-seg-aciklama">Kazancı önceki 12 aya göre <b>%70+ düşen</b> firmalar</div>
+            <div class="v1-seg-emoji">ğŸ“‰</div>
+            <div class="v1-seg-sayi" id="v1-c-sonen">â€¦</div>
+            <div class="v1-seg-etiket">SÃ¶nen YÄ±ldÄ±zlar</div>
+            <div class="v1-seg-aciklama">KazancÄ± Ã¶nceki 12 aya gÃ¶re <b>%70+ dÃ¼ÅŸen</b> firmalar</div>
           </div>
         </div>
 
         <div class="v1-kart" style="padding:18px 20px;">
           <div class="v1-tablo-bas">
             <div>
-              <div style="font-size:17px;font-weight:800;color:var(--v1-lacivert);" id="v1-liste-baslik">Parlayan Yıldızlar</div>
-              <div class="v1-tablo-sayi" id="v1-sayi">Yükleniyor…</div>
+              <div style="font-size:17px;font-weight:800;color:var(--v1-lacivert);" id="v1-liste-baslik">Parlayan YÄ±ldÄ±zlar</div>
+              <div class="v1-tablo-sayi" id="v1-sayi">YÃ¼kleniyorâ€¦</div>
               <div class="v1-tazelik" id="v1-tazelik"></div>
             </div>
           </div>
@@ -168,7 +168,7 @@
             <table class="v1-tablo">
               <thead id="v1-thead"></thead>
               <tbody id="v1-tbody">
-                <tr><td colspan="6" class="v1-bos">Yükleniyor…</td></tr>
+                <tr><td colspan="6" class="v1-bos">YÃ¼kleniyorâ€¦</td></tr>
               </tbody>
             </table>
           </div>
@@ -181,7 +181,7 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-<script src="js/v1-kabuk.js?v=14"></script>
+<script src="js/v1-kabuk.js?v=15"></script>
 <script>
 (() => {
   const SB_URL="https://ihaleglobal.com", SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzg0MzA3MTU4LCJleHAiOjE5NDE5ODcxNTh9.CjNKulvirotDD_y2oO2QKgo0kbqYvL0jUSV1RiDMoso";
@@ -189,25 +189,25 @@
 
   const esc=(s)=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
   const num=(n)=>(Number(n)||0).toLocaleString('tr-TR');
-  // v2 ile aynı biçim: 1 Mn ve üzeri "x,y Mn ₺", altı tam sayı "N ₺"
-  const tl=(v)=>v==null?'—':(Number(v)/1e6>=1
-      ? (Number(v)/1e6).toLocaleString('tr-TR',{maximumFractionDigits:1})+' Mn ₺'
-      : Number(v).toLocaleString('tr-TR',{maximumFractionDigits:0})+' ₺');
-  const ayTarih=(t)=>t?new Date(t).toLocaleDateString('tr-TR',{year:'numeric',month:'short'}):'—';
+  // v2 ile aynÄ± biÃ§im: 1 Mn ve Ã¼zeri "x,y Mn â‚º", altÄ± tam sayÄ± "N â‚º"
+  const tl=(v)=>v==null?'â€”':(Number(v)/1e6>=1
+      ? (Number(v)/1e6).toLocaleString('tr-TR',{maximumFractionDigits:1})+' Mn â‚º'
+      : Number(v).toLocaleString('tr-TR',{maximumFractionDigits:0})+' â‚º');
+  const ayTarih=(t)=>t?new Date(t).toLocaleDateString('tr-TR',{year:'numeric',month:'short'}):'â€”';
   const tamTarih=(t)=>t?new Date(t).toLocaleDateString('tr-TR',{year:'numeric',month:'long',day:'numeric'}):'';
 
-  // ⚠️ Sayaç RPC'si '150mn' segmentini 'yuz50mn' anahtarıyla döner (migration_firma_segmentleri.sql)
+  // âš ï¸ SayaÃ§ RPC'si '150mn' segmentini 'yuz50mn' anahtarÄ±yla dÃ¶ner (migration_firma_segmentleri.sql)
   const SEGMENTLER = {
-    // ⚠️ buyume:true olan segmentlerde İKİ pencere de gösterilir — yoksa kullanıcı
-    //    "neyle kıyaslandığını" göremiyor (Sönen'de yalnız 'önceki 12 ay' görünüyordu).
-    parlayan: { emoji:'🌟', ad:'Parlayan Yıldızlar', sayacAnahtar:'parlayan',
-                ciroBaslik:'Son 12 ay kazancı',     ciroAlan:'ciro_son_12ay',    buyume:true,  tarih:false },
-    ilk_kez:  { emoji:'🆕', ad:'İlk Kez Kazananlar', sayacAnahtar:'ilk_kez',
-                ciroBaslik:'Toplam kazanç',          ciroAlan:'toplam_ciro',      buyume:false, tarih:true  },
-    '150mn':  { emoji:'💰', ad:'150Mn+ Kazananlar',  sayacAnahtar:'yuz50mn',
-                ciroBaslik:'Toplam kazanç',          ciroAlan:'toplam_ciro',      buyume:false, tarih:false },
-    sonen:    { emoji:'📉', ad:'Sönen Yıldızlar',    sayacAnahtar:'sonen',
-                ciroBaslik:'Önceki 12 ay kazancı',   ciroAlan:'ciro_onceki_12ay', buyume:true,  tarih:false },
+    // âš ï¸ buyume:true olan segmentlerde Ä°KÄ° pencere de gÃ¶sterilir â€” yoksa kullanÄ±cÄ±
+    //    "neyle kÄ±yaslandÄ±ÄŸÄ±nÄ±" gÃ¶remiyor (SÃ¶nen'de yalnÄ±z 'Ã¶nceki 12 ay' gÃ¶rÃ¼nÃ¼yordu).
+    parlayan: { emoji:'ğŸŒŸ', ad:'Parlayan YÄ±ldÄ±zlar', sayacAnahtar:'parlayan',
+                ciroBaslik:'Son 12 ay kazancÄ±',     ciroAlan:'ciro_son_12ay',    buyume:true,  tarih:false },
+    ilk_kez:  { emoji:'ğŸ†•', ad:'Ä°lk Kez Kazananlar', sayacAnahtar:'ilk_kez',
+                ciroBaslik:'Toplam kazanÃ§',          ciroAlan:'toplam_ciro',      buyume:false, tarih:true  },
+    '150mn':  { emoji:'ğŸ’°', ad:'150Mn+ Kazananlar',  sayacAnahtar:'yuz50mn',
+                ciroBaslik:'Toplam kazanÃ§',          ciroAlan:'toplam_ciro',      buyume:false, tarih:false },
+    sonen:    { emoji:'ğŸ“‰', ad:'SÃ¶nen YÄ±ldÄ±zlar',    sayacAnahtar:'sonen',
+                ciroBaslik:'Ã–nceki 12 ay kazancÄ±',   ciroAlan:'ciro_onceki_12ay', buyume:true,  tarih:false },
   };
   const SAYFA=50;
   let aktifSeg='parlayan', sayfa=0, sonToplam=0, kilitli=false;
@@ -221,9 +221,9 @@
     document.getElementById('v1-kilit').style.display='block';
   }
 
-  // ⚠️ Paket rozeti YARIŞI: v1-kabuk.js topbar'ı DOMContentLoaded'da monte eder, bu
-  // script ise getSession() çözülür çözülmez çalışır. Erken v1PaketYaz() çağrısı
-  // #v1-paket-ad henüz DOM'da olmadığı için SESSİZCE kaybolur (rozet '—' kalır).
+  // âš ï¸ Paket rozeti YARIÅI: v1-kabuk.js topbar'Ä± DOMContentLoaded'da monte eder, bu
+  // script ise getSession() Ã§Ã¶zÃ¼lÃ¼r Ã§Ã¶zÃ¼lmez Ã§alÄ±ÅŸÄ±r. Erken v1PaketYaz() Ã§aÄŸrÄ±sÄ±
+  // #v1-paket-ad henÃ¼z DOM'da olmadÄ±ÄŸÄ± iÃ§in SESSÄ°ZCE kaybolur (rozet 'â€”' kalÄ±r).
   function paketYaz(ad){
     let kalan=60;                                   // en fazla ~3 sn dene
     const dene=()=>{
@@ -233,28 +233,28 @@
     dene();
   }
 
-  // v1 kabuğunda kaydırılan kap .v1-main (height:100vh; overflow-y:auto) —
-  // window.scrollTo ETKİSİZDİR (body zaten viewport boyunda).
-  // NOT: kapsayıcıda behavior:'smooth' bazı ortamlarda sessizce yok sayılıyor —
-  // scrollTop'a doğrudan yazmak tek güvenilir yol.
+  // v1 kabuÄŸunda kaydÄ±rÄ±lan kap .v1-main (height:100vh; overflow-y:auto) â€”
+  // window.scrollTo ETKÄ°SÄ°ZDÄ°R (body zaten viewport boyunda).
+  // NOT: kapsayÄ±cÄ±da behavior:'smooth' bazÄ± ortamlarda sessizce yok sayÄ±lÄ±yor â€”
+  // scrollTop'a doÄŸrudan yazmak tek gÃ¼venilir yol.
   function basaKaydir(){
     const m=document.querySelector('.v1-main');
     if(m) m.scrollTop=0;
     window.scrollTo(0,0);
   }
-  // Sayfa değiştir: liste "Yükleniyor…"e düşünce içerik kısalır ve tarayıcının
-  // kaydırma çıpası eski konumu geri getirir → render BİTTİKTEN sonra da başa al.
+  // Sayfa deÄŸiÅŸtir: liste "YÃ¼kleniyorâ€¦"e dÃ¼ÅŸÃ¼nce iÃ§erik kÄ±salÄ±r ve tarayÄ±cÄ±nÄ±n
+  // kaydÄ±rma Ã§Ä±pasÄ± eski konumu geri getirir â†’ render BÄ°TTÄ°KTEN sonra da baÅŸa al.
   function sayfaGit(yeni){
     sayfa=yeni; basaKaydir();
     listeGetir().then(basaKaydir, basaKaydir);
   }
 
   /**
-   * KIYAS PENCERELERİNİ SOMUT TARİHLE YAZ.
-   * Çapa `ref_tarih` = arşivdeki en güncel gerçek sonuç tarihi (BUGÜN DEĞİL) — sonuç
-   * backfill'i akarken son günler henüz işlenmemiş olabilir, bugünü çapa alsaydık her
-   * firma sahte düşüş gösterirdi. RPC'de ref_tarih yoksa (migration_segment_pencere.sql
-   * henüz uygulanmadıysa) jenerik metin olduğu gibi kalır — sayfa bozulmaz.
+   * KIYAS PENCERELERÄ°NÄ° SOMUT TARÄ°HLE YAZ.
+   * Ã‡apa `ref_tarih` = arÅŸivdeki en gÃ¼ncel gerÃ§ek sonuÃ§ tarihi (BUGÃœN DEÄÄ°L) â€” sonuÃ§
+   * backfill'i akarken son gÃ¼nler henÃ¼z iÅŸlenmemiÅŸ olabilir, bugÃ¼nÃ¼ Ã§apa alsaydÄ±k her
+   * firma sahte dÃ¼ÅŸÃ¼ÅŸ gÃ¶sterirdi. RPC'de ref_tarih yoksa (migration_segment_pencere.sql
+   * henÃ¼z uygulanmadÄ±ysa) jenerik metin olduÄŸu gibi kalÄ±r â€” sayfa bozulmaz.
    */
   function pencereleriYaz(refTarih){
     if(!refTarih) return;
@@ -265,9 +265,9 @@
     const sonEl=document.getElementById('v1-pencere-son');
     const oncEl=document.getElementById('v1-pencere-onceki');
     const refEl=document.getElementById('v1-ref-tarih');
-    if(sonEl) sonEl.textContent = g(geri(bit,12))+' – '+g(bit);
-    if(oncEl) oncEl.textContent = g(geri(bit,24))+' – '+g(geri(bit,12));
-    if(refEl) refEl.textContent = g(bit)+' (arşivdeki en güncel sonuç)';
+    if(sonEl) sonEl.textContent = g(geri(bit,12))+' â€“ '+g(bit);
+    if(oncEl) oncEl.textContent = g(geri(bit,24))+' â€“ '+g(geri(bit,12));
+    if(refEl) refEl.textContent = g(bit)+' (arÅŸivdeki en gÃ¼ncel sonuÃ§)';
   }
 
   async function sayilariGetir(){
@@ -280,12 +280,12 @@
         if(el) el.textContent=num(d[SEGMENTLER[k].sayacAnahtar]);
       });
       const tz=document.getElementById('v1-tazelik');
-      if(tz) tz.textContent = d.guncellendi ? 'Segmentler son güncelleme: '+tamTarih(d.guncellendi) : '';
+      if(tz) tz.textContent = d.guncellendi ? 'Segmentler son gÃ¼ncelleme: '+tamTarih(d.guncellendi) : '';
       pencereleriYaz(d.ref_tarih);
     }catch(e){
       if(kilitliMi(e)){ kilidiGoster(); return; }
       Object.keys(SEGMENTLER).forEach(k=>{
-        const el=document.getElementById('v1-c-'+k); if(el) el.textContent='—';
+        const el=document.getElementById('v1-c-'+k); if(el) el.textContent='â€”';
       });
     }
   }
@@ -295,28 +295,28 @@
     th.innerHTML='<tr>'+
       '<th style="width:56px;">#</th>'+
       '<th>Firma</th>'+
-      '<th style="width:120px;">İl</th>'+
+      '<th style="width:120px;">Ä°l</th>'+
       (cfg.buyume
-        ? '<th class="sayi" style="width:150px;">Önceki 12 ay</th>'+
+        ? '<th class="sayi" style="width:150px;">Ã–nceki 12 ay</th>'+
           '<th class="sayi" style="width:150px;">Son 12 ay</th>'+
-          '<th class="sayi" style="width:110px;">Değişim</th>'
+          '<th class="sayi" style="width:110px;">DeÄŸiÅŸim</th>'
         : `<th class="sayi" style="width:170px;">${esc(cfg.ciroBaslik)}</th>`)+
-      (cfg.tarih?'<th class="sayi" style="width:140px;">İlk Kazanım</th>'
-                :'<th class="sayi" style="width:110px;">Sözleşme</th>')+
+      (cfg.tarih?'<th class="sayi" style="width:140px;">Ä°lk KazanÄ±m</th>'
+                :'<th class="sayi" style="width:110px;">SÃ¶zleÅŸme</th>')+
       '</tr>';
   }
 
-  function sutunSayisi(cfg){ return 3 + (cfg.buyume ? 3 : 1) + 1; }   // #|Firma|İl + (önceki,son,değişim | tek ciro) + son sütun
+  function sutunSayisi(cfg){ return 3 + (cfg.buyume ? 3 : 1) + 1; }   // #|Firma|Ä°l + (Ã¶nceki,son,deÄŸiÅŸim | tek ciro) + son sÃ¼tun
 
   async function listeGetir(){
-    if(kilitli) return;                             // kilit gösterildiyse ikinci 42501 isteği atma
+    if(kilitli) return;                             // kilit gÃ¶sterildiyse ikinci 42501 isteÄŸi atma
     const cfg=SEGMENTLER[aktifSeg];
     const tb=document.getElementById('v1-tbody');
     const ks=sutunSayisi(cfg);
     basliklariYaz(cfg);
     document.getElementById('v1-liste-baslik').textContent=cfg.emoji+' '+cfg.ad;
-    tb.innerHTML=`<tr><td colspan="${ks}" class="v1-bos">Yükleniyor…</td></tr>`;
-    document.getElementById('v1-sayi').textContent='Yükleniyor…';
+    tb.innerHTML=`<tr><td colspan="${ks}" class="v1-bos">YÃ¼kleniyorâ€¦</td></tr>`;
+    document.getElementById('v1-sayi').textContent='YÃ¼kleniyorâ€¦';
     try{
       const {data,error}=await sb.rpc('firma_segment_listesi',
         { p_segment:aktifSeg, p_limit:SAYFA, p_offset:sayfa*SAYFA });
@@ -326,7 +326,7 @@
       const firmalar=Array.isArray(d.firmalar)?d.firmalar:[];
 
       document.getElementById('v1-sayi').innerHTML = sonToplam
-        ? `Bu segmentte <strong>${num(sonToplam)}</strong> firma var — ${num(firmalar.length)} tanesi listeleniyor`
+        ? `Bu segmentte <strong>${num(sonToplam)}</strong> firma var â€” ${num(firmalar.length)} tanesi listeleniyor`
         : 'Bu segmentte firma bulunmuyor';
 
       if(!firmalar.length){
@@ -337,7 +337,7 @@
 
       tb.innerHTML=firmalar.map((f,i)=>{
         const sira=sayfa*SAYFA+i+1;
-        const ad=f.ad||'—';
+        const ad=f.ad||'â€”';
         const ciroHucre = cfg.buyume
           ? `<td class="sayi" style="color:var(--v1-muted);">${tl(f.ciro_onceki_12ay)}</td>`+
             `<td class="sayi" style="font-weight:700;color:var(--v1-lacivert);">${tl(f.ciro_son_12ay)}</td>`
@@ -346,19 +346,19 @@
         if(cfg.buyume){
           const b=f.buyume_yuzde;
           hucreler += (b==null)
-            ? '<td class="sayi" style="color:var(--v1-muted);">—</td>'
+            ? '<td class="sayi" style="color:var(--v1-muted);">â€”</td>'
             : `<td class="sayi ${Number(b)>=0?'v1-buyume-poz':'v1-buyume-neg'}">${Number(b)>=0?'+':''}${Number(b).toLocaleString('tr-TR',{maximumFractionDigits:1})}%</td>`;
         }
         hucreler += cfg.tarih
           ? `<td class="sayi" style="color:var(--v1-metin-2);">${esc(ayTarih(f.ilk_sozlesme_tarihi))}</td>`
-          : `<td class="sayi" style="font-weight:700;color:var(--v1-lacivert);">${f.toplam_sozlesme_sayisi==null?'—':num(f.toplam_sozlesme_sayisi)}</td>`;
+          : `<td class="sayi" style="font-weight:700;color:var(--v1-lacivert);">${f.toplam_sozlesme_sayisi==null?'â€”':num(f.toplam_sozlesme_sayisi)}</td>`;
         return `<tr>
           <td style="color:var(--v1-muted);font-weight:700;">${sira}</td>
           <td>
             <a class="v1-firma-ad" href="v1-firmalar?ara=${encodeURIComponent(ad)}">${esc(ad)}</a>
-            <a class="v1-analiz-link" href="v1-firma-analiz?firma=${encodeURIComponent(ad)}" title="Firma analizi">📊</a>
+            <a class="v1-analiz-link" href="v1-firma-analiz?firma=${encodeURIComponent(ad)}" title="Firma analizi">ğŸ“Š</a>
           </td>
-          <td style="font-size:13px;color:var(--v1-metin-2);">${esc(f.il||'—')}</td>
+          <td style="font-size:13px;color:var(--v1-metin-2);">${esc(f.il||'â€”')}</td>
           ${cfg.buyume ? ciroHucre : `<td class="sayi" style="font-weight:700;color:var(--v1-mavi);">${ciroHucre}</td>`}
           ${hucreler}
         </tr>`;
@@ -367,7 +367,7 @@
       sayfalamaYaz();
     }catch(e){
       if(kilitliMi(e)){ kilidiGoster(); return; }
-      tb.innerHTML=`<tr><td colspan="${ks}" class="v1-bos">Liste alınamadı. ${esc(e.message||'')}</td></tr>`;
+      tb.innerHTML=`<tr><td colspan="${ks}" class="v1-bos">Liste alÄ±namadÄ±. ${esc(e.message||'')}</td></tr>`;
       document.getElementById('v1-sayi').textContent='';
       document.getElementById('v1-sayfalama').innerHTML='';
     }
@@ -378,9 +378,9 @@
     const maks=Math.max(1,Math.ceil(sonToplam/SAYFA));
     if(maks<=1){ el.innerHTML=''; return; }
     el.innerHTML=
-      `<button id="v1-onceki" ${sayfa<=0?'disabled':''}>‹ Önceki</button>`+
-      `<span class="bilgi">${sayfa+1} / ${num(maks)} · ${num(sonToplam)} firma</span>`+
-      `<button id="v1-sonraki" ${sayfa>=maks-1?'disabled':''}>Sonraki ›</button>`;
+      `<button id="v1-onceki" ${sayfa<=0?'disabled':''}>â€¹ Ã–nceki</button>`+
+      `<span class="bilgi">${sayfa+1} / ${num(maks)} Â· ${num(sonToplam)} firma</span>`+
+      `<button id="v1-sonraki" ${sayfa>=maks-1?'disabled':''}>Sonraki â€º</button>`;
     const o=document.getElementById('v1-onceki'), s=document.getElementById('v1-sonraki');
     if(o) o.addEventListener('click',()=>{ if(sayfa<=0)return; sayfaGit(sayfa-1); });
     if(s) s.addEventListener('click',()=>{ if(sayfa>=maks-1)return; sayfaGit(sayfa+1); });
@@ -402,7 +402,7 @@
   }
 
   async function onizlemeUyarisi(){
-    // Sonuç arşivi hedefin altındaysa "önizleme" şeridi göster
+    // SonuÃ§ arÅŸivi hedefin altÄ±ndaysa "Ã¶nizleme" ÅŸeridi gÃ¶ster
     try{
       const HEDEF=1688002;
       const {count}=await sb.from('ihale_sonuclari').select('id',{count:'exact',head:true});
@@ -432,7 +432,7 @@
 
     document.getElementById('v1-icerik').style.display='block';
 
-    // URL'den segment geri okuma (paylaşılabilir link)
+    // URL'den segment geri okuma (paylaÅŸÄ±labilir link)
     const P=new URLSearchParams(location.search);
     const istenen=P.get('seg');
     if(istenen && Object.prototype.hasOwnProperty.call(SEGMENTLER,istenen)){

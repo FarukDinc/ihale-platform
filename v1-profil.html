@@ -1,13 +1,13 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="tr">
 <head>
   <meta charset="UTF-8" />
-  <meta name="author" content="Ömer Faruk Dinç">
+  <meta name="author" content="Ã–mer Faruk DinÃ§">
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Profilim — İhaleGlobal</title>
+  <title>Profilim â€” Ä°haleGlobal</title>
   <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=4" />
   <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/v1.css?v=7" />
+  <link rel="stylesheet" href="css/v1.css?v=15" />
   <style>
     .v1-sayfa-baslik { font-size:22px; font-weight:800; color:var(--v1-lacivert); margin-bottom:4px; }
     .v1-sayfa-alt { font-size:13.5px; color:var(--v1-muted); margin-bottom:18px; }
@@ -34,53 +34,53 @@
     .v1-bildirim.hata { background:#FDECEE; color:var(--v1-kirmizi); display:block; }
   </style>
 </head>
-<body class="v1" data-v1-aktif="benim" data-v1-kirinti="Hesabım > Profilim">
+<body class="v1" data-v1-aktif="benim" data-v1-kirinti="HesabÄ±m > Profilim">
 <div class="v1-app">
   <div class="v1-main">
     <div class="v1-govde">
       <div class="v1-sayfa-baslik">Profilim</div>
-      <div class="v1-sayfa-alt">Firma bilgileriniz — eşleşme motoru ve AI teklif önerileri bu verilerle çalışır.</div>
+      <div class="v1-sayfa-alt">Firma bilgileriniz â€” eÅŸleÅŸme motoru ve AI teklif Ã¶nerileri bu verilerle Ã§alÄ±ÅŸÄ±r.</div>
 
       <div id="v1-giris" style="display:none;text-align:center;padding:80px 20px;color:var(--v1-muted);">
-        🔒 Bu sayfa üyelere özeldir.<br><br><a href="login">Giriş yapın</a> →
+        ğŸ”’ Bu sayfa Ã¼yelere Ã¶zeldir.<br><br><a href="login">GiriÅŸ yapÄ±n</a> â†’
       </div>
 
       <div id="v1-icerik" style="display:none;">
         <div class="v1-bildirim" id="v1-bildirim"></div>
 
-        <!-- Hesap özeti -->
+        <!-- Hesap Ã¶zeti -->
         <div class="v1-kart">
           <div class="v1-kart-baslik">Hesap</div>
-          <div class="v1-hesap-satir"><span class="v1-hesap-et">E-posta</span><span class="v1-hesap-deger" id="v1-eposta">—</span></div>
+          <div class="v1-hesap-satir"><span class="v1-hesap-et">E-posta</span><span class="v1-hesap-deger" id="v1-eposta">â€”</span></div>
           <div class="v1-hesap-satir"><span class="v1-hesap-et">Mevcut Paket</span>
-            <span><span class="v1-hesap-deger" id="v1-plan">—</span>
-            <a href="fiyatlandirma_odeme_bolumu" style="margin-left:12px;font-size:12.5px;">Paket Yükselt →</a></span></div>
-          <div class="v1-hesap-satir"><span class="v1-hesap-et">Kalan Kredi</span><span class="v1-hesap-deger" id="v1-kredi">—</span></div>
-          <div class="v1-hesap-satir"><span class="v1-hesap-et">Seçili Firmam</span>
-            <span><span class="v1-hesap-deger" id="v1-firmam">—</span>
-            <a href="v1-analiz" style="margin-left:12px;font-size:12.5px;">Değiştir →</a></span></div>
+            <span><span class="v1-hesap-deger" id="v1-plan">â€”</span>
+            <a href="fiyatlandirma_odeme_bolumu" style="margin-left:12px;font-size:12.5px;">Paket YÃ¼kselt â†’</a></span></div>
+          <div class="v1-hesap-satir"><span class="v1-hesap-et">Kalan Kredi</span><span class="v1-hesap-deger" id="v1-kredi">â€”</span></div>
+          <div class="v1-hesap-satir"><span class="v1-hesap-et">SeÃ§ili Firmam</span>
+            <span><span class="v1-hesap-deger" id="v1-firmam">â€”</span>
+            <a href="v1-analiz" style="margin-left:12px;font-size:12.5px;">DeÄŸiÅŸtir â†’</a></span></div>
         </div>
 
         <!-- Firma bilgileri -->
         <div class="v1-kart">
           <div class="v1-kart-baslik">Firma Bilgileri</div>
           <div class="v1-form-grid">
-            <div class="v1-alan"><label>Firma Adı</label><input id="p-firma_adi" placeholder="Örn. ABC İnşaat San. Tic. Ltd. Şti."></div>
+            <div class="v1-alan"><label>Firma AdÄ±</label><input id="p-firma_adi" placeholder="Ã–rn. ABC Ä°nÅŸaat San. Tic. Ltd. Åti."></div>
             <div class="v1-alan"><label>Vergi No</label><input id="p-vergi_no" placeholder="10 haneli"></div>
-            <div class="v1-alan"><label>MERSİS No</label><input id="p-mersisi_no" placeholder="16 haneli"></div>
+            <div class="v1-alan"><label>MERSÄ°S No</label><input id="p-mersisi_no" placeholder="16 haneli"></div>
             <div class="v1-alan"><label>Telefon</label><input id="p-telefon" placeholder="0(___) ___ __ __"></div>
             <div class="v1-alan"><label>Web Sitesi</label><input id="p-web_sitesi" placeholder="https://"></div>
-            <div class="v1-alan"><label>Çalışan Sayısı</label><input type="number" id="p-calisani_sayisi" placeholder="0"></div>
-            <div class="v1-alan"><label>Yıllık Ciro (₺)</label><input type="number" id="p-yillik_ciro_tl" placeholder="0">
-              <div class="ipucu">AI teklif stratejisi ve eşleşme skorunda kullanılır.</div></div>
-            <div class="v1-alan"><label>Çalışma İlleri</label><input id="p-calisma_illeri" placeholder="ANKARA, İSTANBUL, İZMİR">
-              <div class="ipucu">Virgülle ayırın.</div></div>
+            <div class="v1-alan"><label>Ã‡alÄ±ÅŸan SayÄ±sÄ±</label><input type="number" id="p-calisani_sayisi" placeholder="0"></div>
+            <div class="v1-alan"><label>YÄ±llÄ±k Ciro (â‚º)</label><input type="number" id="p-yillik_ciro_tl" placeholder="0">
+              <div class="ipucu">AI teklif stratejisi ve eÅŸleÅŸme skorunda kullanÄ±lÄ±r.</div></div>
+            <div class="v1-alan"><label>Ã‡alÄ±ÅŸma Ä°lleri</label><input id="p-calisma_illeri" placeholder="ANKARA, Ä°STANBUL, Ä°ZMÄ°R">
+              <div class="ipucu">VirgÃ¼lle ayÄ±rÄ±n.</div></div>
           </div>
           <div class="v1-form-grid" style="margin-top:16px;">
-            <div class="v1-alan"><label>Hizmet Alanları</label><textarea id="p-hizmet_alanlari" placeholder="Örn. altyapı, yol yapımı, elektrik tesisatı"></textarea></div>
-            <div class="v1-alan"><label>Referanslar</label><textarea id="p-referanslar" placeholder="Tamamladığınız önemli işler"></textarea></div>
-            <div class="v1-alan"><label>Belgeler / Sertifikalar</label><textarea id="p-belgeler" placeholder="ISO 9001, iş deneyim belgesi vb."></textarea></div>
-            <div class="v1-alan"><label>Kaçındığınız İşler</label><textarea id="p-kacinilanlar" placeholder="İlgilenmediğiniz iş türleri — eşleşmede elenir"></textarea></div>
+            <div class="v1-alan"><label>Hizmet AlanlarÄ±</label><textarea id="p-hizmet_alanlari" placeholder="Ã–rn. altyapÄ±, yol yapÄ±mÄ±, elektrik tesisatÄ±"></textarea></div>
+            <div class="v1-alan"><label>Referanslar</label><textarea id="p-referanslar" placeholder="TamamladÄ±ÄŸÄ±nÄ±z Ã¶nemli iÅŸler"></textarea></div>
+            <div class="v1-alan"><label>Belgeler / Sertifikalar</label><textarea id="p-belgeler" placeholder="ISO 9001, iÅŸ deneyim belgesi vb."></textarea></div>
+            <div class="v1-alan"><label>KaÃ§Ä±ndÄ±ÄŸÄ±nÄ±z Ä°ÅŸler</label><textarea id="p-kacinilanlar" placeholder="Ä°lgilenmediÄŸiniz iÅŸ tÃ¼rleri â€” eÅŸleÅŸmede elenir"></textarea></div>
           </div>
           <div style="margin-top:20px;"><button class="v1-kaydet" id="v1-kaydet">Bilgileri Kaydet</button></div>
         </div>
@@ -90,7 +90,7 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-<script src="js/v1-kabuk.js?v=14"></script>
+<script src="js/v1-kabuk.js?v=15"></script>
 <script>
 (() => {
   const SB_URL="https://ihaleglobal.com", SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzg0MzA3MTU4LCJleHAiOjE5NDE5ODcxNTh9.CjNKulvirotDD_y2oO2QKgo0kbqYvL0jUSV1RiDMoso";
@@ -98,7 +98,7 @@
   const num=(n)=>(Number(n)||0).toLocaleString('tr-TR');
   const ALANLAR=['firma_adi','vergi_no','mersisi_no','telefon','web_sitesi','calisani_sayisi','yillik_ciro_tl',
                  'calisma_illeri','hizmet_alanlari','referanslar','belgeler','kacinilanlar'];
-  // Dizi olarak saklanan alanlar (metin ↔ dizi çevrimi)
+  // Dizi olarak saklanan alanlar (metin â†” dizi Ã§evrimi)
   const DIZI=['calisma_illeri','hizmet_alanlari','referanslar','belgeler','kacinilanlar'];
   let uid=null;
 
@@ -114,11 +114,11 @@
       if(DIZI.includes(a) && Array.isArray(v)) v=v.join(', ');
       e.value = (v===null||v===undefined) ? '' : v;
     });
-    document.getElementById('v1-firmam').textContent = p.firma_adi || 'Seçilmedi';
+    document.getElementById('v1-firmam').textContent = p.firma_adi || 'SeÃ§ilmedi';
   }
 
   async function kaydet(){
-    const btn=document.getElementById('v1-kaydet'); btn.disabled=true; const eski=btn.textContent; btn.textContent='Kaydediliyor…';
+    const btn=document.getElementById('v1-kaydet'); btn.disabled=true; const eski=btn.textContent; btn.textContent='Kaydediliyorâ€¦';
     try{
       const kayit={id:uid};
       ALANLAR.forEach(a=>{
@@ -131,7 +131,7 @@
       });
       const {error}=await sb.from('kullanici_profiller').upsert(kayit,{onConflict:'id'});
       if(error) throw error;
-      bildir('Profil bilgileriniz kaydedildi ✓');
+      bildir('Profil bilgileriniz kaydedildi âœ“');
     }catch(e){ bildir('Kaydedilemedi: '+(e.message||''),false); }
     finally{ btn.disabled=false; btn.textContent=eski; }
   }
@@ -141,7 +141,7 @@
     if(!data||!data.session){ document.getElementById('v1-giris').style.display='block'; return; }
     document.getElementById('v1-icerik').style.display='block';
     uid=data.session.user.id;
-    document.getElementById('v1-eposta').textContent=data.session.user.email||'—';
+    document.getElementById('v1-eposta').textContent=data.session.user.email||'â€”';
     try{
       const {data:k}=await sb.from('kullanici_krediler').select('plan,kalan_kredi').eq('kullanici_id',uid).maybeSingle();
       const pro=['standart','kurumsal'].includes(k?.plan);

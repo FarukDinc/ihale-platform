@@ -1,13 +1,13 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="tr">
 <head>
   <meta charset="UTF-8" />
-  <meta name="author" content="Ömer Faruk Dinç">
+  <meta name="author" content="Ã–mer Faruk DinÃ§">
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Bank Modülü — İhaleGlobal</title>
+  <title>Bank ModÃ¼lÃ¼ â€” Ä°haleGlobal</title>
   <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=4" />
   <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/v1.css?v=7" />
+  <link rel="stylesheet" href="css/v1.css?v=15" />
   <style>
     .v1-sayfa-baslik { font-size:22px; font-weight:800; color:var(--v1-lacivert); margin-bottom:4px; }
     .v1-sayfa-alt { font-size:13.5px; color:var(--v1-muted); margin-bottom:16px; }
@@ -29,44 +29,44 @@
       font-size:13.5px; margin-bottom:16px; }
   </style>
 </head>
-<body class="v1" data-v1-aktif="bank" data-v1-kirinti="Bank > Genel Bakış">
+<body class="v1" data-v1-aktif="bank" data-v1-kirinti="Bank > Genel BakÄ±ÅŸ">
 <div class="v1-app">
   <div class="v1-main">
     <div class="v1-govde">
       <div class="v1-bank-bant">
         <div class="v1-bank-ikon"><svg viewBox="0 0 24 24"><path d="M12 2.15a1.1 1.1 0 0 0-.49.11L2.28 6.9A1.4 1.4 0 0 0 1.5 8.16V9.3a.7.7 0 0 0 .7.7h19.6a.7.7 0 0 0 .7-.7V8.16a1.4 1.4 0 0 0-.78-1.26l-9.23-4.64a1.1 1.1 0 0 0-.49-.11Z"/><path d="M4.3 11.6h3v6.6h-3zM10.5 11.6h3v6.6h-3zM16.7 11.6h3v6.6h-3z"/><path d="M2.6 19.8h18.8a1.1 1.1 0 0 1 0 2.2H2.6a1.1 1.1 0 0 1 0-2.2Z"/></svg></div>
         <div style="flex:1;min-width:240px;">
-          <div class="v1-bank-t">Bank Modülü — Kamu İhale İstihbaratı</div>
-          <div class="v1-bank-a">Kredi/risk değerlendirmesi için firma kamu performansı, sektör hacimleri ve idare bütçeleri.</div>
+          <div class="v1-bank-t">Bank ModÃ¼lÃ¼ â€” Kamu Ä°hale Ä°stihbaratÄ±</div>
+          <div class="v1-bank-a">Kredi/risk deÄŸerlendirmesi iÃ§in firma kamu performansÄ±, sektÃ¶r hacimleri ve idare bÃ¼tÃ§eleri.</div>
         </div>
       </div>
 
       <div class="v1-sekmeler">
-        <button class="v1-sekme aktif" data-t="dashboard">Genel Bakış</button>
+        <button class="v1-sekme aktif" data-t="dashboard">Genel BakÄ±ÅŸ</button>
         <button class="v1-sekme" data-t="firmalar">Firmalar</button>
-        <button class="v1-sekme" data-t="ihaleler">İhaleler</button>
-        <button class="v1-sekme" data-t="sektorler">Sektörler</button>
+        <button class="v1-sekme" data-t="ihaleler">Ä°haleler</button>
+        <button class="v1-sekme" data-t="sektorler">SektÃ¶rler</button>
         <button class="v1-sekme" data-t="kurumlar">Kurumlar</button>
       </div>
 
       <div id="v1-misafir" class="v1-uyari" style="display:none;">
-        🔒 Bank modülü <strong>üyelere özeldir</strong>. <a href="login">Giriş yapın</a> →
+        ğŸ”’ Bank modÃ¼lÃ¼ <strong>Ã¼yelere Ã¶zeldir</strong>. <a href="login">GiriÅŸ yapÄ±n</a> â†’
       </div>
 
-      <div id="v1-icerik"><div class="v1-bos">Yükleniyor…</div></div>
+      <div id="v1-icerik"><div class="v1-bos">YÃ¼kleniyorâ€¦</div></div>
     </div>
   </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-<script src="js/v1-kabuk.js?v=14"></script>
+<script src="js/v1-kabuk.js?v=15"></script>
 <script>
 (() => {
   const SB_URL="https://ihaleglobal.com", SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzg0MzA3MTU4LCJleHAiOjE5NDE5ODcxNTh9.CjNKulvirotDD_y2oO2QKgo0kbqYvL0jUSV1RiDMoso";
   const sb=window.supabase.createClient(SB_URL,SB_KEY);
   const num=(n)=>(Number(n)||0).toLocaleString('tr-TR');
   const esc=(s)=>(s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-  const tl=(v)=>v==null?'—':'₺'+Number(v).toLocaleString('tr-TR',{maximumFractionDigits:0});
+  const tl=(v)=>v==null?'â€”':'â‚º'+Number(v).toLocaleString('tr-TR',{maximumFractionDigits:0});
   const kisalt=(n)=>{n=Number(n)||0;
     if(n>=1e12) return (n/1e12).toLocaleString('tr-TR',{maximumFractionDigits:1})+' Tn';
     if(n>=1e9)  return (n/1e9).toLocaleString('tr-TR',{maximumFractionDigits:1})+' Mr';
@@ -88,93 +88,93 @@
   };
 
   async function dashboard(){
-    G().innerHTML='<div class="v1-bos">Özet hazırlanıyor…</div>';
+    G().innerHTML='<div class="v1-bos">Ã–zet hazÄ±rlanÄ±yorâ€¦</div>';
     let y={},s={};
     try{ const {data}=await sb.rpc('yuklenici_ozet'); y=(data||[])[0]||{}; }catch(_){}
     try{ const {data}=await sb.rpc('sonuc_ozet'); s=(data||[])[0]||{}; }catch(_){}
     G().innerHTML=`
       <div class="v1-kpi" style="margin-bottom:18px;">
-        ${kpi(IK.firma,num(y.toplam),'Yüklenici Firma')}
-        ${kpi(IK.dosya,kisalt(s.toplam),'Sözleşme Kaydı')}
-        ${kpi(IK.para,kisalt(s.toplam_bedel),'Toplam Sözleşme Hacmi ₺')}
-        ${kpi(IK.firma,num(s.farkli_firma),'Kazanan Farklı Firma')}
+        ${kpi(IK.firma,num(y.toplam),'YÃ¼klenici Firma')}
+        ${kpi(IK.dosya,kisalt(s.toplam),'SÃ¶zleÅŸme KaydÄ±')}
+        ${kpi(IK.para,kisalt(s.toplam_bedel),'Toplam SÃ¶zleÅŸme Hacmi â‚º')}
+        ${kpi(IK.firma,num(s.farkli_firma),'Kazanan FarklÄ± Firma')}
       </div>
       <div class="v1-kart">
-        <div class="v1-kart-baslik">Piyasa Göstergeleri</div>
+        <div class="v1-kart-baslik">Piyasa GÃ¶stergeleri</div>
         <div class="v1-bilgi-grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:18px;">
           <div><div style="font-size:12px;color:var(--v1-muted);font-weight:700;text-transform:uppercase;">Ortalama Tenzilat</div>
-            <div style="font-size:24px;font-weight:800;color:var(--v1-mavi);margin-top:4px;">${s.ort_tenzilat!=null?'%'+Number(s.ort_tenzilat).toLocaleString('tr-TR',{maximumFractionDigits:1}):'—'}</div>
-            <div style="font-size:11.5px;color:var(--v1-muted);margin-top:3px;">Tek kısımlı ihalelerden hesaplanır</div></div>
-          <div><div style="font-size:12px;color:var(--v1-muted);font-weight:700;text-transform:uppercase;">Ortalama Sözleşme Bedeli</div>
-            <div style="font-size:24px;font-weight:800;color:var(--v1-mavi);margin-top:4px;">${(s.toplam&&s.toplam_bedel)?tl(s.toplam_bedel/s.toplam):'—'}</div></div>
+            <div style="font-size:24px;font-weight:800;color:var(--v1-mavi);margin-top:4px;">${s.ort_tenzilat!=null?'%'+Number(s.ort_tenzilat).toLocaleString('tr-TR',{maximumFractionDigits:1}):'â€”'}</div>
+            <div style="font-size:11.5px;color:var(--v1-muted);margin-top:3px;">Tek kÄ±sÄ±mlÄ± ihalelerden hesaplanÄ±r</div></div>
+          <div><div style="font-size:12px;color:var(--v1-muted);font-weight:700;text-transform:uppercase;">Ortalama SÃ¶zleÅŸme Bedeli</div>
+            <div style="font-size:24px;font-weight:800;color:var(--v1-mavi);margin-top:4px;">${(s.toplam&&s.toplam_bedel)?tl(s.toplam_bedel/s.toplam):'â€”'}</div></div>
           <div><div style="font-size:12px;color:var(--v1-muted);font-weight:700;text-transform:uppercase;">Toplam Firma Cirosu</div>
-            <div style="font-size:24px;font-weight:800;color:var(--v1-mavi);margin-top:4px;">${kisalt(y.toplam_ciro)} ₺</div></div>
-          <div><div style="font-size:12px;color:var(--v1-muted);font-weight:700;text-transform:uppercase;">İş Ortaklığı (JV)</div>
+            <div style="font-size:24px;font-weight:800;color:var(--v1-mavi);margin-top:4px;">${kisalt(y.toplam_ciro)} â‚º</div></div>
+          <div><div style="font-size:12px;color:var(--v1-muted);font-weight:700;text-transform:uppercase;">Ä°ÅŸ OrtaklÄ±ÄŸÄ± (JV)</div>
             <div style="font-size:24px;font-weight:800;color:var(--v1-mavi);margin-top:4px;">${num(y.ortak_sayisi)}</div></div>
         </div>
       </div>
       <div class="v1-kart">
-        <div class="v1-kart-baslik">Bank Modülü Ne İşe Yarar?</div>
+        <div class="v1-kart-baslik">Bank ModÃ¼lÃ¼ Ne Ä°ÅŸe Yarar?</div>
         <div style="font-size:13.5px;line-height:1.75;color:var(--v1-metin-2);">
-          Bir firmanın <strong>kamu ihale karnesi</strong> kredi değerlendirmesinde güçlü bir sinyaldir:
-          kaç sözleşme kazanmış, toplam cirosu ne, hangi idarelerle çalışmış, tenzilat davranışı agresif mi
-          ihtiyatlı mı, işleri devam ediyor mu bitmiş mi. Sekmelerden firma/sektör/idare kırılımlarına inin.
+          Bir firmanÄ±n <strong>kamu ihale karnesi</strong> kredi deÄŸerlendirmesinde gÃ¼Ã§lÃ¼ bir sinyaldir:
+          kaÃ§ sÃ¶zleÅŸme kazanmÄ±ÅŸ, toplam cirosu ne, hangi idarelerle Ã§alÄ±ÅŸmÄ±ÅŸ, tenzilat davranÄ±ÅŸÄ± agresif mi
+          ihtiyatlÄ± mÄ±, iÅŸleri devam ediyor mu bitmiÅŸ mi. Sekmelerden firma/sektÃ¶r/idare kÄ±rÄ±lÄ±mlarÄ±na inin.
         </div>
       </div>`;
   }
 
   async function firmalar(){
-    G().innerHTML='<div class="v1-bos">Yükleniyor…</div>';
+    G().innerHTML='<div class="v1-bos">YÃ¼kleniyorâ€¦</div>';
     try{
       const {data,error}=await sb.from('yukleniciler').select('id,ad,il,toplam_sozlesme_sayisi,toplam_ciro')
         .order('toplam_ciro',{ascending:false,nullsFirst:false}).limit(30);
       if(error) throw error;
       const max=Math.max(1,...(data||[]).map(r=>Number(r.toplam_ciro)||0));
-      G().innerHTML=`<div class="v1-kart"><div class="v1-kart-baslik">Ciroya Göre En Büyük 30 Yüklenici</div>
+      G().innerHTML=`<div class="v1-kart"><div class="v1-kart-baslik">Ciroya GÃ¶re En BÃ¼yÃ¼k 30 YÃ¼klenici</div>
         <div style="overflow-x:auto;"><table class="v1-tablo"><thead><tr>
-          <th style="width:44px;">#</th><th>Firma</th><th style="width:95px;">İl</th>
-          <th style="width:100px;">Sözleşme</th><th style="width:230px;">Toplam Ciro</th></tr></thead><tbody>
+          <th style="width:44px;">#</th><th>Firma</th><th style="width:95px;">Ä°l</th>
+          <th style="width:100px;">SÃ¶zleÅŸme</th><th style="width:230px;">Toplam Ciro</th></tr></thead><tbody>
         ${(data||[]).map((r,i)=>{const w=Math.max(3,Math.round((Number(r.toplam_ciro)||0)/max*100));
           return `<tr><td style="color:var(--v1-muted);font-weight:700;">${i+1}</td>
           <td><a class="v1-t-ad" href="v1-firma-analiz?ara=${encodeURIComponent(r.ad)}">${esc(r.ad)}</a></td>
-          <td style="font-size:13px;">${esc(r.il||'—')}</td>
+          <td style="font-size:13px;">${esc(r.il||'â€”')}</td>
           <td style="font-weight:700;color:var(--v1-lacivert);">${num(r.toplam_sozlesme_sayisi)}</td>
           <td><div style="display:flex;align-items:center;gap:10px;"><span class="v1-bar-wrap"><span class="v1-bar" style="width:${w}%"></span></span>
             <span style="font-weight:700;color:var(--v1-mavi);white-space:nowrap;">${tl(r.toplam_ciro)}</span></div></td></tr>`;}).join('')}
         </tbody></table></div></div>`;
-    }catch(e){ G().innerHTML=`<div class="v1-bos">Yüklenemedi. ${esc(e.message||'')}</div>`; }
+    }catch(e){ G().innerHTML=`<div class="v1-bos">YÃ¼klenemedi. ${esc(e.message||'')}</div>`; }
   }
 
   async function ihaleler(){
-    G().innerHTML='<div class="v1-bos">Yükleniyor…</div>';
+    G().innerHTML='<div class="v1-bos">YÃ¼kleniyorâ€¦</div>';
     try{
       const {data,error}=await sb.rpc('il_sayim_aktif');
       if(error) throw error;
       const top=(data||[]).slice().sort((a,b)=>(b.adet||0)-(a.adet||0)).slice(0,20);
       const max=Math.max(1,...top.map(r=>r.adet||0));
       const cap=(s)=>(s||'').toLocaleLowerCase('tr').replace(/(^|\s)\S/g,c=>c.toLocaleUpperCase('tr'));
-      G().innerHTML=`<div class="v1-kart"><div class="v1-kart-baslik">Açık İhale Yoğunluğu — İl Bazlı (İlk 20)</div>
+      G().innerHTML=`<div class="v1-kart"><div class="v1-kart-baslik">AÃ§Ä±k Ä°hale YoÄŸunluÄŸu â€” Ä°l BazlÄ± (Ä°lk 20)</div>
         <div style="overflow-x:auto;"><table class="v1-tablo"><thead><tr>
-          <th style="width:44px;">#</th><th style="width:160px;">İl</th><th>Açık İhale</th></tr></thead><tbody>
+          <th style="width:44px;">#</th><th style="width:160px;">Ä°l</th><th>AÃ§Ä±k Ä°hale</th></tr></thead><tbody>
         ${top.map((r,i)=>{const w=Math.max(3,Math.round((r.adet||0)/max*100));
           return `<tr><td style="color:var(--v1-muted);font-weight:700;">${i+1}</td>
           <td><a class="v1-t-ad" href="v1-ihaleler?il=${encodeURIComponent(r.il)}">${esc(cap(r.il))}</a></td>
           <td><div style="display:flex;align-items:center;gap:10px;"><span class="v1-bar-wrap"><span class="v1-bar" style="width:${w}%"></span></span>
             <span style="font-weight:700;color:var(--v1-mavi);white-space:nowrap;">${num(r.adet)}</span></div></td></tr>`;}).join('')}
         </tbody></table></div></div>`;
-    }catch(e){ G().innerHTML=`<div class="v1-bos">Yüklenemedi. ${esc(e.message||'')}</div>`; }
+    }catch(e){ G().innerHTML=`<div class="v1-bos">YÃ¼klenemedi. ${esc(e.message||'')}</div>`; }
   }
 
   async function sektorler(){
-    G().innerHTML='<div class="v1-bos">Yükleniyor…</div>';
+    G().innerHTML='<div class="v1-bos">YÃ¼kleniyorâ€¦</div>';
     try{
       const {data,error}=await sb.rpc('kategori_sayim');
       if(error) throw error;
       const top=(data||[]).slice().sort((a,b)=>(b.toplam||0)-(a.toplam||0));
       const max=Math.max(1,...top.map(r=>r.toplam||0));
-      G().innerHTML=`<div class="v1-kart"><div class="v1-kart-baslik">Sektör Hacimleri</div>
+      G().innerHTML=`<div class="v1-kart"><div class="v1-kart-baslik">SektÃ¶r Hacimleri</div>
         <div style="overflow-x:auto;"><table class="v1-tablo"><thead><tr>
-          <th style="width:44px;">#</th><th>Sektör</th><th style="width:230px;">Toplam İhale</th><th style="width:100px;">Açık</th></tr></thead><tbody>
+          <th style="width:44px;">#</th><th>SektÃ¶r</th><th style="width:230px;">Toplam Ä°hale</th><th style="width:100px;">AÃ§Ä±k</th></tr></thead><tbody>
         ${top.map((r,i)=>{const w=Math.max(3,Math.round((r.toplam||0)/max*100));
           return `<tr><td style="color:var(--v1-muted);font-weight:700;">${i+1}</td>
           <td><a class="v1-t-ad" href="v1-ihaleler?kategori=${encodeURIComponent(r.kategori)}">${esc(r.kategori)}</a></td>
@@ -182,29 +182,29 @@
             <span style="font-weight:700;color:var(--v1-lacivert);white-space:nowrap;">${num(r.toplam)}</span></div></td>
           <td style="font-weight:700;color:var(--v1-teal);">${num(r.aktif)}</td></tr>`;}).join('')}
         </tbody></table></div></div>`;
-    }catch(e){ G().innerHTML=`<div class="v1-bos">Yüklenemedi. ${esc(e.message||'')}</div>`; }
+    }catch(e){ G().innerHTML=`<div class="v1-bos">YÃ¼klenemedi. ${esc(e.message||'')}</div>`; }
   }
 
   async function kurumlar(){
-    G().innerHTML='<div class="v1-bos">Yükleniyor…</div>';
+    G().innerHTML='<div class="v1-bos">YÃ¼kleniyorâ€¦</div>';
     try{
       const {data,error}=await sb.rpc('idare_sayim');
       if(error) throw error;
       const top=(data||[]).slice().sort((a,b)=>(b.toplam||0)-(a.toplam||0)).slice(0,30);
       const max=Math.max(1,...top.map(r=>r.toplam||0));
-      G().innerHTML=`<div class="v1-kart"><div class="v1-kart-baslik">En Çok İhale Açan 30 İdare</div>
+      G().innerHTML=`<div class="v1-kart"><div class="v1-kart-baslik">En Ã‡ok Ä°hale AÃ§an 30 Ä°dare</div>
         <div style="overflow-x:auto;"><table class="v1-tablo"><thead><tr>
-          <th style="width:44px;">#</th><th>İdare</th><th style="width:95px;">İl</th>
-          <th style="width:230px;">Toplam İhale</th><th style="width:90px;">Aktif</th></tr></thead><tbody>
+          <th style="width:44px;">#</th><th>Ä°dare</th><th style="width:95px;">Ä°l</th>
+          <th style="width:230px;">Toplam Ä°hale</th><th style="width:90px;">Aktif</th></tr></thead><tbody>
         ${top.map((r,i)=>{const w=Math.max(3,Math.round((r.toplam||0)/max*100));
           return `<tr><td style="color:var(--v1-muted);font-weight:700;">${i+1}</td>
           <td><a class="v1-t-ad" href="v1-ihaleler?ara=${encodeURIComponent(r.idare)}">${esc(r.idare)}</a></td>
-          <td style="font-size:13px;">${esc(r.en_yakin_il||'—')}</td>
+          <td style="font-size:13px;">${esc(r.en_yakin_il||'â€”')}</td>
           <td><div style="display:flex;align-items:center;gap:10px;"><span class="v1-bar-wrap"><span class="v1-bar" style="width:${w}%"></span></span>
             <span style="font-weight:700;color:var(--v1-lacivert);white-space:nowrap;">${num(r.toplam)}</span></div></td>
           <td style="font-weight:700;color:var(--v1-teal);">${num(r.aktif)}</td></tr>`;}).join('')}
         </tbody></table></div></div>`;
-    }catch(e){ G().innerHTML=`<div class="v1-bos">Yüklenemedi. ${esc(e.message||'')}</div>`; }
+    }catch(e){ G().innerHTML=`<div class="v1-bos">YÃ¼klenemedi. ${esc(e.message||'')}</div>`; }
   }
 
   const CIZ={dashboard,firmalar,ihaleler,sektorler,kurumlar};
@@ -216,7 +216,7 @@
     }catch(_){}
     if(!uyeMi){
       document.getElementById('v1-misafir').style.display='block';
-      G().innerHTML='<div class="v1-bos">🔒 Bank modülü üyelere özeldir. <a href="login">Giriş yapın →</a></div>';
+      G().innerHTML='<div class="v1-bos">ğŸ”’ Bank modÃ¼lÃ¼ Ã¼yelere Ã¶zeldir. <a href="login">GiriÅŸ yapÄ±n â†’</a></div>';
       return;
     }
     document.querySelectorAll('.v1-sekme').forEach(b=>b.addEventListener('click',()=>{

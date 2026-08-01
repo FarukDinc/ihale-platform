@@ -1,21 +1,21 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="tr">
 <head>
   <meta charset="UTF-8" />
-  <meta name="author" content="Ömer Faruk Dinç">
-  <meta name="copyright" content="© 2026 Ömer Faruk Dinç — İhaleGlobal">
+  <meta name="author" content="Ã–mer Faruk DinÃ§">
+  <meta name="copyright" content="Â© 2026 Ã–mer Faruk DinÃ§ â€” Ä°haleGlobal">
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Dökümanlar — İhaleGlobal</title>
+  <title>DÃ¶kÃ¼manlar â€” Ä°haleGlobal</title>
   <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=4" />
   <link rel="icon" type="image/png" sizes="48x48" href="/favicon-48.png?v=4" />
   <link rel="apple-touch-icon" sizes="180x180" href="/favicon-180.png?v=4" />
   <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/v1.css?v=7" />
+  <link rel="stylesheet" href="css/v1.css?v=15" />
   <style>
     .v1-sayfa-baslik { font-size:22px; font-weight:800; color:var(--v1-lacivert); margin-bottom:4px; }
     .v1-sayfa-alt { font-size:13.5px; color:var(--v1-muted); margin-bottom:16px; }
 
-    /* Üst aksiyon satırı */
+    /* Ãœst aksiyon satÄ±rÄ± */
     .v1-ust-satir { display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:14px; }
     .v1-mini-btn { background:#fff; border:1.5px solid var(--v1-cizgi); color:var(--v1-muted); border-radius:9px;
       padding:9px 14px; font-family:var(--v1-font); font-size:12.5px; font-weight:700; cursor:pointer;
@@ -35,7 +35,7 @@
     .v1-sekme:hover { color:var(--v1-lacivert); }
     .v1-sekme.aktif { color:var(--v1-mavi); border-bottom-color:var(--v1-mavi); }
 
-    /* Bilgi şeridi */
+    /* Bilgi ÅŸeridi */
     .v1-bilgi-serit { background:var(--v1-mavi-acik); border:1px solid #CFE2F5; border-radius:12px;
       padding:14px 16px; font-size:13px; line-height:1.6; margin-bottom:16px; color:var(--v1-metin); }
     .v1-bilgi-serit strong { color:var(--v1-lacivert); }
@@ -51,7 +51,7 @@
     .v1-ara-ipucu { font-size:11.5px; font-weight:700; color:var(--v1-muted); border:1px solid var(--v1-cizgi);
       border-radius:6px; padding:2px 7px; background:#F6FAFF; white-space:nowrap; }
 
-    /* İhale akordeon kartı */
+    /* Ä°hale akordeon kartÄ± */
     .v1-dk { background:#fff; border:1px solid var(--v1-cizgi); border-radius:var(--v1-radius-lg);
       box-shadow:var(--v1-golge); margin-bottom:14px; overflow:hidden; }
     .v1-dk-bas { padding:15px 18px; display:flex; align-items:center; justify-content:space-between;
@@ -70,7 +70,7 @@
     .v1-dk-govde.acik { display:block; }
     .v1-dk-not { font-size:13px; color:var(--v1-muted); margin:0; }
 
-    /* Döküman ızgarası */
+    /* DÃ¶kÃ¼man Ä±zgarasÄ± */
     .v1-dok-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(270px,1fr)); gap:10px; }
     .v1-dok { background:#fff; border:1px solid var(--v1-cizgi); border-radius:var(--v1-radius);
       padding:12px 14px; display:flex; align-items:flex-start; gap:10px; text-decoration:none;
@@ -95,7 +95,7 @@
       color:var(--v1-mavi); border:1.5px solid var(--v1-cizgi); text-decoration:none; transition:border-color .15s; }
     .v1-btn-ekap:hover { border-color:var(--v1-mavi); text-decoration:none; }
 
-    /* Boş durum */
+    /* BoÅŸ durum */
     .v1-bos-durum { text-align:center; padding:56px 24px; background:#fff; border:1px solid var(--v1-cizgi);
       border-radius:var(--v1-radius-lg); box-shadow:var(--v1-golge); }
     .v1-bos-ikon { font-size:46px; margin-bottom:14px; line-height:1; }
@@ -120,61 +120,61 @@
     }
   </style>
 </head>
-<body class="v1" data-v1-aktif="dokumanlar" data-v1-kirinti="İhaleler > Dökümanlar">
+<body class="v1" data-v1-aktif="dokumanlar" data-v1-kirinti="Ä°haleler > DÃ¶kÃ¼manlar">
 <div class="v1-app">
   <div class="v1-main">
     <div class="v1-govde">
-      <div class="v1-sayfa-baslik">Dökümanlar</div>
-      <div class="v1-sayfa-alt">Takip ettiğiniz ihalelerin dökümanlarını buradan görüntüleyin ve indirin.</div>
+      <div class="v1-sayfa-baslik">DÃ¶kÃ¼manlar</div>
+      <div class="v1-sayfa-alt">Takip ettiÄŸiniz ihalelerin dÃ¶kÃ¼manlarÄ±nÄ± buradan gÃ¶rÃ¼ntÃ¼leyin ve indirin.</div>
 
       <div class="v1-ust-satir">
-        <button class="v1-mini-btn dolu" id="tumunu-ac-btn" type="button">Tümünü Aç</button>
-        <a class="v1-mini-btn" href="v1-takipte">☆ Takip Listem →</a>
-        <a class="v1-mini-btn" href="v1-ihaleler">⊞ İhaleler →</a>
+        <button class="v1-mini-btn dolu" id="tumunu-ac-btn" type="button">TÃ¼mÃ¼nÃ¼ AÃ§</button>
+        <a class="v1-mini-btn" href="v1-takipte">â˜† Takip Listem â†’</a>
+        <a class="v1-mini-btn" href="v1-ihaleler">âŠ Ä°haleler â†’</a>
         <span class="v1-ust-not" id="ust-not"></span>
       </div>
 
       <div class="v1-sekme-bar" id="sekme-bar">
-        <button class="v1-sekme aktif" type="button" data-sekme="takip">Takip Dökümanları</button>
-        <button class="v1-sekme" type="button" data-sekme="teknik">Teknik Şartnameler</button>
-        <button class="v1-sekme" type="button" data-sekme="idari">İdari Şartnameler</button>
+        <button class="v1-sekme aktif" type="button" data-sekme="takip">Takip DÃ¶kÃ¼manlarÄ±</button>
+        <button class="v1-sekme" type="button" data-sekme="teknik">Teknik Åartnameler</button>
+        <button class="v1-sekme" type="button" data-sekme="idari">Ä°dari Åartnameler</button>
       </div>
 
       <div id="panel-takip">
         <div class="v1-bilgi-serit">
-          ℹ️ <strong>Dökümanlar EKAP'tan otomatik çekilir.</strong> Yeni ihaleler için dökümanlar 24 saat içinde
-          güncellenir. Döküman indirmek için EKAP hesabınızla giriş yapmanız gerekebilir.
+          â„¹ï¸ <strong>DÃ¶kÃ¼manlar EKAP'tan otomatik Ã§ekilir.</strong> Yeni ihaleler iÃ§in dÃ¶kÃ¼manlar 24 saat iÃ§inde
+          gÃ¼ncellenir. DÃ¶kÃ¼man indirmek iÃ§in EKAP hesabÄ±nÄ±zla giriÅŸ yapmanÄ±z gerekebilir.
         </div>
 
         <div class="v1-ara-satir">
           <label class="v1-ara-alan">
-            <span aria-hidden="true">🔍</span>
-            <input type="text" id="dok-ara" placeholder="Döküman veya ihale adı ara…" autocomplete="off" />
+            <span aria-hidden="true">ğŸ”</span>
+            <input type="text" id="dok-ara" placeholder="DÃ¶kÃ¼man veya ihale adÄ± araâ€¦" autocomplete="off" />
           </label>
           <span class="v1-ara-ipucu">Ctrl + K</span>
           <span class="v1-ara-ipucu">Alt + 1 / 2 / 3 sekme</span>
         </div>
 
         <div id="dok-icerik">
-          <div class="v1-bos">Yükleniyor…</div>
+          <div class="v1-bos">YÃ¼kleniyorâ€¦</div>
         </div>
       </div>
 
       <div id="panel-teknik" style="display:none;">
         <div class="v1-bos-durum">
-          <div class="v1-bos-ikon">📋</div>
-          <h3>Teknik Şartnameler</h3>
-          <p>Takip ettiğiniz ihalelerin teknik şartnameleri burada listelenecek. Bu özellik yakında aktif olacak.</p>
-          <a class="v1-bos-cta" href="v1-takipte">İhaleleri Takibe Al →</a>
+          <div class="v1-bos-ikon">ğŸ“‹</div>
+          <h3>Teknik Åartnameler</h3>
+          <p>Takip ettiÄŸiniz ihalelerin teknik ÅŸartnameleri burada listelenecek. Bu Ã¶zellik yakÄ±nda aktif olacak.</p>
+          <a class="v1-bos-cta" href="v1-takipte">Ä°haleleri Takibe Al â†’</a>
         </div>
       </div>
 
       <div id="panel-idari" style="display:none;">
         <div class="v1-bos-durum">
-          <div class="v1-bos-ikon">📄</div>
-          <h3>İdari Şartnameler</h3>
-          <p>Takip ettiğiniz ihalelerin idari şartnameleri burada listelenecek. Bu özellik yakında aktif olacak.</p>
-          <a class="v1-bos-cta" href="v1-takipte">İhaleleri Takibe Al →</a>
+          <div class="v1-bos-ikon">ğŸ“„</div>
+          <h3>Ä°dari Åartnameler</h3>
+          <p>Takip ettiÄŸiniz ihalelerin idari ÅŸartnameleri burada listelenecek. Bu Ã¶zellik yakÄ±nda aktif olacak.</p>
+          <a class="v1-bos-cta" href="v1-takipte">Ä°haleleri Takibe Al â†’</a>
         </div>
       </div>
     </div>
@@ -183,7 +183,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/takip.js?v=2"></script>
-<script src="js/v1-kabuk.js?v=14"></script>
+<script src="js/v1-kabuk.js?v=15"></script>
 <script>
 (() => {
   const SB_URL="https://ihaleglobal.com", SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzg0MzA3MTU4LCJleHAiOjE5NDE5ODcxNTh9.CjNKulvirotDD_y2oO2QKgo0kbqYvL0jUSV1RiDMoso";
@@ -191,36 +191,36 @@
 
   const esc=(s)=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
   const num=(n)=>(Number(n)||0).toLocaleString('tr-TR');
-  // ⚠️ TR harf tuzağı: 'İ'.toLowerCase() JS'te birleşik noktalı 'i̇' üretir ve arama sessizce ıskalar.
-  // toLocaleLowerCase('tr') + şapkasızlaştırma ile hem büyük/küçük hem aksan duyarsız arama.
+  // âš ï¸ TR harf tuzaÄŸÄ±: 'Ä°'.toLowerCase() JS'te birleÅŸik noktalÄ± 'iÌ‡' Ã¼retir ve arama sessizce Ä±skalar.
+  // toLocaleLowerCase('tr') + ÅŸapkasÄ±zlaÅŸtÄ±rma ile hem bÃ¼yÃ¼k/kÃ¼Ã§Ã¼k hem aksan duyarsÄ±z arama.
   const fold=(s)=>String(s==null?'':s).toLocaleLowerCase('tr')
-    .replace(/ı/g,'i').replace(/i̇/g,'i').replace(/ş/g,'s').replace(/ğ/g,'g')
-    .replace(/ü/g,'u').replace(/ö/g,'o').replace(/ç/g,'c').replace(/â/g,'a').replace(/î/g,'i').replace(/û/g,'u');
+    .replace(/Ä±/g,'i').replace(/iÌ‡/g,'i').replace(/ÅŸ/g,'s').replace(/ÄŸ/g,'g')
+    .replace(/Ã¼/g,'u').replace(/Ã¶/g,'o').replace(/Ã§/g,'c').replace(/Ã¢/g,'a').replace(/Ã®/g,'i').replace(/Ã»/g,'u');
 
-  // Misafir maskeleme bayrağı — İLK sorgudan ÖNCE kesinleşmeli. Varsayılan false:
-  // bilinmiyorken dar select kullanmak güvenli taraf (aksi hâlde 42501 sayfayı öldürür).
+  // Misafir maskeleme bayraÄŸÄ± â€” Ä°LK sorgudan Ã–NCE kesinleÅŸmeli. VarsayÄ±lan false:
+  // bilinmiyorken dar select kullanmak gÃ¼venli taraf (aksi hÃ¢lde 42501 sayfayÄ± Ã¶ldÃ¼rÃ¼r).
   let uyeMi=false, tumVeriler=[], tumAcik=false;
-  const MASKE_ROZET='<a href="login" class="v1-maske" title="Üyelere özel — giriş yapın">🔒 ***</a>';
+  const MASKE_ROZET='<a href="login" class="v1-maske" title="Ãœyelere Ã¶zel â€” giriÅŸ yapÄ±n">ğŸ”’ ***</a>';
 
-  // ilanlar.id uuid'dir. Takip listesi localStorage tabanlı; oraya uuid olmayan bayat bir
-  // değer sızarsa PostgREST 22P02 ("invalid input syntax for type uuid") döner ve TÜM
-  // sayfa hata ekranına düşer. Sorgudan önce süzülüyor.
+  // ilanlar.id uuid'dir. Takip listesi localStorage tabanlÄ±; oraya uuid olmayan bayat bir
+  // deÄŸer sÄ±zarsa PostgREST 22P02 ("invalid input syntax for type uuid") dÃ¶ner ve TÃœM
+  // sayfa hata ekranÄ±na dÃ¼ÅŸer. Sorgudan Ã¶nce sÃ¼zÃ¼lÃ¼yor.
   const UUID_RE=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-  // Belge url'leri DB'den (EKAP kazıyıcısı) geliyor. 'javascript:' / 'data:' şemalı bir
-  // kayıt href'e basıldığında tıklamada sayfa bağlamında çalışırdı → yalnız http(s) geçer,
-  // diğerleri linksiz (pasif) kutu olarak çizilir.
+  // Belge url'leri DB'den (EKAP kazÄ±yÄ±cÄ±sÄ±) geliyor. 'javascript:' / 'data:' ÅŸemalÄ± bir
+  // kayÄ±t href'e basÄ±ldÄ±ÄŸÄ±nda tÄ±klamada sayfa baÄŸlamÄ±nda Ã§alÄ±ÅŸÄ±rdÄ± â†’ yalnÄ±z http(s) geÃ§er,
+  // diÄŸerleri linksiz (pasif) kutu olarak Ã§izilir.
   const guvenliUrl=(u)=>{ const s=String(u==null?'':u).trim(); return /^https?:\/\//i.test(s)?s:''; };
 
-  // ⚠️ YARIŞ: v1-kabuk.js topbar'ı DOMContentLoaded'da monte eder; getSession bundan önce
-  // çözülürse #v1-paket-ad henüz YOKTUR ve rozet '—' kalır. DOM hazır olana kadar ertele.
+  // âš ï¸ YARIÅ: v1-kabuk.js topbar'Ä± DOMContentLoaded'da monte eder; getSession bundan Ã¶nce
+  // Ã§Ã¶zÃ¼lÃ¼rse #v1-paket-ad henÃ¼z YOKTUR ve rozet 'â€”' kalÄ±r. DOM hazÄ±r olana kadar ertele.
   function paketYaz(ad){
     const uygula=()=>{ if(window.v1PaketYaz) window.v1PaketYaz(ad); };
     if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', uygula, { once:true });
     else uygula();
   }
 
-  // ── Sekmeler ─────────────────────────────────────────────────────────────
+  // â”€â”€ Sekmeler â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   const SEKMELER=['takip','teknik','idari'];
   function sekmeAc(id){
     document.querySelectorAll('.v1-sekme').forEach(t=>t.classList.toggle('aktif', t.dataset.sekme===id));
@@ -231,75 +231,75 @@
     if(not) not.style.visibility = (id==='takip' ? '' : 'hidden');
   }
 
-  // ── Döküman türü → ikon ──────────────────────────────────────────────────
+  // â”€â”€ DÃ¶kÃ¼man tÃ¼rÃ¼ â†’ ikon â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   function dokIkon(tur){
     const t=fold(tur);
-    if(t.includes('pdf')) return '📕';
-    if(t.includes('excel')||t.includes('xlsx')||t.includes('xls')) return '📗';
-    if(t.includes('word')||t.includes('docx')||t.includes('doc')) return '📘';
-    if(t.includes('zip')||t.includes('rar')) return '🗜️';
-    if(t.includes('teknik')) return '🔧';
-    if(t.includes('idari')) return '📎';
-    if(t.includes('sartname')) return '📋';
-    return '📄';
+    if(t.includes('pdf')) return 'ğŸ“•';
+    if(t.includes('excel')||t.includes('xlsx')||t.includes('xls')) return 'ğŸ“—';
+    if(t.includes('word')||t.includes('docx')||t.includes('doc')) return 'ğŸ“˜';
+    if(t.includes('zip')||t.includes('rar')) return 'ğŸ—œï¸';
+    if(t.includes('teknik')) return 'ğŸ”§';
+    if(t.includes('idari')) return 'ğŸ“';
+    if(t.includes('sartname')) return 'ğŸ“‹';
+    return 'ğŸ“„';
   }
 
-  // ── Bir ihale kartı ──────────────────────────────────────────────────────
+  // â”€â”€ Bir ihale kartÄ± â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   function kartHtml(item){
     const ihale=item.ihale, liste=Array.isArray(item.belgeler)?item.belgeler:[];
-    // ekap_id misafirde select'e girmiyor (anon'a kapalı) → undefined gelir. EKAP linki
-    // yalnız üyede gösterilir; misafirde yanlış link üretmek yerine gizlenir.
+    // ekap_id misafirde select'e girmiyor (anon'a kapalÄ±) â†’ undefined gelir. EKAP linki
+    // yalnÄ±z Ã¼yede gÃ¶sterilir; misafirde yanlÄ±ÅŸ link Ã¼retmek yerine gizlenir.
     const ekapId=ihale.ekap_id;
-    // Doğrudan Temin EKAP'ta AYRI modül (ekap-dt/search) — normal ihale araması (ekap/search)
-    // DT kayıtlarını kapsamaz, o yüzden usul'e göre ayrılıyor.
+    // DoÄŸrudan Temin EKAP'ta AYRI modÃ¼l (ekap-dt/search) â€” normal ihale aramasÄ± (ekap/search)
+    // DT kayÄ±tlarÄ±nÄ± kapsamaz, o yÃ¼zden usul'e gÃ¶re ayrÄ±lÄ±yor.
     const dt=fold(ihale.usul).includes('dogrudan temin');
     const ekapUrl=(uyeMi && ekapId)
       ? (dt ? 'https://ekapv2.kik.gov.tr/ekap-dt/search' : 'https://ekapv2.kik.gov.tr/ekap/search')
       : null;
 
     const govde = liste.length===0
-      ? `<p class="v1-dk-not">Bu ihale için döküman kaydı bulunamadı.
-           ${ekapUrl?`<br><a class="v1-btn-ekap" href="${esc(ekapUrl)}" target="_blank" rel="noopener">EKAP'ta Görüntüle ↗</a>`:''}</p>`
+      ? `<p class="v1-dk-not">Bu ihale iÃ§in dÃ¶kÃ¼man kaydÄ± bulunamadÄ±.
+           ${ekapUrl?`<br><a class="v1-btn-ekap" href="${esc(ekapUrl)}" target="_blank" rel="noopener">EKAP'ta GÃ¶rÃ¼ntÃ¼le â†—</a>`:''}</p>`
       : `<div class="v1-dok-grid">
            ${liste.map(d=>{
-             // storage_url = EKAP belgesinin Supabase Storage aynası; url boşsa yedek kaynak.
+             // storage_url = EKAP belgesinin Supabase Storage aynasÄ±; url boÅŸsa yedek kaynak.
              const url=guvenliUrl(d && (d.url || d.storage_url));
-             const ad=(d&&(d.ad||d.baslik))||'Döküman';
+             const ad=(d&&(d.ad||d.baslik))||'DÃ¶kÃ¼man';
              const tur=(d&&(d.tur||d.type))||'';
              return `<a class="v1-dok${url?'':' pasif'}" href="${url?esc(url):'#'}"${url?' target="_blank" rel="noopener"':' onclick="return false;"'}>
                <span class="v1-dok-ikon">${dokIkon(tur||ad)}</span>
                <span class="v1-dok-info">
                  <span class="v1-dok-ad">${esc(ad)}</span>
-                 <span class="v1-dok-tur">${tur?esc(tur):'Tür belirtilmemiş'}</span>
+                 <span class="v1-dok-tur">${tur?esc(tur):'TÃ¼r belirtilmemiÅŸ'}</span>
                </span>
-               ${url?'<span class="v1-dok-ok">↗</span>':''}
+               ${url?'<span class="v1-dok-ok">â†—</span>':''}
              </a>`;
            }).join('')}
            ${ekapUrl?`<a class="v1-dok ekap" href="${esc(ekapUrl)}" target="_blank" rel="noopener">
-             <span class="v1-dok-ikon">🏛️</span>
+             <span class="v1-dok-ikon">ğŸ›ï¸</span>
              <span class="v1-dok-info">
-               <span class="v1-dok-ad">EKAP'ta Görüntüle</span>
-               <span class="v1-dok-tur">Tüm dökümanlar için</span>
+               <span class="v1-dok-ad">EKAP'ta GÃ¶rÃ¼ntÃ¼le</span>
+               <span class="v1-dok-tur">TÃ¼m dÃ¶kÃ¼manlar iÃ§in</span>
              </span>
-             <span class="v1-dok-ok">↗</span>
+             <span class="v1-dok-ok">â†—</span>
            </a>`:''}
          </div>`;
 
     const kid='kart-'+ihale.id;
-    const idareHtml = uyeMi ? esc(ihale.idare||'—') : MASKE_ROZET;
-    // Arama anahtarı: ihale başlığı + (üyede) idare + il + döküman adları/türleri
+    const idareHtml = uyeMi ? esc(ihale.idare||'â€”') : MASKE_ROZET;
+    // Arama anahtarÄ±: ihale baÅŸlÄ±ÄŸÄ± + (Ã¼yede) idare + il + dÃ¶kÃ¼man adlarÄ±/tÃ¼rleri
     const araMetin = fold([ihale.baslik, uyeMi?ihale.idare:'', ihale.il,
       liste.map(d=>[(d&&(d.ad||d.baslik))||'', (d&&(d.tur||d.type))||''].join(' ')).join(' ')].join(' '));
 
     return `<div class="v1-dk" data-id="${esc(ihale.id)}" data-ara="${esc(araMetin)}">
       <div class="v1-dk-bas" data-hedef="${kid}">
         <div class="v1-dk-sol">
-          <div class="v1-dk-baslik">${esc(ihale.baslik||'—')}</div>
-          <div class="v1-dk-meta">${idareHtml}${ihale.il?' &nbsp;·&nbsp; '+esc(ihale.il):''}</div>
+          <div class="v1-dk-baslik">${esc(ihale.baslik||'â€”')}</div>
+          <div class="v1-dk-meta">${idareHtml}${ihale.il?' &nbsp;Â·&nbsp; '+esc(ihale.il):''}</div>
         </div>
         <div class="v1-dk-sag">
-          <span class="v1-dk-sayi${liste.length?'':' yok'}">${num(liste.length)} döküman</span>
-          <span class="v1-dk-ok" id="ok-${kid}">›</span>
+          <span class="v1-dk-sayi${liste.length?'':' yok'}">${num(liste.length)} dÃ¶kÃ¼man</span>
+          <span class="v1-dk-ok" id="ok-${kid}">â€º</span>
         </div>
       </div>
       <div class="v1-dk-govde" id="${kid}">${govde}</div>
@@ -323,10 +323,10 @@
       if(ok) ok.classList.toggle('acik', tumAcik);
     });
     const b=document.getElementById('tumunu-ac-btn');
-    if(b) b.textContent = tumAcik ? 'Tümünü Kapat' : 'Tümünü Aç';
+    if(b) b.textContent = tumAcik ? 'TÃ¼mÃ¼nÃ¼ Kapat' : 'TÃ¼mÃ¼nÃ¼ AÃ§';
   }
 
-  // ── Arama filtresi ───────────────────────────────────────────────────────
+  // â”€â”€ Arama filtresi â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   function araFiltrele(){
     const inp=document.getElementById('dok-ara');
     const q=fold(inp?inp.value:'').trim();
@@ -342,7 +342,7 @@
   function notYaz(ihaleAdet, belgeAdet, filtreli){
     const el=document.getElementById('ust-not');
     if(!el) return;
-    el.innerHTML = `<strong>${num(ihaleAdet)}</strong> ihale · <strong>${num(belgeAdet)}</strong> döküman`
+    el.innerHTML = `<strong>${num(ihaleAdet)}</strong> ihale Â· <strong>${num(belgeAdet)}</strong> dÃ¶kÃ¼man`
       + (filtreli ? ' <span style="color:var(--v1-muted);">(filtreli)</span>' : '');
   }
 
@@ -355,30 +355,30 @@
     </div>`;
   }
 
-  // ── Yükleme ──────────────────────────────────────────────────────────────
+  // â”€â”€ YÃ¼kleme â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   async function yukle(){
     const icerik=document.getElementById('dok-icerik');
     const ham=(window.Takip && typeof Takip.liste==='function') ? Takip.liste() : [];
     const ids=ham.filter(v=>UUID_RE.test(String(v)));
 
     if(!ham.length){
-      icerik.innerHTML=bosDurum('📁','Takip listesi boş',
-        'Dökümanları görmek için önce ihaleleri takip listesine ekleyin. İhale listesindeki ☆ butonuyla takibe alabilirsiniz.',
-        'İhalelere Göz At →','v1-ihaleler');
+      icerik.innerHTML=bosDurum('ğŸ“','Takip listesi boÅŸ',
+        'DÃ¶kÃ¼manlarÄ± gÃ¶rmek iÃ§in Ã¶nce ihaleleri takip listesine ekleyin. Ä°hale listesindeki â˜† butonuyla takibe alabilirsiniz.',
+        'Ä°halelere GÃ¶z At â†’','v1-ihaleler');
       notYaz(0,0,false);
       return;
     }
 
-    icerik.innerHTML='<div class="v1-bos">Yükleniyor…</div>';
+    icerik.innerHTML='<div class="v1-bos">YÃ¼kleniyorâ€¦</div>';
 
-    // MİSAFİR MASKELEME: ilanlar.ekap_id ve ilanlar.idare anon'a KAPALI (canlı curl ile
-    // doğrulandı: 42501 permission denied for table ilanlar). Biri select'te kalırsa
-    // PostgREST tek kolonu atlamaz — SORGUNUN TAMAMINI reddeder ve sayfa tamamen ölür.
-    // Takip listesi localStorage tabanlı olduğu için misafirin de dolu listesi olabilir.
-    // baslik/il/belgeler/usul anon'a açık — dar select yeterli.
+    // MÄ°SAFÄ°R MASKELEME: ilanlar.ekap_id ve ilanlar.idare anon'a KAPALI (canlÄ± curl ile
+    // doÄŸrulandÄ±: 42501 permission denied for table ilanlar). Biri select'te kalÄ±rsa
+    // PostgREST tek kolonu atlamaz â€” SORGUNUN TAMAMINI reddeder ve sayfa tamamen Ã¶lÃ¼r.
+    // Takip listesi localStorage tabanlÄ± olduÄŸu iÃ§in misafirin de dolu listesi olabilir.
+    // baslik/il/belgeler/usul anon'a aÃ§Ä±k â€” dar select yeterli.
     const uyeKolon = uyeMi ? 'ekap_id,idare,' : '';
-    // Çok takipli kullanıcıda tek istekte 500+ uuid ≈ 20 KB'lık URL demek; nginx/Kong
-    // başlık sınırını aşınca 414 döner ve sayfa komple ölür. 100'lük parçalara böl.
+    // Ã‡ok takipli kullanÄ±cÄ±da tek istekte 500+ uuid â‰ˆ 20 KB'lÄ±k URL demek; nginx/Kong
+    // baÅŸlÄ±k sÄ±nÄ±rÄ±nÄ± aÅŸÄ±nca 414 dÃ¶ner ve sayfa komple Ã¶lÃ¼r. 100'lÃ¼k parÃ§alara bÃ¶l.
     const PARCA=100, parcalar=[];
     for(let i=0;i<ids.length;i+=PARCA) parcalar.push(ids.slice(i,i+PARCA));
     const sonuclar = await Promise.all(parcalar.map(p => sb
@@ -390,13 +390,13 @@
     if(hatali){
       const error=hatali.error;
       const kilit = error.code==='42501' || /permission denied/i.test(error.message||'');
-      // Ham Postgres metni (kolon/rol/timeout ayrıntısı) kullanıcıya GÖSTERİLMEZ; konsola.
-      console.error('v1-dokumanlar yükleme hatası:', error);
+      // Ham Postgres metni (kolon/rol/timeout ayrÄ±ntÄ±sÄ±) kullanÄ±cÄ±ya GÃ–STERÄ°LMEZ; konsola.
+      console.error('v1-dokumanlar yÃ¼kleme hatasÄ±:', error);
       icerik.innerHTML = kilit
-        ? `<div class="v1-kilit-kutu">🔒 İhale dökümanları üyelere özeldir.<br><br>
-             <a href="login">Giriş yapın</a> veya <a href="fiyatlandirma_odeme_bolumu">üye olun</a> →</div>`
-        : `<div class="v1-kilit-kutu">Dökümanlar şu an yüklenemedi.<br><br>
-             Lütfen birkaç saniye sonra sayfayı yenileyin.</div>`;
+        ? `<div class="v1-kilit-kutu">ğŸ”’ Ä°hale dÃ¶kÃ¼manlarÄ± Ã¼yelere Ã¶zeldir.<br><br>
+             <a href="login">GiriÅŸ yapÄ±n</a> veya <a href="fiyatlandirma_odeme_bolumu">Ã¼ye olun</a> â†’</div>`
+        : `<div class="v1-kilit-kutu">DÃ¶kÃ¼manlar ÅŸu an yÃ¼klenemedi.<br><br>
+             LÃ¼tfen birkaÃ§ saniye sonra sayfayÄ± yenileyin.</div>`;
       notYaz(0,0,false);
       return;
     }
@@ -405,33 +405,33 @@
     tumVeriler=data.map(ihale=>({ ihale, belgeler: Array.isArray(ihale.belgeler)?ihale.belgeler:[] }));
 
     if(!tumVeriler.length){
-      icerik.innerHTML=bosDurum('🔍','Veri bulunamadı',
-        'Takip listenizde kayıtlı ihaleler bulunamadı. İlanlar arşivden kaldırılmış olabilir.',
-        'İhalelere Göz At →','v1-ihaleler');
+      icerik.innerHTML=bosDurum('ğŸ”','Veri bulunamadÄ±',
+        'Takip listenizde kayÄ±tlÄ± ihaleler bulunamadÄ±. Ä°lanlar arÅŸivden kaldÄ±rÄ±lmÄ±ÅŸ olabilir.',
+        'Ä°halelere GÃ¶z At â†’','v1-ihaleler');
       notYaz(0,0,false);
       return;
     }
 
-    // Çok dökümanlı ihaleler üstte
+    // Ã‡ok dÃ¶kÃ¼manlÄ± ihaleler Ã¼stte
     tumVeriler.sort((a,b)=>b.belgeler.length-a.belgeler.length);
     icerik.innerHTML=tumVeriler.map(kartHtml).join('');
 
-    // ≤3 kart varsa otomatik aç
+    // â‰¤3 kart varsa otomatik aÃ§
     if(tumVeriler.length<=3){
-      tumAcik=false;      // toggle çağrısı true'ya çevirsin
+      tumAcik=false;      // toggle Ã§aÄŸrÄ±sÄ± true'ya Ã§evirsin
       tumunuAcKapat();
     } else {
       const b=document.getElementById('tumunu-ac-btn');
-      if(b) b.textContent='Tümünü Aç';
+      if(b) b.textContent='TÃ¼mÃ¼nÃ¼ AÃ§';
     }
 
     araFiltrele();
   }
 
-  // ── Klavye kısayolları ───────────────────────────────────────────────────
-  // NOT: v1-kabuk.js de Ctrl+K'yı üst arama kutusuna bağlıyor. Bu script kabuk'tan ÖNCE
-  // (kabuk mont'u DOMContentLoaded'da) dinleyici eklediği için stopImmediatePropagation ile
-  // bu sayfada öncelik sayfa içi aramaya verilir.
+  // â”€â”€ Klavye kÄ±sayollarÄ± â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // NOT: v1-kabuk.js de Ctrl+K'yÄ± Ã¼st arama kutusuna baÄŸlÄ±yor. Bu script kabuk'tan Ã–NCE
+  // (kabuk mont'u DOMContentLoaded'da) dinleyici eklediÄŸi iÃ§in stopImmediatePropagation ile
+  // bu sayfada Ã¶ncelik sayfa iÃ§i aramaya verilir.
   document.addEventListener('keydown', (e)=>{
     if((e.ctrlKey||e.metaKey) && (e.key==='k'||e.key==='K')){
       const el=document.getElementById('dok-ara');
@@ -448,7 +448,7 @@
     }
   });
 
-  // ── Başlat ───────────────────────────────────────────────────────────────
+  // â”€â”€ BaÅŸlat â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   document.getElementById('sekme-bar').addEventListener('click', (e)=>{
     const b=e.target.closest('.v1-sekme'); if(!b) return; sekmeAc(b.dataset.sekme);
   });
@@ -459,7 +459,7 @@
   });
 
   (async()=>{
-    // SIRA ÖNEMLİ: uyeMi, anon'a kapalı kolona dokunan sorgudan ÖNCE set edilmeli.
+    // SIRA Ã–NEMLÄ°: uyeMi, anon'a kapalÄ± kolona dokunan sorgudan Ã–NCE set edilmeli.
     try{
       const { data } = await sb.auth.getSession();
       const oturum = data && data.session;
@@ -468,7 +468,7 @@
         const { data:k } = await sb.from('kullanici_krediler').select('plan').eq('kullanici_id',oturum.user.id).maybeSingle();
         paketYaz(['standart','kurumsal'].includes(k?.plan)?'Pro':'Temel');
       } else paketYaz('Misafir');
-      // Girişliyse başka cihazda eklenen takipler de gelsin
+      // GiriÅŸliyse baÅŸka cihazda eklenen takipler de gelsin
       if(oturum && window.Takip && typeof Takip.syncFromDB==='function'){
         try{ await Takip.syncFromDB(); }catch(_){}
       }

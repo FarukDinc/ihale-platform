@@ -94,12 +94,12 @@
   const ray = document.createElement('aside');
   ray.className = 'v1-ray';
   ray.innerHTML =
-    // <a> menü öğeleri ZİYARET EDİLİNCE (:visited) tarayıcı rengi soldururdu (buton'da yoktu).
-    // :link/:visited/aktif renklerini sabitle → tıklanan öğe rengi değişmesin. (css/v1.css bump
-    // gerekmesin diye burada enjekte.)
-    '<style>.v1-ray-item:link,.v1-ray-item:visited{color:rgba(255,255,255,.82)}'
-    + '.v1-ray-item:hover,.v1-ray-item:visited:hover{color:#fff}'
-    + '.v1-ray-item.aktif,.v1-ray-item.aktif:visited{color:var(--v1-lacivert)}</style>' +
+    // <a> menü öğeleri ZİYARET EDİLİNCE (:visited) soluyordu. Kök neden: alfa'lı renk
+    // (rgba .82). Tarayıcı gizlilik modeli :visited'te alfa kanalını + fill:currentColor'ı
+    // kısıtlar → tıklanan öğe soluk kalır. Çözüm: SOLID renk (alfa yok) + !important.
+    '<style>.v1-ray-item,.v1-ray-item:link,.v1-ray-item:visited{color:#E8EEF4!important}'
+    + '.v1-ray-item:hover,.v1-ray-item:visited:hover{color:#fff!important}'
+    + '.v1-ray-item.aktif,.v1-ray-item.aktif:visited{color:var(--v1-lacivert)!important}</style>' +
     '<a class="v1-ray-logo" href="v1-benim-sayfam" title="İhaleGlobal"><img src="/favicon-v1.svg?v=1" alt="İhaleGlobal"></a>' +
     '<nav class="v1-ray-nav">' +
     MENU.map((m, i) =>

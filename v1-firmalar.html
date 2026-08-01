@@ -1,13 +1,13 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="tr">
 <head>
   <meta charset="UTF-8" />
-  <meta name="author" content="Ömer Faruk Dinç">
+  <meta name="author" content="Ã–mer Faruk DinÃ§">
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Firmalar — İhaleGlobal</title>
+  <title>Firmalar â€” Ä°haleGlobal</title>
   <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=4" />
   <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/v1.css?v=7" />
+  <link rel="stylesheet" href="css/v1.css?v=15" />
   <style>
     .v1-sayfa-baslik { font-size:22px; font-weight:800; color:var(--v1-lacivert); margin-bottom:4px; }
     .v1-sayfa-alt { font-size:13.5px; color:var(--v1-muted); margin-bottom:16px; }
@@ -20,7 +20,7 @@
     .v1-uyari { background:var(--v1-mavi-acik); border:1px solid #CFE2F5; border-radius:12px; padding:16px 18px;
       font-size:13.5px; color:var(--v1-metin); margin-bottom:16px; }
 
-    /* ── Filtre çubuğu (il + segment) ─────────────────────────────────── */
+    /* â”€â”€ Filtre Ã§ubuÄŸu (il + segment) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     .v1-fc { display:flex; align-items:center; gap:18px; flex-wrap:wrap; background:#fff;
       border:1px solid var(--v1-cizgi); border-radius:var(--v1-radius-lg); box-shadow:var(--v1-golge);
       padding:12px 16px; margin-bottom:14px; }
@@ -42,74 +42,74 @@
     .v1-seg-ipucu { background:var(--v1-mavi-acik); border:1px solid #CFE2F5; border-radius:10px;
       padding:10px 14px; font-size:12.5px; color:var(--v1-metin-2); margin-bottom:14px; }
 
-    /* ── Tıklanabilir sıralama başlıkları ─────────────────────────────── */
+    /* â”€â”€ TÄ±klanabilir sÄ±ralama baÅŸlÄ±klarÄ± â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     .v1-th-sirala { cursor:pointer; user-select:none; white-space:nowrap; }
     .v1-th-sirala:hover { color:var(--v1-mavi); }
     .v1-th-sirala.aktif { color:var(--v1-mavi); }
     .v1-ok { font-size:10px; color:var(--v1-cizgi); margin-left:3px; }
     .v1-th-sirala:hover .v1-ok { color:var(--v1-mavi); }
     .v1-th-sirala.aktif .v1-ok { color:var(--v1-mavi); }
-    /* ⚠️ css/v1.css'teki `.v1-tablo th{text-align:left}` özgüllüğü (0,1,1) — düz
-       `.v1-sayi-h` (0,1,0) ONU YENEMEZ, başlıklar sola yapışık kalırdı. Sütun
-       adıyla birlikte yazıp (0,2,1)'e çıkıyoruz. */
+    /* âš ï¸ css/v1.css'teki `.v1-tablo th{text-align:left}` Ã¶zgÃ¼llÃ¼ÄŸÃ¼ (0,1,1) â€” dÃ¼z
+       `.v1-sayi-h` (0,1,0) ONU YENEMEZ, baÅŸlÄ±klar sola yapÄ±ÅŸÄ±k kalÄ±rdÄ±. SÃ¼tun
+       adÄ±yla birlikte yazÄ±p (0,2,1)'e Ã§Ä±kÄ±yoruz. */
     .v1-tablo th.v1-sayi-h { text-align:right; }
     .v1-tablo td.v1-sayi   { text-align:right; }
     .v1-buyume-poz { color:var(--v1-yesil); font-weight:800; }
     .v1-buyume-neg { color:var(--v1-kirmizi); font-weight:800; }
   </style>
 </head>
-<body class="v1" data-v1-aktif="firmalar" data-v1-kirinti="İhaleGlobal > Firmalar">
+<body class="v1" data-v1-aktif="firmalar" data-v1-kirinti="Ä°haleGlobal > Firmalar">
 <div class="v1-app">
   <div class="v1-main">
     <div class="v1-govde">
-      <div class="v1-sayfa-baslik">Yüklenici Firmalar</div>
-      <div class="v1-sayfa-alt">Kamu ihalesi kazanan firmalar — il, segment, ciro ve sözleşme sayısına göre süzülüp sıralanabilir.</div>
+      <div class="v1-sayfa-baslik">YÃ¼klenici Firmalar</div>
+      <div class="v1-sayfa-alt">Kamu ihalesi kazanan firmalar â€” il, segment, ciro ve sÃ¶zleÅŸme sayÄ±sÄ±na gÃ¶re sÃ¼zÃ¼lÃ¼p sÄ±ralanabilir.</div>
 
       <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
         <div class="v1-sekmeler" style="margin:0;">
-          <button class="v1-sekme aktif" id="s-tum">Tüm Firmalar</button>
+          <button class="v1-sekme aktif" id="s-tum">TÃ¼m Firmalar</button>
           <button class="v1-sekme" id="s-takip">Takip Ettiklerim</button>
         </div>
         <span style="flex:1;"></span>
         <a href="v1-firma-segmentleri" style="display:inline-flex;align-items:center;gap:6px;background:#fff;color:var(--v1-mavi);
-          border:1.5px solid var(--v1-cizgi);font-size:12.5px;font-weight:700;padding:8px 14px;border-radius:9px;text-decoration:none;">⭐ Firma Segmentleri →</a>
+          border:1.5px solid var(--v1-cizgi);font-size:12.5px;font-weight:700;padding:8px 14px;border-radius:9px;text-decoration:none;">â­ Firma Segmentleri â†’</a>
       </div>
 
       <div id="v1-misafir" class="v1-uyari" style="display:none;">
-        🔒 Firma listesi ve ciro verileri <strong>üyelere özeldir</strong>.
-        <a href="login">Giriş yapın</a> veya <a href="fiyatlandirma_odeme_bolumu">üye olun</a> →
+        ğŸ”’ Firma listesi ve ciro verileri <strong>Ã¼yelere Ã¶zeldir</strong>.
+        <a href="login">GiriÅŸ yapÄ±n</a> veya <a href="fiyatlandirma_odeme_bolumu">Ã¼ye olun</a> â†’
       </div>
 
-      <!-- Filtre çubuğu: il her zaman görünür (misafirde kilitli), segment YALNIZ üyede -->
+      <!-- Filtre Ã§ubuÄŸu: il her zaman gÃ¶rÃ¼nÃ¼r (misafirde kilitli), segment YALNIZ Ã¼yede -->
       <div class="v1-fc">
         <div class="v1-fc-alan">
-          <span class="v1-fc-etiket">İl</span>
-          <select id="v1-il" title="İle göre süz"><option value="">Tüm iller</option></select>
+          <span class="v1-fc-etiket">Ä°l</span>
+          <select id="v1-il" title="Ä°le gÃ¶re sÃ¼z"><option value="">TÃ¼m iller</option></select>
         </div>
         <div class="v1-fc-alan" id="v1-segment-alan" style="display:none;">
           <span class="v1-fc-etiket">Segment</span>
           <div class="v1-cipler" id="v1-cipler"></div>
         </div>
         <span style="flex:1;"></span>
-        <button class="v1-fc-temizle" id="v1-temizle" style="display:none;">✕ Filtreleri temizle</button>
+        <button class="v1-fc-temizle" id="v1-temizle" style="display:none;">âœ• Filtreleri temizle</button>
       </div>
       <div class="v1-seg-ipucu" id="v1-seg-ipucu" style="display:none;"></div>
 
       <div class="v1-kart" style="padding:18px 20px;">
         <div class="v1-tablo-bas">
           <div>
-            <div style="font-size:17px;font-weight:800;color:var(--v1-lacivert);" id="v1-liste-baslik">Tüm Firmalar</div>
-            <div class="v1-tablo-sayi" id="v1-sayi">Yükleniyor…</div>
+            <div style="font-size:17px;font-weight:800;color:var(--v1-lacivert);" id="v1-liste-baslik">TÃ¼m Firmalar</div>
+            <div class="v1-tablo-sayi" id="v1-sayi">YÃ¼kleniyorâ€¦</div>
           </div>
           <div class="v1-listede-ara">
             <svg viewBox="0 0 24 24" width="15" height="15" fill="var(--v1-muted)"><path fill-rule="evenodd" d="M10.5 3a7.5 7.5 0 1 0 4.55 13.46l4.24 4.25 1.42-1.42-4.25-4.24A7.5 7.5 0 0 0 10.5 3Zm0 2a5.5 5.5 0 1 1 0 11 5.5 5.5 0 0 1 0-11Z"/></svg>
-            <input type="text" id="v1-ara-liste" placeholder="Firma adı ara">
+            <input type="text" id="v1-ara-liste" placeholder="Firma adÄ± ara">
           </div>
         </div>
         <div style="overflow-x:auto;">
           <table class="v1-tablo" id="v1-tablo">
             <thead id="v1-thead"></thead>
-            <tbody id="v1-tbody"><tr><td colspan="6" class="v1-bos">Yükleniyor…</td></tr></tbody>
+            <tbody id="v1-tbody"><tr><td colspan="6" class="v1-bos">YÃ¼kleniyorâ€¦</td></tr></tbody>
           </table>
         </div>
         <div class="v1-sayfalama" id="v1-sayfalama"></div>
@@ -119,79 +119,79 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-<script src="js/v1-kabuk.js?v=14"></script>
+<script src="js/v1-kabuk.js?v=15"></script>
 <script>
 (() => {
   const SB_URL="https://ihaleglobal.com", SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzg0MzA3MTU4LCJleHAiOjE5NDE5ODcxNTh9.CjNKulvirotDD_y2oO2QKgo0kbqYvL0jUSV1RiDMoso";
   const sb=window.supabase.createClient(SB_URL,SB_KEY);
   const num=(n)=>(Number(n)||0).toLocaleString('tr-TR');
   const esc=(s)=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-  const tl=(v)=>v==null?'—':'₺'+Number(v).toLocaleString('tr-TR',{maximumFractionDigits:0});
-  // ⚠️ Türkçe arama: burada KENDİ fold fonksiyonumuzu yazmıyoruz. js/v1-kabuk.js
-  //    window.trFold + window.v1Ara sunuyor ve SQL tr_fold() ile birebir aynı katlamayı
-  //    yapıyor (ı→i dahil). Sayfa-içi kopya "IŞIK"ı "isik"e katlamadığı için sessizce
-  //    0 sonuç döndürüyordu.
+  const tl=(v)=>v==null?'â€”':'â‚º'+Number(v).toLocaleString('tr-TR',{maximumFractionDigits:0});
+  // âš ï¸ TÃ¼rkÃ§e arama: burada KENDÄ° fold fonksiyonumuzu yazmÄ±yoruz. js/v1-kabuk.js
+  //    window.trFold + window.v1Ara sunuyor ve SQL tr_fold() ile birebir aynÄ± katlamayÄ±
+  //    yapÄ±yor (Ä±â†’i dahil). Sayfa-iÃ§i kopya "IÅIK"Ä± "isik"e katlamadÄ±ÄŸÄ± iÃ§in sessizce
+  //    0 sonuÃ§ dÃ¶ndÃ¼rÃ¼yordu.
   const P=new URLSearchParams(location.search);
   const BOY=25;
 
   /**
-   * ── SIRALANABİLİR SÜTUNLAR ───────────────────────────────────────────────
-   * uyeOzel:true  → kolon anon'a KAPALI (REST 401/42501). Misafirde başlığı bile
-   *                 basmıyoruz; yoksa misafir tıklayıp sayfayı öldürebilirdi.
-   * bosOlabilir:true → kolonda NULL var (segment tazelemesi eşleşmeyen firmayı
-   *                 atlıyor). Bu kolonlarla sıralarken NULL satırları sorgudan
-   *                 DÜŞÜRÜYORUZ (.not(...is null)): yoksa "Son 12 Ay ▼" ilk sayfası
-   *                 baştan aşağı "—" geliyordu. toplam_ciro / toplam_sozlesme_sayisi'nda
-   *                 203.784 satırın TAMAMI dolu (ölçüldü: is.null → 0 satır).
+   * â”€â”€ SIRALANABÄ°LÄ°R SÃœTUNLAR â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+   * uyeOzel:true  â†’ kolon anon'a KAPALI (REST 401/42501). Misafirde baÅŸlÄ±ÄŸÄ± bile
+   *                 basmÄ±yoruz; yoksa misafir tÄ±klayÄ±p sayfayÄ± Ã¶ldÃ¼rebilirdi.
+   * bosOlabilir:true â†’ kolonda NULL var (segment tazelemesi eÅŸleÅŸmeyen firmayÄ±
+   *                 atlÄ±yor). Bu kolonlarla sÄ±ralarken NULL satÄ±rlarÄ± sorgudan
+   *                 DÃœÅÃœRÃœYORUZ (.not(...is null)): yoksa "Son 12 Ay â–¼" ilk sayfasÄ±
+   *                 baÅŸtan aÅŸaÄŸÄ± "â€”" geliyordu. toplam_ciro / toplam_sozlesme_sayisi'nda
+   *                 203.784 satÄ±rÄ±n TAMAMI dolu (Ã¶lÃ§Ã¼ldÃ¼: is.null â†’ 0 satÄ±r).
    */
   const SIRALANABILIR = {
-    toplam_sozlesme_sayisi: { ad:'Sözleşme',    genislik:'120px', uyeOzel:false, bosOlabilir:false },
+    toplam_sozlesme_sayisi: { ad:'SÃ¶zleÅŸme',    genislik:'120px', uyeOzel:false, bosOlabilir:false },
     toplam_ciro:            { ad:'Toplam Ciro', genislik:'160px', uyeOzel:false, bosOlabilir:false },
     ciro_son_12ay:          { ad:'Son 12 Ay',   genislik:'150px', uyeOzel:true,  bosOlabilir:true  },
-    buyume_yuzde:           { ad:'Büyüme',      genislik:'110px', uyeOzel:true,  bosOlabilir:true  },
+    buyume_yuzde:           { ad:'BÃ¼yÃ¼me',      genislik:'110px', uyeOzel:true,  bosOlabilir:true  },
   };
   const VARSAYILAN_SIRALA='toplam_ciro', VARSAYILAN_YON='desc';
 
   /**
-   * ── SEGMENTLER ───────────────────────────────────────────────────────────
-   * Eşikler backend/migration_firma_segmentleri.sql ile birebir. `dogalSirala`
-   * o segmentin kısmi indeksiyle (ix_yuk_seg_*) uyumlu sütun — segment seçilince
-   * kullanıcı kendi sıralamasını seçmediyse buna geçiyoruz.
+   * â”€â”€ SEGMENTLER â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+   * EÅŸikler backend/migration_firma_segmentleri.sql ile birebir. `dogalSirala`
+   * o segmentin kÄ±smi indeksiyle (ix_yuk_seg_*) uyumlu sÃ¼tun â€” segment seÃ§ilince
+   * kullanÄ±cÄ± kendi sÄ±ralamasÄ±nÄ± seÃ§mediyse buna geÃ§iyoruz.
    */
   const SEGMENTLER = {
-    parlayan: { emoji:'🌟', ad:'Parlayan Yıldızlar', kolon:'seg_parlayan', dogalSirala:'ciro_son_12ay', dogalYon:'desc',
-      ipucu:'Son 12 ayda en az 5 Mn ₺ kazanıp önceki 12 aya göre cirosunu en az 2 katına çıkaran firmalar — ya da ilk kez kazanıp 20 Mn ₺ ve üzeri iş alanlar.' },
-    sonen:    { emoji:'📉', ad:'Sönen Yıldızlar',    kolon:'seg_sonen',    dogalSirala:'buyume_yuzde',  dogalYon:'asc',
-      ipucu:'Önceki 12 ayda en az 5 Mn ₺ kazanmışken son 12 ayda cirosu %70 ve üzeri düşen firmalar.' },
-    ilk_kez:  { emoji:'🆕', ad:'İlk Kez Kazananlar', kolon:'seg_ilk_kez',  dogalSirala:'toplam_ciro',   dogalYon:'desc',
-      ipucu:'İlk kamu kazanımı son 12 ay içinde olan ve toplamda en az 100 B ₺ iş alan firmalar.' },
-    '150mn':  { emoji:'💰', ad:'150Mn+ Kazananlar',  kolon:'seg_150mn',    dogalSirala:'toplam_ciro',   dogalYon:'desc',
-      ipucu:'Kümülatif kamu kazancı 150 Mn ₺ ve üzeri olan firmalar.' },
+    parlayan: { emoji:'ğŸŒŸ', ad:'Parlayan YÄ±ldÄ±zlar', kolon:'seg_parlayan', dogalSirala:'ciro_son_12ay', dogalYon:'desc',
+      ipucu:'Son 12 ayda en az 5 Mn â‚º kazanÄ±p Ã¶nceki 12 aya gÃ¶re cirosunu en az 2 katÄ±na Ã§Ä±karan firmalar â€” ya da ilk kez kazanÄ±p 20 Mn â‚º ve Ã¼zeri iÅŸ alanlar.' },
+    sonen:    { emoji:'ğŸ“‰', ad:'SÃ¶nen YÄ±ldÄ±zlar',    kolon:'seg_sonen',    dogalSirala:'buyume_yuzde',  dogalYon:'asc',
+      ipucu:'Ã–nceki 12 ayda en az 5 Mn â‚º kazanmÄ±ÅŸken son 12 ayda cirosu %70 ve Ã¼zeri dÃ¼ÅŸen firmalar.' },
+    ilk_kez:  { emoji:'ğŸ†•', ad:'Ä°lk Kez Kazananlar', kolon:'seg_ilk_kez',  dogalSirala:'toplam_ciro',   dogalYon:'desc',
+      ipucu:'Ä°lk kamu kazanÄ±mÄ± son 12 ay iÃ§inde olan ve toplamda en az 100 B â‚º iÅŸ alan firmalar.' },
+    '150mn':  { emoji:'ğŸ’°', ad:'150Mn+ Kazananlar',  kolon:'seg_150mn',    dogalSirala:'toplam_ciro',   dogalYon:'desc',
+      ipucu:'KÃ¼mÃ¼latif kamu kazancÄ± 150 Mn â‚º ve Ã¼zeri olan firmalar.' },
   };
 
   let sayfa=1, uyeMi=false, uid=null, mod='tum', takipli=new Set(), aramaT, istekNo=0;
   let il='', segment='', sirala=VARSAYILAN_SIRALA, yon=VARSAYILAN_YON, siralaSecildi=false;
-  const ilAdet=new Map();          // il → firma adedi (il_firma_dagilimi'nden)
+  const ilAdet=new Map();          // il â†’ firma adedi (il_firma_dagilimi'nden)
 
   const el=(id)=>document.getElementById(id);
   const artanMi=()=>yon==='asc';
-  const kolonSayisi=()=>uyeMi?8:6;   // #|Firma|İl|Sözleşme|Ciro(+Son12Ay|Büyüme)|takip
+  const kolonSayisi=()=>uyeMi?8:6;   // #|Firma|Ä°l|SÃ¶zleÅŸme|Ciro(+Son12Ay|BÃ¼yÃ¼me)|takip
 
-  // v1-kabuk topbar'ı DOMContentLoaded'da monte eder; getSession() localStorage'dan
-  // mikrotaskta dönüp ondan ÖNCE bitince v1PaketYaz hedef elemanı bulamıyor ve rozet
-  // "—" kalıyordu (v1-firma-analiz.html:1839'daki çarenin aynısı).
+  // v1-kabuk topbar'Ä± DOMContentLoaded'da monte eder; getSession() localStorage'dan
+  // mikrotaskta dÃ¶nÃ¼p ondan Ã–NCE bitince v1PaketYaz hedef elemanÄ± bulamÄ±yor ve rozet
+  // "â€”" kalÄ±yordu (v1-firma-analiz.html:1839'daki Ã§arenin aynÄ±sÄ±).
   function paketYaz(ad){
     const yaz=()=>{ if(window.v1PaketYaz) window.v1PaketYaz(ad); };
     if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',yaz);
     else yaz();
   }
 
-  // ── URL (derin link) ────────────────────────────────────────────────────
+  // â”€â”€ URL (derin link) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   /**
-   * `sirala`/`yon` URL'e YALNIZ kullanıcı bir başlığa tıkladıysa yazılır. Sebep:
-   * segment seçiliyken sıralama segmentin doğal sütununa kayıyor; bunu URL'e
-   * yazmazsak link açıldığında aynı türetme tekrar çalışıp AYNI sonucu verir.
-   * Kullanıcı elle seçtiyse yazıyoruz ki türetme onu EZMESİN.
+   * `sirala`/`yon` URL'e YALNIZ kullanÄ±cÄ± bir baÅŸlÄ±ÄŸa tÄ±kladÄ±ysa yazÄ±lÄ±r. Sebep:
+   * segment seÃ§iliyken sÄ±ralama segmentin doÄŸal sÃ¼tununa kayÄ±yor; bunu URL'e
+   * yazmazsak link aÃ§Ä±ldÄ±ÄŸÄ±nda aynÄ± tÃ¼retme tekrar Ã§alÄ±ÅŸÄ±p AYNI sonucu verir.
+   * KullanÄ±cÄ± elle seÃ§tiyse yazÄ±yoruz ki tÃ¼retme onu EZMESÄ°N.
    */
   function urlYaz(){
     const p=new URLSearchParams();
@@ -209,39 +209,39 @@
     if(s && Object.prototype.hasOwnProperty.call(SIRALANABILIR,s)){ sirala=s; siralaSecildi=true; }
     const y=(P.get('yon')||'').toLowerCase();
     if(y==='asc'||y==='desc') yon=y;
-    const g=P.get('segment')||P.get('seg')||'';   // segmentler sayfası ?seg= kullanıyor
+    const g=P.get('segment')||P.get('seg')||'';   // segmentler sayfasÄ± ?seg= kullanÄ±yor
     if(Object.prototype.hasOwnProperty.call(SEGMENTLER,g)) segment=g;
     il=(P.get('il')||'').trim();
   }
 
-  /** Misafirde üyeye özel sütun/segment seçilemez — URL'den gelse bile geri al. */
+  /** Misafirde Ã¼yeye Ã¶zel sÃ¼tun/segment seÃ§ilemez â€” URL'den gelse bile geri al. */
   function yetkiyeGoreKirp(){
     if(uyeMi) return;
     segment='';
-    // ⚠️ `il` de düşmeli: misafirde il açılır listesi doldurulmuyor (illeriYukle
-    //    yalnız üyede çağrılıyor) ve disabled. Bırakılırsa liste başlığı
-    //    "Tüm Firmalar — ANKARA" ve "✕ Filtreleri temizle" görünüyor, yani
-    //    misafire UYGULANMAMIŞ bir süzgeç uygulanmış gibi gösteriliyordu.
+    // âš ï¸ `il` de dÃ¼ÅŸmeli: misafirde il aÃ§Ä±lÄ±r listesi doldurulmuyor (illeriYukle
+    //    yalnÄ±z Ã¼yede Ã§aÄŸrÄ±lÄ±yor) ve disabled. BÄ±rakÄ±lÄ±rsa liste baÅŸlÄ±ÄŸÄ±
+    //    "TÃ¼m Firmalar â€” ANKARA" ve "âœ• Filtreleri temizle" gÃ¶rÃ¼nÃ¼yor, yani
+    //    misafire UYGULANMAMIÅ bir sÃ¼zgeÃ§ uygulanmÄ±ÅŸ gibi gÃ¶steriliyordu.
     il='';
     if(SIRALANABILIR[sirala] && SIRALANABILIR[sirala].uyeOzel){
       sirala=VARSAYILAN_SIRALA; yon=VARSAYILAN_YON; siralaSecildi=false;
     }
   }
 
-  // ── Başlıklar (tıklanabilir sıralama) ───────────────────────────────────
+  // â”€â”€ BaÅŸlÄ±klar (tÄ±klanabilir sÄ±ralama) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   function siralaTh(alan){
     const c=SIRALANABILIR[alan];
     const a=(sirala===alan);
-    const ok=a?(artanMi()?'▲':'▼'):'↕';
+    const ok=a?(artanMi()?'â–²':'â–¼'):'â†•';
     return `<th class="v1-th-sirala v1-sayi-h${a?' aktif':''}" data-sirala="${alan}" style="width:${c.genislik};"
-      title="${esc(c.ad)} sütununa göre sırala" aria-sort="${a?(artanMi()?'ascending':'descending'):'none'}"
+      title="${esc(c.ad)} sÃ¼tununa gÃ¶re sÄ±rala" aria-sort="${a?(artanMi()?'ascending':'descending'):'none'}"
       >${esc(c.ad)} <span class="v1-ok">${ok}</span></th>`;
   }
 
   function basliklariYaz(){
     const alanlar=Object.keys(SIRALANABILIR).filter(k=>uyeMi || !SIRALANABILIR[k].uyeOzel);
     el('v1-thead').innerHTML='<tr>'+
-      '<th style="width:44px;">#</th><th>Firma</th><th style="width:100px;">İl</th>'+
+      '<th style="width:44px;">#</th><th>Firma</th><th style="width:100px;">Ä°l</th>'+
       alanlar.map(siralaTh).join('')+
       '<th style="width:120px;"></th></tr>';
     el('v1-thead').querySelectorAll('[data-sirala]').forEach(th=>{
@@ -255,7 +255,7 @@
     });
   }
 
-  // ── İl açılır listesi (il_firma_dagilimi RPC — anon'a AÇIK) ─────────────
+  // â”€â”€ Ä°l aÃ§Ä±lÄ±r listesi (il_firma_dagilimi RPC â€” anon'a AÃ‡IK) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   async function illeriYukle(){
     const sec=el('v1-il');
     try{
@@ -265,22 +265,22 @@
         .filter(r=>r && r.il)
         .sort((a,b)=>String(a.il).localeCompare(String(b.il),'tr'));
       liste.forEach(r=>ilAdet.set(r.il,Number(r.adet)||0));
-      sec.innerHTML='<option value="">Tüm iller</option>'+
+      sec.innerHTML='<option value="">TÃ¼m iller</option>'+
         liste.map(r=>`<option value="${esc(r.il)}">${esc(r.il)} (${num(r.adet)})</option>`).join('');
-      // URL'den gelen il listede yoksa seçim boşta kalır → filtreyi de düşür
+      // URL'den gelen il listede yoksa seÃ§im boÅŸta kalÄ±r â†’ filtreyi de dÃ¼ÅŸÃ¼r
       if(il && !ilAdet.has(il)){ il=''; urlYaz(); }
       sec.value=il;
     }catch(e){
-      console.warn('İl listesi alınamadı:',e.message||e);
-      sec.innerHTML='<option value="">Tüm iller</option>';
+      console.warn('Ä°l listesi alÄ±namadÄ±:',e.message||e);
+      sec.innerHTML='<option value="">TÃ¼m iller</option>';
       sec.value='';
     }
   }
 
-  // ── Segment çipleri ─────────────────────────────────────────────────────
+  // â”€â”€ Segment Ã§ipleri â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   function cipleriYaz(){
     el('v1-cipler').innerHTML=
-      `<button class="v1-cip${segment?'':' aktif'}" data-seg="">Tümü</button>`+
+      `<button class="v1-cip${segment?'':' aktif'}" data-seg="">TÃ¼mÃ¼</button>`+
       Object.keys(SEGMENTLER).map(k=>
         `<button class="v1-cip${segment===k?' aktif':''}" data-seg="${esc(k)}">${SEGMENTLER[k].emoji} ${esc(SEGMENTLER[k].ad)}</button>`
       ).join('');
@@ -289,7 +289,7 @@
         const s=b.dataset.seg||'';
         if(s===segment) return;
         segment=s;
-        // Kullanıcı kendi sıralamasını seçmediyse segmentin doğal (indeksli) sütununa geç
+        // KullanÄ±cÄ± kendi sÄ±ralamasÄ±nÄ± seÃ§mediyse segmentin doÄŸal (indeksli) sÃ¼tununa geÃ§
         if(!siralaSecildi && segment){
           sirala=SEGMENTLER[segment].dogalSirala; yon=SEGMENTLER[segment].dogalYon;
         } else if(!siralaSecildi){
@@ -303,54 +303,54 @@
   function ipucuYaz(){
     const e=el('v1-seg-ipucu');
     if(segment && SEGMENTLER[segment]){
-      e.innerHTML=`${SEGMENTLER[segment].emoji} <strong>${esc(SEGMENTLER[segment].ad)}</strong> — ${esc(SEGMENTLER[segment].ipucu)}`;
+      e.innerHTML=`${SEGMENTLER[segment].emoji} <strong>${esc(SEGMENTLER[segment].ad)}</strong> â€” ${esc(SEGMENTLER[segment].ipucu)}`;
       e.style.display='block';
     } else e.style.display='none';
   }
 
   function temizleGoster(){
-    // Misafirde il/arama kutuları disabled, segment çipi hiç basılmıyor → temizlenecek
-    // hiçbir şey YOK. ?ara= disabled kutuya yine de yazılıyor (link neyi arıyordu
-    // görünsün diye); düğmeyi ona bakarak açarsak hiçbir şey yapmayan düğme çıkıyordu.
+    // Misafirde il/arama kutularÄ± disabled, segment Ã§ipi hiÃ§ basÄ±lmÄ±yor â†’ temizlenecek
+    // hiÃ§bir ÅŸey YOK. ?ara= disabled kutuya yine de yazÄ±lÄ±yor (link neyi arÄ±yordu
+    // gÃ¶rÃ¼nsÃ¼n diye); dÃ¼ÄŸmeyi ona bakarak aÃ§arsak hiÃ§bir ÅŸey yapmayan dÃ¼ÄŸme Ã§Ä±kÄ±yordu.
     if(!uyeMi){ el('v1-temizle').style.display='none'; return; }
     const q=(el('v1-ara-liste').value||'').trim();
     el('v1-temizle').style.display=(il||segment||q)?'inline-block':'none';
   }
 
   function listeBasligiYaz(){
-    let b = (mod==='takip') ? 'Takip Ettiğim Firmalar'
+    let b = (mod==='takip') ? 'Takip EttiÄŸim Firmalar'
           : (segment && SEGMENTLER[segment]) ? SEGMENTLER[segment].emoji+' '+SEGMENTLER[segment].ad
-          : 'Tüm Firmalar';
-    if(il) b+=' — '+il;
+          : 'TÃ¼m Firmalar';
+    if(il) b+=' â€” '+il;
     el('v1-liste-baslik').textContent=b;
   }
 
-  // ── Liste ───────────────────────────────────────────────────────────────
+  // â”€â”€ Liste â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   async function yukle(){
     const tb=el('v1-tbody');
     const KS=kolonSayisi();
-    // Her yükleme bir sıra numarası alır: arama debounce'u/sekme değişimi üst üste
-    // binince ESKİ isteğin geç dönen cevabı yeniyi ezmesin.
+    // Her yÃ¼kleme bir sÄ±ra numarasÄ± alÄ±r: arama debounce'u/sekme deÄŸiÅŸimi Ã¼st Ã¼ste
+    // binince ESKÄ° isteÄŸin geÃ§ dÃ¶nen cevabÄ± yeniyi ezmesin.
     const benim=++istekNo;
     const bosalt=()=>{ el('v1-sayi').textContent=''; el('v1-sayfalama').innerHTML=''; };
     listeBasligiYaz();
-    tb.innerHTML=`<tr><td colspan="${KS}" class="v1-bos">Yükleniyor…</td></tr>`;
+    tb.innerHTML=`<tr><td colspan="${KS}" class="v1-bos">YÃ¼kleniyorâ€¦</td></tr>`;
     if(!uyeMi){
       el('v1-misafir').style.display='block';
-      tb.innerHTML=`<tr><td colspan="${KS}" class="v1-bos">🔒 Firma listesi üyelere özeldir. <a href="login">Giriş yapın →</a></td></tr>`;
+      tb.innerHTML=`<tr><td colspan="${KS}" class="v1-bos">ğŸ”’ Firma listesi Ã¼yelere Ã¶zeldir. <a href="login">GiriÅŸ yapÄ±n â†’</a></td></tr>`;
       bosalt();
       return;
     }
     try{
       const q=(el('v1-ara-liste').value||'').trim();
       if(mod==='takip' && !takipli.size){
-        tb.innerHTML=`<tr><td colspan="${KS}" class="v1-bos">Henüz firma takip etmiyorsunuz.</td></tr>`;
+        tb.innerHTML=`<tr><td colspan="${KS}" class="v1-bos">HenÃ¼z firma takip etmiyorsunuz.</td></tr>`;
         bosalt(); return;
       }
       const bas=(sayfa-1)*BOY;
       const cfg=SIRALANABILIR[sirala]||SIRALANABILIR[VARSAYILAN_SIRALA];
-      // Her deneme için TAZE builder: supabase-js builder'ı bir kez await edildikten sonra
-      // yeniden filtrelenip çalıştırılamaz.
+      // Her deneme iÃ§in TAZE builder: supabase-js builder'Ä± bir kez await edildikten sonra
+      // yeniden filtrelenip Ã§alÄ±ÅŸtÄ±rÄ±lamaz.
       const temel=()=>{
         let s=sb.from('yukleniciler')
           .select('id,ad,il,toplam_sozlesme_sayisi,toplam_ciro,ciro_son_12ay,ciro_onceki_12ay,buyume_yuzde');
@@ -361,42 +361,42 @@
         return s;
       };
       /**
-       * ⚠️ NULL YÖNÜ İNDEKSE GÖRE: btree indeksi ancak "ASC NULLS LAST" ya da
-       *    "DESC NULLS FIRST" istendiğinde okunabilir (ikisi aynı indeksin ileri/geri
-       *    taraması). Yani nullsFirst = !ascending. Ters yazılırsa planlayıcı indeksi
-       *    bırakıp tüm tabloyu sıralar. Zaten NULL'lu sütunlarda satırları yukarıda
-       *    eleyip bu seçimi tamamen etkisiz hâle getiriyoruz.
+       * âš ï¸ NULL YÃ–NÃœ Ä°NDEKSE GÃ–RE: btree indeksi ancak "ASC NULLS LAST" ya da
+       *    "DESC NULLS FIRST" istendiÄŸinde okunabilir (ikisi aynÄ± indeksin ileri/geri
+       *    taramasÄ±). Yani nullsFirst = !ascending. Ters yazÄ±lÄ±rsa planlayÄ±cÄ± indeksi
+       *    bÄ±rakÄ±p tÃ¼m tabloyu sÄ±ralar. Zaten NULL'lu sÃ¼tunlarda satÄ±rlarÄ± yukarÄ±da
+       *    eleyip bu seÃ§imi tamamen etkisiz hÃ¢le getiriyoruz.
        */
       const artan=artanMi();
       const calistir=(s)=>s.order(sirala,{ascending:artan,nullsFirst:!artan}).range(bas,bas+BOY-1);
-      // yukleniciler.arama_fold = tr_fold(ad) — GENERATED kolon, trigram indeksli.
-      // Tüm tablo anon'a kapalı (42501) zaten; bu dal yalnızca üyede çalışıyor.
+      // yukleniciler.arama_fold = tr_fold(ad) â€” GENERATED kolon, trigram indeksli.
+      // TÃ¼m tablo anon'a kapalÄ± (42501) zaten; bu dal yalnÄ±zca Ã¼yede Ã§alÄ±ÅŸÄ±yor.
       let sorgu=temel();
       if(q){
-        if(!window.v1Ara) throw new Error('Arama modülü yüklenemedi, sayfayı yenileyin.');
+        if(!window.v1Ara) throw new Error('Arama modÃ¼lÃ¼ yÃ¼klenemedi, sayfayÄ± yenileyin.');
         sorgu=window.v1Ara(sorgu,'arama_fold',q);
       }
       let {data,error}=await calistir(sorgu);
-      if(benim!==istekNo) return;   // daha yeni bir yükleme başladı, bu cevabı yazma
-      // Emniyet (firma-analiz.html:1191 ile aynı desen): arama_fold prod'da yoksa sayfayı
-      // öldürme, düz ad ILIKE'a düş — bu yedek Türkçe İ/ı'da eksik sonuç verir, uyarı bırak.
+      if(benim!==istekNo) return;   // daha yeni bir yÃ¼kleme baÅŸladÄ±, bu cevabÄ± yazma
+      // Emniyet (firma-analiz.html:1191 ile aynÄ± desen): arama_fold prod'da yoksa sayfayÄ±
+      // Ã¶ldÃ¼rme, dÃ¼z ad ILIKE'a dÃ¼ÅŸ â€” bu yedek TÃ¼rkÃ§e Ä°/Ä±'da eksik sonuÃ§ verir, uyarÄ± bÄ±rak.
       if(error && q && /arama_fold/.test(error.message||'')){
-        console.warn('yukleniciler.arama_fold okunamadı, düz ad ILIKE yedeğine düşüldü:',error.message);
-        // virgül/parantez PostgREST sorgu ayrıştırıcısını bozar → temizle
+        console.warn('yukleniciler.arama_fold okunamadÄ±, dÃ¼z ad ILIKE yedeÄŸine dÃ¼ÅŸÃ¼ldÃ¼:',error.message);
+        // virgÃ¼l/parantez PostgREST sorgu ayrÄ±ÅŸtÄ±rÄ±cÄ±sÄ±nÄ± bozar â†’ temizle
         ({data,error}=await calistir(temel().ilike('ad','*'+q.replace(/[,()*]/g,' ').trim()+'*')));
         if(benim!==istekNo) return;
       }
       if(error) throw error;
-      if(!data||!data.length){ tb.innerHTML=`<tr><td colspan="${KS}" class="v1-bos">Sonuç bulunamadı.</td></tr>`; bosalt(); return; }
+      if(!data||!data.length){ tb.innerHTML=`<tr><td colspan="${KS}" class="v1-bos">SonuÃ§ bulunamadÄ±.</td></tr>`; bosalt(); return; }
 
       const kapsam = il
-        ? `${esc(il)} · <strong>${num(ilAdet.get(il)||0)}</strong> firma kayıtlı`
-        : 'Türkiye geneli';
+        ? `${esc(il)} Â· <strong>${num(ilAdet.get(il)||0)}</strong> firma kayÄ±tlÄ±`
+        : 'TÃ¼rkiye geneli';
       const notlar=[];
-      if(cfg.bosOlabilir) notlar.push(`${esc(cfg.ad)} verisi olmayan firmalar bu sıralamada listelenmez`);
+      if(cfg.bosOlabilir) notlar.push(`${esc(cfg.ad)} verisi olmayan firmalar bu sÄ±ralamada listelenmez`);
       el('v1-sayi').innerHTML=
-        `${kapsam} · <strong>${esc(cfg.ad)}</strong> ${artan?'artan':'azalan'} · Sayfa <strong>${sayfa}</strong> · ${data.length} firma gösteriliyor`+
-        (notlar.length?`<br><span style="font-size:12px;">${notlar.join(' · ')}</span>`:'');
+        `${kapsam} Â· <strong>${esc(cfg.ad)}</strong> ${artan?'artan':'azalan'} Â· Sayfa <strong>${sayfa}</strong> Â· ${data.length} firma gÃ¶steriliyor`+
+        (notlar.length?`<br><span style="font-size:12px;">${notlar.join(' Â· ')}</span>`:'');
 
       tb.innerHTML=data.map((r,i)=>{
         const t=takipli.has(r.ad);
@@ -404,38 +404,38 @@
         if(uyeMi){
           const b=r.buyume_yuzde;
           const bHucre=(b==null)
-            ? '<td class="v1-sayi" style="color:var(--v1-muted);">—</td>'
+            ? '<td class="v1-sayi" style="color:var(--v1-muted);">â€”</td>'
             : `<td class="v1-sayi ${Number(b)>=0?'v1-buyume-poz':'v1-buyume-neg'}"`+
-              ` title="Önceki 12 ay: ${esc(tl(r.ciro_onceki_12ay))}">`+
+              ` title="Ã–nceki 12 ay: ${esc(tl(r.ciro_onceki_12ay))}">`+
               `${Number(b)>=0?'+':''}${Number(b).toLocaleString('tr-TR',{maximumFractionDigits:1})}%</td>`;
           ekstra=`<td class="v1-sayi" style="font-weight:700;color:var(--v1-lacivert);">${tl(r.ciro_son_12ay)}</td>`+bHucre;
         }
         return `<tr>
           <td style="color:var(--v1-muted);font-weight:700;">${(sayfa-1)*BOY+i+1}</td>
           <td><a class="v1-firma-ad" href="v1-firma-analiz?ara=${encodeURIComponent(r.ad)}">${esc(r.ad)}</a></td>
-          <td style="font-size:13px;">${esc(r.il||'—')}</td>
+          <td style="font-size:13px;">${esc(r.il||'â€”')}</td>
           <td class="v1-sayi" style="font-weight:700;color:var(--v1-lacivert);">${num(r.toplam_sozlesme_sayisi)}</td>
           <td class="v1-sayi" style="font-weight:700;color:var(--v1-mavi);">${tl(r.toplam_ciro)}</td>
           ${ekstra}
           <td style="text-align:right;">
             <button class="v1-tk" data-ad="${esc(r.ad)}" style="background:${t?'var(--v1-mavi)':'#fff'};color:${t?'#fff':'var(--v1-mavi)'};
               border:1.5px solid var(--v1-mavi);border-radius:8px;padding:6px 12px;font-family:var(--v1-font);
-              font-size:12.5px;font-weight:700;cursor:pointer;white-space:nowrap;">${t?'✓ Takipte':'+ Takip Et'}</button></td></tr>`;
+              font-size:12.5px;font-weight:700;cursor:pointer;white-space:nowrap;">${t?'âœ“ Takipte':'+ Takip Et'}</button></td></tr>`;
       }).join('');
       tb.querySelectorAll('.v1-tk').forEach(b=>b.addEventListener('click',()=>takipToggle(b)));
       sayfalama(data.length);
     }catch(e){
       if(benim!==istekNo) return;
-      tb.innerHTML=`<tr><td colspan="${KS}" class="v1-bos">Liste yüklenemedi. ${esc(e.message||'')}</td></tr>`;
-      bosalt();   // yoksa "Yükleniyor…" sayacı ve ESKİ sayfalama düğmeleri ekranda kalıyordu
+      tb.innerHTML=`<tr><td colspan="${KS}" class="v1-bos">Liste yÃ¼klenemedi. ${esc(e.message||'')}</td></tr>`;
+      bosalt();   // yoksa "YÃ¼kleniyorâ€¦" sayacÄ± ve ESKÄ° sayfalama dÃ¼ÄŸmeleri ekranda kalÄ±yordu
     }
   }
 
   function sayfalama(adet){
     const e=el('v1-sayfalama');
-    e.innerHTML=`<button ${sayfa===1?'disabled':''} data-s="${sayfa-1}">‹ Önceki</button>`+
+    e.innerHTML=`<button ${sayfa===1?'disabled':''} data-s="${sayfa-1}">â€¹ Ã–nceki</button>`+
       `<button class="aktif" disabled>${sayfa}</button>`+
-      `<button ${adet<BOY?'disabled':''} data-s="${sayfa+1}">Sonraki ›</button>`;
+      `<button ${adet<BOY?'disabled':''} data-s="${sayfa+1}">Sonraki â€º</button>`;
     e.querySelectorAll('[data-s]').forEach(b=>b.addEventListener('click',()=>{
       const s=+b.dataset.s; if(s<1)return; sayfa=s; yukle(); window.scrollTo({top:0,behavior:'smooth'});
       const m=document.querySelector('.v1-main'); if(m) m.scrollTop=0;
@@ -445,20 +445,20 @@
   function tkBoya(btn,t){
     btn.style.background=t?'var(--v1-mavi)':'#fff';
     btn.style.color=t?'#fff':'var(--v1-mavi)';
-    btn.textContent=t?'✓ Takipte':'+ Takip Et';
+    btn.textContent=t?'âœ“ Takipte':'+ Takip Et';
   }
 
-  // ⛔ İKİ SESSİZ HATA VARDI:
-  //    1) kolon adı `firma_adi` idi — canlı şema `firma_ad` (REST: 42703 "does not exist"),
-  //    2) `kullanici_id` NOT NULL + default YOK → gönderilmeyince satır hiç yazılmıyordu.
-  //    Üstüne supabase-js yazma çağrıları HATA FIRLATMAZ, {error} döndürür; try/catch boş
-  //    geçiyor ve düğme koşulsuz "✓ Takipte" oluyordu. Artık her çağrıda {error} kontrol
-  //    ediliyor, hata varsa düğme eski haline dönüyor ve kullanıcıya söyleniyor.
+  // â›” Ä°KÄ° SESSÄ°Z HATA VARDI:
+  //    1) kolon adÄ± `firma_adi` idi â€” canlÄ± ÅŸema `firma_ad` (REST: 42703 "does not exist"),
+  //    2) `kullanici_id` NOT NULL + default YOK â†’ gÃ¶nderilmeyince satÄ±r hiÃ§ yazÄ±lmÄ±yordu.
+  //    ÃœstÃ¼ne supabase-js yazma Ã§aÄŸrÄ±larÄ± HATA FIRLATMAZ, {error} dÃ¶ndÃ¼rÃ¼r; try/catch boÅŸ
+  //    geÃ§iyor ve dÃ¼ÄŸme koÅŸulsuz "âœ“ Takipte" oluyordu. ArtÄ±k her Ã§aÄŸrÄ±da {error} kontrol
+  //    ediliyor, hata varsa dÃ¼ÄŸme eski haline dÃ¶nÃ¼yor ve kullanÄ±cÄ±ya sÃ¶yleniyor.
   async function takipToggle(btn){
     const ad=btn.dataset.ad;
-    if(!uyeMi||!uid){ alert('Firma takibi için giriş yapmalısınız.'); return; }
+    if(!uyeMi||!uid){ alert('Firma takibi iÃ§in giriÅŸ yapmalÄ±sÄ±nÄ±z.'); return; }
     const oncekiDurum=takipli.has(ad);
-    btn.disabled=true; btn.style.opacity='.6'; btn.textContent='…';
+    btn.disabled=true; btn.style.opacity='.6'; btn.textContent='â€¦';
     try{
       if(oncekiDurum){
         const {error}=await sb.from('takip_firmalar').delete()
@@ -466,41 +466,41 @@
         if(error) throw error;
         takipli.delete(ad);
       } else {
-        // UNIQUE(kullanici_id,firma_ad) migration_takip_firmalar.sql:22'de var AMA canlıda
-        // olduğu anon anahtarla doğrulanamıyor (INSERT 42501). Uygulanmamışsa on_conflict
-        // 42P10 ile HER takip denemesini öldürürdü → düz insert'e düş; 23505 (zaten takipte)
-        // hata değil, başarı sayılır.
+        // UNIQUE(kullanici_id,firma_ad) migration_takip_firmalar.sql:22'de var AMA canlÄ±da
+        // olduÄŸu anon anahtarla doÄŸrulanamÄ±yor (INSERT 42501). UygulanmamÄ±ÅŸsa on_conflict
+        // 42P10 ile HER takip denemesini Ã¶ldÃ¼rÃ¼rdÃ¼ â†’ dÃ¼z insert'e dÃ¼ÅŸ; 23505 (zaten takipte)
+        // hata deÄŸil, baÅŸarÄ± sayÄ±lÄ±r.
         let {error}=await sb.from('takip_firmalar').upsert(
           {kullanici_id:uid, firma_ad:ad},
           {onConflict:'kullanici_id,firma_ad', ignoreDuplicates:true});
         if(error && error.code==='42P10'){
-          console.warn('takip_firmalar UNIQUE kısıtı canlıda yok, düz insert:',error.message);
+          console.warn('takip_firmalar UNIQUE kÄ±sÄ±tÄ± canlÄ±da yok, dÃ¼z insert:',error.message);
           ({error}=await sb.from('takip_firmalar').insert({kullanici_id:uid, firma_ad:ad}));
         }
         if(error && error.code!=='23505') throw error;
         takipli.add(ad);
       }
-      // "Takip Ettiklerim" sekmesinde liste üyeliği değişti → yeniden çiz
+      // "Takip Ettiklerim" sekmesinde liste Ã¼yeliÄŸi deÄŸiÅŸti â†’ yeniden Ã§iz
       if(mod==='takip'){ yukle(); return; }
       btn.disabled=false; btn.style.opacity='';
       tkBoya(btn,takipli.has(ad));
     }catch(e){
       btn.disabled=false; btn.style.opacity='';
       tkBoya(btn,oncekiDurum);
-      alert('Takip işlemi kaydedilemedi: '+(e.message||'bilinmeyen hata'));
+      alert('Takip iÅŸlemi kaydedilemedi: '+(e.message||'bilinmeyen hata'));
     }
   }
 
-  // ── Açılış ──────────────────────────────────────────────────────────────
+  // â”€â”€ AÃ§Ä±lÄ±ÅŸ â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   (async()=>{
     urlOku();
     try{ const {data}=await sb.auth.getSession(); uyeMi=!!(data&&data.session);
       uid=uyeMi?data.session.user.id:null;
       if(uyeMi){
-        // takip_firmalar.firma_ad (firma_adi DEĞİL) + kendi satırların
+        // takip_firmalar.firma_ad (firma_adi DEÄÄ°L) + kendi satÄ±rlarÄ±n
         const {data:t,error:tHata}=await sb.from('takip_firmalar')
           .select('firma_ad').eq('kullanici_id',uid);
-        if(tHata) console.warn('Takip listesi okunamadı:',tHata.message);
+        if(tHata) console.warn('Takip listesi okunamadÄ±:',tHata.message);
         else (t||[]).forEach(r=>takipli.add(r.firma_ad));
         const {data:k}=await sb.from('kullanici_krediler').select('plan').eq('kullanici_id',uid).maybeSingle();
         paketYaz(['standart','kurumsal'].includes(k?.plan)?'Pro':'Temel');
@@ -508,31 +508,31 @@
     }catch(_){ if(!uyeMi) paketYaz('Misafir'); }
 
     yetkiyeGoreKirp();
-    // Segment URL'den geldiyse ve kullanıcı sıralama seçmediyse doğal sütuna geç
+    // Segment URL'den geldiyse ve kullanÄ±cÄ± sÄ±ralama seÃ§mediyse doÄŸal sÃ¼tuna geÃ§
     if(segment && !siralaSecildi){
       sirala=SEGMENTLER[segment].dogalSirala; yon=SEGMENTLER[segment].dogalYon;
     }
 
     const araEl=el('v1-ara-liste');
     const ilEl=el('v1-il');
-    // ⚠️ ?ara= kutuya illeriYukle()'DEN ÖNCE yazılmalı: geçersiz bir ?il= geldiğinde
-    //    illeriYukle onu düşürüp urlYaz() çağırıyor, urlYaz da arama kutusunu okuyor.
-    //    Kutu henüz boşken çalışırsa ?ara= URL'den sessizce siliniyordu.
+    // âš ï¸ ?ara= kutuya illeriYukle()'DEN Ã–NCE yazÄ±lmalÄ±: geÃ§ersiz bir ?il= geldiÄŸinde
+    //    illeriYukle onu dÃ¼ÅŸÃ¼rÃ¼p urlYaz() Ã§aÄŸÄ±rÄ±yor, urlYaz da arama kutusunu okuyor.
+    //    Kutu henÃ¼z boÅŸken Ã§alÄ±ÅŸÄ±rsa ?ara= URL'den sessizce siliniyordu.
     if(P.get('ara')) araEl.value=P.get('ara');
-    // Misafirde yukleniciler tablosunun tamamı anon'a kapalı (42501) → arama kutusu ve
-    // il süzgeci ölü, boşuna çalıştırmak yerine kilitli göster. Segment çipleri seg_*
-    // kolonlarını okuduğu için misafire HİÇ basılmaz.
+    // Misafirde yukleniciler tablosunun tamamÄ± anon'a kapalÄ± (42501) â†’ arama kutusu ve
+    // il sÃ¼zgeci Ã¶lÃ¼, boÅŸuna Ã§alÄ±ÅŸtÄ±rmak yerine kilitli gÃ¶ster. Segment Ã§ipleri seg_*
+    // kolonlarÄ±nÄ± okuduÄŸu iÃ§in misafire HÄ°Ã‡ basÄ±lmaz.
     if(!uyeMi){
-      araEl.disabled=true; araEl.placeholder='Arama üyelere özel'; araEl.style.cursor='not-allowed';
-      ilEl.disabled=true; ilEl.title='İl süzgeci üyelere özel';
+      araEl.disabled=true; araEl.placeholder='Arama Ã¼yelere Ã¶zel'; araEl.style.cursor='not-allowed';
+      ilEl.disabled=true; ilEl.title='Ä°l sÃ¼zgeci Ã¼yelere Ã¶zel';
       el('v1-segment-alan').style.display='none';
     } else {
       el('v1-segment-alan').style.display='flex';
       cipleriYaz();
-      // Normalde await YOK — liste il açılır listesini beklemesin. AMA derin linkte
-      // (?il=ANKARA) sayaç satırı ilAdet'ten besleniyor; beklemezsek "0 firma kayıtlı"
-      // yazıp öyle kalıyor (ikinci bir çizim yok). Ayrıca URL'deki il geçersizse
-      // illeriYukle onu düşürüyor; bunu yukle()'den ÖNCE öğrenmemiz gerekiyor.
+      // Normalde await YOK â€” liste il aÃ§Ä±lÄ±r listesini beklemesin. AMA derin linkte
+      // (?il=ANKARA) sayaÃ§ satÄ±rÄ± ilAdet'ten besleniyor; beklemezsek "0 firma kayÄ±tlÄ±"
+      // yazÄ±p Ã¶yle kalÄ±yor (ikinci bir Ã§izim yok). AyrÄ±ca URL'deki il geÃ§ersizse
+      // illeriYukle onu dÃ¼ÅŸÃ¼rÃ¼yor; bunu yukle()'den Ã–NCE Ã¶ÄŸrenmemiz gerekiyor.
       if(il) await illeriYukle(); else illeriYukle();
     }
 

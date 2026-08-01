@@ -1,13 +1,13 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="tr">
 <head>
   <meta charset="UTF-8" />
-  <meta name="author" content="Ömer Faruk Dinç">
+  <meta name="author" content="Ã–mer Faruk DinÃ§">
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Kurumlar — İhaleGlobal</title>
+  <title>Kurumlar â€” Ä°haleGlobal</title>
   <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=4" />
   <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/v1.css?v=7" />
+  <link rel="stylesheet" href="css/v1.css?v=15" />
   <style>
     .v1-sayfa-baslik { font-size:22px; font-weight:800; color:var(--v1-lacivert); margin-bottom:4px; }
     .v1-sayfa-alt { font-size:13.5px; color:var(--v1-muted); margin-bottom:16px; }
@@ -20,7 +20,7 @@
     .v1-bar { display:block; height:100%; background:var(--v1-mavi); border-radius:5px; }
     .v1-uyari { background:var(--v1-mavi-acik); border:1px solid #CFE2F5; border-radius:12px; padding:16px 18px;
       font-size:13.5px; color:var(--v1-metin); margin-bottom:16px; }
-    /* Filtre araçları — v1-kurum-analiz ile aynı görünüm (css/v1.css PAYLAŞILAN, dokunulmadı) */
+    /* Filtre araÃ§larÄ± â€” v1-kurum-analiz ile aynÄ± gÃ¶rÃ¼nÃ¼m (css/v1.css PAYLAÅILAN, dokunulmadÄ±) */
     .v1-arac-sag { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
     .v1-sec { border:1.5px solid var(--v1-cizgi); border-radius:9px; padding:9px 12px; background:#fff;
       font-family:var(--v1-font); font-size:13px; color:var(--v1-metin); outline:none; cursor:pointer;
@@ -29,54 +29,54 @@
     .v1-mini-btn { background:#fff; border:1.5px solid var(--v1-cizgi); color:var(--v1-muted); border-radius:9px;
       padding:9px 12px; font-family:var(--v1-font); font-size:12.5px; font-weight:700; cursor:pointer; white-space:nowrap; }
     .v1-mini-btn:hover { border-color:var(--v1-mavi); color:var(--v1-mavi); }
-    /* Diğer kurum dizinine köprü — v1-kurum-analiz'deki görünüm anahtarıyla aynı
-       görünüm (css/v1.css PAYLAŞILAN, dokunulmadı). Burada AĞAÇ KOPYALANMAZ:
-       çalışan tek ağaç v1-kurum-analiz'dedir, buradan oraya yönlendirilir. */
+    /* DiÄŸer kurum dizinine kÃ¶prÃ¼ â€” v1-kurum-analiz'deki gÃ¶rÃ¼nÃ¼m anahtarÄ±yla aynÄ±
+       gÃ¶rÃ¼nÃ¼m (css/v1.css PAYLAÅILAN, dokunulmadÄ±). Burada AÄAÃ‡ KOPYALANMAZ:
+       Ã§alÄ±ÅŸan tek aÄŸaÃ§ v1-kurum-analiz'dedir, buradan oraya yÃ¶nlendirilir. */
     .v1-gor { display:flex; gap:8px; margin-bottom:16px; flex-wrap:wrap; }
     .v1-gor-btn { padding:9px 16px; border-radius:9px; font-size:13px; font-weight:700; background:#fff;
       border:1.5px solid var(--v1-cizgi); color:var(--v1-muted); cursor:pointer; font-family:var(--v1-font);
       text-decoration:none; display:inline-flex; align-items:center; transition:all .15s; }
     .v1-gor-btn:hover { border-color:var(--v1-mavi); color:var(--v1-mavi); text-decoration:none; }
-    /* Tıklanabilir sütun başlıkları */
+    /* TÄ±klanabilir sÃ¼tun baÅŸlÄ±klarÄ± */
     .v1-tablo th.v1-sr { cursor:pointer; user-select:none; }
     .v1-tablo th.v1-sr:hover { color:var(--v1-mavi); }
     .v1-tablo th.v1-sr:focus-visible { outline:2px solid var(--v1-mavi); outline-offset:-2px; }
     .v1-ok { font-size:10.5px; margin-left:5px; }
   </style>
 </head>
-<body class="v1" data-v1-aktif="kurumlar" data-v1-kirinti="İhaleGlobal > Kurumlar">
+<body class="v1" data-v1-aktif="kurumlar" data-v1-kirinti="Ä°haleGlobal > Kurumlar">
 <div class="v1-app">
   <div class="v1-main">
     <div class="v1-govde">
-      <div class="v1-sayfa-baslik">İşveren Kurumlar</div>
-      <div class="v1-sayfa-alt">İhale açan idareler — hangi kurum kaç ihale açmış, kaçı şu an aktif.
-        Bakanlıktan il müdürlüğüne uzanan hiyerarşi için <strong>Kurum Ağacı</strong> görünümünü kullanın.</div>
+      <div class="v1-sayfa-baslik">Ä°ÅŸveren Kurumlar</div>
+      <div class="v1-sayfa-alt">Ä°hale aÃ§an idareler â€” hangi kurum kaÃ§ ihale aÃ§mÄ±ÅŸ, kaÃ§Ä± ÅŸu an aktif.
+        BakanlÄ±ktan il mÃ¼dÃ¼rlÃ¼ÄŸÃ¼ne uzanan hiyerarÅŸi iÃ§in <strong>Kurum AÄŸacÄ±</strong> gÃ¶rÃ¼nÃ¼mÃ¼nÃ¼ kullanÄ±n.</div>
 
       <div class="v1-gor">
         <a class="v1-gor-btn" href="v1-kurum-analiz?gorunum=agac"
-           title="DETSİS hiyerarşisi — bakanlık › genel müdürlük › il müdürlüğü; kuruma tıklayınca analizi doğrudan açılır">🌳 Kurum Ağacı</a>
+           title="DETSÄ°S hiyerarÅŸisi â€” bakanlÄ±k â€º genel mÃ¼dÃ¼rlÃ¼k â€º il mÃ¼dÃ¼rlÃ¼ÄŸÃ¼; kuruma tÄ±klayÄ±nca analizi doÄŸrudan aÃ§Ä±lÄ±r">ğŸŒ³ Kurum AÄŸacÄ±</a>
         <a class="v1-gor-btn" href="v1-kurum-analiz?gorunum=liste"
-           title="İdare Dizini — KPI şeridi, aktiflik süzgeci ve tıklayınca aynı ekranda açılan kurum analizi">🏛️ İdare Dizini</a>
+           title="Ä°dare Dizini â€” KPI ÅŸeridi, aktiflik sÃ¼zgeci ve tÄ±klayÄ±nca aynÄ± ekranda aÃ§Ä±lan kurum analizi">ğŸ›ï¸ Ä°dare Dizini</a>
       </div>
 
       <div class="v1-sekmeler">
-        <button class="v1-sekme aktif" id="s-tum">Tüm Kurumlar</button>
+        <button class="v1-sekme aktif" id="s-tum">TÃ¼m Kurumlar</button>
         <button class="v1-sekme" id="s-takip">Takip Ettiklerim</button>
       </div>
 
       <div id="v1-misafir" class="v1-uyari" style="display:none;">
-        🔒 Kurum listesi <strong>üyelere özeldir</strong>.
-        <a href="login">Giriş yapın</a> veya <a href="fiyatlandirma_odeme_bolumu">üye olun</a> →
+        ğŸ”’ Kurum listesi <strong>Ã¼yelere Ã¶zeldir</strong>.
+        <a href="login">GiriÅŸ yapÄ±n</a> veya <a href="fiyatlandirma_odeme_bolumu">Ã¼ye olun</a> â†’
       </div>
 
       <div class="v1-kart" style="padding:18px 20px;">
         <div class="v1-tablo-bas">
           <div>
-            <div style="font-size:17px;font-weight:800;color:var(--v1-lacivert);" id="v1-liste-baslik">Tüm Kurumlar</div>
-            <div class="v1-tablo-sayi" id="v1-sayi">Yükleniyor…</div>
+            <div style="font-size:17px;font-weight:800;color:var(--v1-lacivert);" id="v1-liste-baslik">TÃ¼m Kurumlar</div>
+            <div class="v1-tablo-sayi" id="v1-sayi">YÃ¼kleniyorâ€¦</div>
           </div>
           <div class="v1-arac-sag">
-            <select class="v1-sec" id="v1-il" aria-label="İl filtresi"><option value="">Tüm İller</option></select>
+            <select class="v1-sec" id="v1-il" aria-label="Ä°l filtresi"><option value="">TÃ¼m Ä°ller</option></select>
             <button type="button" class="v1-mini-btn" id="v1-sifirla" style="display:none;">Filtreyi temizle</button>
             <div class="v1-listede-ara">
               <svg viewBox="0 0 24 24" width="15" height="15" fill="var(--v1-muted)"><path fill-rule="evenodd" d="M10.5 3a7.5 7.5 0 1 0 4.55 13.46l4.24 4.25 1.42-1.42-4.25-4.24A7.5 7.5 0 0 0 10.5 3Zm0 2a5.5 5.5 0 1 1 0 11 5.5 5.5 0 0 1 0-11Z"/></svg>
@@ -88,13 +88,13 @@
           <table class="v1-tablo" id="v1-tablo">
             <thead><tr>
               <th style="width:44px;">#</th>
-              <th class="v1-sr" data-k="ad" title="İsme göre sırala">İdare / Kurum<span class="v1-ok" id="v1-ok-ad"></span></th>
-              <th class="v1-sr" style="width:110px;" data-k="il" title="İle göre sırala">İl<span class="v1-ok" id="v1-ok-il"></span></th>
-              <th class="v1-sr" style="width:210px;" data-k="toplam" title="Toplam ihaleye göre sırala">Toplam İhale<span class="v1-ok" id="v1-ok-toplam"></span></th>
-              <th class="v1-sr" style="width:100px;" data-k="aktif" title="Aktif ihaleye göre sırala">Aktif<span class="v1-ok" id="v1-ok-aktif"></span></th>
+              <th class="v1-sr" data-k="ad" title="Ä°sme gÃ¶re sÄ±rala">Ä°dare / Kurum<span class="v1-ok" id="v1-ok-ad"></span></th>
+              <th class="v1-sr" style="width:110px;" data-k="il" title="Ä°le gÃ¶re sÄ±rala">Ä°l<span class="v1-ok" id="v1-ok-il"></span></th>
+              <th class="v1-sr" style="width:210px;" data-k="toplam" title="Toplam ihaleye gÃ¶re sÄ±rala">Toplam Ä°hale<span class="v1-ok" id="v1-ok-toplam"></span></th>
+              <th class="v1-sr" style="width:100px;" data-k="aktif" title="Aktif ihaleye gÃ¶re sÄ±rala">Aktif<span class="v1-ok" id="v1-ok-aktif"></span></th>
               <th style="width:120px;"></th>
             </tr></thead>
-            <tbody id="v1-tbody"><tr><td colspan="6" class="v1-bos">Yükleniyor…</td></tr></tbody>
+            <tbody id="v1-tbody"><tr><td colspan="6" class="v1-bos">YÃ¼kleniyorâ€¦</td></tr></tbody>
           </table>
         </div>
         <div class="v1-sayfalama" id="v1-sayfalama"></div>
@@ -104,7 +104,7 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-<script src="js/v1-kabuk.js?v=14"></script>
+<script src="js/v1-kabuk.js?v=15"></script>
 <script>
 (() => {
   const SB_URL="https://ihaleglobal.com", SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzg0MzA3MTU4LCJleHAiOjE5NDE5ODcxNTh9.CjNKulvirotDD_y2oO2QKgo0kbqYvL0jUSV1RiDMoso";
@@ -113,12 +113,12 @@
   const esc=(s)=>(s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
   const P=new URLSearchParams(location.search);
   const BOY=25;
-  // İl'i boş/NULL olan kayıtları YUTMA — ayrı "Belirsiz" kovası
+  // Ä°l'i boÅŸ/NULL olan kayÄ±tlarÄ± YUTMA â€” ayrÄ± "Belirsiz" kovasÄ±
   const IL_YOK='__yok__';
-  // v1-kurum-analiz.html ile ORTAK önbellek (aynı RPC, aynı ham biçim)
+  // v1-kurum-analiz.html ile ORTAK Ã¶nbellek (aynÄ± RPC, aynÄ± ham biÃ§im)
   const CACHE_KEY='idare_dizin_v1', CACHE_TTL=30*60*1000;
   const trFold=window.trFold||((s)=>(s||'').toLocaleLowerCase('tr'));
-  // Türkçe sıralama — 23K satırda localeCompare'i satır başı çağırmak yerine tek collator
+  // TÃ¼rkÃ§e sÄ±ralama â€” 23K satÄ±rda localeCompare'i satÄ±r baÅŸÄ± Ã§aÄŸÄ±rmak yerine tek collator
   const KRS=new Intl.Collator('tr');
   const SIRA_ANAHTAR=['ad','il','toplam','aktif'];
   const YON_VARSAYILAN={ad:'asc', il:'asc', toplam:'desc', aktif:'desc'};
@@ -126,7 +126,7 @@
   let tumu=[], takipli=new Set(), uyeMi=false, mod='tum', sayfa=1;
   let ilSecim='', sirala='toplam', yon='desc';
 
-  // ── URL (derin link) ────────────────────────────────────────────────
+  // â”€â”€ URL (derin link) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   function urlOku(){
     const il=P.get('il'); if(il) ilSecim=il;
     const s=P.get('sirala'); if(SIRA_ANAHTAR.includes(s)) sirala=s;
@@ -143,18 +143,18 @@
     history.replaceState(null,'',location.pathname+(qs?'?'+qs:'')+location.hash);
   }
 
-  // ── Veri ────────────────────────────────────────────────────────────
-  // idare_sayim() satır döndürdüğü için PostgREST db-max-rows=1000 tavanına
-  // takılıyordu ("Toplam 1.000 kurum" sahte sayısı). idare_dizin_json() jsonb
-  // skaler döner → sınır işlemez, ~23K idarenin TAMAMI tek istekte gelir.
-  // Satır formatı DİZİ: [idare, toplam, aktif, en_yakin_il] — nesne DEĞİL.
+  // â”€â”€ Veri â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // idare_sayim() satÄ±r dÃ¶ndÃ¼rdÃ¼ÄŸÃ¼ iÃ§in PostgREST db-max-rows=1000 tavanÄ±na
+  // takÄ±lÄ±yordu ("Toplam 1.000 kurum" sahte sayÄ±sÄ±). idare_dizin_json() jsonb
+  // skaler dÃ¶ner â†’ sÄ±nÄ±r iÅŸlemez, ~23K idarenin TAMAMI tek istekte gelir.
+  // SatÄ±r formatÄ± DÄ°ZÄ°: [idare, toplam, aktif, en_yakin_il] â€” nesne DEÄÄ°L.
   async function yukle(){
     const tb=document.getElementById('v1-tbody');
     if(!uyeMi){
       document.getElementById('v1-misafir').style.display='block';
       document.getElementById('v1-il').style.display='none';
       document.getElementById('v1-sifirla').style.display='none';
-      tb.innerHTML='<tr><td colspan="6" class="v1-bos">🔒 Kurum listesi üyelere özeldir. <a href="login">Giriş yapın →</a></td></tr>';
+      tb.innerHTML='<tr><td colspan="6" class="v1-bos">ğŸ”’ Kurum listesi Ã¼yelere Ã¶zeldir. <a href="login">GiriÅŸ yapÄ±n â†’</a></td></tr>';
       document.getElementById('v1-sayi').textContent=''; return;
     }
     try{
@@ -162,7 +162,7 @@
       try{
         const paket=JSON.parse(sessionStorage.getItem(CACHE_KEY)||'null');
         if(paket&&paket.t&&(Date.now()-paket.t)<CACHE_TTL&&Array.isArray(paket.d)) ham=paket.d;
-      }catch(_){ /* bozuk önbellek → normal çekim */ }
+      }catch(_){ /* bozuk Ã¶nbellek â†’ normal Ã§ekim */ }
       if(!ham){
         const {data,error}=await sb.rpc('idare_dizin_json',{},{get:true});
         if(error) throw error;
@@ -175,16 +175,16 @@
         aktif:Number(r&&r[2])||0,
         il:((r&&r[3])||'').trim()
       })).filter(r=>r.idare);
-      // takip_idareler kolonu `idare_ad` (idare DEĞİL); supabase-js hata FIRLATMAZ
+      // takip_idareler kolonu `idare_ad` (idare DEÄÄ°L); supabase-js hata FIRLATMAZ
       const {data:t,error:te}=await sb.from('takip_idareler').select('idare_ad');
-      if(te) console.warn('takip listesi okunamadı:',te.message||te);
+      if(te) console.warn('takip listesi okunamadÄ±:',te.message||te);
       else (t||[]).forEach(r=>takipli.add(r.idare_ad));
       ilSecenekleriYaz();
       ciz();
-    }catch(e){ tb.innerHTML=`<tr><td colspan="6" class="v1-bos">Liste yüklenemedi. ${esc(e.message||'')}</td></tr>`; }
+    }catch(e){ tb.innerHTML=`<tr><td colspan="6" class="v1-bos">Liste yÃ¼klenemedi. ${esc(e.message||'')}</td></tr>`; }
   }
 
-  // ── Filtre / sıralama (tamamı client'ta — RPC bir kez çağrılır) ──────
+  // â”€â”€ Filtre / sÄ±ralama (tamamÄ± client'ta â€” RPC bir kez Ã§aÄŸrÄ±lÄ±r) â”€â”€â”€â”€â”€â”€
   const tabanListe=()=>mod==='takip'?tumu.filter(r=>takipli.has(r.idare)):tumu;
 
   function ilSecenekleriYaz(){
@@ -193,9 +193,9 @@
     taban.forEach(r=>{ const k=r.il||IL_YOK; sayac.set(k,(sayac.get(k)||0)+1); });
     const anahtar=[...sayac.keys()].filter(k=>k!==IL_YOK).sort(KRS.compare);
     if(sayac.has(IL_YOK)) anahtar.push(IL_YOK);
-    // Seçili il bu sekmede yoksa bile seçenekte kalsın (kullanıcı filtreyi kaybetmesin)
+    // SeÃ§ili il bu sekmede yoksa bile seÃ§enekte kalsÄ±n (kullanÄ±cÄ± filtreyi kaybetmesin)
     if(ilSecim&&!sayac.has(ilSecim)){ anahtar.unshift(ilSecim); sayac.set(ilSecim,0); }
-    sel.innerHTML=`<option value="">Tüm İller (${num(taban.length)})</option>`+
+    sel.innerHTML=`<option value="">TÃ¼m Ä°ller (${num(taban.length)})</option>`+
       anahtar.map(k=>`<option value="${esc(k)}">${esc(k===IL_YOK?'Belirsiz':k)} (${num(sayac.get(k))})</option>`).join('');
     sel.value=ilSecim;
     if(sel.value!==ilSecim){ ilSecim=''; sel.value=''; }
@@ -212,7 +212,7 @@
       if(sirala==='ad') c=KRS.compare(a.idare,b.idare);
       else if(sirala==='il'){
         if(!a.il&&!b.il) c=0;
-        else if(!a.il) return 1;          // "Belirsiz" yönden bağımsız olarak sonda
+        else if(!a.il) return 1;          // "Belirsiz" yÃ¶nden baÄŸÄ±msÄ±z olarak sonda
         else if(!b.il) return -1;
         else c=KRS.compare(a.il,b.il);
       }
@@ -227,7 +227,7 @@
     SIRA_ANAHTAR.forEach(k=>{
       const o=document.getElementById('v1-ok-'+k); if(!o) return;
       const secili=(k===sirala);
-      o.textContent=secili?(yon==='asc'?'▲':'▼'):'⇅';
+      o.textContent=secili?(yon==='asc'?'â–²':'â–¼'):'â‡…';
       o.style.opacity=secili?'1':'.3';
       const th=o.parentElement;
       if(th) th.setAttribute('aria-sort',secili?(yon==='asc'?'ascending':'descending'):'none');
@@ -235,8 +235,8 @@
   }
 
   function ciz(){
-    // Misafirde çizme: başlık tıklaması / arama kutusu kilit mesajını "Sonuç
-    // bulunamadı" ile ezip giriş çağrısını yok ediyordu (misafir dalı korunur).
+    // Misafirde Ã§izme: baÅŸlÄ±k tÄ±klamasÄ± / arama kutusu kilit mesajÄ±nÄ± "SonuÃ§
+    // bulunamadÄ±" ile ezip giriÅŸ Ã§aÄŸrÄ±sÄ±nÄ± yok ediyordu (misafir dalÄ± korunur).
     if(!uyeMi) return;
     const tb=document.getElementById('v1-tbody');
     const taban=tabanListe(), liste=suz(taban);
@@ -246,21 +246,21 @@
     if(sayfa<1) sayfa=1;
     baslikOkYaz();
     document.getElementById('v1-sifirla').style.display=(ilSecim||document.getElementById('v1-ara-liste').value.trim())?'':'none';
-    // Bar ölçeği o anki LİSTENİN maksimumuna göre (il filtresinde barlar minicik kalmasın)
+    // Bar Ã¶lÃ§eÄŸi o anki LÄ°STENÄ°N maksimumuna gÃ¶re (il filtresinde barlar minicik kalmasÄ±n)
     let max=1; for(const r of liste) if(r.toplam>max) max=r.toplam;
     const bas=(sayfa-1)*BOY; const dilim=liste.slice(bas,bas+BOY);
     let bilgi=`Toplam <strong>${num(toplamAdet)}</strong> kurum`;
-    if(toplamAdet!==taban.length) bilgi+=` <span style="color:var(--v1-muted);">(${num(taban.length)} kurum içinden)</span>`;
-    bilgi+=` · sayfa ${num(sayfa)}/${num(sonSayfa)}`;
+    if(toplamAdet!==taban.length) bilgi+=` <span style="color:var(--v1-muted);">(${num(taban.length)} kurum iÃ§inden)</span>`;
+    bilgi+=` Â· sayfa ${num(sayfa)}/${num(sonSayfa)}`;
     document.getElementById('v1-sayi').innerHTML=bilgi;
-    if(!dilim.length){ tb.innerHTML=`<tr><td colspan="6" class="v1-bos">${mod==='takip'&&!taban.length?'Henüz kurum takip etmiyorsunuz.':'Sonuç bulunamadı.'}</td></tr>`; document.getElementById('v1-sayfalama').innerHTML=''; return; }
+    if(!dilim.length){ tb.innerHTML=`<tr><td colspan="6" class="v1-bos">${mod==='takip'&&!taban.length?'HenÃ¼z kurum takip etmiyorsunuz.':'SonuÃ§ bulunamadÄ±.'}</td></tr>`; document.getElementById('v1-sayfalama').innerHTML=''; return; }
     tb.innerHTML=dilim.map((r,i)=>{
       const w=Math.max(3,Math.round((r.toplam||0)/max*100));
       const t=takipli.has(r.idare);
       return `<tr>
         <td style="color:var(--v1-muted);font-weight:700;">${bas+i+1}</td>
         <td><a class="v1-t-ad" href="v1-kurum-analiz?kurum=${encodeURIComponent(r.idare)}">${esc(r.idare)}</a></td>
-        <td style="font-size:13px;">${esc(r.il||'—')}</td>
+        <td style="font-size:13px;">${esc(r.il||'â€”')}</td>
         <td><div style="display:flex;align-items:center;gap:10px;">
           <span class="v1-bar-wrap"><span class="v1-bar" style="width:${w}%"></span></span>
           <span style="font-weight:700;color:var(--v1-lacivert);white-space:nowrap;">${num(r.toplam)}</span></div></td>
@@ -268,26 +268,26 @@
         <td style="text-align:right;">
           <button class="v1-tk" data-i="${esc(r.idare)}" style="background:${t?'var(--v1-mavi)':'#fff'};color:${t?'#fff':'var(--v1-mavi)'};
             border:1.5px solid var(--v1-mavi);border-radius:8px;padding:6px 12px;font-family:var(--v1-font);
-            font-size:12.5px;font-weight:700;cursor:pointer;white-space:nowrap;">${t?'✓ Takipte':'+ Takip Et'}</button></td></tr>`;
+            font-size:12.5px;font-weight:700;cursor:pointer;white-space:nowrap;">${t?'âœ“ Takipte':'+ Takip Et'}</button></td></tr>`;
     }).join('');
     tb.querySelectorAll('.v1-tk').forEach(b=>b.addEventListener('click',()=>takipToggle(b.dataset.i)));
     const el=document.getElementById('v1-sayfalama');
     const gor=[]; const b1=Math.max(1,sayfa-2), b2=Math.min(sonSayfa,b1+4);
     for(let i=b1;i<=b2;i++) gor.push(i);
-    el.innerHTML=`<button ${sayfa===1?'disabled':''} data-s="${sayfa-1}">‹</button>`+
+    el.innerHTML=`<button ${sayfa===1?'disabled':''} data-s="${sayfa-1}">â€¹</button>`+
       gor.map(i=>`<button class="${i===sayfa?'aktif':''}" data-s="${i}">${i}</button>`).join('')+
-      `<button ${sayfa===sonSayfa?'disabled':''} data-s="${sayfa+1}">›</button>`;
+      `<button ${sayfa===sonSayfa?'disabled':''} data-s="${sayfa+1}">â€º</button>`;
     el.querySelectorAll('[data-s]').forEach(b=>b.addEventListener('click',()=>{
       const s=+b.dataset.s; if(s<1||s>sonSayfa)return; sayfa=s; ciz(); window.scrollTo({top:0,behavior:'smooth'});
     }));
   }
 
   async function takipToggle(idare){
-    if(!uyeMi){ alert('Kurum takibi için giriş yapmalısınız.'); return; }
+    if(!uyeMi){ alert('Kurum takibi iÃ§in giriÅŸ yapmalÄ±sÄ±nÄ±z.'); return; }
     try{
       const {data:oturum}=await sb.auth.getSession();
       const uid=oturum&&oturum.session&&oturum.session.user.id;
-      if(!uid){ alert('Oturum bulunamadı, tekrar giriş yapın.'); return; }
+      if(!uid){ alert('Oturum bulunamadÄ±, tekrar giriÅŸ yapÄ±n.'); return; }
       if(takipli.has(idare)){
         const {error}=await sb.from('takip_idareler').delete().eq('kullanici_id',uid).eq('idare_ad',idare);
         if(error) throw error; takipli.delete(idare);
@@ -296,7 +296,7 @@
         if(error) throw error; takipli.add(idare);
       }
       ilSecenekleriYaz(); ciz();
-    }catch(e){ alert('İşlem başarısız: '+(e.message||'')); }
+    }catch(e){ alert('Ä°ÅŸlem baÅŸarÄ±sÄ±z: '+(e.message||'')); }
   }
 
   (async()=>{
@@ -313,7 +313,7 @@
       araZ=setTimeout(()=>{ sayfa=1; urlYaz(); ciz(); },150);
     });
 
-    // İl filtresi — sayfalama 1'e döner, seçili sıralama KORUNUR
+    // Ä°l filtresi â€” sayfalama 1'e dÃ¶ner, seÃ§ili sÄ±ralama KORUNUR
     document.getElementById('v1-il').addEventListener('change',e=>{
       ilSecim=e.target.value; sayfa=1; urlYaz(); ciz();
     });
@@ -323,7 +323,7 @@
       document.getElementById('v1-il').value=''; urlYaz(); ciz();
     });
 
-    // Tıklanabilir sütun başlıkları — aynı sütuna ikinci tık yönü çevirir
+    // TÄ±klanabilir sÃ¼tun baÅŸlÄ±klarÄ± â€” aynÄ± sÃ¼tuna ikinci tÄ±k yÃ¶nÃ¼ Ã§evirir
     document.querySelectorAll('#v1-tablo th.v1-sr').forEach(th=>{
       th.setAttribute('role','button'); th.tabIndex=0;
       const tetik=()=>{
@@ -340,10 +340,10 @@
       mod=m; sayfa=1;
       ['s-tum','s-takip'].forEach(x=>document.getElementById(x).classList.toggle('aktif',x===id));
       document.getElementById('v1-liste-baslik').textContent=baslik;
-      if(!uyeMi) return;                 // misafir kilidi ekranda kalsın
+      if(!uyeMi) return;                 // misafir kilidi ekranda kalsÄ±n
       ilSecenekleriYaz(); ciz();
     });
-    sek('s-tum','tum','Tüm Kurumlar'); sek('s-takip','takip','Takip Ettiğim Kurumlar');
+    sek('s-tum','tum','TÃ¼m Kurumlar'); sek('s-takip','takip','Takip EttiÄŸim Kurumlar');
     baslikOkYaz();
     yukle();
   })();

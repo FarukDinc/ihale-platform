@@ -1,13 +1,13 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="tr">
 <head>
   <meta charset="UTF-8" />
-  <meta name="author" content="Ömer Faruk Dinç">
+  <meta name="author" content="Ã–mer Faruk DinÃ§">
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>İhale Detayı — İhaleGlobal</title>
+  <title>Ä°hale DetayÄ± â€” Ä°haleGlobal</title>
   <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=4" />
   <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/v1.css?v=7" />
+  <link rel="stylesheet" href="css/v1.css?v=15" />
   <style>
     .v1-d-bant { background:var(--v1-lacivert); border-radius:var(--v1-radius-lg); padding:24px 26px; color:#fff; margin-bottom:18px; }
     .v1-d-ikn { font-size:12.5px; color:rgba(255,255,255,.72); font-weight:600; letter-spacing:.04em; }
@@ -29,7 +29,7 @@
     .v1-metin { font-size:13.5px; line-height:1.7; color:var(--v1-metin); white-space:pre-wrap;
       max-height:340px; overflow-y:auto; background:var(--v1-zemin); border:1px solid var(--v1-cizgi);
       border-radius:10px; padding:16px; }
-    /* İlan HTML'i (ilan_html) render edilirken pre-wrap kapanmalı, yoksa etiket araları boşluk olur */
+    /* Ä°lan HTML'i (ilan_html) render edilirken pre-wrap kapanmalÄ±, yoksa etiket aralarÄ± boÅŸluk olur */
     .v1-metin.zengin { white-space:normal; max-height:560px; }
     .v1-metin.zengin p { margin:0 0 9px; }
     .v1-metin.zengin table { border-collapse:collapse; width:100%; font-size:12.5px; margin:9px 0; }
@@ -48,8 +48,8 @@
     .v1-kisim-det { margin-top:14px; border-top:1px solid #BFE6CE; padding-top:10px; }
     .v1-kisim-det > summary { cursor:pointer; font-size:12.5px; font-weight:700; color:#1E7A46; list-style:none; }
     .v1-kisim-det > summary::-webkit-details-marker { display:none; }
-    .v1-kisim-det > summary::before { content:'▸ '; }
-    .v1-kisim-det[open] > summary::before { content:'▾ '; }
+    .v1-kisim-det > summary::before { content:'â–¸ '; }
+    .v1-kisim-det[open] > summary::before { content:'â–¾ '; }
     .v1-kisim-sar { max-height:260px; overflow-y:auto; margin-top:9px; }
     .v1-kisim-tablo { width:100%; border-collapse:collapse; font-size:12.5px; }
     .v1-kisim-tablo th { position:sticky; top:0; background:#E6F6EC; text-align:left; font-size:10.5px;
@@ -61,41 +61,41 @@
       border-radius:8px; font-size:12.5px; color:#96262F; font-weight:600; }
   </style>
 </head>
-<body class="v1" data-v1-aktif="ihaleler" data-v1-kirinti="Kamu > İhaleler > Detay">
+<body class="v1" data-v1-aktif="ihaleler" data-v1-kirinti="Kamu > Ä°haleler > Detay">
 <div class="v1-app">
   <div class="v1-main">
     <div class="v1-govde" id="v1-govde">
-      <div class="v1-bos">Yükleniyor…</div>
+      <div class="v1-bos">YÃ¼kleniyorâ€¦</div>
     </div>
   </div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-<script src="js/v1-kabuk.js?v=14"></script>
+<script src="js/v1-kabuk.js?v=15"></script>
 <script>
 (() => {
   const SB_URL="https://ihaleglobal.com", SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzg0MzA3MTU4LCJleHAiOjE5NDE5ODcxNTh9.CjNKulvirotDD_y2oO2QKgo0kbqYvL0jUSV1RiDMoso";
   const sb=window.supabase.createClient(SB_URL,SB_KEY);
   const esc=(s)=>(s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
   const num=(n)=>(Number(n)||0).toLocaleString('tr-TR');
-  const tl=(v)=>v==null?null:'₺'+Number(v).toLocaleString('tr-TR',{maximumFractionDigits:0});
+  const tl=(v)=>v==null?null:'â‚º'+Number(v).toLocaleString('tr-TR',{maximumFractionDigits:0});
   const gun=(t)=>t?new Date(t).toLocaleDateString('tr-TR',{day:'numeric',month:'long',year:'numeric'}):null;
   const saat=(t)=>t?new Date(t).toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'}):'';
   const id=new URLSearchParams(location.search).get('id');
   const G=()=>document.getElementById('v1-govde');
   let uyeMi=false;
 
-  const DURUM={aktif:['Aktif','yesil'],kapali:['Kapalı',''],sonuclandi:['Sonuçlandı','teal'],iptal:['İptal','kirmizi']};
+  const DURUM={aktif:['Aktif','yesil'],kapali:['KapalÄ±',''],sonuclandi:['SonuÃ§landÄ±','teal'],iptal:['Ä°ptal','kirmizi']};
 
-  /* ── İlan HTML sanitizasyonu ──────────────────────────────────────────
-     ilan_html EKAP'tan gelen HAM HTML'dir; doğrudan innerHTML'e verilirse XSS
-     yüzeyi açar. Etiket kara listesi + on* nitelik + javascript:/data:/vbscript:
-     URL temizliği ŞART. DOMParser ayrı bir belgede ayrıştırır: içerideki <img
-     onerror> gibi kalıplar biz temizlemeden ÇALIŞMAZ (sayfaya bağlı değil). */
+  /* â”€â”€ Ä°lan HTML sanitizasyonu â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+     ilan_html EKAP'tan gelen HAM HTML'dir; doÄŸrudan innerHTML'e verilirse XSS
+     yÃ¼zeyi aÃ§ar. Etiket kara listesi + on* nitelik + javascript:/data:/vbscript:
+     URL temizliÄŸi ÅART. DOMParser ayrÄ± bir belgede ayrÄ±ÅŸtÄ±rÄ±r: iÃ§erideki <img
+     onerror> gibi kalÄ±plar biz temizlemeden Ã‡ALIÅMAZ (sayfaya baÄŸlÄ± deÄŸil). */
   const TEHLIKELI_ETIKET='script,style,iframe,object,embed,link,meta,base,form,input,button,'
     +'textarea,select,option,svg,math,applet,frame,frameset,noscript,template,portal';
-  // Tarayıcı URL'i çözerken boşluk ve kontrol karakterlerini atar ("java&#9;script:"
-  // yine çalışır) → şemayı TEMİZLENMİŞ bir kopya üzerinde sına, değeri değiştirme.
+  // TarayÄ±cÄ± URL'i Ã§Ã¶zerken boÅŸluk ve kontrol karakterlerini atar ("java&#9;script:"
+  // yine Ã§alÄ±ÅŸÄ±r) â†’ ÅŸemayÄ± TEMÄ°ZLENMÄ°Å bir kopya Ã¼zerinde sÄ±na, deÄŸeri deÄŸiÅŸtirme.
   function tehlikeliUrl(deger){
     const sade=String(deger||'').replace(/[\u0000-\u0020\u00a0\u1680\u2000-\u200f\u2028-\u202f\u205f\u3000\ufeff]/g,'');
     return /^(javascript|data|vbscript):/i.test(sade);
@@ -109,7 +109,7 @@
     doc.querySelectorAll('*').forEach(el=>{
       Array.from(el.attributes).forEach(a=>{
         const n=a.name.toLowerCase();
-        // on* handler + sayfa görünümünü kaçıran/kod taşıyan nitelikler
+        // on* handler + sayfa gÃ¶rÃ¼nÃ¼mÃ¼nÃ¼ kaÃ§Ä±ran/kod taÅŸÄ±yan nitelikler
         if(n.startsWith('on')||n==='srcdoc'||n==='formaction'||n==='style'||n==='color'||n==='background'||n==='bgcolor'){
           el.removeAttribute(a.name); return;
         }
@@ -126,90 +126,90 @@
   }
 
   async function yukle(){
-    if(!id){ G().innerHTML='<div class="v1-bos">İhale kimliği belirtilmedi.</div>'; return; }
+    if(!id){ G().innerHTML='<div class="v1-bos">Ä°hale kimliÄŸi belirtilmedi.</div>'; return; }
     try{
-      // ilan_metni / ilan_html YALNIZ üye dalında: anon'a kapalı (42501) — koşulsuz
-      // eklenirse tüm sorgu düşer ve misafirde sayfa "Yüklenemedi" der.
-      // aciklama 1,98M satırın TAMAMINDA NULL; yalnız tarihî yedek olarak duruyor.
+      // ilan_metni / ilan_html YALNIZ Ã¼ye dalÄ±nda: anon'a kapalÄ± (42501) â€” koÅŸulsuz
+      // eklenirse tÃ¼m sorgu dÃ¼ÅŸer ve misafirde sayfa "YÃ¼klenemedi" der.
+      // aciklama 1,98M satÄ±rÄ±n TAMAMINDA NULL; yalnÄ±z tarihÃ® yedek olarak duruyor.
       const kolon = uyeMi
         ? 'id,ekap_id,ikn,baslik,aciklama,ilan_metni,ilan_html,idare,il,tur,usul,durum,kategori,ilan_tarihi,son_teklif_tarihi,ihale_tarihi,yaklasik_maliyet_min,yaklasik_maliyet_max,tahmini_bedel,itiraz_bedeli,isin_yapilacagi_yer,ihale_yeri,yapay_zeka_ozeti,pdf_url,kaynak'
         : 'id,baslik,il,tur,usul,durum,kategori,ilan_tarihi,son_teklif_tarihi,kaynak';
-      // id birincil anahtar → .limit(1) burada güvenli (en fazla 1 satır zaten).
+      // id birincil anahtar â†’ .limit(1) burada gÃ¼venli (en fazla 1 satÄ±r zaten).
       const {data,error}=await sb.from('ilanlar').select(kolon).eq('id',id).limit(1);
       if(error) throw error;
       const r=(data||[])[0];
-      if(!r){ G().innerHTML='<div class="v1-bos">İhale bulunamadı.</div>'; return; }
+      if(!r){ G().innerHTML='<div class="v1-bos">Ä°hale bulunamadÄ±.</div>'; return; }
       ciz(r);
       sonucYukle(r);
       benzerYukle(r);
       sonGoruntulenenKaydet(r);
-    }catch(e){ G().innerHTML=`<div class="v1-bos">Yüklenemedi. ${esc(e.message||'')}</div>`; }
+    }catch(e){ G().innerHTML=`<div class="v1-bos">YÃ¼klenemedi. ${esc(e.message||'')}</div>`; }
   }
 
   function ciz(r){
-    const d=DURUM[r.durum]||[r.durum||'—',''];
+    const d=DURUM[r.durum]||[r.durum||'â€”',''];
     const t=r.son_teklif_tarihi?new Date(r.son_teklif_tarihi):null;
     const kalan=t?Math.ceil((t-new Date())/86400000):null;
-    const kilit='<span class="v1-kilit">••••• 🔒</span>';
-    const alan=(b,v)=>`<div class="v1-bilgi"><b>${b}</b><span>${v||'—'}</span></div>`;
+    const kilit='<span class="v1-kilit">â€¢â€¢â€¢â€¢â€¢ ğŸ”’</span>';
+    const alan=(b,v)=>`<div class="v1-bilgi"><b>${b}</b><span>${v||'â€”'}</span></div>`;
     const maliyet = uyeMi
-      ? (r.yaklasik_maliyet_min ? tl(r.yaklasik_maliyet_min)+(r.yaklasik_maliyet_max&&r.yaklasik_maliyet_max!==r.yaklasik_maliyet_min?' – '+tl(r.yaklasik_maliyet_max):'') : 'İlan edilmemiş')
+      ? (r.yaklasik_maliyet_min ? tl(r.yaklasik_maliyet_min)+(r.yaklasik_maliyet_max&&r.yaklasik_maliyet_max!==r.yaklasik_maliyet_min?' â€“ '+tl(r.yaklasik_maliyet_max):'') : 'Ä°lan edilmemiÅŸ')
       : kilit;
-    // EKAP public deep-link YOK (IKN'ye özel sayfa oturum ister → 406). Doğru EKAP modülüne
-    // yönlendir (DT ayrı modül), kullanıcı sayfada görünen IKN ile kendisi aratır/giriş yapar.
-    const dtMi = (((r.usul||'')+' '+(r.tur||'')).toLocaleLowerCase('tr').includes('doğrudan temin'));
+    // EKAP public deep-link YOK (IKN'ye Ã¶zel sayfa oturum ister â†’ 406). DoÄŸru EKAP modÃ¼lÃ¼ne
+    // yÃ¶nlendir (DT ayrÄ± modÃ¼l), kullanÄ±cÄ± sayfada gÃ¶rÃ¼nen IKN ile kendisi aratÄ±r/giriÅŸ yapar.
+    const dtMi = (((r.usul||'')+' '+(r.tur||'')).toLocaleLowerCase('tr').includes('doÄŸrudan temin'));
     const ekapUrl = dtMi ? 'https://ekapv2.kik.gov.tr/ekap-dt/search' : 'https://ekapv2.kik.gov.tr/ekap/search';
 
     G().innerHTML=`
       <div class="v1-d-bant">
-        <div class="v1-d-ikn">${esc(r.ikn||r.ekap_id||'')} ${r.kaynak?'· '+esc(String(r.kaynak).toUpperCase()):''}</div>
-        <div class="v1-d-baslik">${esc(r.baslik||'—')}</div>
+        <div class="v1-d-ikn">${esc(r.ikn||r.ekap_id||'')} ${r.kaynak?'Â· '+esc(String(r.kaynak).toUpperCase()):''}</div>
+        <div class="v1-d-baslik">${esc(r.baslik||'â€”')}</div>
         <div class="v1-d-rozetler">
           <span class="v1-d-rozet ${d[1]}">${esc(d[0])}</span>
           ${r.tur?`<span class="v1-d-rozet">${esc(r.tur)}</span>`:''}
           ${r.il?`<span class="v1-d-rozet">${esc(r.il)}</span>`:''}
-          ${kalan!=null&&kalan>=0?`<span class="v1-d-rozet ${kalan<=3?'kirmizi':'teal'}">Son ${kalan} gün</span>`:''}
+          ${kalan!=null&&kalan>=0?`<span class="v1-d-rozet ${kalan<=3?'kirmizi':'teal'}">Son ${kalan} gÃ¼n</span>`:''}
         </div>
         <div class="v1-d-islem">
-          <button class="v1-d-btn" id="d-takip">⭐ Takibe Al</button>
-          <button class="v1-d-btn hayalet" id="d-takvim">📅 Takvime Ekle</button>
-          <a class="v1-d-btn teal" href="v1-teklif-olustur?ihale_id=${r.id}">📝 Teklif Oluştur</a>
-          <a class="v1-d-btn hayalet" href="v1-teklif-olustur?ihale_id=${r.id}#fiyat">💡 AI Fiyat Stratejisi</a>
+          <button class="v1-d-btn" id="d-takip">â­ Takibe Al</button>
+          <button class="v1-d-btn hayalet" id="d-takvim">ğŸ“… Takvime Ekle</button>
+          <a class="v1-d-btn teal" href="v1-teklif-olustur?ihale_id=${r.id}">ğŸ“ Teklif OluÅŸtur</a>
+          <a class="v1-d-btn hayalet" href="v1-teklif-olustur?ihale_id=${r.id}#fiyat">ğŸ’¡ AI Fiyat Stratejisi</a>
           <a class="v1-d-btn hayalet" href="${ekapUrl}" target="_blank" rel="noopener"
-             title="EKAP ${dtMi?'Doğrudan Temin':'İhale'} arama sayfası — bu ihalenin IKN'si (${esc(r.ikn||r.ekap_id||'')}) ile aratın">🔗 EKAP'a Git</a>
+             title="EKAP ${dtMi?'DoÄŸrudan Temin':'Ä°hale'} arama sayfasÄ± â€” bu ihalenin IKN'si (${esc(r.ikn||r.ekap_id||'')}) ile aratÄ±n">ğŸ”— EKAP'a Git</a>
         </div>
       </div>
 
       <div class="v1-kart">
-        <div class="v1-kart-baslik">İhale Bilgileri</div>
+        <div class="v1-kart-baslik">Ä°hale Bilgileri</div>
         <div class="v1-bilgi-grid">
-          ${alan('İhaleyi Yapan İdare', uyeMi?esc(r.idare):kilit)}
-          ${alan('Sektör', esc(r.kategori))}
-          ${alan('İhale Usulü', esc(r.usul))}
-          ${alan('İlan Tarihi', gun(r.ilan_tarihi))}
-          ${alan('Son Teklif Tarihi', t?`${gun(r.son_teklif_tarihi)} ${saat(r.son_teklif_tarihi)}`:'—')}
-          ${alan('İhale Tarihi', gun(r.ihale_tarihi))}
-          ${alan('Yaklaşık Maliyet', maliyet)}
-          ${uyeMi?alan('İtiraz Bedeli', tl(r.itiraz_bedeli)):''}
-          ${uyeMi?alan('İşin Yapılacağı Yer', esc(r.isin_yapilacagi_yer)):''}
-          ${uyeMi?alan('İhale Yeri', esc(r.ihale_yeri)):''}
+          ${alan('Ä°haleyi Yapan Ä°dare', uyeMi?esc(r.idare):kilit)}
+          ${alan('SektÃ¶r', esc(r.kategori))}
+          ${alan('Ä°hale UsulÃ¼', esc(r.usul))}
+          ${alan('Ä°lan Tarihi', gun(r.ilan_tarihi))}
+          ${alan('Son Teklif Tarihi', t?`${gun(r.son_teklif_tarihi)} ${saat(r.son_teklif_tarihi)}`:'â€”')}
+          ${alan('Ä°hale Tarihi', gun(r.ihale_tarihi))}
+          ${alan('YaklaÅŸÄ±k Maliyet', maliyet)}
+          ${uyeMi?alan('Ä°tiraz Bedeli', tl(r.itiraz_bedeli)):''}
+          ${uyeMi?alan('Ä°ÅŸin YapÄ±lacaÄŸÄ± Yer', esc(r.isin_yapilacagi_yer)):''}
+          ${uyeMi?alan('Ä°hale Yeri', esc(r.ihale_yeri)):''}
         </div>
         ${!uyeMi?`<div style="margin-top:16px;background:var(--v1-mavi-acik);border:1px solid #CFE2F5;border-radius:10px;padding:13px 15px;font-size:13px;">
-          🔒 İdare, yaklaşık maliyet ve iş yeri bilgileri <strong>üyelere açıktır</strong>. <a href="login">Giriş yapın →</a></div>`:''}
+          ğŸ”’ Ä°dare, yaklaÅŸÄ±k maliyet ve iÅŸ yeri bilgileri <strong>Ã¼yelere aÃ§Ä±ktÄ±r</strong>. <a href="login">GiriÅŸ yapÄ±n â†’</a></div>`:''}
       </div>
 
       ${r.yapay_zeka_ozeti?`<div class="v1-kart">
         <div class="v1-kart-baslik">
           <svg viewBox="0 0 24 24" width="19" height="19" fill="var(--v1-teal)"><path d="M12 1.6l1.9 4.7 4.7 1.9-4.7 1.9L12 14.8l-1.9-4.7L5.4 8.2l4.7-1.9L12 1.6Z"/></svg>
-          Yapay Zekâ Özeti</div>
+          Yapay ZekÃ¢ Ã–zeti</div>
         <div class="v1-metin">${esc(r.yapay_zeka_ozeti)}</div></div>`:''}
 
       ${ilanMetniKarti(r)}
 
       <div id="d-sonuc"></div>
       <div class="v1-kart">
-        <div class="v1-kart-baslik">Benzer İhaleler</div>
-        <div id="d-benzer"><div class="v1-bos">Yükleniyor…</div></div>
+        <div class="v1-kart-baslik">Benzer Ä°haleler</div>
+        <div id="d-benzer"><div class="v1-bos">YÃ¼kleniyorâ€¦</div></div>
       </div>`;
 
     ilanMetniDoldur(r);
@@ -218,22 +218,22 @@
     takipDurumGuncelle();
   }
 
-  /* ── İlan metni ───────────────────────────────────────────────────────
-     ESKİ HATA: kart yalnız r.aciklama'yı çiziyordu; o kolon 1,98M satırın
-     TAMAMINDA NULL → ilan metni hiçbir ihalede görünmüyordu. Gerçek metin
-     ilan_metni / ilan_html kolonlarında ve anon'a KAPALI → üye dalında göster,
-     misafire kilit. Gövde innerHTML'den SONRA ilanMetniDoldur() ile basılır ki
-     ilan_html şablon içine ham gömülmesin (sanitizasyon DOM üstünde yapılır). */
+  /* â”€â”€ Ä°lan metni â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+     ESKÄ° HATA: kart yalnÄ±z r.aciklama'yÄ± Ã§iziyordu; o kolon 1,98M satÄ±rÄ±n
+     TAMAMINDA NULL â†’ ilan metni hiÃ§bir ihalede gÃ¶rÃ¼nmÃ¼yordu. GerÃ§ek metin
+     ilan_metni / ilan_html kolonlarÄ±nda ve anon'a KAPALI â†’ Ã¼ye dalÄ±nda gÃ¶ster,
+     misafire kilit. GÃ¶vde innerHTML'den SONRA ilanMetniDoldur() ile basÄ±lÄ±r ki
+     ilan_html ÅŸablon iÃ§ine ham gÃ¶mÃ¼lmesin (sanitizasyon DOM Ã¼stÃ¼nde yapÄ±lÄ±r). */
   function ilanMetniKarti(r){
-    const bas='<div class="v1-kart-baslik">İlan Metni</div>';
+    const bas='<div class="v1-kart-baslik">Ä°lan Metni</div>';
     if(!uyeMi){
       return `<div class="v1-kart">${bas}
-        <div class="v1-kilit-kutu">🔒 İlan metninin tamamı <strong>üyelere açıktır</strong>.
-        <a href="login">Giriş yapın →</a></div></div>`;
+        <div class="v1-kilit-kutu">ğŸ”’ Ä°lan metninin tamamÄ± <strong>Ã¼yelere aÃ§Ä±ktÄ±r</strong>.
+        <a href="login">GiriÅŸ yapÄ±n â†’</a></div></div>`;
     }
     if(!(r.ilan_html||r.ilan_metni||r.aciklama)){
       return `<div class="v1-kart">${bas}
-        <div class="v1-bos">Bu ihale için ilan metni kaydedilmemiş.</div></div>`;
+        <div class="v1-bos">Bu ihale iÃ§in ilan metni kaydedilmemiÅŸ.</div></div>`;
     }
     return `<div class="v1-kart">${bas}<div class="v1-metin" id="d-ilan-metni"></div></div>`;
   }
@@ -241,29 +241,29 @@
     const el=document.getElementById('d-ilan-metni'); if(!el) return;
     const zengin=r.ilan_html?temizHtml(r.ilan_html):'';
     if(zengin.trim()){ el.classList.add('zengin'); el.innerHTML=zengin; return; }
-    // ilan_html yok ya da temizlikten sonra boş kaldı → düz metne düş
+    // ilan_html yok ya da temizlikten sonra boÅŸ kaldÄ± â†’ dÃ¼z metne dÃ¼ÅŸ
     el.classList.remove('zengin');
-    el.textContent=r.ilan_metni||r.aciklama||'İlan metni bulunamadı.';
+    el.textContent=r.ilan_metni||r.aciklama||'Ä°lan metni bulunamadÄ±.';
   }
 
-  /* ── Sonuç (sonuçlanmışsa) ────────────────────────────────────────────
-     ESKİ HATA: `.limit(1)` + SIRALAMASIZ tek satır çekiliyordu. ihale_sonuclari'nda
-     satır = KISIM; 2,52M sonuç satırının %48,1'i lot_sayisi>1. Postgres'in rastgele
-     verdiği TEK kısmın bedeli "Sözleşme Bedeli" diye yazılıyordu (kanıt: 12 kısımlı
-     bir ihalede toplam 2.301.026 ₺ iken sayfa 122.944 ₺ gösteriyordu).
-     DÜZELTME: tüm kısımları kisim_no sırasıyla çek, "N kısım" rozeti + kısım
-     bedelleri TOPLAMI göster.
-     TENZİLAT: EKAP kısım bazlı yaklaşık maliyet yayımlamaz, ihalenin TOPLAM maliyeti
-     her kısma kopyalanır → satır tenzilatı sahte %95'lere çıkar. Proje kuralı:
-     yalnız lot_sayisi=1 iken göster (v1-firma-analiz.html tenzilatDegeri() ile aynı). */
+  /* â”€â”€ SonuÃ§ (sonuÃ§lanmÄ±ÅŸsa) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+     ESKÄ° HATA: `.limit(1)` + SIRALAMASIZ tek satÄ±r Ã§ekiliyordu. ihale_sonuclari'nda
+     satÄ±r = KISIM; 2,52M sonuÃ§ satÄ±rÄ±nÄ±n %48,1'i lot_sayisi>1. Postgres'in rastgele
+     verdiÄŸi TEK kÄ±smÄ±n bedeli "SÃ¶zleÅŸme Bedeli" diye yazÄ±lÄ±yordu (kanÄ±t: 12 kÄ±sÄ±mlÄ±
+     bir ihalede toplam 2.301.026 â‚º iken sayfa 122.944 â‚º gÃ¶steriyordu).
+     DÃœZELTME: tÃ¼m kÄ±sÄ±mlarÄ± kisim_no sÄ±rasÄ±yla Ã§ek, "N kÄ±sÄ±m" rozeti + kÄ±sÄ±m
+     bedelleri TOPLAMI gÃ¶ster.
+     TENZÄ°LAT: EKAP kÄ±sÄ±m bazlÄ± yaklaÅŸÄ±k maliyet yayÄ±mlamaz, ihalenin TOPLAM maliyeti
+     her kÄ±sma kopyalanÄ±r â†’ satÄ±r tenzilatÄ± sahte %95'lere Ã§Ä±kar. Proje kuralÄ±:
+     yalnÄ±z lot_sayisi=1 iken gÃ¶ster (v1-firma-analiz.html tenzilatDegeri() ile aynÄ±). */
   async function sonucYukle(r){
     if(!uyeMi) return;
     const kap=document.getElementById('d-sonuc'); if(!kap) return;
     try{
-      // TAVAN: canlıda en büyük ihale 5.826 kısım. Hepsini çekmek client-load-all
-      // olurdu; count=exact ile GERÇEK kısım sayısını öğrenip yalnız ilk KISIM_TAVAN
-      // satırı indiriyoruz. Kesme olursa toplam KISMİ olur → etiket bunu açıkça söyler,
-      // eksik toplam "Toplam Sözleşme Bedeli" diye sunulmaz.
+      // TAVAN: canlÄ±da en bÃ¼yÃ¼k ihale 5.826 kÄ±sÄ±m. Hepsini Ã§ekmek client-load-all
+      // olurdu; count=exact ile GERÃ‡EK kÄ±sÄ±m sayÄ±sÄ±nÄ± Ã¶ÄŸrenip yalnÄ±z ilk KISIM_TAVAN
+      // satÄ±rÄ± indiriyoruz. Kesme olursa toplam KISMÄ° olur â†’ etiket bunu aÃ§Ä±kÃ§a sÃ¶yler,
+      // eksik toplam "Toplam SÃ¶zleÅŸme Bedeli" diye sunulmaz.
       const KISIM_TAVAN=500;
       const {data,error,count}=await sb.from('ihale_sonuclari')
         .select('kazanan_firma,kazanan_teklif,sozlesme_bedeli,tenzilat_yuzde,kazanan_teklif_farki_yuzde,'
@@ -275,138 +275,138 @@
       const sat=data||[]; if(!sat.length) return;
       const s0=sat[0];
 
-      const kayitSayisi=Number(count)||sat.length;   // ihaleye ait TOPLAM sonuç satırı
-      const kesik=kayitSayisi>sat.length;            // tavana takıldık mı?
-      // lot_sayisi = ihalenin TOPLAM kısım sayısı; sonuç kaydı ondan az olabilir
-      // (iptal/sonuçsuz kısım). İkisinin büyüğü gerçek kısım sayısıdır.
+      const kayitSayisi=Number(count)||sat.length;   // ihaleye ait TOPLAM sonuÃ§ satÄ±rÄ±
+      const kesik=kayitSayisi>sat.length;            // tavana takÄ±ldÄ±k mÄ±?
+      // lot_sayisi = ihalenin TOPLAM kÄ±sÄ±m sayÄ±sÄ±; sonuÃ§ kaydÄ± ondan az olabilir
+      // (iptal/sonuÃ§suz kÄ±sÄ±m). Ä°kisinin bÃ¼yÃ¼ÄŸÃ¼ gerÃ§ek kÄ±sÄ±m sayÄ±sÄ±dÄ±r.
       const lot=Math.max(Number(s0.lot_sayisi)||0, kayitSayisi);
       const cokKisim=lot>1;
       const bedelOf=(x)=>Number(x.sozlesme_bedeli??x.kazanan_teklif)||0;
       const toplam=sat.reduce((a,x)=>a+bedelOf(x),0);
 
-      // Tenzilat YALNIZ tek kısımlı ihalede geçerli (proje kuralı — v1-firma-analiz
-      // tenzilatDegeri() ile aynı). lot_sayisi NULL (42.931 satır, gece işi henüz
-      // dokunmamış) da "bilinmiyor" sayılır: tek kısımlı OLDUĞU kanıtlanmadan gösterme.
+      // Tenzilat YALNIZ tek kÄ±sÄ±mlÄ± ihalede geÃ§erli (proje kuralÄ± â€” v1-firma-analiz
+      // tenzilatDegeri() ile aynÄ±). lot_sayisi NULL (42.931 satÄ±r, gece iÅŸi henÃ¼z
+      // dokunmamÄ±ÅŸ) da "bilinmiyor" sayÄ±lÄ±r: tek kÄ±sÄ±mlÄ± OLDUÄU kanÄ±tlanmadan gÃ¶sterme.
       const tekKisim = Number(s0.lot_sayisi)===1 && kayitSayisi===1;
       let tenzHtml;
       if(tekKisim){
         const v=(s0.tenzilat_yuzde!=null)?s0.tenzilat_yuzde:s0.kazanan_teklif_farki_yuzde;
         const tz=(v!=null&&Math.abs(Number(v))<100)
-          ? '%'+Number(v).toLocaleString('tr-TR',{maximumFractionDigits:1}) : '—';
+          ? '%'+Number(v).toLocaleString('tr-TR',{maximumFractionDigits:1}) : 'â€”';
         tenzHtml=`<div><b>Tenzilat</b><span>${tz}</span></div>`;
       }else if(cokKisim){
-        tenzHtml=`<div><b>Tenzilat</b><span class="kucuk" title="Çok kısımlı ihalede EKAP kısım bazlı yaklaşık maliyet yayımlamadığından tenzilat hesaplanamaz">${num(lot)} kısımlı — hesaplanamaz</span></div>`;
+        tenzHtml=`<div><b>Tenzilat</b><span class="kucuk" title="Ã‡ok kÄ±sÄ±mlÄ± ihalede EKAP kÄ±sÄ±m bazlÄ± yaklaÅŸÄ±k maliyet yayÄ±mlamadÄ±ÄŸÄ±ndan tenzilat hesaplanamaz">${num(lot)} kÄ±sÄ±mlÄ± â€” hesaplanamaz</span></div>`;
       }else{
-        tenzHtml='<div><b>Tenzilat</b><span class="kucuk" title="İhalenin kısım sayısı henüz doğrulanmadı; doğrulanmadan tenzilat yanıltıcı olabilir">Doğrulanmadı</span></div>';
+        tenzHtml='<div><b>Tenzilat</b><span class="kucuk" title="Ä°halenin kÄ±sÄ±m sayÄ±sÄ± henÃ¼z doÄŸrulanmadÄ±; doÄŸrulanmadan tenzilat yanÄ±ltÄ±cÄ± olabilir">DoÄŸrulanmadÄ±</span></div>';
       }
 
-      // Kazanan firma(lar) — kısımları farklı firmalar almış olabilir.
-      // KESİK VERİDE TEK FİRMA DA KESİN DEĞİLDİR: yüklenmeyen kısımları başka firmalar
-      // almış olabilir → linki koru ama kapsamı ("ilk N kısımda") açıkça yaz, yoksa
-      // kısmi veriyi tam sanmak düzelttiğimiz hatanın aynısı olur.
+      // Kazanan firma(lar) â€” kÄ±sÄ±mlarÄ± farklÄ± firmalar almÄ±ÅŸ olabilir.
+      // KESÄ°K VERÄ°DE TEK FÄ°RMA DA KESÄ°N DEÄÄ°LDÄ°R: yÃ¼klenmeyen kÄ±sÄ±mlarÄ± baÅŸka firmalar
+      // almÄ±ÅŸ olabilir â†’ linki koru ama kapsamÄ± ("ilk N kÄ±sÄ±mda") aÃ§Ä±kÃ§a yaz, yoksa
+      // kÄ±smi veriyi tam sanmak dÃ¼zelttiÄŸimiz hatanÄ±n aynÄ±sÄ± olur.
       const firmalar=[...new Set(sat.map(x=>x.kazanan_firma).filter(Boolean))];
       const firmaKapsam = kesik
-        ? ` <span class="kucuk" style="font-weight:600;opacity:.75;" title="Yalnız yüklenen ilk ${num(sat.length)} kısma bakıldı; kalan kısımları başka firmalar almış olabilir">(ilk ${num(sat.length)} kısımda)</span>` : '';
+        ? ` <span class="kucuk" style="font-weight:600;opacity:.75;" title="YalnÄ±z yÃ¼klenen ilk ${num(sat.length)} kÄ±sma bakÄ±ldÄ±; kalan kÄ±sÄ±mlarÄ± baÅŸka firmalar almÄ±ÅŸ olabilir">(ilk ${num(sat.length)} kÄ±sÄ±mda)</span>` : '';
       const firmaHtml = firmalar.length===1
-        ? `<span class="kucuk"><a href="v1-firma-analiz?ara=${encodeURIComponent(firmalar[0])}" title="Firma analizini aç">${esc(firmalar[0])} ↗</a>${firmaKapsam}</span>`
+        ? `<span class="kucuk"><a href="v1-firma-analiz?ara=${encodeURIComponent(firmalar[0])}" title="Firma analizini aÃ§">${esc(firmalar[0])} â†—</a>${firmaKapsam}</span>`
         : firmalar.length>1
-          ? `<span class="kucuk">${kesik?'en az ':''}${num(firmalar.length)} farklı firma</span>`
-          : '<span>—</span>';
+          ? `<span class="kucuk">${kesik?'en az ':''}${num(firmalar.length)} farklÄ± firma</span>`
+          : '<span>â€”</span>';
 
       const sirali=(k)=>sat.map(x=>x[k]).filter(Boolean).sort();
       const ilkSonuc=sirali('sonuc_tarihi')[0]||null;
       const sonBitis=sirali('is_bitis_tarihi').slice(-1)[0]||null;
-      // Tarihler de yalnız yüklenen kısımlardan türetiliyor → kesikse kapsamı söyle.
-      const tarihKapsam = kesik ? ` title="Yalnız yüklenen ilk ${num(sat.length)} kısım üzerinden hesaplandı"` : '';
+      // Tarihler de yalnÄ±z yÃ¼klenen kÄ±sÄ±mlardan tÃ¼retiliyor â†’ kesikse kapsamÄ± sÃ¶yle.
+      const tarihKapsam = kesik ? ` title="YalnÄ±z yÃ¼klenen ilk ${num(sat.length)} kÄ±sÄ±m Ã¼zerinden hesaplandÄ±"` : '';
 
-      // Katılımcı kısım kısım değişir → çok kısımlıda tek sayı yanıltır, kısım sayısını yaz.
+      // KatÄ±lÄ±mcÄ± kÄ±sÄ±m kÄ±sÄ±m deÄŸiÅŸir â†’ Ã§ok kÄ±sÄ±mlÄ±da tek sayÄ± yanÄ±ltÄ±r, kÄ±sÄ±m sayÄ±sÄ±nÄ± yaz.
       const katilimciHtml = cokKisim
-        ? `<div><b>Kısım Sayısı</b><span>${num(lot)}</span></div>`
-        : `<div><b>Katılımcı</b><span>${s0.katilimci_sayisi!=null?num(s0.katilimci_sayisi):'—'}</span></div>`;
+        ? `<div><b>KÄ±sÄ±m SayÄ±sÄ±</b><span>${num(lot)}</span></div>`
+        : `<div><b>KatÄ±lÄ±mcÄ±</b><span>${s0.katilimci_sayisi!=null?num(s0.katilimci_sayisi):'â€”'}</span></div>`;
 
-      // Teklif Rekabeti (mevcut kolonlar): yaklaşık maliyet + verilen tekliflerin en düşük /
-      // en yüksek / ortalama ZARFI. EKAP kişi-bazlı teklif listesi (kim ne verdi) yayımlamaz —
-      // yalnız aralık + katılımcı sayısı vardır. Tek kısımda s0 doğrudan ihaleyi temsil eder;
-      // çok kısımlıda değerler kısım kısım değişir → aralık gösterilmez (kısım tablosuna bak).
+      // Teklif Rekabeti (mevcut kolonlar): yaklaÅŸÄ±k maliyet + verilen tekliflerin en dÃ¼ÅŸÃ¼k /
+      // en yÃ¼ksek / ortalama ZARFI. EKAP kiÅŸi-bazlÄ± teklif listesi (kim ne verdi) yayÄ±mlamaz â€”
+      // yalnÄ±z aralÄ±k + katÄ±lÄ±mcÄ± sayÄ±sÄ± vardÄ±r. Tek kÄ±sÄ±mda s0 doÄŸrudan ihaleyi temsil eder;
+      // Ã§ok kÄ±sÄ±mlÄ±da deÄŸerler kÄ±sÄ±m kÄ±sÄ±m deÄŸiÅŸir â†’ aralÄ±k gÃ¶sterilmez (kÄ±sÄ±m tablosuna bak).
       const tekAlan=(b,v,ipucu)=> (v!=null && Number(v)>0)
         ? `<div><b>${b}</b><span${ipucu?` title="${ipucu}"`:''}>${tl(Number(v))}</span></div>` : '';
       const teklifKutu = !cokKisim
-        ? [tekAlan('Yaklaşık Maliyet', s0.yaklasik_maliyet),
-           tekAlan('En Düşük Teklif',  s0.en_dusuk_teklif,'İhaleye verilen en düşük teklif'),
-           tekAlan('En Yüksek Teklif', s0.en_yuksek_teklif,'İhaleye verilen en yüksek teklif'),
-           tekAlan('Ortalama Teklif',  s0.ortalama_teklif,'En düşük–en yüksek ortalaması')].filter(Boolean).join('')
+        ? [tekAlan('YaklaÅŸÄ±k Maliyet', s0.yaklasik_maliyet),
+           tekAlan('En DÃ¼ÅŸÃ¼k Teklif',  s0.en_dusuk_teklif,'Ä°haleye verilen en dÃ¼ÅŸÃ¼k teklif'),
+           tekAlan('En YÃ¼ksek Teklif', s0.en_yuksek_teklif,'Ä°haleye verilen en yÃ¼ksek teklif'),
+           tekAlan('Ortalama Teklif',  s0.ortalama_teklif,'En dÃ¼ÅŸÃ¼kâ€“en yÃ¼ksek ortalamasÄ±')].filter(Boolean).join('')
         : '';
       const teklifHtml = teklifKutu
         ? `<div style="margin-top:14px;padding-top:12px;border-top:1px dashed var(--v1-cizgi);">
              <div style="font-size:12.5px;font-weight:800;color:var(--v1-lacivert);margin-bottom:8px;">Teklif Rekabeti
-               <span class="kucuk" style="font-weight:600;opacity:.7;" title="EKAP kişi bazlı teklif listesi (kim ne verdi) yayımlamaz; verilen tekliflerin en düşük–en yüksek aralığı ve katılımcı sayısı gösterilir">verilen tekliflerin aralığı</span></div>
+               <span class="kucuk" style="font-weight:600;opacity:.7;" title="EKAP kiÅŸi bazlÄ± teklif listesi (kim ne verdi) yayÄ±mlamaz; verilen tekliflerin en dÃ¼ÅŸÃ¼kâ€“en yÃ¼ksek aralÄ±ÄŸÄ± ve katÄ±lÄ±mcÄ± sayÄ±sÄ± gÃ¶sterilir">verilen tekliflerin aralÄ±ÄŸÄ±</span></div>
              <div class="v1-sonuc-grid">${teklifKutu}</div></div>`
         : '';
 
-      // Bedel etiketi: kesik veride "Toplam" DEMEK YASAK — eksik toplamı tam sanmak
-      // düzelttiğimiz hatanın aynısı olurdu; etiket kapsamı kendisi yazar.
-      const bedelEtiket = !cokKisim ? 'Sözleşme Bedeli'
-        : kesik ? `İlk ${num(sat.length)} Kısmın Bedeli` : 'Toplam Sözleşme Bedeli';
+      // Bedel etiketi: kesik veride "Toplam" DEMEK YASAK â€” eksik toplamÄ± tam sanmak
+      // dÃ¼zelttiÄŸimiz hatanÄ±n aynÄ±sÄ± olurdu; etiket kapsamÄ± kendisi yazar.
+      const bedelEtiket = !cokKisim ? 'SÃ¶zleÅŸme Bedeli'
+        : kesik ? `Ä°lk ${num(sat.length)} KÄ±smÄ±n Bedeli` : 'Toplam SÃ¶zleÅŸme Bedeli';
 
       const kisimTablo = cokKisim ? `
         <details class="v1-kisim-det" open>
-          <summary>Kısım bazlı dağılım (${num(sat.length)}${kesik?' / '+num(kayitSayisi):''} kayıt)</summary>
+          <summary>KÄ±sÄ±m bazlÄ± daÄŸÄ±lÄ±m (${num(sat.length)}${kesik?' / '+num(kayitSayisi):''} kayÄ±t)</summary>
           <div class="v1-kisim-sar"><table class="v1-kisim-tablo">
-            <thead><tr><th>Kısım</th><th>Kazanan</th><th class="sag">En Düşük</th><th class="sag">En Yüksek</th><th class="sag">Bedel</th></tr></thead>
+            <thead><tr><th>KÄ±sÄ±m</th><th>Kazanan</th><th class="sag">En DÃ¼ÅŸÃ¼k</th><th class="sag">En YÃ¼ksek</th><th class="sag">Bedel</th></tr></thead>
             <tbody>${sat.map(x=>`<tr>
-              <td>${x.kisim_no!=null?num(x.kisim_no):'—'}</td>
-              <td>${esc(x.kazanan_firma||'—')}</td>
-              <td class="sag">${x.en_dusuk_teklif>0?tl(Number(x.en_dusuk_teklif)):'—'}</td>
-              <td class="sag">${x.en_yuksek_teklif>0?tl(Number(x.en_yuksek_teklif)):'—'}</td>
-              <td class="sag">${bedelOf(x)?tl(bedelOf(x)):'—'}</td></tr>`).join('')}</tbody>
+              <td>${x.kisim_no!=null?num(x.kisim_no):'â€”'}</td>
+              <td>${esc(x.kazanan_firma||'â€”')}</td>
+              <td class="sag">${x.en_dusuk_teklif>0?tl(Number(x.en_dusuk_teklif)):'â€”'}</td>
+              <td class="sag">${x.en_yuksek_teklif>0?tl(Number(x.en_yuksek_teklif)):'â€”'}</td>
+              <td class="sag">${bedelOf(x)?tl(bedelOf(x)):'â€”'}</td></tr>`).join('')}</tbody>
           </table></div>
         </details>` : '';
 
       const sonucsuz = cokKisim && !kesik && kayitSayisi<lot;
-      const not = cokKisim ? `<div class="v1-sonuc-not">Çok kısımlı ihale: gösterilen tutar,
+      const not = cokKisim ? `<div class="v1-sonuc-not">Ã‡ok kÄ±sÄ±mlÄ± ihale: gÃ¶sterilen tutar,
         ${kesik
-          ? `bu sayfaya yüklenen <b>ilk ${num(sat.length)}</b> kısmın bedelleri toplamıdır — ihalenin ${num(kayitSayisi)} sonuç kaydı olduğundan bu tutar ihalenin TAMAMI DEĞİLDİR`
-          : `sonucu yayımlanan ${num(kayitSayisi)} kısmın bedelleri toplamıdır${sonucsuz?` (ihalenin ${num(lot)} kısmından ${num(kayitSayisi)} tanesinde sonuç kaydı var)`:''}`}.
-        EKAP kısım bazlı yaklaşık maliyet yayımlamadığından tenzilat kısım kısım hesaplanamaz.</div>` : '';
+          ? `bu sayfaya yÃ¼klenen <b>ilk ${num(sat.length)}</b> kÄ±smÄ±n bedelleri toplamÄ±dÄ±r â€” ihalenin ${num(kayitSayisi)} sonuÃ§ kaydÄ± olduÄŸundan bu tutar ihalenin TAMAMI DEÄÄ°LDÄ°R`
+          : `sonucu yayÄ±mlanan ${num(kayitSayisi)} kÄ±smÄ±n bedelleri toplamÄ±dÄ±r${sonucsuz?` (ihalenin ${num(lot)} kÄ±smÄ±ndan ${num(kayitSayisi)} tanesinde sonuÃ§ kaydÄ± var)`:''}`}.
+        EKAP kÄ±sÄ±m bazlÄ± yaklaÅŸÄ±k maliyet yayÄ±mlamadÄ±ÄŸÄ±ndan tenzilat kÄ±sÄ±m kÄ±sÄ±m hesaplanamaz.</div>` : '';
 
       const fes=sat.filter(x=>x.fesih_var).length, tas=sat.filter(x=>x.tasfiye_var).length;
       const uyariParca=[];
-      const enAz=kesik?'en az ':'';   // kesik veride sayım eksik kalır, öyle sun
-      if(fes) uyariParca.push(cokKisim?`${enAz}<b>${num(fes)}</b> kısımda sözleşme <b>feshedilmiş</b>`:'Sözleşme <b>feshedilmiş</b>');
-      if(tas) uyariParca.push(cokKisim?`${enAz}<b>${num(tas)}</b> kısımda <b>tasfiye / devir</b> var`:'Sözleşmede <b>tasfiye / devir</b> var');
-      const uyari=uyariParca.length?`<div class="v1-sonuc-uyari">⚠ ${uyariParca.join(' · ')}</div>`:'';
+      const enAz=kesik?'en az ':'';   // kesik veride sayÄ±m eksik kalÄ±r, Ã¶yle sun
+      if(fes) uyariParca.push(cokKisim?`${enAz}<b>${num(fes)}</b> kÄ±sÄ±mda sÃ¶zleÅŸme <b>feshedilmiÅŸ</b>`:'SÃ¶zleÅŸme <b>feshedilmiÅŸ</b>');
+      if(tas) uyariParca.push(cokKisim?`${enAz}<b>${num(tas)}</b> kÄ±sÄ±mda <b>tasfiye / devir</b> var`:'SÃ¶zleÅŸmede <b>tasfiye / devir</b> var');
+      const uyari=uyariParca.length?`<div class="v1-sonuc-uyari">âš  ${uyariParca.join(' Â· ')}</div>`:'';
 
       kap.innerHTML=`
-        <div class="v1-kart"><div class="v1-kart-baslik">İhale Sonucu${cokKisim?` <span class="v1-d-rozet teal" style="color:#fff;">${num(lot)} kısım</span>`:''}</div>
+        <div class="v1-kart"><div class="v1-kart-baslik">Ä°hale Sonucu${cokKisim?` <span class="v1-d-rozet teal" style="color:#fff;">${num(lot)} kÄ±sÄ±m</span>`:''}</div>
           <div class="v1-sonuc-kart"><div class="v1-sonuc-grid">
             <div><b>Kazanan Firma</b>${firmaHtml}</div>
-            <div><b>${bedelEtiket}</b><span>${toplam?tl(toplam):'—'}</span></div>
+            <div><b>${bedelEtiket}</b><span>${toplam?tl(toplam):'â€”'}</span></div>
             ${tenzHtml}
             ${katilimciHtml}
-            <div><b>Sonuç Tarihi</b><span class="kucuk"${tarihKapsam}>${gun(ilkSonuc)||'—'}</span></div>
-            ${sonBitis?`<div><b>İş Bitiş</b><span class="kucuk"${tarihKapsam}>${gun(sonBitis)}</span></div>`:''}
+            <div><b>SonuÃ§ Tarihi</b><span class="kucuk"${tarihKapsam}>${gun(ilkSonuc)||'â€”'}</span></div>
+            ${sonBitis?`<div><b>Ä°ÅŸ BitiÅŸ</b><span class="kucuk"${tarihKapsam}>${gun(sonBitis)}</span></div>`:''}
           </div>${teklifHtml}${not}${uyari}${kisimTablo}</div></div>`;
     }catch(e){
-      kap.innerHTML=`<div class="v1-kart"><div class="v1-kart-baslik">İhale Sonucu</div>
-        <div class="v1-bos">Sonuç bilgisi yüklenemedi. ${esc(e.message||'')}</div></div>`;
+      kap.innerHTML=`<div class="v1-kart"><div class="v1-kart-baslik">Ä°hale Sonucu</div>
+        <div class="v1-bos">SonuÃ§ bilgisi yÃ¼klenemedi. ${esc(e.message||'')}</div></div>`;
     }
   }
 
-  // ── Benzer ihaleler — skorlu RPC (idare+il+kategori+başlık kelimesi); RPC yoksa eski filtreye düşer ──
+  // â”€â”€ Benzer ihaleler â€” skorlu RPC (idare+il+kategori+baÅŸlÄ±k kelimesi); RPC yoksa eski filtreye dÃ¼ÅŸer â”€â”€
   async function benzerYukle(r){
     const el=document.getElementById('d-benzer');
     const ciz=(data)=>{
-      if(!data||!data.length){ el.innerHTML='<div class="v1-bos">Benzer açık ihale bulunamadı.</div>'; return; }
+      if(!data||!data.length){ el.innerHTML='<div class="v1-bos">Benzer aÃ§Ä±k ihale bulunamadÄ±.</div>'; return; }
       el.innerHTML=data.map(i=>{
         const g=i.son_teklif_tarihi?Math.max(0,Math.ceil((new Date(i.son_teklif_tarihi)-new Date())/86400000)):null;
-        const alt=[esc(i.il||'—'), i.tur?esc(i.tur):null, i.neden?esc(i.neden):null].filter(Boolean).join(' · ');
+        const alt=[esc(i.il||'â€”'), i.tur?esc(i.tur):null, i.neden?esc(i.neden):null].filter(Boolean).join(' Â· ');
         return `<a class="v1-satir" href="v1-ihale-detay?id=${i.id}" style="display:flex;align-items:center;gap:12px;padding:11px 0;border-top:1px solid var(--v1-cizgi);text-decoration:none;color:inherit;">
           <div style="flex:1;min-width:0;">
-            <div style="font-size:13.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(i.baslik||'İhale')}</div>
+            <div style="font-size:13.5px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${esc(i.baslik||'Ä°hale')}</div>
             <div style="font-size:11.5px;color:var(--v1-muted);margin-top:2px;">${alt}</div>
           </div>
           ${g!=null?`<span style="flex-shrink:0;font-size:12px;font-weight:700;padding:4px 11px;border-radius:20px;
-            background:${g<=3?'#FDECEE':'var(--v1-mavi-acik)'};color:${g<=3?'var(--v1-kirmizi)':'var(--v1-mavi)'};">Son ${g} gün</span>`:''}</a>`;
+            background:${g<=3?'#FDECEE':'var(--v1-mavi-acik)'};color:${g<=3?'var(--v1-kirmizi)':'var(--v1-mavi)'};">Son ${g} gÃ¼n</span>`:''}</a>`;
       }).join('');
     };
     try{
@@ -414,7 +414,7 @@
       if(error) throw error;
       ciz(data);
     }catch(_){
-      // RPC henüz uygulanmadıysa/hata: eski kategori+tur filtresine düş (bölüm bozulmasın)
+      // RPC henÃ¼z uygulanmadÄ±ysa/hata: eski kategori+tur filtresine dÃ¼ÅŸ (bÃ¶lÃ¼m bozulmasÄ±n)
       try{
         let q=sb.from('ilanlar').select('id,baslik,il,tur,son_teklif_tarihi')
           .eq('durum','aktif').gte('son_teklif_tarihi',new Date().toISOString()).neq('id',r.id);
@@ -422,11 +422,11 @@
         if(r.tur) q=q.eq('tur',r.tur);
         const {data}=await q.order('son_teklif_tarihi',{ascending:true,nullsFirst:true}).limit(6);
         ciz(data);
-      }catch(_e){ el.innerHTML='<div class="v1-bos">Yüklenemedi.</div>'; }
+      }catch(_e){ el.innerHTML='<div class="v1-bos">YÃ¼klenemedi.</div>'; }
     }
   }
 
-  // ── Takip ──
+  // â”€â”€ Takip â”€â”€
   function yerelTakip(){ try{ return JSON.parse(localStorage.getItem('takipEdilen')||'[]'); }catch(_){ return []; } }
   async function kullaniciId(){
     try{ const {data}=await sb.auth.getSession(); return (data&&data.session&&data.session.user.id)||null; }
@@ -439,24 +439,24 @@
       const uid=await kullaniciId();
       if(uid){
         // kullanici_id filtresi RLS'e ek olarak ELDE de duruyor: politika ileride
-        // gevşerse başkasının takip satırı "takipte" göstermesin.
+        // gevÅŸerse baÅŸkasÄ±nÄ±n takip satÄ±rÄ± "takipte" gÃ¶stermesin.
         const {data,error}=await sb.from('takipler').select('ilan_id').eq('kullanici_id',uid).eq('ilan_id',id).limit(1);
         if(!error) takipte=!!(data&&data.length);
       }
     }
-    b.textContent = takipte ? '✓ Takipte' : '⭐ Takibe Al';
+    b.textContent = takipte ? 'âœ“ Takipte' : 'â­ Takibe Al';
     b.dataset.takipte = takipte ? '1' : '';
   }
   async function takipToggle(){
-    if(!uyeMi){ alert('Takip için giriş yapmalısınız.'); return; }
+    if(!uyeMi){ alert('Takip iÃ§in giriÅŸ yapmalÄ±sÄ±nÄ±z.'); return; }
     const b=document.getElementById('d-takip'); if(!b) return;
     const eski=b.textContent;
-    b.disabled=true; b.textContent='…';
+    b.disabled=true; b.textContent='â€¦';
     try{
       const uid=await kullaniciId();
-      if(!uid) throw new Error('Oturum bulunamadı, lütfen tekrar giriş yapın.');
-      // supabase-js YAZMA HATASI FIRLATMAZ, {error} döner → try/catch boş geçer ve
-      // kod başarısız işlemde bile "kaydedildi" sanırdı. Hatayı ELLE kontrol et.
+      if(!uid) throw new Error('Oturum bulunamadÄ±, lÃ¼tfen tekrar giriÅŸ yapÄ±n.');
+      // supabase-js YAZMA HATASI FIRLATMAZ, {error} dÃ¶ner â†’ try/catch boÅŸ geÃ§er ve
+      // kod baÅŸarÄ±sÄ±z iÅŸlemde bile "kaydedildi" sanÄ±rdÄ±. HatayÄ± ELLE kontrol et.
       if(b.dataset.takipte){
         const {error}=await sb.from('takipler').delete().eq('kullanici_id',uid).eq('ilan_id',id);
         if(error) throw error;
@@ -469,7 +469,7 @@
       await takipDurumGuncelle();
     }catch(e){
       b.disabled=false; b.textContent=eski;
-      alert('İşlem başarısız: '+(e.message||'bilinmeyen hata'));
+      alert('Ä°ÅŸlem baÅŸarÄ±sÄ±z: '+(e.message||'bilinmeyen hata'));
     }
   }
 
@@ -478,7 +478,7 @@
     const d=new Date(r.son_teklif_tarihi); const f=(x)=>x.toISOString().replace(/[-:]/g,'').split('.')[0]+'Z';
     const ics=['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//ihaleglobal//TR','BEGIN:VEVENT',
       'UID:'+r.id+'@ihaleglobal.com','DTSTAMP:'+f(new Date()),'DTSTART:'+f(d),'DTEND:'+f(new Date(d.getTime()+36e5)),
-      'SUMMARY:'+String(r.baslik||'İhale').replace(/[,;]/g,' '),'DESCRIPTION:İhaleGlobal — son teklif tarihi',
+      'SUMMARY:'+String(r.baslik||'Ä°hale').replace(/[,;]/g,' '),'DESCRIPTION:Ä°haleGlobal â€” son teklif tarihi',
       'URL:https://ihaleglobal.com/v1-ihale-detay?id='+r.id,'END:VEVENT','END:VCALENDAR'].join('\r\n');
     const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([ics],{type:'text/calendar'}));
     a.download='ihale.ics'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(a.href);

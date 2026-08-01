@@ -1,15 +1,15 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="tr">
 <head>
   <meta charset="UTF-8" />
-  <meta name="author" content="Ömer Faruk Dinç">
+  <meta name="author" content="Ã–mer Faruk DinÃ§">
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Firma Analizi — İhaleGlobal</title>
+  <title>Firma Analizi â€” Ä°haleGlobal</title>
   <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=4" />
   <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/v1.css?v=7" />
+  <link rel="stylesheet" href="css/v1.css?v=15" />
   <style>
-    /* ── Sayfa başlığı / üst şerit ─────────────────────────────────────── */
+    /* â”€â”€ Sayfa baÅŸlÄ±ÄŸÄ± / Ã¼st ÅŸerit â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     .v1-sayfa-baslik { font-size:22px; font-weight:800; color:var(--v1-lacivert); margin-bottom:4px; }
     .v1-sayfa-alt { font-size:13.5px; color:var(--v1-muted); margin-bottom:16px; max-width:720px; }
     .fa-ust { display:flex; align-items:flex-start; justify-content:space-between; gap:16px; flex-wrap:wrap; }
@@ -24,9 +24,9 @@
       text-decoration:none; display:inline-flex; align-items:center; gap:6px; white-space:nowrap; }
     .fa-btn-ana:hover { background:var(--v1-lacivert); border-color:var(--v1-lacivert); color:#fff; text-decoration:none; }
 
-    /* Kapsam notu + rozeti — parasal alanların hangi evrenden geldiğini söyler.
-       Bu sayfadaki TÜM ciro/sözleşme/tenzilat rakamları ihale_sonuclari zincirinden gelir;
-       firmanın DOĞRUDAN TEMİN kazanımları hiçbirine dahil değildir (iki evren bilinçli toplanmaz). */
+    /* Kapsam notu + rozeti â€” parasal alanlarÄ±n hangi evrenden geldiÄŸini sÃ¶yler.
+       Bu sayfadaki TÃœM ciro/sÃ¶zleÅŸme/tenzilat rakamlarÄ± ihale_sonuclari zincirinden gelir;
+       firmanÄ±n DOÄRUDAN TEMÄ°N kazanÄ±mlarÄ± hiÃ§birine dahil deÄŸildir (iki evren bilinÃ§li toplanmaz). */
     .fa-not { display:flex; gap:9px; align-items:flex-start; background:var(--v1-mavi-acik);
       border:1px solid #CFE2F5; border-radius:12px; padding:13px 16px; margin-bottom:18px;
       font-size:12.5px; line-height:1.65; color:var(--v1-metin); }
@@ -35,7 +35,7 @@
       padding:2px 8px; border-radius:20px; white-space:nowrap; cursor:help; text-transform:none;
       background:#EDF1F6; color:var(--v1-muted); border:1px solid var(--v1-cizgi); vertical-align:middle; }
 
-    /* ── KPI kartları ──────────────────────────────────────────────────── */
+    /* â”€â”€ KPI kartlarÄ± â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     .fa-kpi { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin-bottom:18px; }
     @media(max-width:1000px){ .fa-kpi { grid-template-columns:repeat(2,1fr); } }
     @media(max-width:560px){ .fa-kpi { grid-template-columns:1fr; } }
@@ -44,7 +44,7 @@
     .fa-kpi.besli { grid-template-columns:repeat(5,1fr); }
     @media(max-width:1100px){ .fa-kpi.besli { grid-template-columns:repeat(3,1fr); } }
     @media(max-width:640px){ .fa-kpi.besli { grid-template-columns:1fr; } }
-    /* DT KPI satırı — İhale satırının aynası, yalnız-DT vurgusu için hafif amber çerçeve */
+    /* DT KPI satÄ±rÄ± â€” Ä°hale satÄ±rÄ±nÄ±n aynasÄ±, yalnÄ±z-DT vurgusu iÃ§in hafif amber Ã§erÃ§eve */
     .fa-kpi.dt-kpi .fa-k { background:#FFFBF0; border:1px solid #EFE3C4; }
     .fa-k { background:#fff; border:1px solid var(--v1-cizgi); border-radius:var(--v1-radius-lg);
       box-shadow:var(--v1-golge); padding:16px 18px; }
@@ -54,13 +54,13 @@
     .fa-k-v.mavi { color:var(--v1-mavi); }
     .fa-k-alt { font-size:11px; color:var(--v1-muted); margin-top:5px; line-height:1.5; }
 
-    /* ── Görünüm anahtarı (Liste / Harita) ─────────────────────────────── */
+    /* â”€â”€ GÃ¶rÃ¼nÃ¼m anahtarÄ± (Liste / Harita) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     .fa-gbtns { display:flex; gap:8px; margin-bottom:14px; flex-wrap:wrap; }
     .fa-gbtn { background:#fff; border:1.5px solid var(--v1-cizgi); color:var(--v1-muted); font-size:12.5px;
       font-weight:700; padding:8px 15px; border-radius:9px; cursor:pointer; font-family:var(--v1-font); }
     .fa-gbtn.aktif { border-color:var(--v1-mavi); color:var(--v1-mavi); background:var(--v1-mavi-acik); }
 
-    /* ── Dizin araç çubuğu ─────────────────────────────────────────────── */
+    /* â”€â”€ Dizin araÃ§ Ã§ubuÄŸu â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     .fa-toolbar { display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-bottom:14px; }
     .fa-ara { flex:1; min-width:230px; display:flex; align-items:center; gap:8px; background:#fff;
       border:1.5px solid var(--v1-cizgi); border-radius:9px; padding:8px 12px; }
@@ -79,7 +79,7 @@
       padding:5px 13px; font-family:var(--v1-font); font-size:12px; font-weight:700; cursor:pointer; }
     .fa-chip:hover { border-color:var(--v1-mavi); color:var(--v1-mavi); }
 
-    /* ── Dizin tablosu ─────────────────────────────────────────────────── */
+    /* â”€â”€ Dizin tablosu â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     .fa-tablo-kutu { background:#fff; border:1px solid var(--v1-cizgi); border-radius:var(--v1-radius-lg);
       box-shadow:var(--v1-golge); overflow:hidden; }
     .fa-tablo-kaydir { overflow-x:auto; }
@@ -89,7 +89,7 @@
       text-transform:uppercase; letter-spacing:.05em; }
     .fa-tablo th.srt { cursor:pointer; user-select:none; }
     .fa-tablo th.srt:hover { color:var(--v1-mavi); }
-    .fa-tablo th.srt.on::after { content:' ↓'; color:var(--v1-mavi); }
+    .fa-tablo th.srt.on::after { content:' â†“'; color:var(--v1-mavi); }
     .fa-tablo td { padding:13px 14px; border-bottom:1px solid var(--v1-cizgi); font-size:13.5px; vertical-align:middle; }
     .fa-tablo tbody tr { cursor:pointer; }
     .fa-tablo tbody tr:hover td { background:#F8FBFF; }
@@ -103,7 +103,7 @@
       background:var(--v1-teal-acik); padding:1px 6px; border-radius:5px; margin-left:6px; vertical-align:middle; }
     @media(max-width:760px){ .fa-tablo th.gizli-m, .fa-tablo td.gizli-m { display:none; } .fa-tablo { min-width:520px; } }
 
-    /* ── Arama sonucu firma kartları ───────────────────────────────────── */
+    /* â”€â”€ Arama sonucu firma kartlarÄ± â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     .fa-fk { display:grid; grid-template-columns:1fr auto; align-items:center; gap:14px; background:#fff;
       border:1px solid var(--v1-cizgi); border-radius:var(--v1-radius-lg); box-shadow:var(--v1-golge);
       padding:15px 20px; margin-bottom:10px; cursor:pointer; transition:border-color .15s, transform .12s; }
@@ -116,7 +116,7 @@
     .fa-fk:hover .fa-fk-sec { background:var(--v1-mavi); color:#fff; }
     @media(max-width:600px){ .fa-fk { grid-template-columns:1fr; } .fa-fk-sec { justify-self:start; } }
 
-    /* ── Firma başlık kartı ────────────────────────────────────────────── */
+    /* â”€â”€ Firma baÅŸlÄ±k kartÄ± â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     .fa-basrak { background:#fff; border:1px solid var(--v1-cizgi); border-radius:var(--v1-radius-lg);
       box-shadow:var(--v1-golge); padding:22px 24px; margin-bottom:18px; }
     .fa-eyebrow { font-size:11px; font-weight:800; letter-spacing:.1em; text-transform:uppercase;
@@ -129,7 +129,7 @@
       background:#E4F6EC; border-radius:5px; padding:1px 7px; font-weight:700; }
     .fa-aksiyon { margin-top:16px; display:flex; gap:10px; flex-wrap:wrap; }
 
-    /* ── Risk şeridi ───────────────────────────────────────────────────── */
+    /* â”€â”€ Risk ÅŸeridi â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     .fa-risk { background:#FDECEE; border:1px solid #F3C6CB; border-radius:12px;
       padding:14px 18px; margin-bottom:18px; }
     .fa-risk-bas { font-size:11.5px; font-weight:800; color:var(--v1-kirmizi); text-transform:uppercase;
@@ -137,7 +137,7 @@
     .fa-risk-metin { font-size:13px; color:var(--v1-metin); }
     .fa-risk-alt { font-size:11px; color:var(--v1-muted); margin-top:6px; line-height:1.5; }
 
-    /* ── Sekmeler ──────────────────────────────────────────────────────── */
+    /* â”€â”€ Sekmeler â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     .fa-tabs { display:flex; border-bottom:1px solid var(--v1-cizgi); margin-bottom:18px; gap:4px; flex-wrap:wrap; }
     .fa-tab { padding:11px 18px; font-family:var(--v1-font); font-size:14px; font-weight:700;
       color:var(--v1-muted); background:none; border:none; border-bottom:2.5px solid transparent;
@@ -147,7 +147,7 @@
     .fa-panel { display:none; }
     .fa-panel.aktif { display:block; }
 
-    /* ── Çubuk listesi ─────────────────────────────────────────────────── */
+    /* â”€â”€ Ã‡ubuk listesi â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     .fa-cb { margin-bottom:11px; }
     .fa-cb-ust { display:flex; justify-content:space-between; gap:10px; font-size:12.5px; margin-bottom:4px; }
     .fa-cb-ad { color:var(--v1-metin); font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
@@ -164,7 +164,7 @@
     .fa-ikili { display:grid; grid-template-columns:repeat(auto-fit,minmax(290px,1fr)); gap:16px; }
     .fa-graf { position:relative; height:190px; }
 
-    /* ── İhale sonuç kartı ─────────────────────────────────────────────── */
+    /* â”€â”€ Ä°hale sonuÃ§ kartÄ± â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     .fa-ik { background:#fff; border:1px solid var(--v1-cizgi); border-radius:var(--v1-radius);
       padding:14px 18px; margin-bottom:10px; transition:border-color .15s; }
     .fa-ik:hover { border-color:var(--v1-mavi); }
@@ -181,7 +181,7 @@
     .fa-etiket { font-size:11px; padding:2px 9px; border-radius:10px; font-weight:700;
       background:var(--v1-mavi-acik); color:var(--v1-mavi); }
 
-    /* ── Sayfalama (5 butonlu) ─────────────────────────────────────────── */
+    /* â”€â”€ Sayfalama (5 butonlu) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     .fa-pager { display:flex; justify-content:center; gap:8px; margin-top:18px; flex-wrap:wrap; }
     .fa-pbtn { padding:8px 14px; border-radius:8px; font-size:13px; font-weight:700; background:#fff;
       border:1.5px solid var(--v1-cizgi); color:var(--v1-metin); cursor:pointer; font-family:var(--v1-font); }
@@ -189,7 +189,7 @@
     .fa-pbtn:disabled { opacity:.42; cursor:default; }
     .fa-pinfo { display:flex; align-items:center; font-size:13px; color:var(--v1-muted); padding:0 6px; }
 
-    /* ── Giriş kapısı / boş durum / spinner ────────────────────────────── */
+    /* â”€â”€ GiriÅŸ kapÄ±sÄ± / boÅŸ durum / spinner â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     .fa-kilit { max-width:440px; margin:40px auto; text-align:center; background:#fff;
       border:1px solid var(--v1-cizgi); border-radius:var(--v1-radius-lg); box-shadow:var(--v1-golge);
       padding:34px 28px; }
@@ -207,7 +207,7 @@
       border-radius:50%; animation:fa-donus .8s linear infinite; margin:20px auto; }
     @keyframes fa-donus { to { transform:rotate(360deg); } }
 
-    /* ── Karşılaştırma overlay ─────────────────────────────────────────── */
+    /* â”€â”€ KarÅŸÄ±laÅŸtÄ±rma overlay â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     .fa-ov { display:none; position:fixed; inset:0; z-index:200; background:rgba(12,62,112,.45);
       backdrop-filter:blur(3px); overflow-y:auto; }
     .fa-ov-kutu { max-width:1000px; margin:40px auto; background:#fff; border:1px solid var(--v1-cizgi);
@@ -230,7 +230,7 @@
       text-transform:uppercase; letter-spacing:.04em; background:#F6FAFF; min-width:130px; }
     .fa-kars-alt { font-size:10.5px; color:var(--v1-muted); font-weight:400; margin-top:2px; }
 
-    /* ── Harita görünümü ───────────────────────────────────────────────── */
+    /* â”€â”€ Harita gÃ¶rÃ¼nÃ¼mÃ¼ â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     .fa-h-wrap { display:grid; grid-template-columns:1fr 340px; gap:16px; align-items:start; }
     @media(max-width:1050px){ .fa-h-wrap { grid-template-columns:1fr; } .fa-h-panel { position:static !important; } }
     .fa-h-kart { background:#fff; border:1px solid var(--v1-cizgi); border-radius:var(--v1-radius-lg);
@@ -244,8 +244,8 @@
     svg.fa-h-svg path.il:hover { stroke:var(--v1-lacivert); stroke-width:1.4; }
     svg.fa-h-svg path.il.secili { stroke:var(--v1-lacivert); stroke-width:1.8; }
     /* svg-zoom.js kendi stilini (koyu zemin + v2 amber hover) document.head'e ENJEKTE eder
-       ve tembel yüklendiği için bu bloktan SONRA gelir → aynı özgüllükte kazanır. Bu yüzden
-       override daha yüksek özgüllükle (.fa-h-svg-wrap ön eki) yazılır: v1 mavi/beyaz palet. */
+       ve tembel yÃ¼klendiÄŸi iÃ§in bu bloktan SONRA gelir â†’ aynÄ± Ã¶zgÃ¼llÃ¼kte kazanÄ±r. Bu yÃ¼zden
+       override daha yÃ¼ksek Ã¶zgÃ¼llÃ¼kle (.fa-h-svg-wrap Ã¶n eki) yazÄ±lÄ±r: v1 mavi/beyaz palet. */
     .fa-h-svg-wrap .svg-zoom-btns button { background:#fff; border:1.5px solid var(--v1-cizgi);
       color:var(--v1-lacivert); box-shadow:var(--v1-golge); }
     .fa-h-svg-wrap .svg-zoom-btns button:hover { border-color:var(--v1-mavi); color:var(--v1-mavi); }
@@ -292,124 +292,124 @@
       <div class="fa-ust">
         <div>
           <div class="v1-sayfa-baslik">Firma Dizini &amp; Analizi</div>
-          <div class="v1-sayfa-alt">İhale kazanmış firmaları sıralayın veya arayın; birine tıklayınca aynı ekranda derin firma karnesi, karşılaştırma ve rakip analizi açılır.</div>
+          <div class="v1-sayfa-alt">Ä°hale kazanmÄ±ÅŸ firmalarÄ± sÄ±ralayÄ±n veya arayÄ±n; birine tÄ±klayÄ±nca aynÄ± ekranda derin firma karnesi, karÅŸÄ±laÅŸtÄ±rma ve rakip analizi aÃ§Ä±lÄ±r.</div>
         </div>
         <div class="fa-ust-btn">
-          <a class="fa-btn" href="v1-firma-segmentleri">⭐ Firma Segmentleri →</a>
-          <button class="fa-btn" id="fa-paylas">🔗 Paylaş</button>
+          <a class="fa-btn" href="v1-firma-segmentleri">â­ Firma Segmentleri â†’</a>
+          <button class="fa-btn" id="fa-paylas">ğŸ”— PaylaÅŸ</button>
         </div>
       </div>
 
-      <!-- KAPSAM NOTU: dizin de detay da yukleniciler/ihale_sonuclari zincirinden beslenir →
-           firmaların doğrudan temin kazanımları bu ciro rakamlarında YOKTUR. -->
+      <!-- KAPSAM NOTU: dizin de detay da yukleniciler/ihale_sonuclari zincirinden beslenir â†’
+           firmalarÄ±n doÄŸrudan temin kazanÄ±mlarÄ± bu ciro rakamlarÄ±nda YOKTUR. -->
       <div class="fa-not">
-        <span style="flex-shrink:0;">🏢</span>
+        <span style="flex-shrink:0;">ğŸ¢</span>
         <span>
-          <strong>Kapsam: yalnız ihaleler.</strong> Buradaki sözleşme sayıları ve ciro tutarları, firmaların
-          4734 sayılı Kanun ihale usulleriyle kazandığı işlerin EKAP sonuç ilanlarından hesaplanır.
-          <strong>Doğrudan temin kazanımları dahil değildir</strong> — doğrudan teminde yaklaşık maliyet/tenzilat
-          kavramı bulunmadığı ve ölçek bambaşka olduğu için (DT medyanı ≈ ₺37 bin) iki evren bilinçli olarak
-          toplanmaz. Bir firmanın gerçek kamu cirosu, buradaki tutardan yüksek olabilir.
-          Doğrudan temin kayıtları için <a href="v1-ihaleler?tur=dt">Doğrudan Teminler</a> sekmesine bakın.
+          <strong>Kapsam: yalnÄ±z ihaleler.</strong> Buradaki sÃ¶zleÅŸme sayÄ±larÄ± ve ciro tutarlarÄ±, firmalarÄ±n
+          4734 sayÄ±lÄ± Kanun ihale usulleriyle kazandÄ±ÄŸÄ± iÅŸlerin EKAP sonuÃ§ ilanlarÄ±ndan hesaplanÄ±r.
+          <strong>DoÄŸrudan temin kazanÄ±mlarÄ± dahil deÄŸildir</strong> â€” doÄŸrudan teminde yaklaÅŸÄ±k maliyet/tenzilat
+          kavramÄ± bulunmadÄ±ÄŸÄ± ve Ã¶lÃ§ek bambaÅŸka olduÄŸu iÃ§in (DT medyanÄ± â‰ˆ â‚º37 bin) iki evren bilinÃ§li olarak
+          toplanmaz. Bir firmanÄ±n gerÃ§ek kamu cirosu, buradaki tutardan yÃ¼ksek olabilir.
+          DoÄŸrudan temin kayÄ±tlarÄ± iÃ§in <a href="v1-ihaleler?tur=dt">DoÄŸrudan Teminler</a> sekmesine bakÄ±n.
         </span>
       </div>
 
-      <!-- ══════════════ DİZİN GÖRÜNÜMÜ ══════════════ -->
+      <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â• DÄ°ZÄ°N GÃ–RÃœNÃœMÃœ â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
       <div id="fa-dizin">
         <div class="fa-kpi">
           <div class="fa-k">
             <div class="fa-k-et">Toplam Firma</div>
-            <div class="fa-k-v mavi" id="dz-st-firma">—</div>
-            <div class="fa-k-alt" id="dz-st-firma-alt">ihale kazanmış</div>
+            <div class="fa-k-v mavi" id="dz-st-firma">â€”</div>
+            <div class="fa-k-alt" id="dz-st-firma-alt">ihale kazanmÄ±ÅŸ</div>
           </div>
           <div class="fa-k">
-            <div class="fa-k-et">Toplam Sözleşme <span class="fa-rozet" id="dz-st-soz-badge" title="Yalnız ihaleler — doğrudan temin sözleşmeleri dahil değil">yalnız ihaleler</span></div>
-            <div class="fa-k-v" id="dz-st-soz">—</div>
-            <div class="fa-k-alt" id="dz-st-soz-alt">EKAP ihale sonuç kaydı</div>
+            <div class="fa-k-et">Toplam SÃ¶zleÅŸme <span class="fa-rozet" id="dz-st-soz-badge" title="YalnÄ±z ihaleler â€” doÄŸrudan temin sÃ¶zleÅŸmeleri dahil deÄŸil">yalnÄ±z ihaleler</span></div>
+            <div class="fa-k-v" id="dz-st-soz">â€”</div>
+            <div class="fa-k-alt" id="dz-st-soz-alt">EKAP ihale sonuÃ§ kaydÄ±</div>
           </div>
           <div class="fa-k">
-            <div class="fa-k-et">Toplam Ciro <span class="fa-rozet" id="dz-st-ciro-badge" title="Yalnız ihaleler — firmaların doğrudan temin kazanımları bu toplama girmez">yalnız ihaleler</span></div>
-            <div class="fa-k-v" id="dz-st-ciro">—</div>
-            <div class="fa-k-alt" id="dz-st-ciro-alt">kazanılan ihale bedelleri toplamı</div>
+            <div class="fa-k-et">Toplam Ciro <span class="fa-rozet" id="dz-st-ciro-badge" title="YalnÄ±z ihaleler â€” firmalarÄ±n doÄŸrudan temin kazanÄ±mlarÄ± bu toplama girmez">yalnÄ±z ihaleler</span></div>
+            <div class="fa-k-v" id="dz-st-ciro">â€”</div>
+            <div class="fa-k-alt" id="dz-st-ciro-alt">kazanÄ±lan ihale bedelleri toplamÄ±</div>
           </div>
           <div class="fa-k">
-            <div class="fa-k-et">İş Ortaklığı</div>
-            <div class="fa-k-v" id="dz-st-ortak">—</div>
-            <div class="fa-k-alt">ortak girişimli firma</div>
+            <div class="fa-k-et">Ä°ÅŸ OrtaklÄ±ÄŸÄ±</div>
+            <div class="fa-k-v" id="dz-st-ortak">â€”</div>
+            <div class="fa-k-alt">ortak giriÅŸimli firma</div>
           </div>
         </div>
 
-        <!-- GÖRÜNÜM SEÇİMİ: Liste (dizin tablosu) / Harita (il yoğunluğu).
-             RFQ katmanı BİLİNÇLİ yok — o e-Satınalma haritasında. -->
+        <!-- GÃ–RÃœNÃœM SEÃ‡Ä°MÄ°: Liste (dizin tablosu) / Harita (il yoÄŸunluÄŸu).
+             RFQ katmanÄ± BÄ°LÄ°NÃ‡LÄ° yok â€” o e-SatÄ±nalma haritasÄ±nda. -->
         <div class="fa-gbtns">
-          <button class="fa-gbtn aktif" id="fa-gbtn-liste">📋 Liste</button>
-          <button class="fa-gbtn" id="fa-gbtn-harita">🗺️ Harita</button>
+          <button class="fa-gbtn aktif" id="fa-gbtn-liste">ğŸ“‹ Liste</button>
+          <button class="fa-gbtn" id="fa-gbtn-harita">ğŸ—ºï¸ Harita</button>
         </div>
 
-        <!-- HARİTA GÖRÜNÜMÜ (tembel kurulur) -->
+        <!-- HARÄ°TA GÃ–RÃœNÃœMÃœ (tembel kurulur) -->
         <div id="fa-harita-alan" style="display:none;">
           <div class="fa-h-wrap">
             <div class="fa-h-kart">
               <div class="fa-h-toolbar">
-                <div class="fa-h-baslik" id="fa-h-baslik">Firma Yoğunluğu — il bazında</div>
+                <div class="fa-h-baslik" id="fa-h-baslik">Firma YoÄŸunluÄŸu â€” il bazÄ±nda</div>
                 <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-                  <!-- MADDE 20-B: İhale / DT bazı — choropleth yoğunluğu + firma listesi kaynağını değiştirir -->
+                  <!-- MADDE 20-B: Ä°hale / DT bazÄ± â€” choropleth yoÄŸunluÄŸu + firma listesi kaynaÄŸÄ±nÄ± deÄŸiÅŸtirir -->
                   <div id="fa-h-baz" style="display:inline-flex;border:1px solid var(--v1-mavi);border-radius:8px;overflow:hidden;">
-                    <button type="button" class="fa-h-baz-btn" data-baz="ihale" style="border:none;background:var(--v1-mavi);color:#fff;padding:6px 12px;font-family:var(--v1-font);font-size:12.5px;font-weight:700;cursor:pointer;">İhale</button>
-                    <button type="button" class="fa-h-baz-btn" data-baz="dt" style="border:none;background:#fff;color:var(--v1-mavi);padding:6px 12px;font-family:var(--v1-font);font-size:12.5px;font-weight:700;cursor:pointer;">Doğrudan Temin</button>
+                    <button type="button" class="fa-h-baz-btn" data-baz="ihale" style="border:none;background:var(--v1-mavi);color:#fff;padding:6px 12px;font-family:var(--v1-font);font-size:12.5px;font-weight:700;cursor:pointer;">Ä°hale</button>
+                    <button type="button" class="fa-h-baz-btn" data-baz="dt" style="border:none;background:#fff;color:var(--v1-mavi);padding:6px 12px;font-family:var(--v1-font);font-size:12.5px;font-weight:700;cursor:pointer;">DoÄŸrudan Temin</button>
                   </div>
-                  <select id="fa-h-sektor" class="fa-sel" style="min-width:190px;max-width:240px;" title="Sektöre göre filtrele">
-                    <option value="">🏭 Tüm Sektörler</option>
+                  <select id="fa-h-sektor" class="fa-sel" style="min-width:190px;max-width:240px;" title="SektÃ¶re gÃ¶re filtrele">
+                    <option value="">ğŸ­ TÃ¼m SektÃ¶rler</option>
                   </select>
-                  <!-- MADDE 20-B: firma listesi sıralama ölçütü (tüm-zaman / son-1-yıl × ciro / sözleşme) -->
-                  <select id="fa-h-olcut" class="fa-sel" style="min-width:180px;max-width:220px;" title="Firma sıralama ölçütü">
-                    <option value="bedel|0">💰 En çok ciro (tüm zaman)</option>
-                    <option value="sozlesme|0">📑 En çok sözleşme (tüm zaman)</option>
-                    <option value="bedel|1">💰 Son 1 yıl — ciro</option>
-                    <option value="sozlesme|1">📑 Son 1 yıl — sözleşme</option>
+                  <!-- MADDE 20-B: firma listesi sÄ±ralama Ã¶lÃ§Ã¼tÃ¼ (tÃ¼m-zaman / son-1-yÄ±l Ã— ciro / sÃ¶zleÅŸme) -->
+                  <select id="fa-h-olcut" class="fa-sel" style="min-width:180px;max-width:220px;" title="Firma sÄ±ralama Ã¶lÃ§Ã¼tÃ¼">
+                    <option value="bedel|0">ğŸ’° En Ã§ok ciro (tÃ¼m zaman)</option>
+                    <option value="sozlesme|0">ğŸ“‘ En Ã§ok sÃ¶zleÅŸme (tÃ¼m zaman)</option>
+                    <option value="bedel|1">ğŸ’° Son 1 yÄ±l â€” ciro</option>
+                    <option value="sozlesme|1">ğŸ“‘ Son 1 yÄ±l â€” sÃ¶zleÅŸme</option>
                   </select>
-                  <!-- MADDE: DMO/cezaevi/PTT gibi kamu kuruluşları varsayılan GİZLİ (rakip analizi temiz kalsın) -->
-                  <label style="display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--v1-muted);cursor:pointer;white-space:nowrap;" title="DMO, cezaevi/İşyurtları, PTT gibi kamu kuruluşları da doğrudan temin/ihale kazanır; rakip firma analizinde varsayılan gizlenir.">
-                    <input type="checkbox" id="fa-h-kamu"> Kamu kuruluşlarını da göster
+                  <!-- MADDE: DMO/cezaevi/PTT gibi kamu kuruluÅŸlarÄ± varsayÄ±lan GÄ°ZLÄ° (rakip analizi temiz kalsÄ±n) -->
+                  <label style="display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--v1-muted);cursor:pointer;white-space:nowrap;" title="DMO, cezaevi/Ä°ÅŸyurtlarÄ±, PTT gibi kamu kuruluÅŸlarÄ± da doÄŸrudan temin/ihale kazanÄ±r; rakip firma analizinde varsayÄ±lan gizlenir.">
+                    <input type="checkbox" id="fa-h-kamu"> Kamu kuruluÅŸlarÄ±nÄ± da gÃ¶ster
                   </label>
                 </div>
               </div>
               <div class="fa-h-svg-wrap" id="fa-h-svg-wrap"><div class="fa-mini-spin"></div></div>
               <div class="fa-h-lejant" id="fa-h-lejant"></div>
               <div id="fa-h-not" style="font-size:11px;color:var(--v1-muted);margin-top:8px;line-height:1.55;">
-                Ciro ve bedel değerleri <b style="color:var(--v1-lacivert);">yalnız ihale</b> kazanımlarından hesaplanır — doğrudan temin dahil değildir.
+                Ciro ve bedel deÄŸerleri <b style="color:var(--v1-lacivert);">yalnÄ±z ihale</b> kazanÄ±mlarÄ±ndan hesaplanÄ±r â€” doÄŸrudan temin dahil deÄŸildir.
               </div>
             </div>
             <div class="fa-h-panel" id="fa-h-panel">
-              <div class="fa-h-panel-bos">Bir ile tıklayın<br><span style="font-size:11px;">o ilde en çok iş kazanan firmaları görün</span></div>
+              <div class="fa-h-panel-bos">Bir ile tÄ±klayÄ±n<br><span style="font-size:11px;">o ilde en Ã§ok iÅŸ kazanan firmalarÄ± gÃ¶rÃ¼n</span></div>
             </div>
           </div>
         </div>
 
-        <!-- LİSTE GÖRÜNÜMÜ -->
+        <!-- LÄ°STE GÃ–RÃœNÃœMÃœ -->
         <div id="fa-liste-alan">
-          <!-- MADDE 18-B: sıralama modu — İhale / DT / İkisi birlikte -->
+          <!-- MADDE 18-B: sÄ±ralama modu â€” Ä°hale / DT / Ä°kisi birlikte -->
           <div id="dz-mod" style="display:inline-flex;border:1px solid var(--v1-cizgi);border-radius:9px;overflow:hidden;margin-bottom:10px;">
-            <button type="button" class="dz-mod-btn" data-mod="ihale" style="border:none;padding:8px 14px;font-family:inherit;font-size:12.5px;font-weight:700;cursor:pointer;background:var(--v1-mavi);color:#fff;">📋 İhale</button>
-            <button type="button" class="dz-mod-btn" data-mod="dt" style="border:none;border-left:1px solid var(--v1-cizgi);padding:8px 14px;font-family:inherit;font-size:12.5px;font-weight:700;cursor:pointer;background:#fff;color:var(--v1-mavi);">⚡ Doğrudan Temin</button>
-            <button type="button" class="dz-mod-btn" data-mod="birlikte" style="border:none;border-left:1px solid var(--v1-cizgi);padding:8px 14px;font-family:inherit;font-size:12.5px;font-weight:700;cursor:pointer;background:#fff;color:var(--v1-mavi);">🔗 İkisi Birlikte</button>
+            <button type="button" class="dz-mod-btn" data-mod="ihale" style="border:none;padding:8px 14px;font-family:inherit;font-size:12.5px;font-weight:700;cursor:pointer;background:var(--v1-mavi);color:#fff;">ğŸ“‹ Ä°hale</button>
+            <button type="button" class="dz-mod-btn" data-mod="dt" style="border:none;border-left:1px solid var(--v1-cizgi);padding:8px 14px;font-family:inherit;font-size:12.5px;font-weight:700;cursor:pointer;background:#fff;color:var(--v1-mavi);">âš¡ DoÄŸrudan Temin</button>
+            <button type="button" class="dz-mod-btn" data-mod="birlikte" style="border:none;border-left:1px solid var(--v1-cizgi);padding:8px 14px;font-family:inherit;font-size:12.5px;font-weight:700;cursor:pointer;background:#fff;color:var(--v1-mavi);">ğŸ”— Ä°kisi Birlikte</button>
           </div>
-          <!-- DT/İkisi'de DMO/cezaevi/PTT gibi kamu kuruluşları varsayılan gizli (rakip analizi temiz kalsın) -->
-          <label id="dz-kamu-satir" style="display:none;align-items:center;gap:6px;font-size:12px;color:var(--v1-muted);cursor:pointer;margin:0 0 10px 2px;" title="DMO, cezaevi/İşyurtları, PTT gibi kamu kuruluşları da DT/ihale kazanır; rakip firma dizininde varsayılan gizlenir.">
-            <input type="checkbox" id="dz-kamu"> Kamu kuruluşlarını da göster
+          <!-- DT/Ä°kisi'de DMO/cezaevi/PTT gibi kamu kuruluÅŸlarÄ± varsayÄ±lan gizli (rakip analizi temiz kalsÄ±n) -->
+          <label id="dz-kamu-satir" style="display:none;align-items:center;gap:6px;font-size:12px;color:var(--v1-muted);cursor:pointer;margin:0 0 10px 2px;" title="DMO, cezaevi/Ä°ÅŸyurtlarÄ±, PTT gibi kamu kuruluÅŸlarÄ± da DT/ihale kazanÄ±r; rakip firma dizininde varsayÄ±lan gizlenir.">
+            <input type="checkbox" id="dz-kamu"> Kamu kuruluÅŸlarÄ±nÄ± da gÃ¶ster
           </label>
           <div class="fa-toolbar">
-            <div class="fa-ara"><span style="color:var(--v1-muted);">🔍</span>
-              <input type="text" id="dz-arama" placeholder="Firma adı ara… (en az 3 harf)" autocomplete="off"></div>
-            <button class="fa-btn" id="dz-ara-btn" type="button" style="white-space:nowrap;">🔍 Ara</button>
-            <select class="fa-sel" id="dz-il"><option value="">Tüm İller</option></select>
+            <div class="fa-ara"><span style="color:var(--v1-muted);">ğŸ”</span>
+              <input type="text" id="dz-arama" placeholder="Firma adÄ± araâ€¦ (en az 3 harf)" autocomplete="off"></div>
+            <button class="fa-btn" id="dz-ara-btn" type="button" style="white-space:nowrap;">ğŸ” Ara</button>
+            <select class="fa-sel" id="dz-il"><option value="">TÃ¼m Ä°ller</option></select>
             <select class="fa-sel" id="dz-sirala">
-              <option value="ciro_desc">En Çok Ciro</option>
-              <option value="sayi_desc">En Çok Sözleşme</option>
-              <option value="tarih_desc">Son İş (En Yeni)</option>
-              <option value="ad_asc">İsme Göre (A→Z)</option>
+              <option value="ciro_desc">En Ã‡ok Ciro</option>
+              <option value="sayi_desc">En Ã‡ok SÃ¶zleÅŸme</option>
+              <option value="tarih_desc">Son Ä°ÅŸ (En Yeni)</option>
+              <option value="ad_asc">Ä°sme GÃ¶re (Aâ†’Z)</option>
             </select>
-            <span class="fa-say" id="dz-say">— firma</span>
+            <span class="fa-say" id="dz-say">â€” firma</span>
           </div>
 
           <div class="fa-chipler" id="fa-son-aramalar" style="display:none;"></div>
@@ -419,190 +419,197 @@
               <table class="fa-tablo">
                 <thead>
                   <tr>
-                    <th>Firma Adı</th>
-                    <th class="gizli-m">İl</th>
-                    <th class="srt" id="dz-srt-sayi" title="Kazanılan ihale sözleşmesi sayısı — doğrudan temin dahil değil">Sözleşme</th>
-                    <th class="srt on" id="dz-srt-ciro" title="Yalnız ihaleler: kazanılan ihale bedellerinin toplamı. Doğrudan temin kazanımları bu tutara dahil DEĞİLDİR.">Toplam Ciro (İhale)</th>
-                    <th class="gizli-m">Son İş</th>
+                    <th>Firma AdÄ±</th>
+                    <th class="gizli-m">Ä°l</th>
+                    <th class="srt" id="dz-srt-sayi" title="KazanÄ±lan ihale sÃ¶zleÅŸmesi sayÄ±sÄ± â€” doÄŸrudan temin dahil deÄŸil">SÃ¶zleÅŸme</th>
+                    <th class="srt on" id="dz-srt-ciro" title="YalnÄ±z ihaleler: kazanÄ±lan ihale bedellerinin toplamÄ±. DoÄŸrudan temin kazanÄ±mlarÄ± bu tutara dahil DEÄÄ°LDÄ°R.">Toplam Ciro (Ä°hale)</th>
+                    <th class="gizli-m">Son Ä°ÅŸ</th>
                     <th class="gizli-m"></th>
                   </tr>
                 </thead>
                 <tbody id="dz-govde">
-                  <tr><td colspan="6"><div class="v1-bos">Yükleniyor…</div></td></tr>
+                  <tr><td colspan="6"><div class="v1-bos">YÃ¼kleniyorâ€¦</div></td></tr>
                 </tbody>
               </table>
             </div>
           </div>
           <div class="fa-pager" id="dz-pager" style="display:none;">
-            <button class="fa-pbtn" id="dz-prev" disabled>‹ Önceki</button>
+            <button class="fa-pbtn" id="dz-prev" disabled>â€¹ Ã–nceki</button>
             <span class="fa-pinfo" id="dz-pinfo"></span>
-            <button class="fa-pbtn" id="dz-next">Sonraki ›</button>
+            <button class="fa-pbtn" id="dz-next">Sonraki â€º</button>
           </div>
         </div>
       </div>
 
-      <!-- ══════════════ ARAMA SONUCU FİRMA LİSTESİ ══════════════ -->
+      <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â• ARAMA SONUCU FÄ°RMA LÄ°STESÄ° â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
       <div id="fa-arama-liste" style="display:none;">
         <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:16px;">
           <div>
-            <div class="fa-eyebrow">🏢 Firma Analizi</div>
-            <div class="fa-ad">“<span id="liste-terim"></span>” için eşleşen firmalar</div>
-            <div class="fa-meta" id="liste-ozet">Yükleniyor…</div>
+            <div class="fa-eyebrow">ğŸ¢ Firma Analizi</div>
+            <div class="fa-ad">â€œ<span id="liste-terim"></span>â€ iÃ§in eÅŸleÅŸen firmalar</div>
+            <div class="fa-meta" id="liste-ozet">YÃ¼kleniyorâ€¦</div>
           </div>
-          <button class="fa-btn" id="liste-yeni-arama">🔍 Dizine Dön</button>
+          <button class="fa-btn" id="liste-yeni-arama">ğŸ” Dizine DÃ¶n</button>
         </div>
         <div id="fa-arama-kaplayici"></div>
       </div>
 
-      <!-- ══════════════ FİRMA DETAYI ══════════════ -->
+      <!-- â•â•â•â•â•â•â•â•â•â•â•â•â•â• FÄ°RMA DETAYI â•â•â•â•â•â•â•â•â•â•â•â•â•â• -->
       <div id="fa-detay" style="display:none;">
         <div id="fa-detay-govde">
 
           <div class="fa-basrak">
-            <div class="fa-eyebrow">🏢 Firma Analizi</div>
-            <div class="fa-ad" id="firma-ad">—</div>
-            <div class="fa-meta" id="firma-meta">—</div>
+            <div class="fa-eyebrow">ğŸ¢ Firma Analizi</div>
+            <div class="fa-ad" id="firma-ad">â€”</div>
+            <div class="fa-meta" id="firma-meta">â€”</div>
             <div class="fa-vkn" id="firma-vkn" style="display:none;"></div>
             <div class="fa-aksiyon">
-              <button class="fa-btn-ana" id="btn-ihaleleri">📋 İhalelerini Gör</button>
-              <button class="fa-btn" id="btn-karsilastir">⚖️ Firmayla Karşılaştır</button>
-              <button class="fa-btn" id="btn-takip">⭐ Rakibi Takip Et</button>
-              <button class="fa-btn" id="btn-yeni-arama">🔍 Dizine Dön</button>
+              <button class="fa-btn-ana" id="btn-ihaleleri">ğŸ“‹ Ä°halelerini GÃ¶r</button>
+              <button class="fa-btn" id="btn-karsilastir">âš–ï¸ Firmayla KarÅŸÄ±laÅŸtÄ±r</button>
+              <button class="fa-btn" id="btn-takip">â­ Rakibi Takip Et</button>
+              <button class="fa-btn" id="btn-yeni-arama">ğŸ” Dizine DÃ¶n</button>
             </div>
           </div>
 
-          <!-- İHALE KPI satırı (5 kart) — yalnız ihaleler -->
+          <!-- Ä°HALE KPI satÄ±rÄ± (5 kart) â€” yalnÄ±z ihaleler -->
           <div class="fa-kpi besli">
             <div class="fa-k">
-              <div class="fa-k-et">Toplam Kayıt</div>
-              <div class="fa-k-v mavi" id="kpi-katilan">—</div>
-              <div class="fa-k-alt">eşleşen ihale sayısı</div>
+              <div class="fa-k-et">Toplam KayÄ±t</div>
+              <div class="fa-k-v mavi" id="kpi-katilan">â€”</div>
+              <div class="fa-k-alt">eÅŸleÅŸen ihale sayÄ±sÄ±</div>
             </div>
             <div class="fa-k">
-              <div class="fa-k-et">Kazanılan İhale <span class="fa-rozet" title="Yalnız ihaleler — bu firmanın doğrudan temin kazanımları burada sayılmaz/toplanmaz">yalnız ihaleler</span></div>
-              <div class="fa-k-v" id="kpi-kazanilan">—</div>
-              <div class="fa-k-alt" id="kpi-kazanilan-alt">EKAP ihale sonuç kaydı</div>
+              <div class="fa-k-et">KazanÄ±lan Ä°hale <span class="fa-rozet" title="YalnÄ±z ihaleler â€” bu firmanÄ±n doÄŸrudan temin kazanÄ±mlarÄ± burada sayÄ±lmaz/toplanmaz">yalnÄ±z ihaleler</span></div>
+              <div class="fa-k-v" id="kpi-kazanilan">â€”</div>
+              <div class="fa-k-alt" id="kpi-kazanilan-alt">EKAP ihale sonuÃ§ kaydÄ±</div>
             </div>
             <div class="fa-k">
-              <div class="fa-k-et">Toplam İhale Bedeli <span class="fa-rozet" title="Yalnız ihaleler — doğrudan temin dahil değil">yalnız ihaleler</span></div>
-              <div class="fa-k-v mavi" id="kpi-ihale-bedel" style="font-size:17px;">—</div>
-              <div class="fa-k-alt">sözleşme bedeli toplamı</div>
+              <div class="fa-k-et">Toplam Ä°hale Bedeli <span class="fa-rozet" title="YalnÄ±z ihaleler â€” doÄŸrudan temin dahil deÄŸil">yalnÄ±z ihaleler</span></div>
+              <div class="fa-k-v mavi" id="kpi-ihale-bedel" style="font-size:17px;">â€”</div>
+              <div class="fa-k-alt">sÃ¶zleÅŸme bedeli toplamÄ±</div>
             </div>
             <div class="fa-k">
-              <div class="fa-k-et">Kapsanan İl</div>
-              <div class="fa-k-v mavi" id="kpi-il">—</div>
-              <div class="fa-k-alt">farklı şehir</div>
+              <div class="fa-k-et">Kapsanan Ä°l</div>
+              <div class="fa-k-v mavi" id="kpi-il">â€”</div>
+              <div class="fa-k-alt">farklÄ± ÅŸehir</div>
             </div>
             <div class="fa-k">
-              <div class="fa-k-et">Kapsanan Sektör</div>
-              <div class="fa-k-v" id="kpi-sektor">—</div>
-              <div class="fa-k-alt">farklı kategori</div>
+              <div class="fa-k-et">Kapsanan SektÃ¶r</div>
+              <div class="fa-k-v" id="kpi-sektor">â€”</div>
+              <div class="fa-k-alt">farklÄ± kategori</div>
             </div>
           </div>
 
-          <!-- DOĞRUDAN TEMİN KPI satırı (5 kart) — İhale satırının aynası. firma_dt_ozet ile dolar
-               (dtBlokYukle). DT kazanımı yoksa gizli kalır. -->
+          <!-- DOÄRUDAN TEMÄ°N KPI satÄ±rÄ± (5 kart) â€” Ä°hale satÄ±rÄ±nÄ±n aynasÄ±. firma_dt_ozet ile dolar
+               (dtBlokYukle). DT kazanÄ±mÄ± yoksa gizli kalÄ±r. -->
           <div class="fa-kpi besli dt-kpi" id="fa-dt-kpi" style="display:none;margin-bottom:18px;">
             <div class="fa-k">
-              <div class="fa-k-et">Toplam DT Kaydı <span class="fa-rozet" style="background:#F5E6C0;color:#8A5A00;">yalnız DT</span></div>
-              <div class="fa-k-v mavi" id="kpi-dt-kayit">—</div>
-              <div class="fa-k-alt">eşleşen doğrudan temin</div>
+              <div class="fa-k-et">Toplam DT KaydÄ± <span class="fa-rozet" style="background:#F5E6C0;color:#8A5A00;">yalnÄ±z DT</span></div>
+              <div class="fa-k-v mavi" id="kpi-dt-kayit">â€”</div>
+              <div class="fa-k-alt">eÅŸleÅŸen doÄŸrudan temin</div>
             </div>
             <div class="fa-k">
-              <div class="fa-k-et">Kazanılan DT</div>
-              <div class="fa-k-v" id="kpi-dt-kazanilan">—</div>
-              <div class="fa-k-alt" id="kpi-dt-kazanilan-alt">doğrudan temin sözleşmesi</div>
+              <div class="fa-k-et">KazanÄ±lan DT</div>
+              <div class="fa-k-v" id="kpi-dt-kazanilan">â€”</div>
+              <div class="fa-k-alt" id="kpi-dt-kazanilan-alt">doÄŸrudan temin sÃ¶zleÅŸmesi</div>
             </div>
             <div class="fa-k">
               <div class="fa-k-et">Toplam DT Bedeli</div>
-              <div class="fa-k-v mavi" id="kpi-dt-bedel" style="font-size:17px;">—</div>
-              <div class="fa-k-alt" id="kpi-dt-bedel-alt">bedelli kayıt</div>
+              <div class="fa-k-v mavi" id="kpi-dt-bedel" style="font-size:17px;">â€”</div>
+              <div class="fa-k-alt" id="kpi-dt-bedel-alt">bedelli kayÄ±t</div>
             </div>
             <div class="fa-k">
-              <div class="fa-k-et">Kapsanan İl (DT)</div>
-              <div class="fa-k-v mavi" id="kpi-dt-il">—</div>
-              <div class="fa-k-alt">farklı şehir</div>
+              <div class="fa-k-et">Kapsanan Ä°l (DT)</div>
+              <div class="fa-k-v mavi" id="kpi-dt-il">â€”</div>
+              <div class="fa-k-alt">farklÄ± ÅŸehir</div>
             </div>
             <div class="fa-k">
-              <div class="fa-k-et">Kapsanan Sektör (DT)</div>
-              <div class="fa-k-v" id="kpi-dt-sektor">—</div>
-              <div class="fa-k-alt">farklı kategori</div>
+              <div class="fa-k-et">Kapsanan SektÃ¶r (DT)</div>
+              <div class="fa-k-v" id="kpi-dt-sektor">â€”</div>
+              <div class="fa-k-alt">farklÄ± kategori</div>
             </div>
           </div>
 
-          <!-- MADDE 18: DT dağılım tabloları (İl/Kategori) — Parça 3'te DT Genel Bakış sekmesine taşınacak. -->
+          <!-- MADDE 18: DT daÄŸÄ±lÄ±m tablolarÄ± (Ä°l/Kategori) â€” ParÃ§a 3'te DT Genel BakÄ±ÅŸ sekmesine taÅŸÄ±nacak. -->
           <div id="fa-dt-blok" style="display:none;margin-bottom:16px;"></div>
 
-          <!-- Sözleşme risk şeridi — YALNIZ fesih/tasfiye varsa açılır (tam sayımdan) -->
+          <!-- SÃ¶zleÅŸme risk ÅŸeridi â€” YALNIZ fesih/tasfiye varsa aÃ§Ä±lÄ±r (tam sayÄ±mdan) -->
           <div class="fa-risk" id="risk-serit" style="display:none;">
-            <div class="fa-risk-bas">⚠ Sözleşme Riski</div>
+            <div class="fa-risk-bas">âš  SÃ¶zleÅŸme Riski</div>
             <div class="fa-risk-metin" id="risk-metin"></div>
-            <div class="fa-risk-alt">Kaynak: EKAP sözleşme kayıtları. Fesih/tasfiye tek başına kusur kanıtı değildir — idare kaynaklı da olabilir.</div>
+            <div class="fa-risk-alt">Kaynak: EKAP sÃ¶zleÅŸme kayÄ±tlarÄ±. Fesih/tasfiye tek baÅŸÄ±na kusur kanÄ±tÄ± deÄŸildir â€” idare kaynaklÄ± da olabilir.</div>
           </div>
 
           <div class="fa-tabs">
-            <button class="fa-tab aktif" data-sekme="genel">Genel Bakış</button>
-            <button class="fa-tab" data-sekme="sonuclar">Katıldığı İhaleler</button>
-            <button class="fa-tab" data-sekme="dt">Katıldığı Doğrudan Teminler</button>
+            <button class="fa-tab" data-sekme="dtgenel">DoÄŸrudan Teminler Genel BakÄ±ÅŸ</button>
+            <button class="fa-tab aktif" data-sekme="genel">Ä°haleler Genel BakÄ±ÅŸ</button>
+            <button class="fa-tab" data-sekme="sonuclar">KatÄ±ldÄ±ÄŸÄ± Ä°haleler</button>
+            <button class="fa-tab" data-sekme="dt">KatÄ±ldÄ±ÄŸÄ± DoÄŸrudan Teminler</button>
           </div>
 
-          <!-- GENEL BAKIŞ -->
+          <!-- DOÄRUDAN TEMÄ°NLER GENEL BAKIÅ (Ä°haleler Genel BakÄ±ÅŸ'Ä±n DT aynasÄ±) â€” dtBlokYukle doldurur -->
+          <div id="tab-dtgenel" class="fa-panel">
+            <div id="fa-dtgenel-icerik"><div class="fa-bos-kart"><div class="fa-spin"></div>
+              <div style="font-size:13px;color:var(--v1-muted);">DoÄŸrudan temin verisi yÃ¼kleniyorâ€¦</div></div></div>
+          </div>
+
+          <!-- GENEL BAKIÅ -->
           <div id="tab-genel" class="fa-panel aktif">
             <div class="fa-ikili" style="margin-bottom:16px;">
               <div class="v1-kart" style="margin-bottom:0;">
-                <div class="v1-kart-baslik">Yıllara Göre İhale Sayısı</div>
+                <div class="v1-kart-baslik">YÄ±llara GÃ¶re Ä°hale SayÄ±sÄ±</div>
                 <div class="fa-graf"><canvas id="yillik-chart"></canvas></div>
               </div>
               <div class="v1-kart" style="margin-bottom:0;">
-                <div class="v1-kart-baslik">İhale Türü Dağılımı</div>
-                <div id="tur-list"><div class="v1-bos">—</div></div>
+                <div class="v1-kart-baslik">Ä°hale TÃ¼rÃ¼ DaÄŸÄ±lÄ±mÄ±</div>
+                <div id="tur-list"><div class="v1-bos">â€”</div></div>
               </div>
             </div>
             <div class="fa-ikili">
               <div class="v1-kart" style="margin-bottom:0;">
-                <div class="v1-kart-baslik">İl Bazlı Dağılım</div>
-                <div id="il-list" class="fa-kutucuk"><div class="v1-bos">—</div></div>
+                <div class="v1-kart-baslik">Ä°l BazlÄ± DaÄŸÄ±lÄ±m</div>
+                <div id="il-list" class="fa-kutucuk"><div class="v1-bos">â€”</div></div>
               </div>
               <div class="v1-kart" style="margin-bottom:0;">
-                <div class="v1-kart-baslik">Sektör / Kategori Dağılımı</div>
-                <div id="kategori-list"><div class="v1-bos">—</div></div>
+                <div class="v1-kart-baslik">SektÃ¶r / Kategori DaÄŸÄ±lÄ±mÄ±</div>
+                <div id="kategori-list"><div class="v1-bos">â€”</div></div>
               </div>
             </div>
           </div>
 
-          <!-- KATILDIĞI İHALELER -->
+          <!-- KATILDIÄI Ä°HALELER -->
           <div id="tab-sonuclar" class="fa-panel">
             <div id="sonuclar-kaplayici">
               <div class="fa-bos-kart">
                 <div class="fa-spin"></div>
-                <div style="font-size:13px;color:var(--v1-muted);">Sonuç verisi yükleniyor…</div>
+                <div style="font-size:13px;color:var(--v1-muted);">SonuÃ§ verisi yÃ¼kleniyorâ€¦</div>
               </div>
             </div>
             <div class="fa-pager" id="sonuc-pager" style="display:none;">
-              <button class="fa-pbtn" data-yon="ilk">« İlk</button>
-              <button class="fa-pbtn" data-yon="prev">‹ Önceki</button>
+              <button class="fa-pbtn" data-yon="ilk">Â« Ä°lk</button>
+              <button class="fa-pbtn" data-yon="prev">â€¹ Ã–nceki</button>
               <span class="fa-pinfo" id="sonuc-pinfo"></span>
-              <button class="fa-pbtn" data-yon="next">Sonraki ›</button>
-              <button class="fa-pbtn" data-yon="son">Son »</button>
+              <button class="fa-pbtn" data-yon="next">Sonraki â€º</button>
+              <button class="fa-pbtn" data-yon="son">Son Â»</button>
             </div>
             <div id="pivot-kaplayici"></div>
             <div id="ai-kaplayici"></div>
           </div>
 
-          <!-- KATILDIĞI DOĞRUDAN TEMİNLER (firma_dt_liste) — ihaleden AYRI ekran -->
+          <!-- KATILDIÄI DOÄRUDAN TEMÄ°NLER (firma_dt_liste) â€” ihaleden AYRI ekran -->
           <div id="tab-dt" class="fa-panel">
             <div id="dt-liste-kaplayici">
               <div class="fa-bos-kart">
                 <div class="fa-spin"></div>
-                <div style="font-size:13px;color:var(--v1-muted);">Doğrudan temin verisi yükleniyor…</div>
+                <div style="font-size:13px;color:var(--v1-muted);">DoÄŸrudan temin verisi yÃ¼kleniyorâ€¦</div>
               </div>
             </div>
             <div class="fa-pager" id="dt-pager" style="display:none;">
-              <button class="fa-pbtn" data-yon="ilk">« İlk</button>
-              <button class="fa-pbtn" data-yon="prev">‹ Önceki</button>
+              <button class="fa-pbtn" data-yon="ilk">Â« Ä°lk</button>
+              <button class="fa-pbtn" data-yon="prev">â€¹ Ã–nceki</button>
               <span class="fa-pinfo" id="dt-pinfo"></span>
-              <button class="fa-pbtn" data-yon="next">Sonraki ›</button>
-              <button class="fa-pbtn" data-yon="son">Son »</button>
+              <button class="fa-pbtn" data-yon="next">Sonraki â€º</button>
+              <button class="fa-pbtn" data-yon="son">Son Â»</button>
             </div>
           </div>
 
@@ -615,15 +622,15 @@
 
 <div class="fa-h-tip" id="fa-h-tip"></div>
 
-<!-- ⚖️ FİRMA KARŞILAŞTIRMA OVERLAY -->
+<!-- âš–ï¸ FÄ°RMA KARÅILAÅTIRMA OVERLAY -->
 <div class="fa-ov" id="fa-kars-ov">
   <div class="fa-ov-kutu">
     <div class="fa-ov-bas">
-      <div style="font-size:19px;font-weight:800;color:var(--v1-lacivert);">⚖️ Firma Karşılaştırma</div>
-      <button class="fa-ov-kapat" id="kars-kapat">✕</button>
+      <div style="font-size:19px;font-weight:800;color:var(--v1-lacivert);">âš–ï¸ Firma KarÅŸÄ±laÅŸtÄ±rma</div>
+      <button class="fa-ov-kapat" id="kars-kapat">âœ•</button>
     </div>
     <div style="font-size:12.5px;color:var(--v1-muted);margin-bottom:18px;">
-      Eldeki EKAP sonuç verisiyle iki firmayı yan yana kıyaslar. Büyük firmalarda dağılımlar en güncel 500 kazanımdan hesaplanır.
+      Eldeki EKAP sonuÃ§ verisiyle iki firmayÄ± yan yana kÄ±yaslar. BÃ¼yÃ¼k firmalarda daÄŸÄ±lÄ±mlar en gÃ¼ncel 500 kazanÄ±mdan hesaplanÄ±r.
     </div>
     <div id="kars-icerik"></div>
   </div>
@@ -632,57 +639,57 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/kategoriler.js?v=1"></script>
-<script src="js/v1-kabuk.js?v=14"></script>
+<script src="js/v1-kabuk.js?v=15"></script>
 <script>
 (() => {
   const SB_URL="https://ihaleglobal.com", SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzg0MzA3MTU4LCJleHAiOjE5NDE5ODcxNTh9.CjNKulvirotDD_y2oO2QKgo0kbqYvL0jUSV1RiDMoso";
   const sb = window.supabase.createClient(SB_URL, SB_KEY);
   const $ = (id) => document.getElementById(id);
 
-  /* ── Biçimleyiciler ───────────────────────────────────────────────── */
+  /* â”€â”€ BiÃ§imleyiciler â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   const esc = (s) => (s==null?'':String(s)).replace(/[&<>"']/g,
     c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const num = (n) => (Number(n)||0).toLocaleString('tr-TR');
-  // Kullanıcı kararı: sözleşme/ciro tutarları kısaltmasız gösterilir ("809.558,00 ₺").
-  const paraTam = (v) => { v = Number(v)||0; if(!v) return '—';
-    return v.toLocaleString('tr-TR',{minimumFractionDigits:2,maximumFractionDigits:2}) + ' ₺'; };
-  // Yer kısıtlı görselleştirmelerde (KPI, harita) kısaltılmış tutar
+  // KullanÄ±cÄ± kararÄ±: sÃ¶zleÅŸme/ciro tutarlarÄ± kÄ±saltmasÄ±z gÃ¶sterilir ("809.558,00 â‚º").
+  const paraTam = (v) => { v = Number(v)||0; if(!v) return 'â€”';
+    return v.toLocaleString('tr-TR',{minimumFractionDigits:2,maximumFractionDigits:2}) + ' â‚º'; };
+  // Yer kÄ±sÄ±tlÄ± gÃ¶rselleÅŸtirmelerde (KPI, harita) kÄ±saltÄ±lmÄ±ÅŸ tutar
   const paraKisa = (v) => { v = Number(v)||0;
-    if(v>=1e12) return '₺'+(v/1e12).toLocaleString('tr-TR',{maximumFractionDigits:1})+' Tn';
-    if(v>=1e9)  return '₺'+(v/1e9).toLocaleString('tr-TR',{maximumFractionDigits:1})+' Mr';
-    if(v>=1e6)  return '₺'+(v/1e6).toLocaleString('tr-TR',{maximumFractionDigits:1})+' Mn';
-    if(v>=1e3)  return '₺'+(v/1e3).toLocaleString('tr-TR',{maximumFractionDigits:0})+' B';
-    return '₺'+num(v); };
-  const tarihF = (s) => s ? new Date(s).toLocaleDateString('tr-TR',{day:'2-digit',month:'2-digit',year:'numeric'}) : '—';
-  // Türkçe karakter katlama — SQL tr_fold() ile BİREBİR aynı olmalı (arama_fold sütunu)
+    if(v>=1e12) return 'â‚º'+(v/1e12).toLocaleString('tr-TR',{maximumFractionDigits:1})+' Tn';
+    if(v>=1e9)  return 'â‚º'+(v/1e9).toLocaleString('tr-TR',{maximumFractionDigits:1})+' Mr';
+    if(v>=1e6)  return 'â‚º'+(v/1e6).toLocaleString('tr-TR',{maximumFractionDigits:1})+' Mn';
+    if(v>=1e3)  return 'â‚º'+(v/1e3).toLocaleString('tr-TR',{maximumFractionDigits:0})+' B';
+    return 'â‚º'+num(v); };
+  const tarihF = (s) => s ? new Date(s).toLocaleDateString('tr-TR',{day:'2-digit',month:'2-digit',year:'numeric'}) : 'â€”';
+  // TÃ¼rkÃ§e karakter katlama â€” SQL tr_fold() ile BÄ°REBÄ°R aynÄ± olmalÄ± (arama_fold sÃ¼tunu)
   function trFold(s){
     return (s||'')
-      .replace(/İ/g,'i').replace(/I/g,'i').replace(/ı/g,'i')
-      .replace(/Ş/g,'s').replace(/ş/g,'s')
-      .replace(/Ğ/g,'g').replace(/ğ/g,'g')
-      .replace(/Ü/g,'u').replace(/ü/g,'u')
-      .replace(/Ö/g,'o').replace(/ö/g,'o')
-      .replace(/Ç/g,'c').replace(/ç/g,'c')
+      .replace(/Ä°/g,'i').replace(/I/g,'i').replace(/Ä±/g,'i')
+      .replace(/Å/g,'s').replace(/ÅŸ/g,'s')
+      .replace(/Ä/g,'g').replace(/ÄŸ/g,'g')
+      .replace(/Ãœ/g,'u').replace(/Ã¼/g,'u')
+      .replace(/Ã–/g,'o').replace(/Ã¶/g,'o')
+      .replace(/Ã‡/g,'c').replace(/Ã§/g,'c')
       .toLowerCase();
   }
-  // Üyeye özel RPC/tablo → 42501. Ham Postgres mesajı kullanıcıya GÖSTERİLMEZ.
+  // Ãœyeye Ã¶zel RPC/tablo â†’ 42501. Ham Postgres mesajÄ± kullanÄ±cÄ±ya GÃ–STERÄ°LMEZ.
   const kilitliMi = (e) => !!(e && (e.code==='42501' || /permission denied/i.test(e.message||'')));
 
-  /* Kamu kuruluşu rozeti — SQL public.firma_kurum_mu ile AYNI mantık (aynala; filtreleme
-     zaten SQL'de, bu yalnız kozmetik rozet — küçük drift zarar vermez). Kamu kuruluşları
-     varsayılan gizli; "Kamu kuruluşlarını da göster" açıkken bu rozetle işaretlenir. */
+  /* Kamu kuruluÅŸu rozeti â€” SQL public.firma_kurum_mu ile AYNI mantÄ±k (aynala; filtreleme
+     zaten SQL'de, bu yalnÄ±z kozmetik rozet â€” kÃ¼Ã§Ã¼k drift zarar vermez). Kamu kuruluÅŸlarÄ±
+     varsayÄ±lan gizli; "Kamu kuruluÅŸlarÄ±nÄ± da gÃ¶ster" aÃ§Ä±kken bu rozetle iÅŸaretlenir. */
   const KURUM_SONEK = /(mudurlugu|baskanligi|bakanligi|belediyesi|belediye baskanligi|universitesi|rektorlugu|valiligi|kaymakamligi|komutanligi|genel sekreterligi|il ozel idaresi|hastanesi|cezaevi|muftulugu|il saglik mudurlugu|halk sagligi merkezi)$/;
   const KURUM_AD = /(devlet malzeme ofisi|ceza infaz kurumu|isyurtlari|isyurdu|posta ve telgraf|kizilay|orman genel mudurlugu|makina ve kimya endustrisi|turkiye seker fabrikalari|sumer holding|turkiye komur isletmeleri|turkiye taskomuru|devlet demiryollari|turkiye radyo televizyon|sosyal guvenlik kurumu|turkiye elektrik|boru hatlari ile petrol|turkiye petrolleri|toprak mahsulleri ofisi|tarim isletmeleri|cay isletmeleri|eti maden|devlet hava meydanlari)/;
   const kurumMu = (ad) => { if (!ad) return false; const f = trFold(ad); return KURUM_SONEK.test(f) || KURUM_AD.test(f); };
-  const KURUM_ROZET = '<span class="fa-badge" style="background:#EEF2F7;color:#5A6B7E;" title="Kamu kuruluşu — rakip firma değil">🏛️ Kamu</span>';
+  const KURUM_ROZET = '<span class="fa-badge" style="background:#EEF2F7;color:#5A6B7E;" title="Kamu kuruluÅŸu â€” rakip firma deÄŸil">ğŸ›ï¸ Kamu</span>';
 
-  /* ── v1 sabit renk paleti (Chart.js CSS değişkeni okumaz) ──────────── */
+  /* â”€â”€ v1 sabit renk paleti (Chart.js CSS deÄŸiÅŸkeni okumaz) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   const C = { mavi:'#135EAA', lacivert:'#0C3E70', teal:'#00A19A', acik:'#9CC4E8',
               cizgi:'#DCE5EF', muted:'#6C757D', yesil:'#1E9E57', kirmizi:'#D64550', ikinci:'#4A8FD0' };
 
-  /* ── Sabitler ─────────────────────────────────────────────────────── */
-  // ihale_sonuclari çekimi SONUC_LIMIT ile kesilir (ağır sorgu). Kesme olduğunda ekrandaki
-  // paydalar firmanın TAMAMI değil, son N kayıtlık ÖRNEKLEMDİR — etiketler bunu açıkça yazar.
+  /* â”€â”€ Sabitler â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+  // ihale_sonuclari Ã§ekimi SONUC_LIMIT ile kesilir (aÄŸÄ±r sorgu). Kesme olduÄŸunda ekrandaki
+  // paydalar firmanÄ±n TAMAMI deÄŸil, son N kayÄ±tlÄ±k Ã–RNEKLEMDÄ°R â€” etiketler bunu aÃ§Ä±kÃ§a yazar.
   const SONUC_LIMIT = 500;
   const PER_PAGE = 20;
   const DZ_BOYUT = 50;
@@ -690,53 +697,53 @@
                     tarih_desc:['son_sozlesme_tarihi',false], ad_asc:['ad',true] };
   const SON_ARAMA_KEY = 'ihale_son_aramalar_firma_v1';
 
-  /* ── Durum ────────────────────────────────────────────────────────── */
+  /* â”€â”€ Durum â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   let uyeMi = false, proMu = false;
   let FIRMA = '', AKTIF_YID = '';
   let sonucVeri = [], tumIhaleler = [];
-  let DT_SAYISI = 0, dtSayfa = 1;   // Katıldığı Doğrudan Teminler sekmesi (firma_dt_liste)
-  let RESMI_SOZLESME = null;    // yukleniciler.toplam_sozlesme_sayisi — kesilmemiş gerçek toplam
-  let ORNEKLEM_KESIK = false;   // sonucVeri limite dayandı mı
+  let DT_SAYISI = 0, dtSayfa = 1;   // KatÄ±ldÄ±ÄŸÄ± DoÄŸrudan Teminler sekmesi (firma_dt_liste)
+  let RESMI_SOZLESME = null;    // yukleniciler.toplam_sozlesme_sayisi â€” kesilmemiÅŸ gerÃ§ek toplam
+  let ORNEKLEM_KESIK = false;   // sonucVeri limite dayandÄ± mÄ±
   let sayfa = 1, topSayfa = 1;
   let dzSayfaNo = 0, dzToplam = 0, dzAramaTimer = null, _dizinKuruldu = false;
   let dzMod = 'ihale';   // MADDE 18-B: ihale | dt | birlikte
-  let dzKamu = false;    // kamu kuruluşlarını (DMO/cezaevi/PTT) dizinde göster? varsayılan GİZLİ (DT/İkisi)
+  let dzKamu = false;    // kamu kuruluÅŸlarÄ±nÄ± (DMO/cezaevi/PTT) dizinde gÃ¶ster? varsayÄ±lan GÄ°ZLÄ° (DT/Ä°kisi)
   let _pivotYuklendi = false, _yilChart = null;
-  let ilDagilimVeri = null;     // il_firma_dagilimi sonucu (dizin il filtresi + harita ortak kullanır)
+  let ilDagilimVeri = null;     // il_firma_dagilimi sonucu (dizin il filtresi + harita ortak kullanÄ±r)
 
-  /* ── Tenzilatın TEK KAYNAĞI ───────────────────────────────────────────
-     Çok kısımlı ihalede EKAP kısım bazlı yaklaşık maliyet yayımlamaz, ihalenin TOPLAM
-     maliyeti her kısma kopyalanır → satır tenzilatı sahte %95+ çıkar. Proje kuralı:
-     lot_sayisi=1 değilse GÖSTERME ve ortalamaya KATMA. KPI, kart ve karşılaştırma
-     tablosunun üçü de bu fonksiyonu çağırır ki aynı firma her yüzeyde aynı oranı göstersin. */
+  /* â”€â”€ TenzilatÄ±n TEK KAYNAÄI â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+     Ã‡ok kÄ±sÄ±mlÄ± ihalede EKAP kÄ±sÄ±m bazlÄ± yaklaÅŸÄ±k maliyet yayÄ±mlamaz, ihalenin TOPLAM
+     maliyeti her kÄ±sma kopyalanÄ±r â†’ satÄ±r tenzilatÄ± sahte %95+ Ã§Ä±kar. Proje kuralÄ±:
+     lot_sayisi=1 deÄŸilse GÃ–STERME ve ortalamaya KATMA. KPI, kart ve karÅŸÄ±laÅŸtÄ±rma
+     tablosunun Ã¼Ã§Ã¼ de bu fonksiyonu Ã§aÄŸÄ±rÄ±r ki aynÄ± firma her yÃ¼zeyde aynÄ± oranÄ± gÃ¶stersin. */
   function tenzilatDegeri(s){
     if (!s || Number(s.lot_sayisi) !== 1) return null;
     const v = (s.tenzilat_yuzde != null) ? s.tenzilat_yuzde : s.kazanan_teklif_farki_yuzde;
     return v != null ? Number(v) : null;
   }
-  // Payda etiketi: kesme varsa sayının neyin üzerinden hesaplandığını açıkça söyler.
+  // Payda etiketi: kesme varsa sayÄ±nÄ±n neyin Ã¼zerinden hesaplandÄ±ÄŸÄ±nÄ± aÃ§Ä±kÃ§a sÃ¶yler.
   function ornekEtiketi(adet){
     const n = Number(adet)||0;
     return ORNEKLEM_KESIK
-      ? `son ${num(n)} kayıtlık örneklem${RESMI_SOZLESME ? ` · firmanın toplamı ${num(RESMI_SOZLESME)} sözleşme` : ''}`
-      : `${num(n)} ihale sonucu üzerinden`;
+      ? `son ${num(n)} kayÄ±tlÄ±k Ã¶rneklem${RESMI_SOZLESME ? ` Â· firmanÄ±n toplamÄ± ${num(RESMI_SOZLESME)} sÃ¶zleÅŸme` : ''}`
+      : `${num(n)} ihale sonucu Ã¼zerinden`;
   }
 
-  /* ── Misafir kapısı ───────────────────────────────────────────────── */
+  /* â”€â”€ Misafir kapÄ±sÄ± â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   function girisKapisi(el, baslik){
     if (!el) return;
     el.innerHTML = `<div class="fa-kilit">
-      <div style="font-size:34px;margin-bottom:10px;">🔒</div>
+      <div style="font-size:34px;margin-bottom:10px;">ğŸ”’</div>
       <div class="fa-kilit-bas">${esc(baslik)}</div>
-      <div class="fa-kilit-alt">Firma adları ve detaylı analizler üyelere özeldir. Ücretsiz hesabınızla giriş yapın.</div>
+      <div class="fa-kilit-alt">Firma adlarÄ± ve detaylÄ± analizler Ã¼yelere Ã¶zeldir. Ãœcretsiz hesabÄ±nÄ±zla giriÅŸ yapÄ±n.</div>
       <div class="fa-kilit-btns">
-        <a class="fa-btn-ana" href="login">Giriş yapın</a>
-        <a class="fa-btn" href="fiyatlandirma_odeme_bolumu">Üye olun →</a>
+        <a class="fa-btn-ana" href="login">GiriÅŸ yapÄ±n</a>
+        <a class="fa-btn" href="fiyatlandirma_odeme_bolumu">Ãœye olun â†’</a>
       </div></div>`;
   }
-  const MASKE_ROZET = '<a href="login" title="Üyelere özel — giriş yapın">🔒 ***</a>';
+  const MASKE_ROZET = '<a href="login" title="Ãœyelere Ã¶zel â€” giriÅŸ yapÄ±n">ğŸ”’ ***</a>';
 
-  /* ── Görünüm geçişi ───────────────────────────────────────────────── */
+  /* â”€â”€ GÃ¶rÃ¼nÃ¼m geÃ§iÅŸi â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   function goster(hangi){
     $('fa-dizin').style.display        = hangi==='dizin' ? 'block' : 'none';
     $('fa-arama-liste').style.display  = hangi==='liste' ? 'block' : 'none';
@@ -750,7 +757,7 @@
     dizinBaslat();
   }
 
-  /* ── Son aramalar (localStorage) ──────────────────────────────────── */
+  /* â”€â”€ Son aramalar (localStorage) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   function sonAramaKaydet(ad){
     if (!ad) return;
     try{
@@ -770,17 +777,17 @@
     if (!liste.length || !uyeMi){ kap.style.display='none'; return; }
     kap.style.display='flex';
     kap.innerHTML = '<span style="font-size:11.5px;font-weight:800;color:var(--v1-muted);text-transform:uppercase;letter-spacing:.06em;">Son Aramalar</span>' +
-      liste.map(ad => `<button class="fa-chip" data-son-arama="${esc(ad)}">🕐 ${esc(ad)}</button>`).join('');
+      liste.map(ad => `<button class="fa-chip" data-son-arama="${esc(ad)}">ğŸ• ${esc(ad)}</button>`).join('');
   }
   $('fa-son-aramalar').addEventListener('click', (e) => {
     const b = e.target.closest('[data-son-arama]');
     if (b) firmaListesiYukle(b.dataset.sonArama, true);
   });
 
-  /* ══════════════ DİZİN ══════════════ */
+  /* â•â•â•â•â•â•â•â•â•â•â•â•â•â• DÄ°ZÄ°N â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
   async function dzIstatistik(){
     try{
-      // MADDE 20: KPI'lar moda göre — ihale / DT / ikisi birlikte.
+      // MADDE 20: KPI'lar moda gÃ¶re â€” ihale / DT / ikisi birlikte.
       const rpc = dzMod==='dt' ? 'firma_ozet_dt' : dzMod==='birlikte' ? 'firma_ozet_birlikte' : 'yuklenici_ozet';
       const { data, error } = await sb.rpc(rpc);
       if (error) throw error;
@@ -789,19 +796,19 @@
       $('dz-st-soz').textContent   = num(r.toplam_sozlesme);
       $('dz-st-ciro').textContent  = paraKisa(r.toplam_ciro);
       $('dz-st-ortak').textContent = num(r.ortak_sayisi);
-      const rozet = dzMod==='dt' ? 'yalnız DT' : dzMod==='birlikte' ? 'ihale + DT' : 'yalnız ihaleler';
+      const rozet = dzMod==='dt' ? 'yalnÄ±z DT' : dzMod==='birlikte' ? 'ihale + DT' : 'yalnÄ±z ihaleler';
       if($('dz-st-soz-badge'))  $('dz-st-soz-badge').textContent  = rozet;
       if($('dz-st-ciro-badge')) $('dz-st-ciro-badge').textContent = rozet;
       if($('dz-st-firma-alt'))  $('dz-st-firma-alt').textContent  =
-        dzMod==='dt' ? 'doğrudan temin kazanmış' : dzMod==='birlikte' ? 'ihale veya DT kazanmış' : 'ihale kazanmış';
+        dzMod==='dt' ? 'doÄŸrudan temin kazanmÄ±ÅŸ' : dzMod==='birlikte' ? 'ihale veya DT kazanmÄ±ÅŸ' : 'ihale kazanmÄ±ÅŸ';
       if($('dz-st-soz-alt'))    $('dz-st-soz-alt').textContent    =
-        dzMod==='dt' ? 'DT sonuç kaydı' : dzMod==='birlikte' ? 'ihale + DT kaydı' : 'EKAP ihale sonuç kaydı';
+        dzMod==='dt' ? 'DT sonuÃ§ kaydÄ±' : dzMod==='birlikte' ? 'ihale + DT kaydÄ±' : 'EKAP ihale sonuÃ§ kaydÄ±';
       $('dz-st-ciro-alt').textContent =
-        dzMod==='dt' ? `${num(r.toplam_sozlesme)} DT · ${num(r.toplam)} firma üzerinden`
-        : dzMod==='birlikte' ? `${num(r.toplam_sozlesme)} sözleşme (ihale+DT) · ${num(r.toplam)} firma`
-        : `${num(r.toplam_sozlesme)} ihale sözleşmesi · ${num(r.toplam)} firma üzerinden`;
+        dzMod==='dt' ? `${num(r.toplam_sozlesme)} DT Â· ${num(r.toplam)} firma Ã¼zerinden`
+        : dzMod==='birlikte' ? `${num(r.toplam_sozlesme)} sÃ¶zleÅŸme (ihale+DT) Â· ${num(r.toplam)} firma`
+        : `${num(r.toplam_sozlesme)} ihale sÃ¶zleÅŸmesi Â· ${num(r.toplam)} firma Ã¼zerinden`;
     }catch(e){
-      ['dz-st-firma','dz-st-soz','dz-st-ciro','dz-st-ortak'].forEach(i => { $(i).textContent='—'; });
+      ['dz-st-firma','dz-st-soz','dz-st-ciro','dz-st-ortak'].forEach(i => { $(i).textContent='â€”'; });
     }
   }
 
@@ -837,9 +844,9 @@
     const arama = trFold(aramaRaw);
     const ilVal = $('dz-il').value;
     const govde = $('dz-govde');
-    if (reset) govde.innerHTML = '<tr><td colspan="6"><div class="v1-bos">Yükleniyor…</div></td></tr>';
+    if (reset) govde.innerHTML = '<tr><td colspan="6"><div class="v1-bos">YÃ¼kleniyorâ€¦</div></td></tr>';
 
-    // MADDE 18-B: mod=dt/birlikte → RPC (DT bedeli / ihale+DT toplamı). mod=ihale → yukleniciler.
+    // MADDE 18-B: mod=dt/birlikte â†’ RPC (DT bedeli / ihale+DT toplamÄ±). mod=ihale â†’ yukleniciler.
     let data, count = null, error;
     if (dzMod !== 'ihale' && uyeMi){
       const rpc = dzMod === 'dt' ? 'firma_dizin_dt' : 'firma_dizin_birlikte';
@@ -851,7 +858,7 @@
       ({ data, error } = await sb.rpc(rpc, params));
     } else {
       let [alan, asc] = DZ_ALAN[$('dz-sirala').value] || DZ_ALAN.ciro_desc;
-      if (!uyeMi && alan === 'ad') [alan, asc] = DZ_ALAN.ciro_desc;   // ad kolonu anon'a kapalı
+      if (!uyeMi && alan === 'ad') [alan, asc] = DZ_ALAN.ciro_desc;   // ad kolonu anon'a kapalÄ±
       let q = sb.from('yukleniciler').select(
         uyeMi ? 'id,ad,normalize_ad,il,toplam_sozlesme_sayisi,toplam_ciro,son_sozlesme_tarihi,ortak_girisim'
               : 'id,il,toplam_sozlesme_sayisi,toplam_ciro,son_sozlesme_tarihi,ortak_girisim',
@@ -865,36 +872,36 @@
     if (error){
       govde.innerHTML = `<tr><td colspan="6"><div class="v1-bos">${
         kilitliMi(error)
-          ? '🔒 Firma dizini üyelere özeldir. <a href="login">Giriş yapın</a> veya <a href="fiyatlandirma_odeme_bolumu">üye olun</a> →'
-          : 'Firma dizini yüklenemedi.'}</div></td></tr>`;
+          ? 'ğŸ”’ Firma dizini Ã¼yelere Ã¶zeldir. <a href="login">GiriÅŸ yapÄ±n</a> veya <a href="fiyatlandirma_odeme_bolumu">Ã¼ye olun</a> â†’'
+          : 'Firma dizini yÃ¼klenemedi.'}</div></td></tr>`;
       $('dz-pager').style.display = 'none';
       return;
     }
     const rpcMod = (dzMod !== 'ihale');
     dzToplam = count || 0;
     $('dz-say').textContent = rpcMod
-      ? (dzMod === 'dt' ? 'Doğrudan Temin' : 'İhale + DT (birlikte)')
+      ? (dzMod === 'dt' ? 'DoÄŸrudan Temin' : 'Ä°hale + DT (birlikte)')
       : num(dzToplam) + ' firma';
     const rows = data || [];
     if (!rows.length){
-      govde.innerHTML = '<tr><td colspan="6"><div class="v1-bos">Eşleşen firma bulunamadı.</div></td></tr>';
+      govde.innerHTML = '<tr><td colspan="6"><div class="v1-bos">EÅŸleÅŸen firma bulunamadÄ±.</div></td></tr>';
       $('dz-pager').style.display = 'none';
       return;
     }
     govde.innerHTML = rows.map(f => {
-      const ad = f.ad || f.normalize_ad || '—';
+      const ad = f.ad || f.normalize_ad || 'â€”';
       return `<tr data-yid="${esc(f.id)}">
-        <td><span class="fa-t-ad" title="${uyeMi ? esc(ad) : 'Üyelere özel'}">${uyeMi ? esc(ad) : MASKE_ROZET}</span>${
-          f.ortak_girisim ? '<span class="fa-badge">İŞ ORT.</span>' : ''}${uyeMi && kurumMu(ad) ? KURUM_ROZET : ''}</td>
-        <td class="gizli-m fa-t-sonuc">${esc(f.il || '—')}</td>
+        <td><span class="fa-t-ad" title="${uyeMi ? esc(ad) : 'Ãœyelere Ã¶zel'}">${uyeMi ? esc(ad) : MASKE_ROZET}</span>${
+          f.ortak_girisim ? '<span class="fa-badge">Ä°Å ORT.</span>' : ''}${uyeMi && kurumMu(ad) ? KURUM_ROZET : ''}</td>
+        <td class="gizli-m fa-t-sonuc">${esc(f.il || 'â€”')}</td>
         <td class="fa-t-sayi">${num(f.toplam_sozlesme_sayisi)}</td>
         <td class="fa-t-ciro">${paraTam(f.toplam_ciro)}</td>
-        <td class="gizli-m fa-t-sonuc">${f.son_sozlesme_tarihi ? tarihF(f.son_sozlesme_tarihi) : '—'}</td>
-        <td class="gizli-m" style="text-align:right;"><span class="fa-t-analiz">Analiz →</span></td>
+        <td class="gizli-m fa-t-sonuc">${f.son_sozlesme_tarihi ? tarihF(f.son_sozlesme_tarihi) : 'â€”'}</td>
+        <td class="gizli-m" style="text-align:right;"><span class="fa-t-analiz">Analiz â†’</span></td>
       </tr>`;
     }).join('');
 
-    if (rpcMod){   // count yok → sayfa doluysa sonraki var say
+    if (rpcMod){   // count yok â†’ sayfa doluysa sonraki var say
       const sonrakiVar = rows.length >= DZ_BOYUT;
       $('dz-pager').style.display = (dzSayfaNo > 0 || sonrakiVar) ? 'flex' : 'none';
       $('dz-pinfo').textContent = `Sayfa ${dzSayfaNo+1}`;
@@ -915,7 +922,7 @@
       dzIstatistik(); dzIlDoldur();
       if (!uyeMi){
         const da = $('dz-arama');
-        if (da){ da.disabled = true; da.placeholder = '🔒 Firma araması üyelere özel — giriş yapın'; }
+        if (da){ da.disabled = true; da.placeholder = 'ğŸ”’ Firma aramasÄ± Ã¼yelere Ã¶zel â€” giriÅŸ yapÄ±n'; }
         const adOpt = document.querySelector('#dz-sirala option[value="ad_asc"]');
         if (adOpt) adOpt.disabled = true;
       }
@@ -924,15 +931,15 @@
     dzYukle(true);
   }
 
-  /* ══════════════ ARAMA SONUCU FİRMA LİSTESİ ══════════════ */
+  /* â•â•â•â•â•â•â•â•â•â•â•â•â•â• ARAMA SONUCU FÄ°RMA LÄ°STESÄ° â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
   async function firmaListesiYukle(term, pushUrl){
     term = (term || '').trim();
     if (!term) return;
-    if (!uyeMi){   // arama ad/arama_fold ister — anon'a DB'de kapalı
+    if (!uyeMi){   // arama ad/arama_fold ister â€” anon'a DB'de kapalÄ±
       goster('liste');
       $('liste-terim').textContent = term;
       $('liste-ozet').textContent = '';
-      girisKapisi($('fa-arama-kaplayici'), 'Firma araması üyelere özeldir');
+      girisKapisi($('fa-arama-kaplayici'), 'Firma aramasÄ± Ã¼yelere Ã¶zeldir');
       return;
     }
     sonAramaKaydet(term);
@@ -944,12 +951,12 @@
     }
     goster('liste');
     $('liste-terim').textContent = term;
-    $('liste-ozet').textContent = 'Yükleniyor…';
+    $('liste-ozet').textContent = 'YÃ¼kleniyorâ€¦';
     const kap = $('fa-arama-kaplayici');
     kap.innerHTML = `<div class="fa-bos-kart"><div class="fa-spin"></div>
-      <div style="font-size:13px;color:var(--v1-muted);">Firmalar aranıyor…</div></div>`;
+      <div style="font-size:13px;color:var(--v1-muted);">Firmalar aranÄ±yorâ€¦</div></div>`;
 
-    // arama_fold (Türkçe katlanmış) ile ara; kolon yoksa düz ad ILIKE'a düş.
+    // arama_fold (TÃ¼rkÃ§e katlanmÄ±ÅŸ) ile ara; kolon yoksa dÃ¼z ad ILIKE'a dÃ¼ÅŸ.
     let { data, error } = await sb.from('yukleniciler')
       .select('id,ad,il,toplam_sozlesme_sayisi,toplam_ciro,son_sozlesme_tarihi')
       .ilike('arama_fold', `%${trFold(term)}%`)
@@ -964,71 +971,71 @@
     }
     if (error){
       $('liste-ozet').textContent = '';
-      if (kilitliMi(error)) girisKapisi(kap, 'Firma araması üyelere özeldir');
-      else kap.innerHTML = '<div class="v1-bos">Arama yapılamadı, lütfen tekrar deneyin.</div>';
+      if (kilitliMi(error)) girisKapisi(kap, 'Firma aramasÄ± Ã¼yelere Ã¶zeldir');
+      else kap.innerHTML = '<div class="v1-bos">Arama yapÄ±lamadÄ±, lÃ¼tfen tekrar deneyin.</div>';
       return;
     }
     const liste = data || [];
     if (!liste.length){
-      $('liste-ozet').textContent = 'Eşleşen firma bulunamadı.';
+      $('liste-ozet').textContent = 'EÅŸleÅŸen firma bulunamadÄ±.';
       kap.innerHTML = `<div class="fa-bos-kart">
-        <div class="fa-bos-ikon">🔍</div>
-        <div class="fa-bos-bas">“${esc(term)}” için firma bulunamadı</div>
-        <div class="fa-bos-alt">Yalnızca EKAP sonuç ilanlarında KAZANAN olarak geçen firmalar aranabilir.
-          Geçmiş veri arka planda toplanmaya devam ediyor — daha küçük bir firma adı parçası deneyin.</div>
+        <div class="fa-bos-ikon">ğŸ”</div>
+        <div class="fa-bos-bas">â€œ${esc(term)}â€ iÃ§in firma bulunamadÄ±</div>
+        <div class="fa-bos-alt">YalnÄ±zca EKAP sonuÃ§ ilanlarÄ±nda KAZANAN olarak geÃ§en firmalar aranabilir.
+          GeÃ§miÅŸ veri arka planda toplanmaya devam ediyor â€” daha kÃ¼Ã§Ã¼k bir firma adÄ± parÃ§asÄ± deneyin.</div>
       </div>`;
       return;
     }
-    // Tek eşleşme → doğrudan detaya atla
+    // Tek eÅŸleÅŸme â†’ doÄŸrudan detaya atla
     if (liste.length === 1){ firmaDetayYukle(liste[0].id, true); return; }
 
     $('liste-ozet').textContent =
-      `${num(liste.length)}${liste.length===100 ? '+' : ''} firma bulundu · cirosu en yüksekten sıralı · ciro yalnız ihale kazanımlarından (doğrudan temin hariç)`;
+      `${num(liste.length)}${liste.length===100 ? '+' : ''} firma bulundu Â· cirosu en yÃ¼ksekten sÄ±ralÄ± Â· ciro yalnÄ±z ihale kazanÄ±mlarÄ±ndan (doÄŸrudan temin hariÃ§)`;
     kap.innerHTML = liste.map(f => `
       <div class="fa-fk" data-yid="${esc(f.id)}">
         <div>
-          <div class="fa-fk-ad">${esc(f.ad || '—')}</div>
+          <div class="fa-fk-ad">${esc(f.ad || 'â€”')}</div>
           <div class="fa-fk-stat">
-            <span>📋 <b>${num(f.toplam_sozlesme_sayisi)}</b> sözleşme</span>
-            <span>💰 <b>${paraTam(f.toplam_ciro)}</b></span>
-            ${f.il ? `<span>📍 ${esc(f.il)}</span>` : ''}
-            ${f.son_sozlesme_tarihi ? `<span>🕐 son: ${tarihF(f.son_sozlesme_tarihi)}</span>` : ''}
+            <span>ğŸ“‹ <b>${num(f.toplam_sozlesme_sayisi)}</b> sÃ¶zleÅŸme</span>
+            <span>ğŸ’° <b>${paraTam(f.toplam_ciro)}</b></span>
+            ${f.il ? `<span>ğŸ“ ${esc(f.il)}</span>` : ''}
+            ${f.son_sozlesme_tarihi ? `<span>ğŸ• son: ${tarihF(f.son_sozlesme_tarihi)}</span>` : ''}
           </div>
         </div>
-        <div class="fa-fk-sec">Analiz →</div>
+        <div class="fa-fk-sec">Analiz â†’</div>
       </div>`).join('');
   }
 
-  /* ══════════════ FİRMA DETAYI ══════════════ */
+  /* â•â•â•â•â•â•â•â•â•â•â•â•â•â• FÄ°RMA DETAYI â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
   async function firmaDetayYukle(yid, pushUrl){
     if (!yid) return;
-    if (!uyeMi){   // detay = ad + sonuç geçmişi + pivot; hepsi anon'a kapalı
+    if (!uyeMi){   // detay = ad + sonuÃ§ geÃ§miÅŸi + pivot; hepsi anon'a kapalÄ±
       goster('detay');
-      girisKapisi($('fa-detay-govde'), 'Firma analizi üyelere özeldir');
+      girisKapisi($('fa-detay-govde'), 'Firma analizi Ã¼yelere Ã¶zeldir');
       return;
     }
     AKTIF_YID = yid;
-    // Önceki firmanın kapsam bilgisi sızmasın (bayat "örneklem" etiketi paydayı yanlış yapar)
+    // Ã–nceki firmanÄ±n kapsam bilgisi sÄ±zmasÄ±n (bayat "Ã¶rneklem" etiketi paydayÄ± yanlÄ±ÅŸ yapar)
     RESMI_SOZLESME = null; ORNEKLEM_KESIK = false; _pivotYuklendi = false;
     $('pivot-kaplayici').innerHTML = '';
     $('ai-kaplayici').innerHTML = '';
     $('risk-serit').style.display = 'none';
 
     goster('detay');
-    $('firma-meta').textContent = 'Veri yükleniyor…';
-    ['kpi-katilan','kpi-kazanilan','kpi-il','kpi-sektor'].forEach(i => { $(i).textContent = '—'; });
+    $('firma-meta').textContent = 'Veri yÃ¼kleniyorâ€¦';
+    ['kpi-katilan','kpi-kazanilan','kpi-il','kpi-sektor'].forEach(i => { $(i).textContent = 'â€”'; });
     $('sonuclar-kaplayici').innerHTML = `<div class="fa-bos-kart"><div class="fa-spin"></div>
-      <div style="font-size:13px;color:var(--v1-muted);">Sonuç verisi yükleniyor…</div></div>`;
+      <div style="font-size:13px;color:var(--v1-muted);">SonuÃ§ verisi yÃ¼kleniyorâ€¦</div></div>`;
     sayfa = 1;
     $('sonuc-pager').style.display = 'none';
 
-    // Firma başlığı + resmî istatistikler
+    // Firma baÅŸlÄ±ÄŸÄ± + resmÃ® istatistikler
     const { data: yRows, error: yErr } = await sb.from('yukleniciler')
       .select('id,ad,il,vergi_no,vkn_kaynak,toplam_sozlesme_sayisi,toplam_ciro,ilk_sozlesme_tarihi,son_sozlesme_tarihi')
       .eq('id', yid).limit(1);
     if (yErr){
-      if (kilitliMi(yErr)) girisKapisi($('fa-detay-govde'), 'Firma analizi üyelere özeldir');
-      else $('firma-meta').textContent = 'Firma bilgisi alınamadı.';
+      if (kilitliMi(yErr)) girisKapisi($('fa-detay-govde'), 'Firma analizi Ã¼yelere Ã¶zeldir');
+      else $('firma-meta').textContent = 'Firma bilgisi alÄ±namadÄ±.';
       return;
     }
     const y = (yRows && yRows[0]) || null;
@@ -1042,61 +1049,61 @@
     }
     sonAramaKaydet(FIRMA);
 
-    // Kazandığı ihaleler — yuklenici_id ile kesin eşleşme + ilan başlık/idare embed'i
+    // KazandÄ±ÄŸÄ± ihaleler â€” yuklenici_id ile kesin eÅŸleÅŸme + ilan baÅŸlÄ±k/idare embed'i
     const { data: sonucRaw, error: sErr } = await sb.from('ihale_sonuclari')
       .select('ilan_id,ikn,kazanan_firma,kazanan_teklif,sozlesme_bedeli,kazanan_teklif_farki_yuzde,tenzilat_yuzde,toplam_teklif_sayisi,katilimci_sayisi,yaklasik_maliyet,en_dusuk_teklif,en_yuksek_teklif,sonuc_tarihi,sozlesme_tarihi,kisim_no,lot_sayisi,ilanlar(id,baslik,idare,il,tur,kategori,ilan_tarihi,son_teklif_tarihi)')
       .eq('yuklenici_id', yid)
       .order('sonuc_tarihi', { ascending:false })
       .limit(SONUC_LIMIT);
     if (sErr && kilitliMi(sErr)){
-      girisKapisi($('fa-detay-govde'), 'Firma analizi üyelere özeldir');
+      girisKapisi($('fa-detay-govde'), 'Firma analizi Ã¼yelere Ã¶zeldir');
       return;
     }
 
     sonucVeri = (sonucRaw || []).map(s => ({ ...s, ilan: s.ilanlar || null }));
-    dtSayfa = 1; DT_SAYISI = 0;   // yeni firma → DT sekmesi baştan
+    dtSayfa = 1; DT_SAYISI = 0;   // yeni firma â†’ DT sekmesi baÅŸtan
     RESMI_SOZLESME = (y && y.toplam_sozlesme_sayisi != null) ? Number(y.toplam_sozlesme_sayisi) : null;
     ORNEKLEM_KESIK = sonucVeri.length >= SONUC_LIMIT;
-    // "Katıldığı İhaleler" = kazandığı ihalelerin kendisi (EKAP kaybedeni yayınlamaz)
+    // "KatÄ±ldÄ±ÄŸÄ± Ä°haleler" = kazandÄ±ÄŸÄ± ihalelerin kendisi (EKAP kaybedeni yayÄ±nlamaz)
     tumIhaleler = sonucVeri.map(s => s.ilan).filter(Boolean);
 
     const iller  = new Set(tumIhaleler.map(i => i.il).filter(Boolean));
     const katlar = new Set(tumIhaleler.map(i => i.kategori).filter(Boolean));
     const toplamBedel = sonucVeri.reduce((a,s) => a + (Number(s.sozlesme_bedeli || s.kazanan_teklif) || 0), 0);
 
-    // Adet KPI'ları resmî toplamdan (kesilmemiş); tutar/il/sektör örneklemden.
+    // Adet KPI'larÄ± resmÃ® toplamdan (kesilmemiÅŸ); tutar/il/sektÃ¶r Ã¶rneklemden.
     const kayitSayisi = sonucVeri.length;
     const gosterAdet = (ORNEKLEM_KESIK && RESMI_SOZLESME) ? RESMI_SOZLESME : kayitSayisi;
     $('kpi-katilan').textContent   = num(gosterAdet);
     $('kpi-kazanilan').textContent = num(gosterAdet);
     $('kpi-il').textContent        = num(iller.size);
     $('kpi-sektor').textContent    = num(katlar.size);
-    $('kpi-ihale-bedel').textContent = toplamBedel ? paraTam(toplamBedel) : '—';   // yeni: Toplam İhale Bedeli kartı
+    $('kpi-ihale-bedel').textContent = toplamBedel ? paraTam(toplamBedel) : 'â€”';   // yeni: Toplam Ä°hale Bedeli kartÄ±
     $('kpi-kazanilan-alt').textContent = toplamBedel
-      ? paraTam(toplamBedel) + (ORNEKLEM_KESIK ? ` (son ${num(kayitSayisi)} kayıt, yalnız ihaleler)` : ' (yalnız ihaleler)')
-      : 'EKAP ihale sonuç kaydı';
+      ? paraTam(toplamBedel) + (ORNEKLEM_KESIK ? ` (son ${num(kayitSayisi)} kayÄ±t, yalnÄ±z ihaleler)` : ' (yalnÄ±z ihaleler)')
+      : 'EKAP ihale sonuÃ§ kaydÄ±';
 
-    // Başlık altı özet — tutarın kapsamı burada da yazılı olmalı
+    // BaÅŸlÄ±k altÄ± Ã¶zet â€” tutarÄ±n kapsamÄ± burada da yazÄ±lÄ± olmalÄ±
     $('firma-meta').textContent = kayitSayisi
-      ? `${num(gosterAdet)} kazanılan ihale · ${paraTam(toplamBedel)} · ${num(iller.size)} il${
-          y && y.son_sozlesme_tarihi ? ' · son: ' + tarihF(y.son_sozlesme_tarihi) : ''
-        } · yalnız ihaleler (doğrudan temin hariç)${
-          ORNEKLEM_KESIK ? ` · tutar ve dağılımlar son ${num(kayitSayisi)} kayıtlık örneklemden` : ''}`
-      : 'Bu firma için henüz kazanım kaydı toplanmadı (geçmiş veri arka planda çekiliyor).';
+      ? `${num(gosterAdet)} kazanÄ±lan ihale Â· ${paraTam(toplamBedel)} Â· ${num(iller.size)} il${
+          y && y.son_sozlesme_tarihi ? ' Â· son: ' + tarihF(y.son_sozlesme_tarihi) : ''
+        } Â· yalnÄ±z ihaleler (doÄŸrudan temin hariÃ§)${
+          ORNEKLEM_KESIK ? ` Â· tutar ve daÄŸÄ±lÄ±mlar son ${num(kayitSayisi)} kayÄ±tlÄ±k Ã¶rneklemden` : ''}`
+      : 'Bu firma iÃ§in henÃ¼z kazanÄ±m kaydÄ± toplanmadÄ± (geÃ§miÅŸ veri arka planda Ã§ekiliyor).';
 
-    // VKN — YALNIZ resmî kaynaktan (EKAP sözleşme devir kaydı). Beyan/tahmin GÖSTERİLMEZ.
+    // VKN â€” YALNIZ resmÃ® kaynaktan (EKAP sÃ¶zleÅŸme devir kaydÄ±). Beyan/tahmin GÃ–STERÄ°LMEZ.
     const vknEl = $('firma-vkn');
     if (y && y.vergi_no){
       vknEl.innerHTML = `VKN: <b>${esc(y.vergi_no)}</b>` +
-        `<span class="fa-resmi" title="Kaynak: EKAP sözleşme devir kaydı — resmî">✓ resmî kayıt</span>`;
+        `<span class="fa-resmi" title="Kaynak: EKAP sÃ¶zleÅŸme devir kaydÄ± â€” resmÃ®">âœ“ resmÃ® kayÄ±t</span>`;
       vknEl.style.display = '';
     } else {
-      vknEl.style.display = 'none';   // VKN yoksa hiç gösterme (boş alan = yanlış izlenim)
+      vknEl.style.display = 'none';   // VKN yoksa hiÃ§ gÃ¶sterme (boÅŸ alan = yanlÄ±ÅŸ izlenim)
     }
 
-    // Sözleşme riski: fesih/tasfiye TAM sayımı (örneklem değil)
+    // SÃ¶zleÅŸme riski: fesih/tasfiye TAM sayÄ±mÄ± (Ã¶rneklem deÄŸil)
     riskSeridiYukle(yid);
-    dtBlokYukle(y && y.ad);   // MADDE 18: firmanın doğrudan temin kazanımları (ayrı blok)
+    dtBlokYukle(y && y.ad);   // MADDE 18: firmanÄ±n doÄŸrudan temin kazanÄ±mlarÄ± (ayrÄ± blok)
     firmaTakipDurumuGuncelle();
 
     if (tumIhaleler.length) firmaIstatistikGoster(tumIhaleler);
@@ -1105,9 +1112,9 @@
       if (_yilChart){ _yilChart.destroy(); _yilChart = null; }
     }
 
-    // (a) Firma açılınca ÖZET yerine SÖZLEŞME LİSTESİ karşılasın — derin analiz yapan
-    //     doğrudan "Katıldığı İhaleler"i görsün (Genel Bakış tek tık uzakta). DT sekmesindeyken
-    //     firma değiştiyse o sekmede kal (aşağıdaki dal tazeler).
+    // (a) Firma aÃ§Ä±lÄ±nca Ã–ZET yerine SÃ–ZLEÅME LÄ°STESÄ° karÅŸÄ±lasÄ±n â€” derin analiz yapan
+    //     doÄŸrudan "KatÄ±ldÄ±ÄŸÄ± Ä°haleler"i gÃ¶rsÃ¼n (Genel BakÄ±ÅŸ tek tÄ±k uzakta). DT sekmesindeyken
+    //     firma deÄŸiÅŸtiyse o sekmede kal (aÅŸaÄŸÄ±daki dal tazeler).
     if (!$('tab-dt').classList.contains('aktif')){
       document.querySelectorAll('.fa-panel').forEach(p => p.classList.remove('aktif'));
       document.querySelectorAll('.fa-tab').forEach(x => x.classList.remove('aktif'));
@@ -1115,12 +1122,12 @@
       const stb = document.querySelector('.fa-tab[data-sekme="sonuclar"]'); if (stb) stb.classList.add('aktif');
     }
     if ($('tab-sonuclar').classList.contains('aktif')) sonuclariGoster();
-    // DT sekmesi açıkken firma değişirse listeyi tazele. dtBlokYukle DT_SAYISI'yi asenkron
-    // set eder → kısa gecikmeyle yeniden çağır (sayaç güncel olsun).
+    // DT sekmesi aÃ§Ä±kken firma deÄŸiÅŸirse listeyi tazele. dtBlokYukle DT_SAYISI'yi asenkron
+    // set eder â†’ kÄ±sa gecikmeyle yeniden Ã§aÄŸÄ±r (sayaÃ§ gÃ¼ncel olsun).
     if ($('tab-dt').classList.contains('aktif')){ dtListeGoster(); setTimeout(() => { if ($('tab-dt').classList.contains('aktif')) dtListeYukle(1); }, 700); }
   }
 
-  // Fesih / tasfiye TAM sayımı (head:true → satır indirmez). Şerit yalnız sıfırdan büyükse açılır.
+  // Fesih / tasfiye TAM sayÄ±mÄ± (head:true â†’ satÄ±r indirmez). Åerit yalnÄ±z sÄ±fÄ±rdan bÃ¼yÃ¼kse aÃ§Ä±lÄ±r.
   async function riskSeridiYukle(yid){
     try{
       const [fesih, tasfiye] = await Promise.all([
@@ -1132,14 +1139,14 @@
       const f = fesih.count || 0, t = tasfiye.count || 0;
       if (!f && !t) return;
       const parcalar = [];
-      if (f) parcalar.push(`<b style="color:${C.kirmizi};">${num(f)}</b> feshedilmiş sözleşme`);
+      if (f) parcalar.push(`<b style="color:${C.kirmizi};">${num(f)}</b> feshedilmiÅŸ sÃ¶zleÅŸme`);
       if (t) parcalar.push(`<b style="color:#A96A00;">${num(t)}</b> tasfiye / devir`);
-      $('risk-metin').innerHTML = parcalar.join(' · ');
+      $('risk-metin').innerHTML = parcalar.join(' Â· ');
       $('risk-serit').style.display = 'block';
-    }catch(_){ /* kolon/yetki yoksa şerit hiç açılmaz — sayfa bozulmaz */ }
+    }catch(_){ /* kolon/yetki yoksa ÅŸerit hiÃ§ aÃ§Ä±lmaz â€” sayfa bozulmaz */ }
   }
 
-  /* ── Genel Bakış grafikleri ───────────────────────────────────────── */
+  /* â”€â”€ Genel BakÄ±ÅŸ grafikleri â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   function cubukHtml(list, ikinci){
     const max = Math.max(1, ...list.map(r => r[1]));
     return list.map(([ad, n]) => `<div class="fa-cb">
@@ -1148,7 +1155,7 @@
     </div>`).join('');
   }
 
-  // ── MADDE 18: firmanın DOĞRUDAN TEMİN kazanımları (firma_dt_ozet) — ihale evreninden AYRI ──
+  // â”€â”€ MADDE 18: firmanÄ±n DOÄRUDAN TEMÄ°N kazanÄ±mlarÄ± (firma_dt_ozet) â€” ihale evreninden AYRI â”€â”€
   async function dtBlokYukle(firmaAd){
     const el = $('fa-dt-blok'), kpiRow = $('fa-dt-kpi');
     if(el) el.style.display = 'none';
@@ -1159,56 +1166,56 @@
       if(error) throw error;
       const d = data || {};
       const n = Number(d.dt_sayisi) || 0;
-      DT_SAYISI = n;                                 // "Katıldığı DT" sekmesi sayfalaması bunu kullanır
-      if(!n) return;                                 // DT kazanımı yoksa satır+blok gizli kalır
-      // ── DT KPI satırı (İhale aynası, 5 kart) ──
+      DT_SAYISI = n;                                 // "KatÄ±ldÄ±ÄŸÄ± DT" sekmesi sayfalamasÄ± bunu kullanÄ±r
+      if(!n) return;                                 // DT kazanÄ±mÄ± yoksa satÄ±r+blok gizli kalÄ±r
+      // â”€â”€ DT KPI satÄ±rÄ± (Ä°hale aynasÄ±, 5 kart) â”€â”€
       $('kpi-dt-kayit').textContent     = num(n);
       $('kpi-dt-kazanilan').textContent = num(n);
       $('kpi-dt-bedel').textContent     = paraTam(Number(d.toplam_bedel)||0);
-      $('kpi-dt-bedel-alt').textContent = `${num(d.bedelli_sayisi||0)} bedelli · medyan ${d.medyan_bedel!=null?paraTam(Number(d.medyan_bedel)):'—'}`;
+      $('kpi-dt-bedel-alt').textContent = `${num(d.bedelli_sayisi||0)} bedelli Â· medyan ${d.medyan_bedel!=null?paraTam(Number(d.medyan_bedel)):'â€”'}`;
       $('kpi-dt-il').textContent        = num(d.il_sayisi||0);
       $('kpi-dt-sektor').textContent    = num(d.kategori_sayisi||0);
       if(kpiRow) kpiRow.style.display = '';
-      // ── DT dağılım tabloları (İl/Kategori) — Parça 3'te DT Genel Bakış sekmesine taşınacak ──
+      // â”€â”€ DT daÄŸÄ±lÄ±m tablolarÄ± (Ä°l/Kategori) â€” ParÃ§a 3'te DT Genel BakÄ±ÅŸ sekmesine taÅŸÄ±nacak â”€â”€
       const satirlar = (list, ikon) => (list||[]).slice(0,6).map(x =>
         `<div class="fa-satir"><span class="sol">${ikon}${esc(x.il || x.kategori)}</span><span class="sag">${num(x.sayi)}</span></div>`
-      ).join('') || '<div class="v1-bos">—</div>';
+      ).join('') || '<div class="v1-bos">â€”</div>';
       el.innerHTML = `
         <div class="v1-kart" style="margin-bottom:0;border:1px solid #EFE3C4;background:#FFFBF0;">
           <div class="fa-ikili">
-            <div><div class="v1-kart-baslik" style="font-size:13px;">⚡ DT — İl Dağılımı</div>${satirlar(d.iller,'📍 ')}</div>
-            <div><div class="v1-kart-baslik" style="font-size:13px;">⚡ DT — Kategori Dağılımı</div>${satirlar(d.kategoriler,'')}</div>
+            <div><div class="v1-kart-baslik" style="font-size:13px;">âš¡ DT â€” Ä°l DaÄŸÄ±lÄ±mÄ±</div>${satirlar(d.iller,'ğŸ“ ')}</div>
+            <div><div class="v1-kart-baslik" style="font-size:13px;">âš¡ DT â€” Kategori DaÄŸÄ±lÄ±mÄ±</div>${satirlar(d.kategoriler,'')}</div>
           </div>
-          <div style="font-size:11px;color:var(--v1-muted);margin-top:10px;">Eşleşme firma adına göre (normalize) yapılır — resmî VKN doğrulaması değildir.</div>
+          <div style="font-size:11px;color:var(--v1-muted);margin-top:10px;">EÅŸleÅŸme firma adÄ±na gÃ¶re (normalize) yapÄ±lÄ±r â€” resmÃ® VKN doÄŸrulamasÄ± deÄŸildir.</div>
         </div>`;
       el.style.display = '';
     }catch(_){ if(el) el.style.display = 'none'; if(kpiRow) kpiRow.style.display = 'none'; }
   }
 
   function firmaIstatistikGoster(rows){
-    // İhale türü
+    // Ä°hale tÃ¼rÃ¼
     const turSay = {};
-    rows.forEach(i => { const t = i.tur || 'Diğer'; turSay[t] = (turSay[t]||0) + 1; });
+    rows.forEach(i => { const t = i.tur || 'DiÄŸer'; turSay[t] = (turSay[t]||0) + 1; });
     const turSirali = Object.entries(turSay).sort((a,b) => b[1]-a[1]);
     $('tur-list').innerHTML = turSirali.length
-      ? cubukHtml(turSirali) : '<div class="v1-bos">Tür bilgisi yok.</div>';
+      ? cubukHtml(turSirali) : '<div class="v1-bos">TÃ¼r bilgisi yok.</div>';
 
-    // İl dağılımı
+    // Ä°l daÄŸÄ±lÄ±mÄ±
     const ilSay = {};
     rows.forEach(i => { if (i.il) ilSay[i.il] = (ilSay[i.il]||0) + 1; });
     const ilSirali = Object.entries(ilSay).sort((a,b) => b[1]-a[1]);
     $('il-list').innerHTML = ilSirali.length
-      ? ilSirali.map(([ad,n]) => `<div class="fa-satir"><span class="sol">📍 ${esc(ad)}</span><span class="sag">${num(n)}</span></div>`).join('')
-      : '<div class="v1-bos">İl bilgisi yok.</div>';
+      ? ilSirali.map(([ad,n]) => `<div class="fa-satir"><span class="sol">ğŸ“ ${esc(ad)}</span><span class="sag">${num(n)}</span></div>`).join('')
+      : '<div class="v1-bos">Ä°l bilgisi yok.</div>';
 
-    // Kategori dağılımı
+    // Kategori daÄŸÄ±lÄ±mÄ±
     const katSay = {};
     rows.forEach(i => { const k = i.kategori || 'Kategorisiz'; katSay[k] = (katSay[k]||0) + 1; });
     const katSirali = Object.entries(katSay).sort((a,b) => b[1]-a[1]).slice(0,10);
     $('kategori-list').innerHTML = katSirali.length
       ? cubukHtml(katSirali, true) : '<div class="v1-bos">Kategori bilgisi yok.</div>';
 
-    // Yıllık grafik — ⚠️ Chart.js CSS değişkeni okumaz, v1 renkleri sabit hex verilir
+    // YÄ±llÄ±k grafik â€” âš ï¸ Chart.js CSS deÄŸiÅŸkeni okumaz, v1 renkleri sabit hex verilir
     const yilSay = {};
     rows.forEach(i => {
       const t = i.ilan_tarihi || i.son_teklif_tarihi;
@@ -1220,7 +1227,7 @@
       if (_yilChart) _yilChart.destroy();
       _yilChart = new Chart(ctx, {
         type:'bar',
-        data:{ labels:yillar, datasets:[{ label:'İhale', data:yillar.map(y => yilSay[y]),
+        data:{ labels:yillar, datasets:[{ label:'Ä°hale', data:yillar.map(y => yilSay[y]),
           backgroundColor:C.ikinci, borderColor:C.mavi, borderWidth:1, borderRadius:5 }] },
         options:{
           responsive:true, maintainAspectRatio:false,
@@ -1236,7 +1243,7 @@
     }
   }
 
-  /* ── Katıldığı İhaleler sekmesi ───────────────────────────────────── */
+  /* â”€â”€ KatÄ±ldÄ±ÄŸÄ± Ä°haleler sekmesi â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   function sonuclariGoster(){
     const kap = $('sonuclar-kaplayici');
     if (!kap) return;
@@ -1244,10 +1251,10 @@
     aiYorumKartiGoster();
     if (!sonucVeri.length){
       kap.innerHTML = `<div class="fa-bos-kart">
-        <div class="fa-bos-ikon">🔍</div>
-        <div class="fa-bos-bas">Kayıtlı kazanım verisi bulunamadı</div>
-        <div class="fa-bos-alt">EKAP sonuç ilanlarından bu firma ismiyle eşleşen kazanım henüz toplanmamış.
-          Sistem her gece otomatik tarama yapmaktadır — yeni sonuçlar biriktiğinde burada görünür.</div>
+        <div class="fa-bos-ikon">ğŸ”</div>
+        <div class="fa-bos-bas">KayÄ±tlÄ± kazanÄ±m verisi bulunamadÄ±</div>
+        <div class="fa-bos-alt">EKAP sonuÃ§ ilanlarÄ±ndan bu firma ismiyle eÅŸleÅŸen kazanÄ±m henÃ¼z toplanmamÄ±ÅŸ.
+          Sistem her gece otomatik tarama yapmaktadÄ±r â€” yeni sonuÃ§lar biriktiÄŸinde burada gÃ¶rÃ¼nÃ¼r.</div>
       </div>`;
       $('sonuc-pager').style.display = 'none';
       return;
@@ -1262,29 +1269,29 @@
     kap.innerHTML = `
       <div class="fa-kpi uclu">
         <div class="fa-k">
-          <div class="fa-k-et">Katıldığı / Kazandığı İhale</div>
+          <div class="fa-k-et">KatÄ±ldÄ±ÄŸÄ± / KazandÄ±ÄŸÄ± Ä°hale</div>
           <div class="fa-k-v mavi">${num(gosterAdet)}</div>
           <div class="fa-k-alt">${ORNEKLEM_KESIK
-            ? `EKAP kaydı · aşağıdaki analizler son ${num(kayitSayisi)} kayıttan`
-            : 'EKAP ihale sonuç kaydı'}</div>
+            ? `EKAP kaydÄ± Â· aÅŸaÄŸÄ±daki analizler son ${num(kayitSayisi)} kayÄ±ttan`
+            : 'EKAP ihale sonuÃ§ kaydÄ±'}</div>
         </div>
         <div class="fa-k">
-          <div class="fa-k-et">Toplam Sözleşme <span class="fa-rozet" title="Yalnız ihaleler — bu firmanın doğrudan temin kazanımları toplama dahil DEĞİL">yalnız ihaleler</span></div>
+          <div class="fa-k-et">Toplam SÃ¶zleÅŸme <span class="fa-rozet" title="YalnÄ±z ihaleler â€” bu firmanÄ±n doÄŸrudan temin kazanÄ±mlarÄ± toplama dahil DEÄÄ°L">yalnÄ±z ihaleler</span></div>
           <div class="fa-k-v" style="font-size:17px;">${paraTam(toplamBedel)}</div>
-          <div class="fa-k-alt" title="Doğrudan temin kazanımları bu tutara dahil değildir.">${ornekEtiketi(kayitSayisi)}</div>
+          <div class="fa-k-alt" title="DoÄŸrudan temin kazanÄ±mlarÄ± bu tutara dahil deÄŸildir.">${ornekEtiketi(kayitSayisi)}</div>
         </div>
         <div class="fa-k">
-          <div class="fa-k-et">Ort. Tenzilat <span class="fa-rozet" title="Yalnız tek kısımlı ihaleler — çok kısımlı ihalede EKAP kısım bazlı yaklaşık maliyet yayımlamadığından tenzilat hesaplanamaz">yalnız tek kısımlı ihale</span></div>
-          <div class="fa-k-v mavi">${ortTenz != null ? '%'+ortTenz.toFixed(1) : '—'}</div>
-          <div class="fa-k-alt" title="Kısımlı ihalelerde tenzilat hesaplanamaz; ortalamaya katılmaz.">${
+          <div class="fa-k-et">Ort. Tenzilat <span class="fa-rozet" title="YalnÄ±z tek kÄ±sÄ±mlÄ± ihaleler â€” Ã§ok kÄ±sÄ±mlÄ± ihalede EKAP kÄ±sÄ±m bazlÄ± yaklaÅŸÄ±k maliyet yayÄ±mlamadÄ±ÄŸÄ±ndan tenzilat hesaplanamaz">yalnÄ±z tek kÄ±sÄ±mlÄ± ihale</span></div>
+          <div class="fa-k-v mavi">${ortTenz != null ? '%'+ortTenz.toFixed(1) : 'â€”'}</div>
+          <div class="fa-k-alt" title="KÄ±sÄ±mlÄ± ihalelerde tenzilat hesaplanamaz; ortalamaya katÄ±lmaz.">${
             ortTenz != null
-              ? `${num(tenzList.length)} / ${num(kayitSayisi)} ${ORNEKLEM_KESIK ? 'örneklem kaydı' : 'ihale'} (tek kısımlı)${kisimliAdet ? ` · ${num(kisimliAdet)} kısımlı hariç` : ''}`
-              : (kisimliAdet ? `${num(kisimliAdet)} kısımlı ihale — hesaplanamaz` : 'sözleşme indirimi')
+              ? `${num(tenzList.length)} / ${num(kayitSayisi)} ${ORNEKLEM_KESIK ? 'Ã¶rneklem kaydÄ±' : 'ihale'} (tek kÄ±sÄ±mlÄ±)${kisimliAdet ? ` Â· ${num(kisimliAdet)} kÄ±sÄ±mlÄ± hariÃ§` : ''}`
+              : (kisimliAdet ? `${num(kisimliAdet)} kÄ±sÄ±mlÄ± ihale â€” hesaplanamaz` : 'sÃ¶zleÅŸme indirimi')
           }</div>
         </div>
       </div>
       <div id="sonuc-liste"></div>`;
-    // Mevcut sayfayı koru (sekme gidiş-dönüşünde 1'e sıfırlanmasın); clamp sonucSayfaGoster içinde
+    // Mevcut sayfayÄ± koru (sekme gidiÅŸ-dÃ¶nÃ¼ÅŸÃ¼nde 1'e sÄ±fÄ±rlanmasÄ±n); clamp sonucSayfaGoster iÃ§inde
     sonucSayfaGoster(sayfa);
   }
 
@@ -1292,15 +1299,15 @@
     const ilan = s.ilan || {};
     const tenzVal = tenzilatDegeri(s);
     const tenz = Number(s.lot_sayisi) > 1
-      ? `<span class="fa-durum notr" title="Kısımlı ihale — EKAP kısım bazlı yaklaşık maliyet yayımlamadığından tenzilat hesaplanamaz">${num(s.lot_sayisi)} kısımlı</span>`
+      ? `<span class="fa-durum notr" title="KÄ±sÄ±mlÄ± ihale â€” EKAP kÄ±sÄ±m bazlÄ± yaklaÅŸÄ±k maliyet yayÄ±mlamadÄ±ÄŸÄ±ndan tenzilat hesaplanamaz">${num(s.lot_sayisi)} kÄ±sÄ±mlÄ±</span>`
       : (tenzVal != null ? `<span class="fa-durum iyi">%${Number(tenzVal).toFixed(1)} tenz.</span>` : '');
     const bedel = s.sozlesme_bedeli || s.kazanan_teklif;
     const teklifSay = s.katilimci_sayisi || s.toplam_teklif_sayisi;
-    const baslik = ilan.baslik || (s.ikn ? `İhale ${s.ikn}${s.kisim_no ? ' · Kısım '+s.kisim_no : ''}` : 'İhale kaydı');
-    // İhaleyi YAPAN kurum — v1 kurum analizine link (v1-kurum-analiz ?kurum= parametresini okur)
+    const baslik = ilan.baslik || (s.ikn ? `Ä°hale ${s.ikn}${s.kisim_no ? ' Â· KÄ±sÄ±m '+s.kisim_no : ''}` : 'Ä°hale kaydÄ±');
+    // Ä°haleyi YAPAN kurum â€” v1 kurum analizine link (v1-kurum-analiz ?kurum= parametresini okur)
     const idareHtml = ilan.idare
-      ? `<a href="v1-kurum-analiz?kurum=${encodeURIComponent(ilan.idare)}" style="color:var(--v1-muted);">🏛️ ${esc(ilan.idare)}</a>` : '';
-    const firmaHtml = s.kazanan_firma ? `<span>🏢 ${esc(s.kazanan_firma)}</span>` : '';
+      ? `<a href="v1-kurum-analiz?kurum=${encodeURIComponent(ilan.idare)}" style="color:var(--v1-muted);">ğŸ›ï¸ ${esc(ilan.idare)}</a>` : '';
+    const firmaHtml = s.kazanan_firma ? `<span>ğŸ¢ ${esc(s.kazanan_firma)}</span>` : '';
     const detayLink = ilan.id ? `v1-ihale-detay?id=${encodeURIComponent(ilan.id)}` : null;
     return `<div class="fa-ik">
       <div class="fa-ik-ust">
@@ -1311,13 +1318,13 @@
       <div class="fa-ik-satir">${idareHtml}${firmaHtml}</div>
       <div class="fa-ik-meta">
         ${ilan.tur ? `<span class="fa-etiket">${esc(ilan.tur)}</span>` : ''}
-        ${ilan.il ? `<span>📍 ${esc(ilan.il)}</span>` : ''}
+        ${ilan.il ? `<span>ğŸ“ ${esc(ilan.il)}</span>` : ''}
         ${bedel ? `<span class="fa-ik-bedel">${paraTam(bedel)}</span>` : ''}
-        ${s.sonuc_tarihi ? `<span>📅 ${tarihF(s.sonuc_tarihi)}</span>` : ''}
-        ${teklifSay ? `<span>👥 ${num(teklifSay)} teklif</span>` : ''}
+        ${s.sonuc_tarihi ? `<span>ğŸ“… ${tarihF(s.sonuc_tarihi)}</span>` : ''}
+        ${teklifSay ? `<span>ğŸ‘¥ ${num(teklifSay)} teklif</span>` : ''}
         ${(Number(s.en_dusuk_teklif)>0 && Number(s.en_yuksek_teklif)>0)
-          ? `<span title="İhaleye verilen tekliflerin en düşük–en yüksek aralığı (EKAP kişi bazlı liste yayımlamaz)">📊 ${paraTam(s.en_dusuk_teklif)} – ${paraTam(s.en_yuksek_teklif)}</span>` : ''}
-        ${(Number(s.yaklasik_maliyet)>0) ? `<span title="Yaklaşık maliyet">🎯 ${paraTam(s.yaklasik_maliyet)}</span>` : ''}
+          ? `<span title="Ä°haleye verilen tekliflerin en dÃ¼ÅŸÃ¼kâ€“en yÃ¼ksek aralÄ±ÄŸÄ± (EKAP kiÅŸi bazlÄ± liste yayÄ±mlamaz)">ğŸ“Š ${paraTam(s.en_dusuk_teklif)} â€“ ${paraTam(s.en_yuksek_teklif)}</span>` : ''}
+        ${(Number(s.yaklasik_maliyet)>0) ? `<span title="YaklaÅŸÄ±k maliyet">ğŸ¯ ${paraTam(s.yaklasik_maliyet)}</span>` : ''}
       </div>
     </div>`;
   }
@@ -1337,12 +1344,12 @@
     pg.querySelector('[data-yon="son"]').disabled  = sayfa >= topSayfa;
   }
 
-  /* ── Katıldığı Doğrudan Teminler sekmesi (firma_dt_liste) — ihaleden AYRI ── */
+  /* â”€â”€ KatÄ±ldÄ±ÄŸÄ± DoÄŸrudan Teminler sekmesi (firma_dt_liste) â€” ihaleden AYRI â”€â”€ */
   function dtKartHtml(r){
     const link = r.dt_no ? `v1-dt-detay?dt_no=${encodeURIComponent(r.dt_no)}` : null;
-    const baslik = r.baslik || (r.dt_no ? 'Doğrudan Temin ' + r.dt_no : 'DT kaydı');
+    const baslik = r.baslik || (r.dt_no ? 'DoÄŸrudan Temin ' + r.dt_no : 'DT kaydÄ±');
     const idareHtml = r.idare
-      ? `<a href="v1-kurum-analiz?kurum=${encodeURIComponent(r.idare)}" style="color:var(--v1-muted);">🏛️ ${esc(r.idare)}</a>` : '';
+      ? `<a href="v1-kurum-analiz?kurum=${encodeURIComponent(r.idare)}" style="color:var(--v1-muted);">ğŸ›ï¸ ${esc(r.idare)}</a>` : '';
     return `<div class="fa-ik">
       <div class="fa-ik-ust">
         ${link ? `<a class="fa-ik-bas" href="${link}">${esc(baslik)}</a>` : `<span class="fa-ik-bas">${esc(baslik)}</span>`}
@@ -1351,11 +1358,11 @@
       <div class="fa-ik-satir">${idareHtml}</div>
       <div class="fa-ik-meta">
         ${r.tur ? `<span class="fa-etiket">${esc(r.tur)}</span>` : ''}
-        ${r.il ? `<span>📍 ${esc(r.il)}</span>` : ''}
+        ${r.il ? `<span>ğŸ“ ${esc(r.il)}</span>` : ''}
         ${r.kazanan_bedel ? `<span class="fa-ik-bedel">${paraTam(r.kazanan_bedel)}</span>` : ''}
-        ${r.tarih ? `<span>📅 ${tarihF(r.tarih)}</span>` : ''}
+        ${r.tarih ? `<span>ğŸ“… ${tarihF(r.tarih)}</span>` : ''}
         ${(Number(r.en_dusuk_teklif)>0 && Number(r.en_yuksek_teklif)>0)
-          ? `<span title="Doğrudan temine verilen tekliflerin en düşük–en yüksek aralığı">📊 ${paraTam(r.en_dusuk_teklif)} – ${paraTam(r.en_yuksek_teklif)}</span>` : ''}
+          ? `<span title="DoÄŸrudan temine verilen tekliflerin en dÃ¼ÅŸÃ¼kâ€“en yÃ¼ksek aralÄ±ÄŸÄ±">ğŸ“Š ${paraTam(r.en_dusuk_teklif)} â€“ ${paraTam(r.en_yuksek_teklif)}</span>` : ''}
         ${r.kategori ? `<span>${esc(r.kategori)}</span>` : ''}
       </div>
     </div>`;
@@ -1365,7 +1372,7 @@
     const kap = $('dt-liste-kaplayici'), pg = $('dt-pager');
     if (!kap) return;
     dtSayfa = Math.max(1, Number(s) || 1);
-    kap.innerHTML = '<div class="fa-bos-kart"><div class="fa-spin"></div><div style="font-size:13px;color:var(--v1-muted);">Yükleniyor…</div></div>';
+    kap.innerHTML = '<div class="fa-bos-kart"><div class="fa-spin"></div><div style="font-size:13px;color:var(--v1-muted);">YÃ¼kleniyorâ€¦</div></div>';
     try{
       const { data, error } = await sb.rpc('firma_dt_liste',
         { p_firma_ad: FIRMA, p_limit: PER_PAGE, p_offset: (dtSayfa-1)*PER_PAGE });
@@ -1373,18 +1380,18 @@
       const rows = data || [];
       if (!rows.length && dtSayfa === 1){
         kap.innerHTML = `<div class="fa-bos-kart">
-          <div class="fa-bos-ikon">⚡</div>
-          <div class="fa-bos-bas">Doğrudan temin kazanımı bulunamadı</div>
-          <div class="fa-bos-alt">Bu firma adıyla eşleşen doğrudan temin kaydı henüz toplanmamış.</div></div>`;
+          <div class="fa-bos-ikon">âš¡</div>
+          <div class="fa-bos-bas">DoÄŸrudan temin kazanÄ±mÄ± bulunamadÄ±</div>
+          <div class="fa-bos-alt">Bu firma adÄ±yla eÅŸleÅŸen doÄŸrudan temin kaydÄ± henÃ¼z toplanmamÄ±ÅŸ.</div></div>`;
         if (pg) pg.style.display = 'none'; return;
       }
       const toplam = DT_SAYISI || rows.length;
       kap.innerHTML = `
         <div class="fa-kpi uclu" style="margin-bottom:14px;">
-          <div class="fa-k"><div class="fa-k-et">Kazanılan DT <span class="fa-rozet" style="background:#F5E6C0;color:#8A5A00;" title="4734/22 doğrudan temin — ihale evreninden AYRI">yalnız DT</span></div>
-            <div class="fa-k-v mavi">${num(toplam)}</div><div class="fa-k-alt">doğrudan temin sözleşmesi</div></div>
-          <div class="fa-k"><div class="fa-k-et">Bu Sayfada</div><div class="fa-k-v" style="font-size:17px;">${num(rows.length)}</div><div class="fa-k-alt">kayıt gösteriliyor</div></div>
-          <div class="fa-k"><div class="fa-k-et">Sıralama</div><div class="fa-k-v" style="font-size:15px;">Tarihe göre</div><div class="fa-k-alt">en yeni önce</div></div>
+          <div class="fa-k"><div class="fa-k-et">KazanÄ±lan DT <span class="fa-rozet" style="background:#F5E6C0;color:#8A5A00;" title="4734/22 doÄŸrudan temin â€” ihale evreninden AYRI">yalnÄ±z DT</span></div>
+            <div class="fa-k-v mavi">${num(toplam)}</div><div class="fa-k-alt">doÄŸrudan temin sÃ¶zleÅŸmesi</div></div>
+          <div class="fa-k"><div class="fa-k-et">Bu Sayfada</div><div class="fa-k-v" style="font-size:17px;">${num(rows.length)}</div><div class="fa-k-alt">kayÄ±t gÃ¶steriliyor</div></div>
+          <div class="fa-k"><div class="fa-k-et">SÄ±ralama</div><div class="fa-k-v" style="font-size:15px;">Tarihe gÃ¶re</div><div class="fa-k-alt">en yeni Ã¶nce</div></div>
         </div>
         <div id="dt-liste"></div>`;
       $('dt-liste').innerHTML = rows.map(dtKartHtml).join('');
@@ -1398,13 +1405,13 @@
         pg.querySelector('[data-yon="son"]').disabled  = dtSayfa >= top;
       }
     }catch(e){
-      kap.innerHTML = `<div class="fa-bos-kart"><div class="fa-bos-bas">Liste yüklenemedi</div>
+      kap.innerHTML = `<div class="fa-bos-kart"><div class="fa-bos-bas">Liste yÃ¼klenemedi</div>
         <div class="fa-bos-alt">${esc((e && e.message) || '')}</div></div>`;
       if (pg) pg.style.display = 'none';
     }
   }
 
-  /* ── analiz_pivot kırılımı (idare + sektör) ───────────────────────── */
+  /* â”€â”€ analiz_pivot kÄ±rÄ±lÄ±mÄ± (idare + sektÃ¶r) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   async function pivotKirilimGoster(){
     if (_pivotYuklendi || !FIRMA) return;
     const hedef = $('pivot-kaplayici');
@@ -1420,43 +1427,43 @@
         <div class="fa-satir">
           <span class="sol">${ikon} ${esc(r.grup_deger)}</span>
           <span style="display:flex;gap:10px;align-items:center;flex-shrink:0;color:var(--v1-muted);font-size:12px;">
-            <span class="sag">${num(r.ihale_sayisi)} iş</span>
+            <span class="sag">${num(r.ihale_sayisi)} iÅŸ</span>
             ${r.ort_tenzilat != null ? `<span>ort. %${Number(r.ort_tenzilat).toFixed(1)} tenz.</span>` : ''}
           </span>
         </div>`).join('') || '<div class="v1-bos">Veri yok.</div>';
       if ((idareData && idareData.length) || (katData && katData.length)){
         hedef.innerHTML = `<div class="fa-ikili" style="margin-top:18px;">
           <div class="v1-kart" style="margin-bottom:0;">
-            <div class="v1-kart-baslik">🏛️ En Çok Çalıştığı İdareler</div>${satirlar(idareData,'📍')}
+            <div class="v1-kart-baslik">ğŸ›ï¸ En Ã‡ok Ã‡alÄ±ÅŸtÄ±ÄŸÄ± Ä°dareler</div>${satirlar(idareData,'ğŸ“')}
           </div>
           <div class="v1-kart" style="margin-bottom:0;">
-            <div class="v1-kart-baslik">🏭 Sektör Kırılımı</div>${satirlar(katData,'🏷️')}
+            <div class="v1-kart-baslik">ğŸ­ SektÃ¶r KÄ±rÄ±lÄ±mÄ±</div>${satirlar(katData,'ğŸ·ï¸')}
           </div>
         </div>`;
       }
     }catch(err){
-      // analiz_pivot üyeye özel / timeout — sessizce atla, sayfa çalışmaya devam etsin
-      console.info('analiz_pivot kullanılamıyor:', err && err.message);
+      // analiz_pivot Ã¼yeye Ã¶zel / timeout â€” sessizce atla, sayfa Ã§alÄ±ÅŸmaya devam etsin
+      console.info('analiz_pivot kullanÄ±lamÄ±yor:', err && err.message);
     }
   }
 
-  /* ── 🤖 AI Rakip Analizi (Pro; free'de bulanık önizleme + CTA) ─────── */
+  /* â”€â”€ ğŸ¤– AI Rakip Analizi (Pro; free'de bulanÄ±k Ã¶nizleme + CTA) â”€â”€â”€â”€â”€â”€â”€ */
   function aiYorumKartiGoster(){
     const hedef = $('ai-kaplayici');
     if (!hedef || !FIRMA) return;
     if (!proMu){
       hedef.innerHTML = `<div class="v1-kart" style="margin-top:16px;position:relative;overflow:hidden;">
-        <div class="v1-kart-baslik">🤖 AI Rakip Analizi</div>
+        <div class="v1-kart-baslik">ğŸ¤– AI Rakip Analizi</div>
         <div style="filter:blur(4px);pointer-events:none;font-size:12.5px;color:var(--v1-muted);line-height:1.7;">
-          Bu firma X idaresinde baskın, Y sektöründe agresif tenzilat veriyor, son dönemde Z'ye yöneliyor…
+          Bu firma X idaresinde baskÄ±n, Y sektÃ¶rÃ¼nde agresif tenzilat veriyor, son dÃ¶nemde Z'ye yÃ¶neliyorâ€¦
         </div>
-        <a class="fa-btn-ana" style="margin-top:12px;" href="fiyatlandirma_odeme_bolumu">Pro'ya Geç ve Aç</a>
+        <a class="fa-btn-ana" style="margin-top:12px;" href="fiyatlandirma_odeme_bolumu">Pro'ya GeÃ§ ve AÃ§</a>
       </div>`;
       return;
     }
     hedef.innerHTML = `<div class="v1-kart" style="margin-top:16px;">
-      <div class="v1-kart-baslik">🤖 AI Rakip Analizi</div>
-      <button class="fa-btn-ana" id="ai-btn">Analizi Oluştur (1 kredi)</button>
+      <div class="v1-kart-baslik">ğŸ¤– AI Rakip Analizi</div>
+      <button class="fa-btn-ana" id="ai-btn">Analizi OluÅŸtur (1 kredi)</button>
       <div id="ai-metin" style="margin-top:12px;font-size:13px;color:var(--v1-metin);line-height:1.75;white-space:pre-line;"></div>
     </div>`;
     $('ai-btn').addEventListener('click', aiYorumUret);
@@ -1465,13 +1472,13 @@
   async function aiYorumUret(){
     const btn = $('ai-btn'), metinEl = $('ai-metin');
     if (!btn || !metinEl) return;
-    btn.disabled = true; btn.textContent = 'Oluşturuluyor…';
+    btn.disabled = true; btn.textContent = 'OluÅŸturuluyorâ€¦';
     try{
       const { data: oturum } = await sb.auth.getSession();
       const jeton = oturum && oturum.session && oturum.session.access_token;
       if (!jeton){
-        metinEl.innerHTML = 'Analiz için <a href="login">giriş yapın</a>.';
-        btn.disabled = false; btn.textContent = 'Analizi Oluştur (1 kredi)'; return;
+        metinEl.innerHTML = 'Analiz iÃ§in <a href="login">giriÅŸ yapÄ±n</a>.';
+        btn.disabled = false; btn.textContent = 'Analizi OluÅŸtur (1 kredi)'; return;
       }
       const yanit = await fetch(SB_URL + '/api/ai/firma-yorum', {
         method:'POST',
@@ -1479,11 +1486,11 @@
         body: JSON.stringify({ firma: FIRMA })
       });
       if (yanit.status === 402){
-        metinEl.innerHTML = 'Yetersiz kredi. <a href="fiyatlandirma_odeme_bolumu">Paket yükseltin →</a>';
+        metinEl.innerHTML = 'Yetersiz kredi. <a href="fiyatlandirma_odeme_bolumu">Paket yÃ¼kseltin â†’</a>';
         btn.disabled = false; btn.textContent = 'Tekrar Dene'; return;
       }
       if (yanit.status === 401){
-        metinEl.innerHTML = 'Oturumunuz sona ermiş. <a href="login">Yeniden giriş yapın</a>.';
+        metinEl.innerHTML = 'Oturumunuz sona ermiÅŸ. <a href="login">Yeniden giriÅŸ yapÄ±n</a>.';
         btn.disabled = false; btn.textContent = 'Tekrar Dene'; return;
       }
       if (!yanit.ok) throw new Error('sunucu ' + yanit.status);
@@ -1492,28 +1499,28 @@
         metinEl.textContent = sonuc.metin;
         btn.style.display = 'none';
       } else {
-        metinEl.textContent = 'Analiz oluşturulamadı. Lütfen daha sonra tekrar deneyin.';
+        metinEl.textContent = 'Analiz oluÅŸturulamadÄ±. LÃ¼tfen daha sonra tekrar deneyin.';
         btn.disabled = false; btn.textContent = 'Tekrar Dene';
       }
     }catch(err){
-      metinEl.textContent = 'Bu özellik şu an kullanılamıyor, lütfen daha sonra tekrar deneyin.';
+      metinEl.textContent = 'Bu Ã¶zellik ÅŸu an kullanÄ±lamÄ±yor, lÃ¼tfen daha sonra tekrar deneyin.';
       btn.disabled = false; btn.textContent = 'Tekrar Dene';
     }
   }
 
-  /* ── ⭐ Rakip takibi ──────────────────────────────────────────────── */
+  /* â”€â”€ â­ Rakip takibi â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
   async function firmaTakipDurumuGuncelle(){
     const btn = $('btn-takip');
     if (!btn || !FIRMA) return;
     try{
       const { data:{ user } } = await sb.auth.getUser();
-      if (!user){ btn.textContent = '⭐ Rakibi Takip Et'; btn.dataset.takipte = ''; return; }
+      if (!user){ btn.textContent = 'â­ Rakibi Takip Et'; btn.dataset.takipte = ''; return; }
       const { data } = await sb.from('takip_firmalar')
         .select('id').eq('kullanici_id', user.id).eq('firma_ad', FIRMA).limit(1);
       const takipte = !!(data && data.length);
-      btn.textContent = takipte ? '✓ Takip Ediliyor' : '⭐ Rakibi Takip Et';
+      btn.textContent = takipte ? 'âœ“ Takip Ediliyor' : 'â­ Rakibi Takip Et';
       btn.dataset.takipte = takipte ? '1' : '';
-    }catch(_){ /* takip_firmalar yoksa sessizce geç */ }
+    }catch(_){ /* takip_firmalar yoksa sessizce geÃ§ */ }
   }
   async function firmaTakipToggle(){
     if (!FIRMA) return;
@@ -1533,17 +1540,17 @@
       }
       firmaTakipDurumuGuncelle();
     }catch(e){
-      alert('Takip işlemi şu an yapılamıyor, lütfen daha sonra tekrar deneyin.');
+      alert('Takip iÅŸlemi ÅŸu an yapÄ±lamÄ±yor, lÃ¼tfen daha sonra tekrar deneyin.');
     }
   }
 
-  /* ══════════════ ⚖️ FİRMA KARŞILAŞTIRMA ══════════════ */
+  /* â•â•â•â•â•â•â•â•â•â•â•â•â•â• âš–ï¸ FÄ°RMA KARÅILAÅTIRMA â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
   function _karsVeri(yid){
     return Promise.all([
       sb.from('yukleniciler')
         .select('id,ad,il,toplam_sozlesme_sayisi,toplam_ciro,ilk_sozlesme_tarihi,son_sozlesme_tarihi')
         .eq('id', yid).limit(1),
-      // lot_sayisi ŞART: onsuz tenzilat ortalamasına çok kısımlı ihalelerin sahte %95'leri karışır
+      // lot_sayisi ÅART: onsuz tenzilat ortalamasÄ±na Ã§ok kÄ±sÄ±mlÄ± ihalelerin sahte %95'leri karÄ±ÅŸÄ±r
       sb.from('ihale_sonuclari')
         .select('kazanan_teklif,sozlesme_bedeli,tenzilat_yuzde,kazanan_teklif_farki_yuzde,lot_sayisi,ilanlar(idare,il,kategori)')
         .eq('yuklenici_id', yid).limit(SONUC_LIMIT),
@@ -1573,11 +1580,11 @@
     $('fa-kars-ov').style.display = 'block';
     $('kars-icerik').innerHTML = `
       <div style="margin-bottom:6px;font-size:13px;color:var(--v1-metin);font-weight:700;">
-        1. firma: <span style="color:var(--v1-mavi);">${esc(FIRMA || '—')}</span></div>
-      <div style="font-size:12.5px;color:var(--v1-muted);margin-bottom:10px;">Karşılaştırmak istediğiniz 2. firmayı arayın:</div>
+        1. firma: <span style="color:var(--v1-mavi);">${esc(FIRMA || 'â€”')}</span></div>
+      <div style="font-size:12.5px;color:var(--v1-muted);margin-bottom:10px;">KarÅŸÄ±laÅŸtÄ±rmak istediÄŸiniz 2. firmayÄ± arayÄ±n:</div>
       <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;">
-        <input id="kars-ara-input" class="fa-sel" style="flex:1;min-width:220px;cursor:text;" placeholder="2. firma adı…" />
-        <button class="fa-btn-ana" id="kars-ara-btn">Ara →</button>
+        <input id="kars-ara-input" class="fa-sel" style="flex:1;min-width:220px;cursor:text;" placeholder="2. firma adÄ±â€¦" />
+        <button class="fa-btn-ana" id="kars-ara-btn">Ara â†’</button>
       </div>
       <div id="kars-ara-sonuc"></div>`;
     $('kars-ara-btn').addEventListener('click', karsilastirAra);
@@ -1590,7 +1597,7 @@
     const term = ($('kars-ara-input').value || '').trim();
     if (!term) return;
     const kap = $('kars-ara-sonuc');
-    kap.innerHTML = '<div class="v1-bos">Aranıyor…</div>';
+    kap.innerHTML = '<div class="v1-bos">AranÄ±yorâ€¦</div>';
     const { data, error } = await sb.from('yukleniciler')
       .select('id,ad,il,toplam_sozlesme_sayisi,toplam_ciro')
       .ilike('arama_fold', `%${trFold(term)}%`)
@@ -1598,59 +1605,59 @@
       .limit(30);
     if (error){
       kap.innerHTML = `<div class="v1-bos">${kilitliMi(error)
-        ? '🔒 Firma araması üyelere özeldir. <a href="login">Giriş yapın</a> veya <a href="fiyatlandirma_odeme_bolumu">üye olun</a> →'
-        : 'Arama yapılamadı.'}</div>`;
+        ? 'ğŸ”’ Firma aramasÄ± Ã¼yelere Ã¶zeldir. <a href="login">GiriÅŸ yapÄ±n</a> veya <a href="fiyatlandirma_odeme_bolumu">Ã¼ye olun</a> â†’'
+        : 'Arama yapÄ±lamadÄ±.'}</div>`;
       return;
     }
     const liste = (data || []).filter(f => f.id !== AKTIF_YID);
-    if (!liste.length){ kap.innerHTML = '<div class="v1-bos">Eşleşen başka firma bulunamadı.</div>'; return; }
+    if (!liste.length){ kap.innerHTML = '<div class="v1-bos">EÅŸleÅŸen baÅŸka firma bulunamadÄ±.</div>'; return; }
     kap.innerHTML = liste.map(f => `
       <div class="fa-fk" style="margin-bottom:8px;" data-kars-yid="${esc(f.id)}">
         <div>
-          <div class="fa-fk-ad">${esc(f.ad || '—')}</div>
+          <div class="fa-fk-ad">${esc(f.ad || 'â€”')}</div>
           <div class="fa-fk-stat">
-            <span>📋 <b>${num(f.toplam_sozlesme_sayisi)}</b> sözleşme</span>
-            <span>💰 <b>${paraTam(f.toplam_ciro)}</b></span>
-            ${f.il ? `<span>📍 ${esc(f.il)}</span>` : ''}
+            <span>ğŸ“‹ <b>${num(f.toplam_sozlesme_sayisi)}</b> sÃ¶zleÅŸme</span>
+            <span>ğŸ’° <b>${paraTam(f.toplam_ciro)}</b></span>
+            ${f.il ? `<span>ğŸ“ ${esc(f.il)}</span>` : ''}
           </div>
         </div>
-        <div class="fa-fk-sec">Seç →</div>
+        <div class="fa-fk-sec">SeÃ§ â†’</div>
       </div>`).join('');
   }
 
   async function karsilastirSec(yidB){
     const kap = $('kars-icerik');
     kap.innerHTML = `<div class="fa-bos-kart"><div class="fa-spin"></div>
-      <div style="font-size:13px;color:var(--v1-muted);">İki firma karşılaştırılıyor…</div></div>`;
+      <div style="font-size:13px;color:var(--v1-muted);">Ä°ki firma karÅŸÄ±laÅŸtÄ±rÄ±lÄ±yorâ€¦</div></div>`;
     try{
       const [vA, vB] = await Promise.all([_karsVeri(AKTIF_YID), _karsVeri(yidB)]);
-      if (!vA.y || !vB.y){ kap.innerHTML = '<div class="v1-bos">Firma verisi alınamadı.</div>'; return; }
+      if (!vA.y || !vB.y){ kap.innerHTML = '<div class="v1-bos">Firma verisi alÄ±namadÄ±.</div>'; return; }
       _karsCiz(vA, vB);
     }catch(e){
-      kap.innerHTML = '<div class="v1-bos">Karşılaştırma yüklenemedi. Tekrar deneyin.</div>';
+      kap.innerHTML = '<div class="v1-bos">KarÅŸÄ±laÅŸtÄ±rma yÃ¼klenemedi. Tekrar deneyin.</div>';
     }
   }
 
   function _karsCiz(vA, vB){
     const oA = _karsOzet(vA), oB = _karsOzet(vB);
     const s = n => (Number(n) || 0);
-    const rozet = '<span class="fa-rozet" title="Yalnız ihaleler — doğrudan temin kazanımları dahil değil">yalnız ihaleler</span>';
-    const tenzRozet = '<span class="fa-rozet" title="Yalnız tek kısımlı ihaleler — çok kısımlı ihalede kısım bazlı yaklaşık maliyet yayımlanmadığından tenzilat hesaplanamaz">yalnız tek kısımlı ihale</span>';
-    const ornekNotu = o => (o.kesik ? `son ${num(o.ornek)} kayıttan` : '');
-    // Tenzilat paydası: kesme varsa "N / 500" YAZILMAZ — 500 veri değil limit değeridir.
+    const rozet = '<span class="fa-rozet" title="YalnÄ±z ihaleler â€” doÄŸrudan temin kazanÄ±mlarÄ± dahil deÄŸil">yalnÄ±z ihaleler</span>';
+    const tenzRozet = '<span class="fa-rozet" title="YalnÄ±z tek kÄ±sÄ±mlÄ± ihaleler â€” Ã§ok kÄ±sÄ±mlÄ± ihalede kÄ±sÄ±m bazlÄ± yaklaÅŸÄ±k maliyet yayÄ±mlanmadÄ±ÄŸÄ±ndan tenzilat hesaplanamaz">yalnÄ±z tek kÄ±sÄ±mlÄ± ihale</span>';
+    const ornekNotu = o => (o.kesik ? `son ${num(o.ornek)} kayÄ±ttan` : '');
+    // Tenzilat paydasÄ±: kesme varsa "N / 500" YAZILMAZ â€” 500 veri deÄŸil limit deÄŸeridir.
     const tenzPayda = o => {
       if (o.ortTenz == null) return '';
-      const haric = o.kisimli ? ` · ${num(o.kisimli)} kısımlı hariç` : '';
+      const haric = o.kisimli ? ` Â· ${num(o.kisimli)} kÄ±sÄ±mlÄ± hariÃ§` : '';
       return o.kesik
-        ? `${num(o.tenzAdet)} tek kısımlı ihale · son ${num(o.ornek)} kayıtlık örneklemden${haric}`
-        : `${num(o.tenzAdet)} / ${num(o.ornek)} ihale üzerinden (tek kısımlı)${haric}`;
+        ? `${num(o.tenzAdet)} tek kÄ±sÄ±mlÄ± ihale Â· son ${num(o.ornek)} kayÄ±tlÄ±k Ã¶rneklemden${haric}`
+        : `${num(o.tenzAdet)} / ${num(o.ornek)} ihale Ã¼zerinden (tek kÄ±sÄ±mlÄ±)${haric}`;
     };
     const kpiler = [
-      ['Toplam sözleşme', s(vA.y.toplam_sozlesme_sayisi), s(vB.y.toplam_sozlesme_sayisi), v => num(v), true, rozet, '', ''],
+      ['Toplam sÃ¶zleÅŸme', s(vA.y.toplam_sozlesme_sayisi), s(vB.y.toplam_sozlesme_sayisi), v => num(v), true, rozet, '', ''],
       ['Toplam ciro',     s(vA.y.toplam_ciro),            s(vB.y.toplam_ciro),            v => paraTam(v), true, rozet, '', ''],
       ['Kapsanan il',     oA.ilSayi,  oB.ilSayi,  v => num(v), true, '', ornekNotu(oA), ornekNotu(oB)],
-      ['Kapsanan sektör', oA.katSayi, oB.katSayi, v => num(v), true, '', ornekNotu(oA), ornekNotu(oB)],
-      ['Ort. tenzilat',   oA.ortTenz, oB.ortTenz, v => (v == null ? '—' : '%'+v.toFixed(1)), null, tenzRozet,
+      ['Kapsanan sektÃ¶r', oA.katSayi, oB.katSayi, v => num(v), true, '', ornekNotu(oA), ornekNotu(oB)],
+      ['Ort. tenzilat',   oA.ortTenz, oB.ortTenz, v => (v == null ? 'â€”' : '%'+v.toFixed(1)), null, tenzRozet,
         tenzPayda(oA), tenzPayda(oB)],
     ];
     const altHtml = t => t ? `<div class="fa-kars-alt">${esc(t)}</div>` : '';
@@ -1677,59 +1684,59 @@
           <div style="height:100%;width:${Math.round(n/katMax*100)}%;background:${renk};border-radius:4px;"></div></div>
       </div>`).join('') || '<div class="v1-bos" style="padding:12px;">Veri yok</div>';
     const orn = o => (o.kesik
-      ? ` <span style="color:var(--v1-muted);font-weight:400;">· son ${num(o.ornek)} kayıt${o.resmiAdet ? ` / ${num(o.resmiAdet)} sözleşme` : ''}</span>`
+      ? ` <span style="color:var(--v1-muted);font-weight:400;">Â· son ${num(o.ornek)} kayÄ±t${o.resmiAdet ? ` / ${num(o.resmiAdet)} sÃ¶zleÅŸme` : ''}</span>`
       : '');
 
     $('kars-icerik').innerHTML = `
       <div class="fa-kars-bas">
         <div class="fa-kars-ad" style="color:${C.mavi};">${esc(vA.y.ad)}</div>
-        <div style="color:var(--v1-muted);font-size:12px;font-weight:800;">KARŞI</div>
+        <div style="color:var(--v1-muted);font-size:12px;font-weight:800;">KARÅI</div>
         <div class="fa-kars-ad" style="color:${C.teal};">${esc(vB.y.ad)}</div>
       </div>
       <div class="fa-kars-tablo">${kpiSatir}</div>
       <div style="font-size:11px;color:var(--v1-muted);text-align:center;margin-top:8px;line-height:1.65;">
-        Yeşil = daha yüksek değer. Tenzilat “iyi/kötü” değil, teklif agresifliği göstergesidir; yalnız
-        <b style="color:var(--v1-lacivert);">tek kısımlı</b> ihalelerden hesaplanır.<br>
-        Tüm parasal değerler <b style="color:var(--v1-lacivert);">yalnız ihale</b> kazanımlarından; doğrudan temin dahil değildir.
+        YeÅŸil = daha yÃ¼ksek deÄŸer. Tenzilat â€œiyi/kÃ¶tÃ¼â€ deÄŸil, teklif agresifliÄŸi gÃ¶stergesidir; yalnÄ±z
+        <b style="color:var(--v1-lacivert);">tek kÄ±sÄ±mlÄ±</b> ihalelerden hesaplanÄ±r.<br>
+        TÃ¼m parasal deÄŸerler <b style="color:var(--v1-lacivert);">yalnÄ±z ihale</b> kazanÄ±mlarÄ±ndan; doÄŸrudan temin dahil deÄŸildir.
       </div>
 
       <div class="fa-ikili" style="margin-top:20px;">
         <div class="v1-kart" style="margin-bottom:0;">
-          <div class="v1-kart-baslik" style="color:${C.mavi};">🏭 Sektör dağılımı${orn(oA)}</div>
+          <div class="v1-kart-baslik" style="color:${C.mavi};">ğŸ­ SektÃ¶r daÄŸÄ±lÄ±mÄ±${orn(oA)}</div>
           ${katBar(katList(oA), C.mavi)}
         </div>
         <div class="v1-kart" style="margin-bottom:0;">
-          <div class="v1-kart-baslik" style="color:${C.teal};">🏭 Sektör dağılımı${orn(oB)}</div>
+          <div class="v1-kart-baslik" style="color:${C.teal};">ğŸ­ SektÃ¶r daÄŸÄ±lÄ±mÄ±${orn(oB)}</div>
           ${katBar(katList(oB), C.teal)}
         </div>
       </div>
 
       <div class="v1-kart" style="margin-top:16px;margin-bottom:0;">
-        <div class="v1-kart-baslik">🤝 Ortak Zemin</div>
+        <div class="v1-kart-baslik">ğŸ¤ Ortak Zemin</div>
         <div style="font-size:12.5px;color:var(--v1-metin);margin-bottom:8px;line-height:1.6;">
-          Her ikisinin de iş yaptığı idareler: <b style="color:var(--v1-mavi);">${num(ortakIdare.length)}</b>${
-            ortakIdare.length ? ' — ' + ortakIdare.slice(0,5).map(esc).join(', ') + (ortakIdare.length > 5 ? '…' : '') : ''}
+          Her ikisinin de iÅŸ yaptÄ±ÄŸÄ± idareler: <b style="color:var(--v1-mavi);">${num(ortakIdare.length)}</b>${
+            ortakIdare.length ? ' â€” ' + ortakIdare.slice(0,5).map(esc).join(', ') + (ortakIdare.length > 5 ? 'â€¦' : '') : ''}
         </div>
         <div style="font-size:12.5px;color:var(--v1-metin);line-height:1.6;">
-          Ortak sektörler: <b style="color:var(--v1-mavi);">${num(ortakKat.length)}</b>${
-            ortakKat.length ? ' — ' + ortakKat.slice(0,6).map(esc).join(', ') : ''}
+          Ortak sektÃ¶rler: <b style="color:var(--v1-mavi);">${num(ortakKat.length)}</b>${
+            ortakKat.length ? ' â€” ' + ortakKat.slice(0,6).map(esc).join(', ') : ''}
         </div>
       </div>
 
       <div style="margin-top:16px;text-align:center;">
-        <button class="fa-btn" id="kars-yeniden">↺ Başka firmayla karşılaştır</button>
+        <button class="fa-btn" id="kars-yeniden">â†º BaÅŸka firmayla karÅŸÄ±laÅŸtÄ±r</button>
       </div>`;
     $('kars-yeniden').addEventListener('click', karsilastirAc);
   }
 
-  /* ══════════════ 🗺️ HARİTA GÖRÜNÜMÜ ══════════════
-     Veri üçlüsü MV'li (il_firma_dagilimi / il_sektor_ozet / il_sektor_firmalar) → etkileşimler ~ms.
-     tr-harita.js + svg-zoom.js YALNIZ harita ilk açıldığında yüklenir. */
+  /* â•â•â•â•â•â•â•â•â•â•â•â•â•â• ğŸ—ºï¸ HARÄ°TA GÃ–RÃœNÃœMÃœ â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+     Veri Ã¼Ã§lÃ¼sÃ¼ MV'li (il_firma_dagilimi / il_sektor_ozet / il_sektor_firmalar) â†’ etkileÅŸimler ~ms.
+     tr-harita.js + svg-zoom.js YALNIZ harita ilk aÃ§Ä±ldÄ±ÄŸÄ±nda yÃ¼klenir. */
   const H_RENK = ['#C3D8EF','#9CC4E8','#6BA6DD','#4A8FD0','#2C6FB5','#0C3E70'];
-  const H_BOS  = '#DBE1E9';   // iş olmayan il — bembeyaz DEĞİL: zeminle karışmayan nötr gri-mavi
+  const H_BOS  = '#DBE1E9';   // iÅŸ olmayan il â€” bembeyaz DEÄÄ°L: zeminle karÄ±ÅŸmayan nÃ¶tr gri-mavi
   const H_ALIAS = { afyon:'afyonkarahisar' };
   function hFold(s){
-    const m = {'İ':'i','I':'i','ı':'i','Ş':'s','ş':'s','Ğ':'g','ğ':'g','Ü':'u','ü':'u','Ö':'o','ö':'o','Ç':'c','ç':'c'};
+    const m = {'Ä°':'i','I':'i','Ä±':'i','Å':'s','ÅŸ':'s','Ä':'g','ÄŸ':'g','Ãœ':'u','Ã¼':'u','Ã–':'o','Ã¶':'o','Ã‡':'c','Ã§':'c'};
     return (s || '').split('').map(c => m[c] || c).join('').toLowerCase().trim();
   }
   const hKey = il => { const k = hFold(il); return H_ALIAS[k] || k; };
@@ -1741,17 +1748,17 @@
   let hEsikler = [], hFirmaMap = {}, hToplamFirma = 0, hIlAdMap = {};
   let hSektorSecili = null, hSektorVeri = null, hSektorTopSoz = 0, hSeciliIl = null;
   let hKurulum = null, hSektorIstek = 0;
-  // MADDE 20-B: İhale/DT bazı + ölçüt (son-1-yıl & ciro/sözleşme). DT verisi lazy.
+  // MADDE 20-B: Ä°hale/DT bazÄ± + Ã¶lÃ§Ã¼t (son-1-yÄ±l & ciro/sÃ¶zleÅŸme). DT verisi lazy.
   let hBaz = 'ihale', hSonYil = false, hOlcut = 'bedel', hKamuDahil = false;
   let hSektorVeriDt = null, hFirmaMapDt = {}, hToplamFirmaDt = 0;
   const hDt = () => hBaz === 'dt';
   const hSektorMap = () => { const sv = hDt() ? hSektorVeriDt : hSektorVeri;
     return (hSektorSecili && sv && sv[hSektorSecili]) || null; };
-  const hIlTotal = () => hDt() ? hFirmaMapDt : hFirmaMap;         // sektörsüz yoğunluk kaynağı
-  const hToplam  = () => hDt() ? hToplamFirmaDt : hToplamFirma;   // Türkiye payı paydası
+  const hIlTotal = () => hDt() ? hFirmaMapDt : hFirmaMap;         // sektÃ¶rsÃ¼z yoÄŸunluk kaynaÄŸÄ±
+  const hToplam  = () => hDt() ? hToplamFirmaDt : hToplamFirma;   // TÃ¼rkiye payÄ± paydasÄ±
   const hBazEt   = () => hDt() ? 'DT' : 'ihale';
-  const hOlcutEt = () => (hSonYil ? 'Son 1 yıl ' : '') + (hOlcut === 'sozlesme' ? 'sözleşme sayısı' : 'ciro');
-  const hSektorEmoji = kod => { const k = (window.KATEGORILER || []).find(x => x.kod === kod); return k ? k.emoji : '🏭'; };
+  const hOlcutEt = () => (hSonYil ? 'Son 1 yÄ±l ' : '') + (hOlcut === 'sozlesme' ? 'sÃ¶zleÅŸme sayÄ±sÄ±' : 'ciro');
+  const hSektorEmoji = kod => { const k = (window.KATEGORILER || []).find(x => x.kod === kod); return k ? k.emoji : 'ğŸ­'; };
 
   function hEsikHesapla(){
     const sm = hSektorMap();
@@ -1770,7 +1777,7 @@
   function hSvgKur(){
     const H = window.TR_HARITA;
     const wrap = $('fa-h-svg-wrap');
-    if (!H){ wrap.innerHTML = '<div class="fa-h-panel-bos">Harita verisi yüklenemedi.</div>'; return; }
+    if (!H){ wrap.innerHTML = '<div class="fa-h-panel-bos">Harita verisi yÃ¼klenemedi.</div>'; return; }
     let paths = '';
     H.iller.forEach(il => {
       hIlAdMap[il.key] = il.ad;
@@ -1799,20 +1806,20 @@
       const alt = sinir[i];
       const ust = i < H_RENK.length-1 ? hEsikler[i] : null;
       if (alt == null) return '';
-      const etiket = ust ? `${num(alt)}–${num(ust)}` : `${num(alt)}+`;
+      const etiket = ust ? `${num(alt)}â€“${num(ust)}` : `${num(alt)}+`;
       return `<span class="kutu" style="background:${renk}"></span><span style="margin-right:8px;">${etiket}</span>`;
     }).join('');
     const kapsam = hSektorSecili
-      ? `Renkler <b style="color:var(--v1-lacivert);">${esc(hSektorSecili)}</b> sektöründe ildeki kazanan firma yoğunluğu:`
-      : 'Renkler ildeki kayıtlı firma yoğunluğunu gösterir:';
+      ? `Renkler <b style="color:var(--v1-lacivert);">${esc(hSektorSecili)}</b> sektÃ¶rÃ¼nde ildeki kazanan firma yoÄŸunluÄŸu:`
+      : 'Renkler ildeki kayÄ±tlÄ± firma yoÄŸunluÄŸunu gÃ¶sterir:';
     el.innerHTML = `<span style="margin-right:4px;color:var(--v1-metin);font-weight:700;">${kapsam}</span>` +
       `<span class="kutu" style="background:${H_BOS}"></span><span style="margin-right:8px;">Firma yok</span>` + et;
   }
   function hTipGoster(e, p){
     const k = p.dataset.key, sm = hSektorMap(), tt = $('fa-h-tip');
     const ana = sm
-      ? (d => `<div>${hSektorEmoji(hSektorSecili)} ${num(d.firma)} firma · ${num(d.soz)} sözleşme${d.bedel ? ' · '+paraKisa(d.bedel) : ''}</div>`)(sm[k] || {})
-      : (f => `<div>🏢 ${num(f.adet)} firma${f.ciro ? ' · '+paraKisa(f.ciro)+(hDt()?' bedel':' ciro') : ''}</div>`)(hIlTotal()[k] || {});
+      ? (d => `<div>${hSektorEmoji(hSektorSecili)} ${num(d.firma)} firma Â· ${num(d.soz)} sÃ¶zleÅŸme${d.bedel ? ' Â· '+paraKisa(d.bedel) : ''}</div>`)(sm[k] || {})
+      : (f => `<div>ğŸ¢ ${num(f.adet)} firma${f.ciro ? ' Â· '+paraKisa(f.ciro)+(hDt()?' bedel':' ciro') : ''}</div>`)(hIlTotal()[k] || {});
     tt.innerHTML = `<div class="t-ad">${esc(p.dataset.ad)}</div>${ana}`;
     tt.style.display = 'block';
     tt.style.left = Math.min(e.clientX + 14, window.innerWidth - 260) + 'px';
@@ -1828,34 +1835,34 @@
     let kpi;
     if (sm){
       const d = sm[key] || { firma:0, soz:0, bedel:0 };
-      kpi = `<span class="fa-h-geri" data-h-geri="1">← ${esc(hSektorSecili)} il sıralamasına dön</span>
-        <div class="fa-h-panel-il">📍 ${esc(ad)}</div>
+      kpi = `<span class="fa-h-geri" data-h-geri="1">â† ${esc(hSektorSecili)} il sÄ±ralamasÄ±na dÃ¶n</span>
+        <div class="fa-h-panel-il">ğŸ“ ${esc(ad)}</div>
         <div style="font-size:11.5px;color:var(--v1-mavi);font-weight:700;margin-top:2px;">${hSektorEmoji(hSektorSecili)} ${esc(hSektorSecili)}</div>
         <div class="fa-h-panel-kpi">
           <div class="k"><div class="kl">Firma</div><div class="kv">${num(d.firma)}</div></div>
-          <div class="k"><div class="kl">Sözleşme</div><div class="kv">${num(d.soz)}</div></div>
+          <div class="k"><div class="kl">SÃ¶zleÅŸme</div><div class="kv">${num(d.soz)}</div></div>
           <div class="k"><div class="kl">Toplam Bedel (${hBazEt()})</div><div class="kv">${paraKisa(d.bedel)}</div></div>
-          <div class="k"><div class="kl">Sektör Payı</div><div class="kv">${hSektorTopSoz ? ((d.soz||0)/hSektorTopSoz*100).toFixed(1)+'%' : '—'}</div></div>
+          <div class="k"><div class="kl">SektÃ¶r PayÄ±</div><div class="kv">${hSektorTopSoz ? ((d.soz||0)/hSektorTopSoz*100).toFixed(1)+'%' : 'â€”'}</div></div>
         </div>
-        <div class="fa-h-sec-baslik">Bu ilde bu sektörde öne çıkan firmalar · <span style="color:var(--v1-mavi);">${esc(hOlcutEt())}</span></div>`;
+        <div class="fa-h-sec-baslik">Bu ilde bu sektÃ¶rde Ã¶ne Ã§Ä±kan firmalar Â· <span style="color:var(--v1-mavi);">${esc(hOlcutEt())}</span></div>`;
     } else {
       const f = hIlTotal()[key] || {};
-      kpi = `<div class="fa-h-panel-il">📍 ${esc(ad)}</div>
+      kpi = `<div class="fa-h-panel-il">ğŸ“ ${esc(ad)}</div>
         <div class="fa-h-panel-kpi">
           <div class="k"><div class="kl">Firma</div><div class="kv">${num(f.adet)}</div></div>
           <div class="k"><div class="kl">Toplam ${hDt()?'Bedel':'Ciro'} (${hBazEt()})</div><div class="kv">${paraKisa(f.ciro)}</div></div>
-          <div class="k"><div class="kl">Türkiye Payı</div><div class="kv">${hToplam() ? ((f.adet||0)/hToplam()*100).toFixed(1)+'%' : '—'}</div></div>
-          <div class="k"><div class="kl">Sıralama Ölçütü</div><div class="kv" style="font-size:12px;">${esc(hOlcutEt())}</div></div>
+          <div class="k"><div class="kl">TÃ¼rkiye PayÄ±</div><div class="kv">${hToplam() ? ((f.adet||0)/hToplam()*100).toFixed(1)+'%' : 'â€”'}</div></div>
+          <div class="k"><div class="kl">SÄ±ralama Ã–lÃ§Ã¼tÃ¼</div><div class="kv" style="font-size:12px;">${esc(hOlcutEt())}</div></div>
         </div>
-        <div class="fa-h-sec-baslik">Bu ilde en çok iş kazanan firmalar · <span style="color:var(--v1-mavi);">${esc(hOlcutEt())}</span></div>`;
+        <div class="fa-h-sec-baslik">Bu ilde en Ã§ok iÅŸ kazanan firmalar Â· <span style="color:var(--v1-mavi);">${esc(hOlcutEt())}</span></div>`;
     }
     panel.innerHTML = kpi + '<div id="fa-h-firmalar"><div class="fa-mini-spin"></div></div>' +
-      '<div style="font-size:11px;color:var(--v1-muted);margin-top:12px;">Firmaya tıklayın — analizi bu sayfada açılır.</div>';
+      '<div style="font-size:11px;color:var(--v1-muted);margin-top:12px;">Firmaya tÄ±klayÄ±n â€” analizi bu sayfada aÃ§Ä±lÄ±r.</div>';
 
-    // Misafir: il_sektor_firmalar (firma adları) anon'a kapalı — RPC'yi hiç çağırma
+    // Misafir: il_sektor_firmalar (firma adlarÄ±) anon'a kapalÄ± â€” RPC'yi hiÃ§ Ã§aÄŸÄ±rma
     if (!uyeMi){
       const elA = $('fa-h-firmalar');
-      if (elA) elA.innerHTML = '<div class="fa-h-panel-bos" style="padding:16px;">🔒 Firma sıralaması üyelere özeldir. <a href="login">Giriş yapın</a> veya <a href="fiyatlandirma_odeme_bolumu">üye olun</a> →</div>';
+      if (elA) elA.innerHTML = '<div class="fa-h-panel-bos" style="padding:16px;">ğŸ”’ Firma sÄ±ralamasÄ± Ã¼yelere Ã¶zeldir. <a href="login">GiriÅŸ yapÄ±n</a> veya <a href="fiyatlandirma_odeme_bolumu">Ã¼ye olun</a> â†’</div>';
       return;
     }
     try{
@@ -1864,45 +1871,45 @@
       if (error) throw error;
       const el = $('fa-h-firmalar');
       if (!el || hSeciliIl !== key) return;
-      if (!data || !data.length){ el.innerHTML = '<div class="fa-h-panel-bos" style="padding:16px;">Kayıt yok.</div>'; return; }
+      if (!data || !data.length){ el.innerHTML = '<div class="fa-h-panel-bos" style="padding:16px;">KayÄ±t yok.</div>'; return; }
       el.innerHTML = data.map((y,i) => `<div class="fa-h-firma">
         <span style="width:16px;flex-shrink:0;font-size:11px;font-weight:800;color:var(--v1-muted);">${i+1}</span>
         <div style="flex:1;min-width:0;">
           <div class="pf-ad" data-h-firma="${esc(y.ad)}">${esc(y.ad)}${kurumMu(y.ad) ? ' '+KURUM_ROZET : ''}</div>
-          <div class="pf-meta">${num(y.sozlesme)} sözleşme · ${paraKisa(y.toplam_bedel)}${
-            hSektorSecili ? ' (bu il + sektörde)' : ' (bu ilde)'}</div>
+          <div class="pf-meta">${num(y.sozlesme)} sÃ¶zleÅŸme Â· ${paraKisa(y.toplam_bedel)}${
+            hSektorSecili ? ' (bu il + sektÃ¶rde)' : ' (bu ilde)'}</div>
         </div></div>`).join('');
     }catch(err){
       const el = $('fa-h-firmalar');
       if (el) el.innerHTML = `<div class="fa-h-panel-bos" style="padding:16px;">${
-        kilitliMi(err) ? '🔒 Firma sıralaması üyelere özeldir. <a href="login">Giriş yapın</a> →' : 'Yüklenemedi.'}</div>`;
+        kilitliMi(err) ? 'ğŸ”’ Firma sÄ±ralamasÄ± Ã¼yelere Ã¶zeldir. <a href="login">GiriÅŸ yapÄ±n</a> â†’' : 'YÃ¼klenemedi.'}</div>`;
     }
   }
 
   function hPanelVarsayilan(){
     const panel = $('fa-h-panel'), sm = hSektorMap();
     if (!sm){
-      panel.innerHTML = '<div class="fa-h-panel-bos">Bir ile tıklayın<br><span style="font-size:11px;">o ilde en çok iş kazanan firmaları görün</span></div>';
+      panel.innerHTML = '<div class="fa-h-panel-bos">Bir ile tÄ±klayÄ±n<br><span style="font-size:11px;">o ilde en Ã§ok iÅŸ kazanan firmalarÄ± gÃ¶rÃ¼n</span></div>';
       return;
     }
     const sirali = Object.entries(sm).map(([k,v]) => ({ key:k, ...v }))
       .sort((a,b) => (b.firma-a.firma) || (b.soz-a.soz)).slice(0,15);
-    if (!sirali.length){ panel.innerHTML = '<div class="fa-h-panel-bos">Bu sektörde il verisi yok.</div>'; return; }
+    if (!sirali.length){ panel.innerHTML = '<div class="fa-h-panel-bos">Bu sektÃ¶rde il verisi yok.</div>'; return; }
     const maxF = sirali[0].firma || 1;
     panel.innerHTML = `<div class="fa-h-panel-il" style="font-size:16px;">${hSektorEmoji(hSektorSecili)} ${esc(hSektorSecili)}</div>
-      <div class="fa-h-sec-baslik">İl sıralaması — kazanan firma yoğunluğu</div>` +
+      <div class="fa-h-sec-baslik">Ä°l sÄ±ralamasÄ± â€” kazanan firma yoÄŸunluÄŸu</div>` +
       sirali.map((r,i) => `<div class="fa-h-sira" data-h-il="${esc(r.key)}">
         <span class="is-no">${i+1}</span><span class="is-ad">${esc(hIlAdMap[r.key] || r.key)}</span>
         <span class="is-bar"><span style="width:${Math.max(3, Math.round(r.firma/maxF*100))}%"></span></span>
-        <span class="is-say">${num(r.firma)} firma · ${num(r.soz)} söz.</span></div>`).join('') +
-      '<div style="font-size:11px;color:var(--v1-muted);margin-top:10px;">Bir ile tıklayın — o ildeki firma sıralamasını görün.</div>';
+        <span class="is-say">${num(r.firma)} firma Â· ${num(r.soz)} sÃ¶z.</span></div>`).join('') +
+      '<div style="font-size:11px;color:var(--v1-muted);margin-top:10px;">Bir ile tÄ±klayÄ±n â€” o ildeki firma sÄ±ralamasÄ±nÄ± gÃ¶rÃ¼n.</div>';
   }
 
-  // il × sektör özeti — harita.html ile AYNI sessionStorage anahtarı (sayfalar arası ortak 6h önbellek)
+  // il Ã— sektÃ¶r Ã¶zeti â€” harita.html ile AYNI sessionStorage anahtarÄ± (sayfalar arasÄ± ortak 6h Ã¶nbellek)
   async function hSektorVeriYukle(baz){
     baz = baz || hBaz;
     const dt = baz === 'dt';
-    if (dt ? hSektorVeriDt : hSektorVeri) return;              // zaten yüklü
+    if (dt ? hSektorVeriDt : hSektorVeri) return;              // zaten yÃ¼klÃ¼
     const CK = dt ? 'harita_sektor_dt_v1' : 'harita_sektor_v1';
     try{
       const c = JSON.parse(sessionStorage.getItem(CK) || 'null');
@@ -1917,7 +1924,7 @@
       if (error) throw error;
       const v = {};
       (data || []).forEach(r => {
-        const kat = r.kategori || 'Diğer', key = hKey(r.il);
+        const kat = r.kategori || 'DiÄŸer', key = hKey(r.il);
         const o = (v[kat] = v[kat] || {});
         const t = (o[key] = o[key] || { firma:0, soz:0, bedel:0 });
         t.firma += Number(r.firma_adet) || 0;
@@ -1930,11 +1937,11 @@
     }catch(err){ if (dt) hSektorVeriDt = null; else hSektorVeri = null; }
     finally{ sel.disabled = false; }
   }
-  // Sektör verisinden il-toplam yoğunluk türet (sektörsüz choropleth için). İhale'nin
-  // gerçek distinct il-toplamı il_firma_dagilimi'nden (hFirmaMap) gelir; DT için sektör
-  // toplamı kullanılır (çok-sektörlü firma ± sayılır — yoğunluk RENGİ için kabul edilebilir).
+  // SektÃ¶r verisinden il-toplam yoÄŸunluk tÃ¼ret (sektÃ¶rsÃ¼z choropleth iÃ§in). Ä°hale'nin
+  // gerÃ§ek distinct il-toplamÄ± il_firma_dagilimi'nden (hFirmaMap) gelir; DT iÃ§in sektÃ¶r
+  // toplamÄ± kullanÄ±lÄ±r (Ã§ok-sektÃ¶rlÃ¼ firma Â± sayÄ±lÄ±r â€” yoÄŸunluk RENGÄ° iÃ§in kabul edilebilir).
   function hIlToplamTuret(dt){
-    if (!dt) return;   // İhale hFirmaMap'i hVeriYukle kurar
+    if (!dt) return;   // Ä°hale hFirmaMap'i hVeriYukle kurar
     const sv = hSektorVeriDt; if (!sv) return;
     const m = {}; let top = 0;
     Object.values(sv).forEach(iller => Object.entries(iller).forEach(([key,d]) => {
@@ -1948,21 +1955,21 @@
     const istek = ++hSektorIstek;
     hSektorSecili = kod || null;
     if (hSektorSecili && !(hDt() ? hSektorVeriDt : hSektorVeri)){
-      $('fa-h-lejant').innerHTML = '<span class="fa-mini-spin" style="margin:4px 8px;width:14px;height:14px;border-width:2px;display:inline-block;"></span> Sektör verisi yükleniyor…';
+      $('fa-h-lejant').innerHTML = '<span class="fa-mini-spin" style="margin:4px 8px;width:14px;height:14px;border-width:2px;display:inline-block;"></span> SektÃ¶r verisi yÃ¼kleniyorâ€¦';
       await hSektorVeriYukle();
       if (istek !== hSektorIstek) return;
       if (!(hDt() ? hSektorVeriDt : hSektorVeri)){
         $('fa-h-sektor').value = '';
         hSektorSecili = null;
-        $('fa-h-lejant').innerHTML = '⚠️ Sektör verisi yüklenemedi.';
+        $('fa-h-lejant').innerHTML = 'âš ï¸ SektÃ¶r verisi yÃ¼klenemedi.';
         return;
       }
     }
     const sm = hSektorMap();
     hSektorTopSoz = sm ? Object.values(sm).reduce((a,v) => a + v.soz, 0) : 0;
     $('fa-h-baslik').textContent = hSektorSecili
-      ? `${hSektorEmoji(hSektorSecili)} ${hSektorSecili} — il yoğunluğu`
-      : 'Firma Yoğunluğu — il bazında';
+      ? `${hSektorEmoji(hSektorSecili)} ${hSektorSecili} â€” il yoÄŸunluÄŸu`
+      : 'Firma YoÄŸunluÄŸu â€” il bazÄ±nda';
     hEsikHesapla(); hBoya();
     if (hSeciliIl) hIlSec(hSeciliIl); else hPanelVarsayilan();
   }
@@ -1981,7 +1988,7 @@
   function assetYukle(src){
     return new Promise((res, rej) => {
       const sc = document.createElement('script');
-      sc.src = src; sc.onload = res; sc.onerror = () => rej(new Error(src + ' yüklenemedi'));
+      sc.src = src; sc.onload = res; sc.onerror = () => rej(new Error(src + ' yÃ¼klenemedi'));
       document.head.appendChild(sc);
     });
   }
@@ -2002,7 +2009,7 @@
       hSvgKur();
       await hVeriYukle();
     })().catch(() => {
-      $('fa-h-svg-wrap').innerHTML = '<div class="fa-h-panel-bos">Harita yüklenemedi. Sayfayı yenileyin.</div>';
+      $('fa-h-svg-wrap').innerHTML = '<div class="fa-h-panel-bos">Harita yÃ¼klenemedi. SayfayÄ± yenileyin.</div>';
     });
     return hKurulum;
   }
@@ -2016,9 +2023,9 @@
     if (harita) hKur();
   }
 
-  /* ══════════════ OLAY BAĞLAMA ══════════════ */
-  // Dizin satırı / arama kartı / karşılaştırma kartı → delegasyon (firma adlarındaki tırnaklar
-  // inline onclick'i kırar; data-attribute + delegasyon güvenli)
+  /* â•â•â•â•â•â•â•â•â•â•â•â•â•â• OLAY BAÄLAMA â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
+  // Dizin satÄ±rÄ± / arama kartÄ± / karÅŸÄ±laÅŸtÄ±rma kartÄ± â†’ delegasyon (firma adlarÄ±ndaki tÄ±rnaklar
+  // inline onclick'i kÄ±rar; data-attribute + delegasyon gÃ¼venli)
   $('dz-govde').addEventListener('click', e => {
     const tr = e.target.closest('tr[data-yid]');
     if (tr) firmaDetayYukle(tr.dataset.yid, true);
@@ -2044,12 +2051,12 @@
     }
   });
 
-  // MADDE 21: min 3 harf + 500ms debounce + Enter/Ara butonu → boşa sorguyu kes.
+  // MADDE 21: min 3 harf + 500ms debounce + Enter/Ara butonu â†’ boÅŸa sorguyu kes.
   function dzAra(){ clearTimeout(dzAramaTimer); dzYukle(true); }
   $('dz-arama').addEventListener('input', () => {
     clearTimeout(dzAramaTimer);
     const q = ($('dz-arama').value || '').trim();
-    if (q.length > 0 && q.length < 3) return;   // 1-2 harf: sorgu YOK. 0: tüm liste. ≥3: ara.
+    if (q.length > 0 && q.length < 3) return;   // 1-2 harf: sorgu YOK. 0: tÃ¼m liste. â‰¥3: ara.
     dzAramaTimer = setTimeout(() => dzYukle(true), 500);
   });
   $('dz-arama').addEventListener('keydown', (e) => { if (e.key === 'Enter') dzAra(); });
@@ -2057,7 +2064,7 @@
   if (dzAraBtn) dzAraBtn.addEventListener('click', dzAra);
   $('dz-il').addEventListener('change', () => dzYukle(true));
   $('dz-sirala').addEventListener('change', () => dzSirala($('dz-sirala').value));
-  // MADDE 18-B: sıralama modu (İhale / DT / İkisi) — ciro kolonu başlığı moda göre değişir.
+  // MADDE 18-B: sÄ±ralama modu (Ä°hale / DT / Ä°kisi) â€” ciro kolonu baÅŸlÄ±ÄŸÄ± moda gÃ¶re deÄŸiÅŸir.
   const dzModBar = $('dz-mod');
   if (dzModBar) dzModBar.addEventListener('click', (e) => {
     const b = e.target.closest('.dz-mod-btn'); if (!b) return;
@@ -2067,15 +2074,15 @@
     });
     const ciroTh = $('dz-srt-ciro');
     if (ciroTh) ciroTh.textContent = dzMod === 'dt' ? 'Toplam DT Bedeli'
-                                   : dzMod === 'birlikte' ? 'Toplam (İhale + DT)' : 'Toplam Ciro (İhale)';
-    $('dz-sirala').disabled = false;   // MADDE 20-A: DT & İkisi modunda da sıralanabilir
-    // Kamu-kuruluşu toggle'ı yalnız DT/İkisi'de anlamlı (İhale modu doğrudan yukleniciler sorgular)
+                                   : dzMod === 'birlikte' ? 'Toplam (Ä°hale + DT)' : 'Toplam Ciro (Ä°hale)';
+    $('dz-sirala').disabled = false;   // MADDE 20-A: DT & Ä°kisi modunda da sÄ±ralanabilir
+    // Kamu-kuruluÅŸu toggle'Ä± yalnÄ±z DT/Ä°kisi'de anlamlÄ± (Ä°hale modu doÄŸrudan yukleniciler sorgular)
     const kamuSatir = $('dz-kamu-satir');
     if (kamuSatir) kamuSatir.style.display = (dzMod !== 'ihale') ? 'flex' : 'none';
     dzYukle(true);
-    dzIstatistik();   // MADDE 20: üst KPI'lar da moda göre değişsin
+    dzIstatistik();   // MADDE 20: Ã¼st KPI'lar da moda gÃ¶re deÄŸiÅŸsin
   });
-  // Kamu kuruluşlarını göster/gizle (DT & İkisi dizin)
+  // Kamu kuruluÅŸlarÄ±nÄ± gÃ¶ster/gizle (DT & Ä°kisi dizin)
   const dzKamuEl = $('dz-kamu');
   if (dzKamuEl) dzKamuEl.addEventListener('change', (e) => { dzKamu = !!e.target.checked; dzYukle(true); });
   $('dz-srt-sayi').addEventListener('click', () => dzSirala('sayi_desc'));
@@ -2087,7 +2094,7 @@
   $('fa-gbtn-harita').addEventListener('click', () => gorunumSec('harita'));
   $('fa-h-sektor').addEventListener('change', e => hSektorSec(e.target.value));
 
-  // MADDE 20-B: İhale / Doğrudan Temin bazı — yoğunluk + firma listesi kaynağını değiştirir.
+  // MADDE 20-B: Ä°hale / DoÄŸrudan Temin bazÄ± â€” yoÄŸunluk + firma listesi kaynaÄŸÄ±nÄ± deÄŸiÅŸtirir.
   async function hBazSec(baz){
     if (baz === hBaz) return;
     hBaz = baz;
@@ -2098,16 +2105,16 @@
     });
     const not = $('fa-h-not');
     if (not) not.innerHTML = hDt()
-      ? 'Değerler <b style="color:var(--v1-lacivert);">yalnız doğrudan temin</b> kazanımlarından hesaplanır. Kazanan firma adları üyelere özeldir.'
-      : 'Ciro ve bedel değerleri <b style="color:var(--v1-lacivert);">yalnız ihale</b> kazanımlarından hesaplanır — doğrudan temin dahil değildir.';
-    // DT verisini (yoğunluk + sektör) garanti et
+      ? 'DeÄŸerler <b style="color:var(--v1-lacivert);">yalnÄ±z doÄŸrudan temin</b> kazanÄ±mlarÄ±ndan hesaplanÄ±r. Kazanan firma adlarÄ± Ã¼yelere Ã¶zeldir.'
+      : 'Ciro ve bedel deÄŸerleri <b style="color:var(--v1-lacivert);">yalnÄ±z ihale</b> kazanÄ±mlarÄ±ndan hesaplanÄ±r â€” doÄŸrudan temin dahil deÄŸildir.';
+    // DT verisini (yoÄŸunluk + sektÃ¶r) garanti et
     if (hDt()){
-      $('fa-h-lejant').innerHTML = '<span class="fa-mini-spin" style="margin:4px 8px;width:14px;height:14px;border-width:2px;display:inline-block;"></span> Doğrudan temin verisi yükleniyor…';
+      $('fa-h-lejant').innerHTML = '<span class="fa-mini-spin" style="margin:4px 8px;width:14px;height:14px;border-width:2px;display:inline-block;"></span> DoÄŸrudan temin verisi yÃ¼kleniyorâ€¦';
       await hSektorVeriYukle('dt');
     }
     $('fa-h-baslik').textContent = hSektorSecili
-      ? `${hSektorEmoji(hSektorSecili)} ${hSektorSecili} — il yoğunluğu`
-      : `Firma Yoğunluğu — il bazında (${hBazEt()})`;
+      ? `${hSektorEmoji(hSektorSecili)} ${hSektorSecili} â€” il yoÄŸunluÄŸu`
+      : `Firma YoÄŸunluÄŸu â€” il bazÄ±nda (${hBazEt()})`;
     const sm = hSektorMap();
     hSektorTopSoz = sm ? Object.values(sm).reduce((a,v) => a + v.soz, 0) : 0;
     hEsikHesapla(); hBoya();
@@ -2116,14 +2123,14 @@
   $('fa-h-baz').addEventListener('click', e => {
     const b = e.target.closest('.fa-h-baz-btn'); if (b) hBazSec(b.dataset.baz);
   });
-  // MADDE 20-B: ölçüt (tüm-zaman/son-1-yıl × ciro/sözleşme) — yalnız firma listesini etkiler.
+  // MADDE 20-B: Ã¶lÃ§Ã¼t (tÃ¼m-zaman/son-1-yÄ±l Ã— ciro/sÃ¶zleÅŸme) â€” yalnÄ±z firma listesini etkiler.
   $('fa-h-olcut').addEventListener('change', e => {
     const [ol, yil] = (e.target.value || 'bedel|0').split('|');
     hOlcut = (ol === 'sozlesme') ? 'sozlesme' : 'bedel';
     hSonYil = (yil === '1');
     if (hSeciliIl) hIlSec(hSeciliIl);
   });
-  // MADDE: kamu kuruluşlarını göster/gizle — yalnız firma listesini etkiler (yoğunluk değişmez)
+  // MADDE: kamu kuruluÅŸlarÄ±nÄ± gÃ¶ster/gizle â€” yalnÄ±z firma listesini etkiler (yoÄŸunluk deÄŸiÅŸmez)
   $('fa-h-kamu').addEventListener('change', e => {
     hKamuDahil = !!e.target.checked;
     if (hSeciliIl) hIlSec(hSeciliIl);
@@ -2133,8 +2140,8 @@
   $('btn-yeni-arama').addEventListener('click', dizineDon);
   $('btn-karsilastir').addEventListener('click', karsilastirAc);
   $('btn-takip').addEventListener('click', firmaTakipToggle);
-  // "İhalelerini Gör" → bu sayfanın Katıldığı İhaleler sekmesini açar
-  // (v1-ihaleler?ara= ilan metnini arar, kazanan firmayı DEĞİL → alakasız sonuç verirdi)
+  // "Ä°halelerini GÃ¶r" â†’ bu sayfanÄ±n KatÄ±ldÄ±ÄŸÄ± Ä°haleler sekmesini aÃ§ar
+  // (v1-ihaleler?ara= ilan metnini arar, kazanan firmayÄ± DEÄÄ°L â†’ alakasÄ±z sonuÃ§ verirdi)
   $('btn-ihaleleri').addEventListener('click', () => {
     const tb = document.querySelector('.fa-tab[data-sekme="sonuclar"]');
     if (tb) tb.click();
@@ -2153,7 +2160,7 @@
     if (b.dataset.sekme === 'dt') dtListeGoster();
   }));
 
-  // Katıldığı DT sayfalaması
+  // KatÄ±ldÄ±ÄŸÄ± DT sayfalamasÄ±
   $('dt-pager').addEventListener('click', e => {
     const b = e.target.closest('[data-yon]');
     if (!b || b.disabled) return;
@@ -2185,17 +2192,17 @@
     const u = window.location.href;
     const b = $('fa-paylas'), eski = b.textContent;
     navigator.clipboard.writeText(u).then(() => {
-      b.textContent = '✓ Kopyalandı';
+      b.textContent = 'âœ“ KopyalandÄ±';
       setTimeout(() => { b.textContent = eski; }, 1800);
-    }).catch(() => prompt('Bağlantı:', u));
+    }).catch(() => prompt('BaÄŸlantÄ±:', u));
   });
 
-  // Tarayıcı ileri/geri — pushState kullandığımız için rotayı yeniden çöz
+  // TarayÄ±cÄ± ileri/geri â€” pushState kullandÄ±ÄŸÄ±mÄ±z iÃ§in rotayÄ± yeniden Ã§Ã¶z
   window.addEventListener('popstate', () => rotala(new URLSearchParams(location.search)));
 
-  /* ══════════════ AÇILIŞ ══════════════ */
+  /* â•â•â•â•â•â•â•â•â•â•â•â•â•â• AÃ‡ILIÅ â•â•â•â•â•â•â•â•â•â•â•â•â•â• */
   function rotala(P){
-    const qYid   = P.get('yid') || P.get('id');   // ?id= eski/dış linkler için eş anlamlı
+    const qYid   = P.get('yid') || P.get('id');   // ?id= eski/dÄ±ÅŸ linkler iÃ§in eÅŸ anlamlÄ±
     const qAra   = P.get('ara');
     const qFirma = P.get('firma');                // v1-firmalar / firmalar "Analiz" linkleri
     if (qYid){ firmaDetayYukle(qYid, false); return; }
@@ -2204,8 +2211,8 @@
     goster('dizin'); dizinBaslat();
   }
 
-  // Paket rozeti — v1-kabuk topbar'ı DOMContentLoaded'da monte eder; getSession() ondan
-  // ÖNCE dönerse v1PaketYaz hedef elemanı bulamaz ve rozet "—" kalırdı. DOM hazır olana dek ertele.
+  // Paket rozeti â€” v1-kabuk topbar'Ä± DOMContentLoaded'da monte eder; getSession() ondan
+  // Ã–NCE dÃ¶nerse v1PaketYaz hedef elemanÄ± bulamaz ve rozet "â€”" kalÄ±rdÄ±. DOM hazÄ±r olana dek ertele.
   function paketYaz(ad){
     const yaz = () => { if (window.v1PaketYaz) v1PaketYaz(ad); };
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', yaz);

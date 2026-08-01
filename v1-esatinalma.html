@@ -1,13 +1,13 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="tr">
 <head>
   <meta charset="UTF-8" />
-  <meta name="author" content="Ömer Faruk Dinç">
+  <meta name="author" content="Ã–mer Faruk DinÃ§">
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>e-Satınalma — İhaleGlobal</title>
+  <title>e-SatÄ±nalma â€” Ä°haleGlobal</title>
   <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=4" />
   <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/v1.css?v=7" />
+  <link rel="stylesheet" href="css/v1.css?v=15" />
   <style>
     .v1-sayfa-baslik { font-size:22px; font-weight:800; color:var(--v1-lacivert); margin-bottom:4px; }
     .v1-sayfa-alt { font-size:13.5px; color:var(--v1-muted); margin-bottom:16px; }
@@ -38,16 +38,16 @@
     .v1-bilgi-serit strong { color:var(--v1-lacivert); }
   </style>
 </head>
-<body class="v1" data-v1-aktif="esatinalma" data-v1-kirinti="e-Satınalma > Açık Talepler">
+<body class="v1" data-v1-aktif="esatinalma" data-v1-kirinti="e-SatÄ±nalma > AÃ§Ä±k Talepler">
 <div class="v1-app">
   <div class="v1-main">
     <div class="v1-govde">
-      <div class="v1-sayfa-baslik">e-Satınalma</div>
-      <div class="v1-sayfa-alt">Özel sektör satınalma talepleri (RFQ) — kamu ihalesi dışındaki iş fırsatları.</div>
+      <div class="v1-sayfa-baslik">e-SatÄ±nalma</div>
+      <div class="v1-sayfa-alt">Ã–zel sektÃ¶r satÄ±nalma talepleri (RFQ) â€” kamu ihalesi dÄ±ÅŸÄ±ndaki iÅŸ fÄ±rsatlarÄ±.</div>
 
       <div class="v1-bilgi-serit">
-        🏭 <strong>Kamu dışı fırsatlar:</strong> Firmaların yayımladığı satınalma talepleri. Teklif vermek için talebe girin.
-        Kendi talebinizi yayımlamak isterseniz <a href="https://fasonda.com" target="_blank" rel="noopener">Fasonda.com</a> üzerinden ilan açabilirsiniz.
+        ğŸ­ <strong>Kamu dÄ±ÅŸÄ± fÄ±rsatlar:</strong> FirmalarÄ±n yayÄ±mladÄ±ÄŸÄ± satÄ±nalma talepleri. Teklif vermek iÃ§in talebe girin.
+        Kendi talebinizi yayÄ±mlamak isterseniz <a href="https://fasonda.com" target="_blank" rel="noopener">Fasonda.com</a> Ã¼zerinden ilan aÃ§abilirsiniz.
       </div>
 
       <div class="v1-liste-duzen">
@@ -57,44 +57,44 @@
             Filtrele
           </div>
           <div class="v1-filtre-grup acik">
-            <button class="v1-filtre-btn">Kelime Arama<span class="ok">›</span></button>
-            <div class="v1-filtre-icerik"><input class="v1-f-input" id="f-kelime" placeholder="Talep başlığında ara…"></div>
+            <button class="v1-filtre-btn">Kelime Arama<span class="ok">â€º</span></button>
+            <div class="v1-filtre-icerik"><input class="v1-f-input" id="f-kelime" placeholder="Talep baÅŸlÄ±ÄŸÄ±nda araâ€¦"></div>
           </div>
           <div class="v1-filtre-grup">
-            <button class="v1-filtre-btn">Sektör<span class="ok">›</span></button>
-            <div class="v1-filtre-icerik"><select class="v1-f-select" id="f-kategori"><option value="">Tümü</option></select></div>
+            <button class="v1-filtre-btn">SektÃ¶r<span class="ok">â€º</span></button>
+            <div class="v1-filtre-icerik"><select class="v1-f-select" id="f-kategori"><option value="">TÃ¼mÃ¼</option></select></div>
           </div>
           <div class="v1-filtre-grup">
-            <button class="v1-filtre-btn">İl<span class="ok">›</span></button>
-            <div class="v1-filtre-icerik"><select class="v1-f-select" id="f-il"><option value="">Tümü</option></select></div>
+            <button class="v1-filtre-btn">Ä°l<span class="ok">â€º</span></button>
+            <div class="v1-filtre-icerik"><select class="v1-f-select" id="f-il"><option value="">TÃ¼mÃ¼</option></select></div>
           </div>
           <div class="v1-filtre-grup">
-            <button class="v1-filtre-btn">Durum<span class="ok">›</span></button>
+            <button class="v1-filtre-btn">Durum<span class="ok">â€º</span></button>
             <div class="v1-filtre-icerik">
               <label style="display:flex;gap:8px;align-items:center;font-size:13px;">
-                <input type="checkbox" id="f-acik" checked> Yalnız teklif süresi devam edenler</label>
+                <input type="checkbox" id="f-acik" checked> YalnÄ±z teklif sÃ¼resi devam edenler</label>
             </div>
           </div>
           <button class="v1-filtre-uygula" id="f-uygula">Filtreyi Uygula</button>
           <button style="width:100%;background:none;border:none;border-top:1px solid var(--v1-cizgi);padding:11px;
-            font-family:var(--v1-font);font-size:13px;font-weight:600;color:var(--v1-muted);cursor:pointer;" id="f-temizle">Vazgeç / Temizle</button>
+            font-family:var(--v1-font);font-size:13px;font-weight:600;color:var(--v1-muted);cursor:pointer;" id="f-temizle">VazgeÃ§ / Temizle</button>
         </aside>
 
         <section>
           <div class="v1-kart" style="padding:18px 20px;margin-bottom:14px;">
             <div class="v1-tablo-bas" style="margin:0;">
               <div>
-                <div style="font-size:17px;font-weight:800;color:var(--v1-lacivert);">Açık Talepler</div>
-                <div class="v1-tablo-sayi" id="v1-sayi">Yükleniyor…</div>
+                <div style="font-size:17px;font-weight:800;color:var(--v1-lacivert);">AÃ§Ä±k Talepler</div>
+                <div class="v1-tablo-sayi" id="v1-sayi">YÃ¼kleniyorâ€¦</div>
               </div>
               <select class="v1-sec v1-f-select" id="f-sirala" style="max-width:200px;">
-                <option value="tarih">Son teklife göre (yakın)</option>
+                <option value="tarih">Son teklife gÃ¶re (yakÄ±n)</option>
                 <option value="yeni">En yeni eklenen</option>
-                <option value="bedel">Bedele göre (yüksek)</option>
+                <option value="bedel">Bedele gÃ¶re (yÃ¼ksek)</option>
               </select>
             </div>
           </div>
-          <div class="v1-rfq-grid" id="v1-liste"><div class="v1-bos">Yükleniyor…</div></div>
+          <div class="v1-rfq-grid" id="v1-liste"><div class="v1-bos">YÃ¼kleniyorâ€¦</div></div>
           <div class="v1-sayfalama" id="v1-sayfalama"></div>
         </section>
       </div>
@@ -104,16 +104,16 @@
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/kategoriler.js?v=1"></script>
-<script src="js/v1-kabuk.js?v=14"></script>
+<script src="js/v1-kabuk.js?v=15"></script>
 <script>
 (() => {
   const SB_URL="https://ihaleglobal.com", SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzg0MzA3MTU4LCJleHAiOjE5NDE5ODcxNTh9.CjNKulvirotDD_y2oO2QKgo0kbqYvL0jUSV1RiDMoso";
   const sb=window.supabase.createClient(SB_URL,SB_KEY);
   const esc=(s)=>(s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
   const num=(n)=>(Number(n)||0).toLocaleString('tr-TR');
-  const bedelFmt=(v,pb)=>v==null?'Belirtilmemiş':(pb==='USD'?'$':pb==='EUR'?'€':'₺')+Number(v).toLocaleString('tr-TR',{maximumFractionDigits:0});
-  const ILLER=["ADANA","ANKARA","ANTALYA","AYDIN","BALIKESİR","BURSA","DENİZLİ","DİYARBAKIR","ESKİŞEHİR","GAZİANTEP","HATAY","İSTANBUL","İZMİR","KAYSERİ","KOCAELİ","KONYA","MANİSA","MERSİN","MUĞLA","SAKARYA","SAMSUN","TEKİRDAĞ","TRABZON"];
-  // ⚠️ window.KATEGORILER nesne dizisi — .kod al
+  const bedelFmt=(v,pb)=>v==null?'BelirtilmemiÅŸ':(pb==='USD'?'$':pb==='EUR'?'â‚¬':'â‚º')+Number(v).toLocaleString('tr-TR',{maximumFractionDigits:0});
+  const ILLER=["ADANA","ANKARA","ANTALYA","AYDIN","BALIKESÄ°R","BURSA","DENÄ°ZLÄ°","DÄ°YARBAKIR","ESKÄ°ÅEHÄ°R","GAZÄ°ANTEP","HATAY","Ä°STANBUL","Ä°ZMÄ°R","KAYSERÄ°","KOCAELÄ°","KONYA","MANÄ°SA","MERSÄ°N","MUÄLA","SAKARYA","SAMSUN","TEKÄ°RDAÄ","TRABZON"];
+  // âš ï¸ window.KATEGORILER nesne dizisi â€” .kod al
   const KATS=(window.KATEGORILER||[]).map(k=>(typeof k==='string'?k:(k&&k.kod)||'')).filter(Boolean);
   const BOY=12;
   let sayfa=1;
@@ -133,7 +133,7 @@
 
   async function yukle(){
     const el=document.getElementById('v1-liste');
-    el.innerHTML='<div class="v1-bos">Yükleniyor…</div>';
+    el.innerHTML='<div class="v1-bos">YÃ¼kleniyorâ€¦</div>';
     try{
       const s=document.getElementById('f-sirala').value;
       const kol = s==='bedel'?'tahmini_bedel' : s==='yeni'?'olusturulma' : 'son_teklif_tarihi';
@@ -146,10 +146,10 @@
       if(veri.error) throw veri.error;
       const toplam=(sayim&&sayim.count!=null)?sayim.count:null;
       document.getElementById('v1-sayi').innerHTML = toplam!=null
-        ? `Arama kriterinize uygun <strong>${num(toplam)}</strong> satınalma talebi listeleniyor`
-        : `<strong>${(veri.data||[]).length}</strong> talep gösteriliyor`;
+        ? `Arama kriterinize uygun <strong>${num(toplam)}</strong> satÄ±nalma talebi listeleniyor`
+        : `<strong>${(veri.data||[]).length}</strong> talep gÃ¶steriliyor`;
       const d=veri.data||[];
-      if(!d.length){ el.innerHTML='<div class="v1-bos">Kriterlere uyan açık talep bulunamadı.</div>';
+      if(!d.length){ el.innerHTML='<div class="v1-bos">Kriterlere uyan aÃ§Ä±k talep bulunamadÄ±.</div>';
         document.getElementById('v1-sayfalama').innerHTML=''; return; }
       el.innerHTML=d.map(r=>{
         const t=r.son_teklif_tarihi?new Date(r.son_teklif_tarihi):null;
@@ -157,30 +157,30 @@
         return `<a class="v1-rfq" href="v1-ozel-ihale-detay?id=${r.id}">
           <div class="v1-rfq-ust">
             <span class="v1-rfq-kat" title="${esc(r.kategori||'')}">${esc(r.kategori||'Genel')}</span>
-            ${g!=null?`<span class="v1-rfq-gun${g<=3?' acil':''}">Son ${g} gün</span>`:'<span class="v1-rfq-gun">Süresiz</span>'}
+            ${g!=null?`<span class="v1-rfq-gun${g<=3?' acil':''}">Son ${g} gÃ¼n</span>`:'<span class="v1-rfq-gun">SÃ¼resiz</span>'}
           </div>
-          <div class="v1-rfq-baslik">${esc(r.baslik||'Satınalma Talebi')}</div>
+          <div class="v1-rfq-baslik">${esc(r.baslik||'SatÄ±nalma Talebi')}</div>
           ${r.aciklama?`<div class="v1-rfq-aciklama">${esc(r.aciklama)}</div>`:''}
           <div class="v1-rfq-alt">
-            <span class="v1-rfq-il">📍 ${esc(r.il||'—')}${r.ilce?' / '+esc(r.ilce):''}${r.miktar?' · '+esc(String(r.miktar)):''}</span>
+            <span class="v1-rfq-il">ğŸ“ ${esc(r.il||'â€”')}${r.ilce?' / '+esc(r.ilce):''}${r.miktar?' Â· '+esc(String(r.miktar)):''}</span>
             <span class="v1-rfq-bedel">${bedelFmt(r.tahmini_bedel,r.para_birimi)}</span>
           </div></a>`;
       }).join('');
       sayfalama(toplam,d.length);
-    }catch(e){ el.innerHTML=`<div class="v1-bos">Liste yüklenemedi. ${esc(e.message||'')}</div>`; }
+    }catch(e){ el.innerHTML=`<div class="v1-bos">Liste yÃ¼klenemedi. ${esc(e.message||'')}</div>`; }
   }
 
   function sayfalama(toplam,adet){
     const el=document.getElementById('v1-sayfalama');
     if(toplam==null){
-      el.innerHTML=`<button ${sayfa===1?'disabled':''} data-s="${sayfa-1}">‹ Önceki</button><button class="aktif" disabled>${sayfa}</button><button ${adet<BOY?'disabled':''} data-s="${sayfa+1}">Sonraki ›</button>`;
+      el.innerHTML=`<button ${sayfa===1?'disabled':''} data-s="${sayfa-1}">â€¹ Ã–nceki</button><button class="aktif" disabled>${sayfa}</button><button ${adet<BOY?'disabled':''} data-s="${sayfa+1}">Sonraki â€º</button>`;
     } else {
       const son=Math.max(1,Math.ceil(toplam/BOY)); if(son<=1){ el.innerHTML=''; return; }
       const g=[]; const b1=Math.max(1,sayfa-2), b2=Math.min(son,b1+4);
       for(let i=b1;i<=b2;i++) g.push(i);
-      el.innerHTML=`<button ${sayfa===1?'disabled':''} data-s="${sayfa-1}">‹</button>`+
+      el.innerHTML=`<button ${sayfa===1?'disabled':''} data-s="${sayfa-1}">â€¹</button>`+
         g.map(i=>`<button class="${i===sayfa?'aktif':''}" data-s="${i}">${i}</button>`).join('')+
-        `<button ${sayfa===son?'disabled':''} data-s="${sayfa+1}">›</button>`;
+        `<button ${sayfa===son?'disabled':''} data-s="${sayfa+1}">â€º</button>`;
     }
     el.querySelectorAll('[data-s]').forEach(b=>b.addEventListener('click',()=>{
       const s=+b.dataset.s; if(s<1)return; sayfa=s; yukle(); window.scrollTo({top:0,behavior:'smooth'});
