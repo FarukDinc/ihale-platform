@@ -507,13 +507,17 @@ Durum: ✅ bitti · ⏳ sıradaki · 📋 planlandı (FE=frontend/pull · DB=mig
 - [26-34] 📋 DB — Kategori misassignment (düzeltme ilanı/irtifak "İnşaat"a) = sınıflandırıcı kalitesi.
 
 ### İLERLEME (2 Ağu)
-**✅ FE batch-1 (commit a039532, CANLI):** 26-1 (Excel export kaldırıldı) · 26-4/26-11 (arama başlık+tarih fallback) ·
-26-13 (İhalelerim→E-Satınalma dünyası) · 26-14 (v2 stilize modal) · 26-15 (Dokümanlar) · 26-30 (maliyet çip ₺) · 26-32 (Kurum Ağacı başlık).
-**✅ FE batch-2 (commit 8dfb4f1, CANLI):** 26-12 (Takibim sektör bölümü) · 26-17 (global ülke TR) · 26-29 (firmalar segment sayaç) · 26-33 (büyüme tooltip).
-**⏸️ Bug DEĞİL / kaynak kısıtı:** 26-10 (Kurul liste'sinde sonuç yayımlanmıyor — kod yorumu doğrular) · 26-33 (semantik doğru, tooltip eklendi).
-**🔬 DB teşhis bekliyor** (`backend/qa_diagnostics.sql` — read-only, kullanıcı çalıştırıp çıktı verecek):
-26-2, 26-3, 26-21, 26-5, 26-6, 26-8, 26-24, 26-28, 26-23 → çıktıya göre kesin migration.
-**⏭️ Ayrı pas:** 26-22 (uyum skoru firma-profili fallback = MADDE 6 eşleşme motoru ailesi) · 26-25 (usul analitik normalizasyon) · 26-7 (=UV-4) · 26-34 (=sınıflandırıcı) · 26-16 (kozmetik).
+**✅ FE CANLI (a039532 + 8dfb4f1):** 26-1 (Excel kaldırıldı) · 26-4/11 (arama başlık+tarih fallback) · 26-12 (Takibim sektör) ·
+26-13 (İhalelerim→E-Satınalma) · 26-14 (v2 modal) · 26-15 (Dokümanlar) · 26-17 (global ülke TR) · 26-29 (segment sayaç) ·
+26-30 (maliyet çip ₺) · 26-32 (Kurum Ağacı başlık) · 26-33 (büyüme tooltip).
+**✅ FE + migration GEREKLİ (aafaa1d):** 26-23 (Firmalar kamu-kurulusu gizle toggle + kurum_mu kolonu) · 26-24 (DT sonuç "kazanan işleniyor" etiketi).
+**✅ MIGRATION HAZIR (çalıştırılacak — sıra aşağıda):**
+- `migration_qa_26_2_cop_bedel.sql` (429eec3) → 26-2 trilyon çöp bedel.
+- `migration_qa_26_data_fixes.sql` (a53f4d8) → 26-3 tenzilat · 26-21 placeholder maliyet · 26-6 İZMIR · 26-8 sektör · 26-5 DT tarih.
+- `migration_qa_26_23_kurum_mu.sql` (aafaa1d) → 26-23 kurum_mu kolonu doldur.
+- `migration_qa_26_27_parlayan.sql` (9a2d2c1) → 26-27 Parlayan segment 0-taban fix.
+**⏸️ Bug DEĞİL / kaynak kısıtı:** 26-10 (Kurul listesinde sonuç yayımlanmıyor) · 26-28 (idare_bagsiz_mv = DETSİS eşleşmeyen; kapsam metriği, ayrı zenginleştirme) · 26-33 · 26-16 (kozmetik, tarihsel bildirim).
+**⏭️ Ayrı pas:** 26-22 (uyum skoru firma-profili fallback = MADDE 6 eşleşme motoru) · 26-25 (usul analitik normalizasyon) · 26-26 (segment üst özet timeout → MV) · 26-7 (=UV-4) · 26-34 (=sınıflandırıcı kalitesi).
 
 # UZUN VADE (ayrı seri — "uzun vade" dendiğinde bu liste çıkarılır)
 
