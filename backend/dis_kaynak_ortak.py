@@ -16,11 +16,44 @@ Env: FLARESOLVERR_URL (öntanım http://127.0.0.1:8191/v1) — sunucu taşımada
 """
 
 import os
+import re
+import html as _html
 
 import httpx
 
 # Sunucu taşımada değişebilir → env'den okunur (öntanım yerel Docker).
 FLARESOLVERR_URL = os.environ.get("FLARESOLVERR_URL", "http://127.0.0.1:8191/v1")
+
+# FlareSolverr'ın XML gövdesini Chromium XML-viewer'ına sardığını tespit eden imza.
+_XML_SARMA_IZ = ("&lt;?xml", "&lt;rss", "&lt;item&gt;", "&lt;feed")
+
+
+def xml_sarma_ac(metin):
+    """FlareSolverr Chromium XML-viewer sarmasını söker → ham XML metnini döndürür.
+
+    ⚠️ GOTCHA (AfDB RSS dersi): FlareSolverr baş görünmez Chromium ile çeker; Chromium
+    bir XML/RSS dökümanını KENDİ görüntüleyicisiyle RENDER eder →
+    `<html><head>…</head><body><pre>&lt;?xml …&gt;&lt;rss&gt;&lt;item&gt;…</pre></body></html>`
+    Yani XML, `<pre>` içinde HTML-ESCAPE'li durur; `ET.fromstring`/`<item>` regex İKİSİ DE
+    patlar (literal `<item>`=0, `&lt;item&gt;`=20). Çözüm: `<pre>` içeriğini alıp
+    `html.unescape` et → temiz XML geri gelir.
+
+    Güvenlik: yalnız `<pre>` içeriği XML imzası taşıyorsa açar (gerçek HTML sayfadaki
+    meşru `<pre>` bloklarını BOZMAZ). İmza yoksa metin AYNEN döner → HTML çekimlerinde
+    (ADB/AfDB liste) zararsız no-op.
+    """
+    if not metin:
+        return metin
+    m = re.search(r"<pre[^>]*>(.*?)</pre>", metin, re.DOTALL | re.IGNORECASE)
+    if m and any(iz in m.group(1) for iz in _XML_SARMA_IZ):
+        return _html.unescape(m.group(1))
+    return metin
+
+
+def fs_cek_xml(url, timeout=90, max_timeout_ms=60000):
+    """fs_cek + xml_sarma_ac: Cloudflare arkası bir XML/RSS kaynağını çeker ve
+    FlareSolverr'ın Chromium sarmasını açarak HAM XML döndürür (RSS parse için)."""
+    return xml_sarma_ac(fs_cek(url, timeout=timeout, max_timeout_ms=max_timeout_ms))
 
 
 def fs_cek(url, timeout=90, max_timeout_ms=60000):

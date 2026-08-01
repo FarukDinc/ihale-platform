@@ -27,9 +27,11 @@ KAYNAKLAR (keşifle doğrulandı)
     ~18 satır/sayfa, ~12.100 doküman. Listedeki her satır /en/documents/{slug}
     linkidir; başlık anchor metnidir (defansif anchor-tabanlı parse).
 
-  ⚠️ CLOUDFLARE managed challenge ARALIKLI: istekler ~%75 200, kalanı 403 döner.
-     Bu yüzden HER çekim retry/backoff + tarayıcı-benzeri User-Agent ile yapılır
-     (basit tek curl güvenilmez). RSS, HTML'e göre daha kararlıdır → önce o.
+  ⚠️ CLOUDFLARE managed challenge: adb.org gibi afdb.org da challenge arkasında;
+     düz httpx/curl/cloudscraper 403 alır. Bu yüzden HER çekim FlareSolverr üzerinden
+     yapılır (dis_kaynak_ortak.fs_cek — baş görünmez Chromium challenge'ı çözer).
+     FlareSolverr YAVAŞ (~3-8 sn/istek) → backfill'de sayfa başı bekle, gece cron RSS'i
+     tek istektir. Geçici hatada sınırlı-retry + backoff.
 
 ALAN EŞLEMESİ (AfDB az yapısal veri verir; çoğu alan NULL)
 ----------------------------------------------------------
@@ -81,6 +83,7 @@ from dotenv import load_dotenv
 
 sys.path.insert(0, os.path.dirname(__file__))
 from ted_scraper import baslik_cevir  # ORTAK toplu-çeviri (ai_ortak üzerinden; TED/georgia ile aynı)
+from dis_kaynak_ortak import fs_cek, xml_sarma_ac   # FlareSolverr çekim + XML-viewer sarma açıcı
 
 load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), ".env"))
 
@@ -90,12 +93,8 @@ SUPABASE_KEY = os.environ.get("SUPABASE_SERVICE_KEY", "")
 BASE = "https://www.afdb.org"
 RSS_URL = f"{BASE}/en/projects-and-operations/procurement.xml"
 HTML_URL = f"{BASE}/en/projects-and-operations/procurement"
-# Tarayıcı-benzeri UA: Cloudflare managed challenge'ı çıplak curl/httpx UA'sına göre
-# daha seyrek tetikler (yine de aralıklı 403 olur → retry/backoff şart).
-UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
-      "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36")
-
-# Bir istek en fazla kaç kez denenir (Cloudflare 403 / 5xx / ağ hatası). Aşılınca o
+# Çekim FlareSolverr üzerinden (Cloudflare challenge çözülür; UA'yı FlareSolverr yönetir).
+# Bir istek en fazla kaç kez denenir (FlareSolverr geçici hata / Chromium timeout). Aşılınca o
 # sayfa/istek atlanır (backfill devam eder; RSS'te tüm koşu boşa düşmüş sayılır).
 ISTEK_DENEME = 3
 
@@ -279,42 +278,34 @@ def satir_yap(title, link, pubdate_raw=None):
     }
 
 
-# ─────────────────────────────────────────────────────────── çekim (Cloudflare retry)
-def _getir(client, url):
-    """URL'yi tarayıcı-benzeri UA + retry/backoff ile çeker. Metin ya da None döner.
+# ─────────────────────────────────────────────────────── çekim (FlareSolverr + retry)
+def _getir(url):
+    """URL'yi FlareSolverr üzerinden çeker (Cloudflare challenge çözülür). Metin ya da None.
 
-    Cloudflare managed challenge ARALIKLI 403 döndürür (istekler ~%75 200). 403/5xx/ağ
-    hatasında üstel backoff ile yeniden dener; ISTEK_DENEME tükenince None döner (çağıran
-    o sayfayı atlar). 200 gövdesi challenge HTML'i olabilir; çağıran parse'ta 0 satır görür.
+    FlareSolverr geçici hata verebilir (Chromium timeout / servis yeniden başlıyor) →
+    sınırlı-retry + üstel backoff. ISTEK_DENEME tükenince None döner (çağıran o sayfayı
+    atlar). Cloudflare 403'ü FlareSolverr içinde çözülür; buraya sızmaz.
     """
     for k in range(ISTEK_DENEME):
         try:
-            r = client.get(url, headers={"User-Agent": UA,
-                                         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
-                                         "Accept-Language": "en-US,en;q=0.8"})
+            return fs_cek(url)
         except Exception as e:
-            print(f"  ⚠ istek hata (deneme {k+1}/{ISTEK_DENEME}): {type(e).__name__}: {str(e)[:120]}")
-        else:
-            if r.status_code == 200:
-                return r.text
-            if r.status_code == 403:
-                print(f"  ⚠ Cloudflare 403 (deneme {k+1}/{ISTEK_DENEME}) — bekle+tekrar")
-            elif r.status_code >= 500:
-                print(f"  ⚠ {r.status_code} (deneme {k+1}/{ISTEK_DENEME})")
-            else:
-                print(f"  ✗ {url} → {r.status_code} {r.text[:120]}")
-                return None  # kalıcı (404 vb.) — tekrar denemek anlamsız
-        if k < ISTEK_DENEME - 1:
-            time.sleep(min(2 ** k * 3, 20))
-    print(f"  ✗ {url}: {ISTEK_DENEME} denemede alınamadı (Cloudflare/ağ)")
+            print(f"  ⚠ FlareSolverr hata (deneme {k+1}/{ISTEK_DENEME}): "
+                  f"{type(e).__name__}: {str(e)[:140]}")
+            if k < ISTEK_DENEME - 1:
+                time.sleep(min(2 ** k * 3, 20))
+    print(f"  ✗ {url}: {ISTEK_DENEME} denemede alınamadı (FlareSolverr/Cloudflare)")
     return None
 
 
-def rss_cek(client):
+def rss_cek():
     """RSS feed'ini çeker ve satırlara dönüştürür (gece cron'u — kararlı yol)."""
-    metin = _getir(client, RSS_URL)
+    metin = _getir(RSS_URL)
     if not metin:
         return []
+    # ⚠️ FlareSolverr, RSS'i Chromium XML-viewer'ına sarar (XML, <pre> içinde escape'li) →
+    #    hem ET.fromstring hem <item> regex patlar. Önce sarmayı aç, sonra parse et.
+    metin = xml_sarma_ac(metin)
     satirlar = []
     try:
         kok = ET.fromstring(metin)
@@ -336,17 +327,18 @@ def rss_cek(client):
     return satirlar
 
 
-def html_cek(client, max_pages):
+def html_cek(max_pages):
     """HTML listeleme sayfalarını (?page=0..max_pages-1) çeker — opsiyonel BACKFILL.
 
     Defansif anchor-tabanlı parse: sayfadaki her /en/documents/{slug} linki bir duyurudur;
     başlık anchor metnidir. Menü/navigasyon linklerini elemek için başlığın ' - ' içermesi
     (AfDB 'TIP - Ülke - …' kalıbı) şart koşulur. Sayfa markup'ı keşifte satır düzeyinde
     doğrulanmadı → kalıp, ilk gerçek backfill koşusunda gözlemle teyit edilmeli.
+    FlareSolverr YAVAŞ → sayfa başı bekle (aşağıda sleep).
     """
     satirlar, bos_sayfa = [], 0
     for p in range(max_pages):
-        metin = _getir(client, f"{HTML_URL}?page={p}")
+        metin = _getir(f"{HTML_URL}?page={p}")
         if not metin:
             bos_sayfa += 1
             if bos_sayfa >= 3:
@@ -426,14 +418,13 @@ def main():
         print("✗ SUPABASE_URL / SUPABASE_SERVICE_KEY eksik (.env)")
         return
 
-    # ── Çekim ──
-    with httpx.Client(timeout=60, follow_redirects=True) as client:
-        if args.backfill:
-            print(f"→ AfDB HTML backfill: sayfa 0..{args.max_pages - 1}")
-            satirlar = html_cek(client, args.max_pages)
-        else:
-            print("→ AfDB RSS taraması (procurement.xml)")
-            satirlar = rss_cek(client)
+    # ── Çekim (FlareSolverr üzerinden — Cloudflare challenge çözülür) ──
+    if args.backfill:
+        print(f"→ AfDB HTML backfill: sayfa 0..{args.max_pages - 1} (FlareSolverr — yavaş)")
+        satirlar = html_cek(args.max_pages)
+    else:
+        print("→ AfDB RSS taraması (procurement.xml, FlareSolverr)")
+        satirlar = rss_cek()
 
     # Dedup (publication_no = afdb-{slug})
     benzersiz = {}

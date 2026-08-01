@@ -80,7 +80,6 @@ $VENV/python ted_scraper.py --gun 2 >> /opt/ihale-platform/logs/scraper.log 2>&1
 $VENV/python georgia_scraper.py >> /opt/ihale-platform/logs/scraper.log 2>&1
 # UNGM (BM Kuresel Pazar Yeri) — uluslararasi_ihaleler'e kaynak='UNGM'. Deadline'a gore sirali,
 # --max-pages 20 = ~300 en yakin acik ilan/gece guncellenir. Baslik cevirisi DeepSeek (ai_ortak).
-# NOT: AfDB scraper HAZIR ama VDS IP'si Cloudflare challenge yiyor (403) — proxy cozulunce eklenecek.
 echo "[$(date +'%Y-%m-%d %H:%M:%S')] === UNGM uluslararasi ===" >> /opt/ihale-platform/logs/scraper.log
 $VENV/python ungm_scraper.py --max-pages 20 >> /opt/ihale-platform/logs/scraper.log 2>&1
 # EBRD (Avrupa Imar ve Kalkinma Bankasi) — kaynak='EBRD'. Tek GET ~4000 ilan (UA sart, yoksa 403).
@@ -89,8 +88,16 @@ $VENV/python ebrd_scraper.py >> /opt/ihale-platform/logs/scraper.log 2>&1
 # World Bank (Dunya Bankasi) — kaynak='WorldBank'. En yeni ilanlar (noticedate desc), --max-pages 10 = son ~1000.
 echo "[$(date +'%Y-%m-%d %H:%M:%S')] === WorldBank uluslararasi ===" >> /opt/ihale-platform/logs/scraper.log
 $VENV/python worldbank_scraper.py --max-pages 10 >> /opt/ihale-platform/logs/scraper.log 2>&1
-# NOT: ADB + AfDB Cloudflare bot-korumasi kullaniyor (cloudscraper dahil 403) — headless (Playwright/
-# FlareSolverr) sart. Sunucu tasima YENI sunucuda kurulacak (bkz. sunucu-tasima-kontrol-listesi memory).
+# ADB (Asya Kalkinma Bankasi) — kaynak='ADB'. FlareSolverr uzerinden (Cloudflare challenge asilir),
+# SearchStax liste ds_date_closing desc; --max-pages 3 = ~36 en yeni acik duyuru/gece. FlareSolverr
+# YAVAS (~5sn/istek) ama az sayfa. FlareSolverr Docker 127.0.0.1:8191 ayakta olmali (server tasima notu).
+echo "[$(date +'%Y-%m-%d %H:%M:%S')] === ADB uluslararasi (FlareSolverr) ===" >> /opt/ihale-platform/logs/scraper.log
+$VENV/python adb_scraper.py --max-pages 3 >> /opt/ihale-platform/logs/scraper.log 2>&1
+# AfDB (Afrika Kalkinma Bankasi) — kaynak='AfDB'. FlareSolverr + RSS (procurement.xml, TEK istek, ~20 en
+# yeni proje satinalmasi). FlareSolverr XML'i Chromium-viewer'a sarar (<pre> icinde escape'li) →
+# dis_kaynak_ortak.xml_sarma_ac ile acilir (yoksa 0 kayit). Backfill icin: afdb_scraper.py --backfill.
+echo "[$(date +'%Y-%m-%d %H:%M:%S')] === AfDB uluslararasi (FlareSolverr RSS) ===" >> /opt/ihale-platform/logs/scraper.log
+$VENV/python afdb_scraper.py >> /opt/ihale-platform/logs/scraper.log 2>&1
 # Kamu kurumu kaynakları (EKAP dışı, ANA ilanlar tablosuna kaynak='dmo'/'jandarma' ile yazar —
 # 16 Tem'de ayrı kamu_ihaleleri'nden buraya taşındı, İhaleler ekranında rozetle görünür): DMO + Jandarma
 echo "[$(date +'%Y-%m-%d %H:%M:%S')] === Kamu kurumu (DMO/Jandarma) ===" >> /opt/ihale-platform/logs/scraper.log
