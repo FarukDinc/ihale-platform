@@ -95,6 +95,9 @@
     .k-cb-bas { display:flex; justify-content:space-between; gap:10px; margin-bottom:4px; font-size:13px; }
     .k-cb-ad { color:var(--v1-metin); font-weight:600; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
     .k-cb-link { cursor:pointer; } .k-cb-link:hover .k-cb-ad { color:var(--v1-mavi); text-decoration:underline; }
+    .dag-tip { display:inline-flex; border:1px solid var(--v1-cizgi); border-radius:9px; overflow:hidden; margin-bottom:14px; }
+    .dag-tip-btn { border:none; background:#fff; color:var(--v1-muted); font-family:var(--v1-font); font-size:13px; font-weight:700; padding:8px 16px; cursor:pointer; }
+    .dag-tip-btn.aktif { background:var(--v1-mavi); color:#fff; }
     .k-cb-say { color:var(--v1-mavi); font-weight:800; white-space:nowrap; flex-shrink:0; }
     .k-cb-yol { height:7px; background:#EDF1F6; border-radius:4px; overflow:hidden; }
     .k-cb-dolu { display:block; height:100%; background:var(--v1-mavi); border-radius:4px; }
@@ -438,18 +441,22 @@
 
         <!-- DAĞILIM ANALİZİ -->
         <div id="sek-dagilim" class="v1-panel">
+          <div class="dag-tip">
+            <button type="button" data-dtip="ihale" class="dag-tip-btn aktif">📋 İhale</button>
+            <button type="button" data-dtip="dt" class="dag-tip-btn">⚡ Doğrudan Temin</button>
+          </div>
           <div class="v1-ikili">
             <div class="v1-kart">
               <div class="v1-kart-baslik">Sektör / Kategori Dağılımı</div>
               <div id="l-kategori"><div class="v1-bos">Yükleniyor…</div></div>
             </div>
             <div class="v1-kart">
-              <div class="v1-kart-baslik">İhale Usulü Dağılımı</div>
+              <div class="v1-kart-baslik" id="dag-usul-baslik">İhale Usulü Dağılımı</div>
               <div id="l-usul"><div class="v1-bos">Yükleniyor…</div></div>
             </div>
           </div>
           <div class="v1-kart">
-            <div class="v1-kart-baslik">Aktif vs Kapanmış İhaleler</div>
+            <div class="v1-kart-baslik" id="dag-durum-baslik">Aktif vs Kapanmış İhaleler</div>
             <div class="v1-graf" style="height:190px;"><canvas id="g-durum"></canvas></div>
           </div>
           <!-- analiz_pivot RPC'sinden kazanan firma dağılımı (RPC yoksa kart gizli kalır) -->
@@ -587,6 +594,7 @@
 
   const P = new URLSearchParams(location.search);
   let KURUM = P.get('kurum') || '';    // birleşik hub: pushState ile sayfa içinde değişir
+  let _ihaleOzet = null, _dtOzet = null, _dagilimTip = 'ihale';   // Dağılım Analizi İhale/DT seçici
   let uyeMi = false;
 
   // ══════════════════ KURUM ANALİZİ ══════════════════
@@ -987,6 +995,34 @@
   }
 
   // analiz_pivot: bu idarenin kazanan firma dağılımı + yoğunlaşma endeksi
+  // Dağılım Analizi — İhale/DT seçici. İhale: kurum_ozet (yüklü). DT: kurum_dt_ozet (on-demand + cache).
+  async function dagilimCiz(tip) {
+    _dagilimTip = tip;
+    document.querySelectorAll('[data-dtip]').forEach(b => b.classList.toggle('aktif', b.dataset.dtip === tip));
+    const usulB = el('dag-usul-baslik'), durumB = el('dag-durum-baslik');
+    if (tip === 'dt') {
+      if (!_dtOzet) {
+        el('l-kategori').innerHTML = '<div class="v1-bos">Yükleniyor…</div>';
+        el('l-usul').innerHTML = '<div class="v1-bos">Yükleniyor…</div>';
+        try { const { data, error } = await sb.rpc('kurum_dt_ozet', { p_idare: KURUM }); if (error) throw error; _dtOzet = data || {}; }
+        catch (e) { el('l-kategori').innerHTML = '<div class="v1-bos">Doğrudan temin dağılımı yüklenemedi.</div>'; el('l-usul').innerHTML = '<div class="v1-bos">—</div>'; return; }
+      }
+      cubukListe('l-kategori', _dtOzet.kategori || [], 'Kategori verisi yok.');
+      cubukListe('l-usul', _dtOzet.tur || [], 'Tür verisi yok.');
+      if (usulB) usulB.textContent = 'DT Türü Dağılımı';
+      if (durumB) durumB.textContent = 'Açık vs Geçmiş Doğrudan Teminler';
+      durumGrafik(_dtOzet.durum || {});
+      el('kart-kazanan').style.display = 'none';   // DT kazanan bu görünümde yok
+    } else {
+      cubukListe('l-kategori', (_ihaleOzet && _ihaleOzet.kategori) || [], 'Kategori verisi yok.');
+      cubukListe('l-usul', (_ihaleOzet && _ihaleOzet.usul) || [], 'Usul verisi yok.');
+      if (usulB) usulB.textContent = 'İhale Usulü Dağılımı';
+      if (durumB) durumB.textContent = 'Aktif vs Kapanmış İhaleler';
+      durumGrafik((_ihaleOzet && _ihaleOzet.durum) || {});
+      kazananFirmalar();
+    }
+  }
+
   async function kazananFirmalar() {
     try {
       const { data, error } = await sb.rpc('analiz_pivot', { p_grup: 'firma', p_idare: KURUM });
@@ -1147,10 +1183,8 @@
     yillikGrafik((ozet && ozet.yillik) || []);
     cubukListe('l-tur', (ozet && ozet.tur) || [], 'Tür verisi yok.');
     ilListe((ozet && ozet.il) || []);
-    cubukListe('l-kategori', (ozet && ozet.kategori) || [], 'Kategori verisi yok.');
-    cubukListe('l-usul', (ozet && ozet.usul) || [], 'Usul verisi yok.');
-    durumGrafik((ozet && ozet.durum) || {});
-    kazananFirmalar();
+    _ihaleOzet = ozet; _dtOzet = null;   // yeni kurum → DT önbelleğini sıfırla; İhale dağılımı varsayılan
+    dagilimCiz('ihale');
   }
 
   // ══════════════════ İDARE DİZİNİ ══════════════════
@@ -1751,6 +1785,9 @@
     // kurum analizi sekmeleri + aksiyonlar
     document.querySelectorAll('#root-content .v1-sekme').forEach(b =>
       b.addEventListener('click', () => sekmeAc(b.dataset.sek)));
+    // Dağılım Analizi İhale/DT seçici
+    document.querySelectorAll('[data-dtip]').forEach(b =>
+      b.addEventListener('click', () => { if (b.dataset.dtip !== _dagilimTip) dagilimCiz(b.dataset.dtip); }));
     el('btn-liste-git').addEventListener('click', () => {
       sekmeAc('liste');
       el('sek-liste').scrollIntoView({ behavior: 'smooth', block: 'start' });
