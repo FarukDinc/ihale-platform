@@ -1,10 +1,10 @@
-﻿<!DOCTYPE html>
+?<!DOCTYPE html>
 <html lang="tr">
 <head>
   <meta charset="UTF-8" />
-  <meta name="author" content="Ã–mer Faruk DinÃ§">
+  <meta name="author" content="Ömer Faruk Dinç">
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Global Ä°haleler â€” Ä°haleGlobal</title>
+  <title>Global İhaleler — İhaleGlobal</title>
   <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=4" />
   <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/v1.css?v=15" />
@@ -17,10 +17,10 @@
     .v1-f-etiket { font-size:11.5px; color:var(--v1-muted); margin:6px 0 3px; display:block; }
     .v1-bayrak { display:inline-block; font-size:11.5px; font-weight:700; padding:3px 10px; border-radius:20px;
       background:var(--v1-mavi-acik); color:var(--v1-mavi); white-space:nowrap; }
-    /* Kaynak rozeti â€” hangi ilan hangi kurumdan (TED/UNGM/EBRD/ADB/AfDB/DÃ¼nya BankasÄ±) */
+    /* Kaynak rozeti — hangi ilan hangi kurumdan (TED/UNGM/EBRD/ADB/AfDB/Dünya Bankası) */
     .v1-kaynak { display:inline-block; font-size:10px; font-weight:800; padding:2px 7px; border-radius:5px;
       color:#fff; letter-spacing:.2px; vertical-align:middle; margin-right:7px; white-space:nowrap; }
-    /* DÃ¼nya haritasÄ± â€” v1 mavi paleti */
+    /* Dünya haritası — v1 mavi paleti */
     .v1-dunya-wrap { position:relative; width:100%; background:var(--v1-zemin); border:1px solid var(--v1-cizgi);
       border-radius:12px; overflow:hidden; }
     .v1-dunya-svg { width:100%; height:auto; display:block; }
@@ -34,20 +34,20 @@
     .v1-lejant i { width:24px; height:11px; border-radius:3px; display:inline-block; }
   </style>
 </head>
-<body class="v1" data-v1-aktif="global" data-v1-kirinti="Global > UluslararasÄ± Ä°haleler">
+<body class="v1" data-v1-aktif="global" data-v1-kirinti="Global > Uluslararası İhaleler">
 <div class="v1-app">
   <div class="v1-main">
     <div class="v1-govde">
-      <div class="v1-sayfa-baslik">Global Ä°haleler</div>
-      <div class="v1-sayfa-alt">TED (AB), UNGM (BM), DÃ¼nya BankasÄ±, EBRD, ADB ve AfDB gibi kaynaklardan derlenen uluslararasÄ± ihale ilanlarÄ± â€” her ilanda kaynaÄŸÄ± rozetiyle gÃ¶rÃ¼rsÃ¼nÃ¼z. Haritadan Ã¼lkeye tÄ±klayÄ±n ya da aÅŸaÄŸÄ±dan sÃ¼zÃ¼n.</div>
+      <div class="v1-sayfa-baslik">Global İhaleler</div>
+      <div class="v1-sayfa-alt">TED (AB), UNGM (BM), Dünya Bankası, EBRD, ADB ve AfDB gibi kaynaklardan derlenen uluslararası ihale ilanları — her ilanda kaynağı rozetiyle görürsünüz. Haritadan ülkeye tıklayın ya da aşağıdan süzün.</div>
 
-      <!-- DÃ¼nya haritasÄ±: Ã¼lke bazlÄ± ihale yoÄŸunluÄŸu (arÅŸiv toplamÄ±) -->
+      <!-- Dünya haritası: ülke bazlı ihale yoğunluğu (arşiv toplamı) -->
       <div class="v1-kart">
         <div class="v1-kart-baslik" style="justify-content:space-between;">
-          <span>DÃ¼nya HaritasÄ± â€” Ãœlke BazlÄ± Ä°hale YoÄŸunluÄŸu</span>
-          <a href="v1-dis-ticaret" style="font-size:12.5px;color:var(--v1-muted);">DÄ±ÅŸ Ticaret Analizi â†’</a>
+          <span>Dünya Haritası — Ülke Bazlı İhale Yoğunluğu</span>
+          <a href="v1-dis-ticaret" style="font-size:12.5px;color:var(--v1-muted);">Dış Ticaret Analizi →</a>
         </div>
-        <div class="v1-dunya-wrap" id="g-harita"><div class="v1-bos">Harita yÃ¼kleniyorâ€¦</div></div>
+        <div class="v1-dunya-wrap" id="g-harita"><div class="v1-bos">Harita yükleniyor…</div></div>
         <div class="v1-lejant" id="g-lejant"></div>
       </div>
 
@@ -58,42 +58,42 @@
             Filtrele
           </div>
           <div class="v1-filtre-grup acik">
-            <button class="v1-filtre-btn">Kelime Arama<span class="ok">â€º</span></button>
-            <div class="v1-filtre-icerik"><input class="v1-f-input" id="f-kelime" placeholder="Ä°hale adÄ±nda araâ€¦"></div>
+            <button class="v1-filtre-btn">Kelime Arama<span class="ok">›</span></button>
+            <div class="v1-filtre-icerik"><input class="v1-f-input" id="f-kelime" placeholder="İhale adında ara…"></div>
           </div>
           <div class="v1-filtre-grup">
-            <button class="v1-filtre-btn">Ãœlke<span class="ok">â€º</span></button>
-            <div class="v1-filtre-icerik"><select class="v1-f-select" id="f-ulke"><option value="">TÃ¼mÃ¼</option></select></div>
+            <button class="v1-filtre-btn">Ülke<span class="ok">›</span></button>
+            <div class="v1-filtre-icerik"><select class="v1-f-select" id="f-ulke"><option value="">Tümü</option></select></div>
           </div>
           <div class="v1-filtre-grup">
-            <button class="v1-filtre-btn">SektÃ¶r<span class="ok">â€º</span></button>
-            <div class="v1-filtre-icerik"><select class="v1-f-select" id="f-kategori"><option value="">TÃ¼mÃ¼</option></select></div>
+            <button class="v1-filtre-btn">Sektör<span class="ok">›</span></button>
+            <div class="v1-filtre-icerik"><select class="v1-f-select" id="f-kategori"><option value="">Tümü</option></select></div>
           </div>
           <div class="v1-filtre-grup">
-            <button class="v1-filtre-btn">Ä°hale Tarihi<span class="ok">â€º</span></button>
+            <button class="v1-filtre-btn">İhale Tarihi<span class="ok">›</span></button>
             <div class="v1-filtre-icerik">
-              <span class="v1-f-etiket">BaÅŸlangÄ±Ã§</span><input type="date" class="v1-f-input" id="f-t1">
-              <span class="v1-f-etiket">BitiÅŸ</span><input type="date" class="v1-f-input" id="f-t2">
+              <span class="v1-f-etiket">Başlangıç</span><input type="date" class="v1-f-input" id="f-t1">
+              <span class="v1-f-etiket">Bitiş</span><input type="date" class="v1-f-input" id="f-t2">
             </div>
           </div>
           <div class="v1-filtre-grup">
-            <button class="v1-filtre-btn">DiÄŸer<span class="ok">â€º</span></button>
+            <button class="v1-filtre-btn">Diğer<span class="ok">›</span></button>
             <div class="v1-filtre-icerik">
               <label style="display:flex;gap:8px;align-items:center;font-size:13px;">
-                <input type="checkbox" id="f-acik" checked> YalnÄ±z teklif sÃ¼resi devam edenler</label>
+                <input type="checkbox" id="f-acik" checked> Yalnız teklif süresi devam edenler</label>
             </div>
           </div>
           <button class="v1-filtre-uygula" id="f-uygula">Filtreyi Uygula</button>
           <button style="width:100%;background:none;border:none;border-top:1px solid var(--v1-cizgi);padding:11px;
-            font-family:var(--v1-font);font-size:13px;font-weight:600;color:var(--v1-muted);cursor:pointer;" id="f-temizle">VazgeÃ§ / Temizle</button>
+            font-family:var(--v1-font);font-size:13px;font-weight:600;color:var(--v1-muted);cursor:pointer;" id="f-temizle">Vazgeç / Temizle</button>
         </aside>
 
         <section>
           <div class="v1-kart" style="padding:18px 20px;">
             <div class="v1-tablo-bas">
               <div>
-                <div style="font-size:17px;font-weight:800;color:var(--v1-lacivert);">UluslararasÄ± Ä°haleler</div>
-                <div class="v1-tablo-sayi" id="v1-sayi">YÃ¼kleniyorâ€¦</div>
+                <div style="font-size:17px;font-weight:800;color:var(--v1-lacivert);">Uluslararası İhaleler</div>
+                <div class="v1-tablo-sayi" id="v1-sayi">Yükleniyor…</div>
               </div>
               <div class="v1-listede-ara">
                 <svg viewBox="0 0 24 24" width="15" height="15" fill="var(--v1-muted)"><path fill-rule="evenodd" d="M10.5 3a7.5 7.5 0 1 0 4.55 13.46l4.24 4.25 1.42-1.42-4.25-4.24A7.5 7.5 0 0 0 10.5 3Zm0 2a5.5 5.5 0 1 1 0 11 5.5 5.5 0 0 1 0-11Z"/></svg>
@@ -104,12 +104,12 @@
               <table class="v1-tablo">
                 <thead><tr>
                   <th style="width:120px;">Son Teklif</th>
-                  <th>Ä°hale AdÄ±</th>
-                  <th style="width:120px;">Ãœlke</th>
-                  <th style="width:150px;">SektÃ¶r</th>
+                  <th>İhale Adı</th>
+                  <th style="width:120px;">Ülke</th>
+                  <th style="width:150px;">Sektör</th>
                   <th style="width:60px;"></th>
                 </tr></thead>
-                <tbody id="v1-tbody"><tr><td colspan="5" class="v1-bos">YÃ¼kleniyorâ€¦</td></tr></tbody>
+                <tbody id="v1-tbody"><tr><td colspan="5" class="v1-bos">Yükleniyor…</td></tr></tbody>
               </table>
             </div>
             <div class="v1-sayfalama" id="v1-sayfalama"></div>
@@ -120,7 +120,7 @@
   </div>
 </div>
 
-<!-- Harita tooltip kabÄ±: script'ten Ã–NCE dursun ki haritaCiz onu her hÃ¢lÃ¼kÃ¢rda bulsun -->
+<!-- Harita tooltip kabı: script'ten ÖNCE dursun ki haritaCiz onu her hâlükârda bulsun -->
 <div class="v1-tooltip" id="g-tip"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
@@ -133,12 +133,12 @@
   const sb=window.supabase.createClient(SB_URL,SB_KEY);
   const num=(n)=>(Number(n)||0).toLocaleString('tr-TR');
   const esc=(s)=>(s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-  // Kaynak rozeti â€” her ilanÄ±n hangi kurumdan geldiÄŸini renkli etiketle gÃ¶sterir (TED gibi)
+  // Kaynak rozeti — her ilanın hangi kurumdan geldiğini renkli etiketle gösterir (TED gibi)
   const KAYNAK_ROZET={
     ted:{e:'TED',r:'#1a4f9c'}, TED:{e:'TED',r:'#1a4f9c'},
     UNGM:{e:'UNGM',r:'#009edb'}, EBRD:{e:'EBRD',r:'#00857d'},
     ADB:{e:'ADB',r:'#d81e05'}, AfDB:{e:'AfDB',r:'#0a8f3c'},
-    WorldBank:{e:'DÃ¼nya BankasÄ±',r:'#0a2f66'}, georgia:{e:'Georgia (ABD)',r:'#6b7280'}
+    WorldBank:{e:'Dünya Bankası',r:'#0a2f66'}, georgia:{e:'Georgia (ABD)',r:'#6b7280'}
   };
   const kaynakRozet=(k)=>{ const m=KAYNAK_ROZET[k]||{e:(k||'?').toUpperCase(),r:'#6b7280'};
     return `<span class="v1-kaynak" style="background:${m.r};" title="Kaynak: ${esc(m.e)}">${esc(m.e)}</span>`; };
@@ -147,72 +147,72 @@
   let sayfa=1;
 
   /**
-   * â”€â”€ TÃœRKÃ‡E KELÄ°ME ARAMA KALIBI â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-   * â›” PostgREST `ilike` TÃ¼rkÃ§e nokta(lÄ±/sÄ±z) i'de SESSÄ°ZCE Ä°KÄ°YE BÃ–LÃœNÃœR:
-   *      baslik ilike *inÅŸaat*  â†’   735 satÄ±r
-   *      baslik ilike *Ä°nÅŸaat*  â†’ 1.351 satÄ±r   (ikisi birbirini HÄ°Ã‡ bulmaz)
-   *    KullanÄ±cÄ± "inÅŸaat" yazÄ±nca 1.351 kayÄ±t sessizce kaybolur, hata da Ã§Ä±kmaz.
+   * ── TÜRKÇE KELİME ARAMA KALIBI ────────────────────────────────────────────
+   * ⛔ PostgREST `ilike` Türkçe nokta(lı/sız) i'de SESSİZCE İKİYE BÖLÜNÜR:
+   *      baslik ilike *inşaat*  →   735 satır
+   *      baslik ilike *İnşaat*  → 1.351 satır   (ikisi birbirini HİÇ bulmaz)
+   *    Kullanıcı "inşaat" yazınca 1.351 kayıt sessizce kaybolur, hata da çıkmaz.
    *
-   * âš ï¸ window.v1Ara(...) BURADA KULLANILAMAZ: o yardÄ±mcÄ± metni katlayÄ±p (fold)
-   *    bir `*_fold` kolonuyla karÅŸÄ±laÅŸtÄ±rÄ±r; `uluslararasi_ihaleler`de Ã¶yle bir
-   *    kolon YOK (baslik_fold / arama_fold â†’ 42703, canlÄ± REST ile doÄŸrulandÄ±).
-   *    KatlanmÄ±ÅŸ metni ham `baslik` kolonuna vurmak 0 satÄ±r dÃ¶ndÃ¼rÃ¼r â€” yani tam
-   *    da dÃ¼zeltmeye Ã§alÄ±ÅŸtÄ±ÄŸÄ±mÄ±z hatayÄ± Ã¼retir.
+   * ⚠️ window.v1Ara(...) BURADA KULLANILAMAZ: o yardımcı metni katlayıp (fold)
+   *    bir `*_fold` kolonuyla karşılaştırır; `uluslararasi_ihaleler`de öyle bir
+   *    kolon YOK (baslik_fold / arama_fold → 42703, canlı REST ile doğrulandı).
+   *    Katlanmış metni ham `baslik` kolonuna vurmak 0 satır döndürür — yani tam
+   *    da düzeltmeye çalıştığımız hatayı üretir.
    *
-   * âœ… Ã‡Ã¶zÃ¼m: kullanÄ±cÄ±nÄ±n yazdÄ±ÄŸÄ± kelime AYNEN korunur, yalnÄ±zca BELÄ°RSÄ°Z
-   *    harfler LIKE'Ä±n tek-karakter jokeri `_` ile deÄŸiÅŸtirilir.
+   * ✅ Çözüm: kullanıcının yazdığı kelime AYNEN korunur, yalnızca BELİRSİZ
+   *    harfler LIKE'ın tek-karakter jokeri `_` ile değiştirilir.
    *
-   * âš ï¸ AYNI SESSÄ°Z HATA ÅŸ/Ã§/ÄŸ/Ã¶/Ã¼'DE DE VAR â€” yalnÄ±z i-ailesi geniÅŸletilince
-   *    ASCII klavyeyle yazan kullanÄ±cÄ± HÃ‚LÃ‚ 0 satÄ±r alÄ±yordu (canlÄ± Ã¶lÃ§Ã¼m):
-   *      "insaat"   â†’ *_nsaat*   =     0   Â·  "inÅŸaat"   â†’ *_nÅŸaat*  = 1.925
-   *      "guvenlik" â†’ *guvenlik* =     0   Â·  "gÃ¼venlik" â†’ *gÃ¼venlik*=   358
-   *    Bu yÃ¼zden s/c/g/o/u da geniÅŸletiliyor. AMA kÃ¶rlemesine deÄŸil: kalÄ±pta
-   *    en az 4 SABÄ°T harf kalmalÄ±, yoksa kÄ±sa kelimeler tabloyu sÃ¼pÃ¼rÃ¼r:
-   *      insaat   â†’ *_n_aat*    1.926  (diakritikli hÃ¢lin 1.925'ine +1 gÃ¼rÃ¼ltÃ¼)
-   *      guvenlik â†’ *__venl_k*    358  (*gÃ¼venlik* ile BÄ°REBÄ°R aynÄ± kÃ¼me)
-   *      software â†’ *__ftware*    335  (*software* ile BÄ°REBÄ°R aynÄ± kÃ¼me)
-   *      gunes    â†’ *__ne_*     6.904  (!) sabit=2 â†’ GENÄ°ÅLETÄ°LMEZ, *gunes* kalÄ±r
+   * ⚠️ AYNI SESSİZ HATA ş/ç/ğ/ö/ü'DE DE VAR — yalnız i-ailesi genişletilince
+   *    ASCII klavyeyle yazan kullanıcı HÂLÂ 0 satır alıyordu (canlı ölçüm):
+   *      "insaat"   → *_nsaat*   =     0   ·  "inşaat"   → *_nşaat*  = 1.925
+   *      "guvenlik" → *guvenlik* =     0   ·  "güvenlik" → *güvenlik*=   358
+   *    Bu yüzden s/c/g/o/u da genişletiliyor. AMA körlemesine değil: kalıpta
+   *    en az 4 SABİT harf kalmalı, yoksa kısa kelimeler tabloyu süpürür:
+   *      insaat   → *_n_aat*    1.926  (diakritikli hâlin 1.925'ine +1 gürültü)
+   *      guvenlik → *__venl_k*    358  (*güvenlik* ile BİREBİR aynı küme)
+   *      software → *__ftware*    335  (*software* ile BİREBİR aynı küme)
+   *      gunes    → *__ne_*     6.904  (!) sabit=2 → GENİŞLETİLMEZ, *gunes* kalır
    */
   function araKalibi(metin){
-    // PostgREST filtre ayrÄ±ÅŸtÄ±rÄ±cÄ±sÄ±nÄ± GERÃ‡EKTEN bozan karakterler + kullanÄ±cÄ±nÄ±n
-    // kendi jokerleri. BoÅŸluÄŸa deÄŸil `_`e Ã§evriliyor: boÅŸluk kelimeyi ikiye bÃ¶ler,
-    // `_` ise o karakterin yerinde eÅŸleÅŸir. CanlÄ± Ã¶lÃ§Ã¼m â€” `,` PGRST100 hatasÄ± Â·
-    // `)` or(...) grubunu erken kapatÄ±p 701 alakasÄ±z satÄ±r Â· `\` 3.207 satÄ±r Â·
-    // `"` 0 satÄ±r. `'` ve `.` zararsÄ±z (*VALD'YERRE* = 1 satÄ±r) ama dÃ¼z/kÄ±vrÄ±k
-    // tÄ±rnak ayrÄ±mÄ±nÄ± yutmak iÃ§in tÄ±rnaklar da `_` yapÄ±lÄ±yor.
+    // PostgREST filtre ayrıştırıcısını GERÇEKTEN bozan karakterler + kullanıcının
+    // kendi jokerleri. Boşluğa değil `_`e çevriliyor: boşluk kelimeyi ikiye böler,
+    // `_` ise o karakterin yerinde eşleşir. Canlı ölçüm — `,` PGRST100 hatası ·
+    // `)` or(...) grubunu erken kapatıp 701 alakasız satır · `\` 3.207 satır ·
+    // `"` 0 satır. `'` ve `.` zararsız (*VALD'YERRE* = 1 satır) ama düz/kıvrık
+    // tırnak ayrımını yutmak için tırnaklar da `_` yapılıyor.
     const t=(metin||'')
-      .replace(/\u0307/g,'')     // birleÅŸen nokta (i + U+0307) â†’ tek karaktere indir
-      .replace(/[,()"'â€™â€˜`\\*%]/g,'_')
+      .replace(/\u0307/g,'')     // birleşen nokta (i + U+0307) → tek karaktere indir
+      .replace(/[,()"'’‘`\\*%]/g,'_')
       .replace(/\s+/g,' ').trim();
     if(!t) return '';
     const sabit=(s)=>s.replace(/[_\s]/g,'').length;
-    if(!sabit(t)) return '';        // ",,," gibi girdi *___* olup her ÅŸeyi dÃ¶ndÃ¼rÃ¼r
-    const iAile=t.replace(/[iÄ±Ä°I]/g,'_');
-    const genis=iAile.replace(/[ÅŸsÅS]/g,'_').replace(/[Ã§cÃ‡C]/g,'_')
-      .replace(/[ÄŸgÄG]/g,'_').replace(/[Ã¶oÃ–O]/g,'_').replace(/[Ã¼uÃœU]/g,'_');
+    if(!sabit(t)) return '';        // ",,," gibi girdi *___* olup her şeyi döndürür
+    const iAile=t.replace(/[iıİI]/g,'_');
+    const genis=iAile.replace(/[şsŞS]/g,'_').replace(/[çcÇC]/g,'_')
+      .replace(/[ğgĞG]/g,'_').replace(/[öoÖO]/g,'_').replace(/[üuÜU]/g,'_');
     return '*'+(sabit(genis)>=4?genis:iAile)+'*';
   }
 
   /**
-   * TAKEDOWN switch guard'Ä±: `yayinda` kolonu tabloda VAR MI?
-   * â”€â”€ Neden guard? v1-global CANLI. `.eq('yayinda',true)`'yu KOÅULSUZ eklersek ve
-   *    HTML, migration_uluslararasi_yayin.sql UYGULANMADAN Ã¶nce deploy olursa
-   *    (CF cache 4sa + migration'Ä± kullanÄ±cÄ± ayrÄ±ca -U supabase_admin ile koÅŸuyor â†’
-   *    sÄ±ralama kÄ±rÄ±lgan) sorgu 42703 ile 400 dÃ¶ner ve TÃœM liste "Liste yÃ¼klenemedi"
-   *    olur â€” Ã§alÄ±ÅŸan bir sayfada canlÄ± kesinti. Guard bunu tamamen ortadan kaldÄ±rÄ±r.
-   * â”€â”€ SÄ±zÄ±ntÄ± riski YOK: gizlenecek satÄ±rlar (UNGM/AfDB, yayinda=false) ancak kolon
-   *    VARSA yazÄ±labilir; kolon yokken gizli satÄ±r da yoktur â†’ filtresiz mod gÃ¼venli.
-   * â”€â”€ FAIL-CLOSED: yalnÄ±z KESÄ°N "kolon yok" (42703) filtreyi kapatÄ±r. AÄŸ hatasÄ± /
-   *    baÅŸka hata â†’ kolon VAR varsayÄ±lÄ±r (filtre AÃ‡IK kalÄ±r) ki gerÃ§ek bir takedown
-   *    sÄ±rasÄ±nda geÃ§ici bir hata gizli veriyi gÃ¶stermesin. SonuÃ§ bir kez sorgulanÄ±p
-   *    cache'lenir (sayfa baÅŸÄ±na tek ek istek).
+   * TAKEDOWN switch guard'ı: `yayinda` kolonu tabloda VAR MI?
+   * ── Neden guard? v1-global CANLI. `.eq('yayinda',true)`'yu KOŞULSUZ eklersek ve
+   *    HTML, migration_uluslararasi_yayin.sql UYGULANMADAN önce deploy olursa
+   *    (CF cache 4sa + migration'ı kullanıcı ayrıca -U supabase_admin ile koşuyor →
+   *    sıralama kırılgan) sorgu 42703 ile 400 döner ve TÜM liste "Liste yüklenemedi"
+   *    olur — çalışan bir sayfada canlı kesinti. Guard bunu tamamen ortadan kaldırır.
+   * ── Sızıntı riski YOK: gizlenecek satırlar (UNGM/AfDB, yayinda=false) ancak kolon
+   *    VARSA yazılabilir; kolon yokken gizli satır da yoktur → filtresiz mod güvenli.
+   * ── FAIL-CLOSED: yalnız KESİN "kolon yok" (42703) filtreyi kapatır. Ağ hatası /
+   *    başka hata → kolon VAR varsayılır (filtre AÇIK kalır) ki gerçek bir takedown
+   *    sırasında geçici bir hata gizli veriyi göstermesin. Sonuç bir kez sorgulanıp
+   *    cache'lenir (sayfa başına tek ek istek).
    */
   let _yayindaProbe=null;
   function yayindaVarMi(){
     if(_yayindaProbe) return _yayindaProbe;
     _yayindaProbe=sb.from('uluslararasi_ihaleler').select('yayinda').limit(1)
-      .then(r=>!(r.error && r.error.code==='42703'))   // 42703 = kolon yok â†’ false
-      .catch(()=>true);                                 // aÄŸ hatasÄ± â†’ fail-closed (sÃ¼z)
+      .then(r=>!(r.error && r.error.code==='42703'))   // 42703 = kolon yok → false
+      .catch(()=>true);                                 // ağ hatası → fail-closed (süz)
     return _yayindaProbe;
   }
 
@@ -220,12 +220,12 @@
     let q=sb.from('uluslararasi_ihaleler').select(
       sayimIcin?'id':'id,baslik,ulke,ulke_kodu,kategori,tur,tahmini_bedel,para_birimi,son_teklif_tarihi,orijinal_url,kaynak',
       sayimIcin?{count:'exact',head:true}:undefined);
-    // TAKEDOWN switch: misafir/Ã¼ye YALNIZ yayinda=true gÃ¶rÃ¼r. Kolon yoksa (migration
-    // uygulanmadan) filtre ATLANIR â†’ sayfa 400 vermez, mevcut TED verisi gÃ¶rÃ¼nÃ¼r kalÄ±r.
+    // TAKEDOWN switch: misafir/üye YALNIZ yayinda=true görür. Kolon yoksa (migration
+    // uygulanmadan) filtre ATLANIR → sayfa 400 vermez, mevcut TED verisi görünür kalır.
     if(yayindaVar) q=q.eq('yayinda',true);
     const v=(id)=>{const e=document.getElementById(id); return e&&e.value?e.value.trim():'';};
-    // BaÅŸlÄ±k + orijinal (TED) baÅŸlÄ±k birlikte taranÄ±r: "software" tek baÅŸÄ±na
-    // baslik'te 335, iki kolonda 936 satÄ±r buluyor (Ã¶lÃ§Ã¼ldÃ¼).
+    // Başlık + orijinal (TED) başlık birlikte taranır: "software" tek başına
+    // baslik'te 335, iki kolonda 936 satır buluyor (ölçüldü).
     const kal=araKalibi(v('f-kelime'));
     if(kal) q=q.or('baslik.ilike.'+kal+',orijinal_baslik.ilike.'+kal);
     if(v('f-ulke'))   q=q.eq('ulke',v('f-ulke'));
@@ -239,41 +239,41 @@
 
   async function yukle(){
     const tb=document.getElementById('v1-tbody');
-    tb.innerHTML='<tr><td colspan="5" class="v1-bos">YÃ¼kleniyorâ€¦</td></tr>';
+    tb.innerHTML='<tr><td colspan="5" class="v1-bos">Yükleniyor…</td></tr>';
     try{
       const bas=(sayfa-1)*BOY;
-      const yv=await yayindaVarMi();   // kolon var mÄ±? (bir kez sorulur, cache'lenir)
+      const yv=await yayindaVarMi();   // kolon var mı? (bir kez sorulur, cache'lenir)
       const [veri,sayim]=await Promise.all([
         sorgu(false,yv).order('son_teklif_tarihi',{ascending:true,nullsFirst:true}).range(bas,bas+BOY-1),
-        // âš ï¸ supabase-js sorgu hatasÄ±nda REDDETMEZ, {error} ile Ã§Ã¶zÃ¼lÃ¼r â†’ .catch
-        //    tek baÅŸÄ±na yetmez; sayÄ±m patlarsa toplamÄ± gizleyip listeyi gÃ¶ster.
+        // ⚠️ supabase-js sorgu hatasında REDDETMEZ, {error} ile çözülür → .catch
+        //    tek başına yetmez; sayım patlarsa toplamı gizleyip listeyi göster.
         sorgu(true,yv).then(r=>r&&r.error?{count:null}:r).catch(()=>({count:null})),
       ]);
       if(veri.error) throw veri.error;
       const toplam=(sayim&&sayim.count!=null)?sayim.count:null;
       document.getElementById('v1-sayi').innerHTML = toplam!=null
-        ? `Arama kriterinize uygun <strong>${num(toplam)}</strong> uluslararasÄ± ihale listeleniyor`
-        : `<strong>${(veri.data||[]).length}</strong> ihale gÃ¶steriliyor`;
+        ? `Arama kriterinize uygun <strong>${num(toplam)}</strong> uluslararası ihale listeleniyor`
+        : `<strong>${(veri.data||[]).length}</strong> ihale gösteriliyor`;
       const d=veri.data||[];
-      if(!d.length){ tb.innerHTML='<tr><td colspan="5" class="v1-bos">KayÄ±t bulunamadÄ±.</td></tr>'; document.getElementById('v1-sayfalama').innerHTML=''; return; }
+      if(!d.length){ tb.innerHTML='<tr><td colspan="5" class="v1-bos">Kayıt bulunamadı.</td></tr>'; document.getElementById('v1-sayfalama').innerHTML=''; return; }
       tb.innerHTML=d.map(r=>{
         const t=r.son_teklif_tarihi?new Date(r.son_teklif_tarihi):null;
         const g=t?Math.ceil((t-new Date())/86400000):null;
         const bedel=r.tahmini_bedel?Number(r.tahmini_bedel).toLocaleString('tr-TR',{maximumFractionDigits:0})+' '+(r.para_birimi||''):'';
         return `<tr>
-          <td class="v1-t-tarih">${t?t.toLocaleDateString('tr-TR'):'â€”'}${g!=null&&g>=0?`<br><span class="kalan">Son ${g} gÃ¼n</span>`:''}</td>
-          <td><a class="v1-t-ad" href="${esc(r.orijinal_url||'#')}" target="_blank" rel="noopener">${esc(r.baslik||'â€”')}</a>
+          <td class="v1-t-tarih">${t?t.toLocaleDateString('tr-TR'):'—'}${g!=null&&g>=0?`<br><span class="kalan">Son ${g} gün</span>`:''}</td>
+          <td><a class="v1-t-ad" href="${esc(r.orijinal_url||'#')}" target="_blank" rel="noopener">${esc(r.baslik||'—')}</a>
             <div class="v1-t-ikn" style="margin-top:4px;">${kaynakRozet(r.kaynak)}${bedel?esc(bedel):''}</div></td>
-          <td><span class="v1-bayrak">${esc(r.ulke||'â€”')}</span></td>
-          <td style="font-size:12.5px;color:var(--v1-metin-2);">${esc(r.kategori||'â€”')}</td>
+          <td><span class="v1-bayrak">${esc(r.ulke||'—')}</span></td>
+          <td style="font-size:12.5px;color:var(--v1-metin-2);">${esc(r.kategori||'—')}</td>
           <td style="text-align:right;">${r.orijinal_url?`<a class="v1-yuvarlak-btn" style="text-decoration:none;" href="${esc(r.orijinal_url)}" target="_blank" rel="noopener" title="Kaynak ilan">
             <svg viewBox="0 0 24 24" fill="currentColor"><path d="M14 3v2h3.6l-9.3 9.3 1.4 1.4L19 6.4V10h2V3h-7Z"/><path d="M5 5h5V3H3v18h18v-7h-2v5H5V5Z"/></svg></a>`:''}</td></tr>`;
       }).join('');
       sayfalama(toplam,d.length);
     }catch(e){
-      tb.innerHTML=`<tr><td colspan="5" class="v1-bos">Liste yÃ¼klenemedi. ${esc(e.message||'')}</td></tr>`;
-      // SayaÃ§ "YÃ¼kleniyorâ€¦"da ASILI KALMASIN â€” kullanÄ±cÄ± istek hÃ¢lÃ¢ sÃ¼rÃ¼yor sanÄ±r.
-      document.getElementById('v1-sayi').textContent='Liste yÃ¼klenemedi';
+      tb.innerHTML=`<tr><td colspan="5" class="v1-bos">Liste yüklenemedi. ${esc(e.message||'')}</td></tr>`;
+      // Sayaç "Yükleniyor…"da ASILI KALMASIN — kullanıcı istek hâlâ sürüyor sanır.
+      document.getElementById('v1-sayi').textContent='Liste yüklenemedi';
       document.getElementById('v1-sayfalama').innerHTML='';
     }
   }
@@ -281,14 +281,14 @@
   function sayfalama(toplam,adet){
     const el=document.getElementById('v1-sayfalama');
     if(toplam==null){
-      el.innerHTML=`<button ${sayfa===1?'disabled':''} data-s="${sayfa-1}">â€¹ Ã–nceki</button><button class="aktif" disabled>${sayfa}</button><button ${adet<BOY?'disabled':''} data-s="${sayfa+1}">Sonraki â€º</button>`;
+      el.innerHTML=`<button ${sayfa===1?'disabled':''} data-s="${sayfa-1}">‹ Önceki</button><button class="aktif" disabled>${sayfa}</button><button ${adet<BOY?'disabled':''} data-s="${sayfa+1}">Sonraki ›</button>`;
     } else {
       const son=Math.max(1,Math.ceil(toplam/BOY)); if(son<=1){ el.innerHTML=''; return; }
       const g=[]; const b1=Math.max(1,sayfa-2), b2=Math.min(son,b1+4);
       for(let i=b1;i<=b2;i++) g.push(i);
-      el.innerHTML=`<button ${sayfa===1?'disabled':''} data-s="${sayfa-1}">â€¹</button>`+
+      el.innerHTML=`<button ${sayfa===1?'disabled':''} data-s="${sayfa-1}">‹</button>`+
         g.map(i=>`<button class="${i===sayfa?'aktif':''}" data-s="${i}">${i}</button>`).join('')+
-        `<button ${sayfa===son?'disabled':''} data-s="${sayfa+1}">â€º</button>`;
+        `<button ${sayfa===son?'disabled':''} data-s="${sayfa+1}">›</button>`;
     }
     el.querySelectorAll('[data-s]').forEach(b=>b.addEventListener('click',()=>{
       const s=+b.dataset.s; if(s<1)return; sayfa=s; yukle(); window.scrollTo({top:0,behavior:'smooth'});
@@ -296,13 +296,13 @@
   }
 
   /**
-   * Filtre seÃ§eneklerini doldur (Ã¼lke + sektÃ¶r).
-   * â›” ESKÄ° HAL: .select('ulke,kategori').limit(2000) â€” PostgREST'in 1.000 satÄ±r
-   *    TAVANI limit'i sessizce kÄ±rpÄ±yordu (istek 2000, dÃ¶nen tam 1000; Ã¶lÃ§Ã¼ldÃ¼).
-   *    Ä°lk 1.000 satÄ±rdan tÃ¼retilen listede 51 Ã¼lkeden 35'i, 41 sektÃ¶rden 38'i
-   *    vardÄ± â†’ kullanÄ±cÄ± var olan Ã¼lkeyi/sektÃ¶rÃ¼ dropdown'da BULAMIYORDU.
-   * âœ… Sunucu tarafÄ±: uluslararasi_filtre_secenekleri() RPC tam listeyi
-   *    {ulkeler:[],kategoriler:[]} olarak dÃ¶ndÃ¼rÃ¼r (51 + 41, anon'a aÃ§Ä±k).
+   * Filtre seçeneklerini doldur (ülke + sektör).
+   * ⛔ ESKİ HAL: .select('ulke,kategori').limit(2000) — PostgREST'in 1.000 satır
+   *    TAVANI limit'i sessizce kırpıyordu (istek 2000, dönen tam 1000; ölçüldü).
+   *    İlk 1.000 satırdan türetilen listede 51 ülkeden 35'i, 41 sektörden 38'i
+   *    vardı → kullanıcı var olan ülkeyi/sektörü dropdown'da BULAMIYORDU.
+   * ✅ Sunucu tarafı: uluslararasi_filtre_secenekleri() RPC tam listeyi
+   *    {ulkeler:[],kategoriler:[]} olarak döndürür (51 + 41, anon'a açık).
    */
   function secenekDoldur(u,k){
     const su=document.getElementById('f-ulke'), sk=document.getElementById('f-kategori');
@@ -319,11 +319,11 @@
       if(error) throw error;
       secenekDoldur((data&&data.ulkeler)||[],(data&&data.kategoriler)||[]);
     }catch(_){
-      // RPC eriÅŸilemezse boÅŸ dropdown bÄ±rakmamak iÃ§in daraltÄ±lmÄ±ÅŸ yedek tarama.
-      // (Yine 1.000 satÄ±r tavanÄ±na takÄ±lÄ±r â€” bilerek yalnÄ±zca yedek yol.)
+      // RPC erişilemezse boş dropdown bırakmamak için daraltılmış yedek tarama.
+      // (Yine 1.000 satır tavanına takılır — bilerek yalnızca yedek yol.)
       try{
         let fq=sb.from('uluslararasi_ihaleler').select('ulke,kategori');
-        if(await yayindaVarMi()) fq=fq.eq('yayinda',true);  // gizli kaynak dropdown'a dÃ¼ÅŸmesin
+        if(await yayindaVarMi()) fq=fq.eq('yayinda',true);  // gizli kaynak dropdown'a düşmesin
         const {data}=await fq.limit(1000);
         secenekDoldur((data||[]).map(r=>r.ulke),(data||[]).map(r=>r.kategori));
       }catch(_e){}
@@ -331,49 +331,49 @@
   }
 
 
-  // â”€â”€ DÃ¼nya haritasÄ±: Ã¼lke bazlÄ± ihale yoÄŸunluÄŸu, arÅŸiv toplamÄ± (v1 mavi rampasÄ±) â”€â”€
+  // ── Dünya haritası: ülke bazlı ihale yoğunluğu, arşiv toplamı (v1 mavi rampası) ──
   const MAVI=['#EDF1F6','#D6E6F5','#9CC4E8','#4A8FD0','#135EAA','#0C3E70'];
   async function haritaCiz(){
     const el=document.getElementById('g-harita'); const D=window.DUNYA_HARITA;
-    if(!D){ el.innerHTML='<div class="v1-bos">Harita verisi yÃ¼klenemedi.</div>'; return; }
-    // Ãœlke bazlÄ± ihale sayÄ±mÄ± â€” ulke_kodu (ISO-A3) ile eÅŸleÅŸir.
-    // â›” ESKÄ° HAL: .select('ulke,ulke_kodu').limit(20000) â€” aynÄ± 1.000 satÄ±r
-    //    TAVANI. Harita 19.062 ihalenin yalnÄ±zca ilk 1.000'ini sayÄ±yordu, yani
-    //    yoÄŸunluk renkleri ve tooltip rakamlarÄ± TAMAMEN yanlÄ±ÅŸtÄ±.
-    // âœ… ulke_ihale_dagilimi() RPC Ã¼lke baÅŸÄ±na toplamÄ± sunucuda hesaplar
-    //    (51 satÄ±r / 19.062 ihale = tablonun tamamÄ±, doÄŸrulandÄ±).
-    // âš ï¸ RPC PATLARSA SESSÄ°Z KALMASIN: eskiden `catch(_){}` yutuyordu â†’ `say` boÅŸ
-    //    kalÄ±r, her Ã¼lke MAVI[0] ile boyanÄ±r, tooltip "0 ihale (arÅŸiv toplamÄ±)"
-    //    yazar. KullanÄ±cÄ± ekranda GERÃ‡EK ama YANLIÅ bir harita gÃ¶rÃ¼rdÃ¼. ArtÄ±k
-    //    hata `dagilimHatasi`ye alÄ±nÄ±p lejantta ve tooltip'te aÃ§Ä±kÃ§a sÃ¶yleniyor.
+    if(!D){ el.innerHTML='<div class="v1-bos">Harita verisi yüklenemedi.</div>'; return; }
+    // Ülke bazlı ihale sayımı — ulke_kodu (ISO-A3) ile eşleşir.
+    // ⛔ ESKİ HAL: .select('ulke,ulke_kodu').limit(20000) — aynı 1.000 satır
+    //    TAVANI. Harita 19.062 ihalenin yalnızca ilk 1.000'ini sayıyordu, yani
+    //    yoğunluk renkleri ve tooltip rakamları TAMAMEN yanlıştı.
+    // ✅ ulke_ihale_dagilimi() RPC ülke başına toplamı sunucuda hesaplar
+    //    (51 satır / 19.062 ihale = tablonun tamamı, doğrulandı).
+    // ⚠️ RPC PATLARSA SESSİZ KALMASIN: eskiden `catch(_){}` yutuyordu → `say` boş
+    //    kalır, her ülke MAVI[0] ile boyanır, tooltip "0 ihale (arşiv toplamı)"
+    //    yazar. Kullanıcı ekranda GERÇEK ama YANLIŞ bir harita görürdü. Artık
+    //    hata `dagilimHatasi`ye alınıp lejantta ve tooltip'te açıkça söyleniyor.
     const say={}, adlar={}; let dagilimHatasi='';
     try{
       const {data,error}=await sb.rpc('ulke_ihale_dagilimi');
       if(error) throw error;
       (data||[]).forEach(r=>{ if(!r.ulke_kodu) return;
         say[r.ulke_kodu]=Number(r.adet)||0; if(r.ulke) adlar[r.ulke_kodu]=r.ulke; });
-      if(!Object.keys(say).length) dagilimHatasi='Ãœlke daÄŸÄ±lÄ±mÄ± boÅŸ dÃ¶ndÃ¼.';
-    }catch(e){ dagilimHatasi=(e&&e.message)||'Ãœlke daÄŸÄ±lÄ±mÄ± alÄ±namadÄ±.'; }
+      if(!Object.keys(say).length) dagilimHatasi='Ülke dağılımı boş döndü.';
+    }catch(e){ dagilimHatasi=(e&&e.message)||'Ülke dağılımı alınamadı.'; }
     const max=Math.max(1,...Object.values(say));
     const renk=(c)=>{ if(!c) return MAVI[0]; const r=c/max;
       return r>0.6?MAVI[5]:r>0.33?MAVI[4]:r>0.16?MAVI[3]:r>0.06?MAVI[2]:MAVI[1]; };
     el.className='v1-dunya-wrap';
-    el.innerHTML=`<svg viewBox="${D.viewBox}" xmlns="http://www.w3.org/2000/svg" class="v1-dunya-svg" role="img" aria-label="Ãœlke bazlÄ± ihale yoÄŸunluÄŸu">`+
+    el.innerHTML=`<svg viewBox="${D.viewBox}" xmlns="http://www.w3.org/2000/svg" class="v1-dunya-svg" role="img" aria-label="Ülke bazlı ihale yoğunluğu">`+
       D.ulkeler.map(u=>`<path d="${u.d}" fill="${renk(say[u.kod]||0)}" data-k="${esc(u.kod)}" data-ad="${esc(adlar[u.kod]||u.ad||'')}" data-n="${say[u.kod]||0}"></path>`).join('')+`</svg>`;
-    // Tooltip kabÄ± script'ten sonra geldiÄŸi iÃ§in yoksa burada oluÅŸturulur â€”
-    // erken `return` etmek lejantÄ± ve zoom kurulumunu da dÃ¼ÅŸÃ¼rÃ¼rdÃ¼.
+    // Tooltip kabı script'ten sonra geldiği için yoksa burada oluşturulur —
+    // erken `return` etmek lejantı ve zoom kurulumunu da düşürürdü.
     let tip=document.getElementById('g-tip');
     if(!tip){ tip=document.createElement('div'); tip.id='g-tip'; tip.className='v1-tooltip'; document.body.appendChild(tip); }
     el.querySelectorAll('path').forEach(p=>{
       p.addEventListener('mousemove',(e)=>{
         const n=Number(p.dataset.n)||0;
-        // Harita arÅŸiv toplamÄ±nÄ± gÃ¶sterir; liste varsayÄ±lan olarak yalnÄ±z aÃ§Ä±k
-        // ihaleleri sÃ¼zer â†’ tÄ±klayÄ±nca rakam dÃ¼ÅŸebilir, bunu peÅŸinen sÃ¶ylÃ¼yoruz.
-        // SayÄ±m alÄ±namadÄ±ysa "0 ihale" yazmak YALAN olur â†’ rakam hiÃ§ gÃ¶sterilmez.
+        // Harita arşiv toplamını gösterir; liste varsayılan olarak yalnız açık
+        // ihaleleri süzer → tıklayınca rakam düşebilir, bunu peşinen söylüyoruz.
+        // Sayım alınamadıysa "0 ihale" yazmak YALAN olur → rakam hiç gösterilmez.
         tip.innerHTML=`<b>${esc(p.dataset.ad||p.dataset.k)}</b>`+(dagilimHatasi
-          ? `<br><span style="opacity:.75;">Ä°hale sayÄ±sÄ± alÄ±namadÄ±</span>`
-          : `<br>${num(n)} ihale (arÅŸiv toplamÄ±)`+
-            (n?`<br><span style="opacity:.75;">TÄ±klayÄ±n â†’ listede sÃ¼zÃ¼n</span>`:''));
+          ? `<br><span style="opacity:.75;">İhale sayısı alınamadı</span>`
+          : `<br>${num(n)} ihale (arşiv toplamı)`+
+            (n?`<br><span style="opacity:.75;">Tıklayın → listede süzün</span>`:''));
         tip.style.display='block'; tip.style.left=Math.min(e.clientX+14,window.innerWidth-200)+'px';
         tip.style.top=Math.max(8,e.clientY-56)+'px';
       });
@@ -381,8 +381,8 @@
       p.addEventListener('click',()=>{
         const ad=p.dataset.ad; if(!ad||!Number(p.dataset.n)) return;
         const su=document.getElementById('f-ulke'); if(!su) return;
-        // SeÃ§enek listede yoksa ekle: aksi halde su.value='' kalÄ±r ve tÄ±klama
-        // sessizce TÃœM Ã¼lkeleri listeler (kullanÄ±cÄ± sÃ¼zÃ¼ldÃ¼ÄŸÃ¼nÃ¼ sanÄ±r).
+        // Seçenek listede yoksa ekle: aksi halde su.value='' kalır ve tıklama
+        // sessizce TÜM ülkeleri listeler (kullanıcı süzüldüğünü sanır).
         if(![...su.options].some(o=>o.value===ad||o.text===ad))
           su.insertAdjacentHTML('beforeend',`<option>${esc(ad)}</option>`);
         su.value=ad;
@@ -390,10 +390,10 @@
       });
     });
     document.getElementById('g-lejant').innerHTML = dagilimHatasi
-      ? `<span style="color:#b4232a;font-weight:600;">Ãœlke daÄŸÄ±lÄ±mÄ± yÃ¼klenemedi (${esc(dagilimHatasi)}) â€” haritadaki renkler ihale yoÄŸunluÄŸunu gÃ¶stermiyor.</span>`
-      : '<span>Ä°hale sayÄ±sÄ±: Az</span>'+
-        MAVI.slice(1).map(c=>`<i style="background:${c}"></i>`).join('')+'<span>Ã‡ok</span>';
-    // Tekerlekle yakÄ±nlaÅŸtÄ±r / sÃ¼rÃ¼kleyerek gez (Avrupa yoÄŸun â†’ yakÄ±nlaÅŸmadan Ã¼lke seÃ§mek zor)
+      ? `<span style="color:#b4232a;font-weight:600;">Ülke dağılımı yüklenemedi (${esc(dagilimHatasi)}) — haritadaki renkler ihale yoğunluğunu göstermiyor.</span>`
+      : '<span>İhale sayısı: Az</span>'+
+        MAVI.slice(1).map(c=>`<i style="background:${c}"></i>`).join('')+'<span>Çok</span>';
+    // Tekerlekle yakınlaştır / sürükleyerek gez (Avrupa yoğun → yakınlaşmadan ülke seçmek zor)
     if(window.haritaZoomKur) haritaZoomKur(el,{gizle:()=>{tip.style.display='none';}});
   }
 
@@ -405,16 +405,16 @@
     document.querySelectorAll('.v1-filtre-btn').forEach(b=>b.addEventListener('click',()=>b.parentElement.classList.toggle('acik')));
     const fk=document.getElementById('f-kelime');
     if(P.get('ara')) fk.value=P.get('ara');
-    // Arama kutusu bir form iÃ§inde deÄŸil â†’ Enter'Ä±n kendiliÄŸinden bir etkisi yok.
+    // Arama kutusu bir form içinde değil → Enter'ın kendiliğinden bir etkisi yok.
     fk.addEventListener('keydown',(e)=>{ if(e.key==='Enter'){ e.preventDefault(); sayfa=1; yukle(); } });
     document.getElementById('f-uygula').addEventListener('click',()=>{sayfa=1;yukle();});
     document.getElementById('f-temizle').addEventListener('click',()=>{
       document.querySelectorAll('.v1-f-input,.v1-f-select').forEach(e=>e.value='');
-      const la=document.getElementById('v1-listede-ara'); if(la) la.value=''; // satÄ±r gizleyen yerel sÃ¼zgeÃ§ de sÄ±fÄ±rlansÄ±n
+      const la=document.getElementById('v1-listede-ara'); if(la) la.value=''; // satır gizleyen yerel süzgeç de sıfırlansın
       document.getElementById('f-acik').checked=true; sayfa=1; yukle();
     });
-    // Yerel (sayfa iÃ§i) sÃ¼zgeÃ§ â€” tamamen tarayÄ±cÄ±da Ã§alÄ±ÅŸÄ±r, DB'ye gitmez.
-    // KabuÄŸun trFold'u ile aksan/Ä°-Ä± duyarsÄ±z: "insaat" yazan "Ä°nÅŸaat"Ä± bulur.
+    // Yerel (sayfa içi) süzgeç — tamamen tarayıcıda çalışır, DB'ye gitmez.
+    // Kabuğun trFold'u ile aksan/İ-ı duyarsız: "insaat" yazan "İnşaat"ı bulur.
     const kat=(s)=>window.trFold?window.trFold(s):(s||'').toLocaleLowerCase('tr');
     document.getElementById('v1-listede-ara').addEventListener('input',(e)=>{
       const q=kat(e.target.value);

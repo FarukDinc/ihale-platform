@@ -1,10 +1,10 @@
-﻿<!DOCTYPE html>
+?<!DOCTYPE html>
 <html lang="tr">
 <head>
   <meta charset="UTF-8" />
-  <meta name="author" content="Ã–mer Faruk DinÃ§">
+  <meta name="author" content="Ömer Faruk Dinç">
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Ä°hale Analizi â€” Ä°haleGlobal</title>
+  <title>İhale Analizi — İhaleGlobal</title>
   <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=4" />
   <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/v1.css?v=15" />
@@ -26,7 +26,7 @@
     .v1-graf { position:relative; height:290px; }
     .v1-ikili { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
     @media(max-width:900px){ .v1-ikili{ grid-template-columns:1fr; } }
-    /* Yatay Ã§ubuk listesi */
+    /* Yatay çubuk listesi */
     .v1-cb { display:flex; align-items:center; gap:12px; padding:8px 0; }
     .v1-cb-ad { width:190px; flex-shrink:0; font-size:12.5px; color:var(--v1-metin); white-space:nowrap;
       overflow:hidden; text-overflow:ellipsis; }
@@ -35,74 +35,74 @@
     .v1-cb-say { width:70px; flex-shrink:0; text-align:right; font-size:12.5px; font-weight:800; color:var(--v1-lacivert); }
   </style>
 </head>
-<body class="v1" data-v1-aktif="analiz" data-v1-kirinti="Analiz > Ä°hale Analizi">
+<body class="v1" data-v1-aktif="analiz" data-v1-kirinti="Analiz > İhale Analizi">
 <div class="v1-app">
   <div class="v1-main">
     <div class="v1-govde">
-      <div class="v1-sayfa-baslik">Ä°hale Analizi</div>
-      <div class="v1-sayfa-alt">Ä°hale tÃ¼rÃ¼, bÃ¶lge ve bÃ¼tÃ§e bazÄ±nda pazar daÄŸÄ±lÄ±mÄ± â€” hangi sektÃ¶rde kaÃ§ ihale aÃ§Ä±k, rakip yoÄŸunluÄŸu nerede yÃ¼ksek?</div>
+      <div class="v1-sayfa-baslik">İhale Analizi</div>
+      <div class="v1-sayfa-alt">İhale türü, bölge ve bütçe bazında pazar dağılımı — hangi sektörde kaç ihale açık, rakip yoğunluğu nerede yüksek?</div>
 
       <div class="v1-kapsam">
-        ğŸ“‹ <strong>Kapsam: yalnÄ±z ihaleler.</strong> Bu sayfadaki tÃ¼m sayÄ±lar 4734 sayÄ±lÄ± Kanun'un ihale usulleriyle yapÄ±lan alÄ±mlardan hesaplanÄ±r.
-        <strong>DoÄŸrudan temin kayÄ±tlarÄ± dahil deÄŸildir</strong> â€” doÄŸrudan teminde yaklaÅŸÄ±k maliyet ilan edilmediÄŸi ve Ã¶lÃ§ek bambaÅŸka olduÄŸu iÃ§in
-        iki evren bilinÃ§li olarak toplanmaz. DoÄŸrudan temin verisi iÃ§in <a href="v1-ihaleler?tur=dt">DoÄŸrudan Teminler</a> sekmesine,
-        derin kÄ±rÄ±lÄ±m iÃ§in <a href="v1-dt-analiz">DoÄŸrudan Temin Analizi</a> sayfasÄ±na bakÄ±n.
+        📋 <strong>Kapsam: yalnız ihaleler.</strong> Bu sayfadaki tüm sayılar 4734 sayılı Kanun'un ihale usulleriyle yapılan alımlardan hesaplanır.
+        <strong>Doğrudan temin kayıtları dahil değildir</strong> — doğrudan teminde yaklaşık maliyet ilan edilmediği ve ölçek bambaşka olduğu için
+        iki evren bilinçli olarak toplanmaz. Doğrudan temin verisi için <a href="v1-ihaleler?tur=dt">Doğrudan Teminler</a> sekmesine,
+        derin kırılım için <a href="v1-dt-analiz">Doğrudan Temin Analizi</a> sayfasına bakın.
       </div>
 
       <div class="v1-filtre-bar">
         <select class="v1-sec" id="f-durum">
-          <option value="aktif">Aktif Ä°haleler</option>
-          <option value="">TÃ¼m Ä°haleler</option>
+          <option value="aktif">Aktif İhaleler</option>
+          <option value="">Tüm İhaleler</option>
         </select>
-        <select class="v1-sec" id="f-il"><option value="">TÃ¼m Ä°ller</option></select>
-        <select class="v1-sec" id="f-kategori"><option value="">TÃ¼m SektÃ¶rler</option></select>
-        <button class="v1-mini-btn" id="f-sifirla">â†º SÄ±fÄ±rla</button>
-        <button class="v1-mini-btn" id="f-paylas">ğŸ”— PaylaÅŸ</button>
+        <select class="v1-sec" id="f-il"><option value="">Tüm İller</option></select>
+        <select class="v1-sec" id="f-kategori"><option value="">Tüm Sektörler</option></select>
+        <button class="v1-mini-btn" id="f-sifirla">↺ Sıfırla</button>
+        <button class="v1-mini-btn" id="f-paylas">🔗 Paylaş</button>
         <span id="f-durum-notu" style="font-size:12.5px;color:var(--v1-muted);"></span>
       </div>
 
       <div class="v1-kpi" style="grid-template-columns:repeat(4,1fr);margin-bottom:18px;" id="v1-kpi"></div>
 
       <div class="v1-kart">
-        <div class="v1-kart-baslik">AylÄ±k Ä°hale Hareketi <span style="font-size:12px;font-weight:400;color:var(--v1-muted);margin-left:8px;">son 24 ay</span></div>
+        <div class="v1-kart-baslik">Aylık İhale Hareketi <span style="font-size:12px;font-weight:400;color:var(--v1-muted);margin-left:8px;">son 24 ay</span></div>
         <div class="v1-graf"><canvas id="g-trend"></canvas></div>
       </div>
 
       <div class="v1-ikili">
         <div class="v1-kart">
-          <div class="v1-kart-baslik">Ä°hale TÃ¼rÃ¼ DaÄŸÄ±lÄ±mÄ±</div>
+          <div class="v1-kart-baslik">İhale Türü Dağılımı</div>
           <div class="v1-graf"><canvas id="g-tur"></canvas></div>
         </div>
         <div class="v1-kart">
-          <div class="v1-kart-baslik">Ä°l BazlÄ± DaÄŸÄ±lÄ±m <span style="font-size:12px;font-weight:400;color:var(--v1-muted);margin-left:6px;">ilk 10</span></div>
+          <div class="v1-kart-baslik">İl Bazlı Dağılım <span style="font-size:12px;font-weight:400;color:var(--v1-muted);margin-left:6px;">ilk 10</span></div>
           <div class="v1-graf"><canvas id="g-il"></canvas></div>
         </div>
       </div>
 
       <div class="v1-kart">
-        <div class="v1-kart-baslik">SektÃ¶r DaÄŸÄ±lÄ±mÄ± <span style="font-size:12px;font-weight:400;color:var(--v1-muted);margin-left:6px;">ilk 15</span></div>
+        <div class="v1-kart-baslik">Sektör Dağılımı <span style="font-size:12px;font-weight:400;color:var(--v1-muted);margin-left:6px;">ilk 15</span></div>
         <div class="v1-graf" style="height:360px;"><canvas id="g-kategori"></canvas></div>
       </div>
 
       <div class="v1-ikili">
         <div class="v1-kart">
-          <div class="v1-kart-baslik">Ä°hale UsulÃ¼ DaÄŸÄ±lÄ±mÄ±</div>
-          <div id="l-usul"><div class="v1-bos">YÃ¼kleniyorâ€¦</div></div>
+          <div class="v1-kart-baslik">İhale Usulü Dağılımı</div>
+          <div id="l-usul"><div class="v1-bos">Yükleniyor…</div></div>
         </div>
         <div class="v1-kart">
-          <div class="v1-kart-baslik">BÃ¼tÃ§e AralÄ±ÄŸÄ± DaÄŸÄ±lÄ±mÄ± <span class="v1-rozet-kapsam">yalnÄ±z ihaleler</span></div>
-          <div id="l-butce"><div class="v1-bos">YÃ¼kleniyorâ€¦</div></div>
+          <div class="v1-kart-baslik">Bütçe Aralığı Dağılımı <span class="v1-rozet-kapsam">yalnız ihaleler</span></div>
+          <div id="l-butce"><div class="v1-bos">Yükleniyor…</div></div>
         </div>
       </div>
 
       <div class="v1-ikili">
         <div class="v1-kart">
-          <div class="v1-kart-baslik">En Ã‡ok Ä°hale AÃ§an Ä°dareler <span style="font-size:12px;font-weight:400;color:var(--v1-muted);margin-left:6px;">ilk 10</span></div>
-          <div id="l-idare"><div class="v1-bos">YÃ¼kleniyorâ€¦</div></div>
+          <div class="v1-kart-baslik">En Çok İhale Açan İdareler <span style="font-size:12px;font-weight:400;color:var(--v1-muted);margin-left:6px;">ilk 10</span></div>
+          <div id="l-idare"><div class="v1-bos">Yükleniyor…</div></div>
         </div>
         <div class="v1-kart">
-          <div class="v1-kart-baslik">TÃ¼re GÃ¶re Ort. YaklaÅŸÄ±k Maliyet <span class="v1-rozet-kapsam">yalnÄ±z ihaleler</span></div>
-          <div id="l-tur-maliyet"><div class="v1-bos">YÃ¼kleniyorâ€¦</div></div>
+          <div class="v1-kart-baslik">Türe Göre Ort. Yaklaşık Maliyet <span class="v1-rozet-kapsam">yalnız ihaleler</span></div>
+          <div id="l-tur-maliyet"><div class="v1-bos">Yükleniyor…</div></div>
         </div>
       </div>
     </div>
@@ -119,20 +119,20 @@
   const sb=window.supabase.createClient(SB_URL,SB_KEY);
   const esc=(s)=>(s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
   const num=(n)=>(Number(n)||0).toLocaleString('tr-TR');
-  const tl=(v)=>v==null?'â€”':'â‚º'+Number(v).toLocaleString('tr-TR',{maximumFractionDigits:0});
+  const tl=(v)=>v==null?'—':'₺'+Number(v).toLocaleString('tr-TR',{maximumFractionDigits:0});
   const kisalt=(n)=>{n=Number(n)||0;
-    if(n>=1e9) return 'â‚º'+(n/1e9).toLocaleString('tr-TR',{maximumFractionDigits:1})+' Mr';
-    if(n>=1e6) return 'â‚º'+(n/1e6).toLocaleString('tr-TR',{maximumFractionDigits:1})+' Mn';
-    if(n>=1e3) return 'â‚º'+(n/1e3).toLocaleString('tr-TR',{maximumFractionDigits:0})+' Bin';
-    return 'â‚º'+num(n);};
-  const ILLER=["ADANA","ADIYAMAN","AFYONKARAHÄ°SAR","AÄRI","AKSARAY","AMASYA","ANKARA","ANTALYA","ARDAHAN","ARTVÄ°N","AYDIN","BALIKESÄ°R","BARTIN","BATMAN","BAYBURT","BÄ°LECÄ°K","BÄ°NGÃ–L","BÄ°TLÄ°S","BOLU","BURDUR","BURSA","Ã‡ANAKKALE","Ã‡ANKIRI","Ã‡ORUM","DENÄ°ZLÄ°","DÄ°YARBAKIR","DÃœZCE","EDÄ°RNE","ELAZIÄ","ERZÄ°NCAN","ERZURUM","ESKÄ°ÅEHÄ°R","GAZÄ°ANTEP","GÄ°RESUN","GÃœMÃœÅHANE","HAKKARÄ°","HATAY","IÄDIR","ISPARTA","Ä°STANBUL","Ä°ZMÄ°R","KAHRAMANMARAÅ","KARABÃœK","KARAMAN","KARS","KASTAMONU","KAYSERÄ°","KIRIKKALE","KIRKLARELÄ°","KIRÅEHÄ°R","KÄ°LÄ°S","KOCAELÄ°","KONYA","KÃœTAHYA","MALATYA","MANÄ°SA","MARDÄ°N","MERSÄ°N","MUÄLA","MUÅ","NEVÅEHÄ°R","NÄ°ÄDE","ORDU","OSMANÄ°YE","RÄ°ZE","SAKARYA","SAMSUN","SÄ°Ä°RT","SÄ°NOP","SÄ°VAS","ÅANLIURFA","ÅIRNAK","TEKÄ°RDAÄ","TOKAT","TRABZON","TUNCELÄ°","UÅAK","VAN","YALOVA","YOZGAT","ZONGULDAK"];
+    if(n>=1e9) return '₺'+(n/1e9).toLocaleString('tr-TR',{maximumFractionDigits:1})+' Mr';
+    if(n>=1e6) return '₺'+(n/1e6).toLocaleString('tr-TR',{maximumFractionDigits:1})+' Mn';
+    if(n>=1e3) return '₺'+(n/1e3).toLocaleString('tr-TR',{maximumFractionDigits:0})+' Bin';
+    return '₺'+num(n);};
+  const ILLER=["ADANA","ADIYAMAN","AFYONKARAHİSAR","AĞRI","AKSARAY","AMASYA","ANKARA","ANTALYA","ARDAHAN","ARTVİN","AYDIN","BALIKESİR","BARTIN","BATMAN","BAYBURT","BİLECİK","BİNGÖL","BİTLİS","BOLU","BURDUR","BURSA","ÇANAKKALE","ÇANKIRI","ÇORUM","DENİZLİ","DİYARBAKIR","DÜZCE","EDİRNE","ELAZIĞ","ERZİNCAN","ERZURUM","ESKİŞEHİR","GAZİANTEP","GİRESUN","GÜMÜŞHANE","HAKKARİ","HATAY","IĞDIR","ISPARTA","İSTANBUL","İZMİR","KAHRAMANMARAŞ","KARABÜK","KARAMAN","KARS","KASTAMONU","KAYSERİ","KIRIKKALE","KIRKLARELİ","KIRŞEHİR","KİLİS","KOCAELİ","KONYA","KÜTAHYA","MALATYA","MANİSA","MARDİN","MERSİN","MUĞLA","MUŞ","NEVŞEHİR","NİĞDE","ORDU","OSMANİYE","RİZE","SAKARYA","SAMSUN","SİİRT","SİNOP","SİVAS","ŞANLIURFA","ŞIRNAK","TEKİRDAĞ","TOKAT","TRABZON","TUNCELİ","UŞAK","VAN","YALOVA","YOZGAT","ZONGULDAK"];
   const KATS=(window.KATEGORILER||[]).map(k=>(typeof k==='string'?k:(k&&k.kod)||'')).filter(Boolean);
-  // v1 MAVÄ° paleti â€” grafiklerde amber YOK
+  // v1 MAVİ paleti — grafiklerde amber YOK
   const C={ mavi:'#135EAA', lacivert:'#0C3E70', teal:'#00A19A', acik:'#9CC4E8', cizgi:'#DCE5EF', metin:'#2F3D4D', muted:'#6C757D' };
   const SERI=[C.mavi,C.lacivert,C.teal,C.acik,'#4A8FD0','#1E9E57','#6C757D','#8FBCE3','#0B6C67','#B7C9DC'];
   let grafikler={};
 
-  // âš ï¸ Chart.js CSS deÄŸiÅŸkeni okumaz â€” sabit v1 renkleri veriyoruz (tema kaymasÄ± olmaz)
+  // ⚠️ Chart.js CSS değişkeni okumaz — sabit v1 renkleri veriyoruz (tema kayması olmaz)
   const ortak={ responsive:true, maintainAspectRatio:false,
     plugins:{ legend:{display:false}, tooltip:{ backgroundColor:C.lacivert, titleColor:'#fff', bodyColor:'#fff',
       padding:10, cornerRadius:8, displayColors:false } },
@@ -159,21 +159,21 @@
     const max=Math.max(1,...dizi.map(r=>Number(r[sayiAlan])||0));
     el.innerHTML=dizi.map(r=>{
       const v=Number(r[sayiAlan])||0, w=Math.max(3,Math.round(v/max*100));
-      return `<div class="v1-cb"><span class="v1-cb-ad" title="${esc(String(r[etiketAlan]||''))}">${esc(String(r[etiketAlan]||'â€”'))}</span>
+      return `<div class="v1-cb"><span class="v1-cb-ad" title="${esc(String(r[etiketAlan]||''))}">${esc(String(r[etiketAlan]||'—'))}</span>
         <span class="v1-cb-wrap"><span class="v1-cb-bar" style="width:${w}%"></span></span>
         <span class="v1-cb-say">${bicim(v)}</span></div>`;
     }).join('');
   }
 
-  // EKAP ham i18n anahtarlarÄ±nÄ± temizle
+  // EKAP ham i18n anahtarlarını temizle
   const usulTemizle=(s)=>String(s||'').replace(/^ihaleUsulu\./,'').replace(/_/g,' ')
-    .replace(/istisna4734Md3([a-z])/i,'Ä°stisna (4734 md. 3-$1)').trim() || 'â€”';
+    .replace(/istisna4734Md3([a-z])/i,'İstisna (4734 md. 3-$1)').trim() || '—';
 
   async function yukle(){
     const durum=document.getElementById('f-durum').value||null;
     const il=document.getElementById('f-il').value||null;
     const kat=document.getElementById('f-kategori').value||null;
-    document.getElementById('f-durum-notu').textContent='HesaplanÄ±yorâ€¦';
+    document.getElementById('f-durum-notu').textContent='Hesaplanıyor…';
     try{
       const {data,error}=await sb.rpc('rekabet_ozet',{p_durum:durum,p_il:il,p_kategori:kat});
       if(error) throw error;
@@ -188,16 +188,16 @@
           ${alt?`<span style="display:block;font-size:11px;color:var(--v1-muted);margin-top:3px;">${alt}</span>`:''}
         </span></div>`;
       document.getElementById('v1-kpi').innerHTML =
-        kpi(num(d.toplam),'Toplam Ä°hale','veri setinde')+
-        kpi(kisalt(d.ort_maliyet),'Ort. YaklaÅŸÄ±k Maliyet',
-            `${num(d.maliyet_adet)} / ${num(d.toplam)} ihale Ã¼zerinden Â· ${num((d.toplam||0)-(d.maliyet_adet||0))} kayÄ±tta maliyet yok`)+
-        kpi(enKat?esc(String(enKat.k).slice(0,22)):'â€”','En YoÄŸun SektÃ¶r',enKat?num(enKat.n)+' ihale':'')+
-        kpi(enIl?esc(enIl.k):'â€”','En Aktif Ä°l',enIl?num(enIl.n)+' ihale':'');
+        kpi(num(d.toplam),'Toplam İhale','veri setinde')+
+        kpi(kisalt(d.ort_maliyet),'Ort. Yaklaşık Maliyet',
+            `${num(d.maliyet_adet)} / ${num(d.toplam)} ihale üzerinden · ${num((d.toplam||0)-(d.maliyet_adet||0))} kayıtta maliyet yok`)+
+        kpi(enKat?esc(String(enKat.k).slice(0,22)):'—','En Yoğun Sektör',enKat?num(enKat.n)+' ihale':'')+
+        kpi(enIl?esc(enIl.k):'—','En Aktif İl',enIl?num(enIl.n)+' ihale':'');
       document.querySelectorAll('#v1-kpi .v1-kpi-sayi').forEach(s=>{ if(s.textContent.length>12) s.style.fontSize='18px'; });
 
-      // Grafikler â€” âš ï¸ trend DÄ°ZÄ° deÄŸil, {"2025-01": adet} OBJESÄ°. Son 24 ay sÄ±fÄ±rla doldurulur.
+      // Grafikler — ⚠️ trend DİZİ değil, {"2025-01": adet} OBJESİ. Son 24 ay sıfırla doldurulur.
       const trend=d.trend||{}, simdi=new Date(), etiket=[], deger=[];
-      const AYLAR=['Oca','Åub','Mar','Nis','May','Haz','Tem','AÄŸu','Eyl','Eki','Kas','Ara'];
+      const AYLAR=['Oca','Şub','Mar','Nis','May','Haz','Tem','Ağu','Eyl','Eki','Kas','Ara'];
       for(let i=23;i>=0;i--){ const t=new Date(simdi.getFullYear(),simdi.getMonth()-i,1);
         const anahtar=`${t.getFullYear()}-${String(t.getMonth()+1).padStart(2,'0')}`;
         etiket.push(AYLAR[t.getMonth()]+(t.getMonth()===0?" '"+String(t.getFullYear()).slice(2):''));
@@ -212,26 +212,26 @@
 
       // Listeler
       cubuklar('l-usul',(d.usul||[]).slice(0,10).map(r=>({k:usulTemizle(r.k),n:r.n})));
-      // âš ï¸ butce de DÄ°ZÄ° deÄŸil: {b0..b5, byok} sabit bantlar
+      // ⚠️ butce de DİZİ değil: {b0..b5, byok} sabit bantlar
       const b=d.butce||{};
       cubuklar('l-butce',[
-        {k:'< â‚º500 Bin',n:b.b0||0},{k:'â‚º500 Bin â€“ â‚º2 Mn',n:b.b1||0},{k:'â‚º2 Mn â€“ â‚º10 Mn',n:b.b2||0},
-        {k:'â‚º10 Mn â€“ â‚º50 Mn',n:b.b3||0},{k:'â‚º50 Mn â€“ â‚º200 Mn',n:b.b4||0},{k:'> â‚º200 Mn',n:b.b5||0},
-        {k:'BelirtilmemiÅŸ',n:b.byok||0}]);
+        {k:'< ₺500 Bin',n:b.b0||0},{k:'₺500 Bin – ₺2 Mn',n:b.b1||0},{k:'₺2 Mn – ₺10 Mn',n:b.b2||0},
+        {k:'₺10 Mn – ₺50 Mn',n:b.b3||0},{k:'₺50 Mn – ₺200 Mn',n:b.b4||0},{k:'> ₺200 Mn',n:b.b5||0},
+        {k:'Belirtilmemiş',n:b.byok||0}]);
       cubuklar('l-idare',(d.idare||[]).slice(0,10));
-      // TÃ¼r bazlÄ± ortalama yaklaÅŸÄ±k maliyet
+      // Tür bazlı ortalama yaklaşık maliyet
       const tm=(d.tur_maliyet||[]).filter(r=>Number(r.ort)>0).slice(0,10);
       cubuklar('l-tur-maliyet',tm.map(r=>({k:`${r.k} (${num(r.sayi)} ihale)`,n:r.ort})),'k','n',kisalt);
     }catch(e){
       document.getElementById('f-durum-notu').textContent='';
-      // 42501 = RPC Ã¼yeye Ã¶zel (anon'a EXECUTE yok) â†’ ham Postgres mesajÄ±nÄ± kullanÄ±cÄ±ya gÃ¶sterme
+      // 42501 = RPC üyeye özel (anon'a EXECUTE yok) → ham Postgres mesajını kullanıcıya gösterme
       const kilit = e.code==='42501' || /permission denied/i.test(e.message||'');
       document.getElementById('v1-kpi').innerHTML=`<div class="v1-bos" style="grid-column:1/-1;padding:34px 20px;">`+
         (kilit
-          ? `ğŸ”’ Rekabet analizi Ã¼yelere Ã¶zeldir.<br><br><a href="login">GiriÅŸ yapÄ±n</a> veya <a href="fiyatlandirma_odeme_bolumu">Ã¼ye olun</a> â†’`
-          : `Analiz alÄ±namadÄ±. ${esc(e.message||'')}`)+`</div>`;
+          ? `🔒 Rekabet analizi üyelere özeldir.<br><br><a href="login">Giriş yapın</a> veya <a href="fiyatlandirma_odeme_bolumu">üye olun</a> →`
+          : `Analiz alınamadı. ${esc(e.message||'')}`)+`</div>`;
       ['g-trend','g-tur','g-il','g-kategori'].forEach(i=>{ if(grafikler[i]){grafikler[i].destroy(); delete grafikler[i];} });
-      ['l-usul','l-butce','l-idare','l-tur-maliyet'].forEach(i=>{const el=document.getElementById(i); if(el) el.innerHTML='<div class="v1-bos">â€”</div>';});
+      ['l-usul','l-butce','l-idare','l-tur-maliyet'].forEach(i=>{const el=document.getElementById(i); if(el) el.innerHTML='<div class="v1-bos">—</div>';});
     }
   }
 
@@ -243,7 +243,7 @@
     const si=document.getElementById('f-il'), sk=document.getElementById('f-kategori');
     ILLER.forEach(i=>si.insertAdjacentHTML('beforeend',`<option>${i}</option>`));
     KATS.forEach(k=>sk.insertAdjacentHTML('beforeend',`<option>${esc(k)}</option>`));
-    // URL'den filtreleri geri oku (paylaÅŸÄ±labilir link)
+    // URL'den filtreleri geri oku (paylaşılabilir link)
     const P=new URLSearchParams(location.search);
     if(P.get('durum')!==null) document.getElementById('f-durum').value=P.get('durum');
     if(P.get('il')) si.value=P.get('il');
@@ -260,9 +260,9 @@
       if(sk.value) p.set('kategori',sk.value);
       const u=location.origin+location.pathname+'?'+p.toString();
       navigator.clipboard.writeText(u).then(()=>{
-        const b=document.getElementById('f-paylas'); const e0=b.textContent; b.textContent='âœ“ KopyalandÄ±';
+        const b=document.getElementById('f-paylas'); const e0=b.textContent; b.textContent='✓ Kopyalandı';
         setTimeout(()=>{b.textContent=e0;},1800);
-      }).catch(()=>prompt('BaÄŸlantÄ±:',u));
+      }).catch(()=>prompt('Bağlantı:',u));
     });
     yukle();
   })();

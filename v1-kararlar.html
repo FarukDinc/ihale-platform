@@ -1,10 +1,10 @@
-﻿<!DOCTYPE html>
+?<!DOCTYPE html>
 <html lang="tr">
 <head>
   <meta charset="UTF-8" />
-  <meta name="author" content="Ã–mer Faruk DinÃ§">
+  <meta name="author" content="Ömer Faruk Dinç">
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>KÄ°K KararlarÄ± â€” Ä°haleGlobal</title>
+  <title>KİK Kararları — İhaleGlobal</title>
   <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=4" />
   <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/v1.css?v=15" />
@@ -33,33 +33,33 @@
     .v1-kaynak-link { display:inline-block; margin-top:3px; font-size:11.5px; font-weight:600; }
   </style>
 </head>
-<body class="v1" data-v1-aktif="kararlar" data-v1-kirinti="Kamu > KÄ°K KararlarÄ±">
+<body class="v1" data-v1-aktif="kararlar" data-v1-kirinti="Kamu > KİK Kararları">
 <div class="v1-app">
   <div class="v1-main">
     <div class="v1-govde">
-      <div class="v1-sayfa-baslik">KÄ°K KararlarÄ±</div>
-      <div class="v1-sayfa-alt">Kamu Ä°hale Kurulu kararlarÄ±, mahkeme kararlarÄ± ve tutanaklar â€” itiraz emsallerini arayÄ±n.</div>
+      <div class="v1-sayfa-baslik">KİK Kararları</div>
+      <div class="v1-sayfa-alt">Kamu İhale Kurulu kararları, mahkeme kararları ve tutanaklar — itiraz emsallerini arayın.</div>
 
-      <!-- Sekme kodlarÄ± canlÄ± DB'deki gerÃ§ek karar_turu deÄŸerleridir (Ã¶lÃ§Ã¼m 29 Tem: 775/775 satÄ±r
-           'uyusmazlik'; 'duzenleyici'/'mahkeme' henÃ¼z 0). Eski 'UK'/'MK'/'MT' kodlarÄ± DB'de HÄ°Ã‡
-           yoktu â†’ Ã¼Ã§ sekme de boÅŸ dÃ¶nÃ¼yordu. Bilinmeyen bir tÃ¼r girerse "DiÄŸer" sekmesi JS'ten eklenir. -->
+      <!-- Sekme kodları canlı DB'deki gerçek karar_turu değerleridir (ölçüm 29 Tem: 775/775 satır
+           'uyusmazlik'; 'duzenleyici'/'mahkeme' henüz 0). Eski 'UK'/'MK'/'MT' kodları DB'de HİÇ
+           yoktu → üç sekme de boş dönüyordu. Bilinmeyen bir tür girerse "Diğer" sekmesi JS'ten eklenir. -->
       <div class="v1-sekmeler" id="v1-sekmeler">
-        <button class="v1-sekme aktif" data-t="" data-ad="TÃ¼m Kararlar">TÃ¼mÃ¼<span class="v1-sekme-adet" hidden></span></button>
-        <button class="v1-sekme" data-t="uyusmazlik" data-ad="UyuÅŸmazlÄ±k KararlarÄ±">UyuÅŸmazlÄ±k KararlarÄ±<span class="v1-sekme-adet" hidden></span></button>
-        <button class="v1-sekme" data-t="duzenleyici" data-ad="DÃ¼zenleyici Kararlar">DÃ¼zenleyici Kararlar<span class="v1-sekme-adet" hidden></span></button>
-        <button class="v1-sekme" data-t="mahkeme" data-ad="Mahkeme KararlarÄ±">Mahkeme KararlarÄ±<span class="v1-sekme-adet" hidden></span></button>
+        <button class="v1-sekme aktif" data-t="" data-ad="Tüm Kararlar">Tümü<span class="v1-sekme-adet" hidden></span></button>
+        <button class="v1-sekme" data-t="uyusmazlik" data-ad="Uyuşmazlık Kararları">Uyuşmazlık Kararları<span class="v1-sekme-adet" hidden></span></button>
+        <button class="v1-sekme" data-t="duzenleyici" data-ad="Düzenleyici Kararlar">Düzenleyici Kararlar<span class="v1-sekme-adet" hidden></span></button>
+        <button class="v1-sekme" data-t="mahkeme" data-ad="Mahkeme Kararları">Mahkeme Kararları<span class="v1-sekme-adet" hidden></span></button>
       </div>
 
       <div id="v1-misafir" class="v1-uyari" style="display:none;">
-        ğŸ”’ KÄ°K kararlarÄ± <strong>Ã¼yelere Ã¶zeldir</strong>.
-        <a href="login">GiriÅŸ yapÄ±n</a> veya <a href="fiyatlandirma_odeme_bolumu">Ã¼ye olun</a> â†’
+        🔒 KİK kararları <strong>üyelere özeldir</strong>.
+        <a href="login">Giriş yapın</a> veya <a href="fiyatlandirma_odeme_bolumu">üye olun</a> →
       </div>
 
       <div class="v1-kart" style="padding:18px 20px;">
         <div class="v1-tablo-bas">
           <div>
-            <div style="font-size:17px;font-weight:800;color:var(--v1-lacivert);" id="v1-liste-baslik">TÃ¼m Kararlar</div>
-            <div class="v1-tablo-sayi" id="v1-sayi">YÃ¼kleniyorâ€¦</div>
+            <div style="font-size:17px;font-weight:800;color:var(--v1-lacivert);" id="v1-liste-baslik">Tüm Kararlar</div>
+            <div class="v1-tablo-sayi" id="v1-sayi">Yükleniyor…</div>
           </div>
           <div class="v1-listede-ara">
             <svg viewBox="0 0 24 24" width="15" height="15" fill="var(--v1-muted)"><path fill-rule="evenodd" d="M10.5 3a7.5 7.5 0 1 0 4.55 13.46l4.24 4.25 1.42-1.42-4.25-4.24A7.5 7.5 0 0 0 10.5 3Zm0 2a5.5 5.5 0 1 1 0 11 5.5 5.5 0 0 1 0-11Z"/></svg>
@@ -71,11 +71,11 @@
           <table class="v1-tablo" id="v1-tablo">
             <thead><tr>
               <th style="width:132px;">Karar No<br>Tarih</th>
-              <th>Konu / BaÅŸlÄ±k</th>
-              <th style="width:150px;">Karar TÃ¼rÃ¼</th>
-              <th style="width:130px;">SonuÃ§</th>
+              <th>Konu / Başlık</th>
+              <th style="width:150px;">Karar Türü</th>
+              <th style="width:130px;">Sonuç</th>
             </tr></thead>
-            <tbody id="v1-tbody"><tr><td colspan="4" class="v1-bos">YÃ¼kleniyorâ€¦</td></tr></tbody>
+            <tbody id="v1-tbody"><tr><td colspan="4" class="v1-bos">Yükleniyor…</td></tr></tbody>
           </table>
         </div>
         <div class="v1-sayfalama" id="v1-sayfalama"></div>
@@ -85,11 +85,11 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-<!-- âš ï¸ v=7 ÅART (v=6 DEÄÄ°L): bu sayfa window.trFold + window.v1AramaKalibi'ye baÄŸÄ±mlÄ± ve bunlar
-     kabuk'a SONRADAN eklendi. CanlÄ±daki v6 kopyasÄ±nda `trFold` HÄ°Ã‡ geÃ§miyor (Ã¶lÃ§Ã¼m 29 Tem: canlÄ±
-     14.843 bayt / 0 eÅŸleÅŸme, yerel 16.158 bayt / var). Kabuk `Cache-Control: max-age=14400` ile
-     gelir â†’ v=6 istenirse yeni kabuk deploy edilse bile tarayÄ±cÄ± 4 saat boyunca fold'suz kopyayÄ±
-     verir ve liste "trFold is not a function" ile tamamen Ã¶lÃ¼r. v1-sektorler.html de v=7'de. -->
+<!-- ⚠️ v=7 ŞART (v=6 DEĞİL): bu sayfa window.trFold + window.v1AramaKalibi'ye bağımlı ve bunlar
+     kabuk'a SONRADAN eklendi. Canlıdaki v6 kopyasında `trFold` HİÇ geçmiyor (ölçüm 29 Tem: canlı
+     14.843 bayt / 0 eşleşme, yerel 16.158 bayt / var). Kabuk `Cache-Control: max-age=14400` ile
+     gelir → v=6 istenirse yeni kabuk deploy edilse bile tarayıcı 4 saat boyunca fold'suz kopyayı
+     verir ve liste "trFold is not a function" ile tamamen ölür. v1-sektorler.html de v=7'de. -->
 <script src="js/v1-kabuk.js?v=15"></script>
 <script>
 (() => {
@@ -97,51 +97,51 @@
   const sb=window.supabase.createClient(SB_URL,SB_KEY);
   const num=(n)=>(Number(n)||0).toLocaleString('tr-TR');
   const esc=(s)=>(s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-  // âš ï¸ TR katlama js/v1-kabuk.js'ten gelir (window.trFold / window.v1AramaKalibi). Sayfaya Ã¶zel
-  //    kopya YAZMA: eski yerel kopya 'Ä±'yÄ± 'i'ye katlamÄ±yordu â†’ "ISPARTA" aramasÄ± SQL tr_fold()
-  //    ile hizalanmadÄ±ÄŸÄ± iÃ§in sessizce 0 satÄ±r dÃ¶nÃ¼yordu.
+  // ⚠️ TR katlama js/v1-kabuk.js'ten gelir (window.trFold / window.v1AramaKalibi). Sayfaya özel
+  //    kopya YAZMA: eski yerel kopya 'ı'yı 'i'ye katlamıyordu → "ISPARTA" araması SQL tr_fold()
+  //    ile hizalanmadığı için sessizce 0 satır dönüyordu.
   const fold=(s)=>window.trFold(s);
   const BOY=20;
-  const BILINEN=['uyusmazlik','duzenleyici','mahkeme'];   // canlÄ± DB'de geÃ§erli karar_turu kodlarÄ±
-  const DIGER='__diger';                                   // bilinmeyen tÃ¼rler iÃ§in sanal sekme kodu
-  // âš ï¸ DÃ¼z .not('karar_turu','in',...) NULL'larÄ± da ELER: SQL'de NOT (NULL IN (...)) = NULL â†’ satÄ±r
-  //    dÃ¼ÅŸer. "DiÄŸer" sekmesinin tÃ¼m amacÄ± bilinmeyen tÃ¼rÃ¼ gÃ¶stermek ve en olasÄ± bilinmeyen NULL'dur;
-  //    not.in tek baÅŸÄ±na onu hem sayÄ±mdan hem listeden sessizce siler. is.null dalÄ± bu yÃ¼zden ÅŸart.
-  //    (CanlÄ± doÄŸrulama: PostgREST aynÄ± istekteki iki `or=` parametresini AND'ler â€” kesiÅŸim testinde
-  //     or1âˆ©or2 = [] dÃ¶ndÃ¼ â€” yani bu filtre arama or()'Ä±yla Ã§akÄ±ÅŸmadan birlikte Ã§alÄ±ÅŸÄ±yor.)
+  const BILINEN=['uyusmazlik','duzenleyici','mahkeme'];   // canlı DB'de geçerli karar_turu kodları
+  const DIGER='__diger';                                   // bilinmeyen türler için sanal sekme kodu
+  // ⚠️ Düz .not('karar_turu','in',...) NULL'ları da ELER: SQL'de NOT (NULL IN (...)) = NULL → satır
+  //    düşer. "Diğer" sekmesinin tüm amacı bilinmeyen türü göstermek ve en olası bilinmeyen NULL'dur;
+  //    not.in tek başına onu hem sayımdan hem listeden sessizce siler. is.null dalı bu yüzden şart.
+  //    (Canlı doğrulama: PostgREST aynı istekteki iki `or=` parametresini AND'ler — kesişim testinde
+  //     or1∩or2 = [] döndü — yani bu filtre arama or()'ıyla çakışmadan birlikte çalışıyor.)
   const DIGER_FILTRE='karar_turu.is.null,karar_turu.not.in.('+BILINEN.join(',')+')';
-  // kaynak_url canlÄ±da 775/775 NULL; dolduÄŸunda `javascript:` taÅŸÄ±yan satÄ±r depolanmÄ±ÅŸ XSS olur.
+  // kaynak_url canlıda 775/775 NULL; dolduğunda `javascript:` taşıyan satır depolanmış XSS olur.
   const guvenliUrl=(u)=>/^https?:\/\//i.test(u||'')?u:'';
   let uyeMi=false, tur='', sayfa=1, aramaT, turAdet={};
 
-  // Ham DB kodu â†’ kullanÄ±cÄ±ya gÃ¶sterilen TÃ¼rkÃ§e etiket (ham 'uyusmazlik' gÃ¶sterilmez).
+  // Ham DB kodu → kullanıcıya gösterilen Türkçe etiket (ham 'uyusmazlik' gösterilmez).
   const TUR_ETIKET={
-    'uyusmazlik':'UyuÅŸmazlÄ±k KararÄ±',
-    'duzenleyici':'DÃ¼zenleyici Karar',
-    'mahkeme':'Mahkeme KararÄ±',
-    'tutanak':'Kurul TutanaÄŸÄ±',
+    'uyusmazlik':'Uyuşmazlık Kararı',
+    'duzenleyici':'Düzenleyici Karar',
+    'mahkeme':'Mahkeme Kararı',
+    'tutanak':'Kurul Tutanağı',
   };
-  const turEtiket=(t)=>{ const ham=(t||'').trim(); if(!ham) return 'â€”'; return TUR_ETIKET[fold(ham)]||ham; };
+  const turEtiket=(t)=>{ const ham=(t||'').trim(); if(!ham) return '—'; return TUR_ETIKET[fold(ham)]||ham; };
 
-  // SonuÃ§ rozeti. âš ï¸ 'diger' = "sonuÃ§ bilgisi yayÄ±mlanmamÄ±ÅŸ" demek, KABUL DEÄÄ°L â€” canlÄ±da 775/775
-  //    satÄ±r 'diger' olduÄŸu iÃ§in eski varsayÄ±lan-yeÅŸil dal tÃ¼m listeyi "kabul" gibi gÃ¶steriyordu.
-  //    NÃ¶tr gri artÄ±k varsayÄ±lan; yalnÄ±z gerÃ§ek kabul/ret/iptal deÄŸerleri renklenir.
+  // Sonuç rozeti. ⚠️ 'diger' = "sonuç bilgisi yayımlanmamış" demek, KABUL DEĞİL — canlıda 775/775
+  //    satır 'diger' olduğu için eski varsayılan-yeşil dal tüm listeyi "kabul" gibi gösteriyordu.
+  //    Nötr gri artık varsayılan; yalnız gerçek kabul/ret/iptal değerleri renklenir.
   const NOTR={bg:'#EFF2F6',fg:'var(--v1-muted)'};
   const sonucBilgi=(s)=>{
     const ham=(s||'').trim(), x=fold(ham);
     if(!ham||x==='diger'||x==='bilinmiyor'||x==='belirsiz')
-      return {ad:'BelirtilmemiÅŸ',bg:NOTR.bg,fg:NOTR.fg,ipucu:'Kurul karar listesinde kabul/ret/iptal bilgisi yayÄ±mlanmÄ±yor'};
+      return {ad:'Belirtilmemiş',bg:NOTR.bg,fg:NOTR.fg,ipucu:'Kurul karar listesinde kabul/ret/iptal bilgisi yayımlanmıyor'};
     if(x.includes('iptal'))  return {ad:ham,bg:'#FDECEE',fg:'var(--v1-kirmizi)',ipucu:''};
     if(x.includes('duzelt')) return {ad:ham,bg:'var(--v1-mavi-acik)',fg:'var(--v1-mavi)',ipucu:''};
     if(x.includes('kabul'))  return {ad:ham,bg:'#E6F6EC',fg:'var(--v1-yesil)',ipucu:''};
     if(x.includes('red')||x.includes('ret')) return {ad:ham,bg:'#FDECEE',fg:'var(--v1-kirmizi)',ipucu:''};
-    return {ad:ham,bg:NOTR.bg,fg:NOTR.fg,ipucu:''};        // tanÄ±nmayan deÄŸer â†’ nÃ¶tr, uydurma renk yok
+    return {ad:ham,bg:NOTR.bg,fg:NOTR.fg,ipucu:''};        // tanınmayan değer → nötr, uydurma renk yok
   };
 
   const aktifSekme=()=>document.querySelector('.v1-sekme.aktif');
   const aktifAd=()=>{ const b=aktifSekme(); return b?(b.dataset.ad||b.dataset.t||'Kararlar'):'Kararlar'; };
 
-  // Sekme baÅŸÄ±na gerÃ§ek satÄ±r sayÄ±sÄ± â€” hangi sekmenin boÅŸ olduÄŸunu tahmin etmeyip Ã¶lÃ§Ã¼yoruz.
+  // Sekme başına gerçek satır sayısı — hangi sekmenin boş olduğunu tahmin etmeyip ölçüyoruz.
   async function adetleriYukle(){
     try{
       const say=(f)=>{ let q=sb.from('kik_kararlar').select('id',{count:'exact',head:true}); return f?f(q):q; };
@@ -150,7 +150,7 @@
         [say(q=>q.or(DIGER_FILTRE))]
       );
       const c=await Promise.all(istek);
-      if(c.some(r=>r.error)) return;                        // sayÄ±m baÅŸarÄ±sÄ±zsa rozet gÃ¶stermeyiz
+      if(c.some(r=>r.error)) return;                        // sayım başarısızsa rozet göstermeyiz
       turAdet={'':c[0].count||0};
       BILINEN.forEach((k,i)=>{ turAdet[k]=c[i+1].count||0; });
       turAdet[DIGER]=c[BILINEN.length+1].count||0;
@@ -162,8 +162,8 @@
   function digerSekmesiEkle(){
     if(document.querySelector('.v1-sekme[data-t="'+DIGER+'"]')) return;
     const b=document.createElement('button');
-    b.className='v1-sekme'; b.dataset.t=DIGER; b.dataset.ad='DiÄŸer Kararlar';
-    b.innerHTML='DiÄŸer Kararlar<span class="v1-sekme-adet" hidden></span>';
+    b.className='v1-sekme'; b.dataset.t=DIGER; b.dataset.ad='Diğer Kararlar';
+    b.innerHTML='Diğer Kararlar<span class="v1-sekme-adet" hidden></span>';
     b.addEventListener('click',()=>sekmeSec(b));
     document.getElementById('v1-sekmeler').appendChild(b);
   }
@@ -171,8 +171,8 @@
   const aramaMetni=()=>((document.getElementById('v1-ara-liste')||{}).value||'').trim();
 
   function rozetleriYaz(){
-    // Rozet = arÅŸivdeki toplam. Arama aÃ§Ä±kken gizlenir; yoksa "775" rozetiyle "12 karar
-    // listeleniyor" satÄ±rÄ± yan yana durup kullanÄ±cÄ±yÄ± yanÄ±ltÄ±r.
+    // Rozet = arşivdeki toplam. Arama açıkken gizlenir; yoksa "775" rozetiyle "12 karar
+    // listeleniyor" satırı yan yana durup kullanıcıyı yanıltır.
     const aramaVar=!!aramaMetni();
     document.querySelectorAll('.v1-sekme').forEach(b=>{
       const n=turAdet[b.dataset.t], s=b.querySelector('.v1-sekme-adet');
@@ -183,7 +183,7 @@
     });
   }
 
-  // BoÅŸ sekmede "hangi sekmede veri var" bilgisi â€” sabit cÃ¼mle yerine Ã¶lÃ§Ã¼len adetlerden.
+  // Boş sekmede "hangi sekmede veri var" bilgisi — sabit cümle yerine ölçülen adetlerden.
   function doluSekmeler(){
     return Array.from(document.querySelectorAll('.v1-sekme'))
       .filter(b=>b.dataset.t&&b.dataset.t!==tur&&turAdet[b.dataset.t]>0)
@@ -206,11 +206,11 @@
     if(!uyeMi){
       document.getElementById('v1-misafir').style.display='block';
       document.getElementById('v1-sayi').textContent='';
-      bosGoster('<strong>ğŸ”’ Ãœyelere Ã¶zel liste</strong>Emsal kararlarÄ± gÃ¶rmek iÃ§in <a href="login">giriÅŸ yapÄ±n</a>.');
+      bosGoster('<strong>🔒 Üyelere özel liste</strong>Emsal kararları görmek için <a href="login">giriş yapın</a>.');
       return;
     }
     tabloGoster(); rozetleriYaz();
-    tb.innerHTML='<tr><td colspan="4" class="v1-bos">YÃ¼kleniyorâ€¦</td></tr>';
+    tb.innerHTML='<tr><td colspan="4" class="v1-bos">Yükleniyor…</td></tr>';
     try{
       const k=aramaMetni();
       const kur=(sayimIcin)=>{
@@ -219,12 +219,12 @@
           sayimIcin?{count:'exact',head:true}:undefined);
         if(tur===DIGER)  q=q.or(DIGER_FILTRE);   // NULL dahil (bkz. DIGER_FILTRE notu)
         else if(tur)     q=q.eq('karar_turu',tur);
-        // âš ï¸ DÃ¼z .ilike('baslik',...) TÃ¼rkÃ§e Ä°/Ä±'da sessizce 0 dÃ¶ner. arama_fold = tr_fold(baslik+
-        //    idare+ihale_konusu+ozet) ve kik_kararlar'da anon'a AÃ‡IK (curl ile doÄŸrulandÄ±).
-        //    karar_no fold kolonuna dahil deÄŸil â†’ or() ile ayrÄ±ca aranÄ±yor (kutu "Karar no" diyor).
-        // âš ï¸ TÄ±rnak/iki nokta ELLE temizleniyor: KÄ°K baÅŸlÄ±klarÄ± " iÃ§eriyor, kullanÄ±cÄ± baÅŸlÄ±ÄŸÄ±
-        //    kopyalayÄ±p yapÄ±ÅŸtÄ±rÄ±nca PostgREST or() tÄ±rnaÄŸÄ± yutup SESSÄ°ZCE [] dÃ¶ndÃ¼rÃ¼yor
-        //    (canlÄ± test: or=(...ilike.*"belediye"*) -> [] , tÄ±rnaksÄ±z -> 2 satÄ±r).
+        // ⚠️ Düz .ilike('baslik',...) Türkçe İ/ı'da sessizce 0 döner. arama_fold = tr_fold(baslik+
+        //    idare+ihale_konusu+ozet) ve kik_kararlar'da anon'a AÇIK (curl ile doğrulandı).
+        //    karar_no fold kolonuna dahil değil → or() ile ayrıca aranıyor (kutu "Karar no" diyor).
+        // ⚠️ Tırnak/iki nokta ELLE temizleniyor: KİK başlıkları " içeriyor, kullanıcı başlığı
+        //    kopyalayıp yapıştırınca PostgREST or() tırnağı yutup SESSİZCE [] döndürüyor
+        //    (canlı test: or=(...ilike.*"belediye"*) -> [] , tırnaksız -> 2 satır).
         if(k){ const kal=window.v1AramaKalibi(k.replace(/["':]/g,' ')); q=q.or(`arama_fold.ilike.${kal},karar_no.ilike.${kal}`); }
         return q;
       };
@@ -239,36 +239,36 @@
       if(!d.length){
         document.getElementById('v1-sayi').textContent='0 karar';
         if(k){
-          bosGoster(`<strong>AramanÄ±za uygun karar bulunamadÄ±.</strong>â€œ${esc(k)}â€ iÃ§in sonuÃ§ yok â€” karar numarasÄ±, idare adÄ± veya ihale konusundan tek bir kelime deneyin.`);
+          bosGoster(`<strong>Aramanıza uygun karar bulunamadı.</strong>“${esc(k)}” için sonuç yok — karar numarası, idare adı veya ihale konusundan tek bir kelime deneyin.`);
         } else if(tur){
           const dolu=doluSekmeler();
-          bosGoster(`<strong>Bu tÃ¼rde henÃ¼z karar yok.</strong>â€œ${esc(aktifAd())}â€ arÅŸivi henÃ¼z aktarÄ±lmadÄ± â€” arÅŸiv backfill'i bekliyor.`
-            +(dolu.length?`<br>Åu an dolu olan sekmeler: ${esc(dolu.join(', '))}.`:''));
+          bosGoster(`<strong>Bu türde henüz karar yok.</strong>“${esc(aktifAd())}” arşivi henüz aktarılmadı — arşiv backfill'i bekliyor.`
+            +(dolu.length?`<br>Şu an dolu olan sekmeler: ${esc(dolu.join(', '))}.`:''));
         } else {
-          bosGoster('<strong>HenÃ¼z karar kaydÄ± yok.</strong>KÄ°K karar arÅŸivi hazÄ±rlanÄ±yor.');
+          bosGoster('<strong>Henüz karar kaydı yok.</strong>KİK karar arşivi hazırlanıyor.');
         }
         return;
       }
       tabloGoster();
       document.getElementById('v1-sayi').innerHTML = toplam!=null
         ? `Arama kriterinize uygun <strong>${num(toplam)}</strong> karar listeleniyor`
-        : `<strong>${d.length}</strong> karar gÃ¶steriliyor`;
+        : `<strong>${d.length}</strong> karar gösteriliyor`;
       tb.innerHTML=d.map(r=>{
         const sn=sonucBilgi(r.sonuc);
-        const t=r.karar_tarihi?new Date(r.karar_tarihi).toLocaleDateString('tr-TR'):'â€”';
+        const t=r.karar_tarihi?new Date(r.karar_tarihi).toLocaleDateString('tr-TR'):'—';
         const url=guvenliUrl(r.kaynak_url);
-        const link=url?`<br><a class="v1-kaynak-link" href="${esc(url)}" target="_blank" rel="noopener noreferrer">Kaynak â†—</a>`:'';
+        const link=url?`<br><a class="v1-kaynak-link" href="${esc(url)}" target="_blank" rel="noopener noreferrer">Kaynak ↗</a>`:'';
         return `<tr>
-          <td class="v1-t-tarih"><strong style="color:var(--v1-lacivert);">${esc(r.karar_no||'â€”')}</strong><br><span class="saat">${t}</span>${link}</td>
-          <td><div class="v1-t-ad" style="font-weight:600;">${esc(r.baslik||r.ihale_konusu||'â€”')}</div>
-            <div class="v1-karar-ozet">${esc(r.idare||'')}${r.ozet?' Â· '+esc(r.ozet):''}</div></td>
+          <td class="v1-t-tarih"><strong style="color:var(--v1-lacivert);">${esc(r.karar_no||'—')}</strong><br><span class="saat">${t}</span>${link}</td>
+          <td><div class="v1-t-ad" style="font-weight:600;">${esc(r.baslik||r.ihale_konusu||'—')}</div>
+            <div class="v1-karar-ozet">${esc(r.idare||'')}${r.ozet?' · '+esc(r.ozet):''}</div></td>
           <td><span class="v1-tur-rozet">${esc(turEtiket(r.karar_turu))}</span></td>
           <td><span class="v1-sonuc-rozet" style="background:${sn.bg};color:${sn.fg};"${sn.ipucu?` title="${esc(sn.ipucu)}"`:''}>${esc(sn.ad)}</span></td></tr>`;
       }).join('');
       sayfalama(toplam,d.length);
     }catch(e){
       tabloGoster();
-      tb.innerHTML=`<tr><td colspan="4" class="v1-bos">Liste yÃ¼klenemedi. ${esc(e.message||'')}</td></tr>`;
+      tb.innerHTML=`<tr><td colspan="4" class="v1-bos">Liste yüklenemedi. ${esc(e.message||'')}</td></tr>`;
       document.getElementById('v1-sayfalama').innerHTML='';
     }
   }
@@ -276,39 +276,39 @@
   function sayfalama(toplam,adet){
     const el=document.getElementById('v1-sayfalama');
     if(toplam==null){
-      el.innerHTML=`<button ${sayfa===1?'disabled':''} data-s="${sayfa-1}">â€¹ Ã–nceki</button><button class="aktif" disabled>${sayfa}</button><button ${adet<BOY?'disabled':''} data-s="${sayfa+1}">Sonraki â€º</button>`;
+      el.innerHTML=`<button ${sayfa===1?'disabled':''} data-s="${sayfa-1}">‹ Önceki</button><button class="aktif" disabled>${sayfa}</button><button ${adet<BOY?'disabled':''} data-s="${sayfa+1}">Sonraki ›</button>`;
     } else {
       const son=Math.max(1,Math.ceil(toplam/BOY));
       if(son<=1){ el.innerHTML=''; return; }
       const g=[]; const b1=Math.max(1,sayfa-2), b2=Math.min(son,b1+4);
       for(let i=b1;i<=b2;i++) g.push(i);
-      el.innerHTML=`<button ${sayfa===1?'disabled':''} data-s="${sayfa-1}">â€¹</button>`+
+      el.innerHTML=`<button ${sayfa===1?'disabled':''} data-s="${sayfa-1}">‹</button>`+
         g.map(i=>`<button class="${i===sayfa?'aktif':''}" data-s="${i}">${i}</button>`).join('')+
-        `<button ${sayfa===son?'disabled':''} data-s="${sayfa+1}">â€º</button>`;
+        `<button ${sayfa===son?'disabled':''} data-s="${sayfa+1}">›</button>`;
     }
     el.querySelectorAll('[data-s]').forEach(b=>b.addEventListener('click',()=>{
       const s=+b.dataset.s; if(s<1)return; sayfa=s; yukle(); window.scrollTo({top:0,behavior:'smooth'});
     }));
   }
 
-  // âš ï¸ BaÅŸlÄ±k iÃ§in b.textContent KULLANMA: sekmenin iÃ§inde adet rozeti var, sayÄ± da baÅŸlÄ±ÄŸa sÄ±zar.
+  // ⚠️ Başlık için b.textContent KULLANMA: sekmenin içinde adet rozeti var, sayı da başlığa sızar.
   function sekmeSec(b){
     document.querySelectorAll('.v1-sekme').forEach(x=>x.classList.remove('aktif'));
     b.classList.add('aktif');
     tur=b.dataset.t||''; sayfa=1;
-    document.getElementById('v1-liste-baslik').textContent=b.dataset.ad||'TÃ¼m Kararlar';
+    document.getElementById('v1-liste-baslik').textContent=b.dataset.ad||'Tüm Kararlar';
     rozetleriYaz();
     yukle();
   }
 
   (async()=>{
-    // âš ï¸ Kabuk baÄŸÄ±mlÄ±lÄ±ÄŸÄ± SESSÄ°Z Ã–LMESÄ°N: fold ilk satÄ±r render'Ä±nda Ã§aÄŸrÄ±lÄ±r, eksikse try/catch
-    //    onu yutup jenerik "Liste yÃ¼klenemedi" yazar ve gerÃ§ek sebep (bayat kabuk) gÃ¶rÃ¼nmez.
-    //    Burada erken ve AÃ‡IKÃ‡A sÃ¶ylÃ¼yoruz. Yerel fold kopyasÄ± YAZILMAZ â€” kopyanÄ±n SQL tr_fold()'dan
-    //    sapmasÄ± ISPARTA aramasÄ±nÄ± sessizce 0 satÄ±ra dÃ¼ÅŸÃ¼ren asÄ±l bug'dÄ±.
+    // ⚠️ Kabuk bağımlılığı SESSİZ ÖLMESİN: fold ilk satır render'ında çağrılır, eksikse try/catch
+    //    onu yutup jenerik "Liste yüklenemedi" yazar ve gerçek sebep (bayat kabuk) görünmez.
+    //    Burada erken ve AÇIKÇA söylüyoruz. Yerel fold kopyası YAZILMAZ — kopyanın SQL tr_fold()'dan
+    //    sapması ISPARTA aramasını sessizce 0 satıra düşüren asıl bug'dı.
     if(typeof window.trFold!=='function'||typeof window.v1AramaKalibi!=='function'){
       document.getElementById('v1-sayi').textContent='';
-      bosGoster('<strong>Sayfa bileÅŸeni eksik yÃ¼klendi.</strong>Arama yardÄ±mcÄ±larÄ± (js/v1-kabuk.js) bayat sÃ¼rÃ¼mden geldi. SayfayÄ± yenileyin; sÃ¼rerse tarayÄ±cÄ± Ã¶nbelleÄŸini temizleyin.');
+      bosGoster('<strong>Sayfa bileşeni eksik yüklendi.</strong>Arama yardımcıları (js/v1-kabuk.js) bayat sürümden geldi. Sayfayı yenileyin; sürerse tarayıcı önbelleğini temizleyin.');
       return;
     }
     try{ const {data}=await sb.auth.getSession(); uyeMi=!!(data&&data.session);
@@ -318,7 +318,7 @@
     document.getElementById('v1-ara-liste').addEventListener('input',()=>{clearTimeout(aramaT); aramaT=setTimeout(()=>{sayfa=1;yukle();},350);});
     document.querySelectorAll('.v1-sekme').forEach(b=>b.addEventListener('click',()=>sekmeSec(b)));
     yukle();
-    if(uyeMi) adetleriYukle();   // rozetler/"DiÄŸer" sekmesi listeyi bekletmeden arkadan gelir
+    if(uyeMi) adetleriYukle();   // rozetler/"Diğer" sekmesi listeyi bekletmeden arkadan gelir
   })();
 })();
 </script>

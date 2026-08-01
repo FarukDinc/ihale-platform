@@ -1,10 +1,10 @@
-﻿<!DOCTYPE html>
+?<!DOCTYPE html>
 <html lang="tr">
 <head>
   <meta charset="UTF-8" />
-  <meta name="author" content="Ã–mer Faruk DinÃ§">
+  <meta name="author" content="Ömer Faruk Dinç">
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>YasaklÄ± Sorgulama â€” Ä°haleGlobal</title>
+  <title>Yasaklı Sorgulama — İhaleGlobal</title>
   <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=4" />
   <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/v1.css?v=15" />
@@ -27,27 +27,27 @@
       background:#EFF2F6; color:var(--v1-muted); }
   </style>
 </head>
-<body class="v1" data-v1-aktif="kararlar" data-v1-kirinti="Kamu > YasaklÄ± Sorgulama">
+<body class="v1" data-v1-aktif="kararlar" data-v1-kirinti="Kamu > Yasaklı Sorgulama">
 <div class="v1-app">
   <div class="v1-main">
     <div class="v1-govde">
-      <div class="v1-sayfa-baslik">YasaklÄ± Sorgulama</div>
-      <div class="v1-sayfa-alt">4734 sayÄ±lÄ± Kanun kapsamÄ±nda ihalelere katÄ±lmaktan yasaklÄ± firma ve kiÅŸileri sorgulayÄ±n.</div>
+      <div class="v1-sayfa-baslik">Yasaklı Sorgulama</div>
+      <div class="v1-sayfa-alt">4734 sayılı Kanun kapsamında ihalelere katılmaktan yasaklı firma ve kişileri sorgulayın.</div>
 
       <div class="v1-kart">
         <div class="v1-sorgu-kutu">
-          <input type="text" class="v1-sorgu-input" id="v1-sorgu" placeholder="Firma adÄ±, T.C. kimlik no veya vergi noâ€¦">
+          <input type="text" class="v1-sorgu-input" id="v1-sorgu" placeholder="Firma adı, T.C. kimlik no veya vergi no…">
           <button class="v1-sorgu-btn" id="v1-sorgu-btn">Sorgula</button>
         </div>
         <div class="v1-uyari mavi" style="margin-bottom:0;">
-          â„¹ï¸ Sorgulama sonucu <strong>bilgilendirme amaÃ§lÄ±dÄ±r</strong>; resmÃ® kaynak Kamu Ä°hale Kurumu ve
-          ResmÃ® Gazete yayÄ±mlarÄ±dÄ±r. Nihai teyit iÃ§in resmÃ® kaynaklara baÅŸvurun.
+          ℹ️ Sorgulama sonucu <strong>bilgilendirme amaçlıdır</strong>; resmî kaynak Kamu İhale Kurumu ve
+          Resmî Gazete yayımlarıdır. Nihai teyit için resmî kaynaklara başvurun.
         </div>
       </div>
 
       <div id="v1-veri-notu" class="v1-uyari sari" style="display:none;">
-        â³ <strong>YasaklÄ± firma veri seti henÃ¼z yÃ¼klenmedi.</strong> Tablo hazÄ±r, veri Ã§ekimi (ResmÃ® Gazete + KÄ°K
-        yasaklÄ±lar listesi) planlandÄ±. YÃ¼klendiÄŸinde bu sayfa Ã§alÄ±ÅŸÄ±r durumda olacak â€” arayÃ¼z ve sorgu akÄ±ÅŸÄ± hazÄ±r.
+        ⏳ <strong>Yasaklı firma veri seti henüz yüklenmedi.</strong> Tablo hazır, veri çekimi (Resmî Gazete + KİK
+        yasaklılar listesi) planlandı. Yüklendiğinde bu sayfa çalışır durumda olacak — arayüz ve sorgu akışı hazır.
       </div>
 
       <div class="v1-kart" id="v1-sonuc-kart" style="display:none;">
@@ -58,10 +58,10 @@
         <div style="overflow-x:auto;">
           <table class="v1-tablo">
             <thead><tr>
-              <th>Firma / KiÅŸi</th>
+              <th>Firma / Kişi</th>
               <th style="width:130px;">Vergi / T.C. No</th>
               <th style="width:190px;">Karar Veren Kurum</th>
-              <th style="width:150px;">Yasak SÃ¼resi</th>
+              <th style="width:150px;">Yasak Süresi</th>
               <th style="width:100px;">Durum</th>
             </tr></thead>
             <tbody id="v1-tbody"></tbody>
@@ -80,48 +80,48 @@
   const sb=window.supabase.createClient(SB_URL,SB_KEY);
   const esc=(s)=>(s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
   const num=(n)=>(Number(n)||0).toLocaleString('tr-TR');
-  const trFold=(s)=>(s||'').toLocaleLowerCase('tr').replace(/iÌ‡/g,'i').replace(/Ã§/g,'c').replace(/ÄŸ/g,'g')
-    .replace(/Ã¶/g,'o').replace(/ÅŸ/g,'s').replace(/Ã¼/g,'u');
-  const gun=(t)=>t?new Date(t).toLocaleDateString('tr-TR'):'â€”';
+  const trFold=(s)=>(s||'').toLocaleLowerCase('tr').replace(/i̇/g,'i').replace(/ç/g,'c').replace(/ğ/g,'g')
+    .replace(/ö/g,'o').replace(/ş/g,'s').replace(/ü/g,'u');
+  const gun=(t)=>t?new Date(t).toLocaleDateString('tr-TR'):'—';
   let uyeMi=false;
 
   async function sorgula(){
     const q=(document.getElementById('v1-sorgu').value||'').trim();
     if(q.length<3){ alert('En az 3 karakter girin.'); return; }
-    if(!uyeMi){ alert('YasaklÄ± sorgulama Ã¼yelere Ã¶zeldir. GiriÅŸ yapÄ±n.'); return; }
+    if(!uyeMi){ alert('Yasaklı sorgulama üyelere özeldir. Giriş yapın.'); return; }
     const kart=document.getElementById('v1-sonuc-kart'), tb=document.getElementById('v1-tbody');
-    kart.style.display=''; tb.innerHTML='<tr><td colspan="5" class="v1-bos">SorgulanÄ±yorâ€¦</td></tr>';
+    kart.style.display=''; tb.innerHTML='<tr><td colspan="5" class="v1-bos">Sorgulanıyor…</td></tr>';
     try{
       const sayisal=/^[0-9]+$/.test(q);
       let s=sb.from('yasakli_firmalar').select('firma_ad,tc_vergi_no,karar_veren_kurum,yasak_baslangic,yasak_bitis,yasak_suresi,aktif,il,kanun_madde');
       s = sayisal ? s.eq('tc_vergi_no',q) : s.ilike('normalize_ad','%'+trFold(q)+'%');
       const {data,error}=await s.limit(50);
       if(error) throw error;
-      document.getElementById('v1-sayi').textContent=`${num((data||[]).length)} kayÄ±t`;
+      document.getElementById('v1-sayi').textContent=`${num((data||[]).length)} kayıt`;
       if(!data||!data.length){
-        tb.innerHTML=`<tr><td colspan="5" class="v1-bos">âœ… "<strong>${esc(q)}</strong>" iÃ§in yasaklÄ±lÄ±k kaydÄ± bulunamadÄ±.<br>
-          <span style="font-size:12px;">(Veri setimizde bulunmamasÄ± resmÃ® teyit yerine geÃ§mez.)</span></td></tr>`;
+        tb.innerHTML=`<tr><td colspan="5" class="v1-bos">✅ "<strong>${esc(q)}</strong>" için yasaklılık kaydı bulunamadı.<br>
+          <span style="font-size:12px;">(Veri setimizde bulunmaması resmî teyit yerine geçmez.)</span></td></tr>`;
         return;
       }
       tb.innerHTML=data.map(r=>{
         const bitis=r.yasak_bitis?new Date(r.yasak_bitis):null;
         const aktif = r.aktif===true || (bitis && bitis>=new Date());
         return `<tr>
-          <td><div style="font-weight:600;color:var(--v1-metin);">${esc(r.firma_ad||'â€”')}</div>
-            <div class="v1-t-ikn">${esc(r.il||'')}${r.kanun_madde?' Â· '+esc(r.kanun_madde):''}</div></td>
-          <td style="font-size:13px;">${esc(r.tc_vergi_no||'â€”')}</td>
-          <td style="font-size:12.5px;">${esc(r.karar_veren_kurum||'â€”')}</td>
-          <td style="font-size:12.5px;">${gun(r.yasak_baslangic)} â€“ ${gun(r.yasak_bitis)}${r.yasak_suresi?`<br><span style="color:var(--v1-muted);">${esc(r.yasak_suresi)}</span>`:''}</td>
-          <td><span class="${aktif?'v1-rozet-aktif':'v1-rozet-bitti'}">${aktif?'YasaklÄ±':'SÃ¼resi doldu'}</span></td></tr>`;
+          <td><div style="font-weight:600;color:var(--v1-metin);">${esc(r.firma_ad||'—')}</div>
+            <div class="v1-t-ikn">${esc(r.il||'')}${r.kanun_madde?' · '+esc(r.kanun_madde):''}</div></td>
+          <td style="font-size:13px;">${esc(r.tc_vergi_no||'—')}</td>
+          <td style="font-size:12.5px;">${esc(r.karar_veren_kurum||'—')}</td>
+          <td style="font-size:12.5px;">${gun(r.yasak_baslangic)} – ${gun(r.yasak_bitis)}${r.yasak_suresi?`<br><span style="color:var(--v1-muted);">${esc(r.yasak_suresi)}</span>`:''}</td>
+          <td><span class="${aktif?'v1-rozet-aktif':'v1-rozet-bitti'}">${aktif?'Yasaklı':'Süresi doldu'}</span></td></tr>`;
       }).join('');
-    }catch(e){ tb.innerHTML=`<tr><td colspan="5" class="v1-bos">Sorgu baÅŸarÄ±sÄ±z. ${esc(e.message||'')}</td></tr>`; }
+    }catch(e){ tb.innerHTML=`<tr><td colspan="5" class="v1-bos">Sorgu başarısız. ${esc(e.message||'')}</td></tr>`; }
   }
 
   (async()=>{
     try{ const {data}=await sb.auth.getSession(); uyeMi=!!(data&&data.session);
       if(window.v1PaketYaz){ if(uyeMi){ const {data:k}=await sb.from('kullanici_krediler').select('plan').eq('kullanici_id',data.session.user.id).maybeSingle();
         v1PaketYaz(['standart','kurumsal'].includes(k?.plan)?'Pro':'Temel'); } else v1PaketYaz('Misafir'); }
-      // Veri var mÄ± â€” yoksa dÃ¼rÃ¼st not gÃ¶ster
+      // Veri var mı — yoksa dürüst not göster
       if(uyeMi){
         const {count}=await sb.from('yasakli_firmalar').select('id',{count:'exact',head:true});
         if(!count) document.getElementById('v1-veri-notu').style.display='block';

@@ -1,14 +1,14 @@
-﻿<!DOCTYPE html>
+?<!DOCTYPE html>
 <html lang="tr">
 <head>
   <meta charset="UTF-8" />
-  <meta name="author" content="Ã–mer Faruk DinÃ§">
-  <meta name="copyright" content="Â© 2026 Ã–mer Faruk DinÃ§ â€” Ä°haleGlobal">
+  <meta name="author" content="Ömer Faruk Dinç">
+  <meta name="copyright" content="© 2026 Ömer Faruk Dinç — İhaleGlobal">
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <!-- noindex ÅART: 1,49M doÄŸrudan temin kaydÄ± Ã— ayrÄ± URL = crawl patlamasÄ±.
-       follow bÄ±rakÄ±ldÄ± ki iÃ§erideki idare/kategori linkleri yine de keÅŸfedilsin. -->
+  <!-- noindex ŞART: 1,49M doğrudan temin kaydı × ayrı URL = crawl patlaması.
+       follow bırakıldı ki içerideki idare/kategori linkleri yine de keşfedilsin. -->
   <meta name="robots" content="noindex,follow" />
-  <title>DoÄŸrudan Temin DetayÄ± â€” Ä°haleGlobal</title>
+  <title>Doğrudan Temin Detayı — İhaleGlobal</title>
   <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=4" />
   <link rel="icon" type="image/png" sizes="48x48" href="/favicon-48.png?v=4" />
   <link rel="apple-touch-icon" sizes="180x180" href="/favicon-180.png?v=4" />
@@ -20,7 +20,7 @@
       font-size:13px; font-weight:700; color:var(--v1-muted); text-decoration:none; }
     .v1-geri:hover { color:var(--v1-mavi); text-decoration:none; }
 
-    /* Lacivert Ã¼st bant (v1-ihale-detay ile aynÄ± dil) */
+    /* Lacivert üst bant (v1-ihale-detay ile aynı dil) */
     .v1-d-bant { background:var(--v1-lacivert); border-radius:var(--v1-radius-lg); padding:24px 26px; color:#fff; margin-bottom:18px; }
     .v1-d-ust { display:flex; justify-content:space-between; align-items:flex-start; gap:18px; }
     .v1-d-no { font-size:12.5px; color:rgba(255,255,255,.72); font-weight:700; letter-spacing:.04em; }
@@ -39,7 +39,7 @@
     .v1-d-btn.hayalet:hover { background:rgba(255,255,255,.22); }
     .v1-d-btn.aktif { background:var(--v1-teal); color:#fff; }
 
-    /* Bilgi Ä±zgarasÄ± */
+    /* Bilgi ızgarası */
     .v1-bilgi-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(210px,1fr)); gap:18px 26px; }
     .v1-bilgi b { display:block; font-size:11.5px; text-transform:uppercase; letter-spacing:.05em; color:var(--v1-muted); margin-bottom:3px; }
     .v1-bilgi span { font-size:14px; font-weight:600; color:var(--v1-metin); line-height:1.45; word-break:break-word; }
@@ -47,15 +47,15 @@
     .v1-bilgi span.acil { color:var(--v1-kirmizi); }
     .v1-bilgi .ek { font-weight:600; font-size:12.5px; color:var(--v1-muted); }
 
-    /* Kilitli (misafir) deÄŸer â€” v1 paywall deseni */
+    /* Kilitli (misafir) değer — v1 paywall deseni */
     .v1 a.v1-kilit { color:var(--v1-muted); }
     .v1 a.v1-kilit:hover { color:var(--v1-mavi); text-decoration:none; }
 
-    /* Misafir uyarÄ± ÅŸeridi */
+    /* Misafir uyarı şeridi */
     .v1-uyari-mavi { margin-top:16px; background:var(--v1-mavi-acik); border:1px solid #CFE2F5;
       border-radius:10px; padding:13px 15px; font-size:13px; line-height:1.6; color:var(--v1-metin); }
 
-    /* SonuÃ§ kartÄ± (yeÅŸil) */
+    /* Sonuç kartı (yeşil) */
     .v1-sonuc-kart { background:#E6F6EC; border:1px solid #BFE6CE; border-radius:12px; padding:18px 20px; }
     .v1-sonuc-satir { display:grid; grid-template-columns:repeat(auto-fit,minmax(165px,1fr));
       gap:14px 24px; padding:14px 0; border-top:1px solid #BFE6CE; }
@@ -67,7 +67,7 @@
     .v1-sozlesme-rozet { display:inline-block; font-size:10.5px; font-weight:800; padding:2px 8px;
       border-radius:20px; background:#CDEBD8; color:#146035; margin-left:6px; vertical-align:middle; }
 
-    /* EKAP / ilgili baÄŸlar */
+    /* EKAP / ilgili bağlar */
     .v1-not { font-size:13px; line-height:1.7; color:var(--v1-metin); }
     .v1-not b { color:var(--v1-lacivert); }
     .v1-dis-link { display:inline-flex; align-items:center; gap:7px; margin-top:12px; padding:9px 16px;
@@ -79,7 +79,7 @@
       border:1px solid var(--v1-cizgi); color:var(--v1-metin); font-size:13px; font-weight:700; text-decoration:none; }
     .v1-ilgili-bag:hover { border-color:var(--v1-mavi); color:var(--v1-mavi); text-decoration:none; }
 
-    /* YÃ¼kleniyor / bulunamadÄ± */
+    /* Yükleniyor / bulunamadı */
     @keyframes v1-spin { to { transform:rotate(360deg); } }
     .v1-yukleniyor { text-align:center; padding:56px 20px; color:var(--v1-muted); font-size:13.5px; }
     .v1-spinner { width:30px; height:30px; border:3px solid var(--v1-cizgi); border-top-color:var(--v1-mavi);
@@ -95,22 +95,22 @@
     }
   </style>
 </head>
-<body class="v1" data-v1-aktif="ihaleler" data-v1-kirinti="Ä°haleler > DoÄŸrudan Temin DetayÄ±">
+<body class="v1" data-v1-aktif="ihaleler" data-v1-kirinti="İhaleler > Doğrudan Temin Detayı">
 <div class="v1-app">
   <div class="v1-main">
     <div class="v1-govde">
-      <a class="v1-geri" href="v1-ihaleler?tur=dt">â† DoÄŸrudan Temin listesine dÃ¶n</a>
+      <a class="v1-geri" href="v1-ihaleler?tur=dt">← Doğrudan Temin listesine dön</a>
 
       <div id="v1-yukleniyor" class="v1-yukleniyor">
         <div class="v1-spinner"></div>
-        <div>Duyuru yÃ¼kleniyorâ€¦</div>
+        <div>Duyuru yükleniyor…</div>
       </div>
 
       <div id="v1-bulunamadi" class="v1-kart v1-bulunamadi" style="display:none;">
-        <div class="ikon">ğŸ”</div>
-        <div class="bas" id="v1-bulunamadi-bas">Duyuru bulunamadÄ±</div>
-        <div class="alt" id="v1-bulunamadi-alt">Bu numaraya ait bir doÄŸrudan temin duyurusu kayÄ±tlarÄ±mÄ±zda yok.</div>
-        <a class="v1-ilgili-bag" href="v1-ihaleler?tur=dt">Listeye dÃ¶n</a>
+        <div class="ikon">🔍</div>
+        <div class="bas" id="v1-bulunamadi-bas">Duyuru bulunamadı</div>
+        <div class="alt" id="v1-bulunamadi-alt">Bu numaraya ait bir doğrudan temin duyurusu kayıtlarımızda yok.</div>
+        <a class="v1-ilgili-bag" href="v1-ihaleler?tur=dt">Listeye dön</a>
       </div>
 
       <div id="v1-icerik" style="display:none;"></div>
@@ -126,25 +126,25 @@
   const SB_URL="https://ihaleglobal.com", SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzg0MzA3MTU4LCJleHAiOjE5NDE5ODcxNTh9.CjNKulvirotDD_y2oO2QKgo0kbqYvL0jUSV1RiDMoso";
   const sb = window.supabase.createClient(SB_URL, SB_KEY);
 
-  // â”€â”€ Misafir maskeleme â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-  // dogrudan_temin_ilanlari.idare        â†’ anon'a DB'de KAPALI (42501, doÄŸrulandÄ±)
-  // dogrudan_temin_sonuclari.kazanan_firma â†’ anon'a DB'de KAPALI (42501, doÄŸrulandÄ±)
-  // Bu iki kolon misafir select'ine EKLENÄ°RSE tÃ¼m sorgu dÃ¼ÅŸer (kÄ±smÃ® sonuÃ§ deÄŸil).
+  // ── Misafir maskeleme ────────────────────────────────────────────────────
+  // dogrudan_temin_ilanlari.idare        → anon'a DB'de KAPALI (42501, doğrulandı)
+  // dogrudan_temin_sonuclari.kazanan_firma → anon'a DB'de KAPALI (42501, doğrulandı)
+  // Bu iki kolon misafir select'ine EKLENİRSE tüm sorgu düşer (kısmî sonuç değil).
   let uyeMi = false;
-  const MASKE = '<a href="login" class="v1-kilit" title="Ãœyelere Ã¶zel â€” giriÅŸ yapÄ±n">â€¢â€¢â€¢â€¢â€¢ ğŸ”’</a>';
+  const MASKE = '<a href="login" class="v1-kilit" title="Üyelere özel — giriş yapın">••••• 🔒</a>';
 
-  // dogrudan-temin.html / dt-detay.html ile AYNI durum gruplarÄ±
+  // dogrudan-temin.html / dt-detay.html ile AYNI durum grupları
   const DURUM_GRUP = {
-    acik:  ['DoÄŸrudan Temin Duyurusu YayÄ±mlanmÄ±ÅŸ', 'Teklifler DeÄŸerlendiriliyor'],
-    sonuc: ['SonuÃ§ Duyurusu YayÄ±mlanmÄ±ÅŸ', 'DoÄŸrudan Temin SonuÃ§landÄ±rÄ±ldÄ±', 'SonuÃ§ Bilgileri GÃ¶nderildi'],
+    acik:  ['Doğrudan Temin Duyurusu Yayımlanmış', 'Teklifler Değerlendiriliyor'],
+    sonuc: ['Sonuç Duyurusu Yayımlanmış', 'Doğrudan Temin Sonuçlandırıldı', 'Sonuç Bilgileri Gönderildi'],
   };
 
   const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 
   function tarihFormat(s) {
-    if (!s) return 'â€”';
+    if (!s) return '—';
     const d = new Date(s);
-    if (isNaN(d)) return 'â€”';
+    if (isNaN(d)) return '—';
     return d.toLocaleDateString('tr-TR', { day:'2-digit', month:'short', year:'numeric' });
   }
 
@@ -156,72 +156,72 @@
   }
 
   function bedelFormat(n) {
-    if (n == null || isNaN(Number(n))) return 'â€”';
-    return 'â‚º' + Number(n).toLocaleString('tr-TR', { maximumFractionDigits: 0 });
+    if (n == null || isNaN(Number(n))) return '—';
+    return '₺' + Number(n).toLocaleString('tr-TR', { maximumFractionDigits: 0 });
   }
 
   function durumRozet(durum) {
     if (!durum) return '';
-    if (DURUM_GRUP.sonuc.includes(durum)) return '<span class="v1-d-rozet yesil">âœ… SonuÃ§landÄ±</span>';
-    if (DURUM_GRUP.acik.includes(durum))  return '<span class="v1-d-rozet teal">ğŸŸ¢ AÃ§Ä±k</span>';
+    if (DURUM_GRUP.sonuc.includes(durum)) return '<span class="v1-d-rozet yesil">✅ Sonuçlandı</span>';
+    if (DURUM_GRUP.acik.includes(durum))  return '<span class="v1-d-rozet teal">🟢 Açık</span>';
     return `<span class="v1-d-rozet">${esc(durum)}</span>`;
   }
 
   const kilitMi = (e) => !!e && (e.code === '42501' || /permission denied/i.test(e.message || ''));
-  // ?id= elle bozulursa PostgREST 400 + 22P02 dÃ¶ner ve mesajÄ± HAM Postgres metnidir
-  // ("invalid input syntax for type uuid: ..."). KullanÄ±cÄ±ya bunu gÃ¶stermek yerine
-  // "bulunamadÄ±" say â€” tek makul yorum bu.
+  // ?id= elle bozulursa PostgREST 400 + 22P02 döner ve mesajı HAM Postgres metnidir
+  // ("invalid input syntax for type uuid: ..."). Kullanıcıya bunu göstermek yerine
+  // "bulunamadı" say — tek makul yorum bu.
   const gecersizKimlikMi = (e) => !!e && (e.code === '22P02' || /invalid input syntax/i.test(e.message || ''));
   const UUID_KALIP = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
-  // v1-kabuk.js topbar'Ä± DOMContentLoaded'da monte ediyor; getSession() ondan Ã–NCE
-  // dÃ¶nerse #v1-paket-ad henÃ¼z belgede yoktur ve rozet "â€”" kalÄ±r. DOM hazÄ±r olana ertele.
+  // v1-kabuk.js topbar'ı DOMContentLoaded'da monte ediyor; getSession() ondan ÖNCE
+  // dönerse #v1-paket-ad henüz belgede yoktur ve rozet "—" kalır. DOM hazır olana ertele.
   function paketYaz(ad) {
     const f = () => { if (window.v1PaketYaz) window.v1PaketYaz(ad); };
     if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', f);
     else f();
   }
 
-  // â”€â”€ Veri â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-  // select('*') ASLA: token kolonlarÄ± (dt_ihale_token/dt_idare_token) frontend'e
-  // hiÃ§ inmemeli, misafirde de 42501 Ã¼retirdi.
+  // ── Veri ─────────────────────────────────────────────────────────────────
+  // select('*') ASLA: token kolonları (dt_ihale_token/dt_idare_token) frontend'e
+  // hiç inmemeli, misafirde de 42501 üretirdi.
   const DT_KOLONLAR = 'id,dt_no,baslik,tur,il,tarih,yayin_tarihi,durum,kategori,dokuman_var,duyuru_var';
 
   async function ilanGetir(dtNo, satirId) {
     let q = sb.from('dogrudan_temin_ilanlari').select(uyeMi ? DT_KOLONLAR + ',idare' : DT_KOLONLAR);
     q = dtNo ? q.eq('dt_no', dtNo) : q.eq('id', satirId);
-    // single() olmayan kayÄ±tta 406 atardÄ±; maybeSingle null dÃ¶ner
+    // single() olmayan kayıtta 406 atardı; maybeSingle null döner
     const { data, error } = await q.maybeSingle();
     if (error) throw error;
     return data;
   }
 
   async function sonucGetir(dtNo) {
-    // Bir dt_no'da BÄ°RDEN FAZLA sÃ¶zleÅŸme satÄ±rÄ± olabilir (EKAP SozlesmeBilgisiList).
+    // Bir dt_no'da BİRDEN FAZLA sözleşme satırı olabilir (EKAP SozlesmeBilgisiList).
     const { data, error } = await sb.from('dogrudan_temin_sonuclari')
       .select(`${uyeMi ? 'kazanan_firma,' : ''}kazanan_bedel,sozlesme_tarihi,en_yuksek_teklif,en_dusuk_teklif,sozlesme_mi`)
       .eq('dt_no', dtNo)
       .limit(200);
-    if (error) { console.info('sonuÃ§ bilgisi alÄ±namadÄ±:', error.message); return []; }
+    if (error) { console.info('sonuç bilgisi alınamadı:', error.message); return []; }
     return data || [];
   }
 
-  // â”€â”€ ParÃ§alar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Parçalar ─────────────────────────────────────────────────────────────
   function tarihBlogu(k) {
     const p = [];
     if (k.yayin_tarihi) {
-      // E8 = o anki duyurunun yayÄ±m tarihi. SonuÃ§lanmÄ±ÅŸ kayÄ±tta bu, SONUÃ‡ duyurusunun
-      // tarihidir (Ã¶lÃ§Ã¼ldÃ¼: aktiflerde yayÄ±n>ihale %0, sonuÃ§lananlarda %58) â€” etiket bunu sÃ¶ylemeli.
+      // E8 = o anki duyurunun yayım tarihi. Sonuçlanmış kayıtta bu, SONUÇ duyurusunun
+      // tarihidir (ölçüldü: aktiflerde yayın>ihale %0, sonuçlananlarda %58) — etiket bunu söylemeli.
       const sonuclu = DURUM_GRUP.sonuc.includes(k.durum);
-      p.push(`<div class="v1-bilgi"><b>${sonuclu ? 'SonuÃ§ Duyurusu Tarihi' : 'YayÄ±n Tarihi'}</b>
+      p.push(`<div class="v1-bilgi"><b>${sonuclu ? 'Sonuç Duyurusu Tarihi' : 'Yayın Tarihi'}</b>
               <span>${tarihFormat(k.yayin_tarihi)}</span></div>`);
     }
     if (k.tarih) {
       const fark = gunFarki(k.tarih);
-      let etiket = 'Ä°hale Tarihi', deger = tarihFormat(k.tarih), sinif = '';
-      if (fark === 0)    { etiket = 'Son Teklif Tarihi'; deger = 'BUGÃœN'; sinif = ' acil'; }
+      let etiket = 'İhale Tarihi', deger = tarihFormat(k.tarih), sinif = '';
+      if (fark === 0)    { etiket = 'Son Teklif Tarihi'; deger = 'BUGÜN'; sinif = ' acil'; }
       else if (fark > 0) { etiket = 'Son Teklif Tarihi';
-        deger = `${tarihFormat(k.tarih)} <span class="ek">(${fark} gÃ¼n kaldÄ±)</span>`;
+        deger = `${tarihFormat(k.tarih)} <span class="ek">(${fark} gün kaldı)</span>`;
         sinif = fark <= 3 ? ' acil' : ''; }
       p.push(`<div class="v1-bilgi"><b>${etiket}</b><span class="${sinif.trim()}">${deger}</span></div>`);
     }
@@ -236,26 +236,26 @@
       <div class="v1-sonuc-satir">
         <div>
           <b>Kazanan Firma</b>
-          <span>${uyeMi ? (esc(s.kazanan_firma) || 'â€”') : MASKE}${s.sozlesme_mi ? '<span class="v1-sozlesme-rozet">SÃ–ZLEÅME</span>' : ''}</span>
+          <span>${uyeMi ? (esc(s.kazanan_firma) || '—') : MASKE}${s.sozlesme_mi ? '<span class="v1-sozlesme-rozet">SÖZLEŞME</span>' : ''}</span>
         </div>
         <div>
-          <b>SÃ¶zleÅŸme Bedeli</b>
+          <b>Sözleşme Bedeli</b>
           <span class="buyuk">${bedelFormat(s.kazanan_bedel)}</span>
         </div>
         <div>
-          <b>SÃ¶zleÅŸme Tarihi</b>
+          <b>Sözleşme Tarihi</b>
           <span>${tarihFormat(s.sozlesme_tarihi)}</span>
         </div>
         ${(s.en_dusuk_teklif != null || s.en_yuksek_teklif != null) ? `
         <div>
-          <b>Teklif AralÄ±ÄŸÄ±</b>
-          <span>${bedelFormat(s.en_dusuk_teklif)} â€“ ${bedelFormat(s.en_yuksek_teklif)}</span>
+          <b>Teklif Aralığı</b>
+          <span>${bedelFormat(s.en_dusuk_teklif)} – ${bedelFormat(s.en_yuksek_teklif)}</span>
         </div>` : ''}
       </div>`).join('');
     return `
       <div class="v1-kart">
-        <div class="v1-kart-baslik">SonuÃ§ Bilgileri
-          ${cok ? `<span class="v1-sonuc-ozet">${satirlar.length} kalem Â· toplam ${bedelFormat(toplam)}</span>` : ''}
+        <div class="v1-kart-baslik">Sonuç Bilgileri
+          ${cok ? `<span class="v1-sonuc-ozet">${satirlar.length} kalem · toplam ${bedelFormat(toplam)}</span>` : ''}
         </div>
         <div class="v1-sonuc-kart">${govde}</div>
       </div>`;
@@ -263,83 +263,83 @@
 
   function ilgiliKarti(k) {
     const baglar = [];
-    // v1-ihaleler DT sekmesi URL'den yalnÄ±z ?il= ve ?ara= okuyor; idare/kategori
-    // sÃ¼zgeci v1'de URL parametresi olarak YOK â†’ o iki baÄŸ v2 listesine gidiyor.
+    // v1-ihaleler DT sekmesi URL'den yalnız ?il= ve ?ara= okuyor; idare/kategori
+    // süzgeci v1'de URL parametresi olarak YOK → o iki bağ v2 listesine gidiyor.
     if (uyeMi && k.idare) {
-      baglar.push(`<a class="v1-ilgili-bag" href="v1-ihaleler?sekme=dt&idare=${encodeURIComponent(k.idare)}">ğŸ›ï¸ Bu idarenin diÄŸer duyurularÄ±</a>`);
+      baglar.push(`<a class="v1-ilgili-bag" href="v1-ihaleler?sekme=dt&idare=${encodeURIComponent(k.idare)}">🏛️ Bu idarenin diğer duyuruları</a>`);
     }
-    // 'DiÄŸer' jenerik kova (kayÄ±tlarÄ±n bÃ¼yÃ¼k bÃ¶lÃ¼mÃ¼ orada) â€” rozette zaten gizleniyor,
-    // baÄŸ olarak da anlamsÄ±z: kullanÄ±cÄ±yÄ± ilgisiz yÃ¼z binlerce duyuruya atar.
-    if (k.kategori && k.kategori !== 'DiÄŸer') {
-      baglar.push(`<a class="v1-ilgili-bag" href="v1-ihaleler?sekme=dt&kategori=${encodeURIComponent(k.kategori)}">ğŸ­ AynÄ± sektÃ¶r: ${esc(k.kategori)}</a>`);
+    // 'Diğer' jenerik kova (kayıtların büyük bölümü orada) — rozette zaten gizleniyor,
+    // bağ olarak da anlamsız: kullanıcıyı ilgisiz yüz binlerce duyuruya atar.
+    if (k.kategori && k.kategori !== 'Diğer') {
+      baglar.push(`<a class="v1-ilgili-bag" href="v1-ihaleler?sekme=dt&kategori=${encodeURIComponent(k.kategori)}">🏭 Aynı sektör: ${esc(k.kategori)}</a>`);
     }
     if (k.il) {
-      baglar.push(`<a class="v1-ilgili-bag" href="v1-ihaleler?tur=dt&il=${encodeURIComponent(k.il)}">ğŸ“ ${esc(k.il)} duyurularÄ±</a>`);
+      baglar.push(`<a class="v1-ilgili-bag" href="v1-ihaleler?tur=dt&il=${encodeURIComponent(k.il)}">📍 ${esc(k.il)} duyuruları</a>`);
     }
     if (!baglar.length) return '';
     return `<div class="v1-kart">
-      <div class="v1-kart-baslik">Ä°lgili Aramalar</div>
+      <div class="v1-kart-baslik">İlgili Aramalar</div>
       <div class="v1-ilgili-baglar">${baglar.join('')}</div>
     </div>`;
   }
 
-  // â”€â”€ Ã‡izim â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Çizim ────────────────────────────────────────────────────────────────
   function ciz(k, sonuclar) {
     const takipte = !!(window.TakipDT && TakipDT.var(k.dt_no));
     const fark = k.tarih ? gunFarki(k.tarih) : null;
-    document.title = `${k.baslik || 'DoÄŸrudan Temin'} â€” Ä°haleGlobal`;
+    document.title = `${k.baslik || 'Doğrudan Temin'} — İhaleGlobal`;
 
     document.getElementById('v1-icerik').innerHTML = `
       <div class="v1-d-bant">
         <div class="v1-d-ust">
           <div style="min-width:0;flex:1;">
-            <div class="v1-d-no">${esc(k.dt_no)} Â· DOÄRUDAN TEMÄ°N</div>
-            <div class="v1-d-baslik">${esc(k.baslik) || '(baÅŸlÄ±k yok)'}</div>
+            <div class="v1-d-no">${esc(k.dt_no)} · DOĞRUDAN TEMİN</div>
+            <div class="v1-d-baslik">${esc(k.baslik) || '(başlık yok)'}</div>
             <div class="v1-d-rozetler">
               ${durumRozet(k.durum)}
               ${k.tur ? `<span class="v1-d-rozet">${esc(k.tur)}</span>` : ''}
-              ${(k.kategori && k.kategori !== 'DiÄŸer') ? `<span class="v1-d-rozet">${esc(k.kategori)}</span>` : ''}
-              ${k.il ? `<span class="v1-d-rozet">ğŸ“ ${esc(k.il)}</span>` : ''}
-              ${k.dokuman_var ? '<span class="v1-d-rozet teal">ğŸ“„ DokÃ¼man var</span>' : ''}
-              ${(fark != null && fark >= 0) ? `<span class="v1-d-rozet ${fark <= 3 ? 'kirmizi' : 'teal'}">${fark === 0 ? 'BugÃ¼n son gÃ¼n' : `Son ${fark} gÃ¼n`}</span>` : ''}
+              ${(k.kategori && k.kategori !== 'Diğer') ? `<span class="v1-d-rozet">${esc(k.kategori)}</span>` : ''}
+              ${k.il ? `<span class="v1-d-rozet">📍 ${esc(k.il)}</span>` : ''}
+              ${k.dokuman_var ? '<span class="v1-d-rozet teal">📄 Doküman var</span>' : ''}
+              ${(fark != null && fark >= 0) ? `<span class="v1-d-rozet ${fark <= 3 ? 'kirmizi' : 'teal'}">${fark === 0 ? 'Bugün son gün' : `Son ${fark} gün`}</span>` : ''}
             </div>
           </div>
         </div>
         <div class="v1-d-islem">
-          <button class="v1-d-btn${takipte ? ' aktif' : ''}" id="v1-takip">${takipte ? 'â˜… Takipte' : 'â˜† Takibe Al'}</button>
-          <button class="v1-d-btn hayalet" id="v1-kopyala">ğŸ”— BaÄŸlantÄ±yÄ± Kopyala</button>
+          <button class="v1-d-btn${takipte ? ' aktif' : ''}" id="v1-takip">${takipte ? '★ Takipte' : '☆ Takibe Al'}</button>
+          <button class="v1-d-btn hayalet" id="v1-kopyala">🔗 Bağlantıyı Kopyala</button>
         </div>
       </div>
 
       <div class="v1-kart">
         <div class="v1-kart-baslik">Duyuru Bilgileri</div>
         <div class="v1-bilgi-grid">
-          <div class="v1-bilgi"><b>Ä°dare</b><span>${uyeMi
-            ? (k.idare ? `<a href="v1-ihaleler?sekme=dt&idare=${encodeURIComponent(k.idare)}">${esc(k.idare)}</a>` : 'â€”')
+          <div class="v1-bilgi"><b>İdare</b><span>${uyeMi
+            ? (k.idare ? `<a href="v1-ihaleler?sekme=dt&idare=${encodeURIComponent(k.idare)}">${esc(k.idare)}</a>` : '—')
             : MASKE}</span></div>
-          <div class="v1-bilgi"><b>Ä°l</b><span>${esc(k.il) || 'â€”'}</span></div>
-          <div class="v1-bilgi"><b>TÃ¼r</b><span>${esc(k.tur) || 'â€”'}</span></div>
-          <div class="v1-bilgi"><b>Kategori</b><span>${esc(k.kategori) || 'â€”'}</span></div>
+          <div class="v1-bilgi"><b>İl</b><span>${esc(k.il) || '—'}</span></div>
+          <div class="v1-bilgi"><b>Tür</b><span>${esc(k.tur) || '—'}</span></div>
+          <div class="v1-bilgi"><b>Kategori</b><span>${esc(k.kategori) || '—'}</span></div>
           ${tarihBlogu(k)}
-          <div class="v1-bilgi"><b>Durum</b><span>${esc(k.durum) || 'â€”'}</span></div>
+          <div class="v1-bilgi"><b>Durum</b><span>${esc(k.durum) || '—'}</span></div>
           <div class="v1-bilgi"><b>Duyuru No</b><span>${esc(k.dt_no)}</span></div>
         </div>
-        ${!uyeMi ? `<div class="v1-uyari-mavi">ğŸ”’ Ä°dare bilgisi ve kazanan firma adÄ± <strong>Ã¼yelere aÃ§Ä±ktÄ±r</strong>.
-          <a href="login">GiriÅŸ yapÄ±n</a> veya <a href="fiyatlandirma_odeme_bolumu">Ã¼ye olun</a> â†’</div>` : ''}
+        ${!uyeMi ? `<div class="v1-uyari-mavi">🔒 İdare bilgisi ve kazanan firma adı <strong>üyelere açıktır</strong>.
+          <a href="login">Giriş yapın</a> veya <a href="fiyatlandirma_odeme_bolumu">üye olun</a> →</div>` : ''}
       </div>
 
       ${sonucKarti(sonuclar)}
 
       <div class="v1-kart">
-        <div class="v1-kart-baslik">EKAP KaydÄ±</div>
+        <div class="v1-kart-baslik">EKAP Kaydı</div>
         <div class="v1-not">
-          Bu duyurunun resmÃ® kaydÄ± EKAP'tadÄ±r. EKAP doÄŸrudan temin duyurularÄ± iÃ§in kalÄ±cÄ± bir
-          derin baÄŸlantÄ± vermediÄŸinden, arama sayfasÄ±nda <b>${esc(k.dt_no)}</b> numarasÄ± ile
-          aratmanÄ±z gerekiyor.
-          ${!k.dokuman_var ? '<br>Bu duyuruda indirilebilir dokÃ¼man bulunmuyor.' : ''}
+          Bu duyurunun resmî kaydı EKAP'tadır. EKAP doğrudan temin duyuruları için kalıcı bir
+          derin bağlantı vermediğinden, arama sayfasında <b>${esc(k.dt_no)}</b> numarası ile
+          aratmanız gerekiyor.
+          ${!k.dokuman_var ? '<br>Bu duyuruda indirilebilir doküman bulunmuyor.' : ''}
         </div>
         <a class="v1-dis-link" href="https://ekapv2.kik.gov.tr/ekap-dt/search" target="_blank" rel="noopener noreferrer">
-          EKAP doÄŸrudan temin arama â†’
+          EKAP doğrudan temin arama →
         </a>
       </div>
 
@@ -352,13 +352,13 @@
     const takipBtn = document.getElementById('v1-takip');
     const takipYaz = (durum) => {
       takipBtn.classList.toggle('aktif', !!durum);
-      takipBtn.textContent = durum ? 'â˜… Takipte' : 'â˜† Takibe Al';
+      takipBtn.textContent = durum ? '★ Takipte' : '☆ Takibe Al';
     };
     takipBtn.addEventListener('click', function () {
-      if (!window.TakipDT) { alert('Takip listesi yÃ¼klenemedi.'); return; }
+      if (!window.TakipDT) { alert('Takip listesi yüklenemedi.'); return; }
       takipYaz(TakipDT.toggle(k.dt_no));
     });
-    // DB â†” localStorage birleÅŸimi SAYFAYI BEKLETMEZ: bitince rozet tazelenir.
+    // DB ↔ localStorage birleşimi SAYFAYI BEKLETMEZ: bitince rozet tazelenir.
     if (uyeMi && window.TakipDT) {
       TakipDT.syncFromDB().then(() => takipYaz(TakipDT.var(k.dt_no))).catch(() => {});
     }
@@ -367,8 +367,8 @@
       const btn = this, eski = btn.textContent;
       const bitir = (m) => { btn.textContent = m; setTimeout(() => { btn.textContent = eski; }, 1600); };
       navigator.clipboard.writeText(window.location.href)
-        .then(() => bitir('âœ“ KopyalandÄ±'))
-        .catch(() => bitir('âœ• KopyalanamadÄ±'));
+        .then(() => bitir('✓ Kopyalandı'))
+        .catch(() => bitir('✕ Kopyalanamadı'));
     });
   }
 
@@ -379,24 +379,24 @@
     document.getElementById('v1-bulunamadi').style.display = '';
   }
 
-  // â”€â”€ BaÅŸlangÄ±Ã§ â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Başlangıç ────────────────────────────────────────────────────────────
   (async () => {
-    // v2 dt-detay.html ile AYNI parametre: ?dt_no=â€¦  Â·  ?id=<uuid> de desteklenir
-    // (v1-ihaleler DT satÄ±rlarÄ± satÄ±r kimliÄŸiyle link verebiliyor).
+    // v2 dt-detay.html ile AYNI parametre: ?dt_no=…  ·  ?id=<uuid> de desteklenir
+    // (v1-ihaleler DT satırları satır kimliğiyle link verebiliyor).
     const P = new URLSearchParams(window.location.search);
     const dtNo = (P.get('dt_no') || '').trim();
     const satirId = (P.get('id') || '').trim();
     if (!dtNo && !satirId) {
-      hata('Duyuru seÃ§ilmedi', 'Adreste bir duyuru numarasÄ± (dt_no) yok.');
+      hata('Duyuru seçilmedi', 'Adreste bir duyuru numarası (dt_no) yok.');
       return;
     }
-    // uuid olmayan ?id= sunucuya hiÃ§ gitmesin: 400 + ham Postgres metni Ã¼retiyordu.
+    // uuid olmayan ?id= sunucuya hiç gitmesin: 400 + ham Postgres metni üretiyordu.
     if (!dtNo && !UUID_KALIP.test(satirId)) {
-      hata('Duyuru bulunamadÄ±', `"${esc(satirId)}" geÃ§erli bir duyuru kimliÄŸi deÄŸil.`);
+      hata('Duyuru bulunamadı', `"${esc(satirId)}" geçerli bir duyuru kimliği değil.`);
       return;
     }
 
-    // uyeMi ilk sorgudan Ã–NCE kesinleÅŸmeli: misafir select'i idare/kazanan_firma'sÄ±z olmalÄ±.
+    // uyeMi ilk sorgudan ÖNCE kesinleşmeli: misafir select'i idare/kazanan_firma'sız olmalı.
     let oturum = null;
     try { const { data } = await sb.auth.getSession(); oturum = (data && data.session) || null; } catch (_) { oturum = null; }
     uyeMi = !!oturum;
@@ -411,8 +411,8 @@
     try {
       const k = await ilanGetir(dtNo, satirId);
       if (!k) {
-        hata('Duyuru bulunamadÄ±',
-          `"${esc(dtNo || satirId)}" iÃ§in bir doÄŸrudan temin duyurusu kayÄ±tlarÄ±mÄ±zda yok.`);
+        hata('Duyuru bulunamadı',
+          `"${esc(dtNo || satirId)}" için bir doğrudan temin duyurusu kayıtlarımızda yok.`);
         return;
       }
       const sonuclar = DURUM_GRUP.sonuc.includes(k.durum) ? await sonucGetir(k.dt_no) : [];
@@ -420,13 +420,13 @@
     } catch (e) {
       console.error(e);
       if (kilitMi(e)) {
-        hata('Bu iÃ§erik Ã¼yelere Ã¶zel',
-          'ğŸ”’ DoÄŸrudan temin duyuru detayÄ± Ã¼yelere Ã¶zeldir. <a href="login">GiriÅŸ yapÄ±n</a> veya <a href="fiyatlandirma_odeme_bolumu">Ã¼ye olun</a> â†’');
+        hata('Bu içerik üyelere özel',
+          '🔒 Doğrudan temin duyuru detayı üyelere özeldir. <a href="login">Giriş yapın</a> veya <a href="fiyatlandirma_odeme_bolumu">üye olun</a> →');
       } else if (gecersizKimlikMi(e)) {
-        hata('Duyuru bulunamadÄ±',
-          `"${esc(dtNo || satirId)}" iÃ§in bir doÄŸrudan temin duyurusu kayÄ±tlarÄ±mÄ±zda yok.`);
+        hata('Duyuru bulunamadı',
+          `"${esc(dtNo || satirId)}" için bir doğrudan temin duyurusu kayıtlarımızda yok.`);
       } else {
-        hata('Duyuru yÃ¼klenemedi', esc((e && e.message) || 'Bilinmeyen bir hata oluÅŸtu.'));
+        hata('Duyuru yüklenemedi', esc((e && e.message) || 'Bilinmeyen bir hata oluştu.'));
       }
     }
   })();

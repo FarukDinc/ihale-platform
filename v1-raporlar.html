@@ -1,10 +1,10 @@
-﻿<!DOCTYPE html>
+?<!DOCTYPE html>
 <html lang="tr">
 <head>
   <meta charset="UTF-8" />
-  <meta name="author" content="Ã–mer Faruk DinÃ§">
+  <meta name="author" content="Ömer Faruk Dinç">
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>RaporlarÄ±m â€” Ä°haleGlobal</title>
+  <title>Raporlarım — İhaleGlobal</title>
   <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=4" />
   <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/v1.css?v=15" />
@@ -32,41 +32,41 @@
       font-size:12.5px; color:var(--v1-metin); margin-top:12px; }
   </style>
 </head>
-<body class="v1" data-v1-aktif="benim" data-v1-kirinti="HesabÄ±m > RaporlarÄ±m">
+<body class="v1" data-v1-aktif="benim" data-v1-kirinti="Hesabım > Raporlarım">
 <div class="v1-app">
   <div class="v1-main">
     <div class="v1-govde">
-      <div class="v1-sayfa-baslik">RaporlarÄ±m</div>
-      <div class="v1-sayfa-alt">Kriterlerinize gÃ¶re ihale ve sonuÃ§ raporlarÄ± oluÅŸturun, kaydedin, Excel'e aktarÄ±n.</div>
+      <div class="v1-sayfa-baslik">Raporlarım</div>
+      <div class="v1-sayfa-alt">Kriterlerinize göre ihale ve sonuç raporları oluşturun, kaydedin, Excel'e aktarın.</div>
 
       <div id="v1-giris" style="display:none;text-align:center;padding:80px 20px;color:var(--v1-muted);">
-        ğŸ”’ Raporlar Ã¼yelere Ã¶zeldir.<br><br><a href="login">GiriÅŸ yapÄ±n</a> â†’
+        🔒 Raporlar üyelere özeldir.<br><br><a href="login">Giriş yapın</a> →
       </div>
 
       <div id="v1-icerik" style="display:none;">
         <div class="v1-sekmeler">
-          <button class="v1-sekme aktif" data-t="ihale">Ä°hale RaporlarÄ±m</button>
-          <button class="v1-sekme" data-t="sonuc">Ä°hale SonuÃ§ RaporlarÄ±m</button>
+          <button class="v1-sekme aktif" data-t="ihale">İhale Raporlarım</button>
+          <button class="v1-sekme" data-t="sonuc">İhale Sonuç Raporlarım</button>
         </div>
 
         <!-- Yeni rapor -->
         <div class="v1-kart">
           <div class="v1-kart-baslik">Yeni Rapor</div>
           <div class="v1-form-grid">
-            <div class="v1-alan"><label>Kelime</label><input id="r-kelime" placeholder="Ä°hale adÄ±nda araâ€¦"></div>
-            <div class="v1-alan"><label>Ä°l</label><select id="r-il"><option value="">TÃ¼mÃ¼</option></select></div>
-            <div class="v1-alan"><label>SektÃ¶r</label><select id="r-kategori"><option value="">TÃ¼mÃ¼</option></select></div>
-            <div class="v1-alan"><label>BaÅŸlangÄ±Ã§</label><input type="date" id="r-bas"></div>
-            <div class="v1-alan"><label>BitiÅŸ</label><input type="date" id="r-bit"></div>
-            <div class="v1-alan"><label>Min. Bedel (â‚º)</label><input type="number" id="r-min" placeholder="0"></div>
+            <div class="v1-alan"><label>Kelime</label><input id="r-kelime" placeholder="İhale adında ara…"></div>
+            <div class="v1-alan"><label>İl</label><select id="r-il"><option value="">Tümü</option></select></div>
+            <div class="v1-alan"><label>Sektör</label><select id="r-kategori"><option value="">Tümü</option></select></div>
+            <div class="v1-alan"><label>Başlangıç</label><input type="date" id="r-bas"></div>
+            <div class="v1-alan"><label>Bitiş</label><input type="date" id="r-bit"></div>
+            <div class="v1-alan"><label>Min. Bedel (₺)</label><input type="number" id="r-min" placeholder="0"></div>
           </div>
           <div style="margin-top:16px;display:flex;gap:10px;flex-wrap:wrap;">
-            <button class="v1-btn" id="r-calistir">Raporu Ã‡alÄ±ÅŸtÄ±r</button>
+            <button class="v1-btn" id="r-calistir">Raporu Çalıştır</button>
             <button class="v1-btn ikincil" id="r-kaydet">Raporu Kaydet</button>
           </div>
         </div>
 
-        <!-- SonuÃ§ -->
+        <!-- Sonuç -->
         <div class="v1-kart" id="r-sonuc-kart" style="display:none;">
           <div class="v1-tablo-bas">
             <div>
@@ -84,10 +84,10 @@
           <div id="r-kilit" class="v1-kilit-not" style="display:none;"></div>
         </div>
 
-        <!-- KayÄ±tlÄ± raporlar -->
+        <!-- Kayıtlı raporlar -->
         <div class="v1-kart">
-          <div class="v1-kart-baslik">KayÄ±tlÄ± RaporlarÄ±m</div>
-          <div id="r-kayitli"><div class="v1-bos">YÃ¼kleniyorâ€¦</div></div>
+          <div class="v1-kart-baslik">Kayıtlı Raporlarım</div>
+          <div id="r-kayitli"><div class="v1-bos">Yükleniyor…</div></div>
         </div>
       </div>
     </div>
@@ -103,71 +103,71 @@
   const sb=window.supabase.createClient(SB_URL,SB_KEY);
   const num=(n)=>(Number(n)||0).toLocaleString('tr-TR');
   const esc=(s)=>(s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-  const tl=(v)=>v==null?'â€”':'â‚º'+Number(v).toLocaleString('tr-TR',{maximumFractionDigits:0});
-  const gun=(t)=>t?new Date(t).toLocaleDateString('tr-TR'):'â€”';
-  const ILLER=["ADANA","ANKARA","ANTALYA","AYDIN","BALIKESÄ°R","BURSA","DENÄ°ZLÄ°","DÄ°YARBAKIR","ERZURUM","ESKÄ°ÅEHÄ°R","GAZÄ°ANTEP","HATAY","Ä°STANBUL","Ä°ZMÄ°R","KAYSERÄ°","KOCAELÄ°","KONYA","MALATYA","MANÄ°SA","MERSÄ°N","MUÄLA","SAKARYA","SAMSUN","ÅANLIURFA","TEKÄ°RDAÄ","TRABZON","VAN"];
-  // âš ï¸ window.KATEGORILER = [{kod,...}] â€” string DEÄÄ°L
+  const tl=(v)=>v==null?'—':'₺'+Number(v).toLocaleString('tr-TR',{maximumFractionDigits:0});
+  const gun=(t)=>t?new Date(t).toLocaleDateString('tr-TR'):'—';
+  const ILLER=["ADANA","ANKARA","ANTALYA","AYDIN","BALIKESİR","BURSA","DENİZLİ","DİYARBAKIR","ERZURUM","ESKİŞEHİR","GAZİANTEP","HATAY","İSTANBUL","İZMİR","KAYSERİ","KOCAELİ","KONYA","MALATYA","MANİSA","MERSİN","MUĞLA","SAKARYA","SAMSUN","ŞANLIURFA","TEKİRDAĞ","TRABZON","VAN"];
+  // ⚠️ window.KATEGORILER = [{kod,...}] — string DEĞİL
   const KATS=(window.KATEGORILER||[]).map(k=>(typeof k==='string'?k:(k&&k.kod)||'')).filter(Boolean);
   let uid=null, tip='ihale', kurumsalMi=false, sonSatirlar=[];
 
   const v=(id)=>{const e=document.getElementById(id); return e&&e.value?e.value.trim():null;};
 
   async function calistir(){
-    const btn=document.getElementById('r-calistir'); btn.disabled=true; const e0=btn.textContent; btn.textContent='Ã‡alÄ±ÅŸÄ±yorâ€¦';
+    const btn=document.getElementById('r-calistir'); btn.disabled=true; const e0=btn.textContent; btn.textContent='Çalışıyor…';
     const kart=document.getElementById('r-sonuc-kart'); kart.style.display='';
-    document.getElementById('r-tbody').innerHTML='<tr><td colspan="6" class="v1-bos">Rapor hazÄ±rlanÄ±yorâ€¦ (birkaÃ§ saniye)</td></tr>';
+    document.getElementById('r-tbody').innerHTML='<tr><td colspan="6" class="v1-bos">Rapor hazırlanıyor… (birkaç saniye)</td></tr>';
     try{
       const p={p_kelime:v('r-kelime'),p_il:v('r-il'),p_kategori:v('r-kategori'),
                p_bas:v('r-bas'),p_bit:v('r-bit'),p_min:v('r-min')?Number(v('r-min')):null,p_limit:200,p_offset:0};
-      // GeniÅŸ kelime-tek SONUÃ‡ aramasÄ± (il/kategori/tarih yok) â†’ backend varsayÄ±lan SON 6 AY gÃ¶sterir.
+      // Geniş kelime-tek SONUÇ araması (il/kategori/tarih yok) → backend varsayılan SON 6 AY gösterir.
       const genisKelime = (tip==='sonuc' && p.p_kelime && !p.p_il && !p.p_kategori && !p.p_bas && !p.p_bit);
       if(genisKelime){
-        document.getElementById('r-tbody').innerHTML='<tr><td colspan="6" class="v1-bos">â³ GeniÅŸ kelime aramasÄ± â€” varsayÄ±lan olarak <b>son 6 ay</b> gÃ¶sterilir. Daha eskisi iÃ§in tarih aralÄ±ÄŸÄ± girin. HesaplanÄ±yorâ€¦</td></tr>';
+        document.getElementById('r-tbody').innerHTML='<tr><td colspan="6" class="v1-bos">⏳ Geniş kelime araması — varsayılan olarak <b>son 6 ay</b> gösterilir. Daha eskisi için tarih aralığı girin. Hesaplanıyor…</td></tr>';
       }
       const {data,error}=await sb.rpc(tip==='ihale'?'rapor_ihale':'rapor_sonuc',p);
       if(error) throw error;
       const r=data||{};
       sonSatirlar=r.satirlar||[];
-      document.getElementById('r-sonuc-baslik').textContent = tip==='ihale'?'Ä°hale Raporu':'Ä°hale SonuÃ§ Raporu';
-      document.getElementById('r-sayi').innerHTML=`<strong>${num(r.toplam||0)}</strong> kayÄ±t bulundu Â· ${num(sonSatirlar.length)} tanesi listeleniyor`+(genisKelime?' Â· <span style="color:var(--v1-muted);">son 6 ay (daha eskisi iÃ§in tarih ekleyin)</span>':'');
+      document.getElementById('r-sonuc-baslik').textContent = tip==='ihale'?'İhale Raporu':'İhale Sonuç Raporu';
+      document.getElementById('r-sayi').innerHTML=`<strong>${num(r.toplam||0)}</strong> kayıt bulundu · ${num(sonSatirlar.length)} tanesi listeleniyor`+(genisKelime?' · <span style="color:var(--v1-muted);">son 6 ay (daha eskisi için tarih ekleyin)</span>':'');
       const thead=document.getElementById('r-thead'), tbody=document.getElementById('r-tbody');
       if(tip==='ihale'){
-        thead.innerHTML='<tr><th style="width:105px;">Tarih</th><th>Ä°hale AdÄ±</th><th style="width:150px;">Ä°dare</th><th style="width:95px;">Ä°l</th><th style="width:140px;">Bedel</th></tr>';
+        thead.innerHTML='<tr><th style="width:105px;">Tarih</th><th>İhale Adı</th><th style="width:150px;">İdare</th><th style="width:95px;">İl</th><th style="width:140px;">Bedel</th></tr>';
         tbody.innerHTML = sonSatirlar.length ? sonSatirlar.map(s=>`<tr>
           <td class="v1-t-tarih">${gun(s.etkin_tarih||s.son_teklif_tarihi)}</td>
-          <td><a class="v1-t-ad" href="v1-ihale-detay?id=${s.id}">${esc(s.baslik||'â€”')}</a></td>
+          <td><a class="v1-t-ad" href="v1-ihale-detay?id=${s.id}">${esc(s.baslik||'—')}</a></td>
           <td style="font-size:12px;color:var(--v1-metin-2);">${esc((s.idare||'').slice(0,60))}</td>
-          <td style="font-size:13px;">${esc(s.il||'â€”')}</td>
+          <td style="font-size:13px;">${esc(s.il||'—')}</td>
           <td style="font-weight:700;color:var(--v1-mavi);">${tl(s.bedel)}</td></tr>`).join('')
-          : '<tr><td colspan="5" class="v1-bos">Kriterlere uyan kayÄ±t bulunamadÄ±.</td></tr>';
+          : '<tr><td colspan="5" class="v1-bos">Kriterlere uyan kayıt bulunamadı.</td></tr>';
       } else {
-        thead.innerHTML='<tr><th style="width:105px;">SonuÃ§ Tarihi</th><th>Ä°hale / Kazanan</th><th style="width:95px;">Ä°l</th><th style="width:140px;">Bedel</th><th style="width:90px;">Tenzilat</th></tr>';
+        thead.innerHTML='<tr><th style="width:105px;">Sonuç Tarihi</th><th>İhale / Kazanan</th><th style="width:95px;">İl</th><th style="width:140px;">Bedel</th><th style="width:90px;">Tenzilat</th></tr>';
         tbody.innerHTML = sonSatirlar.length ? sonSatirlar.map(s=>`<tr>
           <td class="v1-t-tarih">${gun(s.sonuc_tarihi)}</td>
-          <td><div class="v1-t-ad">${esc(s.baslik||'â€”')}</div><div class="v1-t-ikn">${esc(s.kazanan_firma||'')}</div></td>
-          <td style="font-size:13px;">${esc(s.il||'â€”')}</td>
+          <td><div class="v1-t-ad">${esc(s.baslik||'—')}</div><div class="v1-t-ikn">${esc(s.kazanan_firma||'')}</div></td>
+          <td style="font-size:13px;">${esc(s.il||'—')}</td>
           <td style="font-weight:700;color:var(--v1-mavi);">${tl(s.kazanan_teklif||s.bedel)}</td>
-          <td>${s.tenzilat_yuzde!=null?`<span style="font-weight:700;color:var(--v1-teal);">%${Number(s.tenzilat_yuzde).toLocaleString('tr-TR',{maximumFractionDigits:1})}</span>`:'â€”'}</td></tr>`).join('')
-          : '<tr><td colspan="5" class="v1-bos">Kriterlere uyan kayÄ±t bulunamadÄ±.</td></tr>';
+          <td>${s.tenzilat_yuzde!=null?`<span style="font-weight:700;color:var(--v1-teal);">%${Number(s.tenzilat_yuzde).toLocaleString('tr-TR',{maximumFractionDigits:1})}</span>`:'—'}</td></tr>`).join('')
+          : '<tr><td colspan="5" class="v1-bos">Kriterlere uyan kayıt bulunamadı.</td></tr>';
       }
       const kilit=document.getElementById('r-kilit');
       if(r.tavan_asildi){ kilit.style.display='block';
-        kilit.innerHTML=`âš ï¸ SonuÃ§ kÃ¼mesi Ã§ok bÃ¼yÃ¼k â€” ilk <strong>${num(sonSatirlar.length)}</strong> kayÄ±t gÃ¶steriliyor.
-          Kriterleri daraltÄ±n ya da <a href="fiyatlandirma_odeme_bolumu">Kurumsal pakete</a> geÃ§ip tam listeyi Excel'e aktarÄ±n.`;
+        kilit.innerHTML=`⚠️ Sonuç kümesi çok büyük — ilk <strong>${num(sonSatirlar.length)}</strong> kayıt gösteriliyor.
+          Kriterleri daraltın ya da <a href="fiyatlandirma_odeme_bolumu">Kurumsal pakete</a> geçip tam listeyi Excel'e aktarın.`;
       } else kilit.style.display='none';
-    }catch(e){ document.getElementById('r-tbody').innerHTML=`<tr><td colspan="5" class="v1-bos">Rapor alÄ±namadÄ±. ${esc(e.message||'')}</td></tr>`; }
+    }catch(e){ document.getElementById('r-tbody').innerHTML=`<tr><td colspan="5" class="v1-bos">Rapor alınamadı. ${esc(e.message||'')}</td></tr>`; }
     finally{ btn.disabled=false; btn.textContent=e0; }
   }
 
   function excel(){
-    if(!kurumsalMi){ alert('Excel dÄ±ÅŸa aktarÄ±m Kurumsal pakete Ã¶zeldir. Paketinizi yÃ¼kseltin.'); return; }
-    if(!sonSatirlar.length){ alert('Ã–nce raporu Ã§alÄ±ÅŸtÄ±rÄ±n.'); return; }
-    const bas = tip==='ihale' ? 'Tarih;Ä°hale AdÄ±;Ä°dare;Ä°l;Bedel' : 'SonuÃ§ Tarihi;Ä°hale;Kazanan Firma;Ä°l;Bedel;Tenzilat %';
+    if(!kurumsalMi){ alert('Excel dışa aktarım Kurumsal pakete özeldir. Paketinizi yükseltin.'); return; }
+    if(!sonSatirlar.length){ alert('Önce raporu çalıştırın.'); return; }
+    const bas = tip==='ihale' ? 'Tarih;İhale Adı;İdare;İl;Bedel' : 'Sonuç Tarihi;İhale;Kazanan Firma;İl;Bedel;Tenzilat %';
     const sat = sonSatirlar.map(s=> tip==='ihale'
       ? [gun(s.etkin_tarih||s.son_teklif_tarihi),(s.baslik||'').replace(/;/g,','),(s.idare||'').replace(/;/g,','),s.il||'',s.bedel??''].join(';')
       : [gun(s.sonuc_tarihi),(s.baslik||'').replace(/;/g,','),(s.kazanan_firma||'').replace(/;/g,','),s.il||'',(s.kazanan_teklif??s.bedel)??'',s.tenzilat_yuzde??''].join(';'));
-    const csv=[bas,...sat,'',`Kaynak: ihaleglobal.com â€” Â© Ã–mer Faruk DinÃ§ Â· ${new Date().toLocaleString('tr-TR')}`].join('\r\n');
-    const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob(['ï»¿'+csv],{type:'text/csv;charset=utf-8;'}));
+    const csv=[bas,...sat,'',`Kaynak: ihaleglobal.com — © Ömer Faruk Dinç · ${new Date().toLocaleString('tr-TR')}`].join('\r\n');
+    const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8;'}));
     a.download=`ihaleglobal-rapor-${tip}-${new Date().toISOString().slice(0,10)}.csv`;
     document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(a.href);
   }
@@ -176,7 +176,7 @@
     const ad=prompt('Rapora bir ad verin:'); if(!ad) return;
     const kriter={kelime:v('r-kelime'),il:v('r-il'),kategori:v('r-kategori'),bas:v('r-bas'),bit:v('r-bit'),min:v('r-min')};
     try{ const {error}=await sb.from('rapor_abonelikleri').insert({kullanici_id:uid,ad,tip,kriter});
-      if(error) throw error; alert('Rapor kaydedildi âœ“'); kayitliYukle();
+      if(error) throw error; alert('Rapor kaydedildi ✓'); kayitliYukle();
     }catch(e){ alert('Kaydedilemedi: '+(e.message||'')); }
   }
 
@@ -185,14 +185,14 @@
     try{
       const {data}=await sb.from('rapor_abonelikleri').select('id,ad,tip,kriter,aktif,olusturulma')
         .eq('kullanici_id',uid).order('olusturulma',{ascending:false}).limit(20);
-      if(!data||!data.length){ el.innerHTML='<div class="v1-bos">HenÃ¼z kayÄ±tlÄ± raporunuz yok. Kriterlerinizi belirleyip â€œRaporu Kaydetâ€ deyin â€” her gÃ¼n otomatik bildirim alÄ±n.</div>'; return; }
+      if(!data||!data.length){ el.innerHTML='<div class="v1-bos">Henüz kayıtlı raporunuz yok. Kriterlerinizi belirleyip “Raporu Kaydet” deyin — her gün otomatik bildirim alın.</div>'; return; }
       el.innerHTML=data.map(r=>`<div class="v1-kayit">
         <div style="flex:1;min-width:0;">
           <div style="font-size:13.5px;font-weight:700;color:var(--v1-lacivert);">${esc(r.ad)}</div>
           <div style="font-size:11.5px;color:var(--v1-muted);margin-top:2px;">
-            ${r.tip==='ihale'?'Ä°hale Raporu':'SonuÃ§ Raporu'} Â· ${Object.entries(r.kriter||{}).filter(([,v])=>v).map(([k,v])=>`${k}: ${esc(String(v))}`).join(' Â· ')||'filtresiz'}</div>
+            ${r.tip==='ihale'?'İhale Raporu':'Sonuç Raporu'} · ${Object.entries(r.kriter||{}).filter(([,v])=>v).map(([k,v])=>`${k}: ${esc(String(v))}`).join(' · ')||'filtresiz'}</div>
         </div>
-        <button class="v1-btn ikincil" style="padding:7px 14px;font-size:12.5px;" data-yukle="${r.id}">YÃ¼kle</button>
+        <button class="v1-btn ikincil" style="padding:7px 14px;font-size:12.5px;" data-yukle="${r.id}">Yükle</button>
         <button class="v1-btn ikincil" style="padding:7px 12px;font-size:12.5px;color:var(--v1-kirmizi);border-color:var(--v1-kirmizi);" data-sil="${r.id}">Sil</button>
       </div>`).join('');
       el.querySelectorAll('[data-yukle]').forEach(b=>b.addEventListener('click',()=>{
@@ -203,10 +203,10 @@
         calistir(); window.scrollTo({top:0,behavior:'smooth'});
       }));
       el.querySelectorAll('[data-sil]').forEach(b=>b.addEventListener('click',async()=>{
-        if(!confirm('Bu kayÄ±tlÄ± rapor silinsin mi?')) return;
+        if(!confirm('Bu kayıtlı rapor silinsin mi?')) return;
         await sb.from('rapor_abonelikleri').delete().eq('id',b.dataset.sil); kayitliYukle();
       }));
-    }catch(_){ el.innerHTML='<div class="v1-bos">KayÄ±tlÄ± raporlar yÃ¼klenemedi.</div>'; }
+    }catch(_){ el.innerHTML='<div class="v1-bos">Kayıtlı raporlar yüklenemedi.</div>'; }
   }
 
   (async()=>{

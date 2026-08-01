@@ -1,10 +1,10 @@
-﻿<!DOCTYPE html>
+?<!DOCTYPE html>
 <html lang="tr">
 <head>
   <meta charset="UTF-8" />
-  <meta name="author" content="Ã–mer Faruk DinÃ§">
+  <meta name="author" content="Ömer Faruk Dinç">
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>SektÃ¶rler â€” Ä°haleGlobal</title>
+  <title>Sektörler — İhaleGlobal</title>
   <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=4" />
   <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/v1.css?v=15" />
@@ -20,38 +20,38 @@
     .v1-bar { display:block; height:100%; background:var(--v1-mavi); border-radius:5px; }
   </style>
 </head>
-<body class="v1" data-v1-aktif="sektorler" data-v1-kirinti="Ä°haleGlobal > SektÃ¶rler">
+<body class="v1" data-v1-aktif="sektorler" data-v1-kirinti="İhaleGlobal > Sektörler">
 <div class="v1-app">
   <div class="v1-main">
     <div class="v1-govde">
-      <div class="v1-sayfa-baslik">SektÃ¶rler</div>
-      <div class="v1-sayfa-alt">Kamu ihalelerinin sektÃ¶r bazlÄ± daÄŸÄ±lÄ±mÄ± â€” hangi sektÃ¶rde kaÃ§ ihale var, kaÃ§Ä± ÅŸu an aÃ§Ä±k.</div>
+      <div class="v1-sayfa-baslik">Sektörler</div>
+      <div class="v1-sayfa-alt">Kamu ihalelerinin sektör bazlı dağılımı — hangi sektörde kaç ihale var, kaçı şu an açık.</div>
 
       <div class="v1-sekmeler">
-        <button class="v1-sekme aktif" id="s-tum">TÃ¼m SektÃ¶rler</button>
+        <button class="v1-sekme aktif" id="s-tum">Tüm Sektörler</button>
         <button class="v1-sekme" id="s-takip">Takip Ettiklerim</button>
       </div>
 
       <div class="v1-kart" style="padding:18px 20px;">
         <div class="v1-tablo-bas">
           <div>
-            <div style="font-size:17px;font-weight:800;color:var(--v1-lacivert);" id="v1-liste-baslik">TÃ¼m SektÃ¶rler</div>
-            <div class="v1-tablo-sayi" id="v1-sayi">YÃ¼kleniyorâ€¦</div>
+            <div style="font-size:17px;font-weight:800;color:var(--v1-lacivert);" id="v1-liste-baslik">Tüm Sektörler</div>
+            <div class="v1-tablo-sayi" id="v1-sayi">Yükleniyor…</div>
           </div>
           <div class="v1-listede-ara">
             <svg viewBox="0 0 24 24" width="15" height="15" fill="var(--v1-muted)"><path fill-rule="evenodd" d="M10.5 3a7.5 7.5 0 1 0 4.55 13.46l4.24 4.25 1.42-1.42-4.25-4.24A7.5 7.5 0 0 0 10.5 3Zm0 2a5.5 5.5 0 1 1 0 11 5.5 5.5 0 0 1 0-11Z"/></svg>
-            <input type="text" id="v1-ara-liste" placeholder="SektÃ¶r ara">
+            <input type="text" id="v1-ara-liste" placeholder="Sektör ara">
           </div>
         </div>
         <div style="overflow-x:auto;">
           <table class="v1-tablo" id="v1-tablo">
             <thead><tr>
-              <th style="width:44px;">#</th><th>SektÃ¶r</th>
-              <th style="width:210px;">Toplam Ä°hale</th>
-              <th style="width:110px;">AÃ§Ä±k Ä°hale</th>
+              <th style="width:44px;">#</th><th>Sektör</th>
+              <th style="width:210px;">Toplam İhale</th>
+              <th style="width:110px;">Açık İhale</th>
               <th style="width:120px;"></th>
             </tr></thead>
-            <tbody id="v1-tbody"><tr><td colspan="5" class="v1-bos">YÃ¼kleniyorâ€¦</td></tr></tbody>
+            <tbody id="v1-tbody"><tr><td colspan="5" class="v1-bos">Yükleniyor…</td></tr></tbody>
           </table>
         </div>
       </div>
@@ -67,17 +67,17 @@
   const sb=window.supabase.createClient(SB_URL,SB_KEY);
   const num=(n)=>(Number(n)||0).toLocaleString('tr-TR');
   const esc=(s)=>(s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
-  // takip: fold(sektor) -> DB'de kayÄ±tlÄ± ham sektÃ¶r metni (silme .eq('sektor',â€¦) iÃ§in birebir lazÄ±m)
+  // takip: fold(sektor) -> DB'de kayıtlı ham sektör metni (silme .eq('sektor',…) için birebir lazım)
   let tumu=[], takip=new Map(), sonListe=[], uyeMi=false, uid=null, mod='tum', mesgul=false, takipHata=false;
-  // TR katlama tek kaynak: js/v1-kabuk.js â†’ window.trFold ("insaat" yazÄ±nca "Ä°nÅŸaat" bulunsun)
+  // TR katlama tek kaynak: js/v1-kabuk.js → window.trFold ("insaat" yazınca "İnşaat" bulunsun)
   const fold=(s)=>(window.trFold?window.trFold(s):(s||'').toLocaleLowerCase('tr'));
 
   async function takipYukle(){
     takip.clear(); takipHata=false;
-    if(!uyeMi||!uid) return;                // takip_sektorler anon'a kapalÄ± (42501) â€” misafirde Ã§aÄŸÄ±rma
+    if(!uyeMi||!uid) return;                // takip_sektorler anon'a kapalı (42501) — misafirde çağırma
     const {data,error}=await sb.from('takip_sektorler').select('sektor').eq('kullanici_id',uid);
-    // â›” okuma hatasÄ±nÄ± yutup boÅŸ liste Ã§izmek "hiÃ§ takip yok" YALANI Ã¼retir â†’ bayrakla
-    if(error){ takipHata=true; console.warn('Takip listesi okunamadÄ±:',error.message||error); return; }
+    // ⛔ okuma hatasını yutup boş liste çizmek "hiç takip yok" YALANI üretir → bayrakla
+    if(error){ takipHata=true; console.warn('Takip listesi okunamadı:',error.message||error); return; }
     (data||[]).forEach(r=>{ if(r&&r.sektor) takip.set(fold(r.sektor),r.sektor); });
   }
 
@@ -90,7 +90,7 @@
       await takipYukle();
       ciz();
     }catch(e){ console.warn('kategori_sayim:',(e&&(e.message||e.hint))||e);
-      tb.innerHTML=`<tr><td colspan="5" class="v1-bos">Liste yÃ¼klenemedi.</td></tr>`; }
+      tb.innerHTML=`<tr><td colspan="5" class="v1-bos">Liste yüklenemedi.</td></tr>`; }
   }
 
   function ciz(){
@@ -102,13 +102,13 @@
     if(q) liste=liste.filter(r=>fold(r.kategori).includes(q));
     sonListe=liste;
     document.getElementById('v1-sayi').innerHTML = (kilit||(mod==='takip'&&takipHata))
-      ? 'Takip listesi gÃ¶rÃ¼ntÃ¼lenemiyor'
-      : `Toplam <strong>${num(liste.length)}</strong> sektÃ¶r listeleniyor`;
+      ? 'Takip listesi görüntülenemiyor'
+      : `Toplam <strong>${num(liste.length)}</strong> sektör listeleniyor`;
     if(!liste.length){
-      const bos = mod!=='takip' ? 'SonuÃ§ bulunamadÄ±.'
-        : (kilit ? 'SektÃ¶r takibi Ã¼yelere Ã¶zeldir. <a href="login?donus='+encodeURIComponent(location.pathname+location.search)+'" style="color:var(--v1-mavi);font-weight:700;">GiriÅŸ yapÄ±n</a>.'
-        : (takipHata ? 'Takip listeniz okunamadÄ± â€” sayfayÄ± yenileyin.'   // boÅŸ listeyi "takip yok" diye gÃ¶sterme
-                  : (q ? 'SonuÃ§ bulunamadÄ±.' : 'HenÃ¼z sektÃ¶r takip etmiyorsunuz.')));
+      const bos = mod!=='takip' ? 'Sonuç bulunamadı.'
+        : (kilit ? 'Sektör takibi üyelere özeldir. <a href="login?donus='+encodeURIComponent(location.pathname+location.search)+'" style="color:var(--v1-mavi);font-weight:700;">Giriş yapın</a>.'
+        : (takipHata ? 'Takip listeniz okunamadı — sayfayı yenileyin.'   // boş listeyi "takip yok" diye gösterme
+                  : (q ? 'Sonuç bulunamadı.' : 'Henüz sektör takip etmiyorsunuz.')));
       tb.innerHTML=`<tr><td colspan="5" class="v1-bos">${bos}</td></tr>`; return;
     }
     const max=Math.max(1,...liste.map(r=>r.toplam||0));
@@ -126,7 +126,7 @@
           <button class="v1-takip-btn" data-i="${i}" style="background:${takipli?'var(--v1-mavi)':'#fff'};
             color:${takipli?'#fff':'var(--v1-mavi)'};border:1.5px solid var(--v1-mavi);border-radius:8px;padding:6px 12px;
             font-family:var(--v1-font);font-size:12.5px;font-weight:700;cursor:pointer;white-space:nowrap;">
-            ${takipli?'âœ“ Takipte':'+ Takip Et'}</button></td></tr>`;
+            ${takipli?'✓ Takipte':'+ Takip Et'}</button></td></tr>`;
     }).join('');
     tb.querySelectorAll('.v1-takip-btn').forEach(b=>b.addEventListener('click',()=>takipToggle(Number(b.dataset.i),b)));
   }
@@ -141,9 +141,9 @@
     }
     const anahtar=fold(r.kategori), takipli=takip.has(anahtar);
     mesgul=true;
-    if(btn){ btn.disabled=true; btn.style.opacity='.6'; btn.textContent=takipli?'KaldÄ±rÄ±lÄ±yorâ€¦':'Ekleniyorâ€¦'; }
+    if(btn){ btn.disabled=true; btn.style.opacity='.6'; btn.textContent=takipli?'Kaldırılıyor…':'Ekleniyor…'; }
     try{
-      // supabase-js yazma iÅŸlemleri THROW ETMEZ â†’ {error} elle okunmalÄ±
+      // supabase-js yazma işlemleri THROW ETMEZ → {error} elle okunmalı
       if(takipli){
         const kayitli=takip.get(anahtar)||r.kategori;
         const {error}=await sb.from('takip_sektorler').delete()
@@ -154,13 +154,13 @@
         const {error}=await sb.from('takip_sektorler')
           .insert({kullanici_id:uid,sektor:r.kategori});   // kullanici_id NOT NULL, default yok
         if(error && error.code!=='23505') throw error;      // 23505 = zaten takipte, hata sayma
-        // 23505'te satÄ±r BAÅKA metinle kayÄ±tlÄ± olabilir â†’ DB'den tazele ki silme .eq('sektor') tutsun
+        // 23505'te satır BAŞKA metinle kayıtlı olabilir → DB'den tazele ki silme .eq('sektor') tutsun
         if(error) await takipYukle(); else takip.set(anahtar,r.kategori);
       }
       ciz();
     }catch(e){
-      alert('Ä°ÅŸlem kaydedilemedi: '+((e&&(e.message||e.hint))||'bilinmeyen hata'));
-      ciz();   // gerÃ§ek duruma geri dÃ¶n â€” kullanÄ±cÄ±ya sahte "takipte" gÃ¶sterme
+      alert('İşlem kaydedilemedi: '+((e&&(e.message||e.hint))||'bilinmeyen hata'));
+      ciz();   // gerçek duruma geri dön — kullanıcıya sahte "takipte" gösterme
     }finally{ mesgul=false; }
   }
 
@@ -174,11 +174,11 @@
     document.getElementById('v1-ara-liste').addEventListener('input',ciz);
     document.getElementById('s-tum').addEventListener('click',()=>{mod='tum';
       document.getElementById('s-tum').classList.add('aktif'); document.getElementById('s-takip').classList.remove('aktif');
-      document.getElementById('v1-liste-baslik').textContent='TÃ¼m SektÃ¶rler'; ciz();});
+      document.getElementById('v1-liste-baslik').textContent='Tüm Sektörler'; ciz();});
     document.getElementById('s-takip').addEventListener('click',async()=>{mod='takip';
       document.getElementById('s-takip').classList.add('aktif'); document.getElementById('s-tum').classList.remove('aktif');
-      document.getElementById('v1-liste-baslik').textContent='Takip EttiÄŸim SektÃ¶rler'; ciz();
-      if(uyeMi&&uid&&takipHata){ await takipYukle(); ciz(); }});   // ilk okuma dÃ¼ÅŸtÃ¼yse sekmede yeniden dene
+      document.getElementById('v1-liste-baslik').textContent='Takip Ettiğim Sektörler'; ciz();
+      if(uyeMi&&uid&&takipHata){ await takipYukle(); ciz(); }});   // ilk okuma düştüyse sekmede yeniden dene
     yukle();
   })();
 })();
