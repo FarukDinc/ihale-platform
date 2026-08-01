@@ -233,8 +233,8 @@
       `border-radius:8px;cursor:pointer;" data-fn="${fn}">${metin}</button>`;
     m.innerHTML =
       '<div style="padding:8px 12px 4px;font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--v1-muted);">Sürüm</div>' +
-      btn('🔵 <span>v1 — Kurumsal (aktif)</span>', 'v1', 'var(--v1-mavi)') +
-      btn('🟡 <span>v2 — İhaleGlobal</span>', 'v2') +
+      btn('🔵 <span>Standart (aktif)</span>', 'v1', 'var(--v1-mavi)') +
+      btn('🔒 <span>Kurumsal (v2)</span>', 'v2') +
       '<div style="height:1px;background:var(--v1-cizgi);margin:5px 6px;"></div>' +
       btn('⚙️ <span>Profil &amp; Ayarlar</span>', 'profil') +
       btn('💳 <span>Abonelik</span>', 'abonelik') +
@@ -243,7 +243,14 @@
     m.querySelectorAll('[data-fn]').forEach(b => b.addEventListener('click', (e) => {
       e.stopPropagation();
       const f = b.dataset.fn;
-      if (f === 'v2') { localStorage.setItem('ihale_surum', 'v2'); location.href = 'benim-sayfam'; }
+      if (f === 'v2') {
+        // Kurumsal (v2) ŞİFRE KİLİDİ — geçici soft-gate (client-side; kalıcısı server-side rol olacak).
+        const _p = prompt('Kurumsal sürüm şifresi:');
+        if (_p === null) return;                              // iptal
+        if (_p !== 'Faruk.06!') { alert('Şifre hatalı.'); return; }
+        try { sessionStorage.setItem('kurumsal_v2', '1'); } catch (_) {}
+        localStorage.setItem('ihale_surum', 'v2'); location.href = 'benim-sayfam';
+      }
       else if (f === 'v1') { localStorage.setItem('ihale_surum', 'v1'); m.remove(); }
       else if (f === 'profil') location.href = 'v1-profil';
       else if (f === 'abonelik') location.href = 'fiyatlandirma_odeme_bolumu';

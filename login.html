@@ -281,7 +281,7 @@
   // "//evil.com" gibi davranıp dışa yönlendirebilir. Bu yüzden ikinci karakter de / veya \ olamaz.
   function donusHedefi() {
     const d = new URLSearchParams(window.location.search).get('donus');
-    if (!d || d[0] !== '/' || d[1] === '/' || d[1] === '\\') return 'dashboard';
+    if (!d || d[0] !== '/' || d[1] === '/' || d[1] === '\\') return 'v1-benim-sayfam';
     return d.slice(1);
   }
 
@@ -327,7 +327,7 @@
       }
       localStorage.setItem('ihale_token', sd.session.access_token);
       toast(type === 'recovery' ? 'Doğrulandı! Yönlendiriliyorsunuz…' : '✓ E-postanız onaylandı! Giriş yapılıyor…', 'basari');
-      setTimeout(() => window.location.href = 'dashboard', 1400);
+      setTimeout(() => window.location.href = 'v1-benim-sayfam', 1400);
     } catch (e) {
       _onayIsleniyor = false;
       localStorage.removeItem('ihale_token');
