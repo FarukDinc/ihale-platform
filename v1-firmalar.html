@@ -90,6 +90,10 @@
           <span class="v1-fc-etiket">Segment</span>
           <div class="v1-cipler" id="v1-cipler"></div>
         </div>
+        <label class="v1-fc-alan" id="v1-kamu-alan" style="display:none;gap:6px;cursor:pointer;align-items:center;font-size:12.5px;color:var(--v1-muted);"
+               title="DMO, cezaevi işyurtları gibi kamu kuruluşları da alıcı adına ihale kazanır; rakip analizinde gürültü olduğu için varsayılan gizlenir.">
+          <input type="checkbox" id="v1-kamu-dahil"> Kamu kuruluşlarını da göster
+        </label>
         <span style="flex:1;"></span>
         <button class="v1-fc-temizle" id="v1-temizle" style="display:none;">✕ Filtreleri temizle</button>
       </div>
@@ -170,7 +174,8 @@
   };
 
   let sayfa=1, uyeMi=false, uid=null, mod='tum', takipli=new Set(), aramaT, istekNo=0;
-  let il='', segment='', sirala=VARSAYILAN_SIRALA, yon=VARSAYILAN_YON, siralaSecildi=false;
+  let il='', segment='', sirala=VARSAYILAN_SIRALA, yon=VARSAYILAN_YON, siralaSecildi=false, kamuDahil=false;
+  let kurumMuVar=true;   // 26-23: kurum_mu kolonu yoksa (migration öncesi) filtre atlanır (deploy-güvenli)
   const ilAdet=new Map();          // il → firma adedi (il_firma_dagilimi'nden)
 
   const el=(id)=>document.getElementById(id);
@@ -356,6 +361,9 @@
           .select('id,ad,il,toplam_sozlesme_sayisi,toplam_ciro,ciro_son_12ay,ciro_onceki_12ay,buyume_yuzde');
         if(mod==='takip') s=s.in('ad',[...takipli]);
         if(il) s=s.eq('il',il);
+        // 26-23: kamu kuruluşlarını (kurum_mu=true) varsayılan gizle. NULL (yeni/henüz
+        //        sınıflanmamış firma) görünür kalsın → .not IS TRUE (eq false değil).
+        if(!kamuDahil && kurumMuVar) s=s.not('kurum_mu','is',true);
         if(segment && SEGMENTLER[segment]) s=s.eq(SEGMENTLER[segment].kolon,true);
         if(cfg.bosOlabilir) s=s.not(sirala,'is',null);
         return s;
@@ -380,6 +388,12 @@
       if(benim!==istekNo) return;   // daha yeni bir yükleme başladı, bu cevabı yazma
       // Emniyet (firma-analiz.html:1191 ile aynı desen): arama_fold prod'da yoksa sayfayı
       // öldürme, düz ad ILIKE'a düş — bu yedek Türkçe İ/ı'da eksik sonuç verir, uyarı bırak.
+      // 26-23: kurum_mu kolonu henüz yoksa (migration uygulanmadan pull) filtreyi bırak, yeniden dene.
+      if(error && kurumMuVar && /kurum_mu/.test(error.message||'')){
+        kurumMuVar=false;
+        ({data,error}=await calistir(q?window.v1Ara(temel(),'arama_fold',q):temel()));
+        if(benim!==istekNo) return;
+      }
       if(error && q && /arama_fold/.test(error.message||'')){
         console.warn('yukleniciler.arama_fold okunamadı, düz ad ILIKE yedeğine düşüldü:',error.message);
         // virgül/parantez PostgREST sorgu ayrıştırıcısını bozar → temizle
@@ -531,6 +545,7 @@
       el('v1-segment-alan').style.display='none';
     } else {
       el('v1-segment-alan').style.display='flex';
+      el('v1-kamu-alan').style.display='flex';
       cipleriYaz();
       // Normalde await YOK — liste il açılır listesini beklemesin. AMA derin linkte
       // (?il=ANKARA) sayaç satırı ilAdet'ten besleniyor; beklemezsek "0 firma kayıtlı"
@@ -546,6 +561,9 @@
     ilEl.addEventListener('change',()=>{
       il=ilEl.value||''; sayfa=1; temizleGoster(); urlYaz(); yukle();
     });
+
+    // 26-23: kamu kuruluşları (DMO/cezaevi/işyurtları) varsayılan gizli; toggle ile göster.
+    { const kd=el('v1-kamu-dahil'); if(kd) kd.addEventListener('change',()=>{ kamuDahil=kd.checked; sayfa=1; yukle(); }); }
 
     el('v1-temizle').addEventListener('click',()=>{
       il=''; segment=''; araEl.value='';
