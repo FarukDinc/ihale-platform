@@ -469,6 +469,10 @@
 
         <!-- İHALE LİSTESİ -->
         <div id="sek-liste" class="v1-panel">
+          <div class="dag-tip" style="margin-bottom:14px;">
+            <button type="button" data-ltip="ihale" class="dag-tip-btn aktif">📋 İhale</button>
+            <button type="button" data-ltip="dt" class="dag-tip-btn">⚡ Doğrudan Temin</button>
+          </div>
           <div id="liste-kap"><div class="v1-bos">Yükleniyor…</div></div>
           <div class="k-pager" id="pager" style="display:none;">
             <button class="v1-mini-btn" id="pg-ilk">« İlk</button>
@@ -481,6 +485,10 @@
 
         <!-- SONUÇLAR & SÖZLEŞMELER -->
         <div id="sek-sonuc" class="v1-panel">
+          <div class="dag-tip" style="margin-bottom:14px;">
+            <button type="button" data-stip="ihale" class="dag-tip-btn aktif">📋 İhale Sonuçları</button>
+            <button type="button" data-stip="dt" class="dag-tip-btn">⚡ Doğrudan Temin Sonuçları</button>
+          </div>
           <div class="v1-kart" style="padding:18px 20px;">
             <div class="v1-tablo-bas">
               <div>
@@ -507,7 +515,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-<script src="js/v1-kabuk.js?v=21"></script>
+<script src="js/v1-kabuk.js?v=22"></script>
 <script>
 (() => {
   const SB_URL="https://ihaleglobal.com", SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzg0MzA3MTU4LCJleHAiOjE5NDE5ODcxNTh9.CjNKulvirotDD_y2oO2QKgo0kbqYvL0jUSV1RiDMoso";
@@ -601,7 +609,8 @@
   const PER_PAGE = 20;
   let sayfa = 1;
   let topSayfa = 1;      // kurum_ozet kpi.toplam'dan hesaplanır (count=exact yok)
-  let listeIstek = 0;    // hızlı sayfa geçişlerinde eski cevap yenisini ezmesin
+  let listeIstek = 0;
+  let listeTip = 'ihale', sonucTip = 'ihale', listeDahaVar = false;   // #6: İhale/DT seçici (İhale Listesi & Sonuçlar)    // hızlı sayfa geçişlerinde eski cevap yenisini ezmesin
   let gAylik = null, gYillik = null, gDurum = null;
 
   // Sonuçlar & Sözleşmeler sekmesi
@@ -620,13 +629,117 @@
   }
 
   function sayfaGit(s) {
-    sayfa = Math.max(1, Math.min(s, topSayfa));
+    // DT modunda toplam sayfa bilinmez (dahaVar ile ilerlenir); İhale'de topSayfa'ya clamp.
+    sayfa = (listeTip === 'dt') ? Math.max(1, s) : Math.max(1, Math.min(s, topSayfa));
     listeSayfa(sayfa);
     el('sek-liste').scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
   // Server-side sayfalama: sadece görünen 20 satır iner
+  // ══════════════════ KURUM — DOĞRUDAN TEMİN (İhale Listesi & Sonuçlar sekmelerinin DT tarafı) ══════════════════
+  // idare ILIKE (idx_dt_idare_trgm ile hızlı). Kazanan firma/bedel dogrudan_temin_sonuclari'ndan (dt_no).
+  function dtKurumSatir(i) {
+    const d = durumSec(i.tarih);
+    const kaz = i._kazanan
+      ? `<div class="k-ih-kazanan"><span class="k-ih-kaz-sol">🏆 ${esc(i._kazanan)}${i._bedel != null ? ' · ' + paraFormat(i._bedel) : ''}</span>${i.tarih ? `<span class="k-ih-tarih">📅 ${tarihFormat(i.tarih)}</span>` : ''}</div>`
+      : (i._bedel != null ? `<div class="k-ih-kazanan"><span class="k-ih-kaz-sol">💰 ${paraFormat(i._bedel)}</span>${i.tarih ? `<span class="k-ih-tarih">📅 ${tarihFormat(i.tarih)}</span>` : ''}</div>` : '');
+    return `<div class="k-ihale">
+      <div class="k-ih-ust">
+        <a class="k-ih-bas" href="v1-dt-detay?dt_no=${encodeURIComponent(i.dt_no)}">${esc(i.baslik) || '—'}</a>
+        <span class="k-ih-durum ${d.cls}">${d.etiket}</span>
+      </div>
+      <div class="k-etiketler">
+        ${i.tur ? `<span class="k-et k-et-tur">${esc(i.tur)}</span>` : ''}
+        ${i.il ? `<span class="k-et k-et-il">📍 ${esc(i.il)}</span>` : ''}
+        ${i.kategori ? `<span class="k-et">${esc(i.kategori)}</span>` : ''}
+      </div>
+      <div class="k-ih-meta">
+        ${i.tarih ? `<span>📅 ${tarihFormat(i.tarih)}</span>` : ''}
+        ${i.dt_no ? `<span>DT: ${esc(i.dt_no)}</span>` : ''}
+      </div>
+      ${kaz}
+    </div>`;
+  }
+
+  // dt_no listesine göre kazanan firma + bedel eşle (dogrudan_temin_sonuclari)
+  async function dtKazananEsle(rows) {
+    try {
+      const nos = rows.map(r => r.dt_no).filter(Boolean);
+      if (!nos.length) return;
+      const { data: bd } = await sb.from('dogrudan_temin_sonuclari').select('dt_no,kazanan_bedel,kazanan_firma').in('dt_no', nos);
+      const mB = {}, mF = {}; (bd || []).forEach(x => { if (mB[x.dt_no] == null) mB[x.dt_no] = x.kazanan_bedel; if (x.kazanan_firma && mF[x.dt_no] == null) mF[x.dt_no] = x.kazanan_firma; });
+      rows.forEach(r => { r._bedel = mB[r.dt_no]; r._kazanan = mF[r.dt_no]; });
+    } catch (_) {}
+  }
+
+  // İhale Listesi sekmesi → DT: bu idarenin TÜM doğrudan teminleri (tarih DESC)
+  async function listeSayfaDT(s) {
+    const istek = ++listeIstek;
+    sayfa = Math.max(1, s);
+    const bas = (sayfa - 1) * PER_PAGE;
+    const kap = el('liste-kap');
+    kap.innerHTML = '<div class="v1-bos">Yükleniyor…</div>';
+    const { data: dilim, error } = await sb.from('dogrudan_temin_ilanlari')
+      .select('dt_no,baslik,il,tur,kategori,durum,tarih')
+      .ilike('idare', `%${KURUM}%`)
+      .order('tarih', { ascending: false, nullsFirst: false })
+      .range(bas, bas + PER_PAGE);   // PER_PAGE+1: sonraki sayfa var mı
+    if (istek !== listeIstek) return;
+    if (error || !dilim || !dilim.length) {
+      kap.innerHTML = error
+        ? (kilitliMi(error) ? kilitHtml('Doğrudan temin listesi üyelere özel', 'Bu idarenin DT kayıtlarını görmek için giriş yapın.') : '<div class="v1-bos">Doğrudan temin listesi yüklenemedi.</div>')
+        : '<div class="v1-bos">Bu kuruma ait doğrudan temin bulunamadı.</div>';
+      el('pager').style.display = 'none';
+      return;
+    }
+    listeDahaVar = dilim.length > PER_PAGE;
+    const rows = dilim.slice(0, PER_PAGE);
+    await dtKazananEsle(rows);
+    if (istek !== listeIstek) return;
+    kap.innerHTML = rows.map(dtKurumSatir).join('');
+    el('pager').style.display = (sayfa > 1 || listeDahaVar) ? 'flex' : 'none';
+    el('pg-info').textContent = `Sayfa ${sayfa}`;
+    el('pg-ilk').disabled = sayfa <= 1;
+    el('pg-prev').disabled = sayfa <= 1;
+    el('pg-next').disabled = !listeDahaVar;
+    el('pg-son').disabled = true;   // DT'de toplam sayfa bilinmiyor
+  }
+
+  // Sonuçlar & Sözleşmeler sekmesi → DT: bu idarenin sonuçlanmış DT'leri (kazanan firma + bedel)
+  async function sonucSayfaDT(s) {
+    const istek = ++szIstek;
+    szSayfa = Math.max(1, s);
+    const bas = (szSayfa - 1) * SZ_PER;
+    const kap = el('sonuc-kap');
+    kap.innerHTML = '<div class="v1-bos">Yükleniyor…</div>';
+    el('sonuc-pager').style.display = 'none';
+    const SONUC_DURUM = ['Sonuç Duyurusu Yayımlanmış', 'Sonuç Bilgileri Gönderildi', 'Doğrudan Temin Sonuçlandırıldı'];
+    const { data: dilim, error } = await sb.from('dogrudan_temin_ilanlari')
+      .select('dt_no,baslik,il,tur,kategori,durum,tarih')
+      .ilike('idare', `%${KURUM}%`)
+      .in('durum', SONUC_DURUM)
+      .order('tarih', { ascending: false, nullsFirst: false })
+      .range(bas, bas + SZ_PER);
+    if (istek !== szIstek) return;
+    if (error || !dilim || !dilim.length) {
+      kap.innerHTML = error
+        ? (kilitliMi(error) ? kilitHtml('DT sonuçları üyelere özel', 'Bu idarenin doğrudan temin sonuçlarını görmek için giriş yapın.') : '<div class="v1-bos">Doğrudan temin sonuçları yüklenemedi.</div>')
+        : `<div class="v1-bos">${szSayfa > 1 ? 'Daha fazla sonuç yok.' : 'Bu kuruma ait sonuçlanmış doğrudan temin bulunamadı.'}</div>`;
+      el('sonuc-bilgi').textContent = szSayfa > 1 ? '' : 'Sonuçlanmış DT kaydı yok.';
+      if (szSayfa > 1) { szDahaVar = false; szPagerCiz(); }
+      return;
+    }
+    szDahaVar = dilim.length > SZ_PER;
+    const rows = dilim.slice(0, SZ_PER);
+    await dtKazananEsle(rows);
+    if (istek !== szIstek) return;
+    kap.innerHTML = rows.map(dtKurumSatir).join('');
+    el('sonuc-bilgi').textContent = `Sayfa ${sayi(szSayfa)} · bu sayfada ${sayi(rows.length)} doğrudan temin sonucu`;
+    szPagerCiz();
+  }
+
   async function listeSayfa(s) {
+    if (listeTip === 'dt') return listeSayfaDT(s);
     const istek = ++listeIstek;
     const bas = (s - 1) * PER_PAGE;
     const kap = el('liste-kap');
@@ -753,6 +866,7 @@
   }
 
   async function sonucSayfa(s) {
+    if (sonucTip === 'dt') return sonucSayfaDT(s);
     const istek = ++szIstek;
     szSayfa = Math.max(1, s);
     const bas = (szSayfa - 1) * SZ_PER;
@@ -1799,9 +1913,26 @@
     // Dağılım Analizi İhale/DT seçici
     document.querySelectorAll('[data-dtip]').forEach(b =>
       b.addEventListener('click', () => { if (b.dataset.dtip !== _dagilimTip) dagilimCiz(b.dataset.dtip); }));
+    // İhale Listesi İhale/DT seçici
+    document.querySelectorAll('[data-ltip]').forEach(b =>
+      b.addEventListener('click', () => {
+        if (b.dataset.ltip === listeTip) return;
+        listeTip = b.dataset.ltip;
+        document.querySelectorAll('[data-ltip]').forEach(x => x.classList.toggle('aktif', x.dataset.ltip === listeTip));
+        sayfa = 1; listeSayfa(1);
+      }));
+    // Sonuçlar & Sözleşmeler İhale/DT seçici
+    document.querySelectorAll('[data-stip]').forEach(b =>
+      b.addEventListener('click', () => {
+        if (b.dataset.stip === sonucTip) return;
+        sonucTip = b.dataset.stip;
+        document.querySelectorAll('[data-stip]').forEach(x => x.classList.toggle('aktif', x.dataset.stip === sonucTip));
+        szSayfa = 1; sonucSayfa(1);
+      }));
     el('btn-liste-git').addEventListener('click', () => {
-      sekmeAc('liste');
-      el('sek-liste').scrollIntoView({ behavior: 'smooth', block: 'start' });
+      // "Tüm İhalelerini Gör" → tam Kamu İhaleler sayfası, bu idareye süzülmüş (drill-down: tüm durum).
+      // In-page "İhale Listesi" sekmesi de duruyor; müşteri isterse orada, isterse tam sayfada gezer.
+      location.href = 'v1-ihaleler?idare=' + encodeURIComponent(KURUM);
     });
     el('btn-takip').addEventListener('click', takipToggle);
     el('btn-dizin').addEventListener('click', dizineDon);

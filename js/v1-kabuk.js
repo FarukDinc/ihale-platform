@@ -128,8 +128,8 @@
     + '.v1-dunya-sekme:hover{color:var(--v1-lacivert);text-decoration:none;}'
     + '.v1-dunya-sekme.aktif{background:#fff;color:var(--v1-lacivert);box-shadow:0 1px 3px rgba(12,62,112,.14);}'
     + '@media(max-width:900px){.v1-dunya-sekme{padding:7px 9px;font-size:11.5px;}}'
-    + '.v1-ara-btn-dolu{background:var(--v1-mavi);border-radius:8px;margin:3px;padding:0 16px;display:flex;align-items:center;gap:6px;}'
-    + '.v1-ara-btn-dolu svg{fill:#fff;}'
+    + '.v1-ara-btn-dolu{background:var(--v1-mavi);align-self:stretch;margin:0;border-radius:0;padding:0 18px;display:flex;align-items:center;gap:7px;}'
+    + '.v1-ara-btn-dolu svg{fill:#fff;width:18px;height:18px;}'
     + '.v1-ara-btn-dolu .v1-ara-btn-yazi{color:#fff;font-family:var(--v1-font);font-size:13px;font-weight:700;}'
     + '.v1-ara-btn-dolu:hover{background:var(--v1-lacivert);}'
     + '@media(max-width:720px){.v1-ara-btn-dolu .v1-ara-btn-yazi{display:none;}}</style>' +
