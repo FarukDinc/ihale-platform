@@ -708,79 +708,34 @@
   <div class="container">
     <div class="section-header">
       <span class="eyebrow">Fiyatlandırma</span>
-      <h2>İhale büyüklüğünüze göre plan</h2>
-      <p>Ücretsiz plan ile başlayın, büyüdükçe ölçeklendirin.</p>
+      <h2>Şu an her şey ücretsiz</h2>
+      <p>Deneme dönemindeyiz — giren herkes tüm özellikleri ücretsiz kullanır. Kredi kartı gerekmez.</p>
     </div>
 
-    <div class="toggle-wrap">
-      <span>Aylık</span>
-      <label class="toggle-switch">
-        <input type="checkbox" id="billing-toggle" />
-        <span class="toggle-slider"></span>
-      </label>
-      <span><strong>Yıllık</strong> <span class="discount-badge">%20 indirim</span></span>
-    </div>
-
-    <div class="pricing-grid">
-
-      <!-- FREE -->
-      <div class="pricing-card">
+    <!-- DENEME DÖNEMİ: şimdilik tek plan — Ücretsiz, TÜM özellikler açık. Pro/Kurumsal ileride. -->
+    <div class="pricing-grid" style="grid-template-columns:minmax(0,580px);justify-content:center;">
+      <div class="pricing-card featured">
+        <div class="pricing-badge">Deneme Dönemi — Tüm Özellikler Açık</div>
         <div class="plan-name">Ücretsiz</div>
         <div class="plan-price">₺0<span class="period">/ay</span></div>
-        <p class="plan-desc">Platformu keşfetmek için başlangıç noktası.</p>
+        <p class="plan-desc">Şu an giren herkes Kurumsal dahil tüm özellikleri ücretsiz kullanır.</p>
         <ul class="plan-features">
-          <li>Günlük 10 ihale görüntüleme</li>
-          <li>E-posta bildirimi (günlük özet)</li>
-          <li>3 sektör filtresi</li>
-          <li>EKAP temel arama</li>
-          <li class="dim">Uyumluluk analizi</li>
-          <li class="dim">Rekabet istihbaratı</li>
-          <li class="dim">Ekip yönetimi</li>
+          <li>Sınırsız ihale &amp; doğrudan temin görüntüleme</li>
+          <li>Kazanan firma, sözleşme bedeli ve tenzilat verileri</li>
+          <li>Anlık bildirimler + kayıtlı aramalar + teklif takvimi</li>
+          <li>Kurum &amp; Firma Analizi (karne, fesih riski, tenzilat)</li>
+          <li>Uyumluluk skoru &amp; "katılabileceğiniz ihaleler"</li>
+          <li>AI Fiyat/Teklif Stratejisi + Şartname Analizi</li>
+          <li>Rekabet &amp; fiyat istihbaratı, Firma Segmentleri</li>
+          <li>Bank modülü, Global İhaleler &amp; Dış Ticaret</li>
+          <li>Geçmiş sonuçlar, sözleşmeler, dokümanlar, raporlar</li>
         </ul>
-        <a href="login?panel=kayit" class="btn btn-ghost btn-plan">Ücretsiz Başla</a>
+        <a href="login?panel=kayit" class="btn btn-primary btn-plan">Ücretsiz Başla →</a>
       </div>
-
-      <!-- PRO -->
-      <div class="pricing-card featured">
-        <div class="pricing-badge">En Popüler</div>
-        <div class="plan-name">Pro</div>
-        <div class="plan-price">
-          <sup>₺</sup><span data-monthly="1.490" data-annual="1.190">1.490</span><span class="period">/ay</span>
-        </div>
-        <p class="plan-desc">Aktif ihale takipçileri ve KOBİ'ler için.</p>
-        <ul class="plan-features">
-          <li>Sınırsız ihale görüntüleme</li>
-          <li>Anlık bildirimler (SMS + E-posta)</li>
-          <li>Sınırsız sektör filtresi</li>
-          <li>Uyumluluk ön analizi</li>
-          <li>Geçmiş ihale sonuçları</li>
-          <li>Teklif takvimi & hatırlatıcılar</li>
-          <li class="dim">Rekabet istihbaratı</li>
-          <li class="dim">Ekip yönetimi (5+ kişi)</li>
-        </ul>
-        <a href="login?panel=kayit" class="btn btn-primary btn-plan">Pro'yu Dene — 30 Gün Ücretsiz</a>
-      </div>
-
-      <!-- KURUMSAL -->
-      <div class="pricing-card">
-        <div class="plan-name">Kurumsal</div>
-        <div class="plan-price">
-          <sup>₺</sup><span data-monthly="3.990" data-annual="3.190">3.990</span><span class="period">/ay</span>
-        </div>
-        <p class="plan-desc">Büyük müteahhitler ve çok kullanıcılı şirketler için.</p>
-        <ul class="plan-features">
-          <li>Pro'daki her şey</li>
-          <li>Rekabet & fiyat istihbaratı</li>
-          <li>Sınırsız ekip üyesi</li>
-          <li>Özel sektör raporu (aylık)</li>
-          <li>API erişimi</li>
-          <li>Öncelikli destek (4 saat SLA)</li>
-          <li>Özel onboarding</li>
-        </ul>
-        <a href="login?panel=kayit" class="btn btn-ghost btn-plan">Satış Ekibiyle Konuş</a>
-      </div>
-
     </div>
+    <p style="text-align:center;color:var(--muted);font-size:13px;margin-top:18px;">
+      Pro ve Kurumsal planları ileride devreye girecek. Deneme döneminde tüm özellikler herkese açık.
+    </p>
   </div>
 </section>
 
