@@ -172,6 +172,26 @@
   const usulTemizle=(s)=>String(s||'').replace(/^ihaleUsulu\./,'').replace(/_/g,' ')
     .replace(/istisna4734Md3([a-z])/i,'İstisna (4734 md. 3-$1)').trim() || '—';
 
+  // 26-25: usul alanı METOT ile KANUN/YÖNETMELİK adını karıştırıyor → "Açık" ailesi ("Açık",
+  //   "4734 KİK Açık İhale Usulü", "2886 Açık Teklif Usulü", "Açık İhale") ayrı kovalara bölünüyordu.
+  //   Dağılım grafiği için kanonik metoda indirge (VERİYE dokunmaz; yalnız gösterim).
+  const _fold=(s)=>String(s||'').toLocaleLowerCase('tr').replace(/ı/g,'i').replace(/İ/g,'i')
+    .replace(/ç/g,'c').replace(/ğ/g,'g').replace(/ö/g,'o').replace(/ş/g,'s').replace(/ü/g,'u');
+  const usulKanon=(s)=>{
+    const u=usulTemizle(s), x=_fold(u);
+    if(x.includes('belli istekli'))                 return 'Belli İstekliler Arası';
+    if(x.includes('pazarlik')){ const m=u.match(/MD\s*21\s*([A-Fa-f])/i); return m?('Pazarlık (MD 21 '+m[1].toUpperCase()+')'):'Pazarlık'; }
+    if(x.includes('dogrudan temin'))                return 'Doğrudan Temin';
+    if(x.includes('tasarim yaris'))                 return 'Tasarım Yarışması';
+    if(x.includes('acik'))                          return 'Açık İhale';   // tüm "Açık" varyantları
+    if(x.includes('istisna')||x.includes('kapsam disi')) return 'İstisna / Kapsam Dışı';
+    if(!u||u==='—'||x.includes('belirtilme'))       return 'Belirtilmemiş';
+    return u;   // yönetmelik adları (Elektrik Dağıtım…/Vakıf Yükseköğretim…) olduğu gibi kalsın
+  };
+  const usulGrupla=(arr)=>{ const m=new Map();
+    (arr||[]).forEach(r=>{ const k=usulKanon(r.k); m.set(k,(m.get(k)||0)+(Number(r.n)||0)); });
+    return [...m.entries()].map(([k,n])=>({k,n})).sort((a,b)=>b.n-a.n); };
+
   async function yukle(){
     const durum=document.getElementById('f-durum').value||null;
     const il=document.getElementById('f-il').value||null;
@@ -214,7 +234,7 @@
       ciz('g-kategori','bar',kats.map(r=>String(r.k).slice(0,34)),kats.map(r=>r.n),'y');
 
       // Listeler
-      cubuklar('l-usul',(d.usul||[]).slice(0,10).map(r=>({k:usulTemizle(r.k),n:r.n})));
+      cubuklar('l-usul',usulGrupla(d.usul).slice(0,10));
       // ⚠️ butce de DİZİ değil: {b0..b5, byok} sabit bantlar
       const b=d.butce||{};
       cubuklar('l-butce',[
