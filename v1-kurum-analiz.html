@@ -126,6 +126,8 @@
     .k-ih-kazanan { font-size:13px; font-weight:700; color:var(--v1-yesil); margin-top:4px;
       display:flex; justify-content:space-between; align-items:baseline; gap:14px; flex-wrap:wrap; }
     .k-ih-kaz-sol { min-width:0; }
+    .k-ih-firma { color:inherit; text-decoration:none; border-bottom:1px dotted currentColor; }
+    .k-ih-firma:hover { color:var(--v1-mavi); border-bottom-style:solid; }
     .k-ih-tarih { color:var(--v1-muted); font-weight:600; white-space:nowrap; margin-left:auto; }
     .k-ih-tutar { margin-left:auto; color:var(--v1-teal); font-weight:800; white-space:nowrap; }
     .k-etiketler { display:flex; gap:6px; flex-wrap:wrap; margin-top:8px; }
@@ -529,7 +531,7 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/tufe.js?v=2"></script>
-<script src="js/v1-kabuk.js?v=25"></script>
+<script src="js/v1-kabuk.js?v=26"></script>
 <script>
 (() => {
   const SB_URL="https://ihaleglobal.com", SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzg0MzA3MTU4LCJleHAiOjE5NDE5ODcxNTh9.CjNKulvirotDD_y2oO2QKgo0kbqYvL0jUSV1RiDMoso";
@@ -676,10 +678,14 @@
   // Server-side sayfalama: sadece görünen 20 satır iner
   // ══════════════════ KURUM — DOĞRUDAN TEMİN (İhale Listesi & Sonuçlar sekmelerinin DT tarafı) ══════════════════
   // idare ILIKE (idx_dt_idare_trgm ile hızlı). Kazanan firma/bedel dogrudan_temin_sonuclari'ndan (dt_no).
+  // Kazanan firma adı → firma analiz sayfasına link (v1-firma-analiz ?firma= ile ad araması yapar)
+  function firmaLink(ad) {
+    return ad ? `<a class="k-ih-firma" href="v1-firma-analiz?firma=${encodeURIComponent(ad)}">${esc(ad)}</a>` : '—';
+  }
   function dtKurumSatir(i) {
     const d = durumSec(i.tarih);
     const kaz = (i._kazanan || i._bedel != null)
-      ? `<div class="k-ih-kazanan"><span class="k-ih-kaz-sol">${i._kazanan ? '🏆 ' + esc(i._kazanan) : '💰 Sonuçlandı'}</span>${i._bedel != null ? `<span class="k-ih-tutar">${paraFormat(i._bedel)}</span>` : ''}</div>`
+      ? `<div class="k-ih-kazanan"><span class="k-ih-kaz-sol">${i._kazanan ? '🏆 ' + firmaLink(i._kazanan) : '💰 Sonuçlandı'}</span>${i._bedel != null ? `<span class="k-ih-tutar">${paraFormat(i._bedel)}</span>` : ''}</div>`
       : '';
     return `<div class="k-ihale">
       <div class="k-ih-ust">
@@ -816,7 +822,7 @@
       if (sonuclar.length === 1) {
         const so = sonuclar[0];
         sonucTarih = so.sonuc_tarihi || null;
-        const sol = ['🏆 ' + (esc(so.kazanan_firma) || '—'),
+        const sol = ['🏆 ' + (so.kazanan_firma ? firmaLink(so.kazanan_firma) : '—'),
           so.kazanan_teklif_farki_yuzde != null ? 'tenzilat %' + Number(so.kazanan_teklif_farki_yuzde).toFixed(1) : null
         ].filter(Boolean).join(' · ');
         const tut = so.kazanan_teklif ? `<span class="k-ih-tutar">${paraFormat(so.kazanan_teklif)}</span>` : '';

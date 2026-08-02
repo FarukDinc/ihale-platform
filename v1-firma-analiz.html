@@ -468,8 +468,12 @@
               <button class="fa-btn" id="btn-karsilastir">⚖️ Firmayla Karşılaştır</button>
               <button class="fa-btn" id="btn-takip">⭐ Rakibi Takip Et</button>
               <button class="fa-btn" id="btn-yeni-arama">🔍 Dizine Dön</button>
+              <button class="fa-btn-ana" id="btn-ai-yorum">🤖 AI Rakip Analizi (1 kredi)</button>
             </div>
           </div>
+
+          <!-- 🤖 AI Rakip Analizi paneli — üstteki aksiyon butonuyla açılır (eskiden sayfa sonundaydı) -->
+          <div id="ai-kaplayici" style="display:none;"></div>
 
           <!-- İHALE KPI satırı (5 kart) — yalnız ihaleler -->
           <div class="fa-kpi besli">
@@ -540,8 +544,8 @@
           </div>
 
           <div class="fa-tabs">
-            <button class="fa-tab" data-sekme="dtgenel">Doğrudan Teminler Genel Bakış</button>
             <button class="fa-tab aktif" data-sekme="genel">İhaleler Genel Bakış</button>
+            <button class="fa-tab" data-sekme="dtgenel">Doğrudan Teminler Genel Bakış</button>
             <button class="fa-tab" data-sekme="sonuclar">Katıldığı İhaleler</button>
             <button class="fa-tab" data-sekme="dt">Katıldığı Doğrudan Teminler</button>
           </div>
@@ -592,7 +596,6 @@
               <button class="fa-pbtn" data-yon="son">Son »</button>
             </div>
             <div id="pivot-kaplayici"></div>
-            <div id="ai-kaplayici"></div>
           </div>
 
           <!-- KATILDIĞI DOĞRUDAN TEMİNLER (firma_dt_liste) — ihaleden AYRI ekran -->
@@ -639,7 +642,7 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/kategoriler.js?v=1"></script>
 <script src="js/tufe.js?v=2"></script>
-<script src="js/v1-kabuk.js?v=25"></script>
+<script src="js/v1-kabuk.js?v=26"></script>
 <script>
 (() => {
   const SB_URL="https://ihaleglobal.com", SB_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzg0MzA3MTU4LCJleHAiOjE5NDE5ODcxNTh9.CjNKulvirotDD_y2oO2QKgo0kbqYvL0jUSV1RiDMoso";
@@ -1044,6 +1047,7 @@
     const y = (yRows && yRows[0]) || null;
     FIRMA = y ? (y.ad || '') : (FIRMA || '');
     $('firma-ad').textContent = FIRMA || 'Firma';
+    aiYorumKartiGoster();  // header AI Rakip Analizi butonunu bu firmaya bağla + paneli sıfırla
     if (pushUrl){
       const url = new URL(window.location);
       url.searchParams.set('yid', yid);
@@ -1266,7 +1270,6 @@
     const kap = $('sonuclar-kaplayici');
     if (!kap) return;
     pivotKirilimGoster();
-    aiYorumKartiGoster();
     if (!sonucVeri.length){
       kap.innerHTML = `<div class="fa-bos-kart">
         <div class="fa-bos-ikon">🔍</div>
@@ -1467,9 +1470,23 @@
   }
 
   /* ── 🤖 AI Rakip Analizi (Pro; free'de bulanık önizleme + CTA) ─────── */
+  // Header aksiyon satırındaki "🤖 AI Rakip Analizi" butonunu (Dizine Dön'ün sağı) her firma
+  // yüklenişinde sıfırla + bağla. Panel (#ai-kaplayici) başlığın hemen altında, sekmeden bağımsız.
   function aiYorumKartiGoster(){
+    const btn = $('btn-ai-yorum');
+    if (!btn || !FIRMA) return;
+    btn.disabled = false;
+    btn.textContent = '🤖 AI Rakip Analizi (1 kredi)';
+    btn.onclick = aiYorumAc;
     const hedef = $('ai-kaplayici');
-    if (!hedef || !FIRMA) return;
+    if (hedef){ hedef.style.display = 'none'; hedef.innerHTML = ''; }
+  }
+
+  // Butona tıklanınca paneli aç: free → bulanık önizleme + CTA, Pro → analizi üret.
+  function aiYorumAc(){
+    const hedef = $('ai-kaplayici');
+    if (!hedef) return;
+    hedef.style.display = '';
     if (!proMu){
       hedef.innerHTML = `<div class="v1-kart" style="margin-top:16px;position:relative;overflow:hidden;">
         <div class="v1-kart-baslik">🤖 AI Rakip Analizi</div>
@@ -1478,26 +1495,27 @@
         </div>
         <a class="fa-btn-ana" style="margin-top:12px;" href="fiyatlandirma_odeme_bolumu">Pro'ya Geç ve Aç</a>
       </div>`;
+      hedef.scrollIntoView({ behavior:'smooth', block:'nearest' });
       return;
     }
     hedef.innerHTML = `<div class="v1-kart" style="margin-top:16px;">
       <div class="v1-kart-baslik">🤖 AI Rakip Analizi</div>
-      <button class="fa-btn-ana" id="ai-btn">Analizi Oluştur (1 kredi)</button>
-      <div id="ai-metin" style="margin-top:12px;font-size:13px;color:var(--v1-metin);line-height:1.75;white-space:pre-line;"></div>
+      <div id="ai-metin" style="margin-top:8px;font-size:13px;color:var(--v1-metin);line-height:1.75;white-space:pre-line;">Analiz oluşturuluyor…</div>
     </div>`;
-    $('ai-btn').addEventListener('click', aiYorumUret);
+    hedef.scrollIntoView({ behavior:'smooth', block:'nearest' });
+    aiYorumUret();
   }
 
   async function aiYorumUret(){
-    const btn = $('ai-btn'), metinEl = $('ai-metin');
+    const btn = $('btn-ai-yorum'), metinEl = $('ai-metin');
     if (!btn || !metinEl) return;
-    btn.disabled = true; btn.textContent = 'Oluşturuluyor…';
+    btn.disabled = true; btn.textContent = '🤖 Oluşturuluyor…';
     try{
       const { data: oturum } = await sb.auth.getSession();
       const jeton = oturum && oturum.session && oturum.session.access_token;
       if (!jeton){
         metinEl.innerHTML = 'Analiz için <a href="login">giriş yapın</a>.';
-        btn.disabled = false; btn.textContent = 'Analizi Oluştur (1 kredi)'; return;
+        btn.disabled = false; btn.textContent = '🤖 AI Rakip Analizi (1 kredi)'; return;
       }
       const yanit = await fetch(SB_URL + '/api/ai/firma-yorum', {
         method:'POST',
@@ -1506,24 +1524,24 @@
       });
       if (yanit.status === 402){
         metinEl.innerHTML = 'Yetersiz kredi. <a href="fiyatlandirma_odeme_bolumu">Paket yükseltin →</a>';
-        btn.disabled = false; btn.textContent = 'Tekrar Dene'; return;
+        btn.disabled = false; btn.textContent = '🤖 Tekrar Dene'; return;
       }
       if (yanit.status === 401){
         metinEl.innerHTML = 'Oturumunuz sona ermiş. <a href="login">Yeniden giriş yapın</a>.';
-        btn.disabled = false; btn.textContent = 'Tekrar Dene'; return;
+        btn.disabled = false; btn.textContent = '🤖 Tekrar Dene'; return;
       }
       if (!yanit.ok) throw new Error('sunucu ' + yanit.status);
       const sonuc = await yanit.json();
       if (sonuc && sonuc.basari && sonuc.metin){
         metinEl.textContent = sonuc.metin;
-        btn.style.display = 'none';
+        btn.disabled = true; btn.textContent = '✓ AI Analizi Hazır';
       } else {
         metinEl.textContent = 'Analiz oluşturulamadı. Lütfen daha sonra tekrar deneyin.';
-        btn.disabled = false; btn.textContent = 'Tekrar Dene';
+        btn.disabled = false; btn.textContent = '🤖 Tekrar Dene';
       }
     }catch(err){
       metinEl.textContent = 'Bu özellik şu an kullanılamıyor, lütfen daha sonra tekrar deneyin.';
-      btn.disabled = false; btn.textContent = 'Tekrar Dene';
+      btn.disabled = false; btn.textContent = '🤖 Tekrar Dene';
     }
   }
 

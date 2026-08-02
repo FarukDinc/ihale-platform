@@ -221,6 +221,20 @@
     // Arama → kapsama göre v1 sayfasına yönlendir (?ara=)
     const inp = topbar.querySelector('#v1-ara');
     const sel = topbar.querySelector('#v1-kapsam');
+    // Seçilen arama tipi sayfalar arası KALICI olsun. Select her sayfada sıfırdan kurulduğu ve
+    // hiçbir option 'selected' olmadığı için önceden hep 'ihale'ye düşüyordu. Öncelik: bulunduğumuz
+    // sayfadan türet (URL kaynak-of-truth), yoksa son seçim (sessionStorage), yoksa varsayılan.
+    try {
+      const yol = location.pathname, qp = new URLSearchParams(location.search);
+      let tip = '';
+      if (yol.includes('v1-firmalar')) tip = 'firma';
+      else if (yol.includes('v1-kurumlar')) tip = 'idare';
+      else if (yol.includes('v1-ihaleler')) tip = qp.get('tur') === 'dt' ? 'dt' : (qp.get('sekme') === 'sonuc' ? 'sonuc' : 'ihale');
+      if (!tip) tip = sessionStorage.getItem('v1_kapsam') || '';
+      if (tip && sel.querySelector('option[value="' + tip + '"]')) sel.value = tip;
+      const q0 = qp.get('ara'); if (q0 && !inp.value) inp.value = q0;   // arama metnini de koru
+    } catch (_) {}
+    sel.addEventListener('change', () => { try { sessionStorage.setItem('v1_kapsam', sel.value); } catch (_) {} });
     const git = () => {
       const q = inp.value.trim();
       // MADDE 21: 1-2 harflik arama hedef sayfada tam-tablo taraması yapar → boşa yük. En az 3 harf.
@@ -234,6 +248,7 @@
         ihale: 'v1-ihaleler?ara=' + e, firma: 'v1-firmalar?ara=' + e, idare: 'v1-kurumlar?ara=' + e,
         sonuc: 'v1-ihaleler?sekme=sonuc&ara=' + e, dt: 'v1-ihaleler?tur=dt&ara=' + e,
       };
+      try { sessionStorage.setItem('v1_kapsam', sel.value); } catch (_) {}
       location.href = rota[sel.value] || rota.ihale;
     };
     inp.addEventListener('keydown', e => { if (e.key === 'Enter') git(); });
