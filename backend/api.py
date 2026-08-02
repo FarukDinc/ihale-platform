@@ -654,6 +654,108 @@ def ai_teklif_strateji(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@app.post("/ai/sartname-analiz")
+def ai_sartname_analiz(istek: AnalizIstek, authorization: str = Header(None)):
+    """
+    UV-1 Faz 2 — TEKNİK ŞARTNAME ANALİZİ (PREMIUM/kredili). İhalenin teknik şartnamesini + birim fiyat
+    cetvelini EKAP'tan İNDİRİR (Playwright, 406 aşımı + Gemini CAPTCHA), parse eder, AI'a okutup ihaleye
+    ÖZGÜ teklif stratejisi üretir. İndirilen şartname ilanlar.sartname_metni'ye CACHE'lenir (tekrar
+    indirmeyiz — maliyet düşer). Kredi: ilk indirme 3, cache'ten (yeniden indirmesiz) 1.
+    ⚠️ YAVAŞ (~20-35 sn, Playwright): frontend "şartname indiriliyor/analiz ediliyor" göstermeli.
+    """
+    kullanici_id = kullanici_dogrula(authorization)
+    ihale_id = istek.ihale_id
+    _GENERIK = {"satın alma", "satin alma", "satınalma", "mal alımı", "mal alimi", "hizmet alımı",
+                "hizmet alimi", "yapım işi", "yapim isi", "malzeme", "malzemesi", "alım", "alim",
+                "alımı", "alimi", "temin", "hizmet", "yapım", "yapim", "işi", "isi", "ihale", "ihalesi"}
+    try:
+        ilan = (supabase.table("ilanlar").select(
+            "id, baslik, il, kategori, tur, yaklasik_maliyet_min, yaklasik_maliyet_max, tahmini_bedel, "
+            "ekap_ihale_id, sartname_metni, ilan_metni"
+        ).eq("id", ihale_id).limit(1).execute().data or [None])[0]
+        if not ilan:
+            raise HTTPException(status_code=404, detail="İhale bulunamadı")
+
+        cache_var = bool(ilan.get("sartname_metni"))
+        gereken_kredi = 1 if cache_var else 3
+        kredi_bilgi = supabase.table("kullanici_krediler").select("kalan_kredi").eq(
+            "kullanici_id", kullanici_id).single().execute()
+        if (kredi_bilgi.data or {}).get("kalan_kredi", 0) < gereken_kredi:
+            raise HTTPException(status_code=402, detail=f"Bu özellik {gereken_kredi} kredi gerektirir")
+
+        # ── Şartname metni: CACHE varsa kullan, yoksa Playwright ile İNDİR + cache'le ──
+        sartname_metni = ilan.get("sartname_metni")
+        dosyalar = []
+        if not sartname_metni:
+            if not ilan.get("ekap_ihale_id"):
+                raise HTTPException(status_code=422, detail="Bu ihalede indirilebilir doküman kimliği yok")
+            import asyncio
+            from sartname_indir import indir_parse   # lazy: Playwright import ağır, sadece burada
+            r = asyncio.run(indir_parse(str(ilan["ekap_ihale_id"])))
+            if not r.get("basari") or not r.get("metin"):
+                raise HTTPException(status_code=502, detail=f"Şartname indirilemedi: {r.get('hata')}")
+            sartname_metni = r["metin"]
+            dosyalar = r.get("dosyalar") or []
+            supabase.table("ilanlar").update({
+                "sartname_metni": sartname_metni, "sartname_indirildi": datetime.now(timezone.utc).isoformat()
+            }).eq("id", ihale_id).execute()
+
+        # ── AI şartnameyi oku (ilan_metni yerine ZENGİN şartname metni) ──
+        so = sartname_oku(sartname_metni, {"baslik": ilan.get("baslik"), "kategori": ilan.get("kategori")})
+        sartname_ozet = so.get("veri") if so.get("basari") else None
+
+        # ── Kırılımlar: konu (şartname konusuyla) + il + genel ──
+        kirilimlar = {}
+        if sartname_ozet and sartname_ozet.get("konu_kelimeler"):
+            kel = sorted({k.strip() for k in sartname_ozet["konu_kelimeler"]
+                          if k and len(k.strip()) >= 4 and k.strip().lower() not in _GENERIK}, key=len, reverse=True)
+            for k in kel[:4]:
+                try:
+                    kr = supabase.rpc("konu_tenzilat", {"p_kelime": k}).execute()
+                    if kr.data:
+                        kirilimlar["konu"] = kr.data[:1]
+                        break
+                except Exception as e:
+                    print(f"  ⚠ konu_tenzilat ({k}) atlandı: {e}")
+        if ilan.get("il"):
+            try:
+                kirilimlar["il"] = (supabase.rpc("analiz_pivot", {"p_grup": "il", "p_il": ilan["il"]}).execute().data or [])[:1]
+            except Exception as e:
+                print(f"  ⚠ analiz_pivot il (sartname-analiz) atlandı: {e}")
+        try:
+            g = (supabase.rpc("sonuc_ozet", {}).execute().data or [])
+            if g:
+                kirilimlar["genel"] = [{"grup_deger": "Türkiye geneli",
+                                        "ihale_sayisi": g[0].get("toplam"), "ort_tenzilat": g[0].get("ort_tenzilat")}]
+        except Exception as e:
+            print(f"  ⚠ sonuc_ozet (sartname-analiz) atlandı: {e}")
+
+        sonuc = teklif_strateji_uret(ihale=ilan, kirilimlar=kirilimlar, sartname_ozet=sartname_ozet)
+        if not sonuc["basari"]:
+            raise HTTPException(status_code=500, detail=sonuc["hata"])
+
+        # ── Kredi düş (yalnız başarı sonrası; islem_turu='analiz' — CHECK kısıtı) ──
+        try:
+            kredi_sonuc = supabase.rpc("kredi_dus", {
+                "p_kullanici_id": kullanici_id, "p_miktar": gereken_kredi,
+                "p_referans_id": ihale_id, "p_referans_tip": "ihale", "p_islem_turu": "analiz",
+                "p_aciklama": f"Şartname Analizi{' (cache)' if cache_var else ''}: {(ilan.get('baslik') or '')[:45]}"
+            }).execute()
+        except Exception as e:
+            print(f"  ⚠ kredi_dus (sartname-analiz) hatası: {e}")
+            raise HTTPException(status_code=500, detail="Kredi işlemi tamamlanamadı, lütfen tekrar deneyin")
+        if not getattr(kredi_sonuc, "data", None):
+            raise HTTPException(status_code=402, detail="Yetersiz kredi")
+
+        return {"basari": True, "metin": sonuc["metin"], "sartname_ozet": sartname_ozet,
+                "kirilimlar": kirilimlar, "dosyalar": dosyalar, "cache": cache_var, "dusulen_kredi": gereken_kredi}
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 @app.post("/admin/scraper-cron")
 async def scraper_tetikle(
     authorization: str = Header(None)
