@@ -328,6 +328,7 @@
   let tumIlanlar=[];        // skorlanmış + eşik uygulanmış + sıralanmış liste
   let mevcutSayfa=1;
   let idareMaskeli=false;
+  let profilFirma=null;     // 26-22: açık tercih yoksa skorların türetildiği seçili firma
   let aramaZaman=null;
   const seciliSektor=new Set(), seciliIl=new Set(), seciliTur=new Set();
 
@@ -409,6 +410,29 @@
     profilUyum=profilNormalize(profil);
   }
 
+  // 26-22: Açık tercih (sektör/il) girilmemişse Uyum.hesapla herkese sabit ~%60 veriyordu
+  //   (boş kategori +20 · boş il +15 · boş tür +10 · sınırsız bedel +15). Çözüm: kullanıcının
+  //   SEÇTİĞİ firmanın (Bana Özel → "Benim Firmam") geçmiş kategorilerinden SKORLAMA profili
+  //   türet → kategori eşleşmesi puanı 45/65/80'e yayar, %75+/%85+ süzgeci anlamlı olur.
+  //   Açık profil kutuları BOŞ kalır (editör kullanıcıya ait); yalnız profilUyum türetilir.
+  async function firmadanProfilTuret(){
+    const acikTercih = profil && (((profil.sektorler||[]).length>0) ||
+      ((profil.tercih_iller||[]).length>0) || ((profil.kategoriler||[]).length>0));
+    if(acikTercih) return;
+    let firma=null;
+    try{ const {data}=await sb.rpc('firmam_getir'); if(data&&data.firma_id) firma=data; }catch(_){}
+    if(!firma){ try{ const c=localStorage.getItem('firmam'); if(c){ const f=JSON.parse(c); if(f&&f.firma_id) firma=f; } }catch(_){} }
+    if(!firma) return;
+    try{
+      // yukleniciler.kategori = firmanın kanonik kategori dizisi (authenticated okuyabilir).
+      const {data:y}=await sb.from('yukleniciler').select('kategori,sektor,il').eq('id',firma.firma_id).maybeSingle();
+      const kats=(y&&(y.kategori||y.sektor))||[];
+      if(!kats.length) return;
+      profilUyum=profilNormalize({ kategoriler:kats, sektorler:kats, tercih_iller:[], tercih_turler:[], min_bedel:0, max_bedel:0 });
+      profilFirma={ ad: firma.ad || 'firmanız' };
+    }catch(_){}
+  }
+
   function profilOzetGoster(){
     const wrap=document.getElementById('v1-profil-ozet');
     const sektorler=(profil&&profil.sektorler)||[];
@@ -416,12 +440,22 @@
     const turler=(profil&&profil.tercih_turler)||[];
 
     if(!profil || (sektorler.length===0 && iller.length===0)){
-      wrap.innerHTML=`<div class="v1-uyari">
-        <span>⚠️</span>
-        <span style="flex:1;min-width:240px;">Profilinizde <strong>sektör</strong> veya <strong>il</strong> tercihi seçilmemiş.
-          Uyum skorları genel tahmin kullanır.</span>
-        <button class="v1-link-btn" data-terc-ac>→ Eşleşme Tercihlerini Düzenle</button>
-      </div>`;
+      if(profilFirma){
+        // 26-22: skorlar seçili firmanın geçmişinden türetildi — dürüst etiket + kişiselleştirme daveti.
+        wrap.innerHTML=`<div class="v1-uyari" style="background:var(--v1-mavi-acik);border-color:#CFE2F5;">
+          <span>🏢</span>
+          <span style="flex:1;min-width:240px;">Uyum skorları <strong>${esc(profilFirma.ad)}</strong> firmasının geçmiş kazanımlarına
+            (sektör profili) göre hesaplandı. Kendi sektör/il tercihlerinizi girerek kişiselleştirebilirsiniz.</span>
+          <button class="v1-link-btn" data-terc-ac>→ Tercihleri Düzenle</button>
+        </div>`;
+      } else {
+        wrap.innerHTML=`<div class="v1-uyari">
+          <span>⚠️</span>
+          <span style="flex:1;min-width:240px;">Ne bir tercih girdiniz ne de firma seçtiniz — uyum skorları genel tahmin kullanır.
+            <a href="v1-benim-sayfam" style="color:var(--v1-mavi);font-weight:600;">Bana Özel'den firmanızı seçin</a> ya da tercih girin.</span>
+          <button class="v1-link-btn" data-terc-ac>→ Eşleşme Tercihlerini Düzenle</button>
+        </div>`;
+      }
       return;
     }
 
@@ -731,6 +765,7 @@
 
     try{
       await profilCek();
+      await firmadanProfilTuret();   // 26-22: açık tercih yoksa seçili firmadan skorlama profili türet
       tercihSecimleriYukle();
       tercihUIKur();
       profilOzetGoster();
