@@ -767,7 +767,8 @@
   }
   function dizineDon(){
     const url = new URL(window.location);
-    ['yid','id','ara','firma'].forEach(k => url.searchParams.delete(k));
+    // #7: harita durum paramlarını da temizle → "yeni arama" dizin listesine döner, haritayı geri kurmaz
+    ['yid','id','ara','firma','g','baz','olcut','kamu','sektor','il'].forEach(k => url.searchParams.delete(k));
     window.history.pushState({}, '', url);
     goster('dizin');
     dizinBaslat();
@@ -2243,6 +2244,39 @@
     if (harita) hKur();
   }
 
+  // #7: harita durumunu (görünüm+filtreler+seçili il) URL'e yaz — firmaya tıklamadan HEMEN ÖNCE
+  // çağrılır; firma detayı pushState yaptığında tarayıcı "geri" bu filtreli harita URL'ine döner.
+  function haritaURLYaz(){
+    try{
+      const u = new URL(window.location);
+      u.searchParams.set('g', 'harita');
+      u.searchParams.set('baz', hBaz);
+      u.searchParams.set('olcut', hOlcut + '|' + (hSonYil ? '1' : '0'));
+      u.searchParams.set('kamu', hKamuDahil ? '1' : '0');
+      if (hSektorSecili) u.searchParams.set('sektor', hSektorSecili); else u.searchParams.delete('sektor');
+      if (hSeciliIl) u.searchParams.set('il', hSeciliIl); else u.searchParams.delete('il');
+      ['yid','id','ara','firma'].forEach(k => u.searchParams.delete(k));
+      window.history.replaceState({}, '', u);
+    }catch(_){}
+  }
+  // #7: URL'den (g=harita) haritayı filtreleriyle geri kur (tarayıcı geri / derin bağlantı / yenile).
+  async function haritaGeriYukle(P){
+    goster('dizin');
+    gorunumSec('harita');
+    try{ await hKur(); }catch(_){}                          // SVG + varsayılan yoğunluk hazır olsun
+    const [ol, yil] = (P.get('olcut') || 'bedel|0').split('|');
+    hOlcut = (ol === 'sozlesme') ? 'sozlesme' : 'bedel'; hSonYil = (yil === '1');
+    const olSel = $('fa-h-olcut'); if (olSel) olSel.value = hOlcut + '|' + (hSonYil ? '1' : '0');
+    hKamuDahil = P.get('kamu') === '1';
+    const kamuEl = $('fa-h-kamu'); if (kamuEl) kamuEl.checked = hKamuDahil;
+    const wantBaz = P.get('baz') === 'dt' ? 'dt' : 'ihale';
+    if (wantBaz !== hBaz){ try{ await hBazSec(wantBaz); }catch(_){} }   // DT verisini de yükler
+    const sektor = P.get('sektor');
+    if (sektor){ const ss = $('fa-h-sektor'); if (ss) ss.value = sektor; try{ await hSektorSec(sektor); }catch(_){} }
+    const il = P.get('il');
+    if (il) hIlSec(il);                                      // seçili ili + panelini geri getir
+  }
+
   /* ══════════════ OLAY BAĞLAMA ══════════════ */
   // Dizin satırı / arama kartı / karşılaştırma kartı → delegasyon (firma adlarındaki tırnaklar
   // inline onclick'i kırar; data-attribute + delegasyon güvenli)
@@ -2264,7 +2298,7 @@
     const daha = e.target.closest('[data-h-daha]');   // #5: kalan firmaları aç
     if (daha){ $('fa-h-firmalar').querySelectorAll('[data-h-fazla]').forEach(x => { x.style.display = ''; }); daha.remove(); return; }
     const f = e.target.closest('[data-h-firma]');
-    if (f){ firmaListesiYukle(f.dataset.hFirma, true); window.scrollTo({top:0,behavior:'smooth'}); return; }
+    if (f){ haritaURLYaz(); firmaListesiYukle(f.dataset.hFirma, false); window.scrollTo({top:0,behavior:'smooth'}); return; }
     const il = e.target.closest('[data-h-il]');
     if (il){ hIlSec(il.dataset.hIl); return; }
     const geri = e.target.closest('[data-h-geri]');
@@ -2432,6 +2466,7 @@
     if (qYid){ firmaDetayYukle(qYid, false); return; }
     if (qAra){ firmaListesiYukle(qAra, false); return; }
     if (qFirma){ firmaListesiYukle(qFirma, false); return; }
+    if (P.get('g') === 'harita'){ haritaGeriYukle(P); return; }   // #7: filtreli haritaya geri dön
     goster('dizin'); dizinBaslat();
   }
 
