@@ -130,6 +130,17 @@
   const sb=window.supabase.createClient(SB_URL,SB_KEY);
   const num=(n)=>(Number(n)||0).toLocaleString('tr-TR');
   const esc=(s)=>String(s==null?'':s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+  // B: görünen firmaların DT toplamlarını tek istekte al (ad→{s:sayı,b:bedel})
+  async function dtToplamGetir(adlar){
+    const m={};
+    try{
+      const uniq=[...new Set((adlar||[]).filter(Boolean))];
+      if(!uniq.length) return m;
+      const {data}=await sb.rpc('firma_dt_toplu',{p_adlar:uniq});
+      (data||[]).forEach(r=>{ m[r.ad]={s:Number(r.dt_sozlesme)||0,b:Number(r.dt_bedel)||0}; });
+    }catch(_){}
+    return m;
+  }
   const tl=(v)=>v==null?'—':'₺'+Number(v).toLocaleString('tr-TR',{maximumFractionDigits:0});
   // ⚠️ Türkçe arama: burada KENDİ fold fonksiyonumuzu yazmıyoruz. js/v1-kabuk.js
   //    window.trFold + window.v1Ara sunuyor ve SQL tr_fold() ile birebir aynı katlamayı
@@ -340,6 +351,7 @@
     const bosalt=()=>{ el('v1-sayi').textContent=''; el('v1-sayfalama').innerHTML=''; };
     listeBasligiYaz();
     tb.innerHTML=`<tr><td colspan="${KS}" class="v1-bos">Yükleniyor…</td></tr>`;
+    bosalt();  // 26-31: filtre/sekme/arama değişince sayaç + sayfalama bayat kalmasın
     if(!uyeMi){
       el('v1-misafir').style.display='block';
       tb.innerHTML=`<tr><td colspan="${KS}" class="v1-bos">🔒 Firma listesi üyelere özeldir. <a href="login">Giriş yapın →</a></td></tr>`;
@@ -401,25 +413,18 @@
         if(benim!==istekNo) return;
       }
       if(error) throw error;
-      if(!data||!data.length){
-        // #2: yukleniciler YALNIZ ihale (4734) kazananı. Arama boşsa DT kazananlarında da ara —
-        // yalnız doğrudan temin kazanan firma (ör. BELİZ GRUP) burada "bulunamadı" dönmesin.
-        if(q){
-          try{
-            const {data:dtd}=await sb.rpc('firma_dizin_dt',{p_ara:q,p_limit:50,p_offset:0,p_sort:'bedel',p_kamu_dahil:true});
-            if(benim!==istekNo) return;
-            if(dtd&&dtd.length){
-              const satir=d=>`<div style="padding:9px 2px;border-bottom:1px solid var(--v1-cizgi);display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;">
-                <a href="v1-firma-analiz?firma=${encodeURIComponent(d.ad||'')}" style="font-weight:700;color:var(--v1-mavi);text-decoration:none;">${esc(d.ad)} <span style="background:#FFF3E0;color:#A96A00;font-size:11px;font-weight:700;padding:1px 6px;border-radius:6px;">⚡ DT</span></a>
-                <span style="color:var(--v1-muted);font-size:12.5px;white-space:nowrap;">⚡ ${num(d.toplam_sozlesme_sayisi)} DT${d.il?' · 📍 '+esc(d.il):''} · ₺${num(d.dt_bedel)}</span></div>`;
-              tb.innerHTML=`<tr><td colspan="${KS}" style="padding:16px 8px;">
-                <div style="font-weight:800;color:var(--v1-lacivert);margin-bottom:10px;">“${esc(q)}” ihale (4734) kazananlarında yok — ⚡ <b>doğrudan temin</b> kazananları:</div>
-                ${dtd.map(satir).join('')}
-                <div style="font-size:11.5px;color:var(--v1-muted);margin-top:10px;">Firmaya tıklayın — doğrudan temin analizi açılır.</div></td></tr>`;
-              bosalt(); return;
-            }
-          }catch(_){ /* RPC yoksa/kilitliyse normal "bulunamadı"ya düş */ }
-        }
+      data = data || [];
+      // #2: q varken DT-only kazananları da bul → ihale sonuçlarının YANINA ekle (sadece boşken DEĞİL).
+      //     "beliz" gibi kısmi aramada hem ihale hem yalnız-DT firmaları (ör. BELİZ GRUP) çıksın.
+      let dtOnly=[];
+      if(q){
+        try{
+          const {data:dtd}=await sb.rpc('firma_dizin_dt',{p_ara:q,p_limit:50,p_offset:0,p_sort:'bedel',p_kamu_dahil:true});
+          if(benim!==istekNo) return;
+          dtOnly=(dtd||[]).filter(d=>!d.id);   // id yoksa yalnız-DT (ihale firması zaten yukleniciler'de var)
+        }catch(_){ /* RPC yok/kilitli → yalnız ihale sonuçlarıyla devam */ }
+      }
+      if(!data.length && !dtOnly.length){
         tb.innerHTML=`<tr><td colspan="${KS}" class="v1-bos">Sonuç bulunamadı.</td></tr>`; bosalt(); return;
       }
 
@@ -432,11 +437,15 @@
       const notlar=[];
       if(cfg.bosOlabilir) notlar.push(`${esc(cfg.ad)} verisi olmayan firmalar bu sıralamada listelenmez`);
       el('v1-sayi').innerHTML=
-        `${kapsam} · <strong>${esc(cfg.ad)}</strong> ${artan?'artan':'azalan'} · Sayfa <strong>${sayfa}</strong> · ${data.length} firma gösteriliyor`+
+        `${kapsam} · <strong>${esc(cfg.ad)}</strong> ${artan?'artan':'azalan'} · Sayfa <strong>${sayfa}</strong> · ${data.length} ihale firması gösteriliyor`+
+        (dtOnly.length?` · <strong style="color:#A96A00;">${dtOnly.length}</strong> yalnız-DT kazananı`:'')+
         (notlar.length?`<br><span style="font-size:12px;">${notlar.join(' · ')}</span>`:'');
 
+      const dtMap = await dtToplamGetir(data.map(r=>r.ad));   // B: her firmanın DT'si
+      if(benim!==istekNo) return;
       tb.innerHTML=data.map((r,i)=>{
         const t=takipli.has(r.ad);
+        const dt=dtMap[r.ad];
         let ekstra='';
         if(uyeMi){
           const b=r.buyume_yuzde;
@@ -458,7 +467,16 @@
             <button class="v1-tk" data-ad="${esc(r.ad)}" style="background:${t?'var(--v1-mavi)':'#fff'};color:${t?'#fff':'var(--v1-mavi)'};
               border:1.5px solid var(--v1-mavi);border-radius:8px;padding:6px 12px;font-family:var(--v1-font);
               font-size:12.5px;font-weight:700;cursor:pointer;white-space:nowrap;">${t?'✓ Takipte':'+ Takip Et'}</button></td></tr>`;
-      }).join('');
+      }).join('')
+        + ((data.length && dtOnly.length) ? `<tr><td colspan="${KS}" style="padding:9px 8px;font-weight:800;color:#A96A00;background:#FFF9F0;">⚡ Yalnız doğrudan temin kazananları</td></tr>` : '')
+        + dtOnly.map(d=>`<tr style="background:#FFFDF7;">
+          <td style="color:#A96A00;font-weight:700;">⚡</td>
+          <td><a class="v1-firma-ad" href="v1-firma-analiz?firma=${encodeURIComponent(d.ad||'')}">${esc(d.ad)}</a> <span style="background:#FFF3E0;color:#A96A00;font-size:11px;font-weight:700;padding:1px 6px;border-radius:6px;white-space:nowrap;">⚡ DT</span></td>
+          <td style="font-size:13px;">${esc(d.il||'—')}</td>
+          <td class="v1-sayi" style="font-weight:700;color:#A96A00;">${num(d.toplam_sozlesme_sayisi)} DT</td>
+          <td class="v1-sayi" style="font-weight:700;color:#A96A00;">${tl(d.dt_bedel)}</td>
+          ${uyeMi?'<td class="v1-sayi" style="color:var(--v1-muted);">—</td><td class="v1-sayi" style="color:var(--v1-muted);">—</td>':''}
+          <td></td></tr>`).join('');
       tb.querySelectorAll('.v1-tk').forEach(b=>b.addEventListener('click',()=>takipToggle(b)));
       sayfalama(data.length);
     }catch(e){
