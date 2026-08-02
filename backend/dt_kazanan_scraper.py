@@ -280,9 +280,12 @@ async def dt_detay_getir(havuz, dt_ihale_token, dt_idare_token):
                                         artık 'denendi' damgalanabilir.
       · gerçek 404  → (None, True)   : EKAP bu DT için detay SUNMUYOR (kalıcı yok);
                                         boşuna tekrar denememek için damgalanabilir.
+      · BOŞ 200     → (None, None)   : 200 ama gövde BOŞ → detay HENÜZ yayımlanmamış (pending).
+                                        DAMGALAMA (sonra gelir) AMA devre kesiciyi SAYMA — offset
+                                        ile atlanır (poison-head fix, 1 Ağu). Bkz. _parti_cek.
       · GEÇİCİ hata → (None, False)  : blok/kesinti (403/407/429/5xx), ağ/TLS/timeout,
-                                        proxy düşüşü, 200-ama-JSON-değil. DAMGALAMA —
-                                        satır NULL kalsın, sonraki tur tekrar denesin.
+                                        proxy düşüşü, 200-ama-DOLU-JSON-değil (blok sayfası).
+                                        DAMGALAMA + devre kesici saysın, sonraki tur denesin.
 
     KRİTİK (eski hata): önceki sürüm HER non-200 ve HER istisnada None döndürüp çağıran
     tarafın satırı yine de damgalamasına yol açıyordu; geçici bir 403/timeout ile
@@ -310,9 +313,17 @@ async def dt_detay_getir(havuz, dt_ihale_token, dt_idare_token):
                 try:
                     return r.json(), True
                 except ValueError:
-                    # 200 ama gövde JSON değil → EKAP ara-katman/hata sayfası olabilir.
-                    # IP sağlıklı olabilir (ucu cezalandırma), ama veriyi güvenilir sayma:
-                    # geçici kabul et, DAMGALAMA.
+                    # 200 ama JSON değil — İKİ AYRI durum (1 Ağu bulgusu):
+                    #  (a) BOŞ gövde (size 0) → EKAP DT'yi tanıyor ama sözleşme detayı HENÜZ
+                    #      yayımlanmamış ("Sonuç Duyurusu Yayımlanmış" ama detay pending). Bu bir
+                    #      HATA/blok DEĞİL → damgalama (sonra gelir) AMA devre kesiciyi TETİKLEME
+                    #      (None,None = "atla"). Yoksa dt_no sırasında baştaki pending blok (en yeni
+                    #      26DT1xxxxxx) 8 ardışık boş verip kesiciyi açıyor, HAZIR olan %92'ye
+                    #      hiç ulaşılmıyordu (poison-head takılması).
+                    #  (b) DOLU ama JSON değil → EKAP ara-katman/hata/blok sayfası → GEÇİCİ hata,
+                    #      devre kesici saysın (None,False).
+                    if not r.content or not r.text.strip():
+                        return None, None
                     return None, False
             if r.status_code == 404:
                 return None, True  # gerçekten detay yok — kalıcı, damgalanabilir
@@ -543,7 +554,12 @@ async def _parti_cek(havuz, batch, sem, kesici):
                 havuz, row["dt_ihale_token"], row["dt_idare_token"])
             # Tamamlanma sırasına göre ardışık-hata sayacı; eşiği aşınca kesiciyi aç ki
             # semaphore'da bekleyen sonraki işçiler istek atmadan çekilsin.
-            if damgalanabilir:
+            if damgalanabilir is None:
+                # BOŞ-200 (detay henüz yayımlanmamış — pending): HATA DEĞİL. Kesiciyi ne say
+                # ne sıfırla → dt_no sırasındaki pending blok (en yeni 26DT1xxxxxx) kesiciyi
+                # AÇMASIN; offset ile atlanıp HAZIR satırlara ulaşılsın (poison-head fix, 1 Ağu).
+                pass
+            elif damgalanabilir:
                 kesici["ardisik"] = 0
             else:
                 kesici["ardisik"] += 1
