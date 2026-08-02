@@ -1903,19 +1903,24 @@
       return;
     }
     try{
+      // #5: ilk 8 göster, "Devamını gör" ile 50'ye kadarını aç (tek RPC, panel kaydırılır).
       const { data, error } = await sb.rpc(hDt() ? 'il_sektor_firmalar_dt' : 'il_sektor_firmalar',
-        { p_il_folds: hFoldVaryant(key), p_kategori: hSektorSecili, p_limit: 8, p_son_yil: hSonYil, p_olcut: hOlcut, p_kamu_dahil: hKamuDahil });
+        { p_il_folds: hFoldVaryant(key), p_kategori: hSektorSecili, p_limit: 50, p_son_yil: hSonYil, p_olcut: hOlcut, p_kamu_dahil: hKamuDahil });
       if (error) throw error;
       const el = $('fa-h-firmalar');
       if (!el || hSeciliIl !== key) return;
       if (!data || !data.length){ el.innerHTML = '<div class="fa-h-panel-bos" style="padding:16px;">Kayıt yok.</div>'; return; }
-      el.innerHTML = data.map((y,i) => `<div class="fa-h-firma">
+      const HH = 8;
+      const hFirmaSatir = (y,i) => `<div class="fa-h-firma"${i>=HH ? ' data-h-fazla="1" style="display:none;"' : ''}>
         <span style="width:16px;flex-shrink:0;font-size:11px;font-weight:800;color:var(--v1-muted);">${i+1}</span>
         <div style="flex:1;min-width:0;">
           <div class="pf-ad" data-h-firma="${esc(y.ad)}">${esc(y.ad)}${kurumMu(y.ad) ? ' '+KURUM_ROZET : ''}</div>
           <div class="pf-meta">${num(y.sozlesme)} sözleşme · ${paraKisa(y.toplam_bedel)}${
             hSektorSecili ? ' (bu il + sektörde)' : ' (bu ilde)'}</div>
-        </div></div>`).join('');
+        </div></div>`;
+      el.innerHTML = data.map(hFirmaSatir).join('') + (data.length > HH
+        ? `<button type="button" data-h-daha="1" style="width:100%;margin-top:10px;padding:9px;border:1px solid var(--v1-cizgi);background:#fff;color:var(--v1-mavi);font-weight:700;font-size:12.5px;border-radius:9px;cursor:pointer;">Devamını gör (${data.length - HH} firma daha) ↓</button>`
+        : '');
     }catch(err){
       const el = $('fa-h-firmalar');
       if (el) el.innerHTML = `<div class="fa-h-panel-bos" style="padding:16px;">${
@@ -2076,6 +2081,8 @@
     if (k) karsilastirSec(k.dataset.karsYid);
   });
   $('fa-h-panel').addEventListener('click', e => {
+    const daha = e.target.closest('[data-h-daha]');   // #5: kalan firmaları aç
+    if (daha){ $('fa-h-firmalar').querySelectorAll('[data-h-fazla]').forEach(x => { x.style.display = ''; }); daha.remove(); return; }
     const f = e.target.closest('[data-h-firma]');
     if (f){ firmaListesiYukle(f.dataset.hFirma, true); window.scrollTo({top:0,behavior:'smooth'}); return; }
     const il = e.target.closest('[data-h-il]');
