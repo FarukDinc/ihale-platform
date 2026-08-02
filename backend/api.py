@@ -605,9 +605,17 @@ def ai_teklif_strateji(
 
         # UV-1 Faz 1.5: şartname KONUSUYLA eşleşen geçmiş ihalelerin GERÇEK tenzilatı (il/genel'den
         # isabetli). En spesifik (uzun) konu kelimesinden başla; ilk anlamlı eşleşmeyi (≥3 ihale) al.
+        # JENERİK terimler ('satın alma', 'malzeme'...) elenir → konuya-özgü eşleşme, generik tenzilat değil.
+        _KONU_GENERIK = {
+            "satın alma", "satin alma", "satınalma", "mal alımı", "mal alimi", "hizmet alımı",
+            "hizmet alimi", "yapım işi", "yapim isi", "malzeme", "malzemesi", "alım", "alim",
+            "alımı", "alimi", "temin", "hizmet", "yapım", "yapim", "işi", "isi", "ihale", "ihalesi",
+        }
         if sartname_ozet and sartname_ozet.get("konu_kelimeler"):
-            kelimeler = sorted({k.strip() for k in sartname_ozet["konu_kelimeler"] if k and len(k.strip()) >= 4},
-                               key=len, reverse=True)
+            kelimeler = sorted(
+                {k.strip() for k in sartname_ozet["konu_kelimeler"]
+                 if k and len(k.strip()) >= 4 and k.strip().lower() not in _KONU_GENERIK},
+                key=len, reverse=True)
             for kel in kelimeler[:4]:
                 try:
                     kr = supabase.rpc("konu_tenzilat", {"p_kelime": kel}).execute()
