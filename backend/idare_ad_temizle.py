@@ -16,7 +16,10 @@ SORUN: idare adları EKAP KAYNAĞINDA bozuk gelir —
 Kullanım (VDS'te):
   python idare_ad_temizle.py --dry-run            # aday + AI önerisi -> CSV (yazma YOK)
   python idare_ad_temizle.py --dry-run --limit 60 # hızlı örnek
-  python idare_ad_temizle.py --apply --min-guven 0.85   # CSV'deki yüksek güvenli düzeltmeleri uygula
+  # ⭐ UYGULA (ÖNERİLEN — bayt-birebir SQL, REST transport tuzağı yok):
+  python idare_ad_temizle.py --sql | docker exec -i supabase-db psql -U supabase_admin -d postgres
+  # (eski) REST yolu — bazı adlarda SESSİZCE 0 satır günceller (2 Ağu dersi), kullanma:
+  #   python idare_ad_temizle.py --apply --min-guven 0.85
 
 Env (backend/.env): SUPABASE_URL, SUPABASE_SERVICE_KEY, AI_SAGLAYICI, DEEPSEEK_API_KEY,
   (ops.) DEEPSEEK_MODEL / GEMINI_API_KEY
@@ -184,19 +187,56 @@ def apply(min_guven, sadece_takip=False):
     print("    \"REFRESH MATERIALIZED VIEW CONCURRENTLY public.idare_ozet_mv; REFRESH MATERIALIZED VIEW CONCURRENTLY public.dt_idare_ozet_mv;\"")
     print("  docker exec -i supabase-db psql -U postgres -d postgres -c \"SELECT public.idare_tur_tazele();\"")
 
+def _sql_str(s: str) -> str:
+    """SQL tek-tırnak literali (kaçış). İdare adlarında ' var (ör. 2'NCİ HAVA) → '' yapılmalı."""
+    return "'" + (s or "").replace("'", "''") + "'"
+
+def sql_ciktisi(min_guven):
+    """⭐ ÖNERİLEN apply yolu: remap'i SQL olarak stdout'a bas → psql'e pipe et. Bayt-birebir
+    `=` join (VALUES), REST `eq.` transport tuzağı YOK (REST apply idare adlarının bir kısmında
+    sessizce 0 satır güncelliyordu — 2 Ağu dersi). Kullanım:
+      ./venv/bin/python idare_ad_temizle.py --sql | docker exec -i supabase-db psql -U supabase_admin -d postgres
+    """
+    if not os.path.exists(CSV_YOL):
+        print(f"-- ✗ Önce --dry-run çalıştır (öneri dosyası yok: {CSV_YOL})"); return
+    with open(CSV_YOL, encoding="utf-8") as f:
+        rows = [r for r in csv.DictReader(f)
+                if float(r.get("guven") or 0) >= min_guven and (r.get("orijinal") or "").strip()
+                and (r.get("duzeltilmis") or "").strip() and r["orijinal"] != r["duzeltilmis"]]
+    if not rows:
+        print("-- 0 uygulanabilir öneri (güven eşiği altında ya da CSV boş)"); return
+    vals = ",\n  ".join(f"({_sql_str(r['orijinal'])}, {_sql_str(r['duzeltilmis'])})" for r in rows)
+    print(f"-- idare remap: {len(rows)} öneri (güven≥{min_guven}). Bayt-birebir SQL (REST DEĞİL).")
+    print("BEGIN;")
+    print("SET LOCAL statement_timeout = 0;")
+    for tablo, kolon in (("ilanlar", "idare"), ("dogrudan_temin_ilanlari", "idare"),
+                         ("takip_idareler", "idare_ad")):
+        print(f"UPDATE public.{tablo} t SET {kolon} = v.duz\n"
+              f"  FROM (VALUES\n  {vals}\n  ) v(orj, duz)\n  WHERE t.{kolon} = v.orj;")
+    print("COMMIT;")
+    print("-- SONRA (ayrı çalıştır, CONCURRENTLY txn dışı olmalı):")
+    print("--   REFRESH MATERIALIZED VIEW CONCURRENTLY public.idare_ozet_mv;")
+    print("--   REFRESH MATERIALIZED VIEW CONCURRENTLY public.dt_idare_ozet_mv;")
+    print("--   SELECT public.idare_tur_tazele();")
+
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("--dry-run", action="store_true")
-    ap.add_argument("--apply", action="store_true")
+    ap.add_argument("--apply", action="store_true", help="(REST — bazı adlarda sessiz 0-eşleşme riski; --sql tercih et)")
+    ap.add_argument("--sql", action="store_true", help="⭐ remap'i SQL olarak bas (psql'e pipe et — güvenilir)")
     ap.add_argument("--limit", type=int, default=0)
     ap.add_argument("--min-guven", type=float, default=0.85)
     ap.add_argument("--model", default=None, help="sağlayıcı öntanım modelini ez (normalde boş: env/DeepSeek)")
     ap.add_argument("--sadece-takip", action="store_true",
                     help="apply'da yalnız takip_idareler'i güncelle (ilanlar+dt zaten yapıldıysa)")
     a = ap.parse_args()
+    if a.sql:
+        sql_ciktisi(a.min_guven); sys.exit(0)
     if not SB_URL or not SB_KEY:
         print("✗ SUPABASE_URL / SUPABASE_SERVICE_KEY eksik (.env)"); sys.exit(1)
     if a.apply:
+        print("⚠ REST --apply: bazı idare adlarında sessizce 0 satır güncelleyebilir "
+              "(2 Ağu dersi). Güvenilir yol: --sql | psql", file=sys.stderr)
         apply(a.min_guven, sadece_takip=a.sadece_takip)
     else:
         d = ai_durum()
