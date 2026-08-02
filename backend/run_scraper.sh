@@ -260,3 +260,12 @@ pgrep -f ilan_metni_backfill.py >/dev/null && echo "  ilan_metni zaten calisiyor
 # Artımlı (WHERE guard: sadece işlenmemiş + ilan_metni dolu satırlar) → ilk turdan sonra hızlıdır.
 echo "[$(date +'%Y-%m-%d %H:%M:%S')] === Teklif türü parse ===" >> /opt/ihale-platform/logs/scraper.log
 docker exec -i supabase-db psql -U postgres -d postgres < /opt/ihale-platform/backend/teklif_turu_parse.sql >> /opt/ihale-platform/logs/scraper.log 2>&1
+
+# ── AI YORUM TAZELEME — TÜM veri + MV'ler güncellendikten SONRA (EN SONDA) ───────────
+# Cache'li kurum AI yorumlarının veri-hash'ini taze grounding ile (kurum_ozet + analiz_pivot +
+# kurum_dt_ozet) yeniden hesaplar; veri MATERYAL değiştiyse (hacim //100 kovası, top usul/firma,
+# DT hacmi/kazananı) cache'i SİLER → kullanıcı sonraki görüntülemede güncel veriye dayalı TAZE
+# yorum alır. 7 günlük hızlı-yol gecikmesi ORTADAN KALKAR; hash değişmeyen kurumlar (küçük
+# dalgalanma) dokunulmaz (tutarlılık + AI maliyeti yok). firma_iletisim'e dokunmaz (web-grounding).
+echo "[$(date +'%Y-%m-%d %H:%M:%S')] === AI yorum tazeleme (kurum) ===" >> /opt/ihale-platform/logs/scraper.log
+$VENV/python ai_yorum_tazele.py >> /opt/ihale-platform/logs/scraper.log 2>&1
