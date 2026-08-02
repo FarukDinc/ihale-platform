@@ -530,7 +530,13 @@ Durum: ✅ bitti · ⏳ sıradaki · 📋 planlandı (FE=frontend/pull · DB=mig
 
 # UZUN VADE (ayrı seri — "uzun vade" dendiğinde bu liste çıkarılır)
 
-## UV-1 — AI Teklif/Fiyat Asistanı revizyonu: teknik şartname okuması ✅ FAZ 1 CANLI (Faz 2 ertelendi)
+## UV-1 — AI Teklif/Fiyat Asistanı: teknik şartname okuması ✅ FAZ 1 + FAZ 2 CANLI (backend)
+**✅ FAZ 2 (1 Ağu — tam şartname indirme):** 406 **Playwright** ile aşıldı (chromium VDS'te kurulu).
+`backend/sartname_indir.py` (indir+ZIP/PDF/docx parse) + `/ai/sartname-analiz` endpoint (KREDİLİ premium:
+cache 1 / fresh 3 kredi; ilanlar.sartname_metni cache). Zengin doküman seti iniyor (teknik şartname+birim
+fiyat cetveli+poz), AI okuyup **somut ₺ band** veriyor (örn Mustafakemalpaşa %18,09→34,5-36,2M). Endpoint
+401-auth kayıtlı, zincir uçtan uca doğrulandı. KALAN: teklif-olustur.html'e "Şartnameyi Analiz Et" butonu.
+Bkz. [[ekap-belge-indirme-captcha]], [[ai-teklif-strateji-deepseek]].
 **✅ FAZ 1 (1 Ağu):** Teknik şartname İNDİRME EKAP'ta sertleşti (spike: CAPTCHA çözülüyor ama 3. adım
 406 — Playwright gerekir = Faz 2, ertelendi; bkz. [[ekap-belge-indirme-captcha]]). PIVOT: zaten çekili
 `ilan_metni` (%75,8 aktif kapsam, ~4K char) AI'a okutuldu → `teklif_ai.sartname_oku` (DeepSeek, JSON:
