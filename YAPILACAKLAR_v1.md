@@ -535,6 +535,17 @@ Durum: ✅ bitti · ⏳ sıradaki · 📋 planlandı (FE=frontend/pull · DB=mig
 **✅ 26-7 (=UV-4) KAPANDI — TOP-1000 (2 Ağu):** İdare ad-ortası boşluk ("ALTINPAR K"→ALTINPARK, "BET ON"→BETON, "O TEL"→OTEL). Çözüm `backend/idare_ad_temizle.py`: heuristik aday (dupe-grup + wrap imzası, meşru "E Tipi/1 Nolu/A.Ş." korunur) → **Gemini `gemini-3.1-flash-lite` doğrulama** (DeepSeek'ten iyi: MSB "BLG→BİLGİ" tuzağına düşmedi, OTEL'i düzeltti) → dry-run CSV → **SQL remap**. **CANLI: 137/138 wrap adı düzeltildi (`orijinal_hala_var=0`); + DMO daireleri Roman→Arabik normalize (24.172 satır: I/II/III/IV/V Nolu → 1/2/3/4/5); MV+idare_tur tazelendi.** ⚠️ TUZAKLAR (hepsi giderildi): (a) DeepSeek 40'lık öbekte JSON kırpıyordu → öbek 20 + 8000 token; (b) takip_idareler service_role UPDATE grant'ı yoktu → `migration_qa_takip_idareler_grant.sql`; (c) **REST `--apply` bazı idare adlarında SESSİZCE 0 satır güncelledi** (PostgREST `eq.` transport tuzağı; örnek-doğrulama yanılttı, agregat `orijinal_hala_var` gerçeği verdi) → script'e **`--sql` modu** eklendi (bayt-birebir `UPDATE...FROM VALUES`, psql'e pipe; REST apply artık uyarı basıyor). `idare_ozet_mv` YALNIZ `ilanlar`'dan (Kurumlar için ilanlar remap + refresh yeter; DT adları `dt_idare_ozet_mv`←`dogrudan_temin_ilanlari` ayrı). ⏭️ **OPSİYONEL uzun kuyruk:** kalan ~39K küçük idare için tam-katalog turu (`--dry-run --limit 0` → `--sql | psql`); değer düşük, acele değil; dry-run CSV'yi yalnız sonda yazıyor → uzun run'da resumable yapılmalı.
 **⏭️ Opsiyonel iyileştirme:** 26-22+ uyum.js kategori-kelime eşleşmesi kaba (çok kategori → çoğu ihale %80); firma kategori KONSANTRASYONUYLA ağırlıklandırma (MADDE 6 v4 deseni; skorlama-modeli değişikliği, bug değil).
 
+## MADDE 27 — Firma & Harita QA turu (2 Ağu) ✅ 7/7 CANLI
+Kullanıcı tarama sırasında 7 bulgu verdi; hepsi commit+push (eab36a7, 892ad14, e346642, 0a9c436):
+1. **Kurum-analiz kazanan firma linkleri** — İhale Listesi (ihale+DT) + Sonuçlar satırlarında firma adı `v1-firma-analiz?firma=` linki (firmaLink helper).
+2. **DT firmaları Firmalar'da çıksın** (BELİZ GRUP) — `yukleniciler` YALNIZ ihale kazananı; firma araması artık `firma_dizin_dt` ile birleşiyor (v1-firma-analiz + v1-firmalar fallback); DT-only firma "⚡ DT kazananı" rozeti + **ad ile detay** (`firmaDtOnlyAc` → dtBlokYukle + DT sekmesi).
+3. **Kabuk arama tipi kalıcı** — `#v1-kapsam` her sayfada 'ihale'ye düşüyordu → URL/sayfadan türet + sessionStorage (js/v1-kabuk.js, ?v=26).
+4. **Firma-analiz sekme sırası** — "İhaleler Genel Bakış" öne (DT ikinci).
+5. **Harita panel "Devamını gör"** — il paneli 8→50 firma (firma-analiz dizin harita).
+6. **Kamu toggle tutarsızlığı** — bug değil, sınıflandırıcı kapsamı: `firma_kurum_mu` v3'e belediye şirketleri (BELKA/ANFA/İSTON…) + savunma/SOE A.Ş. (ASELSAN/TÜRKSAT/TÜBİTAK…) eklendi, TÜPRAŞ hariç (özel). **⏳ migration_firma_kurum_mu_v3.sql çalıştırılacak.**
+7. **Filtreyle geri dön** — harita dizin'de firmaya tıklamadan önce durum URL'e (haritaURLYaz/replaceState); tarayıcı "geri" filtreli haritaya döner (rotala g=harita → haritaGeriYukle).
+⚠️ **PAGE-ID DERSİ:** Ekranlardaki "Firma Yoğunluğu" haritası + kamu toggle + Liste/Harita + KPI = **v1-firma-analiz.html DİZİN görünümü**, v1-harita.html DEĞİL (o ayrı, sidebar "Harita"). Firmalar altında olduğu için sidebar "Firmalar" yanar.
+
 # UZUN VADE (ayrı seri — "uzun vade" dendiğinde bu liste çıkarılır)
 
 ## UV-1 — AI Teklif/Fiyat Asistanı: teknik şartname okuması ✅ FAZ 1 + FAZ 2 CANLI (backend)
