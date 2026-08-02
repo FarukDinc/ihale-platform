@@ -948,6 +948,18 @@
     dzYukle(true);
   }
 
+  /* B: görünen firmaların DT toplamlarını tek istekte al (ad→{dt_sozlesme,dt_bedel}) */
+  async function dtToplamGetir(adlar){
+    const m = {};
+    try{
+      const uniq = [...new Set((adlar||[]).filter(Boolean))];
+      if (!uniq.length) return m;
+      const { data } = await sb.rpc('firma_dt_toplu', { p_adlar: uniq });
+      (data||[]).forEach(r => { m[r.ad] = { s: Number(r.dt_sozlesme)||0, b: Number(r.dt_bedel)||0 }; });
+    }catch(_){}
+    return m;
+  }
+
   /* ══════════════ ARAMA SONUCU FİRMA LİSTESİ ══════════════ */
   async function firmaListesiYukle(term, pushUrl){
     term = (term || '').trim();
@@ -1027,19 +1039,22 @@
     const topN = liste.length + dtEkstra.length;
     $('liste-ozet').textContent =
       `${num(topN)}${topN>=200 ? '+' : ''} firma bulundu · ihale + doğrudan temin kazananları`;
-    const ihaleKart = f => `
-      <div class="fa-fk" data-yid="${esc(f.id)}">
+    const dtMap = await dtToplamGetir(liste.map(f => f.ad));   // B: ihale firmalarının DT'si de görünsün
+    const ihaleKart = f => {
+      const dt = dtMap[f.ad];
+      return `<div class="fa-fk" data-yid="${esc(f.id)}">
         <div>
           <div class="fa-fk-ad">${esc(f.ad || '—')}</div>
           <div class="fa-fk-stat">
-            <span>📋 <b>${num(f.toplam_sozlesme_sayisi)}</b> sözleşme</span>
-            <span>💰 <b>${paraTam(f.toplam_ciro)}</b></span>
+            <span>📋 <b>${num(f.toplam_sozlesme_sayisi)}</b> ihale · 💰 <b>${paraTam(f.toplam_ciro)}</b></span>
+            ${dt ? `<span style="color:#A96A00;font-weight:600;">⚡ <b>${num(dt.s)}</b> DT · ${paraTam(dt.b)}</span>` : ''}
             ${f.il ? `<span>📍 ${esc(f.il)}</span>` : ''}
             ${f.son_sozlesme_tarihi ? `<span>🕐 son: ${tarihF(f.son_sozlesme_tarihi)}</span>` : ''}
           </div>
         </div>
         <div class="fa-fk-sec">Analiz →</div>
       </div>`;
+    };
     // DT kazananı: yukleniciler'de id'si varsa normal detay (ihale+DT); yoksa ad ile DT-only detay
     const dtKart = d => `
       <div class="fa-fk" ${d.id ? `data-yid="${esc(d.id)}"` : `data-firma-dt="${esc(d.ad)}"`}>
@@ -1066,6 +1081,7 @@
     $('pivot-kaplayici').innerHTML = ''; $('ai-kaplayici').innerHTML = ''; $('risk-serit').style.display = 'none';
     goster('detay');
     $('firma-ad').textContent = ad;
+    aiYorumKartiGoster();  // DT-only firmada da AI Rakip Analizi + İletişim butonlarını bu firmaya bağla (yoksa tıklama ölü kalıyordu)
     $('firma-meta').innerHTML = '<span style="color:#A96A00;font-weight:700;">⚡ Yalnızca doğrudan temin kazanımı — bu firmanın EKAP ihale (4734) kazanımı yok.</span>';
     ['kpi-katilan','kpi-kazanilan'].forEach(i => { const e=$(i); if(e) e.textContent='0'; });
     ['kpi-il','kpi-sektor'].forEach(i => { const e=$(i); if(e) e.textContent='—'; });
