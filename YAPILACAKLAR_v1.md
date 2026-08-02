@@ -538,6 +538,10 @@ kapsam/is_turu/kalemler/konu_kelimeler/ölçek/maliyet_ipucu). `/ai/teklif-strat
 besliyor; guard gevşetildi → tenzilat/maliyet YOKken bile kapsam-temelli band çıkar (kullanıcının asıl
 derdi). Kıyas: DeepSeek = Gemini-3.1-flash-lite kalite eşit + 1,5-2× hızlı → DeepSeek. API restart'landı,
 uçtan uca doğrulandı. → `backend/teklif_ai.py`, `backend/api.py`. Bkz. [[ai-teklif-strateji-deepseek]].
+**✅ FAZ 1.5 (konuya-özgü tenzilat):** `konu_tenzilat(kelime)` RPC (`migration_konu_tenzilat.sql`) —
+sartname konu kelimesiyle sonuçlanmış benzer ihalelerin GERÇEK tenzilatı (il/genel'den isabetli;
+tenzilat_yuzde precomputed + trgm + ORDER'sız LIMIT bound). /ai/teklif-strateji jenerik-eleyip
+`kirilimlar['konu']` besliyor, prompt önceliği konu>il>genel. Doğrulandı (TÜRASAŞ→%10,77). CANLI.
 **FAZ 2 (ertelendi):** tam teknik şartname indirme (Playwright/headless + CAPTCHA, 406 aşımı) → 47-kalem
 gibi detay birim fiyat cetveli. Faz 1 yetersiz kalırsa.
 --- ESKİ PLAN (referans): ---
