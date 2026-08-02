@@ -7,6 +7,13 @@ Durum: ✅ bitti · ⏳ sıradaki · 📋 planlandı
 
 ---
 
+## AI YORUM MODÜLÜ (premium) 🟡 KURUM ✅, firma/ihale sırada
+Grounded+cache'li değerlendirme (3 varlık). Motor `backend/ai_yorum.py`, cache `ai_yorumlari` (service_role,
+veri-hash → tutarlılık). **✅ KURUM (1 Ağu CANLI):** kurum_ozet+tekrar-kazananlar(analiz_pivot firma)→DeepSeek;
+`/ai/kurum-yorum` (1 kredi); v1-kurum-analiz "🧠 AI Kurum Yorumu" butonu (window.kurumYorumAl). Yaş<7g hızlı
+cache (0,1s). **KALAN:** 🏢 firma (firma_ai_yorum VAR→ai_yorum motoruna taşı+DT/segment zenginleştir), 📋 ihale
+(UV-1 teklif-strateji/sartname zaten yorumluyor; ayrı istenirse). Bkz. [[ai-yorum-modulu]].
+
 ## MADDE 1 — Harita renk skalası (geçici düzeltme) ✅
 Hiç ihalesi olmayan iller bembeyaz görünüp arka planla karışıyordu.
 `renk()`'te "ihale yok" `#EDF1F6`→`#C4DAF0`, alt basamaklar bir kademe koyulaştı.
