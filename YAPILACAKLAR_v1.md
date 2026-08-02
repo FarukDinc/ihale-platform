@@ -268,7 +268,10 @@ yıl+il→canlı. **VDS'te supabase_admin ile uygulanacak; gece refresh cron'a.*
 IS DISTINCT guard) → **1.103.448 satır bağlandı (%54,5)**, 61.544 firma; kalan %45,5 = yalnız DT
 kazanmış (yukleniciler'de yok) → NULL DOĞRU. normalize_ad BENZERSIZ (220.181) → belirsizlik yok.
 Gece tazeleme run_scraper.sh'a eklendi (yuklenici_yenile'den sonra). `backend/migration_dt_yuklenici_baglama.sql`.
-KALAN (ayrı, opsiyonel): il bazında DT firma sıralaması (harita paneli).
+**✅ İL BAZLI DT FİRMA SIRALAMASI (1 Ağu):** haritada il tıklanınca "öne çıkan firmalar" paneline
+📋 İhale / ⚡ DT toggle eklendi → DT modu `il_sektor_firmalar_dt` çağırır (İhale ile aynı kolonlar,
+aynı render; iki evren ayrı). DT modunda yıl seçici gizlenir. Canlı doğrulandı (toggle/mod/kilit/0 hata);
+üye-özel (uyeMi guard). → `v1-harita.html`. MADDE 16 part-2 TAMAMEN kapandı.
 **KEŞİF (canlı):** Kazanan verisi `dogrudan_temin_ilanlari`'nda DEĞİL → ayrı tablo
 `dogrudan_temin_sonuclari` (**853.170 satır**): kazanan_firma, kazanan_bedel, dt_no,
 sozlesme_tarihi, yuklenici_id (boş, bilerek). İl/kategori dogrudan_temin_ilanlari'nda (dt_no join).
