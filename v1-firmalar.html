@@ -401,7 +401,27 @@
         if(benim!==istekNo) return;
       }
       if(error) throw error;
-      if(!data||!data.length){ tb.innerHTML=`<tr><td colspan="${KS}" class="v1-bos">Sonuç bulunamadı.</td></tr>`; bosalt(); return; }
+      if(!data||!data.length){
+        // #2: yukleniciler YALNIZ ihale (4734) kazananı. Arama boşsa DT kazananlarında da ara —
+        // yalnız doğrudan temin kazanan firma (ör. BELİZ GRUP) burada "bulunamadı" dönmesin.
+        if(q){
+          try{
+            const {data:dtd}=await sb.rpc('firma_dizin_dt',{p_ara:q,p_limit:50,p_offset:0,p_sort:'bedel',p_kamu_dahil:true});
+            if(benim!==istekNo) return;
+            if(dtd&&dtd.length){
+              const satir=d=>`<div style="padding:9px 2px;border-bottom:1px solid var(--v1-cizgi);display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+                <a href="v1-firma-analiz?firma=${encodeURIComponent(d.ad||'')}" style="font-weight:700;color:var(--v1-mavi);text-decoration:none;">${esc(d.ad)} <span style="background:#FFF3E0;color:#A96A00;font-size:11px;font-weight:700;padding:1px 6px;border-radius:6px;">⚡ DT</span></a>
+                <span style="color:var(--v1-muted);font-size:12.5px;white-space:nowrap;">⚡ ${num(d.toplam_sozlesme_sayisi)} DT${d.il?' · 📍 '+esc(d.il):''} · ₺${num(d.dt_bedel)}</span></div>`;
+              tb.innerHTML=`<tr><td colspan="${KS}" style="padding:16px 8px;">
+                <div style="font-weight:800;color:var(--v1-lacivert);margin-bottom:10px;">“${esc(q)}” ihale (4734) kazananlarında yok — ⚡ <b>doğrudan temin</b> kazananları:</div>
+                ${dtd.map(satir).join('')}
+                <div style="font-size:11.5px;color:var(--v1-muted);margin-top:10px;">Firmaya tıklayın — doğrudan temin analizi açılır.</div></td></tr>`;
+              bosalt(); return;
+            }
+          }catch(_){ /* RPC yoksa/kilitliyse normal "bulunamadı"ya düş */ }
+        }
+        tb.innerHTML=`<tr><td colspan="${KS}" class="v1-bos">Sonuç bulunamadı.</td></tr>`; bosalt(); return;
+      }
 
       // 26-29: ilAdet = ilin TOPLAM firma sayısı (segment/aramadan bağımsız). Bir segment ya da
       //        arama daraltması varken "N firma kayıtlı" YANILTICI → yalnız filtresizken göster.

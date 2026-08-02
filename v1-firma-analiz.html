@@ -992,22 +992,41 @@
       return;
     }
     const liste = data || [];
-    if (!liste.length){
+    // #2: DT-only kazananları da bul. yukleniciler YALNIZ ihale (4734) kazananı içerir →
+    // yalnız doğrudan temin kazanan firma (ör. BELİZ GRUP) eskiden "bulunamadı" dönüyordu.
+    // firma_dizin_dt DT kazananlarını verir; id=NULL ise DT-only (detay ad ile açılır).
+    let dtEkstra = [];
+    try {
+      const { data: dtd } = await sb.rpc('firma_dizin_dt',
+        { p_ara: term, p_limit: 100, p_offset: 0, p_sort: 'bedel', p_kamu_dahil: true });
+      const ihaleIds = new Set(liste.map(f => f.id));
+      const ihaleAd  = new Set(liste.map(f => trFold(f.ad || '')));
+      dtEkstra = (dtd || []).filter(d =>
+        !(d.id && ihaleIds.has(d.id)) && !ihaleAd.has(trFold(d.ad || '')));
+    } catch (_) { /* RPC yoksa/kilitliyse yalnız ihale sonuçlarıyla devam */ }
+
+    if (!liste.length && !dtEkstra.length){
       $('liste-ozet').textContent = 'Eşleşen firma bulunamadı.';
       kap.innerHTML = `<div class="fa-bos-kart">
         <div class="fa-bos-ikon">🔍</div>
         <div class="fa-bos-bas">“${esc(term)}” için firma bulunamadı</div>
-        <div class="fa-bos-alt">Yalnızca EKAP sonuç ilanlarında KAZANAN olarak geçen firmalar aranabilir.
-          Geçmiş veri arka planda toplanmaya devam ediyor — daha küçük bir firma adı parçası deneyin.</div>
+        <div class="fa-bos-alt">EKAP ihale (4734) veya doğrudan temin kazananları arasında eşleşme yok.
+          Daha küçük bir firma adı parçası deneyin — geçmiş veri arka planda toplanmaya devam ediyor.</div>
       </div>`;
       return;
     }
-    // Tek eşleşme → doğrudan detaya atla
-    if (liste.length === 1){ firmaDetayYukle(liste[0].id, true); return; }
+    // Tek eşleşme → doğrudan detaya atla (DT-only ise ad ile)
+    if (liste.length === 1 && !dtEkstra.length){ firmaDetayYukle(liste[0].id, true); return; }
+    if (!liste.length && dtEkstra.length === 1){
+      const d0 = dtEkstra[0];
+      if (d0.id) firmaDetayYukle(d0.id, true); else firmaDtOnlyAc(d0.ad, true);
+      return;
+    }
 
+    const topN = liste.length + dtEkstra.length;
     $('liste-ozet').textContent =
-      `${num(liste.length)}${liste.length===100 ? '+' : ''} firma bulundu · cirosu en yüksekten sıralı · ciro yalnız ihale kazanımlarından (doğrudan temin hariç)`;
-    kap.innerHTML = liste.map(f => `
+      `${num(topN)}${topN>=200 ? '+' : ''} firma bulundu · ihale + doğrudan temin kazananları`;
+    const ihaleKart = f => `
       <div class="fa-fk" data-yid="${esc(f.id)}">
         <div>
           <div class="fa-fk-ad">${esc(f.ad || '—')}</div>
@@ -1019,7 +1038,51 @@
           </div>
         </div>
         <div class="fa-fk-sec">Analiz →</div>
-      </div>`).join('');
+      </div>`;
+    // DT kazananı: yukleniciler'de id'si varsa normal detay (ihale+DT); yoksa ad ile DT-only detay
+    const dtKart = d => `
+      <div class="fa-fk" ${d.id ? `data-yid="${esc(d.id)}"` : `data-firma-dt="${esc(d.ad)}"`}>
+        <div>
+          <div class="fa-fk-ad">${esc(d.ad || '—')} <span class="fa-badge" style="background:#FFF3E0;color:#A96A00;">⚡ DT kazananı</span></div>
+          <div class="fa-fk-stat">
+            <span>⚡ <b>${num(d.toplam_sozlesme_sayisi)}</b> doğrudan temin</span>
+            <span>💰 <b>${paraTam(d.dt_bedel)}</b></span>
+            ${d.il ? `<span>📍 ${esc(d.il)}</span>` : ''}
+          </div>
+        </div>
+        <div class="fa-fk-sec">Analiz →</div>
+      </div>`;
+    kap.innerHTML = liste.map(ihaleKart).join('') + dtEkstra.map(dtKart).join('');
+  }
+
+  /* ══════════════ DT-ONLY FİRMA DETAYI (yalnız doğrudan temin kazanmış — yukleniciler'de yok) ══════════════ */
+  async function firmaDtOnlyAc(ad, pushUrl){
+    ad = (ad || '').trim();
+    if (!ad) return;
+    if (!uyeMi){ goster('detay'); girisKapisi($('fa-detay-govde'), 'Firma analizi üyelere özeldir'); return; }
+    AKTIF_YID = null; FIRMA = ad;
+    RESMI_SOZLESME = null; ORNEKLEM_KESIK = false; _pivotYuklendi = false;
+    $('pivot-kaplayici').innerHTML = ''; $('ai-kaplayici').innerHTML = ''; $('risk-serit').style.display = 'none';
+    goster('detay');
+    $('firma-ad').textContent = ad;
+    $('firma-meta').innerHTML = '<span style="color:#A96A00;font-weight:700;">⚡ Yalnızca doğrudan temin kazanımı — bu firmanın EKAP ihale (4734) kazanımı yok.</span>';
+    ['kpi-katilan','kpi-kazanilan'].forEach(i => { const e=$(i); if(e) e.textContent='0'; });
+    ['kpi-il','kpi-sektor'].forEach(i => { const e=$(i); if(e) e.textContent='—'; });
+    const sk = $('sonuclar-kaplayici');
+    if (sk) sk.innerHTML = `<div class="fa-bos-kart"><div class="fa-bos-ikon">📋</div>
+      <div class="fa-bos-bas">İhale (4734) kazanımı yok</div>
+      <div class="fa-bos-alt">Bu firma yalnızca <b>doğrudan temin</b> kazanmış. Yukarıdaki
+        <b>Doğrudan Teminler Genel Bakış</b> ve <b>Katıldığı Doğrudan Teminler</b> sekmelerinden inceleyebilirsiniz.</div></div>`;
+    if (pushUrl){
+      const url = new URL(window.location);
+      url.searchParams.set('firma', ad);
+      ['yid','id','ara'].forEach(k => url.searchParams.delete(k));
+      window.history.pushState({}, '', url);
+    }
+    sonAramaKaydet(ad);
+    await dtBlokYukle(ad);                                   // DT Genel Bakış panelini doldur
+    const dtTab = document.querySelector('.fa-tab[data-sekme="dtgenel"]');
+    if (dtTab) dtTab.click();                                // DT sekmesini aktif et (ihale boş)
   }
 
   /* ══════════════ FİRMA DETAYI ══════════════ */
@@ -2188,6 +2251,8 @@
     if (tr) firmaDetayYukle(tr.dataset.yid, true);
   });
   $('fa-arama-kaplayici').addEventListener('click', e => {
+    const dt = e.target.closest('[data-firma-dt]');   // #2: DT-only firma → ad ile detay
+    if (dt){ firmaDtOnlyAc(dt.dataset.firmaDt, true); return; }
     const k = e.target.closest('[data-yid]');
     if (k) firmaDetayYukle(k.dataset.yid, true);
   });
