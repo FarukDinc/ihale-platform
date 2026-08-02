@@ -1,0 +1,180 @@
+#!/usr/bin/env python3
+"""
+idare_ad_temizle.py — 26-7 / UV-4: İdare adı temizliği (Gemini destekli)
+
+SORUN: idare adları EKAP KAYNAĞINDA bozuk gelir —
+  (a) büyük/küçük harf + boşluk varyantı: "AFYONKARAHİSAR İl Özel İdaresi" ↔ "... İL ÖZEL İDARESİ"
+  (b) kelime-ortası wrap boşluğu: "ALTINPAR K"→ALTINPARK, "HİZMET LERİ"→HİZMETLERİ, "BET ON"→BETON
+  (c) kısaltma varyantı: "İŞL.LTD.ŞTİ." ↔ "İŞLETMELERİ LİMİTED ŞİRKETİ"
+İdare = kurum-analiz/DETSİS/takip JOIN anahtarı → kör düzeltme TEHLİKELİ. Bu yüzden:
+  1) HEURİSTİK aday seç (dupe-grup + wrap imzası),
+  2) GEMİNİ ile her adayın DÜZELTİLMİŞ kanonik formunu al (meşru "E Tipi"/"1 Nolu"/A.Ş. korunur),
+  3) DRY-RUN CSV yaz (logs/idare_remap_oneri.csv) → İNSAN İNCELER,
+  4) --apply ile remap (ilanlar + dogrudan_temin_ilanlari + takip_idareler) + MV refresh notu.
+
+Kullanım (VDS'te):
+  python idare_ad_temizle.py --dry-run            # aday + Gemini önerisi -> CSV (yazma YOK)
+  python idare_ad_temizle.py --dry-run --limit 60 # hızlı örnek
+  python idare_ad_temizle.py --apply --min-guven 0.85   # CSV'deki degisti+yüksek güven olanları uygula
+
+Env (backend/.env): SUPABASE_URL, SUPABASE_SERVICE_KEY, GEMINI_API_KEY, (ops.) GEMINI_MODEL
+"""
+import os, re, sys, csv, json, argparse, time
+import httpx
+from dotenv import load_dotenv
+
+load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), ".env"))
+SB_URL = os.environ.get("SUPABASE_URL", "").rstrip("/")
+SB_KEY = os.environ.get("SUPABASE_SERVICE_KEY", "")
+CSV_YOL = os.path.join(os.path.dirname(__file__), "..", "logs", "idare_remap_oneri.csv")
+
+# Gemini — proje ortak kapısı (lite model ucuz; env ile ayarlanabilir)
+sys.path.insert(0, os.path.dirname(__file__))
+from gemini_ortak import istemci_al, yanit_metni, gemini_hata_logla, anahtar_var  # noqa: E402
+
+def _h():
+    return {"apikey": SB_KEY, "Authorization": f"Bearer {SB_KEY}", "Content-Type": "application/json"}
+
+def tr_fold(s: str) -> str:
+    return (s or "").replace("İ", "i").replace("I", "i").replace("ı", "i") \
+        .replace("Ş", "s").replace("ş", "s").replace("Ğ", "g").replace("ğ", "g") \
+        .replace("Ü", "u").replace("ü", "u").replace("Ö", "o").replace("ö", "o") \
+        .replace("Ç", "c").replace("ç", "c").lower()
+
+# Meşru "tek/kısa token"lar — bunlar bozukluk DEĞİL (cezaevi tipi, okul no vb.)
+_MESRU_KISA = re.compile(r"\b([A-DF-HL-NP-UYZa-z]?\s*(Tipi|Nolu|Blok|Grup|Kısım|Sınıf|No))\b", re.IGNORECASE)
+# Wrap imzası: kelime-ortasına düşmüş lone kısa parça (tek büyük harf ya da 2-3 harf), meşru değilse
+_WRAP = re.compile(r"[a-zçğıöşü]\s+[A-ZÇĞİÖŞÜ](\s|$)|[A-ZÇĞİÖŞÜ]{2,3}\s+[A-ZÇĞİÖŞÜ]{2,}")
+
+def idareleri_getir() -> list[tuple[str, int]]:
+    """idare_dizin_json() RPC — tüm idare + toplam ihale (tek istek)."""
+    with httpx.Client(timeout=60) as c:
+        r = c.post(f"{SB_URL}/rest/v1/rpc/idare_dizin_json", headers=_h(), json={})
+        r.raise_for_status()
+        return [(row[0], int(row[1] or 0)) for row in (r.json() or []) if row and row[0]]
+
+def adaylari_bul(idareler):
+    """(a) dupe-grup üyeleri + (b) wrap imzalı tekiller → aday set."""
+    grup = {}
+    for ad, adet in idareler:
+        grup.setdefault(tr_fold(ad).replace(" ", ""), []).append((ad, adet))
+    adaylar = {}
+    # (a) folded-no-space grubunda >1 varyant → hepsi aday (aynı kurum, farklı yazım)
+    for k, uyeler in grup.items():
+        if len(uyeler) > 1:
+            for ad, adet in uyeler:
+                adaylar[ad] = adet
+    # (b) wrap imzalı tekiller (meşru "E Tipi/1 Nolu" hariç)
+    for ad, adet in idareler:
+        if ad in adaylar:
+            continue
+        temiz = _MESRU_KISA.sub(" ", ad)
+        if _WRAP.search(temiz):
+            adaylar[ad] = adet
+    return adaylar
+
+GEMINI_TALIMAT = (
+    "Aşağıda Türkiye kamu idaresi / kurum / şirket adları var. Bazıları EKAP kaynağında BOZUK: "
+    "kelime ortasına boşluk girmiş (ör. 'ALTINPAR K'→'ALTINPARK', 'HİZMET LERİ'→'HİZMETLERİ', "
+    "'BET ON'→'BETON') ya da AYNI kurum farklı büyük/küçük harf/boşlukla yazılmış. "
+    "Her ad için DÜZELTİLMİŞ kanonik Türkçe formu ver. KURALLAR: "
+    "1) Meşru kısaltma/tipleri KORU: 'E Tipi', 'L Tipi', '1 Nolu', 'A.Ş.', 'LTD.ŞTİ.', 'MÜD.'. "
+    "2) Sadece bariz kelime-ortası boşluğunu birleştir; emin değilsen DEĞİŞTİRME (degisti=false). "
+    "3) Anlamı/kelimeleri EKLEME-ÇIKARMA, yalnız yazımı düzelt. "
+    "4) Büyük/küçük harfi Türkçe kurumsal yazıma göre normalize edebilirsin ama İ/ı'ya dikkat et. "
+    "SADECE şu JSON'u döndür: "
+    '{"sonuc":[{"orijinal":"...","duzeltilmis":"...","degisti":true,"guven":0.0}]} '
+    "guven 0-1 arası; degisti=false ise duzeltilmis=orijinal, guven=1."
+)
+
+def gemini_duzelt(model, adlar):
+    istemci = istemci_al()
+    icerik = GEMINI_TALIMAT + "\n\nADLAR:\n" + "\n".join(f"- {a}" for a in adlar)
+    resp = istemci.models.generate_content(model=model, contents=icerik)
+    metin, neden = yanit_metni(resp)
+    if not metin:
+        gemini_hata_logla("idare_ad_temizle", neden or "boş yanıt")
+        return []
+    m = re.search(r"\{.*\}", metin, re.DOTALL)
+    if not m:
+        return []
+    try:
+        return json.loads(m.group(0)).get("sonuc", [])
+    except Exception as e:
+        gemini_hata_logla("idare_ad_temizle/json", e)
+        return []
+
+def dry_run(model, limit):
+    idareler = idareleri_getir()
+    print(f"Toplam idare: {len(idareler)}")
+    adaylar = adaylari_bul(idareler)
+    print(f"Aday (bozuk olabilir): {len(adaylar)}")
+    ad_listesi = sorted(adaylar, key=lambda a: -adaylar[a])
+    if limit:
+        ad_listesi = ad_listesi[:limit]
+    satirlar, i = [], 0
+    while i < len(ad_listesi):
+        obek = ad_listesi[i:i + 40]
+        for s in gemini_duzelt(model, obek):
+            orj = (s.get("orijinal") or "").strip()
+            duz = (s.get("duzeltilmis") or "").strip()
+            if orj and s.get("degisti") and duz and duz != orj:
+                satirlar.append({"orijinal": orj, "duzeltilmis": duz,
+                                 "guven": s.get("guven", 0), "ihale": adaylar.get(orj, 0)})
+        i += 40
+        print(f"  {min(i,len(ad_listesi))}/{len(ad_listesi)} işlendi…", flush=True)
+        time.sleep(0.4)   # kota dostu
+    satirlar.sort(key=lambda r: -r["ihale"])
+    os.makedirs(os.path.dirname(CSV_YOL), exist_ok=True)
+    with open(CSV_YOL, "w", newline="", encoding="utf-8") as f:
+        w = csv.DictWriter(f, fieldnames=["orijinal", "duzeltilmis", "guven", "ihale"])
+        w.writeheader(); w.writerows(satirlar)
+    print(f"\n✓ {len(satirlar)} düzeltme önerisi → {CSV_YOL}")
+    print("İlk 20 (ihale sayısına göre):")
+    for r in satirlar[:20]:
+        print(f"  [{r['ihale']:>5}] g={r['guven']}  {r['orijinal']}  →  {r['duzeltilmis']}")
+
+def apply(min_guven):
+    if not os.path.exists(CSV_YOL):
+        print(f"✗ Önce --dry-run çalıştır (öneri dosyası yok: {CSV_YOL})"); return
+    with open(CSV_YOL, encoding="utf-8") as f:
+        rows = [r for r in csv.DictReader(f) if float(r.get("guven") or 0) >= min_guven]
+    print(f"Uygulanacak remap (güven≥{min_guven}): {len(rows)}")
+    n = 0
+    with httpx.Client(timeout=60) as c:
+        for r in rows:
+            orj, duz = r["orijinal"], r["duzeltilmis"]
+            for tablo, kolon in (("ilanlar", "idare"), ("dogrudan_temin_ilanlari", "idare"),
+                                 ("takip_idareler", "idare_ad")):
+                try:
+                    resp = c.patch(f"{SB_URL}/rest/v1/{tablo}", headers={**_h(), "Prefer": "return=minimal"},
+                                   params={kolon: f"eq.{orj}"}, json={kolon: duz})
+                    if resp.status_code >= 400:
+                        print(f"  ✗ {tablo} '{orj[:30]}…': {resp.status_code} {resp.text[:120]}", file=sys.stderr)
+                except Exception as e:
+                    print(f"  ✗ {tablo} '{orj[:30]}…': {e}", file=sys.stderr)
+            n += 1
+            if n % 25 == 0:
+                print(f"  {n}/{len(rows)}…", flush=True)
+    print(f"\n✓ {n} idare remap edildi.")
+    print("⚠ ŞİMDİ MV TAZELE (idare sayıları güncellensin):")
+    print("  docker exec -i supabase-db psql -U supabase_admin -d postgres -c \\")
+    print("    \"REFRESH MATERIALIZED VIEW CONCURRENTLY public.idare_ozet_mv; REFRESH MATERIALIZED VIEW CONCURRENTLY public.dt_idare_ozet_mv;\"")
+
+if __name__ == "__main__":
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--dry-run", action="store_true")
+    ap.add_argument("--apply", action="store_true")
+    ap.add_argument("--limit", type=int, default=0)
+    ap.add_argument("--min-guven", type=float, default=0.85)
+    ap.add_argument("--model", default=os.environ.get("GEMINI_MODEL", "gemini-2.5-flash-lite"))
+    a = ap.parse_args()
+    if not SB_URL or not SB_KEY:
+        print("✗ SUPABASE_URL / SUPABASE_SERVICE_KEY eksik (.env)"); sys.exit(1)
+    if a.apply:
+        apply(a.min_guven)
+    else:
+        if not anahtar_var():
+            print("✗ GEMINI_API_KEY eksik (.env)"); sys.exit(1)
+        print(f"Model: {a.model}")
+        dry_run(a.model, a.limit)
