@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-idare_ad_temizle.py — 26-7 / UV-4: İdare adı temizliği (Gemini destekli)
+idare_ad_temizle.py — 26-7 / UV-4: İdare adı temizliği (AI destekli — DeepSeek birincil, Gemini yedek)
 
 SORUN: idare adları EKAP KAYNAĞINDA bozuk gelir —
   (a) büyük/küçük harf + boşluk varyantı: "AFYONKARAHİSAR İl Özel İdaresi" ↔ "... İL ÖZEL İDARESİ"
@@ -8,16 +8,18 @@ SORUN: idare adları EKAP KAYNAĞINDA bozuk gelir —
   (c) kısaltma varyantı: "İŞL.LTD.ŞTİ." ↔ "İŞLETMELERİ LİMİTED ŞİRKETİ"
 İdare = kurum-analiz/DETSİS/takip JOIN anahtarı → kör düzeltme TEHLİKELİ. Bu yüzden:
   1) HEURİSTİK aday seç (dupe-grup + wrap imzası),
-  2) GEMİNİ ile her adayın DÜZELTİLMİŞ kanonik formunu al (meşru "E Tipi"/"1 Nolu"/A.Ş. korunur),
+  2) AI ile (ai_ortak: DeepSeek birincil, Gemini yedek) her adayın DÜZELTİLMİŞ kanonik
+     formunu al (meşru "E Tipi"/"1 Nolu"/A.Ş. korunur),
   3) DRY-RUN CSV yaz (logs/idare_remap_oneri.csv) → İNSAN İNCELER,
   4) --apply ile remap (ilanlar + dogrudan_temin_ilanlari + takip_idareler) + MV refresh notu.
 
 Kullanım (VDS'te):
-  python idare_ad_temizle.py --dry-run            # aday + Gemini önerisi -> CSV (yazma YOK)
+  python idare_ad_temizle.py --dry-run            # aday + AI önerisi -> CSV (yazma YOK)
   python idare_ad_temizle.py --dry-run --limit 60 # hızlı örnek
-  python idare_ad_temizle.py --apply --min-guven 0.85   # CSV'deki degisti+yüksek güven olanları uygula
+  python idare_ad_temizle.py --apply --min-guven 0.85   # CSV'deki yüksek güvenli düzeltmeleri uygula
 
-Env (backend/.env): SUPABASE_URL, SUPABASE_SERVICE_KEY, GEMINI_API_KEY, (ops.) GEMINI_MODEL
+Env (backend/.env): SUPABASE_URL, SUPABASE_SERVICE_KEY, AI_SAGLAYICI, DEEPSEEK_API_KEY,
+  (ops.) DEEPSEEK_MODEL / GEMINI_API_KEY
 """
 import os, re, sys, csv, json, argparse, time
 import httpx
@@ -28,9 +30,11 @@ SB_URL = os.environ.get("SUPABASE_URL", "").rstrip("/")
 SB_KEY = os.environ.get("SUPABASE_SERVICE_KEY", "")
 CSV_YOL = os.path.join(os.path.dirname(__file__), "..", "logs", "idare_remap_oneri.csv")
 
-# Gemini — proje ortak kapısı (lite model ucuz; env ile ayarlanabilir)
+# AI — proje ortak kapısı (sağlayıcı-bağımsız): DeepSeek BİRİNCİL, Gemini YEDEK.
+# NOT: Gemini servis hesabı 29 Tem'de öldü (401 "service account is deleted or disabled");
+# metin işleri DeepSeek'te. ai_ortak birincil ölürse otomatik yedeğe düşer.
 sys.path.insert(0, os.path.dirname(__file__))
-from gemini_ortak import istemci_al, yanit_metni, gemini_hata_logla, anahtar_var  # noqa: E402
+from ai_ortak import ai_cagir, ai_durum  # noqa: E402
 
 def _h():
     return {"apikey": SB_KEY, "Authorization": f"Bearer {SB_KEY}", "Content-Type": "application/json"}
@@ -73,38 +77,42 @@ def adaylari_bul(idareler):
             adaylar[ad] = adet
     return adaylar
 
-GEMINI_TALIMAT = (
+AI_SISTEM = (
+    "Sen Türkiye kamu idaresi / kurum / şirket adlarını normalize eden bir uzmansın. "
+    "Yanıtını YALNIZ geçerli bir JSON nesnesi olarak verirsin, başka hiçbir metin yazmazsın."
+)
+AI_TALIMAT = (
     "Aşağıda Türkiye kamu idaresi / kurum / şirket adları var. Bazıları EKAP kaynağında BOZUK: "
     "kelime ortasına boşluk girmiş (ör. 'ALTINPAR K'→'ALTINPARK', 'HİZMET LERİ'→'HİZMETLERİ', "
     "'BET ON'→'BETON') ya da AYNI kurum farklı büyük/küçük harf/boşlukla yazılmış. "
-    "Her ad için DÜZELTİLMİŞ kanonik Türkçe formu ver. KURALLAR: "
+    "KURALLAR: "
     "1) Meşru kısaltma/tipleri KORU: 'E Tipi', 'L Tipi', '1 Nolu', 'A.Ş.', 'LTD.ŞTİ.', 'MÜD.'. "
-    "2) Sadece bariz kelime-ortası boşluğunu birleştir; emin değilsen DEĞİŞTİRME (degisti=false). "
+    "2) Sadece bariz kelime-ortası boşluğunu birleştir; emin değilsen DEĞİŞTİRME. "
     "3) Anlamı/kelimeleri EKLEME-ÇIKARMA, yalnız yazımı düzelt. "
     "4) Büyük/küçük harfi Türkçe kurumsal yazıma göre normalize edebilirsin ama İ/ı'ya dikkat et. "
-    "SADECE şu JSON'u döndür: "
-    '{"sonuc":[{"orijinal":"...","duzeltilmis":"...","degisti":true,"guven":0.0}]} '
-    "guven 0-1 arası; degisti=false ise duzeltilmis=orijinal, guven=1."
+    "YALNIZCA DÜZELTTİĞİN adları döndür — değiştirmediklerini LİSTELEME. "
+    "Çıktı formatı (json): "
+    '{"sonuc":[{"orijinal":"...","duzeltilmis":"...","guven":0.0}]}  '
+    'guven 0-1 arası güven puanıdır. Hiçbir düzeltme yoksa {"sonuc":[]} döndür.'
 )
 
-def gemini_duzelt(model, adlar):
-    istemci = istemci_al()
-    icerik = GEMINI_TALIMAT + "\n\nADLAR:\n" + "\n".join(f"- {a}" for a in adlar)
-    resp = istemci.models.generate_content(model=model, contents=icerik)
-    metin, neden = yanit_metni(resp)
-    if not metin:
-        gemini_hata_logla("idare_ad_temizle", neden or "boş yanıt")
+def ai_duzelt(adlar, model=None):
+    """ai_ortak üzerinden (DeepSeek birincil, Gemini yedek) düzeltme önerisi al."""
+    kullanici = AI_TALIMAT + "\n\nADLAR:\n" + "\n".join(f"- {a}" for a in adlar)
+    s = ai_cagir(AI_SISTEM, kullanici, max_tokens=4000, json_mod=True,
+                 temperature=0.1, model=model, deneme=3, nerede="idare_ad_temizle")
+    if not s["basari"] or not s["metin"]:
         return []
-    m = re.search(r"\{.*\}", metin, re.DOTALL)
+    m = re.search(r"\{.*\}", s["metin"], re.DOTALL)
     if not m:
         return []
     try:
         return json.loads(m.group(0)).get("sonuc", [])
     except Exception as e:
-        gemini_hata_logla("idare_ad_temizle/json", e)
+        print(f"  ✗ JSON ayrıştırılamadı ({s.get('saglayici')}): {e}", file=sys.stderr, flush=True)
         return []
 
-def dry_run(model, limit):
+def dry_run(limit, model=None):
     idareler = idareleri_getir()
     print(f"Toplam idare: {len(idareler)}")
     adaylar = adaylari_bul(idareler)
@@ -115,10 +123,10 @@ def dry_run(model, limit):
     satirlar, i = [], 0
     while i < len(ad_listesi):
         obek = ad_listesi[i:i + 40]
-        for s in gemini_duzelt(model, obek):
+        for s in ai_duzelt(obek, model):
             orj = (s.get("orijinal") or "").strip()
             duz = (s.get("duzeltilmis") or "").strip()
-            if orj and s.get("degisti") and duz and duz != orj:
+            if orj and duz and duz != orj:
                 satirlar.append({"orijinal": orj, "duzeltilmis": duz,
                                  "guven": s.get("guven", 0), "ihale": adaylar.get(orj, 0)})
         i += 40
@@ -167,14 +175,17 @@ if __name__ == "__main__":
     ap.add_argument("--apply", action="store_true")
     ap.add_argument("--limit", type=int, default=0)
     ap.add_argument("--min-guven", type=float, default=0.85)
-    ap.add_argument("--model", default=os.environ.get("GEMINI_MODEL", "gemini-2.5-flash-lite"))
+    ap.add_argument("--model", default=None, help="sağlayıcı öntanım modelini ez (normalde boş: env/DeepSeek)")
     a = ap.parse_args()
     if not SB_URL or not SB_KEY:
         print("✗ SUPABASE_URL / SUPABASE_SERVICE_KEY eksik (.env)"); sys.exit(1)
     if a.apply:
         apply(a.min_guven)
     else:
-        if not anahtar_var():
-            print("✗ GEMINI_API_KEY eksik (.env)"); sys.exit(1)
-        print(f"Model: {a.model}")
-        dry_run(a.model, a.limit)
+        d = ai_durum()
+        if not (d["deepseek_anahtar"] or d["gemini_anahtar"]):
+            print("✗ AI anahtarı yok (DEEPSEEK_API_KEY / GEMINI_API_KEY .env'de eksik)"); sys.exit(1)
+        print(f"AI: birincil={d['birincil']} yedek={d['yedek']} "
+              f"(deepseek={'var' if d['deepseek_anahtar'] else 'YOK'}, "
+              f"gemini={'var' if d['gemini_anahtar'] else 'YOK'})")
+        dry_run(a.limit, a.model)

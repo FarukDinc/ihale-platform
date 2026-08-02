@@ -204,6 +204,7 @@ docker exec -i supabase-db psql -U postgres -d postgres \
   -c "REFRESH MATERIALIZED VIEW CONCURRENTLY public.dt_analiz_mv;" \
   -c "REFRESH MATERIALIZED VIEW CONCURRENTLY public.il_yil_firma;" \
   -c "REFRESH MATERIALIZED VIEW CONCURRENTLY public.dt_analiz_yil_mv;" \
+  -c "REFRESH MATERIALIZED VIEW CONCURRENTLY public.dt_analiz_il_mv;" \
   -c "REFRESH MATERIALIZED VIEW CONCURRENTLY public.firma_dt_toplam;" >> /opt/ihale-platform/logs/scraper.log 2>&1
 
 # ── Türetilmiş alanlar: etkin_tarih + idare_tur ────────────────────────────────────
