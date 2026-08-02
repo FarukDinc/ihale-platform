@@ -628,6 +628,16 @@ varsa scraper tarih ayrıştırmasını düzelt (muhtemelen timezone/parse). Saa
 DB'de de saat kısmını sıfırlamak/temizlemek düşünülebilir.
 → `backend/ekap_scraper.py`, `backend/ekap_dogrudan_temin_scraper.py` (tarih parse), ilanlar/dogrudan_temin tarih alanları
 
+## UV-6 — Kurumlar + Firmalar yapısını rakip (ihalepro) örnek alarak yeniden tasarla 📋
+**İstek (kullanıcı, 3 Ağu):** Rakip **`app.ihalepro.com/ihalepro/kurumlar`** KURUM AĞACINI çok iyi
+kurmuş → örnek alınacak. Ayrıca rakibin **Firmalar + Kurumlar** sayfa/veri yapısı da incelenip bizim
+tasarım ona göre yenilenecek. Adımlar: (1) rakip ihalepro Kurumlar (kurum ağacı hiyerarşisi) + Firmalar
+akış/ekran yapısını incele (giriş gerekebilir), ekran+veri-modeli notu çıkar; (2) bizim `v1-kurumlar` +
+kurum ağacı + `v1-firma-analiz` dizin + `v1-firmalar`'ı o desene göre yeniden tasarla. **DETSİS hiyerarşisi
+zaten elimizde** ([[ekap-detsis-idare-tur]]: DetsisAgaci 87.528, idareKodList eşleştirme) — ağaç için taban
+bu. UZUN VADE: koda başlamadan ÖNCE rakip-inceleme + tasarım notu. Referans: [[rakip-ihalepro-referans]].
+→ `v1-kurumlar.html`, kurum ağacı (idare_dizin / DETSİS), `v1-firma-analiz.html` (dizin), `v1-firmalar.html`
+
 ---
 
 ### Sıradaki (kullanıcı söyleyecek)
