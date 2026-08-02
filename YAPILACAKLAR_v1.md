@@ -511,7 +511,9 @@ Durum: ✅ bitti · ⏳ sıradaki · 📋 planlandı (FE=frontend/pull · DB=mig
 - [26-17] ⏳ FE — UNGM global ilan sektör "—" (data); "Palestine, State of" TR çeviri.
 - [26-29] ⏳ FE — Firmalar segment sayacı il-toplamını gösteriyor (segmenti yansıtmıyor).
 - [26-30] ⏳ FE — Maliyet filtre çipi ham sayı ("50000000 – …") → ₺ format.
-- [26-31] ⏳ FE — Sayı flash/stale (filtre/sekme değişince bayat toplam) → yüklenirken gizle.
+- [26-31] ✅ FE (3 Ağu) — Sayı flash/stale: filtre/sekme/yıl/sektör değişince KPI+sayaç fetch'ten ÖNCE '…'
+  yapılır (v1-firma-segmentleri deseni). 7 sayfa: dis-ticaret · rekabet · dt-analiz · harita · global · esatinalma · firmalar.
+  Explore taramasıyla haritalandı; doğru-yapılmış referanslar: firma-segmentleri, bank, analiz, uyumluluk.
 - [26-32] ⏳ FE — Kurum Ağacı görünümünde başlık hâlâ "İdare Dizini".
 - [26-33] ⏳ FE — Büyüme kolonu tutarsız (₺0 son-12 → "—" vs "-100%").
 - [26-34] 📋 DB — Kategori misassignment (düzeltme ilanı/irtifak "İnşaat"a) = sınıflandırıcı kalitesi.
