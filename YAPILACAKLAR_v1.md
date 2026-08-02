@@ -531,7 +531,17 @@ Durum: ✅ bitti · ⏳ sıradaki · 📋 planlandı (FE=frontend/pull · DB=mig
 
 # UZUN VADE (ayrı seri — "uzun vade" dendiğinde bu liste çıkarılır)
 
-## UV-1 — AI Teklif/Fiyat Asistanı revizyonu: teknik şartname okuması 📋
+## UV-1 — AI Teklif/Fiyat Asistanı revizyonu: teknik şartname okuması ✅ FAZ 1 CANLI (Faz 2 ertelendi)
+**✅ FAZ 1 (1 Ağu):** Teknik şartname İNDİRME EKAP'ta sertleşti (spike: CAPTCHA çözülüyor ama 3. adım
+406 — Playwright gerekir = Faz 2, ertelendi; bkz. [[ekap-belge-indirme-captcha]]). PIVOT: zaten çekili
+`ilan_metni` (%75,8 aktif kapsam, ~4K char) AI'a okutuldu → `teklif_ai.sartname_oku` (DeepSeek, JSON:
+kapsam/is_turu/kalemler/konu_kelimeler/ölçek/maliyet_ipucu). `/ai/teklif-strateji` bunu çekip stratejiye
+besliyor; guard gevşetildi → tenzilat/maliyet YOKken bile kapsam-temelli band çıkar (kullanıcının asıl
+derdi). Kıyas: DeepSeek = Gemini-3.1-flash-lite kalite eşit + 1,5-2× hızlı → DeepSeek. API restart'landı,
+uçtan uca doğrulandı. → `backend/teklif_ai.py`, `backend/api.py`. Bkz. [[ai-teklif-strateji-deepseek]].
+**FAZ 2 (ertelendi):** tam teknik şartname indirme (Playwright/headless + CAPTCHA, 406 aşımı) → 47-kalem
+gibi detay birim fiyat cetveli. Faz 1 yetersiz kalırsa.
+--- ESKİ PLAN (referans): ---
 **Sorun (canlı örnek):** Asistan şöyle diyor →
 > "İl bazında tenzilat bilginiz bulunmadığı için yalnızca genel ortalamayı (%11,6) referans
 > alabiliriz. Yaklaşık maliyet bilgisi de olmadığından somut bir teklif bandı (₺ alt–₺ üst)
