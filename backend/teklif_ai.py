@@ -192,9 +192,10 @@ _STRATEJI_SISTEM = (
 )
 
 
-def _strateji_prompt(ihale: dict, kirilimlar: dict) -> str:
+def _strateji_prompt(ihale: dict, kirilimlar: dict, sartname_ozet: dict = None) -> str:
     veri = json.dumps(
-        {"acik_ihale": ihale, "benzer_gecmis_tenzilat": kirilimlar},
+        {"acik_ihale": ihale, "benzer_gecmis_tenzilat": kirilimlar,
+         "sartname_ozeti": sartname_ozet},   # UV-1: sartname_oku çıktısı (kapsam/kalem/ölçek) — None olabilir
         ensure_ascii=False, indent=2, default=str,
     )
     return f"""VERİ:
@@ -209,21 +210,29 @@ Bu AÇIK ihale için firmaya bir TEKLİF/FİYAT STRATEJİSİ öner:
 - Rekabet yoğunluğu (ort_katilimci) yüksekse daha agresif, düşükse daha ihtiyatlı olmayı belirt.
 - ÖNEMLİ: ort_tenzilat null ise o kırılımda tenzilat HESAPLANAMIYOR demektir — null'u "düşük tenzilat"
   sanma; tenzilat verisi yoksa onu belirt ya da o kırılımı atla.
+- ŞARTNAME ÖZETİ (sartname_ozeti) VARSA: ihalenin GERÇEK kapsamını, kalemlerini ve ölçeğini
+  (ör. "16 tren setlik", "15 ay teslim") dikkate al. Yaklaşık maliyet boşsa, şartname kapsamından
+  işin büyüklüğü hakkında NİTEL bir yorum yap (kesin ₺ sayı UYDURMA — "kalem sayısı/ölçek şu yönde"
+  gibi). Kapsam, geçmiş benzer ihale seçimini de yönlendirsin.
 Sadece öneri metnini yaz."""
 
 
-def teklif_strateji_uret(ihale: dict, kirilimlar: dict) -> dict:
+def teklif_strateji_uret(ihale: dict, kirilimlar: dict, sartname_ozet: dict = None) -> dict:
     """
     ihale: {baslik, kategori, il, tur, yaklasik_maliyet_min/max, tahmini_bedel}
     kirilimlar: {"kategori": [analiz_pivot satırı], "il": [...]} — ort_tenzilat/ort_bedel/
                 ihale_sayisi/ort_katilimci içerir.
+    sartname_ozet: sartname_oku() çıktısındaki 'veri' (kapsam/is_turu/kalemler/konu_kelimeler/
+                   büyüklük/maliyet_ipucu) — UV-1, opsiyonel; None ise eski davranış.
     Döner: {basari, metin, hata}
     """
     if not ihale:
         return {"basari": False, "metin": None, "hata": "İhale verisi yok"}
-    if not any((kirilimlar or {}).values()):
+    # Guard gevşetildi (UV-1): tenzilat verisi yoksa BİLE şartname özeti varsa kapsam-temelli
+    # strateji üretebiliriz — kullanıcının "veri yok, band veremiyorum" şikayeti tam buradan çıkıyordu.
+    if not any((kirilimlar or {}).values()) and not sartname_ozet:
         return {"basari": False, "metin": None,
-                "hata": "Benzer geçmiş tenzilat verisi bulunamadı."}
-    # max_tokens=700: eski _deepseek varsayılanıyla aynı (istenen çıktı 4-6 cümle).
-    return ai_cagir(_STRATEJI_SISTEM, _strateji_prompt(ihale, kirilimlar),
-                    max_tokens=700, nerede="teklif_strateji_uret")
+                "hata": "Benzer geçmiş tenzilat verisi ve şartname özeti bulunamadı."}
+    # şartname özeti eklenince çıktı biraz uzayabilir → 700→800.
+    return ai_cagir(_STRATEJI_SISTEM, _strateji_prompt(ihale, kirilimlar, sartname_ozet),
+                    max_tokens=800, nerede="teklif_strateji_uret")

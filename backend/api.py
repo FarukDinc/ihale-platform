@@ -31,7 +31,7 @@ from typing import Optional
 from supabase import create_client, Client
 from worker import kullanici_analiz_isle
 from firma_ai_yorum import firma_yorum_uret, AI_YORUM_GECERLILIK_GUN
-from teklif_ai import teklif_taslak_uret, teklif_strateji_uret
+from teklif_ai import teklif_taslak_uret, teklif_strateji_uret, sartname_oku
 from payment import router as payment_router
 from dotenv import load_dotenv
 from datetime import datetime, timedelta, timezone
@@ -555,7 +555,7 @@ def ai_teklif_strateji(
 
     try:
         ilan_sonuc = supabase.table("ilanlar").select(
-            "id, baslik, il, kategori, tur, yaklasik_maliyet_min, yaklasik_maliyet_max, tahmini_bedel"
+            "id, baslik, il, kategori, tur, yaklasik_maliyet_min, yaklasik_maliyet_max, tahmini_bedel, ilan_metni"
         ).eq("id", ihale_id).limit(1).execute()
         ilan = (ilan_sonuc.data or [None])[0]
         if not ilan:
@@ -592,7 +592,18 @@ def ai_teklif_strateji(
         except Exception as e:
             print(f"  ⚠ sonuc_ozet (teklif-strateji) atlandı: {e}")
 
-        sonuc = teklif_strateji_uret(ihale=ilan, kirilimlar=kirilimlar)
+        # UV-1: şartname/ilan metnini AI'a okut → ihaleye ÖZGÜ kapsam/kalem/ölçek. Tenzilat verisi
+        # zayıf/boş olsa bile kapsam-temelli strateji üretilebilir (kullanıcının "band veremiyorum" derdi).
+        sartname_ozet = None
+        try:
+            so = sartname_oku(ilan.get("ilan_metni"),
+                              {"baslik": ilan.get("baslik"), "kategori": ilan.get("kategori")})
+            if so.get("basari"):
+                sartname_ozet = so.get("veri")
+        except Exception as e:
+            print(f"  ⚠ sartname_oku (teklif-strateji) atlandı: {e}")
+
+        sonuc = teklif_strateji_uret(ihale=ilan, kirilimlar=kirilimlar, sartname_ozet=sartname_ozet)
         if not sonuc["basari"]:
             raise HTTPException(status_code=500, detail=sonuc["hata"])
 
