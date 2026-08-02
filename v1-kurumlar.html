@@ -90,11 +90,13 @@
               <th style="width:44px;">#</th>
               <th class="v1-sr" data-k="ad" title="İsme göre sırala">İdare / Kurum<span class="v1-ok" id="v1-ok-ad"></span></th>
               <th class="v1-sr" style="width:110px;" data-k="il" title="İle göre sırala">İl<span class="v1-ok" id="v1-ok-il"></span></th>
-              <th class="v1-sr" style="width:210px;" data-k="toplam" title="Toplam ihaleye göre sırala">Toplam İhale<span class="v1-ok" id="v1-ok-toplam"></span></th>
-              <th class="v1-sr" style="width:100px;" data-k="aktif" title="Aktif ihaleye göre sırala">Aktif<span class="v1-ok" id="v1-ok-aktif"></span></th>
+              <th class="v1-sr" style="width:190px;" data-k="toplam" title="Toplam ihaleye göre sırala">Toplam İhale<span class="v1-ok" id="v1-ok-toplam"></span></th>
+              <th class="v1-sr" style="width:90px;" data-k="aktif" title="Aktif ihaleye göre sırala">Aktif İhale<span class="v1-ok" id="v1-ok-aktif"></span></th>
+              <th class="v1-sr" style="width:110px;" data-k="dt_toplam" title="Toplam doğrudan temine göre sırala">Toplam DT<span class="v1-ok" id="v1-ok-dt_toplam"></span></th>
+              <th class="v1-sr" style="width:90px;" data-k="dt_aktif" title="Aktif doğrudan temine göre sırala">Aktif DT<span class="v1-ok" id="v1-ok-dt_aktif"></span></th>
               <th style="width:120px;"></th>
             </tr></thead>
-            <tbody id="v1-tbody"><tr><td colspan="6" class="v1-bos">Yükleniyor…</td></tr></tbody>
+            <tbody id="v1-tbody"><tr><td colspan="8" class="v1-bos">Yükleniyor…</td></tr></tbody>
           </table>
         </div>
         <div class="v1-sayfalama" id="v1-sayfalama"></div>
@@ -116,11 +118,11 @@
   // İl'i boş/NULL olan kayıtları YUTMA — ayrı "Belirsiz" kovası
   const IL_YOK='__yok__';
   // v1-kurum-analiz.html ile ORTAK önbellek (aynı RPC, aynı ham biçim)
-  const CACHE_KEY='idare_dizin_v1', CACHE_TTL=30*60*1000;
+  const CACHE_KEY='idare_dizin_v2', CACHE_TTL=30*60*1000;   // v2: satıra DT sayıları eklendi (eski 4-el cache geçersiz)
   const trFold=window.trFold||((s)=>(s||'').toLocaleLowerCase('tr'));
   // Türkçe sıralama — 23K satırda localeCompare'i satır başı çağırmak yerine tek collator
   const KRS=new Intl.Collator('tr');
-  const SIRA_ANAHTAR=['ad','il','toplam','aktif'];
+  const SIRA_ANAHTAR=['ad','il','toplam','aktif','dt_toplam','dt_aktif'];
   const YON_VARSAYILAN={ad:'asc', il:'asc', toplam:'desc', aktif:'desc'};
 
   let tumu=[], takipli=new Set(), uyeMi=false, mod='tum', sayfa=1;
@@ -154,7 +156,7 @@
       document.getElementById('v1-misafir').style.display='block';
       document.getElementById('v1-il').style.display='none';
       document.getElementById('v1-sifirla').style.display='none';
-      tb.innerHTML='<tr><td colspan="6" class="v1-bos">🔒 Kurum listesi üyelere özeldir. <a href="login">Giriş yapın →</a></td></tr>';
+      tb.innerHTML='<tr><td colspan="8" class="v1-bos">🔒 Kurum listesi üyelere özeldir. <a href="login">Giriş yapın →</a></td></tr>';
       document.getElementById('v1-sayi').textContent=''; return;
     }
     try{
@@ -173,7 +175,9 @@
         idare:(r&&r[0])||'',
         toplam:Number(r&&r[1])||0,
         aktif:Number(r&&r[2])||0,
-        il:((r&&r[3])||'').trim()
+        il:((r&&r[3])||'').trim(),
+        dt_toplam:Number(r&&r[4])||0,
+        dt_aktif:Number(r&&r[5])||0
       })).filter(r=>r.idare);
       // takip_idareler kolonu `idare_ad` (idare DEĞİL); supabase-js hata FIRLATMAZ
       const {data:t,error:te}=await sb.from('takip_idareler').select('idare_ad');
@@ -181,7 +185,7 @@
       else (t||[]).forEach(r=>takipli.add(r.idare_ad));
       ilSecenekleriYaz();
       ciz();
-    }catch(e){ tb.innerHTML=`<tr><td colspan="6" class="v1-bos">Liste yüklenemedi. ${esc(e.message||'')}</td></tr>`; }
+    }catch(e){ tb.innerHTML=`<tr><td colspan="8" class="v1-bos">Liste yüklenemedi. ${esc(e.message||'')}</td></tr>`; }
   }
 
   // ── Filtre / sıralama (tamamı client'ta — RPC bir kez çağrılır) ──────
@@ -253,7 +257,7 @@
     if(toplamAdet!==taban.length) bilgi+=` <span style="color:var(--v1-muted);">(${num(taban.length)} kurum içinden)</span>`;
     bilgi+=` · sayfa ${num(sayfa)}/${num(sonSayfa)}`;
     document.getElementById('v1-sayi').innerHTML=bilgi;
-    if(!dilim.length){ tb.innerHTML=`<tr><td colspan="6" class="v1-bos">${mod==='takip'&&!taban.length?'Henüz kurum takip etmiyorsunuz.':'Sonuç bulunamadı.'}</td></tr>`; document.getElementById('v1-sayfalama').innerHTML=''; return; }
+    if(!dilim.length){ tb.innerHTML=`<tr><td colspan="8" class="v1-bos">${mod==='takip'&&!taban.length?'Henüz kurum takip etmiyorsunuz.':'Sonuç bulunamadı.'}</td></tr>`; document.getElementById('v1-sayfalama').innerHTML=''; return; }
     tb.innerHTML=dilim.map((r,i)=>{
       const w=Math.max(3,Math.round((r.toplam||0)/max*100));
       const t=takipli.has(r.idare);
@@ -265,6 +269,8 @@
           <span class="v1-bar-wrap"><span class="v1-bar" style="width:${w}%"></span></span>
           <span style="font-weight:700;color:var(--v1-lacivert);white-space:nowrap;">${num(r.toplam)}</span></div></td>
         <td><span style="font-weight:700;color:var(--v1-teal);">${num(r.aktif)}</span></td>
+        <td><span style="font-weight:700;color:var(--v1-lacivert);">${num(r.dt_toplam)}</span></td>
+        <td><span style="font-weight:700;color:var(--v1-teal);">${num(r.dt_aktif)}</span></td>
         <td style="text-align:right;">
           <button class="v1-tk" data-i="${esc(r.idare)}" style="background:${t?'var(--v1-mavi)':'#fff'};color:${t?'#fff':'var(--v1-mavi)'};
             border:1.5px solid var(--v1-mavi);border-radius:8px;padding:6px 12px;font-family:var(--v1-font);
