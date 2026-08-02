@@ -107,6 +107,9 @@ class KurumYorumIstek(BaseModel):
 class FirmaIletisimIstek(BaseModel):
     firma: str
 
+# Firma iletişim cache tazelik: 1 yıldan eskiyse (adres/tel/e-posta değişmiş olabilir) yeniden ara + güncelle.
+ILETISIM_GECERLILIK_GUN = 365
+
 
 # ── Endpoint'ler ──────────────────────────────────────────
 
@@ -847,15 +850,28 @@ def ai_firma_iletisim(istek: FirmaIletisimIstek, authorization: str = Header(Non
         except Exception:
             anahtar = firma
 
-        # 1. KALICI cache kontrolü (iletişim bilgisi nadir değişir → süresiz sakla)
-        cache = supabase.table("ai_yorumlari").select("yorum").eq(
+        # 1. Cache kontrolü — iletişim bilgisi zamanla değişir (adres/tel/e-posta); 1 YILDAN yeniyse
+        #    cache'ten ücretsiz dön, 1 yıldan eskiyse aşağı düş → yeniden ara + güncelle (kredi düşer).
+        cache = supabase.table("ai_yorumlari").select("yorum, uretildi").eq(
             "varlik_tip", "firma_iletisim").eq("varlik_anahtar", anahtar).limit(1).execute()
         onbellek = (cache.data or [None])[0]
         if onbellek and onbellek.get("yorum"):
-            try:
-                return {"basari": True, "cache": True, **json.loads(onbellek["yorum"])}
-            except (ValueError, TypeError):
-                pass  # bozuk cache → yeniden üret
+            taze = False
+            tarih = onbellek.get("uretildi")
+            if tarih:
+                try:
+                    dt = datetime.fromisoformat(str(tarih).replace("Z", "+00:00"))
+                    if dt.tzinfo is None:
+                        dt = dt.replace(tzinfo=timezone.utc)
+                    taze = (datetime.now(timezone.utc) - dt) < timedelta(days=ILETISIM_GECERLILIK_GUN)
+                except (ValueError, TypeError):
+                    taze = False
+            if taze:
+                try:
+                    return {"basari": True, "cache": True, **json.loads(onbellek["yorum"])}
+                except (ValueError, TypeError):
+                    pass  # bozuk cache → yeniden üret
+            # 1 yıldan eski (veya tarih parse edilemedi) → aşağı düş: yeniden ara + cache güncelle
 
         # 2. Kredi ön kontrolü (yalnız TAZE çekimde düşer)
         kredi_bilgi = supabase.table("kullanici_krediler").select("kalan_kredi").eq(
