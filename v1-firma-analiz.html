@@ -638,6 +638,7 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/kategoriler.js?v=1"></script>
+<script src="js/tufe.js?v=2"></script>
 <script src="js/v1-kabuk.js?v=24"></script>
 <script>
 (() => {
@@ -660,6 +661,9 @@
     if(v>=1e3)  return '₺'+(v/1e3).toLocaleString('tr-TR',{maximumFractionDigits:0})+' B';
     return '₺'+num(v); };
   const tarihF = (s) => s ? new Date(s).toLocaleDateString('tr-TR',{day:'2-digit',month:'2-digit',year:'numeric'}) : '—';
+  // TÜFE bugünkü-değer: geçmiş sözleşme tutarını sonuç tarihindeki alım gücüyle bugüne çevirir (>1.05x).
+  const bugunku=(nominal,tarih)=>{ if(!window.TUFE||!nominal||!tarih) return ''; const c=TUFE.carpani(tarih); if(!c||c<1.05) return '';
+    return `<span title="TÜFE ile enflasyon düzeltmeli — o günkü tutarın bugünkü alım gücü (${c.toFixed(1)}x)">≈ ${paraKisa(TUFE.buguneCevir(nominal,tarih))} bugünkü</span>`; };
   // Türkçe karakter katlama — SQL tr_fold() ile BİREBİR aynı olmalı (arama_fold sütunu)
   function trFold(s){
     return (s||'')
@@ -1334,6 +1338,7 @@
         ${ilan.tur ? `<span class="fa-etiket">${esc(ilan.tur)}</span>` : ''}
         ${ilan.il ? `<span>📍 ${esc(ilan.il)}</span>` : ''}
         ${bedel ? `<span class="fa-ik-bedel">${paraTam(bedel)}</span>` : ''}
+        ${bedel ? bugunku(bedel, s.sonuc_tarihi) : ''}
         ${s.sonuc_tarihi ? `<span>📅 ${tarihF(s.sonuc_tarihi)}</span>` : ''}
         ${teklifSay ? `<span>👥 ${num(teklifSay)} teklif</span>` : ''}
         ${(Number(s.en_dusuk_teklif)>0 && Number(s.en_yuksek_teklif)>0)

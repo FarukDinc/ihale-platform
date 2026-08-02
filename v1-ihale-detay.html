@@ -71,6 +71,7 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="js/tufe.js?v=2"></script>
 <script src="js/v1-kabuk.js?v=24"></script>
 <script>
 (() => {
@@ -80,6 +81,12 @@
   const num=(n)=>(Number(n)||0).toLocaleString('tr-TR');
   const tl=(v)=>v==null?null:'₺'+Number(v).toLocaleString('tr-TR',{maximumFractionDigits:0});
   const gun=(t)=>t?new Date(t).toLocaleDateString('tr-TR',{day:'numeric',month:'long',year:'numeric'}):null;
+  // TÜFE bugünkü-değer: nominal tutarı sözleşme tarihindeki alım gücüyle bugüne çevirir (>1.05x ise göster).
+  const bugunku=(nominal,tarih)=>{
+    if(!window.TUFE||!nominal||!tarih) return '';
+    const c=TUFE.carpani(tarih); if(!c||c<1.05) return '';
+    return ` <span class="kucuk" style="color:var(--v1-muted);font-weight:600;white-space:nowrap;" title="TÜFE ile enflasyon düzeltmeli — sözleşme tarihindeki tutarın bugünkü alım gücü (${c.toFixed(1)}x)">≈ ${tl(TUFE.buguneCevir(nominal,tarih))} bugünkü değer</span>`;
+  };
   const saat=(t)=>t?new Date(t).toLocaleTimeString('tr-TR',{hour:'2-digit',minute:'2-digit'}):'';
   const id=new URLSearchParams(location.search).get('id');
   const G=()=>document.getElementById('v1-govde');
@@ -382,7 +389,7 @@
         <div class="v1-kart"><div class="v1-kart-baslik">İhale Sonucu${cokKisim?` <span class="v1-d-rozet teal" style="color:#fff;">${num(lot)} kısım</span>`:''}</div>
           <div class="v1-sonuc-kart"><div class="v1-sonuc-grid">
             <div><b>Kazanan Firma</b>${firmaHtml}</div>
-            <div><b>${bedelEtiket}</b><span>${toplam?tl(toplam):'—'}</span></div>
+            <div><b>${bedelEtiket}</b><span>${toplam?tl(toplam):'—'}${toplam?bugunku(toplam,ilkSonuc):''}</span></div>
             ${tenzHtml}
             ${katilimciHtml}
             <div><b>Sonuç Tarihi</b><span class="kucuk"${tarihKapsam}>${gun(ilkSonuc)||'—'}</span></div>

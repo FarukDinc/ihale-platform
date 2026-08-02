@@ -516,6 +516,7 @@
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="js/tufe.js?v=2"></script>
 <script src="js/v1-kabuk.js?v=24"></script>
 <script>
 (() => {
@@ -539,6 +540,12 @@
     const d = new Date(s);
     if (isNaN(d)) return '—';
     return d.toLocaleDateString('tr-TR', { day: '2-digit', month: '2-digit', year: 'numeric' });
+  }
+  // TÜFE bugünkü-değer: geçmiş sözleşme tutarını tarihindeki alım gücüyle bugüne çevirir (>1.05x).
+  function bugunku(nominal, tarih) {
+    if (!window.TUFE || !nominal || !tarih) return '';
+    const c = TUFE.carpani(tarih); if (!c || c < 1.05) return '';
+    return ` <span style="color:var(--v1-muted);font-weight:600;font-size:11px;white-space:nowrap;" title="TÜFE ile enflasyon düzeltmeli — o günkü tutarın bugünkü alım gücü (${c.toFixed(1)}x)">≈ ${paraFormat(TUFE.buguneCevir(nominal, tarih))} bugünkü</span>`;
   }
   // Türkçe karakter-duyarsız arama: İ/I/ı→i vb. (PostgREST ilike İ/ı'da sessizce 0 döner)
   function trFold(s) {
@@ -948,7 +955,7 @@
         const tarihEtiket = so.sozlesme_tarihi ? 'Sözleşme' : (so.sonuc_tarihi ? 'Sonuç' : 'İhale');
         const bedelHam = so.sozlesme_bedeli != null ? so.sozlesme_bedeli : so.kazanan_teklif;
         const bedel = (bedelHam != null && Number(bedelHam) > 0)
-          ? `<span class="sz-bedel">${paraFormat(bedelHam)}</span>`
+          ? `<span class="sz-bedel">${paraFormat(bedelHam)}</span>${bugunku(bedelHam, tarih)}`
           : '<span class="sz-yok">—</span>';
         const kisimRozet = (cok || Number(so.lot_sayisi) > 1) && so.kisim_no != null
           ? `<span class="sz-kisim">Kısım ${sayi(so.kisim_no)}${Number(so.lot_sayisi) > 1 ? '/' + sayi(so.lot_sayisi) : ''}</span>` : '';

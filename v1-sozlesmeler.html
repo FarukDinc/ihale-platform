@@ -75,6 +75,7 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script src="js/tufe.js?v=2"></script>
 <script src="js/v1-kabuk.js?v=24"></script>
 <script>
 (() => {
@@ -83,6 +84,9 @@
   const num=(n)=>(Number(n)||0).toLocaleString('tr-TR');
   const esc=(s)=>(s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
   const tl=(v)=>v==null?'—':'₺'+Number(v).toLocaleString('tr-TR',{maximumFractionDigits:0});
+  // TÜFE bugünkü-değer (sözleşme tarihindeki tutarın bugünkü alım gücü; >1.05x ise ikinci satır)
+  const bugunku=(nominal,tarih)=>{ if(!window.TUFE||!nominal||!tarih) return ''; const c=TUFE.carpani(tarih); if(!c||c<1.05) return '';
+    return `<br><span style="font-weight:400;color:var(--v1-muted);font-size:11px;" title="TÜFE ile enflasyon düzeltmeli — bugünkü alım gücü (${c.toFixed(1)}x)">≈ ${tl(TUFE.buguneCevir(nominal,tarih))} bugünkü</span>`; };
   const BOY=20;
   let uyeMi=false, sekme='tumu', sayfa=1, aramaT;
 
@@ -134,7 +138,7 @@
         return `<tr>
           <td class="v1-t-tarih">${t}${devam!=null?`<br><span class="v1-sonuc-rozet" style="background:${devam?'#E6F6EC':'#EFF2F6'};color:${devam?'var(--v1-yesil)':'var(--v1-muted)'};font-size:10.5px;">${devam?'Devam':'Bitti'}</span>`:''}</td>
           <td><a class="v1-t-ad" href="v1-firma-analiz?ara=${encodeURIComponent(r.kazanan_firma||'')}">${esc(r.kazanan_firma||'—')}</a></td>
-          <td style="font-weight:700;color:var(--v1-mavi);">${tl(r.sozlesme_bedeli ?? r.kazanan_teklif)}</td>
+          <td style="font-weight:700;color:var(--v1-mavi);">${tl(r.sozlesme_bedeli ?? r.kazanan_teklif)}${bugunku(r.sozlesme_bedeli ?? r.kazanan_teklif, r.sonuc_tarihi)}</td>
           <td>${tenz}</td>
           <td style="text-align:right;">${r.ilan_id?`<a class="v1-yuvarlak-btn" style="text-decoration:none;" href="v1-ihale-detay?id=${r.ilan_id}" title="İhale detayı">
             <svg viewBox="0 0 24 24" fill="currentColor"><path d="M8.6 5.4 10 4l8 8-8 8-1.4-1.4L15.2 12 8.6 5.4Z"/></svg></a>`:''}</td></tr>`;
