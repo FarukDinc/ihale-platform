@@ -301,6 +301,12 @@ def main():
                           "1. sayfadan başlar — yoksa yeni eklenen ilanlar hiç yakalanmaz.")
     ap.add_argument("--start-page", type=int, default=None, help="Sadece --backfill ile birlikte anlamlı; belirtilmezse checkpoint dosyasından devam eder")
     ap.add_argument("--reset", action="store_true", help="Checkpoint'i sıfırla (--backfill ile birlikte, 1. sayfadan başlar)")
+    # TARİH DİLİMİ (paralel token backfill için): dtTarihiBaslangic/Bitis ile her dilim 1. sayfadan
+    # başlar → sayfalar SIĞ ve HIZLI (~6sn vs filtresiz derin ~3dk; bkz. sayfa_cek docstring). Birden
+    # çok dilim PARALEL koşulunca çekim 30-100x hızlanır. Bu modda checkpoint OKUNMAZ/YAZILMAZ
+    # (dilimler paylaşımlı checkpoint'i clobber etmesin) — her dilim --start-page 1'den kendi aralığını tarar.
+    ap.add_argument("--bas", type=str, default=None, help="Tarih dilimi başlangıç GG.AA.YYYY (dtTarihiBaslangic)")
+    ap.add_argument("--bit", type=str, default=None, help="Tarih dilimi bitiş GG.AA.YYYY (dtTarihiBitis)")
     ap.add_argument("--dry-run", action="store_true")
     args = ap.parse_args()
 
@@ -339,7 +345,7 @@ def main():
         son_ham_uzunluk = None    # son çekilen sayfanın kayıt sayısı (tavan tespiti için, B4)
         for i in range(args.max_pages):
             try:
-                ham = sayfa_cek(havuz, sayfa)
+                ham = sayfa_cek(havuz, sayfa, bas=args.bas, bit=args.bit)
             except (httpx.TimeoutException, httpx.HTTPStatusError, httpx.TransportError, json.JSONDecodeError) as e:
                 # sayfa_cek kendi içinde 3 deneme yaptı ve yine de başarısız oldu —
                 # uzun süren bir EKAP kesintisi olabilir (--backfill saatlerce/günlerce
@@ -389,7 +395,9 @@ def main():
                 # zehirli olan bir daha ASLA yazılamaz. Checkpoint ilerler → aynı sayfada takılmayız.
                 # (Kilit varsa — bu turda daha önce GEÇİCİ hata oldu — ilerletmeyiz; o sayfa önce
                 # yeniden denenmeli, yoksa üstünden atlanıp kaybolurdu.)
-                if args.backfill and not checkpoint_kilit:
+                # Date-slice modunda (--bas) checkpoint YAZILMAZ: paralel dilimler paylaşımlı
+                # checkpoint'i clobber etmesin (her dilim --start-page 1'den kendi aralığını tarar).
+                if args.backfill and not args.bas and not checkpoint_kilit:
                     checkpoint_yaz(sayfa)
                 # Sistemik bozulma freni: tek tük zehirli kayıt normaldir; çok sayısı şema/veri
                 # kaynaklı yaygın bir sorundur. Checkpoint zaten ilerledi (liveness korundu),
