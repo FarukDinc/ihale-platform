@@ -586,7 +586,9 @@ kullanıcıdan alınacak). Mevcut: Comtrade/WITS tabanlı ticaret katmanı (haf�
 `ticaret_backfill.py` + `ticaret_yillar/harita/ulke/liste`). Yeni algoritma tanımı netleşecek.
 → `backend/ticaret_backfill.py`, `v1-dis-ticaret.html` / `ticaret-analiz.html`
 
-## UV-4 — İdare/kurum adlarında kelime-ortası boşluk (scraper metin çıkarımı) 📋
+## UV-4 — İdare/kurum adlarında kelime-ortası boşluk (scraper metin çıkarımı) 🟡 TOP-1000 KAPANDI, UZUN KUYRUK BEKLİYOR
+**✅ TOP-1000 YAPILDI (2 Ağu, bkz MADDE 26-7):** en yüksek-hacimli ~138 idare düzeltildi (137 wrap + DMO Roman→Arabik 24.172 satır), `orijinal_hala_var=0`, MV tazelendi. Araç: `backend/idare_ad_temizle.py` (heuristik aday → Gemini `gemini-3.1-flash-lite` doğrulama → `--dry-run` CSV → **`--sql | psql`** bayt-birebir remap). REST `--apply` sessiz-kısmi-fail ettiği için `--sql` modu eklendi ([[toplu-remap-sql-postgrest-sessiz]]).
+**⏭️ UZUN KUYRUK (buraya dönünce TEK TEK inilecek — kullanıcı isteği 2 Ağu):** kalan ~39K küçük idare (çoğu 1-2 ihaleli) için tam-katalog turu. ÖNCE yapılacak: `--dry-run`'ı resumable/checkpoint'li yap (şu an CSV'yi yalnız sonda yazıyor → `--limit 0` ~40 dk run ortada çökerse kayıp; öbek-öbek append + kaldığı yerden devam). Sonra `--dry-run --limit 0` (Gemini) → CSV incele → `--sql | psql` → MV refresh + `idare_tur_tazele()`. Değer düşük ama kapsam için; aceleye gerek yok.
 **Sorun (canlı):** idare adları kelime ortasında boşlukla bozuk geliyor:
 "ANFA ANKARA ALTINPAR K İŞL.LTD.ŞTİ." (→ ALTINPARK), "ANFA GÜVENLİK HİZMET LERİ VE SİSTEMLE LTD.ŞTİ."
 (→ HİZMETLERİ VE SİSTEMLERİ). Bazı kurumlarda var. Ayrıca aynı idare hem bozuk hem DOĞRU adla ayrı
