@@ -603,6 +603,20 @@ def ai_teklif_strateji(
         except Exception as e:
             print(f"  ⚠ sartname_oku (teklif-strateji) atlandı: {e}")
 
+        # UV-1 Faz 1.5: şartname KONUSUYLA eşleşen geçmiş ihalelerin GERÇEK tenzilatı (il/genel'den
+        # isabetli). En spesifik (uzun) konu kelimesinden başla; ilk anlamlı eşleşmeyi (≥3 ihale) al.
+        if sartname_ozet and sartname_ozet.get("konu_kelimeler"):
+            kelimeler = sorted({k.strip() for k in sartname_ozet["konu_kelimeler"] if k and len(k.strip()) >= 4},
+                               key=len, reverse=True)
+            for kel in kelimeler[:4]:
+                try:
+                    kr = supabase.rpc("konu_tenzilat", {"p_kelime": kel}).execute()
+                    if kr.data:
+                        kirilimlar["konu"] = kr.data[:1]
+                        break
+                except Exception as e:
+                    print(f"  ⚠ konu_tenzilat ({kel}) atlandı: {e}")
+
         sonuc = teklif_strateji_uret(ihale=ilan, kirilimlar=kirilimlar, sartname_ozet=sartname_ozet)
         if not sonuc["basari"]:
             raise HTTPException(status_code=500, detail=sonuc["hata"])

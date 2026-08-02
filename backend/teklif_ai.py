@@ -202,9 +202,10 @@ def _strateji_prompt(ihale: dict, kirilimlar: dict, sartname_ozet: dict = None) 
 {veri}
 
 Bu AÇIK ihale için firmaya bir TEKLİF/FİYAT STRATEJİSİ öner:
-- Benzer geçmiş ihalelerde ortalama tenzilat yüzdesi ne? Kırılımlar: "il" = ihalenin ilindeki
-  gerçekleşen ortalama tenzilat (EN ÖNEMLİ referans), "genel" = Türkiye geneli taban.
-  İl verisi genelden sapıyorsa bunu yorumla.
+- Benzer geçmiş ihalelerde ortalama tenzilat yüzdesi ne? Kırılımlar: "konu" = ihalenin ŞARTNAME
+  KONUSUYLA eşleşen geçmiş ihalelerin tenzilatı (EN İSABETLİ referans — varsa önce buna dayan),
+  "il" = ihalenin ilindeki ortalama tenzilat, "genel" = Türkiye geneli taban. Konu verisi il/genelden
+  sapıyorsa bunu yorumla; konu > il > genel önceliğiyle değerlendir.
 - Buna göre yaklaşık maliyetin (yaklasik_maliyet_max/min) yaklaşık yüzde kaç ALTINA teklif vermek
   rekabetçi olur — somut bir TEKLİF BANDI (₺ alt – ₺ üst) ver.
 - Rekabet yoğunluğu (ort_katilimci) yüksekse daha agresif, düşükse daha ihtiyatlı olmayı belirt.
