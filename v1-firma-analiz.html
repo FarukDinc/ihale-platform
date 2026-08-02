@@ -23,6 +23,10 @@
       padding:9px 16px; font-family:var(--v1-font); font-size:13px; font-weight:700; cursor:pointer;
       text-decoration:none; display:inline-flex; align-items:center; gap:6px; white-space:nowrap; }
     .fa-btn-ana:hover { background:var(--v1-lacivert); border-color:var(--v1-lacivert); color:#fff; text-decoration:none; }
+    /* İki satırlı buton: üstte etiket, altta küçük "1 Kredi" */
+    .fa-btn-2s { flex-direction:column; align-items:center; gap:1px; line-height:1.15; padding-top:7px; padding-bottom:7px; }
+    .fa-btn-2s .fa-btn-kredi { font-size:10px; font-weight:600; opacity:.82; }
+    .fa-btn:disabled, .fa-btn-ana:disabled { opacity:.65; cursor:default; }
 
     /* Kapsam notu + rozeti — parasal alanların hangi evrenden geldiğini söyler.
        Bu sayfadaki TÜM ciro/sözleşme/tenzilat rakamları ihale_sonuclari zincirinden gelir;
@@ -468,12 +472,18 @@
               <button class="fa-btn" id="btn-karsilastir">⚖️ Firmayla Karşılaştır</button>
               <button class="fa-btn" id="btn-takip">⭐ Rakibi Takip Et</button>
               <button class="fa-btn" id="btn-yeni-arama">🔍 Dizine Dön</button>
-              <button class="fa-btn-ana" id="btn-ai-yorum">🤖 AI Rakip Analizi (1 kredi)</button>
+              <button class="fa-btn-ana fa-btn-2s" id="btn-ai-yorum">
+                <span class="fa-btn-ust">🤖 AI Rakip Analizi</span><span class="fa-btn-kredi">1 Kredi</span>
+              </button>
+              <button class="fa-btn-ana fa-btn-2s" id="btn-ai-iletisim">
+                <span class="fa-btn-ust">📞 İletişim Bilgileri</span><span class="fa-btn-kredi">1 Kredi</span>
+              </button>
             </div>
           </div>
 
-          <!-- 🤖 AI Rakip Analizi paneli — üstteki aksiyon butonuyla açılır (eskiden sayfa sonundaydı) -->
+          <!-- 🤖 AI Rakip Analizi + 📞 İletişim panelleri — üstteki aksiyon butonlarıyla açılır -->
           <div id="ai-kaplayici" style="display:none;"></div>
+          <div id="ai-iletisim-kaplayici" style="display:none;"></div>
 
           <!-- İHALE KPI satırı (5 kart) — yalnız ihaleler -->
           <div class="fa-kpi besli">
@@ -1472,14 +1482,25 @@
   /* ── 🤖 AI Rakip Analizi (Pro; free'de bulanık önizleme + CTA) ─────── */
   // Header aksiyon satırındaki "🤖 AI Rakip Analizi" butonunu (Dizine Dön'ün sağı) her firma
   // yüklenişinde sıfırla + bağla. Panel (#ai-kaplayici) başlığın hemen altında, sekmeden bağımsız.
+  // İki satırlı buton içeriğini yaz: üst etiket + küçük "1 Kredi" (visibility ile yer korunur, zıplama yok)
+  function faBtn2s(btn, ust, krediGoster){
+    if (!btn) return;
+    const u = btn.querySelector('.fa-btn-ust'); if (u) u.textContent = ust;
+    const k = btn.querySelector('.fa-btn-kredi'); if (k) k.style.visibility = krediGoster ? 'visible' : 'hidden';
+  }
+
   function aiYorumKartiGoster(){
+    if (!FIRMA) return;
+    // 🤖 AI Rakip Analizi butonu (Dizine Dön'ün sağı)
     const btn = $('btn-ai-yorum');
-    if (!btn || !FIRMA) return;
-    btn.disabled = false;
-    btn.textContent = '🤖 AI Rakip Analizi (1 kredi)';
-    btn.onclick = aiYorumAc;
+    if (btn){ btn.disabled = false; faBtn2s(btn, '🤖 AI Rakip Analizi', true); btn.onclick = aiYorumAc; }
     const hedef = $('ai-kaplayici');
     if (hedef){ hedef.style.display = 'none'; hedef.innerHTML = ''; }
+    // 📞 İletişim Bilgileri butonu (AI Rakip Analizi'nin sağı)
+    const ibtn = $('btn-ai-iletisim');
+    if (ibtn){ ibtn.disabled = false; faBtn2s(ibtn, '📞 İletişim Bilgileri', true); ibtn.onclick = aiIletisimAc; }
+    const ihedef = $('ai-iletisim-kaplayici');
+    if (ihedef){ ihedef.style.display = 'none'; ihedef.innerHTML = ''; }
   }
 
   // Butona tıklanınca paneli aç: free → bulanık önizleme + CTA, Pro → analizi üret.
@@ -1509,13 +1530,13 @@
   async function aiYorumUret(){
     const btn = $('btn-ai-yorum'), metinEl = $('ai-metin');
     if (!btn || !metinEl) return;
-    btn.disabled = true; btn.textContent = '🤖 Oluşturuluyor…';
+    btn.disabled = true; faBtn2s(btn, '🤖 Oluşturuluyor…', false);
     try{
       const { data: oturum } = await sb.auth.getSession();
       const jeton = oturum && oturum.session && oturum.session.access_token;
       if (!jeton){
         metinEl.innerHTML = 'Analiz için <a href="login">giriş yapın</a>.';
-        btn.disabled = false; btn.textContent = '🤖 AI Rakip Analizi (1 kredi)'; return;
+        btn.disabled = false; faBtn2s(btn, '🤖 AI Rakip Analizi', true); return;
       }
       const yanit = await fetch(SB_URL + '/api/ai/firma-yorum', {
         method:'POST',
@@ -1524,24 +1545,118 @@
       });
       if (yanit.status === 402){
         metinEl.innerHTML = 'Yetersiz kredi. <a href="fiyatlandirma_odeme_bolumu">Paket yükseltin →</a>';
-        btn.disabled = false; btn.textContent = '🤖 Tekrar Dene'; return;
+        btn.disabled = false; faBtn2s(btn, '🤖 Tekrar Dene', false); return;
       }
       if (yanit.status === 401){
         metinEl.innerHTML = 'Oturumunuz sona ermiş. <a href="login">Yeniden giriş yapın</a>.';
-        btn.disabled = false; btn.textContent = '🤖 Tekrar Dene'; return;
+        btn.disabled = false; faBtn2s(btn, '🤖 Tekrar Dene', false); return;
       }
       if (!yanit.ok) throw new Error('sunucu ' + yanit.status);
       const sonuc = await yanit.json();
       if (sonuc && sonuc.basari && sonuc.metin){
         metinEl.textContent = sonuc.metin;
-        btn.disabled = true; btn.textContent = '✓ AI Analizi Hazır';
+        btn.disabled = true; faBtn2s(btn, '✓ AI Analizi Hazır', false);
       } else {
         metinEl.textContent = 'Analiz oluşturulamadı. Lütfen daha sonra tekrar deneyin.';
-        btn.disabled = false; btn.textContent = '🤖 Tekrar Dene';
+        btn.disabled = false; faBtn2s(btn, '🤖 Tekrar Dene', false);
       }
     }catch(err){
       metinEl.textContent = 'Bu özellik şu an kullanılamıyor, lütfen daha sonra tekrar deneyin.';
-      btn.disabled = false; btn.textContent = '🤖 Tekrar Dene';
+      btn.disabled = false; faBtn2s(btn, '🤖 Tekrar Dene', false);
+    }
+  }
+
+  /* ── 📞 Firma İletişim Bilgileri (Gemini + Google grounding; Pro; 1 kredi) ─────
+     UYARI DAİMA gösterilir: veriler AI'nın web'den derlemesidir, KESİN DEĞİLDİR. */
+  const _kacis = (s) => String(s == null ? '' : s).replace(/[&<>"']/g,
+    c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+
+  function aiIletisimAc(){
+    const hedef = $('ai-iletisim-kaplayici');
+    if (!hedef) return;
+    hedef.style.display = '';
+    if (!proMu){
+      hedef.innerHTML = `<div class="v1-kart" style="margin-top:16px;position:relative;overflow:hidden;">
+        <div class="v1-kart-baslik">📞 Firma İletişim Bilgileri</div>
+        <div style="filter:blur(4px);pointer-events:none;font-size:12.5px;color:var(--v1-muted);line-height:1.8;">
+          Telefon: +90 ••• ••• •• •• · E-posta: ••••@••••• · Adres: •••••• Mah. •••••• Cad. · Web: www.••••••.com
+        </div>
+        <a class="fa-btn-ana" style="margin-top:12px;" href="fiyatlandirma_odeme_bolumu">Pro'ya Geç ve Aç</a>
+      </div>`;
+      hedef.scrollIntoView({ behavior:'smooth', block:'nearest' });
+      return;
+    }
+    hedef.innerHTML = `<div class="v1-kart" style="margin-top:16px;">
+      <div class="v1-kart-baslik">📞 Firma İletişim Bilgileri</div>
+      <div id="ai-iletisim-metin" style="margin-top:8px;font-size:13px;color:var(--v1-metin);line-height:1.7;">Web'den derleniyor…</div>
+    </div>`;
+    hedef.scrollIntoView({ behavior:'smooth', block:'nearest' });
+    aiIletisimGetir();
+  }
+
+  function _iletisimKartiHTML(v, kaynaklar){
+    v = v || {};
+    const satir = (etiket, deger, tur) => {
+      if (!deger) return '';
+      const gd = _kacis(deger);
+      let ic = gd;
+      if (tur === 'tel') ic = `<a href="tel:${_kacis(String(deger).replace(/[^0-9+]/g,''))}">${gd}</a>`;
+      else if (tur === 'mail') ic = `<a href="mailto:${gd}">${gd}</a>`;
+      else if (tur === 'web'){ const u = /^https?:\/\//i.test(deger) ? deger : 'https://' + deger;
+        ic = `<a href="${_kacis(u)}" target="_blank" rel="noopener nofollow">${gd}</a>`; }
+      return `<div style="display:flex;gap:8px;margin:5px 0;"><span style="min-width:80px;color:var(--v1-muted);font-weight:600;">${etiket}</span><span>${ic}</span></div>`;
+    };
+    const bosMu = !(v.telefon || v.eposta || v.adres || v.web_sitesi || v.yetkili_kisi);
+    let govde = bosMu
+      ? '<div style="color:var(--v1-muted);">Web aramasında doğrulanabilir iletişim bilgisi bulunamadı.</div>'
+      : (satir('Telefon', v.telefon, 'tel') + satir('E-posta', v.eposta, 'mail') +
+         satir('Adres', v.adres) + satir('Web', v.web_sitesi, 'web') + satir('Yetkili', v.yetkili_kisi));
+    if (v.ozet) govde += `<div style="margin-top:8px;font-size:12px;color:var(--v1-muted);line-height:1.6;">${_kacis(v.ozet)}</div>`;
+    if (kaynaklar && kaynaklar.length){
+      govde += `<div style="margin-top:10px;font-size:11.5px;color:var(--v1-muted);">Kaynaklar: ` +
+        kaynaklar.map(k => `<a href="${_kacis(k.uri)}" target="_blank" rel="noopener nofollow">${_kacis(k.baslik)}</a>`).join(' · ') + `</div>`;
+    }
+    govde += `<div style="margin-top:12px;padding:9px 11px;background:#FFF6E5;border:1px solid #F5D98B;border-radius:8px;font-size:11.5px;color:#8A6D1A;line-height:1.55;">
+      ⚠️ Bu bilgiler yapay zeka tarafından Google/web kaynaklarından derlenmiştir; <strong>kesin değildir</strong>, güncel veya resmî olmayabilir. İşlem yapmadan önce mutlaka doğrulayın.</div>`;
+    return govde;
+  }
+
+  async function aiIletisimGetir(){
+    const btn = $('btn-ai-iletisim'), el = $('ai-iletisim-metin');
+    if (!btn || !el) return;
+    btn.disabled = true; faBtn2s(btn, '📞 Getiriliyor…', false);
+    try{
+      const { data: oturum } = await sb.auth.getSession();
+      const jeton = oturum && oturum.session && oturum.session.access_token;
+      if (!jeton){
+        el.innerHTML = 'İletişim bilgisi için <a href="login">giriş yapın</a>.';
+        btn.disabled = false; faBtn2s(btn, '📞 İletişim Bilgileri', true); return;
+      }
+      const yanit = await fetch(SB_URL + '/api/ai/firma-iletisim', {
+        method:'POST',
+        headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer ' + jeton },
+        body: JSON.stringify({ firma: FIRMA })
+      });
+      if (yanit.status === 402){
+        el.innerHTML = 'Yetersiz kredi. <a href="fiyatlandirma_odeme_bolumu">Paket yükseltin →</a>';
+        btn.disabled = false; faBtn2s(btn, '📞 Tekrar Dene', false); return;
+      }
+      if (yanit.status === 401){
+        el.innerHTML = 'Oturumunuz sona ermiş. <a href="login">Yeniden giriş yapın</a>.';
+        btn.disabled = false; faBtn2s(btn, '📞 Tekrar Dene', false); return;
+      }
+      if (!yanit.ok) throw new Error('sunucu ' + yanit.status);
+      const s = await yanit.json();
+      if (s && s.basari && s.veri){
+        el.innerHTML = _iletisimKartiHTML(s.veri, s.kaynaklar);
+        btn.disabled = true; faBtn2s(btn, s.cache ? '✓ İletişim (kayıtlı)' : '✓ İletişim Getirildi', false);
+      } else {
+        el.textContent = 'İletişim bilgisi bulunamadı.';
+        btn.disabled = false; faBtn2s(btn, '📞 Tekrar Dene', false);
+      }
+    }catch(err){
+      el.textContent = 'Bu özellik şu an kullanılamıyor, lütfen daha sonra tekrar deneyin.';
+      btn.disabled = false; faBtn2s(btn, '📞 Tekrar Dene', false);
     }
   }
 

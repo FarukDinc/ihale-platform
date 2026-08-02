@@ -23,6 +23,7 @@ Bu dosya HİÇBİR AI sağlayıcısını doğrudan çağırmaz; iki farklı katm
     ai_ortak'a TAŞINMAZ (bkz. aşağıdaki not).
 """
 
+import json
 import os
 from fastapi import FastAPI, HTTPException, Header
 from fastapi.middleware.cors import CORSMiddleware
@@ -102,6 +103,9 @@ class FirmaYorumIstek(BaseModel):
 
 class KurumYorumIstek(BaseModel):
     idare: str
+
+class FirmaIletisimIstek(BaseModel):
+    firma: str
 
 
 # ── Endpoint'ler ──────────────────────────────────────────
@@ -844,6 +848,80 @@ def ai_kurum_yorum(istek: KurumYorumIstek, authorization: str = Header(None)):
         if not getattr(kredi_sonuc, "data", None):
             raise HTTPException(status_code=402, detail="Yetersiz kredi")
         return {"basari": True, "yorum": r["yorum"], "kaynak": r.get("kaynak")}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/ai/firma-iletisim")
+def ai_firma_iletisim(istek: FirmaIletisimIstek, authorization: str = Header(None)):
+    """
+    AI Firma İletişim Bilgileri (PREMIUM/kredili, 1 kredi) — Gemini + Google Search GROUNDING ile
+    firmanın telefon/e-posta/adres/web/yetkili bilgisini WEB'DEN derler (firma_iletisim.py).
+    KALICI cache: ai_yorumlari(varlik_tip='firma_iletisim') — aynı firma tekrar istenirse Gemini'ye
+    GİTMEDEN + KREDİ DÜŞMEDEN döner (kota/maliyet tasarrufu, firma-yorum deseniyle tutarlı).
+    ⚠️ Sonuç kesin değildir; frontend "AI web'den derledi, doğrulayın" uyarısını DAİMA gösterir.
+    """
+    kullanici_id = kullanici_dogrula(authorization)
+    firma = (istek.firma or "").strip()
+    if not firma:
+        raise HTTPException(status_code=400, detail="Firma adı gerekli")
+    try:
+        # 0. Cache anahtarı (normalize) — normalize edilemezse ham ad
+        try:
+            anahtar = supabase.rpc("normalize_firma", {"ham_ad": firma}).execute().data or firma
+        except Exception:
+            anahtar = firma
+
+        # 1. KALICI cache kontrolü (iletişim bilgisi nadir değişir → süresiz sakla)
+        cache = supabase.table("ai_yorumlari").select("yorum").eq(
+            "varlik_tip", "firma_iletisim").eq("varlik_anahtar", anahtar).limit(1).execute()
+        onbellek = (cache.data or [None])[0]
+        if onbellek and onbellek.get("yorum"):
+            try:
+                return {"basari": True, "cache": True, **json.loads(onbellek["yorum"])}
+            except (ValueError, TypeError):
+                pass  # bozuk cache → yeniden üret
+
+        # 2. Kredi ön kontrolü (yalnız TAZE çekimde düşer)
+        kredi_bilgi = supabase.table("kullanici_krediler").select("kalan_kredi").eq(
+            "kullanici_id", kullanici_id).single().execute()
+        if (kredi_bilgi.data or {}).get("kalan_kredi", 0) < 1:
+            raise HTTPException(status_code=402, detail="Bu özellik 1 kredi gerektirir")
+
+        # 3. Gemini grounding ile web'den çek
+        from firma_iletisim import firma_iletisim_getir
+        sonuc = firma_iletisim_getir(firma)
+        if not sonuc["basari"]:
+            raise HTTPException(status_code=500, detail=sonuc["hata"] or "İletişim bilgisi alınamadı")
+
+        # 4. Kredi düş
+        try:
+            kredi_sonuc = supabase.rpc("kredi_dus", {
+                "p_kullanici_id": kullanici_id, "p_miktar": 1, "p_referans_id": None,
+                "p_referans_tip": "firma", "p_islem_turu": "analiz",
+                "p_aciklama": f"AI Firma İletişim: {firma[:50]}"
+            }).execute()
+        except Exception as e:
+            print(f"  ⚠ kredi_dus (firma-iletisim) hatası: {e}")
+            raise HTTPException(status_code=500, detail="Kredi işlemi tamamlanamadı, lütfen tekrar deneyin")
+        if not getattr(kredi_sonuc, "data", None):
+            raise HTTPException(status_code=402, detail="Yetersiz kredi")
+
+        # 5. KALICI cache'e yaz (veri + kaynaklar)
+        govde = {"veri": sonuc["veri"], "kaynaklar": sonuc["kaynaklar"]}
+        try:
+            supabase.table("ai_yorumlari").upsert({
+                "varlik_tip": "firma_iletisim", "varlik_anahtar": anahtar,
+                "yorum": json.dumps(govde, ensure_ascii=False),
+                "veri_hash": "web-grounding",
+                "uretildi": datetime.now(timezone.utc).isoformat(),
+            }, on_conflict="varlik_tip,varlik_anahtar").execute()
+        except Exception as e:
+            print(f"  ⚠ firma-iletisim cache yazılamadı: {e}")
+
+        return {"basari": True, "cache": False, **govde}
     except HTTPException:
         raise
     except Exception as e:
