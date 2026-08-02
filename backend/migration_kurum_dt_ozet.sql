@@ -31,12 +31,23 @@ AS $$
     SELECT dt_no, tur, il, kategori, durum, tarih
     FROM public.dogrudan_temin_ilanlari
     WHERE idare ILIKE '%' || p_idare || '%'
+  ),
+  sf AS (
+    -- DT sonuçları (kazanan + bedel) — dogrudan_temin_sonuclari'na TEK join; kazanan VE bedel
+    -- KPI'ları buradan hesaplanır (eskiden yalnız kazanan için join vardı, artık ikisi birlikte).
+    SELECT s.kazanan_firma, s.kazanan_bedel
+    FROM f JOIN public.dogrudan_temin_sonuclari s ON s.dt_no = f.dt_no
   )
   SELECT jsonb_build_object(
     'kpi', jsonb_build_object(
-      'toplam',    (SELECT count(*) FROM f),
-      'acik',      (SELECT count(*) FROM f WHERE durum = 'Doğrudan Temin Duyurusu Yayımlanmış' AND tarih >= now()),
-      'il_sayisi', (SELECT count(DISTINCT il) FROM f WHERE il IS NOT NULL)
+      'toplam',        (SELECT count(*) FROM f),
+      'acik',          (SELECT count(*) FROM f WHERE durum = 'Doğrudan Temin Duyurusu Yayımlanmış' AND tarih >= now()),
+      'il_sayisi',     (SELECT count(DISTINCT il) FROM f WHERE il IS NOT NULL),
+      'sektor_sayisi', (SELECT count(DISTINCT kategori) FROM f WHERE kategori IS NOT NULL AND kategori <> ''),
+      -- DT bedel (dogrudan_temin_sonuclari.kazanan_bedel; yalnız >0 olanlar). Toplam + medyan + kaç kayıtta bedel var.
+      'bedel_toplam',  (SELECT COALESCE(sum(kazanan_bedel), 0) FROM sf WHERE kazanan_bedel > 0),
+      'bedelli_sayisi',(SELECT count(*) FROM sf WHERE kazanan_bedel > 0),
+      'bedel_medyan',  (SELECT round(percentile_cont(0.5) WITHIN GROUP (ORDER BY kazanan_bedel)) FROM sf WHERE kazanan_bedel > 0)
     ),
     'kategori', (SELECT COALESCE(jsonb_agg(jsonb_build_object('k', k, 'n', n) ORDER BY n DESC), '[]'::jsonb)
                  FROM (SELECT COALESCE(NULLIF(kategori, ''), 'Kategorisiz') k, count(*) n
@@ -51,10 +62,10 @@ AS $$
     ),
     -- DT kazanan firmaları: dogrudan_temin_sonuclari.kazanan_firma (anon-kapalı; RPC SECURITY DEFINER)
     'kazanan', (SELECT COALESCE(jsonb_agg(jsonb_build_object('grup_deger', k, 'ihale_sayisi', n) ORDER BY n DESC), '[]'::jsonb)
-                FROM (SELECT s.kazanan_firma k, count(*) n
-                      FROM f JOIN public.dogrudan_temin_sonuclari s ON s.dt_no = f.dt_no
-                      WHERE s.kazanan_firma IS NOT NULL AND s.kazanan_firma <> ''
-                      GROUP BY s.kazanan_firma ORDER BY count(*) DESC LIMIT 12) x)
+                FROM (SELECT kazanan_firma k, count(*) n
+                      FROM sf
+                      WHERE kazanan_firma IS NOT NULL AND kazanan_firma <> ''
+                      GROUP BY kazanan_firma ORDER BY count(*) DESC LIMIT 12) x)
   );
 $$;
 

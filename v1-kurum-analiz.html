@@ -382,7 +382,7 @@
             Kurumun geçmiş ihale verisi AI ile değerlendiriliyor…</div>
           <div id="ai-yorum-metin" style="font-size:13.5px;line-height:1.7;white-space:pre-wrap;color:var(--v1-metin);"></div>
           <div id="ai-yorum-not" style="display:none;margin-top:10px;font-size:11px;color:var(--v1-muted);">
-            ⚠️ Bu değerlendirme yalnız kamuya açık geçmiş ihale verisine dayanan grounded bir yorumdur; kesin sonuç değildir.</div>
+            ⚠️ Bu değerlendirme kamuya açık geçmiş ihale ve doğrudan temin verisine dayanan grounded bir yorumdur; kesin sonuç değildir.</div>
         </div>
 
         <div class="v1-kpi" style="grid-template-columns:repeat(4,1fr);margin-bottom:18px;">
@@ -409,9 +409,34 @@
             <span style="display:block;font-size:11px;color:var(--v1-muted);margin-top:3px;">farklı şehir</span></span></div>
         </div>
 
-        <!-- kurum_ozet YALNIZ `ilanlar` tablosunu okur → 4 KPI ve tüm grafikler ihale
-             evrenidir. Bu sayfada ihale/DT modu seçici YOKTUR; DT evrenine geçiş
-             üstteki "⚡ Doğrudan Temin Kayıtları" butonuyla olur. -->
+        <!-- ⚡ DOĞRUDAN TEMİN KPI satırı (4 kart) — ihaleden AYRI evren (kurum_dt_ozet, on-demand yüklenir) -->
+        <div style="font-size:12.5px;font-weight:800;color:var(--v1-lacivert);margin:2px 0 8px;display:flex;align-items:center;gap:7px;flex-wrap:wrap;">
+          ⚡ Doğrudan Temin
+          <span class="k-rozet" style="background:#FBEED2;color:#8A6D1A;border-color:#F0D9A0;" title="Doğrudan temin, ihaleden ayrı bir evrendir; bu satırdaki sayılar yukarıdaki ihale sayılarına EKLENMEZ.">ayrı evren · ihaleye eklenmez</span>
+        </div>
+        <div class="v1-kpi" style="grid-template-columns:repeat(4,1fr);margin-bottom:18px;">
+          <div class="v1-kpi-kart" style="cursor:default;background:#FFFDF6;"><span class="v1-kpi-govde">
+            <span class="v1-kpi-sayi" id="dt-kpi-toplam" style="color:#B8860B;">—</span>
+            <span class="v1-kpi-etiket">Toplam Doğrudan Temin</span>
+            <span style="display:block;font-size:11px;color:var(--v1-muted);margin-top:3px;">tüm zamanlar</span></span></div>
+          <div class="v1-kpi-kart" style="cursor:default;background:#FFFDF6;"><span class="v1-kpi-govde">
+            <span class="v1-kpi-sayi" id="dt-kpi-aktif" style="color:#B8860B;">—</span>
+            <span class="v1-kpi-etiket">Aktif / Açık</span>
+            <span style="display:block;font-size:11px;color:var(--v1-muted);margin-top:3px;">duyurusu süren</span></span></div>
+          <div class="v1-kpi-kart" style="cursor:default;background:#FFFDF6;"><span class="v1-kpi-govde">
+            <span class="v1-kpi-sayi" id="dt-kpi-bedel" style="color:#B8860B;">—</span>
+            <span class="v1-kpi-etiket">Toplam DT Bedeli
+              <span class="k-rozet" style="background:#FBEED2;color:#8A6D1A;border-color:#F0D9A0;" title="Doğrudan temin kazanan bedellerinin toplamı (dogrudan_temin_sonuclari.kazanan_bedel)">yalnız DT</span></span>
+            <span style="display:block;font-size:11px;color:var(--v1-muted);margin-top:3px;" id="dt-kpi-bedel-alt">kazanan bedelleri toplamı</span></span></div>
+          <div class="v1-kpi-kart" style="cursor:default;background:#FFFDF6;"><span class="v1-kpi-govde">
+            <span class="v1-kpi-sayi" id="dt-kpi-il" style="color:#B8860B;">—</span>
+            <span class="v1-kpi-etiket">Kapsanan İl</span>
+            <span style="display:block;font-size:11px;color:var(--v1-muted);margin-top:3px;">farklı şehir</span></span></div>
+        </div>
+
+        <!-- Üstteki 4 KPI + grafikler kurum_ozet (YALNIZ `ilanlar`) = ihale evreni. DT satırı ise
+             kurum_dt_ozet'ten (dogrudan_temin_*) AYRI evren. Dağılım grafikleri için ihale/DT seçici
+             "Dağılım Analizi" sekmesinde; ayrıntılı DT kayıtları "⚡ Doğrudan Temin Kayıtları" butonunda. -->
         <div class="k-kapsam">
           <span style="flex-shrink:0;">📋</span>
           <span>
@@ -1353,6 +1378,38 @@
     ilListe((ozet && ozet.il) || []);
     _ihaleOzet = ozet; _dtOzet = null;   // yeni kurum → DT önbelleğini sıfırla; İhale dağılımı varsayılan
     dagilimCiz('ihale');
+    dtKartlariniDoldur();   // ⚡ DT KPI kartlarını paralel doldur (kurum_dt_ozet; non-blocking, sayfayı bekletmez)
+  }
+
+  // DT KPI kartları (Toplam DT / Aktif / Toplam DT Bedeli / Kapsanan İl). kurum_dt_ozet on-demand
+  // + ağır (2,9M ILIKE, 25s bütçe) → non-blocking çağrılır; sonuç _dtOzet'e cache'lenir (Dağılım
+  // Analizi DT toggle'ı yeniden çekmez). Race guard: await sonrası KURUM değiştiyse eski cevabı yazma.
+  async function dtKartlariniDoldur(){
+    const buKurum = KURUM;
+    const kartlar = ['dt-kpi-toplam','dt-kpi-aktif','dt-kpi-bedel','dt-kpi-il'];
+    kartlar.forEach(id => { const x = el(id); if (x) x.textContent = '…'; });
+    try{
+      if (!_dtOzet){
+        const { data, error } = await sb.rpc('kurum_dt_ozet', { p_idare: buKurum });
+        if (error) throw error;
+        if (buKurum !== KURUM) return;   // kullanıcı başka kuruma geçti → bayat cevabı yazma
+        _dtOzet = data || {};
+      }
+      if (buKurum !== KURUM) return;
+      const k = (_dtOzet && _dtOzet.kpi) || {};
+      el('dt-kpi-toplam').textContent = num(Number(k.toplam) || 0);
+      el('dt-kpi-aktif').textContent  = num(Number(k.acik) || 0);
+      el('dt-kpi-bedel').textContent  = paraFormat(Number(k.bedel_toplam) || 0);
+      el('dt-kpi-il').textContent     = num(Number(k.il_sayisi) || 0);
+      const bedelli = Number(k.bedelli_sayisi) || 0, medyan = Number(k.bedel_medyan) || 0;
+      el('dt-kpi-bedel-alt').textContent = bedelli
+        ? `${num(bedelli)} kayıtta bedel · medyan ${paraFormat(medyan)}`
+        : 'kazanan bedelleri toplamı';
+      const bEl = el('dt-kpi-bedel'); bEl.style.fontSize = bEl.textContent.length > 13 ? '19px' : '';
+    }catch(e){
+      if (buKurum !== KURUM) return;
+      kartlar.forEach(id => { const x = el(id); if (x) x.textContent = '—'; });
+    }
   }
 
   // ══════════════════ İDARE DİZİNİ ══════════════════

@@ -57,6 +57,30 @@ def _kurum_grounding(supabase, idare: str) -> dict | None:
                              "ort_tenzilat": f.get("ort_tenzilat")})
     except Exception:
         pass
+    # ── DOĞRUDAN TEMİN evreni (kurum_dt_ozet) — ihaleden AYRI; kurum çoğu zaman ihaleden
+    #    ÇOK daha fazla DT yapar (örn. ANFA: 29 ihale vs 1.536 DT, ₺10,7M vs ₺605M). Ağır RPC
+    #    (2,9M ILIKE, 25s bütçe); hata/timeout → DT'siz devam (ihale grounding'i yine üretilir).
+    dt_g = None
+    try:
+        dtd = supabase.rpc("kurum_dt_ozet", {"p_idare": idare}).execute().data or {}
+        if isinstance(dtd, str):
+            dtd = json.loads(dtd)
+        dkpi = (dtd or {}).get("kpi") or {}
+        if dkpi.get("toplam"):
+            dt_g = {
+                "dt_toplam": dkpi.get("toplam"),
+                "dt_aktif": dkpi.get("acik"),
+                "dt_bedel_toplam": dkpi.get("bedel_toplam"),
+                "dt_bedel_medyan": dkpi.get("bedel_medyan"),
+                "dt_sektor_sayisi": dkpi.get("sektor_sayisi"),
+                "dt_kategori_dagilim": (dtd.get("kategori") or [])[:5],
+                "dt_tekrar_kazananlar": [
+                    {"ad": x.get("grup_deger"), "dt_sayisi": x.get("ihale_sayisi")}
+                    for x in (dtd.get("kazanan") or [])[:5]
+                ],
+            }
+    except Exception:
+        pass
     return {
         "kurum": idare,
         "toplam_ihale": kpi.get("toplam"),
@@ -68,6 +92,7 @@ def _kurum_grounding(supabase, idare: str) -> dict | None:
         "sektor_dagilim": (ozet.get("kategori") or [])[:6],
         "il_dagilim": (ozet.get("il") or [])[:5],
         "tekrar_kazananlar": firmalar,
+        "dogrudan_temin": dt_g,   # None ise kurumun DT kaydı yok → prompt DT'ye değinmez
     }
 
 
@@ -78,20 +103,31 @@ def _kaba_hash(g: dict) -> str:
     usul3 = [u.get("k") for u in (g.get("usul_dagilim") or [])[:3]]
     firma3 = [f.get("ad") for f in (g.get("tekrar_kazananlar") or [])[:3]]
     son_yil = (g.get("yillik_trend") or [{}])[-1].get("k") if g.get("yillik_trend") else None
-    imza = json.dumps([toplam_kova, usul3, firma3, son_yil], ensure_ascii=False, sort_keys=True)
+    # DT evreni de imzaya girsin → DT hacmi/kazananları değişince yorum yenilenir
+    dt = g.get("dogrudan_temin") or {}
+    dt_kova = (dt.get("dt_toplam") or 0) // 100
+    dt_firma3 = [f.get("ad") for f in (dt.get("dt_tekrar_kazananlar") or [])[:3]]
+    imza = json.dumps([toplam_kova, usul3, firma3, son_yil, dt_kova, dt_firma3], ensure_ascii=False, sort_keys=True)
     return hashlib.md5(imza.encode("utf-8")).hexdigest()
 
 
 def _kurum_prompt(g: dict) -> str:
     return (
-        "Şu kamu kurumunu değerlendir (JSON GERÇEK verilerdir):\n"
+        "Şu kamu kurumunu değerlendir (JSON GERÇEK verilerdir; 'dogrudan_temin' alanı VARSA bu, 4734 "
+        "ihale usullerinden AYRI bir evrendir — ölçekleri farklıdır, İKİSİNİ TOPLAMA, ama BİRLİKTE "
+        "kurumun gerçek satın alma davranışını gösterir):\n"
         + json.dumps(g, ensure_ascii=False, indent=1, default=str) + "\n\n"
         "Değinilecekler: (1) ihale hacmi ve YILLIK TREND (artıyor/azalıyor/durağan mı — yillik_trend'den); "
         "(2) tercih edilen USUL — açık ihale mi yoksa pazarlık/istisna/3-g ağırlıklı mı; pazarlık/istisna "
         "ağırlığı DÜŞÜK REKABET/az şeffaflık sinyalidir, bunu veriyle belirt; (3) sektör/tür odağı; "
         "(4) TEKRAR KAZANAN firmalar — birkaç firma ihalelerin çoğunu alıyorsa yerleşik tedarikçi/düşük "
-        "rekabet olabilir (ihtiyatlı, sayıyla söyle, itham etme); (5) tekliflere hazırlanan firmaya kısa "
-        "bir çıkarım. Yalnız yorum metnini yaz."
+        "rekabet olabilir (ihtiyatlı, sayıyla söyle, itham etme); "
+        "(5) DOĞRUDAN TEMİN (dogrudan_temin VARSA, ÖNEMLİ): kurum işlerini ağırlıkla ihale ile mi yoksa "
+        "doğrudan temin ile mi yürütüyor? dt_toplam'ı toplam_ihale ile, dt_bedel_toplam'ı ihale bütçesiyle "
+        "SAYIYLA kıyasla (çoğu kurumda DT hacmi ihaleden kat kat büyüktür — bu, ihale-yalnız bakışın kaçırdığı "
+        "gerçek satın alma tablosudur). DT'de de birkaç firma yoğunlaşıyorsa (dt_tekrar_kazananlar) belirt; "
+        "DT düşük rekabete/yerleşik tedarikçiye ihaleden daha açıktır, ihtiyatlı yorumla; "
+        "(6) tekliflere hazırlanan firmaya kısa çıkarım (ihale + DT birlikte). Yalnız yorum metnini yaz."
     )
 
 
@@ -131,7 +167,7 @@ def kurum_yorumla(supabase, idare: str, zorla: bool = False) -> dict:
         return {"basari": True, "yorum": cached["yorum"], "kaynak": "cache", "uretildi_mi": False, "hata": None}
 
     # ── 3) Yeni yorum üret (ilk kez ya da veri materyal DEĞİŞTİ) ──
-    r = ai_cagir(_KURUM_SISTEM, _kurum_prompt(g), max_tokens=1100, temperature=0.3, nerede="kurum_yorumla")
+    r = ai_cagir(_KURUM_SISTEM, _kurum_prompt(g), max_tokens=1400, temperature=0.3, nerede="kurum_yorumla")
     if not r.get("basari") or not r.get("metin"):
         return {"basari": False, "yorum": None, "hata": r.get("hata") or "AI boş yanıt", "uretildi_mi": False}
     yorum = r["metin"].strip()
