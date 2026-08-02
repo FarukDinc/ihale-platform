@@ -535,7 +535,8 @@ Durum: ✅ bitti · ⏳ sıradaki · 📋 planlandı (FE=frontend/pull · DB=mig
 `backend/sartname_indir.py` (indir+ZIP/PDF/docx parse) + `/ai/sartname-analiz` endpoint (KREDİLİ premium:
 cache 1 / fresh 3 kredi; ilanlar.sartname_metni cache). Zengin doküman seti iniyor (teknik şartname+birim
 fiyat cetveli+poz), AI okuyup **somut ₺ band** veriyor (örn Mustafakemalpaşa %18,09→34,5-36,2M). Endpoint
-401-auth kayıtlı, zincir uçtan uca doğrulandı. KALAN: teklif-olustur.html'e "Şartnameyi Analiz Et" butonu.
+401-auth kayıtlı, zincir uçtan uca doğrulandı. **UI:** teklif-olustur.html'e "📄 Teknik Şartnameyi İndir &
+Analiz Et (3 Kredi)" butonu + aiSartnameAnaliz() (canlı doğrulandı, 0 konsol hatası). **FAZ 2 TAM BİTTİ.**
 Bkz. [[ekap-belge-indirme-captcha]], [[ai-teklif-strateji-deepseek]].
 **✅ FAZ 1 (1 Ağu):** Teknik şartname İNDİRME EKAP'ta sertleşti (spike: CAPTCHA çözülüyor ama 3. adım
 406 — Playwright gerekir = Faz 2, ertelendi; bkz. [[ekap-belge-indirme-captcha]]). PIVOT: zaten çekili
