@@ -37,6 +37,55 @@ _TASLAK_SISTEM = (
     "verilen firma bilgilerini ve genel iyi-uygulama ifadelerini kullan."
 )
 
+# ── UV-1: İLAN METNİ / ŞARTNAME OKUMA (1 Ağu) ────────────────────────────────
+# Teknik şartname İNDİRME EKAP'ta sertleşti (406 — Playwright gerekir, ertelendi). Ama ilan_metni
+# ZATEN çekili (%75,8 kapsam, ~4K char, iş tanımı+kalem+idare içerir). AI bunu okuyup ihaleye ÖZGÜ
+# {kapsam, kalemler, konu kelimeleri} çıkarır → benzer-ihale eşleştirmesi ve teklif bandı iyileşir
+# (yaklaşık maliyet/il-tenzilat yoksa "band veremiyorum" yerine metinden çıkarım). Sağlayıcı-bağımsız
+# (ai_ortak, env AI_SAGLAYICI). UYDURMA YASAK: yalnız metinde açıkça geçeni çıkarır, yoksa null.
+_SARTNAME_SISTEM = (
+    "Sen kamu ihale ilan ve şartname analistisin. Verilen ihale ilan metnini oku ve SADECE metinde "
+    "AÇIKÇA yazan bilgiyi yapılandırılmış JSON olarak çıkar. Metinde OLMAYAN hiçbir şeyi UYDURMA — "
+    "bilinmiyorsa null ya da boş liste bırak. Yalnız geçerli JSON döndür, başka açıklama yazma."
+)
+
+
+def _sartname_prompt(metin: str, meta: dict = None) -> tuple:
+    """(sistem, kullanici) döndürür — sartname_oku ve sağlayıcı-kıyas harness'i AYNI prompt'u kullansın."""
+    meta = meta or {}
+    bilgi = ""
+    if meta.get("baslik"):
+        bilgi += f"Başlık: {meta['baslik']}\n"
+    if meta.get("kategori"):
+        bilgi += f"Mevcut kategori tahmini: {meta['kategori']}\n"
+    kullanici = (
+        bilgi + "\nİHALE İLAN METNİ:\n" + (metin or "")[:8000] + "\n\n"
+        "Şu JSON şemasıyla çıkar (metinde olmayan alanı null/boş bırak):\n"
+        '{"kapsam": "1-2 cümle: tam olarak ne alınıyor/yaptırılıyor",'
+        ' "is_turu": "yapım|hizmet|mal|danışmanlık|bilinmiyor",'
+        ' "kalemler": [{"ad": "kalem adı", "miktar": "sayı ya da null", "birim": "adet/m2/kg/ay/... ya da null"}],'
+        ' "konu_kelimeler": ["benzer ihale eşleştirmesi için 5-10 kısa anahtar kelime"],'
+        ' "tahmini_buyukluk_notu": "ölçek/büyüklük ipucu ya da null",'
+        ' "yaklasik_maliyet_ipucu": "metinde açıkça geçen bedel/parasal limit ya da null"}'
+    )
+    return _SARTNAME_SISTEM, kullanici
+
+
+def sartname_oku(metin: str, meta: dict = None) -> dict:
+    """İlan metninden yapılandırılmış kapsam çıkarır (ai_ortak, env sağlayıcı).
+    Döner: {"basari", "veri"(dict)|None, "saglayici", "hata"}."""
+    if not metin or len(metin) < 100:
+        return {"basari": False, "veri": None, "hata": "ilan metni yok/çok kısa", "saglayici": None}
+    sistem, kullanici = _sartname_prompt(metin, meta)
+    r = ai_cagir(sistem, kullanici, max_tokens=1000, json_mod=True, temperature=0.2, nerede="sartname_oku")
+    if not r.get("basari") or not r.get("metin"):
+        return {"basari": False, "veri": None, "hata": r.get("hata") or "AI boş yanıt", "saglayici": r.get("saglayici")}
+    try:
+        veri = json.loads(r["metin"])
+    except (ValueError, TypeError) as e:
+        return {"basari": False, "veri": None, "hata": f"JSON ayrıştırılamadı: {str(e)[:60]}", "saglayici": r.get("saglayici")}
+    return {"basari": True, "veri": veri, "saglayici": r.get("saglayici"), "hata": None}
+
 
 def _prompt_olustur(ilan: dict, firma_profil: dict, piyasa_baglami: list) -> str:
     ihale_json = json.dumps({
