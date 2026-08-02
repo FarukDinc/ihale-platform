@@ -7,12 +7,12 @@ Durum: ✅ bitti · ⏳ sıradaki · 📋 planlandı
 
 ---
 
-## AI YORUM MODÜLÜ (premium) 🟡 KURUM ✅, firma/ihale sırada
-Grounded+cache'li değerlendirme (3 varlık). Motor `backend/ai_yorum.py`, cache `ai_yorumlari` (service_role,
-veri-hash → tutarlılık). **✅ KURUM (1 Ağu CANLI):** kurum_ozet+tekrar-kazananlar(analiz_pivot firma)→DeepSeek;
-`/ai/kurum-yorum` (1 kredi); v1-kurum-analiz "🧠 AI Kurum Yorumu" butonu (window.kurumYorumAl). Yaş<7g hızlı
-cache (0,1s). **KALAN:** 🏢 firma (firma_ai_yorum VAR→ai_yorum motoruna taşı+DT/segment zenginleştir), 📋 ihale
-(UV-1 teklif-strateji/sartname zaten yorumluyor; ayrı istenirse). Bkz. [[ai-yorum-modulu]].
+## AI YORUM MODÜLÜ (premium) ✅ ÜÇ VARLIK DA CANLI
+Grounded+cache'li değerlendirme. **✅ KURUM:** `ai_yorum.py` (kurum_ozet+tekrar-kazananlar→DeepSeek),
+`/ai/kurum-yorum`, v1-kurum-analiz butonu, cache `ai_yorumlari` (veri-hash, yaş<7g hızlı 0,1s).
+**✅ FİRMA (zenginleştirildi):** `firma_ai_yorum.py`+`/ai/firma-yorum`; grounding'e **DT kazanımları
+(firma_dt_ozet) + segment (parlayan/sönen) + büyüme + ortak girişim** eklendi, max_tokens 1200.
+**✅ İHALE:** UV-1 teklif-strateji/sartname. Tutarlılık = grounding + cache. Bkz. [[ai-yorum-modulu]].
 
 ## MADDE 1 — Harita renk skalası (geçici düzeltme) ✅
 Hiç ihalesi olmayan iller bembeyaz görünüp arka planla karışıyordu.
