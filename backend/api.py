@@ -391,7 +391,9 @@ def firma_ai_yorum(
         norm = supabase.rpc("normalize_firma", {"ham_ad": firma}).execute()
         normalize_ad = norm.data
         mevcut_liste = supabase.table("yukleniciler").select(
-            "id, ad, ai_yorum, ai_yorum_tarih"
+            "id, ad, ai_yorum, ai_yorum_tarih, toplam_sozlesme_sayisi, toplam_ciro, il, sektor, "
+            "seg_parlayan, seg_sonen, seg_ilk_kez, seg_150mn, ciro_son_12ay, ciro_onceki_12ay, "
+            "buyume_yuzde, ortak_girisim"
         ).eq("normalize_ad", normalize_ad).limit(1).execute()
         mevcut_kayit = (mevcut_liste.data or [None])[0]
 
@@ -412,11 +414,38 @@ def firma_ai_yorum(
         if (kredi_bilgi.data or {}).get("kalan_kredi", 0) < 1:
             raise HTTPException(status_code=402, detail="Yetersiz kredi")
 
-        # 3. analiz_pivot kırılımlarını topla
+        # 3. analiz_pivot kırılımlarını topla (İHALE evreni)
         kirilimlar = {}
         for grup in ("idare", "kategori", "il", "yil"):
             r = supabase.rpc("analiz_pivot", {"p_grup": grup, "p_firma": firma}).execute()
             kirilimlar[grup] = (r.data or [])[:8]
+
+        # 3b. ZENGİNLEŞTİRME — DT kazanımları (yuklenici_id bağlandı) + firma profili/segmentler.
+        # İhale ve DT AYRI evren (toplama yok); AI ikisini de görüp bütünsel değerlendirir.
+        try:
+            dt = supabase.rpc("firma_dt_ozet", {"p_firma_ad": firma}).execute().data
+            if isinstance(dt, list):
+                dt = dt[0] if dt else None
+            if dt and (dt.get("dt_sayisi") or 0):
+                kirilimlar["dt_kazanimlari"] = dt
+        except Exception as e:
+            print(f"  ⚠ firma_dt_ozet (firma-yorum) atlandı: {e}")
+        if mevcut_kayit:
+            segler = [ad for ad, v in (("parlayan yıldız", mevcut_kayit.get("seg_parlayan")),
+                                       ("sönen", mevcut_kayit.get("seg_sonen")),
+                                       ("ilk kez ihaleye giren", mevcut_kayit.get("seg_ilk_kez")),
+                                       ("150mn+ büyük ölçek", mevcut_kayit.get("seg_150mn"))) if v]
+            kirilimlar["firma_profili"] = {
+                "toplam_sozlesme": mevcut_kayit.get("toplam_sozlesme_sayisi"),
+                "toplam_ciro": mevcut_kayit.get("toplam_ciro"),
+                "ana_il": mevcut_kayit.get("il"),
+                "sektorler": mevcut_kayit.get("sektor"),
+                "ciro_son_12ay": mevcut_kayit.get("ciro_son_12ay"),
+                "ciro_onceki_12ay": mevcut_kayit.get("ciro_onceki_12ay"),
+                "buyume_yuzde": mevcut_kayit.get("buyume_yuzde"),
+                "ortak_girisim_yapar_mi": mevcut_kayit.get("ortak_girisim"),
+                "segmentler": segler,
+            }
 
         # 4. AI yorumu üret (sağlayıcıyı firma_ai_yorum/ai_ortak seçer)
         sonuc = firma_yorum_uret(firma_adi=firma, kirilimlar=kirilimlar)

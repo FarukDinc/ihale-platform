@@ -48,20 +48,26 @@ AI_YORUM_GECERLILIK_GUN = 7  # bkz. plan: "7 gün geçerli" cache
 def _prompt_olustur(firma_adi: str, kirilimlar: dict) -> str:
     veri_json = json.dumps(kirilimlar, ensure_ascii=False, indent=2, default=str)
     return f"""Sen bir kamu ihale rekabet analistisin. Aşağıda "{firma_adi}" adlı firmanın
-EKAP sonuç ilanlarından derlenmiş GERÇEK istatistikleri var (idare/sektör/il/yıl kırılımları,
-her biri ihale sayısı + ortalama tenzilat % içeriyor). Bu sayılara SADIK KAL, uydurma bilgi ekleme.
+EKAP verisinden derlenmiş GERÇEK istatistikleri var: idare/sektör/il/yıl kırılımları (ihale sayısı +
+ortalama tenzilat %), ayrıca varsa "dt_kazanimlari" (DOĞRUDAN TEMİN kazanımları — ihaleden AYRI evren)
+ve "firma_profili" (toplam ciro, son 12 ay büyüme, segment etiketleri, ortak girişim eğilimi).
+Bu sayılara SADIK KAL, uydurma bilgi ekleme.
 
 VERİ:
 {veri_json}
 
-Bu veriye dayanarak, bir rakip ihale teklifçisine yönelik KISA (4-6 cümle, madde işaretsiz düz
+Bu veriye dayanarak, bir rakip ihale teklifçisine yönelik KISA (5-7 cümle, madde işaretsiz düz
 metin) bir Türkçe analiz yaz. Şunlara değin:
 - Bu firma hangi idare(ler)de/sektör(ler)de baskın (en çok iş aldığı yerler)
 - Tenzilat davranışı agresif mi ihtiyatlı mı (ortalama tenzilat yüzdelerine bak).
   ÖNEMLİ: ort_tenzilat null ise o kırılımda tenzilat HESAPLANAMIYOR demektir (kısımlı ihalede
   EKAP kısım bazlı yaklaşık maliyet yayımlamıyor) — null'lar için tenzilat yorumu YAPMA,
   tenzilat verisi olmadığını belirt ya da bu maddeyi atla. Null'u sıfır/düşük tenzilat sanma.
-- Varsa yıllara göre bir yönelim/artış-azalış sinyali
+- DOĞRUDAN TEMİN (dt_kazanimlari) VARSA: firmanın ihale dışında DT ile de iş aldığını belirt
+  (dt_sayisi/bedel); ihale + DT birlikte firmanın gerçek büyüklüğünü gösterir (ikisini TOPLAMA,
+  ayrı ayrı belirt — ölçek farkı var).
+- firma_profili VARSA: segment etiketleri (parlayan yıldız = büyüyor, sönen = küçülüyor) ve
+  buyume_yuzde ile son 12 ay yönelimini yorumla; ortak girişim yapıyorsa bunu bir davranış sinyali say.
 - Bu firmayla aynı ihalede karşılaşan bir rakibe kısa bir tavsiye cümlesi
 
 Sadece analiz metnini yaz, başlık/madde işareti/markdown kullanma."""
