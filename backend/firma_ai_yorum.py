@@ -40,7 +40,7 @@ GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
 
 # Çıktı 4-6 cümlelik Türkçe düz metin; Türkçe'de token/karakter oranı yüksek olduğu için
 # cümlenin ortadan kesilmemesi (finish_reason='length') adına cömert tutuldu.
-AI_MAX_TOKEN = 900
+AI_MAX_TOKEN = 1200  # DT + segment zenginleştirmesiyle yorum uzadı (900'de kesiliyordu, 1 Ağu)
 
 AI_YORUM_GECERLILIK_GUN = 7  # bkz. plan: "7 gün geçerli" cache
 
