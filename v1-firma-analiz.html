@@ -1660,21 +1660,35 @@
 
   function _iletisimKartiHTML(v, kaynaklar){
     v = v || {};
+    // Çoklu değeri diziye normalize et (backend telefonlar/epostalar DİZİ döndürür; eski cache tekil olabilir)
+    const dizi = (x) => Array.isArray(x) ? x.filter(Boolean) : (x ? [x] : []);
+    const telefonlar = dizi(v.telefonlar != null ? v.telefonlar : v.telefon);
+    const epostalar  = dizi(v.epostalar  != null ? v.epostalar  : v.eposta);
+    // Tek değerli satır (adres/web)
     const satir = (etiket, deger, tur) => {
       if (!deger) return '';
       const gd = _kacis(deger);
       let ic = gd;
-      if (tur === 'tel') ic = `<a href="tel:${_kacis(String(deger).replace(/[^0-9+]/g,''))}">${gd}</a>`;
-      else if (tur === 'mail') ic = `<a href="mailto:${gd}">${gd}</a>`;
-      else if (tur === 'web'){ const u = /^https?:\/\//i.test(deger) ? deger : 'https://' + deger;
+      if (tur === 'web'){ const u = /^https?:\/\//i.test(deger) ? deger : 'https://' + deger;
         ic = `<a href="${_kacis(u)}" target="_blank" rel="noopener nofollow">${gd}</a>`; }
       return `<div style="display:flex;gap:8px;margin:5px 0;"><span style="min-width:80px;color:var(--v1-muted);font-weight:600;">${etiket}</span><span>${ic}</span></div>`;
     };
-    const bosMu = !(v.telefon || v.eposta || v.adres || v.web_sitesi || v.yetkili_kisi);
+    // Çok değerli satır (telefon/e-posta — birden fazla varsa HEPSİ, her biri linkli)
+    const satirCoklu = (etiket, degerler, tur) => {
+      if (!degerler.length) return '';
+      const ic = degerler.map(d => {
+        const gd = _kacis(d);
+        if (tur === 'tel') return `<a href="tel:${_kacis(String(d).replace(/[^0-9+]/g,''))}">${gd}</a>`;
+        if (tur === 'mail') return `<a href="mailto:${gd}">${gd}</a>`;
+        return gd;
+      }).join('<span style="color:var(--v1-cizgi);">&nbsp;·&nbsp;</span>');
+      return `<div style="display:flex;gap:8px;margin:5px 0;"><span style="min-width:80px;color:var(--v1-muted);font-weight:600;">${etiket}</span><span>${ic}</span></div>`;
+    };
+    const bosMu = !(telefonlar.length || epostalar.length || v.adres || v.web_sitesi);
     let govde = bosMu
       ? '<div style="color:var(--v1-muted);">Web aramasında doğrulanabilir iletişim bilgisi bulunamadı.</div>'
-      : (satir('Telefon', v.telefon, 'tel') + satir('E-posta', v.eposta, 'mail') +
-         satir('Adres', v.adres) + satir('Web', v.web_sitesi, 'web') + satir('Yetkili', v.yetkili_kisi));
+      : (satirCoklu('Telefon', telefonlar, 'tel') + satirCoklu('E-posta', epostalar, 'mail') +
+         satir('Adres', v.adres) + satir('Web', v.web_sitesi, 'web'));
     if (v.ozet) govde += `<div style="margin-top:8px;font-size:12px;color:var(--v1-muted);line-height:1.6;">${_kacis(v.ozet)}</div>`;
     if (kaynaklar && kaynaklar.length){
       govde += `<div style="margin-top:10px;font-size:11.5px;color:var(--v1-muted);">Kaynaklar: ` +

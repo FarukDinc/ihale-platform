@@ -29,12 +29,16 @@ AI_MAX_TOKEN = 1500  # grounding + JSON + özet için cömert (spike'ta ~180 tok
 
 _PROMPT = """'{firma}' adlı Türkiye'de kayıtlı şirketin GÜNCEL İLETİŞİM BİLGİLERİNİ bulmak için web'de ARAMA YAP.
 Güncel ve doğru veriye ulaşmak için MUTLAKA web aramasına dayan; ezberden/tahminle yanıt verme.
-Şu alanları döndür (bulamadığın alanı null bırak, ASLA UYDURMA):
-telefon, eposta, adres, web_sitesi, yetkili_kisi.
-Yalnızca arama sonuçlarında GERÇEKTEN gördüğün bilgileri yaz; emin değilsen null bırak.
+Şu alanları döndür (bulamadığın alanı boş bırak, ASLA UYDURMA):
+- telefonlar: bulduğun TÜM telefon numaraları — birden fazla varsa HEPSİNİ dizi olarak ver
+- epostalar: bulduğun TÜM e-posta adresleri — birden fazla varsa HEPSİNİ dizi olarak ver
+- adres: şirketin açık adresi
+- web_sitesi: resmî web sitesi
+Yetkili kişi / yönetici / yönetim kurulu başkanı ismi İSTEME ve DÖNDÜRME (gerekmiyor).
+Yalnızca arama sonuçlarında GERÇEKTEN gördüğün bilgileri yaz; emin değilsen boş bırak.
 Kısa bir 'ozet' cümlesi ekle (şirketin ne yaptığı ve bilgilerin hangi kaynaktan geldiği).
 Yanıtı SADECE şu JSON formatında ver, başka hiçbir metin ekleme:
-{{"telefon":null,"eposta":null,"adres":null,"web_sitesi":null,"yetkili_kisi":null,"ozet":""}}"""
+{{"telefonlar":[],"epostalar":[],"adres":null,"web_sitesi":null,"ozet":""}}"""
 
 
 def _json_ayikla(metin: str):
