@@ -364,11 +364,23 @@
           <div class="k-meta" id="kurum-meta">Veri yükleniyor…</div>
           <div class="k-aksiyon">
             <button class="v1-btn-ana" id="btn-liste-git">📋 Tüm İhalelerini Gör</button>
+            <button class="v1-btn-ana" id="btn-ai-yorum" onclick="kurumYorumAl()"
+              style="background:var(--v1-lacivert,#0c3e70);">🧠 AI Kurum Yorumu (1 Kredi)</button>
             <a class="v1-btn-ikincil" id="btn-dt" href="#">⚡ Doğrudan Temin Kayıtları</a>
             <button class="v1-btn-ikincil" id="btn-takip">🔔 Kurumu Takip Et</button>
             <button class="v1-btn-ikincil" id="btn-paylas">🔗 Paylaş</button>
             <button class="v1-btn-ikincil" id="btn-dizin">← Dizine Dön</button>
           </div>
+        </div>
+
+        <!-- AI Yorum Modülü: grounded (kurum_ozet + tekrar-kazananlar) + cache'li kurum değerlendirmesi -->
+        <div class="v1-kart" id="ai-yorum-kart" style="display:none;">
+          <div class="v1-kart-baslik">🧠 AI Kurum Değerlendirmesi</div>
+          <div id="ai-yorum-loading" style="display:none;color:var(--v1-muted);font-size:13px;padding:6px 0;">
+            Kurumun geçmiş ihale verisi AI ile değerlendiriliyor…</div>
+          <div id="ai-yorum-metin" style="font-size:13.5px;line-height:1.7;white-space:pre-wrap;color:var(--v1-metin);"></div>
+          <div id="ai-yorum-not" style="display:none;margin-top:10px;font-size:11px;color:var(--v1-muted);">
+            ⚠️ Bu değerlendirme yalnız kamuya açık geçmiş ihale verisine dayanan grounded bir yorumdur; kesin sonuç değildir.</div>
         </div>
 
         <div class="v1-kpi" style="grid-template-columns:repeat(4,1fr);margin-bottom:18px;">
@@ -2011,6 +2023,45 @@
     // dizinGoster() görünümü tekrar uygular ve gerekiyorsa ağacı kurar.
     if (KURUM) analizAc(KURUM); else dizinGoster();
   })();
+
+  // AI Yorum Modülü — kredili grounded kurum değerlendirmesi (/api/ai/kurum-yorum). window'a
+  // atanır çünkü script IIFE; buton onclick=kurumYorumAl() global'e ulaşsın.
+  window.kurumYorumAl = async function () {
+    const btn = document.getElementById('btn-ai-yorum');
+    const kart = document.getElementById('ai-yorum-kart');
+    const yuk = document.getElementById('ai-yorum-loading');
+    const metin = document.getElementById('ai-yorum-metin');
+    const not = document.getElementById('ai-yorum-not');
+    if (!KURUM || !kart) return;
+    kart.style.display = 'block';
+    metin.textContent = '';
+    not.style.display = 'none';
+    yuk.style.display = 'block';
+    btn.disabled = true;
+    kart.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    try {
+      const { data: { session } } = await sb.auth.getSession();
+      if (!session) { yuk.style.display = 'none'; metin.textContent = 'Bu özellik için giriş yapmalısınız.'; return; }
+      const res = await fetch('https://ihaleglobal.com/api/ai/kurum-yorum', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
+        body: JSON.stringify({ idare: KURUM })
+      }).catch(() => null);
+      yuk.style.display = 'none';
+      if (!res) { metin.textContent = 'Sunucuya ulaşılamadı. Tekrar deneyin.'; return; }
+      if (res.status === 402) { metin.textContent = 'Yetersiz kredi. Bu özellik 1 kredi gerektirir.'; return; }
+      if (!res.ok) { const h = await res.json().catch(() => ({})); metin.textContent = h.detail || 'Yorum alınamadı, tekrar deneyin.'; return; }
+      const j = await res.json();
+      metin.textContent = j.yorum || 'Bu kurum için yorum üretilemedi.';
+      not.style.display = 'block';
+    } catch (e) {
+      yuk.style.display = 'none';
+      metin.textContent = 'Bir hata oluştu. Tekrar deneyin.';
+    } finally {
+      btn.disabled = false;
+      btn.textContent = '🧠 AI Kurum Yorumu (1 Kredi)';
+    }
+  };
 })();
 </script>
 </body>
