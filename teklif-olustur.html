@@ -928,10 +928,15 @@
                 <div class="ai-panel-sub">Benzer geçmiş ihalelerin gerçek tenzilat verisiyle size bir teklif bandı önerir (1 kredi)</div>
               </div>
             </div>
-            <div class="ai-actions">
+            <div class="ai-actions" style="flex-direction:column;align-items:stretch;gap:8px;">
               <button class="btn-ai" id="ai-strateji-btn" onclick="aiFiyatStrateji()">
                 💡 Teklif Bandı Öner (1 Kredi)
               </button>
+              <button class="btn-ai" id="ai-sartname-btn" onclick="aiSartnameAnaliz()"
+                style="background:var(--navy);border:1px solid var(--gold,#c9a227);">
+                📄 Teknik Şartnameyi İndir & Analiz Et (3 Kredi)
+              </button>
+              <div class="ai-panel-sub" style="margin-top:-2px;">Şartnameyi EKAP'tan indirip AI ile okur → daha isabetli, ihaleye özgü band (~30 sn sürer). Bir kez indirilir; sonraki analiz 1 kredi.</div>
             </div>
             <div class="ai-loading" id="ai-strateji-loading">
               <div class="ai-spinner"></div>
@@ -1646,6 +1651,87 @@
       loading.classList.remove('show');
       btn.disabled = false;
       btn.textContent = '💡 Yeniden Öner (1 Kredi)';
+    }
+  }
+
+  // UV-1 Faz 2: EKAP'tan teknik şartnameyi İNDİR (Playwright) + AI analiz → ihaleye özgü band (PREMIUM).
+  async function aiSartnameAnaliz() {
+    const btn = document.getElementById('ai-sartname-btn');
+    const loading = document.getElementById('ai-strateji-loading');
+    const kutu = document.getElementById('ai-strateji-sonuc');
+    const mesajlar = [
+      'Teknik şartname EKAP’tan indiriliyor...',
+      'Güvenlik doğrulaması (CAPTCHA) çözülüyor...',
+      'PDF ve birim fiyat cetveli okunuyor...',
+      'AI şartnameyi analiz ediyor...',
+      'İhaleye özgü teklif bandı hesaplanıyor...',
+    ];
+    let mi = 0;
+    if (!ihaleId) { toast('Şartname analizi için ihale bağlantısı gerekir.', 'hata'); return; }
+
+    btn.disabled = true;
+    loading.classList.add('show');
+    document.getElementById('ai-strateji-loading-text').textContent = mesajlar[0];
+    const interval = setInterval(() => {
+      mi = (mi + 1) % mesajlar.length;
+      document.getElementById('ai-strateji-loading-text').textContent = mesajlar[mi];
+    }, 3500);
+
+    try {
+      const { data: { session } } = await sb.auth.getSession();
+      if (!session) { toast('Bu özellik için giriş yapmalısınız.', 'hata'); return; }
+
+      const res = await fetch(`${API.CONFIG.BASE_URL}/ai/sartname-analiz`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
+        body: JSON.stringify({ ihale_id: ihaleId })
+      }).catch(() => null);
+
+      if (!res) { toast('Sunucuya ulaşılamadı. Tekrar deneyin.', 'hata'); return; }
+      if (res.status === 402) { toast('Yetersiz kredi. Bu özellik 3 kredi gerektirir.', 'hata'); return; }
+      if (res.status === 502) { toast('Şartname EKAP’tan indirilemedi (belge yok ya da erişilemedi).', 'hata'); return; }
+      if (!res.ok) {
+        const h = await res.json().catch(() => ({}));
+        toast(h.detail || 'Şartname analizi alınamadı. Tekrar deneyin.', 'hata');
+        return;
+      }
+
+      const json = await res.json();
+      document.getElementById('ai-strateji-metin').textContent = json.metin || '';
+
+      // Dayanak: kırılımlar + şartname özeti (kapsam/kalem) + indirilen dosyalar (grounding şeffaflığı)
+      const satirlar = [];
+      const kir = json.kirilimlar || {};
+      for (const [ad, dizi] of Object.entries(kir)) {
+        const r = (dizi || [])[0]; if (!r) continue;
+        const t = (r.ort_tenzilat == null) ? 'tenzilat hesaplanamıyor'
+          : '%' + Number(r.ort_tenzilat).toLocaleString('tr-TR', { maximumFractionDigits: 1 }) + ' ort. tenzilat';
+        const n = Number(r.ihale_sayisi || 0).toLocaleString('tr-TR');
+        const etiket = ad === 'konu' ? 'Konu' : (ad === 'genel' ? 'Genel' : (ad === 'il' ? 'İl' : 'Sektör'));
+        satirlar.push(`<strong style="color:var(--white);">${etiket}:</strong> ${r.grup_deger || '—'} · ${n} ihale · ${t}`);
+      }
+      const oz = json.sartname_ozet || null;
+      let ozHtml = '';
+      if (oz) {
+        const kalem = (oz.kalemler || []).length;
+        ozHtml = `<div style="margin-top:8px;"><strong style="color:var(--white);">📄 Şartname özeti:</strong> ${(oz.kapsam || '').slice(0, 200)}`
+          + (kalem ? ` <em>(${kalem} kalem)</em>` : '') + `</div>`;
+      }
+      if ((json.dosyalar || []).length) {
+        ozHtml += `<div style="margin-top:6px;opacity:.8;">📎 ${json.dosyalar.length} belge indirildi ve okundu</div>`;
+      }
+      document.getElementById('ai-strateji-veri').innerHTML =
+        (satirlar.length ? '📊 Dayanak veriler:<br>' + satirlar.join('<br>') : '') + ozHtml;
+
+      kutu.style.display = 'block';
+      toast(json.cache ? 'Şartname analizi hazır (kayıtlı belge)!' : 'Şartname indirildi ve analiz edildi!', 'basari');
+    } catch (e) {
+      toast('Bir hata oluştu. Tekrar deneyin.', 'hata');
+    } finally {
+      clearInterval(interval);
+      loading.classList.remove('show');
+      btn.disabled = false;
+      btn.textContent = '📄 Şartnameyi Yeniden Analiz Et';
     }
   }
 
