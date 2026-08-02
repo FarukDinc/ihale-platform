@@ -139,7 +139,7 @@ else
 fi
 
 echo "[$(date +'%Y-%m-%d %H:%M:%S')] === AI kategori backfill ===" >> /opt/ihale-platform/logs/scraper.log
-$VENV/python ai_kategori_backfill.py --limit 400 --rpm 15 >> /opt/ihale-platform/logs/scraper.log 2>&1
+$VENV/python ai_kategori_backfill.py --limit 10000 --rpm 15 >> /opt/ihale-platform/logs/scraper.log 2>&1
 # Sektör-bazlı bildirim: günün yeni ilan/RFQ'ları → sektörü eşleşen firmalara (taksonomi hizalı, dedup'lı).
 # p_gun=1 → yalnız bugünkü yeni kayıtlar (retroaktif spam yok); dedup tekrar üretmez.
 echo "[$(date +'%Y-%m-%d %H:%M:%S')] === Sektor bildirim ===" >> /opt/ihale-platform/logs/scraper.log
