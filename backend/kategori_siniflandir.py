@@ -297,6 +297,11 @@ def kategori_belirle(okas, tur=None, baslik=None):
     """OKAS açıklaması + başlıktan iş-dostu kategori türet. Eşleşme yoksa CPV-2 fallback, sonra tür."""
     metin = _fold(f"{okas or ''} {baslik or ''}")
     if metin.strip():
+        # 26-34: Taşınmaz irtifak/intifa/satış/kira AÇIKÇA Gayrimenkul'dür; "…tesis edilecektir"
+        #   gibi kelimeler yanlışlıkla İnşaat kuralına kaçırıyordu → yüksek öncelik ön-kontrol.
+        if ("irtifak" in metin or "intifa hakki" in metin
+                or ("tasinmaz" in metin and any(w in metin for w in ("satis", "kira", "tahsis", "devri")))):
+            return "Gayrimenkul - Arsa Satışı - Kantin"
         for kategori, rx in _DERLENMIS:
             if rx.search(metin):
                 return kategori
