@@ -183,7 +183,7 @@
     <h2>Doğru ihaleler,<br>zamanında kapına gelir.</h2>
     <p>12.400+ şirket EKAP ihalelerini platformumuzla takip ediyor. Sektörünüze özel filtreler ve anlık bildirimlerle hiçbir fırsatı kaçırmayın.</p>
     <div class="stat-row">
-      <div class="stat-item"><div class="num">2.847</div><div class="lbl">Aktif İhale</div></div>
+      <div class="stat-item"><div class="num" id="lg-aktif">—</div><div class="lbl">Aktif İhale</div></div>
       <div class="stat-item"><div class="num">%98</div><div class="lbl">EKAP Kapsamı</div></div>
       <div class="stat-item"><div class="num">81 il</div><div class="lbl">Türkiye Geneli</div></div>
     </div>
@@ -261,6 +261,20 @@
 <!-- Supabase JS -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
 <script src="js/api.js?v=bldr1"></script>
+
+<script>
+  // Sol paneldeki "Aktif İhale" sayısını CANLI göster (anasayfa/dashboard ile aynı tanım:
+  // durum='aktif' AND son teklif tarihi geçmemiş). Sessizce başarısız olur (misafir anon).
+  (async () => {
+    try {
+      const sb = window.supabase.createClient(API.CONFIG.SUPABASE_URL, API.CONFIG.SUPABASE_ANON_KEY);
+      const { count } = await sb.from('ilanlar').select('id', { count: 'exact', head: true })
+        .eq('durum', 'aktif').gte('son_teklif_tarihi', new Date().toISOString());
+      const el = document.getElementById('lg-aktif');
+      if (el && count != null) el.textContent = (count).toLocaleString('tr-TR');
+    } catch (_) {}
+  })();
+</script>
 
 <script>
   // Panel geçişi

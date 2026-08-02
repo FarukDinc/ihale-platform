@@ -76,13 +76,13 @@
     { id: 'analiz',     ad: 'Analiz',      ikon: I.analiz, href: 'v1-analiz' },
     { id: 'ihaleler',   ad: 'İhaleler',    ikon: I.dosya,  href: 'v1-ihaleler' },
     { id: 'sonuclar',   ad: 'Sonuçlar',    ikon: I.bayrak, href: 'v1-ihaleler?sekme=sonuc' },
-    { id: 'dokumanlar', ad: 'Dokümanlar',  ikon: I.klasor, href: 'v1-dokumanlar' },
     { id: 'sozlesme',   ad: 'Sözleşmeler', ikon: I.para,   href: 'v1-sozlesmeler' },
-    { id: 'kararlar',   ad: 'Kararlar',    ikon: I.tokmak, href: 'v1-kararlar' },
     { id: 'firmalar',   ad: 'Firmalar',    ikon: I.firma,  href: 'v1-firmalar' },
     { id: 'kurumlar',   ad: 'Kurumlar',    ikon: I.kurum,  href: 'v1-kurumlar' },
     { id: 'sektorler',  ad: 'Sektörler',   ikon: I.sektor, href: 'v1-sektorler' },
     { id: 'harita',     ad: 'Harita',      ikon: I.harita, href: 'v1-harita' },
+    { id: 'kararlar',   ad: 'Kararlar',    ikon: I.tokmak, href: 'v1-kararlar' },
+    { id: 'dokumanlar', ad: 'Dokümanlar',  ikon: I.klasor, href: 'v1-dokumanlar' },
   ];
   const MENU_GLOBAL = [
     { id: 'global',     ad: 'Global İhaleler', ikon: I.global,  href: 'v1-global' },
@@ -91,8 +91,8 @@
   const MENU_ESATINALMA = [
     { id: 'esatinalma', ad: 'Satınalma',  ikon: I.sepet, href: 'v1-esatinalma' },
     { id: 'ihalelerim', ad: 'İhalelerim', ikon: I.rapor, href: 'v1-ihalelerim' },
-    { id: 'bank',   ad: 'Bank',   ikon: I.para,   href: 'v1-bank' },
     { id: 'harita', ad: 'Harita', ikon: I.harita, href: 'v1-harita?dunya=esatinalma' },
+    { id: 'bank',   ad: 'Bank',   ikon: I.para,   href: 'v1-bank' },
   ];
   const DUNYALAR = [
     { ws: 'kamu',       ad: 'Kamu',            ikon: I.kurum,  landing: 'v1-benim-sayfam', menu: MENU_KAMU },

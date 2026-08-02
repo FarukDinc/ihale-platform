@@ -382,7 +382,7 @@
     <li><a href="#features">Özellikler</a></li>
     <li><a href="#how">Nasıl Çalışır</a></li>
     <li><a href="#pricing">Fiyatlar</a></li>
-    <li><a href="dashboard">Anasayfa →</a></li>
+    <li><a href="v1-benim-sayfam">Anasayfa →</a></li>
   </ul>
 </div>
 
@@ -414,7 +414,7 @@
             Ücretsiz Başla
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
           </a>
-          <a href="dashboard" class="btn btn-ghost btn-lg">Demo'yu Gör</a>
+          <a href="v1-benim-sayfam" class="btn btn-ghost btn-lg">Demo'yu Gör</a>
         </div>
 
         <p class="hero-note">
@@ -443,30 +443,36 @@
             <span style="font-size:13px; color:var(--muted);">Son güncelleme: az önce</span>
           </div>
 
-          <div class="counter-grid">
-            <div class="counter-item">
+          <!-- İç v1 dashboard (Bana Özel) ile AYNI 6 canlı KPI — tek veri kaynağı, güncel. -->
+          <div class="counter-grid counter-grid-6">
+            <a class="counter-item" href="v1-ihaleler" style="text-decoration:none;">
               <div class="counter-number" id="cnt-active">—</div>
               <div class="counter-label">Aktif İhale</div>
-              <div class="counter-change">↑ son saatte +3</div>
-            </div>
-            <div class="counter-item">
-              <div class="counter-number" id="cnt-today">—</div>
-              <div class="counter-label">Bugün Eklenen</div>
-              <div class="counter-change">↑ güncellendi</div>
-            </div>
-            <div class="counter-item">
-              <div class="counter-number" id="cnt-budget">—</div>
-              <div class="counter-label">Milyar TL Bütçe</div>
-              <div class="counter-change" id="cnt-budget-not" style="opacity:.55;"></div>
-            </div>
-            <div class="counter-item">
-              <div class="counter-number" id="cnt-win">—</div>
-              <div class="counter-label">% Kazanma Oranı*</div>
-            </div>
+            </a>
+            <a class="counter-item" href="v1-kurumlar" style="text-decoration:none;">
+              <div class="counter-number" id="cnt-idare">—</div>
+              <div class="counter-label">İşveren İdare</div>
+            </a>
+            <a class="counter-item" href="v1-ihaleler?tur=dt" style="text-decoration:none;">
+              <div class="counter-number" id="cnt-dt">—</div>
+              <div class="counter-label">Aktif Doğrudan Temin</div>
+            </a>
+            <a class="counter-item" href="v1-sektorler" style="text-decoration:none;">
+              <div class="counter-number" id="cnt-sektor">41</div>
+              <div class="counter-label">Sektörde Fırsat</div>
+            </a>
+            <a class="counter-item" href="v1-ihaleler" style="text-decoration:none;">
+              <div class="counter-number" id="cnt-toplam">—</div>
+              <div class="counter-label">Toplam DT + İhale</div>
+            </a>
+            <a class="counter-item" href="v1-firmalar" style="text-decoration:none;">
+              <div class="counter-number" id="cnt-firma">—</div>
+              <div class="counter-label">Yüklenici Firma</div>
+            </a>
           </div>
 
           <p style="font-size:11px; color:var(--muted); margin-top:12px;">
-            * Premium kullanıcıların platform ortalamsı
+            EKAP + Doğrudan Temin canlı veri havuzu — sayılar anlık güncellenir.
           </p>
         </div>
 
@@ -511,7 +517,7 @@
           </div>
           <div class="search-footer">
             <span>2.847 ihale bulundu</span>
-            <a href="dashboard">Tümünü gör →</a>
+            <a href="v1-ihaleler">Tümünü gör →</a>
           </div>
         </div>
       </div>
@@ -555,7 +561,7 @@
     </div>
     <div class="harita-sekmeler">
       <button class="harita-sekme aktif">📋 İlanlar</button>
-      <a href="firma-analiz" class="harita-sekme" style="text-decoration:none;display:inline-block;">🏢 Firmalar</a>
+      <a href="v1-firmalar" class="harita-sekme" style="text-decoration:none;display:inline-block;">🏢 Firmalar</a>
       <button class="harita-sekme" disabled>🏛️ Kurumlar <span class="yakinda">Yakında</span></button>
     </div>
     <div class="harita-wrap">
@@ -787,7 +793,7 @@
       <p>Kredi kartı olmadan, 5 dakikada hesap açın. İlk bildirim bugün gelsin.</p>
       <div class="cta-actions">
         <a href="login?panel=kayit" class="btn btn-primary btn-lg">Ücretsiz Hesap Aç</a>
-        <a href="dashboard" class="btn btn-ghost btn-lg">Demo Anasayfa →</a>
+        <a href="v1-benim-sayfam" class="btn btn-ghost btn-lg">Demo Anasayfa →</a>
       </div>
     </div>
   </div>
@@ -808,7 +814,7 @@
       <div class="footer-col">
         <h5>Platform</h5>
         <ul>
-          <li><a href="ihaleler">İhale Arama</a></li>
+          <li><a href="v1-ihaleler">İhale Arama</a></li>
           <li><a href="uluslararasi">Uluslararası İhaleler</a></li>
           <li><a href="uyumluluk">Uyumluluk Analizi</a></li>
           <li><a href="ozel-ihaleler">e-Satınalma</a></li>
@@ -862,34 +868,27 @@
       // 4.452 kaydın yalnız 1.000'i toplanıp gerçeğin ~dörtte biri gösteriliyordu
       // (ölçüldü 20 Tem: 25,0 milyar TL). Sayaçlar count:exact+head olduğu için
       // kesilmiyordu, onlar olduğu gibi kaldı.
-      const [aktif, bugun, butce] = await Promise.all([
-        sb.from('ilanlar').select('id', { count: 'exact', head: true }).gte('son_teklif_tarihi', acikFiltre),
-        sb.from('ilanlar').select('id', { count: 'exact', head: true })
-          .gte('ilan_tarihi', bugunBaslangic.toISOString()),
-        sb.rpc('acik_ihale_butce'),
-      ]);
-
+      // İç v1 dashboard (v1-benim-sayfam kpiYukle) ile AYNI 6 KPI ve AYNI tanımlar → aynı canlı değerler.
       const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+      const num = (n) => (Number(n)||0).toLocaleString('tr-TR');
+      const kisalt = (n) => { n=Number(n)||0; return n>=1e6 ? (n/1e6).toLocaleString('tr-TR',{maximumFractionDigits:1})+' Mn'
+                                             : n>=1e3 ? (n/1e3).toLocaleString('tr-TR',{maximumFractionDigits:0})+' Bin' : String(n); };
+      const say = (t, f) => { let q = sb.from(t).select('id',{count:'exact',head:true}); if(f) q=f(q); return q.then(r=>r.count||0).catch(()=>0); };
+      const DT_AKTIF = ['Doğrudan Temin Duyurusu Yayımlanmış','Teklifler Değerlendiriliyor'];
 
-      set('cnt-active', (aktif.count ?? 0).toLocaleString('tr'));
-      set('cnt-today',  (bugun.count  ?? 0).toLocaleString('tr'));
-
-      const b = butce.data;
-      if (b && b.toplam_butce > 0) {
-        const toplamTL = Number(b.toplam_butce) || 0;
-        const milyar = toplamTL / 1_000_000_000;
-        set('cnt-budget', milyar.toLocaleString('tr-TR', { maximumFractionDigits: 1 }));
-        // DÜRÜSTLÜK: toplam TÜM açık ihaleleri değil, maliyeti BİLİNEN kayıtları kapsıyor.
-        // Kapsamı yazmazsak kullanıcı bunu "açık ihalelerin toplam bütçesi" sanır.
-        const not = document.getElementById('cnt-budget-not');
-        if (not && b.acik_ihale) {
-          not.textContent = `${Number(b.butce_kayit).toLocaleString('tr')} / ${Number(b.acik_ihale).toLocaleString('tr')} ihale`;
-        }
-      } else {
-        set('cnt-budget', '—');
-      }
-
-      set('cnt-win', '34%');
+      // Aktif İhale = durum='aktif' AND son teklif geçmemiş (liste ile birebir)
+      say('ilanlar', q=>q.eq('durum','aktif').gte('son_teklif_tarihi', acikFiltre)).then(v=>set('cnt-active', num(v)));
+      // Aktif DT = teklif vermeye açık (harita dt_il_sayim_aktif paritesi)
+      say('dogrudan_temin_ilanlari', q=>q.in('durum',DT_AKTIF).gte('tarih', acikFiltre)).then(v=>set('cnt-dt', kisalt(v)));
+      // Toplam DT + İhale = tüm DT + tüm ihale ilanı
+      Promise.all([say('dogrudan_temin_ilanlari'), say('ilanlar')]).then(([a,b])=>set('cnt-toplam', kisalt(a+b)));
+      // Yüklenici Firma = İhale + DT birleşik (RPC düşerse yukleniciler count)
+      sb.rpc('firma_ozet_birlikte').then(({data,error})=>{ if(error||!data||!data[0]) throw 0; set('cnt-firma', num(data[0].toplam)); })
+        .catch(()=>say('yukleniciler').then(v=>set('cnt-firma', num(v))));
+      // İşveren İdare = İhale + DT birleşik (RPC düşerse idare_sayim)
+      sb.rpc('idare_sayim_birlikte').then(({data,error})=>{ if(error||data==null) throw 0; set('cnt-idare', num(data)); })
+        .catch(()=>sb.rpc('idare_sayim',{},{count:'exact',head:true}).then(({count})=>set('cnt-idare', num(count||0))).catch(()=>set('cnt-idare','—')));
+      // Sektörde Fırsat = 41 (statik kanonik; HTML'de hazır)
     } catch (e) {
       console.warn('Sayaç yüklenemedi:', e);
     }
@@ -902,8 +901,9 @@
   (() => {
     const SB_URL = "https://ihaleglobal.com";
     const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNzg0MzA3MTU4LCJleHAiOjE5NDE5ODcxNTh9.CjNKulvirotDD_y2oO2QKgo0kbqYvL0jUSV1RiDMoso";
-    // Düşük→yüksek yoğunluk renk skalası (proje paleti: navy → amber → kırmızı)
-    const RENKLER = ['#243b5e', '#7a5c1e', '#b07d08', '#e09600', '#f0a500', '#ef4444'];
+    // Düşük→yüksek yoğunluk renk skalası — v1 MAVİ paleti (açık→koyu; v1 dashboard haritasıyla aynı)
+    const RENKLER = ['#C3D8EF', '#9CC0E8', '#6BA0DC', '#3B7EC2', '#1E5799', '#0C3E70'];
+    const BOS_RENK = '#DBE1E9';   // "ihale yok" — v1 nötr gri-mavi (v2 koyu navy #16233d yerine)
 
     const haritaEl = document.getElementById('turkiye-harita');
     if (!haritaEl || !window.L) return;
@@ -949,7 +949,7 @@
       return [q(0.50), q(0.70), q(0.85), q(0.93), q(0.98)];
     }
     function renkSec(n, esik) {
-      if (!n) return '#16233d';
+      if (!n) return BOS_RENK;
       for (let i = 0; i < esik.length; i++) if (n <= esik[i]) return RENKLER[i];
       return RENKLER[RENKLER.length - 1];
     }
@@ -957,8 +957,8 @@
     function legendCiz(esik) {
       const lg = document.getElementById('harita-legend');
       const fmt = n => n >= 1000 ? (n / 1000).toFixed(1).replace('.0', '') + 'b' : String(n);
-      // renkSec ile birebir eşleşir: 0 → #16233d, [1,e0] → RENKLER[0], (e0,e1] → RENKLER[1], … , e4+ → RENKLER[5]
-      const kutular = [['#16233d', 'İhale yok']];
+      // renkSec ile birebir eşleşir: 0 → BOS_RENK, [1,e0] → RENKLER[0], (e0,e1] → RENKLER[1], … , e4+ → RENKLER[5]
+      const kutular = [[BOS_RENK, 'İhale yok']];
       for (let i = 0; i < RENKLER.length; i++) {
         const alt = i === 0 ? 1 : esik[i - 1] + 1;
         kutular.push([RENKLER[i], i < esik.length ? `${fmt(alt)}–${fmt(esik[i])}` : `${fmt(esik[esik.length - 1] + 1)}+`]);
@@ -999,7 +999,7 @@
         const katman = L.geoJSON(geo, {
           style: f => {
             const k = ilAnahtar(f.properties.name, sayim);
-            return { fillColor: renkSec(sayim[k] || 0, esik), weight: 1, color: '#334155', fillOpacity: 0.85 };
+            return { fillColor: renkSec(sayim[k] || 0, esik), weight: 1, color: '#9FB3C8', fillOpacity: 0.9 };
           },
           onEachFeature: (f, layer) => {
             const k = ilAnahtar(f.properties.name, sayim);
@@ -1007,9 +1007,9 @@
             layer.bindTooltip(`${f.properties.name} <span class="tt-sayi">${n.toLocaleString('tr')}</span>`,
               { className: 'il-tooltip', sticky: true });
             layer.on({
-              mouseover: e => e.target.setStyle({ weight: 2, color: '#fff', fillOpacity: 0.95 }),
+              mouseover: e => e.target.setStyle({ weight: 2.5, color: '#0C3E70', fillOpacity: 1 }),
               mouseout: e => katman.resetStyle(e.target),
-              click: () => { window.location.href = 'ihaleler?il=' + encodeURIComponent(k); },
+              click: () => { window.location.href = 'v1-ihaleler?il=' + encodeURIComponent(k); },
             });
           },
         }).addTo(map);
