@@ -204,6 +204,10 @@
   let rfqVeri={};          // key -> adet (sayı)
   let ilAd={};             // key -> görünen ad (harita verisinden)
   let uyeMi=false, seciliKey=null, seciliYil='';   // seciliYil='' → Tüm Yıllar (MADDE 12)
+  let firmaMod='ihale';    // 'ihale' → il_sektor_firmalar (kazanan ihale); 'dt' → il_sektor_firmalar_dt (kazanan DT) — MADDE 16 part-2
+  // İhale/DT toggle buton stili (inline — CSS dosyasına dokunmadan, kendine yeten)
+  const fmStil=(aktif)=>`font-size:10.5px;font-weight:700;padding:3px 9px;border:none;cursor:pointer;`
+    +`font-family:var(--v1-font);`+(aktif?'background:var(--v1-mavi);color:#fff;':'background:#fff;color:var(--v1-muted);');
   // Panel nesli: her yeni panel çizimi sayacı artırır. Geciken async yazıcılar (firma /
   // talep listesi) kendi nesillerini taşır; nesil eskimişse HİÇBİR ŞEY yazmazlar.
   // Düğüm kimliği kontrolü tek başına YETMİYORDU: A ilinin firma isteği sürerken B'ye
@@ -437,9 +441,17 @@
       ['<option value="">Tüm Yıllar</option>'].concat(
         Array.from({length:buYil-2004+1},(_,i)=>{const y=buYil-i; return `<option value="${y}"${String(y)===seciliYil?' selected':''}>${y}</option>`;})
       ).join('')+`</select>`;
+    // İhale/DT toggle (MADDE 16 part-2): il tıklanınca öne çıkan firmalar İhale kazananı mı
+    // yoksa Doğrudan Temin kazananı mı — ikisi ayrı evren, toplama YOK (bkz. firma dizini MADDE 20/24).
+    const firmaModToggle = katman==='rfq' ? '' :
+      `<span style="display:inline-flex;border:1px solid var(--v1-cizgi);border-radius:7px;overflow:hidden;">
+         <button type="button" class="h-fm" data-m="ihale" style="${fmStil(firmaMod==='ihale')}">📋 İhale</button>
+         <button type="button" class="h-fm" data-m="dt" style="${fmStil(firmaMod==='dt')}">⚡ DT</button>
+       </span>`;
     const firmaBloku = katman==='rfq' ? '' :
-      `<div class="v1-blok-baslik" style="display:flex;justify-content:space-between;align-items:center;gap:8px;">
-         <span>Bu ilde ${sm?'bu sektörde ':''}öne çıkan firmalar</span>${yilSecici}</div>
+      `<div class="v1-blok-baslik" style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
+         <span>Bu ilde ${sm?'bu sektörde ':''}öne çıkan firmalar</span>
+         <span style="display:flex;gap:6px;align-items:center;">${firmaModToggle}${firmaMod==='ihale'?yilSecici:''}</span></div>
        <div id="h-firmalar"><div class="v1-mini-spin"></div></div>`;
 
     if(sm){
@@ -481,6 +493,13 @@
       const fl=document.getElementById('h-firmalar'); if(fl) fl.innerHTML='<div class="v1-mini-spin"></div>';
       firmaListesi(key, ad, nesil);
     });
+    // İhale/DT toggle: mod değişince paneli yeniden çiz (toggle stili + yıl seçici görünürlüğü
+    // + firma listesi mod'a göre yeniden çekilir). ilSec panelNesil'i artırır → bayat yazma yok.
+    yan.querySelectorAll('.h-fm').forEach(b=>b.addEventListener('click',()=>{
+      if(firmaMod===b.dataset.m) return;
+      firmaMod=b.dataset.m;
+      ilSec(key);
+    }));
     // SIRALI çağrı: /rest/v1'de 2 istek/sn limiti var. Firma listesi bitmeden talep
     // listesini başlatma — yoksa tek il tıklamasında 3 eşzamanlı istek gider.
     // Firma isteği sürerken başka ile tıklanmışsa talep isteğini HİÇ AÇMA (hem yanlış
@@ -503,6 +522,16 @@
     // Panel await sırasında yeniden çizilirse hem nesil eskir hem düğüm kopar → yazma.
     const guncelMi=()=>nesil===panelNesil && el===document.getElementById('h-firmalar');
     try{
+      if(firmaMod==='dt'){   // MADDE 16 part-2: Doğrudan Temin kazananları (il_sektor_firmalar_dt — İhale ile AYNI kolonlar: ad/sozlesme/toplam_bedel)
+        const {data,error}=await sb.rpc('il_sektor_firmalar_dt',
+          { p_il_folds: foldVaryantlari(key), p_kategori: sektorSecili||null, p_limit: 8 });
+        if(error) throw error;
+        if(!guncelMi()) return;
+        if(!data||!data.length){ el.innerHTML='<div class="v1-bos">Bu ilde'+(sektorSecili?' bu sektörde':'')+' Doğrudan Temin kazananı yok.</div>'; return; }
+        el.innerHTML=data.map((y,i)=>firmaSatiri(i+1, y.ad,
+          `${num(y.sozlesme)} DT · ${paraKisa(y.toplam_bedel)}`+(sektorSecili?' (bu sektörde)':''))).join('');
+        return;
+      }
       if(seciliYil){   // MADDE 12: belirli yıl → il_firma_yil (sektörden bağımsız, il+yıl)
         const {data,error}=await sb.rpc('il_firma_yil',
           { p_il_folds: foldVaryantlari(key), p_yil: Number(seciliYil), p_limit: 8 });
