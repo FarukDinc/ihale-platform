@@ -517,7 +517,8 @@ Durum: ✅ bitti · ⏳ sıradaki · 📋 planlandı (FE=frontend/pull · DB=mig
 - `migration_qa_26_23_kurum_mu.sql` (aafaa1d) → 26-23 kurum_mu kolonu doldur.
 - `migration_qa_26_27_parlayan.sql` (9a2d2c1) → 26-27 Parlayan segment 0-taban fix.
 **⏸️ Bug DEĞİL / kaynak kısıtı:** 26-10 (Kurul listesinde sonuç yayımlanmıyor) · 26-28 (idare_bagsiz_mv = DETSİS eşleşmeyen; kapsam metriği, ayrı zenginleştirme) · 26-33 · 26-16 (kozmetik, tarihsel bildirim).
-**⏭️ Ayrı pas:** 26-22 (uyum skoru firma-profili fallback = MADDE 6 eşleşme motoru) · 26-25 (usul analitik normalizasyon) · 26-26 (segment üst özet timeout → MV) · 26-7 (=UV-4) · 26-34 (=sınıflandırıcı kalitesi).
+**✅ 26-22 CANLI (commit 6192dd6):** Uyum skoru — açık tercih yoksa `firmam_getir`+`yukleniciler.kategori`'den skorlama profili türetilir → skorlar 45/65/80'e yayıldı (sabit-60 gitti); %75+/%85+ süzgeci + sıralama anlamlı; "firma geçmişinden" notu. Firma da yoksa "firma seç" uyarısı.
+**⏭️ Ayrı pas (kalan):** 26-25 (usul analitik normalizasyon) · 26-26 (segment üst özet timeout → MV) · 26-7 (=UV-4 ad-boşluğu) · 26-34 (=sınıflandırıcı kalitesi). Olası iyileştirme: uyum.js kategori-kelime eşleşmesi kaba (çok kategori → çoğu ihale %80); firma kategori KONSANTRASYONUYLA ağırlıklandırma (MADDE 6 v4 deseni).
 
 # UZUN VADE (ayrı seri — "uzun vade" dendiğinde bu liste çıkarılır)
 
