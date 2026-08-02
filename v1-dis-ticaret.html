@@ -238,6 +238,8 @@
 
   async function veriYukle(){
     document.getElementById('t-tbody').innerHTML='<tr><td colspan="6" class="v1-bos">Yükleniyor…</td></tr>';
+    // 26-31: yıl/kıyas değişince KPI'lar bayat kalmasın → fetch öncesi '…'
+    ['k-ihr','k-ith','k-denge','k-ulke','t-sayi'].forEach(i=>{const e=document.getElementById(i); if(e)e.textContent='…';});
     try{
       const [h,l]=await Promise.all([
         sb.rpc('ticaret_harita',{p_yil:yil}).then(r=>r.data||{}).catch(()=>({})),

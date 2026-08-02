@@ -253,6 +253,7 @@
   async function yukle(){
     const tb=document.getElementById('v1-tbody');
     tb.innerHTML='<tr><td colspan="5" class="v1-bos">Yükleniyor…</td></tr>';
+    { const se=document.getElementById('v1-sayi'); if(se) se.textContent='…'; }  // 26-31: sayaç bayat kalmasın
     try{
       const bas=(sayfa-1)*BOY;
       const yv=await yayindaVarMi();   // kolon var mı? (bir kez sorulur, cache'lenir)

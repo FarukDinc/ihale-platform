@@ -355,6 +355,8 @@
     const tur=el('f-tur').value||null, il=el('f-il').value||null, kat=el('f-kategori').value||null;
     const yil=el('f-yil')&&el('f-yil').value?Number(el('f-yil').value):null;
     el('f-not').textContent='Hesaplanıyor…';
+    // 26-31: filtre/yıl değişince KPI sayıları bayat kalmasın → fetch öncesi '…'
+    document.querySelectorAll('#v1-kpi .v1-kpi-sayi').forEach(s=>s.textContent='…');
     try{
       // p_yil YALNIZ yıl seçiliyken gönderilir → migration uygulanmadan da (yıl seçilmedikçe)
       // eski 3-argümanlı RPC ile çalışır; yıl seçilince 4-argümanlı yeni RPC gerekir.

@@ -732,6 +732,8 @@
   async function sektorSec(kod){
     const istek=++sektorIstek;
     sektorSecili=kod||null;
+    // 26-31: sektör değişince üst KPI'lar bayat kalmasın → fetch öncesi '…' (kpiCiz sonra doldurur)
+    ['k-firma','k-yogun','k-rfq','k-il'].forEach(i=>{const e=document.getElementById(i); if(e)e.textContent='…';});
     urlYaz();
     if(sektorSecili && !sektorVeri){
       const ok=await sektorVeriYukle();

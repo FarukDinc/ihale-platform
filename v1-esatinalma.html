@@ -134,6 +134,7 @@
   async function yukle(){
     const el=document.getElementById('v1-liste');
     el.innerHTML='<div class="v1-bos">Yükleniyor…</div>';
+    { const se=document.getElementById('v1-sayi'); if(se) se.textContent='…'; }  // 26-31: sayaç bayat kalmasın
     try{
       const s=document.getElementById('f-sirala').value;
       const kol = s==='bedel'?'tahmini_bedel' : s==='yeni'?'olusturulma' : 'son_teklif_tarihi';

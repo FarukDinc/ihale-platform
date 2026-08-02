@@ -197,6 +197,9 @@
     const il=document.getElementById('f-il').value||null;
     const kat=document.getElementById('f-kategori').value||null;
     document.getElementById('f-durum-notu').textContent='Hesaplanıyor…';
+    // 26-31: filtre değişince KPI sayıları + liste blokları bayat kalmasın → fetch öncesi boşalt
+    document.querySelectorAll('#v1-kpi .v1-kpi-sayi').forEach(s=>{ s.textContent='…'; s.style.fontSize=''; });
+    ['l-usul','l-butce','l-idare','l-tur-maliyet'].forEach(i=>{const e=document.getElementById(i); if(e)e.innerHTML='<div class="v1-bos">Hesaplanıyor…</div>';});
     try{
       const {data,error}=await sb.rpc('rekabet_ozet',{p_durum:durum,p_il:il,p_kategori:kat});
       if(error) throw error;
