@@ -100,6 +100,9 @@ class TakipEkle(BaseModel):
 class FirmaYorumIstek(BaseModel):
     firma: str
 
+class KurumYorumIstek(BaseModel):
+    idare: str
+
 
 # ── Endpoint'ler ──────────────────────────────────────────
 
@@ -777,3 +780,42 @@ async def scraper_tetikle(
     # Scraping artık VDS gece cron'u (run_scraper.sh) ile yapılıyor; bu endpoint kullanımdan kaldırıldı.
     raise HTTPException(status_code=503,
                         detail="Bu endpoint kullanımdan kaldırıldı — scraping VDS gece cron'u (run_scraper.sh) ile çalışıyor.")
+
+
+@app.post("/ai/kurum-yorum")
+def ai_kurum_yorum(istek: KurumYorumIstek, authorization: str = Header(None)):
+    """
+    AI Yorum Modülü — KURUM (kamu idaresi) değerlendirmesi (PREMIUM/kredili, 1 kredi).
+    kurum_ozet + tekrar-kazanan firmalara (analiz_pivot) dayalı GROUNDED yorum; ai_yorumlari'na
+    cache (veri değişmedikçe aynı yorum → tutarlılık). Metin DeepSeek (ai_ortak). anon-KAPALI.
+    """
+    kullanici_id = kullanici_dogrula(authorization)
+    idare = (istek.idare or "").strip()
+    if len(idare) < 3:
+        raise HTTPException(status_code=400, detail="Kurum adı gerekli")
+    kredi_bilgi = supabase.table("kullanici_krediler").select("kalan_kredi").eq(
+        "kullanici_id", kullanici_id).single().execute()
+    if (kredi_bilgi.data or {}).get("kalan_kredi", 0) < 1:
+        raise HTTPException(status_code=402, detail="Bu özellik 1 kredi gerektirir")
+    try:
+        from ai_yorum import kurum_yorumla
+        r = kurum_yorumla(supabase, idare)
+        if not r.get("basari"):
+            hata = r.get("hata") or "Yorum üretilemedi"
+            raise HTTPException(status_code=404 if "veri yok" in hata else 500, detail=hata)
+        try:
+            kredi_sonuc = supabase.rpc("kredi_dus", {
+                "p_kullanici_id": kullanici_id, "p_miktar": 1, "p_referans_id": None,
+                "p_referans_tip": "kurum", "p_islem_turu": "analiz",
+                "p_aciklama": f"Kurum Yorumu: {idare[:50]}"
+            }).execute()
+        except Exception as e:
+            print(f"  ⚠ kredi_dus (kurum-yorum) hatası: {e}")
+            raise HTTPException(status_code=500, detail="Kredi işlemi tamamlanamadı, lütfen tekrar deneyin")
+        if not getattr(kredi_sonuc, "data", None):
+            raise HTTPException(status_code=402, detail="Yetersiz kredi")
+        return {"basari": True, "yorum": r["yorum"], "kaynak": r.get("kaynak")}
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
