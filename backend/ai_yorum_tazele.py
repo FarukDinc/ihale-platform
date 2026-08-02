@@ -30,6 +30,7 @@ load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), ".env"))
 from supabase import create_client
 
 from ai_yorum import _kurum_grounding, _kaba_hash
+from firma_ai_yorum import firma_kirilim_topla, firma_veri_hash
 
 
 def main():
@@ -73,6 +74,53 @@ def main():
     sure = time.time() - t0
     print(f"kurum yorum tazeleme: {len(rows)} cache · {silinen} geçersiz kılındı (veri değişti) · "
           f"{korunan} korundu · {atlanan} atlandı · {hata} hata · {sure:.0f}s", flush=True)
+
+    # ── FİRMA yorumları (yukleniciler.ai_yorum + ai_yorum_hash) ─────────────────────────
+    # Kurumla AYNI mantık; farklar: (1) cache yukleniciler'de (ai_yorumlari değil); (2) ESKİ
+    # hash'siz kayıtlar (kolon yeni) → hash geri-doldurulur, yorum KORUNUR (haksız yeniden-ücret
+    # olmasın); (3) geçersiz kılma = ai_yorum/ai_yorum_tarih/ai_yorum_hash NULL (satır silinmez).
+    PROFIL = ("ad, normalize_ad, ai_yorum_hash, toplam_sozlesme_sayisi, toplam_ciro, il, sektor, "
+              "seg_parlayan, seg_sonen, seg_ilk_kez, seg_150mn, ciro_son_12ay, ciro_onceki_12ay, "
+              "buyume_yuzde, ortak_girisim")
+    try:
+        # Sahte supabase wrapper'da .filter/.not_.is_ YOK; negasyon .not_(col, op, val) ile:
+        # → ai_yorum_tarih=not.is.null (dolu cache satırları).
+        frows = sb.table("yukleniciler").select(PROFIL).not_(
+            "ai_yorum_tarih", "is", "null").execute().data or []
+    except Exception as e:
+        print(f"ai_yorum_tazele: firma cache okunamadı: {e}", flush=True)
+        frows = []
+
+    f_sil, f_koru, f_backfill, f_atla, f_hata = 0, 0, 0, 0, 0
+    t1 = time.time()
+    for r in frows:
+        ad = r.get("ad")
+        norm = r.get("normalize_ad")
+        if not ad or not norm:
+            continue
+        try:
+            kir = firma_kirilim_topla(sb, ad, r)
+            if not any(kir.get(g) for g in ("idare", "kategori", "il", "yil")) and not kir.get("dt_kazanimlari"):
+                f_atla += 1  # veri yok / geçici RPC hatası → cache'e DOKUNMA (yanlış silme yapma)
+                continue
+            yeni = firma_veri_hash(kir)
+            eski = r.get("ai_yorum_hash")
+            if not eski:
+                # Eski hash'siz kayıt → hash'i geri-doldur, yorumu KORU
+                sb.table("yukleniciler").update({"ai_yorum_hash": yeni}).eq("normalize_ad", norm).execute()
+                f_backfill += 1
+            elif yeni != eski:
+                sb.table("yukleniciler").update(
+                    {"ai_yorum": None, "ai_yorum_tarih": None, "ai_yorum_hash": None}
+                ).eq("normalize_ad", norm).execute()
+                f_sil += 1
+            else:
+                f_koru += 1
+        except Exception as e:
+            f_hata += 1
+            print(f"  ⚠ firma {str(ad)[:50]}: {type(e).__name__}: {str(e)[:100]}", flush=True)
+    print(f"firma yorum tazeleme: {len(frows)} cache · {f_sil} geçersiz kılındı · {f_koru} korundu · "
+          f"{f_backfill} hash geri-dolduruldu · {f_atla} atlandı · {f_hata} hata · {time.time()-t1:.0f}s", flush=True)
     return 0
 
 

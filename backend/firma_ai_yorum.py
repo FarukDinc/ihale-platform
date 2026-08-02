@@ -25,6 +25,7 @@ madde işaretsiz) — üslup/uzunluk sözleşmesi aynen korunuyor.
 Env: DEEPSEEK_API_KEY / GEMINI_API_KEY (backend/.env) — ai_ortak okur, bu modül okumaz.
 """
 
+import hashlib
 import json
 import os
 
@@ -43,6 +44,68 @@ GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
 AI_MAX_TOKEN = 1200  # DT + segment zenginleştirmesiyle yorum uzadı (900'de kesiliyordu, 1 Ağu)
 
 AI_YORUM_GECERLILIK_GUN = 7  # bkz. plan: "7 gün geçerli" cache
+
+
+def firma_kirilim_topla(supabase, firma_adi: str, mevcut_kayit: dict | None = None) -> dict:
+    """
+    Firma yorum grounding'i: analiz_pivot(idare/kategori/il/yil) + firma_dt_ozet (DT kazanımları) +
+    firma_profili (segment/büyüme/ciro). api.py /ai/firma-yorum endpoint'i VE gece tazeleme
+    (ai_yorum_tazele.py) BURADAN beslenir → tek kaynak (kurum tarafındaki _kurum_grounding muadili).
+    mevcut_kayit: yukleniciler satırı (profil alanları); None ise firma_profili eklenmez.
+    """
+    kirilimlar = {}
+    for grup in ("idare", "kategori", "il", "yil"):
+        try:
+            r = supabase.rpc("analiz_pivot", {"p_grup": grup, "p_firma": firma_adi}).execute()
+            kirilimlar[grup] = (r.data or [])[:8]
+        except Exception:
+            kirilimlar[grup] = []
+    try:
+        dt = supabase.rpc("firma_dt_ozet", {"p_firma_ad": firma_adi}).execute().data
+        if isinstance(dt, list):
+            dt = dt[0] if dt else None
+        if dt and (dt.get("dt_sayisi") or 0):
+            kirilimlar["dt_kazanimlari"] = dt
+    except Exception:
+        pass
+    if mevcut_kayit:
+        segler = [ad for ad, v in (("parlayan yıldız", mevcut_kayit.get("seg_parlayan")),
+                                   ("sönen", mevcut_kayit.get("seg_sonen")),
+                                   ("ilk kez ihaleye giren", mevcut_kayit.get("seg_ilk_kez")),
+                                   ("150mn+ büyük ölçek", mevcut_kayit.get("seg_150mn"))) if v]
+        kirilimlar["firma_profili"] = {
+            "toplam_sozlesme": mevcut_kayit.get("toplam_sozlesme_sayisi"),
+            "toplam_ciro": mevcut_kayit.get("toplam_ciro"),
+            "ana_il": mevcut_kayit.get("il"),
+            "sektorler": mevcut_kayit.get("sektor"),
+            "ciro_son_12ay": mevcut_kayit.get("ciro_son_12ay"),
+            "ciro_onceki_12ay": mevcut_kayit.get("ciro_onceki_12ay"),
+            "buyume_yuzde": mevcut_kayit.get("buyume_yuzde"),
+            "ortak_girisim_yapar_mi": mevcut_kayit.get("ortak_girisim"),
+            "segmentler": segler,
+        }
+    return kirilimlar
+
+
+def firma_veri_hash(kirilimlar: dict) -> str:
+    """Materyal-değişim imzası (kurum _kaba_hash muadili): sözleşme kovası (//10) + top-3 idare +
+    top-3 kategori + yıl listesi + DT kovası (//10) + segmentler. Firma ölçeği küçük → kova //10
+    (kurumda //100). Küçük dalgalanmada yorum YENİDEN ÜRETİLMEZ (tutarlılık + AI maliyeti yok)."""
+    prof = kirilimlar.get("firma_profili") or {}
+    idare_list = kirilimlar.get("idare") or []
+    toplam = prof.get("toplam_sozlesme")
+    if not toplam:
+        toplam = sum((x.get("ihale_sayisi") or 0) for x in idare_list)
+    sozlesme_kova = (toplam or 0) // 10
+    idare3 = [x.get("grup_deger") for x in idare_list[:3]]
+    kat3 = [x.get("grup_deger") for x in (kirilimlar.get("kategori") or [])[:3]]
+    yillar = sorted(str(x.get("grup_deger")) for x in (kirilimlar.get("yil") or []))
+    dt = kirilimlar.get("dt_kazanimlari") or {}
+    dt_kova = (dt.get("dt_sayisi") or 0) // 10
+    segler = sorted(prof.get("segmentler") or [])
+    imza = json.dumps([sozlesme_kova, idare3, kat3, yillar, dt_kova, segler],
+                      ensure_ascii=False, sort_keys=True)
+    return hashlib.md5(imza.encode("utf-8")).hexdigest()
 
 
 def _prompt_olustur(firma_adi: str, kirilimlar: dict) -> str:

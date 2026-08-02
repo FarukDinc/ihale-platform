@@ -31,7 +31,7 @@ from pydantic import BaseModel
 from typing import Optional
 from supabase import create_client, Client
 from worker import kullanici_analiz_isle
-from firma_ai_yorum import firma_yorum_uret, AI_YORUM_GECERLILIK_GUN
+from firma_ai_yorum import firma_yorum_uret, firma_kirilim_topla, firma_veri_hash, AI_YORUM_GECERLILIK_GUN
 from teklif_ai import teklif_taslak_uret, teklif_strateji_uret, sartname_oku
 from payment import router as payment_router
 from dotenv import load_dotenv
@@ -418,38 +418,10 @@ def firma_ai_yorum(
         if (kredi_bilgi.data or {}).get("kalan_kredi", 0) < 1:
             raise HTTPException(status_code=402, detail="Yetersiz kredi")
 
-        # 3. analiz_pivot kırılımlarını topla (İHALE evreni)
-        kirilimlar = {}
-        for grup in ("idare", "kategori", "il", "yil"):
-            r = supabase.rpc("analiz_pivot", {"p_grup": grup, "p_firma": firma}).execute()
-            kirilimlar[grup] = (r.data or [])[:8]
-
-        # 3b. ZENGİNLEŞTİRME — DT kazanımları (yuklenici_id bağlandı) + firma profili/segmentler.
-        # İhale ve DT AYRI evren (toplama yok); AI ikisini de görüp bütünsel değerlendirir.
-        try:
-            dt = supabase.rpc("firma_dt_ozet", {"p_firma_ad": firma}).execute().data
-            if isinstance(dt, list):
-                dt = dt[0] if dt else None
-            if dt and (dt.get("dt_sayisi") or 0):
-                kirilimlar["dt_kazanimlari"] = dt
-        except Exception as e:
-            print(f"  ⚠ firma_dt_ozet (firma-yorum) atlandı: {e}")
-        if mevcut_kayit:
-            segler = [ad for ad, v in (("parlayan yıldız", mevcut_kayit.get("seg_parlayan")),
-                                       ("sönen", mevcut_kayit.get("seg_sonen")),
-                                       ("ilk kez ihaleye giren", mevcut_kayit.get("seg_ilk_kez")),
-                                       ("150mn+ büyük ölçek", mevcut_kayit.get("seg_150mn"))) if v]
-            kirilimlar["firma_profili"] = {
-                "toplam_sozlesme": mevcut_kayit.get("toplam_sozlesme_sayisi"),
-                "toplam_ciro": mevcut_kayit.get("toplam_ciro"),
-                "ana_il": mevcut_kayit.get("il"),
-                "sektorler": mevcut_kayit.get("sektor"),
-                "ciro_son_12ay": mevcut_kayit.get("ciro_son_12ay"),
-                "ciro_onceki_12ay": mevcut_kayit.get("ciro_onceki_12ay"),
-                "buyume_yuzde": mevcut_kayit.get("buyume_yuzde"),
-                "ortak_girisim_yapar_mi": mevcut_kayit.get("ortak_girisim"),
-                "segmentler": segler,
-            }
+        # 3. Kırılımları topla (idare/kategori/il/yil + DT kazanımları + firma profili/segmentler) —
+        #    tek kaynak firma_kirilim_topla (gece tazeleme ai_yorum_tazele.py de AYNI fonksiyonu
+        #    kullanır → veri-hash birebir tutarlı). İhale ve DT AYRI evren; AI ikisini birlikte değerlendirir.
+        kirilimlar = firma_kirilim_topla(supabase, firma, mevcut_kayit)
 
         # 4. AI yorumu üret (sağlayıcıyı firma_ai_yorum/ai_ortak seçer)
         sonuc = firma_yorum_uret(firma_adi=firma, kirilimlar=kirilimlar)
@@ -476,10 +448,11 @@ def firma_ai_yorum(
         if not getattr(kredi_sonuc, "data", None):
             raise HTTPException(status_code=402, detail="Yetersiz kredi")
 
-        # 6. Cache'e yaz
+        # 6. Cache'e yaz (+ veri-hash → gece tazeleme veri değişince yorumu geçersiz kılar)
         supabase.table("yukleniciler").update({
             "ai_yorum": sonuc["metin"],
             "ai_yorum_tarih": datetime.now(timezone.utc).isoformat(),
+            "ai_yorum_hash": firma_veri_hash(kirilimlar),
         }).eq("normalize_ad", normalize_ad).execute()
 
         return {"basari": True, "metin": sonuc["metin"], "cache": False}
