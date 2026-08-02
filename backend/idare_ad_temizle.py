@@ -148,26 +148,39 @@ def apply(min_guven):
     with open(CSV_YOL, encoding="utf-8") as f:
         rows = [r for r in csv.DictReader(f) if float(r.get("guven") or 0) >= min_guven]
     print(f"Uygulanacak remap (güven≥{min_guven}): {len(rows)}")
-    n = 0
+    n, hata = 0, 0
     with httpx.Client(timeout=60) as c:
         for r in rows:
             orj, duz = r["orijinal"], r["duzeltilmis"]
             for tablo, kolon in (("ilanlar", "idare"), ("dogrudan_temin_ilanlari", "idare"),
                                  ("takip_idareler", "idare_ad")):
-                try:
-                    resp = c.patch(f"{SB_URL}/rest/v1/{tablo}", headers={**_h(), "Prefer": "return=minimal"},
-                                   params={kolon: f"eq.{orj}"}, json={kolon: duz})
-                    if resp.status_code >= 400:
-                        print(f"  ✗ {tablo} '{orj[:30]}…': {resp.status_code} {resp.text[:120]}", file=sys.stderr)
-                except Exception as e:
-                    print(f"  ✗ {tablo} '{orj[:30]}…': {e}", file=sys.stderr)
+                # origin /rest/v1 hız limiti (2r/s) + geçici hatalar için throttle & 429/5xx retry;
+                # yoksa remap SESSİZCE düşerdi (435 istekte fark edilmez).
+                for deneme in range(4):
+                    try:
+                        resp = c.patch(f"{SB_URL}/rest/v1/{tablo}", headers={**_h(), "Prefer": "return=minimal"},
+                                       params={kolon: f"eq.{orj}"}, json={kolon: duz})
+                        if resp.status_code in (429, 500, 502, 503, 504):
+                            time.sleep(min(2 ** deneme, 8)); continue
+                        if resp.status_code >= 400:
+                            hata += 1
+                            print(f"  ✗ {tablo} '{orj[:30]}…': {resp.status_code} {resp.text[:120]}", file=sys.stderr)
+                        break
+                    except Exception as e:
+                        if deneme == 3:
+                            hata += 1
+                            print(f"  ✗ {tablo} '{orj[:30]}…': {e}", file=sys.stderr)
+                        else:
+                            time.sleep(min(2 ** deneme, 8))
+                time.sleep(0.5)   # ~2 istek/sn — origin limitinin altında kal
             n += 1
             if n % 25 == 0:
-                print(f"  {n}/{len(rows)}…", flush=True)
-    print(f"\n✓ {n} idare remap edildi.")
-    print("⚠ ŞİMDİ MV TAZELE (idare sayıları güncellensin):")
+                print(f"  {n}/{len(rows)}… ({hata} hata)", flush=True)
+    print(f"\n✓ {n} idare remap edildi ({hata} tablo-yazımı hatası).")
+    print("⚠ ŞİMDİ MV + türetilmiş alanları TAZELE (idare sayıları + idare_tur güncellensin):")
     print("  docker exec -i supabase-db psql -U supabase_admin -d postgres -c \\")
     print("    \"REFRESH MATERIALIZED VIEW CONCURRENTLY public.idare_ozet_mv; REFRESH MATERIALIZED VIEW CONCURRENTLY public.dt_idare_ozet_mv;\"")
+    print("  docker exec -i supabase-db psql -U postgres -d postgres -c \"SELECT public.idare_tur_tazele();\"")
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
