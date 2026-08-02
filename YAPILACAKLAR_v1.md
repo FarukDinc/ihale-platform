@@ -521,11 +521,15 @@ Durum: ✅ bitti · ⏳ sıradaki · 📋 planlandı (FE=frontend/pull · DB=mig
 26-13 (İhalelerim→E-Satınalma) · 26-14 (v2 modal) · 26-15 (Dokümanlar) · 26-17 (global ülke TR) · 26-29 (segment sayaç) ·
 26-30 (maliyet çip ₺) · 26-32 (Kurum Ağacı başlık) · 26-33 (büyüme tooltip).
 **✅ FE + migration GEREKLİ (aafaa1d):** 26-23 (Firmalar kamu-kurulusu gizle toggle + kurum_mu kolonu) · 26-24 (DT sonuç "kazanan işleniyor" etiketi).
-**✅ MIGRATION HAZIR (çalıştırılacak — sıra aşağıda):**
-- `migration_qa_26_2_cop_bedel.sql` (429eec3) → 26-2 trilyon çöp bedel.
-- `migration_qa_26_data_fixes.sql` (a53f4d8) → 26-3 tenzilat · 26-21 placeholder maliyet · 26-6 İZMIR · 26-8 sektör · 26-5 DT tarih.
-- `migration_qa_26_23_kurum_mu.sql` (aafaa1d) → 26-23 kurum_mu kolonu doldur.
-- `migration_qa_26_27_parlayan.sql` (9a2d2c1) → 26-27 Parlayan segment 0-taban fix.
+**✅ MIGRATION UYGULANDI (3 Ağu — canlı DB'de doğrulandı, hepsi live):**
+- `migration_qa_26_2_cop_bedel.sql` (429eec3) → 26-2 trilyon çöp bedel ✅ (≥900Mr tekil kayıt=0).
+- `migration_qa_26_data_fixes.sql` (a53f4d8) → 26-3 tenzilat ✅ · 26-6 İZMIR ✅ (0) · 26-8 sektör ✅ (0) · 26-5 DT tarih ✅.
+  ⚠️ **26-21 (placeholder maliyet null'lama) UYGULANMADI ve UYGULANMAMALI** — [[aktif-ihale-maliyet-band]] dersi:
+  min=10.785.492 / max=43.142.132 (max=min×4) bir **KİK BAND TAHMİNİ**, çöp DEĞİL; gece scraper'ı sürekli üretir
+  (3 Ağu: 2.940 satır). Null'lamak gerçek tahmini siler + ertesi gece geri gelir → hem yanlış hem futile.
+- `migration_qa_26_23_kurum_mu.sql` (aafaa1d) → 26-23 kurum_mu kolonu ✅ (kolon var).
+- `migration_qa_26_27_parlayan.sql` (9a2d2c1) → 26-27 Parlayan segment fix ✅ (yeni mantık canlı).
+- `migration_qa_26_26_sonuc_tarihi_idx.sql` ✅ (indeks var) · `migration_qa_26_34_gayrimenkul.sql` ✅ (0 bekleyen) · `migration_firma_kurum_mu_v3.sql` ✅ (aselsan canlı).
 **⏸️ Bug DEĞİL / kaynak kısıtı:** 26-10 (Kurul listesinde sonuç yayımlanmıyor) · 26-28 (idare_bagsiz_mv = DETSİS eşleşmeyen; kapsam metriği, ayrı zenginleştirme) · 26-33 · 26-16 (kozmetik, tarihsel bildirim).
 **✅ 26-22 CANLI (commit 6192dd6):** Uyum skoru — açık tercih yoksa `firmam_getir`+`yukleniciler.kategori`'den skorlama profili türetilir → skorlar 45/65/80'e yayıldı (sabit-60 gitti); %75+/%85+ süzgeci + sıralama anlamlı; "firma geçmişinden" notu. Firma da yoksa "firma seç" uyarısı.
 **✅ 26-25 CANLI (6083cd6):** usul dağılımı normalizasyonu — "Açık" ailesi ("Açık"/"4734 KİK Açık İhale"/"2886 Açık Teklif"/"Açık İhale") tek "Açık İhale" kovasında birleşir (usulKanon+usulGrupla; v1-rekabet + kurum-analiz; yalnız gösterim, veriye dokunmaz).
