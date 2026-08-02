@@ -142,18 +142,20 @@ def dry_run(limit, model=None):
     for r in satirlar[:20]:
         print(f"  [{r['ihale']:>5}] g={r['guven']}  {r['orijinal']}  →  {r['duzeltilmis']}")
 
-def apply(min_guven):
+def apply(min_guven, sadece_takip=False):
     if not os.path.exists(CSV_YOL):
         print(f"✗ Önce --dry-run çalıştır (öneri dosyası yok: {CSV_YOL})"); return
     with open(CSV_YOL, encoding="utf-8") as f:
         rows = [r for r in csv.DictReader(f) if float(r.get("guven") or 0) >= min_guven]
-    print(f"Uygulanacak remap (güven≥{min_guven}): {len(rows)}")
+    # --sadece-takip: ilanlar+dt zaten güncellendiyse yalnız takip_idareler'i (grant sonrası) yeniden dene.
+    tablolar = (("takip_idareler", "idare_ad"),) if sadece_takip else \
+        (("ilanlar", "idare"), ("dogrudan_temin_ilanlari", "idare"), ("takip_idareler", "idare_ad"))
+    print(f"Uygulanacak remap (güven≥{min_guven}): {len(rows)}  tablolar={[t[0] for t in tablolar]}")
     n, hata = 0, 0
     with httpx.Client(timeout=60) as c:
         for r in rows:
             orj, duz = r["orijinal"], r["duzeltilmis"]
-            for tablo, kolon in (("ilanlar", "idare"), ("dogrudan_temin_ilanlari", "idare"),
-                                 ("takip_idareler", "idare_ad")):
+            for tablo, kolon in tablolar:
                 # origin /rest/v1 hız limiti (2r/s) + geçici hatalar için throttle & 429/5xx retry;
                 # yoksa remap SESSİZCE düşerdi (435 istekte fark edilmez).
                 for deneme in range(4):
@@ -189,11 +191,13 @@ if __name__ == "__main__":
     ap.add_argument("--limit", type=int, default=0)
     ap.add_argument("--min-guven", type=float, default=0.85)
     ap.add_argument("--model", default=None, help="sağlayıcı öntanım modelini ez (normalde boş: env/DeepSeek)")
+    ap.add_argument("--sadece-takip", action="store_true",
+                    help="apply'da yalnız takip_idareler'i güncelle (ilanlar+dt zaten yapıldıysa)")
     a = ap.parse_args()
     if not SB_URL or not SB_KEY:
         print("✗ SUPABASE_URL / SUPABASE_SERVICE_KEY eksik (.env)"); sys.exit(1)
     if a.apply:
-        apply(a.min_guven)
+        apply(a.min_guven, sadece_takip=a.sadece_takip)
     else:
         d = ai_durum()
         if not (d["deepseek_anahtar"] or d["gemini_anahtar"]):
