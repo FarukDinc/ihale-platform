@@ -99,7 +99,7 @@ AI_TALIMAT = (
 def ai_duzelt(adlar, model=None):
     """ai_ortak üzerinden (DeepSeek birincil, Gemini yedek) düzeltme önerisi al."""
     kullanici = AI_TALIMAT + "\n\nADLAR:\n" + "\n".join(f"- {a}" for a in adlar)
-    s = ai_cagir(AI_SISTEM, kullanici, max_tokens=4000, json_mod=True,
+    s = ai_cagir(AI_SISTEM, kullanici, max_tokens=8000, json_mod=True,
                  temperature=0.1, model=model, deneme=3, nerede="idare_ad_temizle")
     if not s["basari"] or not s["metin"]:
         return []
@@ -122,14 +122,14 @@ def dry_run(limit, model=None):
         ad_listesi = ad_listesi[:limit]
     satirlar, i = [], 0
     while i < len(ad_listesi):
-        obek = ad_listesi[i:i + 40]
+        obek = ad_listesi[i:i + 20]   # 20'lik öbek: 40'ta çıktı max_tokens'ı aşıp JSON kırpılıyordu
         for s in ai_duzelt(obek, model):
             orj = (s.get("orijinal") or "").strip()
             duz = (s.get("duzeltilmis") or "").strip()
             if orj and duz and duz != orj:
                 satirlar.append({"orijinal": orj, "duzeltilmis": duz,
                                  "guven": s.get("guven", 0), "ihale": adaylar.get(orj, 0)})
-        i += 40
+        i += 20
         print(f"  {min(i,len(ad_listesi))}/{len(ad_listesi)} işlendi…", flush=True)
         time.sleep(0.4)   # kota dostu
     satirlar.sort(key=lambda r: -r["ihale"])

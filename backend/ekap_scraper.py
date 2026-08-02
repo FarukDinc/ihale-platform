@@ -184,7 +184,11 @@ def captcha_coz_gemini(img_bytes: bytes) -> str | None:
     png_bytes = _captcha_temizle(img_bytes)
 
     client_g = genai.Client(api_key=GEMINI_KEY)
-    for model in ["gemini-2.5-flash", "gemini-2.5-flash-lite"]:
+    # 2 Ağu 2026: yeni anahtar 2.5-* modellerini 404 veriyor → güncel 3.1 (lite kanıtlı çalışıyor,
+    # görsel destekli); flash daha isabetli olabilir diye ikinci sıra. GEMINI_MODEL varsa onu öne al.
+    _tercih = os.environ.get("GEMINI_MODEL", "").strip()
+    _modeller = ([_tercih] if _tercih else []) + ["gemini-3.1-flash-lite", "gemini-3.1-flash"]
+    for model in dict.fromkeys(_modeller):   # sırayı koru, tekrarı at
         try:
             resp = client_g.models.generate_content(
                 model=model,

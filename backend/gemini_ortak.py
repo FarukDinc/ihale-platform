@@ -37,7 +37,10 @@ from google import genai
 load_dotenv(dotenv_path=os.path.join(os.path.dirname(__file__), ".env"))
 
 # Proje genelinde kullanılan üretim modeli (analiz_runner.py / ai_kategori_backfill.py ile aynı).
-VARSAYILAN_MODEL = os.environ.get("GEMINI_MODEL", "gemini-2.5-flash")
+# 2 Ağu 2026: yeni anahtar/proje 'gemini-2.5-flash'ı 404 veriyor ("no longer available to new
+# users") → güncel model gemini-3.1-flash-lite (kardeş projede kanıtlı: 2.0/2.5 → 404, 3.5 pahalı).
+# Env GEMINI_MODEL bunu ezer (analyzer PDF vision de MODEL=VARSAYILAN_MODEL ile buradan besleniyor).
+VARSAYILAN_MODEL = os.environ.get("GEMINI_MODEL", "gemini-3.1-flash-lite")
 
 _istemci = None
 
