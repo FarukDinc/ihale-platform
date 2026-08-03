@@ -353,9 +353,12 @@
       // Teklif süresi DEVAM EDEN ihaleler (ihalepro "Aktif İhaleler" davranışı).
       // gte, indeksin 2. kolonunda aralık koşulu → idx_ilanlar_durum_son_teklif ile uyumlu,
       // ayrıca NULL tarihli eski kayıtları da eler (NULLS FIRST yan etkisi).
-      // idare/kelime ile drill-down (kurum→"Tüm İhaleleri" / dış bağlantı) → idarenin TÜM ihaleleri
-      // (tüm durum); filtresiz → yalnız teklif süresi devam edenler (klasik "Aktif İhaleler").
-      if (!(uyeMi && val('f-idare')) && !val('f-kelime')) q=q.eq('durum','aktif').gte('son_teklif_tarihi', new Date().toISOString());
+      // İdare drill-down (kurum→"Tüm İhaleleri") veya İKN/ekap_id araması → o idareye/kayda TÜM durumdan
+      // eriş (aktif filtre atlanır). Düz BAŞLIK KELİMESİ araması → aktif filtre UYGULANIR: "Aktif İhaleler"
+      // sekmesinde aktif sonuç beklenir (26-4: kelime arayınca aktif-dışı 2021-23 dönüp sekmeyle çelişiyordu).
+      const _kw = val('f-kelime');
+      const _iknArama = _kw && uyeMi && /^\s*(\d{4}\/\d+|ILN\d+|DMO[-\d]+)\s*$/i.test(_kw);
+      if (!(uyeMi && val('f-idare')) && !_iknArama) q=q.eq('durum','aktif').gte('son_teklif_tarihi', new Date().toISOString());
     } else if (sekme==='gecmis') {
       // Geçmiş = süresi geçmiş, SONUCU AÇIKLANMAMIŞ ihaleler = durum 'kapali' (~1,6M).
       // ⛔ ESKİ HATA: yalnız 'aktif ama son_teklif geçmiş' (~271) alınıyordu → 1,6M kapalı ihale
@@ -769,6 +772,9 @@
         `<a href="login" style="color:var(--v1-mavi);font-weight:700;">giriş yapın</a>.`);
     }else{
       setVal('f-kelime',metin);
+      araNotYaz(`<strong>${esc(metin)}</strong> başlıkta arandı — kapsam sekmeye göre değişir: `+
+        `<strong>Aktif İhaleler</strong> yalnız teklif süresi açık olanları, `+
+        `<strong>Sonuçlar</strong> / <strong>Geçmiş</strong> ise geçmiş kayıtları gösterir.`);
     }
   }
 
