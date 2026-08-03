@@ -491,15 +491,15 @@ Durum: ✅ bitti · ⏳ sıradaki · 📋 planlandı (FE=frontend/pull · DB=mig
 - [26-24] ✅ DB/FE — ÇÖZÜLMÜŞ (3 Ağu triyaj): DT sonuçlarında kazanansız 0 (2,87M'nin tamamı dolu). Gece DT-kazanan backfill'i bitirmiş.
 
 ### 🟠 Orta
-- [26-5] 📋 DB — DT ileri-tarih +1yıl (24 Kas 2028 / 23 Tem 2027); scraper yıl-parse; +test kaydı "denme". (bkz UV-5)
+- [26-5] ✅ DB — ÇÖZÜLMÜŞ (3 Ağu triyaj): DT >400 gün ileri **0**, >200 gün **0**. migration_qa_26 (+1yıl geri al / aşırı-ileri NULL) uygulanmış.
 - [26-6] ✅ DB/FE — ÇÖZÜLMÜŞ (3 Ağu triyaj): İZMIR (noktasız) 0 satır. (migration_qa_26 uygulanmış.)
 - [26-7] 📋 DB — Ad-ortası boşluk (ALTINPAR K / BET ON / STANBUL) = UV-4 ile aynı.
 - [26-8] ✅ DB/FE — ÇÖZÜLDÜ (3 Ağu): kök neden ekap_scraper.py fallback'i "yapım"→'İnşaat & Yapım' (CPV-45 dahil) NON-KANONİK yazıyordu, jenerik kovada olmadığı için gece AI reclassify de etmiyordu → KALICI. Scraper kanonik 'İnşaat - Altyapı - Üstyapı - Yapım' yazacak (2 satır); 28 kalıntı remap edildi (0 kaldı). 'Mal/Hizmet Alımı' jenerik kovada → gece AI reclassify ediyor (geçici, dokunulmadı).
-- [26-10] 📋 DB — Kararlar "Sonuç" hep "Belirtilmemiş"; Düzenleyici(0)+Mahkeme(0) kapsam ince.
+- [26-10] ⏳ DB (SCRAPER İŞİ, düşük değer) — KÖK NEDEN (3 Ağu): kik_kararlar (827, hepsi karar_turu='uyusmazlik', sonuc='diger') — ham_veri.karar.{karar,kararNitelik,kararTurAciklama} BOŞ; sonuç/tam metin HİÇ scrape edilMEMİŞ, yalnız metadata+başvuran alınmış. Mevcut veriden çıkarılamaz → kik_backfill.py tam KİK karar belgesini çekip sonucu (İtirazın Reddi/Düzeltici İşlem/İptal) parse etmeli + düzenleyici/mahkeme türlerini eklemeli. 827 satır = düşük öncelik, ertelendi.
 - [26-25] ✅ FE — ÇÖZÜLDÜ (3 Ağu): v1-ihaleler `usulTemiz` genişletildi — Açık/Açık İhale/4734 KİK → "Açık İhale"; İstisna+"4734 / 3-x"+Kapsam Dışı → "İstisna / Kapsam Dışı"; 2886/Pazarlık/Belli kanonik (TR İ/ı için toUpperCase KULLANILMADI, ham metinde arandı). AYRICA İstisna FİLTRESİ `.or('%İstisna%,%4734 / 3-%')` ile 90K "4734 / 3-x" satırını kapsar (eskiden Diğer'e düşüyordu); USUL_HARIC'e eklendi. Canlı doğrulandı (REST .or çalışıyor, display kanonik, 0 hata).
-- [26-26] 📋 DB — Firma Segmentleri üst özet rozetler "—/hesaplanıyor" takılı (aggregate timeout → MV).
+- [26-26] ✅ DB — ÇÖZÜLDÜ (3 Ağu): asıl "takılma" pre-seg_* canlı-aggregate'tan; seg_* kolonlarıyla zaten timeout altındaydı (970ms). Bugün firma_segment_sayilari() partial-indeksli alt-sorgulara çevrildi (970→600ms, darboğaz max(segment_guncellendi) tam-tarama→seg_parlayan alt-kümesi); migration_qa_26_26_segment_ozet.sql. Büyümeyle timeout riski kalktı.
 - [26-27] ✅ DB — ÇÖZÜLMÜŞ (3 Ağu doğrulandı): canlı seg_parlayan `önceki12>0 AND son12≥2×önceki` (OR "ilk kez büyük" dalı kaldırılmış) → 0-taban Parlayan **0 firma**. migration_qa_26_27_parlayan.sql uygulanmış + gece refresh koşmuş. Bugün: baz migration_firma_segmentleri.sql'i de fix'le senkronladım (rebuild regresyonu önlendi).
-- [26-28] 📋 DB — Bağlantısız Kurumlar 17.329 (%41 DETSİS'e bağlanamamış).
+- [26-28] ✅ DB — ÇÖZÜLMÜŞ (3 Ağu triyaj): idare_bagsiz_mv **144** (17.329 değil). Orphan-kurum greft yapılmış (bellek: orphan-kurum-greft, 17.329→99 + isim/AI dağıtım).
 
 ### 🟡 Düşük
 - [26-11] ⏳ FE — Arama/Analiz "katılabileceğiniz ihaleler" İhale Tarihi "—" → tarih fallback (26-4 ile beraber).
