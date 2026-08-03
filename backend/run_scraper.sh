@@ -184,6 +184,8 @@ docker exec -i supabase-db psql -U postgres -d postgres -c "REFRESH MATERIALIZED
 # UV-6: idare harcama (Kurumlar listesi Toplam Harcama/Sözleşme Sayısı kolonları) — ihale_sonuclari⋈ilanlar; sonuç backfill'den sonra.
 # PGOPTIONS ile paralellik kapalı: Docker /dev/shm 64MB, ağır hash join'in DSM segmenti sığmaz ("No space left on device").
 docker exec -i -e PGOPTIONS="-c max_parallel_workers_per_gather=0 -c max_parallel_maintenance_workers=0" supabase-db psql -U postgres -d postgres -c "REFRESH MATERIALIZED VIEW CONCURRENTLY public.idare_harcama_mv;" >> /opt/ihale-platform/logs/scraper.log 2>&1
+# UV-6: Sözleşmeler stat tile ozeti (tek satir; ~8s aggregate; NON-concurrent — 1-satir MV, gece kisa kilit sorun degil).
+docker exec -i supabase-db psql -U postgres -d postgres -c "REFRESH MATERIALIZED VIEW public.sozlesme_ozet_mv;" >> /opt/ihale-platform/logs/scraper.log 2>&1
 # Harita il×sektör×firma MV'si — sonuç backfill'inden sonra tazele (harita.html
 # il_sektor_ozet + il_sektor_firmalar bunu okur; normalize_firma maliyeti nedeniyle dakikalar sürebilir).
 echo "[$(date +'%Y-%m-%d %H:%M:%S')] === Harita sektor MV ===" >> /opt/ihale-platform/logs/scraper.log
