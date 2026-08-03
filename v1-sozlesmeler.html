@@ -28,6 +28,28 @@
       <div class="v1-sayfa-baslik">Sözleşmeler</div>
       <div class="v1-sayfa-alt">Sonuçlanan ihalelerin sözleşmeleri — kazanan firma, sözleşme bedeli ve tenzilat.</div>
 
+      <!-- Üst stat tile'lar (UV-6, Kurumlar deseni) — sozlesme_ozet_mv'den; kendi mavi paletimiz -->
+      <style>
+        .v1-kstat { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin:6px 0 20px; }
+        .v1-kstat-tile { display:flex; align-items:center; gap:14px; background:#fff; border:1px solid var(--v1-cizgi);
+          border-radius:14px; padding:15px 18px; box-shadow:0 1px 3px rgba(12,62,112,.05); }
+        .v1-kstat-ikon { width:46px; height:46px; border-radius:50%; background:var(--v1-mavi-acik); color:var(--v1-mavi);
+          display:flex; align-items:center; justify-content:center; font-size:22px; flex-shrink:0; }
+        .v1-kstat-sayi { font-size:22px; font-weight:800; color:var(--v1-lacivert); line-height:1.1; }
+        .v1-kstat-et { font-size:12.5px; color:var(--v1-muted); margin-top:3px; }
+        @media(max-width:900px){ .v1-kstat{ grid-template-columns:repeat(2,1fr); } }
+        /* Tablo cilası: Sözleşme Bedeli (3.) + Tenzilat (4.) sağa hizalı + satır hover */
+        #v1-tablo th:nth-child(3), #v1-tablo th:nth-child(4),
+        #v1-tablo td:nth-child(3), #v1-tablo td:nth-child(4) { text-align:right; }
+        #v1-tablo tbody tr:hover td { background:var(--v1-mavi-acik); }
+      </style>
+      <div class="v1-kstat">
+        <div class="v1-kstat-tile"><span class="v1-kstat-ikon">📄</span><div><div class="v1-kstat-sayi" id="sst-toplam">—</div><div class="v1-kstat-et">Toplam Sözleşme</div></div></div>
+        <div class="v1-kstat-tile"><span class="v1-kstat-ikon">💰</span><div><div class="v1-kstat-sayi" id="sst-bedel">—</div><div class="v1-kstat-et">Toplam Sözleşme Bedeli</div></div></div>
+        <div class="v1-kstat-tile"><span class="v1-kstat-ikon">📉</span><div><div class="v1-kstat-sayi" id="sst-tenzilat">—</div><div class="v1-kstat-et">Ortalama Tenzilat</div></div></div>
+        <div class="v1-kstat-tile"><span class="v1-kstat-ikon">🔄</span><div><div class="v1-kstat-sayi" id="sst-devam">—</div><div class="v1-kstat-et">Devam Eden İş</div></div></div>
+      </div>
+
       <div class="v1-sekmeler">
         <button class="v1-sekme aktif" data-t="tumu">Tümü</button>
         <button class="v1-sekme" data-t="biten">Biten İşler</button>
@@ -84,6 +106,23 @@
   const num=(n)=>(Number(n)||0).toLocaleString('tr-TR');
   const esc=(s)=>(s||'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
   const tl=(v)=>v==null?'—':'₺'+Number(v).toLocaleString('tr-TR',{maximumFractionDigits:0});
+  const paraKisa=(n)=>{ n=Number(n)||0;
+    if(n>=1e9) return '₺'+(n/1e9).toLocaleString('tr-TR',{maximumFractionDigits:1})+' Mr';
+    if(n>=1e6) return '₺'+(n/1e6).toLocaleString('tr-TR',{maximumFractionDigits:1})+' Mn';
+    if(n>=1e3) return '₺'+(n/1e3).toLocaleString('tr-TR',{maximumFractionDigits:0})+' B';
+    return n>0?'₺'+num(n):'—'; };
+  // Üst stat tile'ları — sozlesme_ozet_mv (tek satır global özet; gece refresh, anon+authenticated).
+  async function ozetYukle(){
+    try{
+      const {data,error}=await sb.from('sozlesme_ozet_mv').select('toplam_sozlesme,toplam_bedel,ort_tenzilat,devam').limit(1);
+      if(error||!data||!data[0]) return;
+      const o=data[0], yaz=(id,v)=>{ const e=document.getElementById(id); if(e) e.textContent=v; };
+      yaz('sst-toplam', num(o.toplam_sozlesme));
+      yaz('sst-bedel', paraKisa(o.toplam_bedel));
+      yaz('sst-tenzilat', o.ort_tenzilat!=null?('%'+Number(o.ort_tenzilat).toLocaleString('tr-TR',{maximumFractionDigits:1})):'—');
+      yaz('sst-devam', num(o.devam));
+    }catch(_){ /* özet yoksa tile'lar '—' kalır */ }
+  }
   // TÜFE bugünkü-değer (sözleşme tarihindeki tutarın bugünkü alım gücü; >1.05x ise ikinci satır)
   const bugunku=(nominal,tarih)=>{ if(!window.TUFE||!nominal||!tarih) return ''; const c=TUFE.carpani(tarih); if(!c||c<1.05) return '';
     return `<br><span style="font-weight:400;color:var(--v1-muted);font-size:11px;" title="TÜFE ile enflasyon düzeltmeli — bugünkü alım gücü (${c.toFixed(1)}x)">≈ ${tl(TUFE.buguneCevir(nominal,tarih))} bugünkü</span>`; };
@@ -178,6 +217,7 @@
       yukle();
     }));
     yukle();
+    ozetYukle();
   })();
 })();
 </script>
