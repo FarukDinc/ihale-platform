@@ -182,7 +182,8 @@ docker exec -i supabase-db psql -U postgres -d postgres -c "SELECT public.fesih_
 echo "[$(date +'%Y-%m-%d %H:%M:%S')] === Idare ozet MV ===" >> /opt/ihale-platform/logs/scraper.log
 docker exec -i supabase-db psql -U postgres -d postgres -c "REFRESH MATERIALIZED VIEW CONCURRENTLY public.idare_ozet_mv;" >> /opt/ihale-platform/logs/scraper.log 2>&1
 # UV-6: idare harcama (Kurumlar listesi Toplam Harcama/Sözleşme Sayısı kolonları) — ihale_sonuclari⋈ilanlar; sonuç backfill'den sonra.
-docker exec -i supabase-db psql -U postgres -d postgres -c "REFRESH MATERIALIZED VIEW CONCURRENTLY public.idare_harcama_mv;" >> /opt/ihale-platform/logs/scraper.log 2>&1
+# PGOPTIONS ile paralellik kapalı: Docker /dev/shm 64MB, ağır hash join'in DSM segmenti sığmaz ("No space left on device").
+docker exec -i -e PGOPTIONS="-c max_parallel_workers_per_gather=0 -c max_parallel_maintenance_workers=0" supabase-db psql -U postgres -d postgres -c "REFRESH MATERIALIZED VIEW CONCURRENTLY public.idare_harcama_mv;" >> /opt/ihale-platform/logs/scraper.log 2>&1
 # Harita il×sektör×firma MV'si — sonuç backfill'inden sonra tazele (harita.html
 # il_sektor_ozet + il_sektor_firmalar bunu okur; normalize_firma maliyeti nedeniyle dakikalar sürebilir).
 echo "[$(date +'%Y-%m-%d %H:%M:%S')] === Harita sektor MV ===" >> /opt/ihale-platform/logs/scraper.log
@@ -234,6 +235,10 @@ docker exec -i supabase-db psql -U postgres -d postgres   -c "SELECT public.etki
 echo "[$(date +'%Y-%m-%d %H:%M:%S')] === Idare hiyerarsisi ===" >> /opt/ihale-platform/logs/scraper.log
 docker exec -i supabase-db psql -U postgres -d postgres   -c "SELECT * FROM public.ilan_detsis_esle();"   -c "SELECT public.idare_kapanis_uret() AS kapanis_satiri;" >> /opt/ihale-platform/logs/scraper.log 2>&1
 docker exec -i supabase-db psql -U postgres -d postgres   -c "REFRESH MATERIALIZED VIEW CONCURRENTLY public.idare_hiyerarsi_sayim_mv;" >> /opt/ihale-platform/logs/scraper.log 2>&1
+#   3b) idare_hiyerarsi_bedel_mv : kategori "Toplam Tutar" (sayim_mv'nin bedel aynası;
+#       AYNI (1)+(2) önkoşulu → hemen ardından). Docker /dev/shm 64MB → PGOPTIONS ile paralellik kapalı,
+#       yoksa ağır ihale_sonuclari⋈ilanlar + DT join'i DSM segmentini taşırır.
+docker exec -i -e PGOPTIONS="-c max_parallel_workers_per_gather=0 -c max_parallel_maintenance_workers=0" supabase-db psql -U postgres -d postgres   -c "REFRESH MATERIALIZED VIEW CONCURRENTLY public.idare_hiyerarsi_bedel_mv;" >> /opt/ihale-platform/logs/scraper.log 2>&1
 #   4) idare_bagsiz_mv     : Kurum Ağacı'nın "Bağlantısız Kurumlar" dalı (detsis_no'su
 #                            NULL kalan idareler) — (1)'den SONRA gelmeli ki gece
 #                            eşlenen idareler bağlantısız listesinden düşsün.

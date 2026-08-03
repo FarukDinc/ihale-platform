@@ -51,6 +51,9 @@
     .v1-kat-rozet { font-size:9.5px; font-weight:800; padding:1px 7px; border-radius:6px; white-space:nowrap; }
     .v1-kat-stat { display:flex; gap:16px; flex-wrap:wrap; font-size:12px; color:var(--v1-muted); }
     .v1-kat-stat b { color:var(--v1-metin); font-weight:800; }
+    .v1-kat-tutar-blok { border-top:1px solid var(--v1-cizgi); margin-top:2px; padding-top:8px; }
+    .v1-kat-tutar-et { font-size:9.5px; color:var(--v1-muted); font-weight:800; text-transform:uppercase; letter-spacing:.4px; }
+    .v1-kat-tutar { font-size:15px; font-weight:800; color:var(--v1-mavi); letter-spacing:-.2px; margin-top:1px; }
   </style>
 </head>
 <body class="v1" data-v1-aktif="kurumlar" data-v1-kirinti="İhaleGlobal > Kurumlar">
@@ -170,7 +173,7 @@
   const IL_YOK='__yok__';
   // v1-kurum-analiz.html ile ORTAK önbellek (aynı RPC, aynı ham biçim)
   const CACHE_KEY='idare_dizin_v3', CACHE_TTL=30*60*1000;   // v3: satıra Sözleşme Sayısı + Toplam Harcama (8-el; eski 6-el cache geçersiz)
-  const KAT_CACHE='kurum_kategori_v1';                      // kurum_kategori_ozet() önbelleği (küçük, 76 satır)
+  const KAT_CACHE='kurum_kategori_v2';                      // v2: satıra tutar (bedel) kolonları eklendi (eski cache geçersiz)
   // Kategori kartı eşiği: ihale+DT toplamı bunun altındaki kökler (askeri alt-birim gürültüsü:
   // KIŞLA GAZİNO, TCG…, HAVA İSTİHKAM…) "Diğer küçük kurumlar" altında katlanır.
   const KAT_ESIK=1500;
@@ -410,16 +413,21 @@
   function katKart(k){
     const ad=k.ad||'', dn=k.detsis_no||'';
     const ih=Number(k.toplam_ihale)||0, dt=Number(k.toplam_dt)||0, cs=Number(k.cocuk_sayisi)||0;
+    const tutar=(Number(k.toplam_ihale_bedel)||0)+(Number(k.toplam_dt_bedel)||0);
     const r=KAT_ROZET[k.grup]||KAT_ROZET.diger, ik=KAT_IKON[k.grup]||'🏛️';
     return `<a class="v1-kat-kart" href="v1-kurum-analiz?gorunum=agac&dal=${encodeURIComponent(dn)}">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:9px;">
         <span class="v1-kat-ad" style="margin:0;"><span style="margin-right:6px;">${ik}</span>${esc(ad)}</span>
         <span class="v1-kat-rozet" style="background:${r.bg};color:${r.fg};">${r.et}</span>
       </div>
-      <div class="v1-kat-stat">
+      <div class="v1-kat-stat" style="margin-bottom:8px;">
         <span>İhale <b>${num(ih)}</b></span>
         <span>DT <b>${num(dt)}</b></span>
         ${cs>0?`<span>Alt birim <b>${num(cs)}</b></span>`:''}
+      </div>
+      <div class="v1-kat-tutar-blok">
+        <div class="v1-kat-tutar-et">Toplam Sözleşme Tutarı</div>
+        <div class="v1-kat-tutar" title="İhale + doğrudan temin sözleşme tutarı (sonuçlanmış)">${tutar>0?num(tutar)+' ₺':'—'}</div>
       </div></a>`;
   }
 
@@ -432,16 +440,24 @@
     }
     let html=majors.map(katKart).join('');
     if(minors.length){
-      let mih=0, mdt=0; for(const k of minors){ mih+=Number(k.toplam_ihale)||0; mdt+=Number(k.toplam_dt)||0; }
+      let mih=0, mdt=0, mtutar=0;
+      for(const k of minors){
+        mih+=Number(k.toplam_ihale)||0; mdt+=Number(k.toplam_dt)||0;
+        mtutar+=(Number(k.toplam_ihale_bedel)||0)+(Number(k.toplam_dt_bedel)||0);
+      }
       html+=`<button type="button" class="v1-kat-kart" id="v1-kat-diger"
         style="width:100%;text-align:left;font-family:var(--v1-font);cursor:pointer;">
         <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:9px;">
           <span class="v1-kat-ad" style="margin:0;"><span style="margin-right:6px;">🗂️</span>Diğer küçük kurumlar</span>
           <span class="v1-kat-rozet" style="background:#F0F2F5;color:var(--v1-muted);">${num(minors.length)} kategori</span>
         </div>
-        <div class="v1-kat-stat">
+        <div class="v1-kat-stat" style="margin-bottom:8px;">
           <span>İhale <b>${num(mih)}</b></span><span>DT <b>${num(mdt)}</b></span>
           <span style="color:var(--v1-mavi);font-weight:700;">${katGenis?'▲ Gizle':'▼ Tümünü gör'}</span>
+        </div>
+        <div class="v1-kat-tutar-blok">
+          <div class="v1-kat-tutar-et">Toplam Sözleşme Tutarı</div>
+          <div class="v1-kat-tutar">${mtutar>0?num(mtutar)+' ₺':'—'}</div>
         </div></button>`;
       if(katGenis) html+=minors.map(katKart).join('');
     }
