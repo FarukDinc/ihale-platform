@@ -494,9 +494,9 @@ Durum: ✅ bitti · ⏳ sıradaki · 📋 planlandı (FE=frontend/pull · DB=mig
 - [26-5] 📋 DB — DT ileri-tarih +1yıl (24 Kas 2028 / 23 Tem 2027); scraper yıl-parse; +test kaydı "denme". (bkz UV-5)
 - [26-6] ✅ DB/FE — ÇÖZÜLMÜŞ (3 Ağu triyaj): İZMIR (noktasız) 0 satır. (migration_qa_26 uygulanmış.)
 - [26-7] 📋 DB — Ad-ortası boşluk (ALTINPAR K / BET ON / STANBUL) = UV-4 ile aynı.
-- [26-8] 📋 DB/FE — Sektör taksonomi sızıntısı: "Mal Alımı"/"Hizmet Alımı"/"İnşaat & Yapım" 41 kanonik dışı.
+- [26-8] ✅ DB/FE — ÇÖZÜLDÜ (3 Ağu): kök neden ekap_scraper.py fallback'i "yapım"→'İnşaat & Yapım' (CPV-45 dahil) NON-KANONİK yazıyordu, jenerik kovada olmadığı için gece AI reclassify de etmiyordu → KALICI. Scraper kanonik 'İnşaat - Altyapı - Üstyapı - Yapım' yazacak (2 satır); 28 kalıntı remap edildi (0 kaldı). 'Mal/Hizmet Alımı' jenerik kovada → gece AI reclassify ediyor (geçici, dokunulmadı).
 - [26-10] 📋 DB — Kararlar "Sonuç" hep "Belirtilmemiş"; Düzenleyici(0)+Mahkeme(0) kapsam ince.
-- [26-25] 📋 FE — Usul normalizasyon tutarsız ("Açık" + "4734 KİK Açık İhale" + "2886 Açık Teklif" ayrı) → usulTemiz() genişlet.
+- [26-25] ✅ FE — ÇÖZÜLDÜ (3 Ağu): v1-ihaleler `usulTemiz` genişletildi — Açık/Açık İhale/4734 KİK → "Açık İhale"; İstisna+"4734 / 3-x"+Kapsam Dışı → "İstisna / Kapsam Dışı"; 2886/Pazarlık/Belli kanonik (TR İ/ı için toUpperCase KULLANILMADI, ham metinde arandı). AYRICA İstisna FİLTRESİ `.or('%İstisna%,%4734 / 3-%')` ile 90K "4734 / 3-x" satırını kapsar (eskiden Diğer'e düşüyordu); USUL_HARIC'e eklendi. Canlı doğrulandı (REST .or çalışıyor, display kanonik, 0 hata).
 - [26-26] 📋 DB — Firma Segmentleri üst özet rozetler "—/hesaplanıyor" takılı (aggregate timeout → MV).
 - [26-27] 📋 DB — Segment mantığı: "Parlayan Yıldızlar"a 0-taban ilk-kez JV karışıyor (+182.126%) → İlk Kez'e ayır.
 - [26-28] 📋 DB — Bağlantısız Kurumlar 17.329 (%41 DETSİS'e bağlanamamış).
