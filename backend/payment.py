@@ -45,7 +45,7 @@ supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
 # ── Plan tanımları ────────────────────────────────────────
 PLANLAR = {
     "standart": {
-        "ad":           "Standart Plan",
+        "ad":           "Pro Plan",   # 26-16: plan_kodu 'standart' ama kullanıcıya dönük ad "Pro Plan" (UI ile tutarlı)
         "fiyat_tl":     1490,
         "kredi":        50,
         "sure_gun":     30

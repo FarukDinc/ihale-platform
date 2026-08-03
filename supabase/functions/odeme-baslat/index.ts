@@ -227,13 +227,13 @@ serve(async (req) => {
         kullanici_id: user.id,
         miktar:       krediMiktari,
         islem_turu:   "yukleme",
-        aciklama:     `${dbPlanKodu === "kurumsal" ? "Kurumsal Plan" : "Standart Plan"} — İyzico: ${veri.paymentId ?? convId}`,
+        aciklama:     `${dbPlanKodu === "kurumsal" ? "Kurumsal Plan" : "Pro Plan"} — İyzico: ${veri.paymentId ?? convId}`,
       });
 
       await sb.from("bildirimler").insert({
         kullanici_id: user.id,
         baslik:       "Kredi yüklendi! 🎉",
-        icerik:       `${dbPlanKodu === "kurumsal" ? "Kurumsal Plan" : "Standart Plan"} aktivasyonu: ${krediMiktari} kredi hesabınıza eklendi.`,
+        icerik:       `${dbPlanKodu === "kurumsal" ? "Kurumsal Plan" : "Pro Plan"} aktivasyonu: ${krediMiktari} kredi hesabınıza eklendi.`,
         tur:          "kredi",
       });
 
