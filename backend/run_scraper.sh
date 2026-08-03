@@ -248,6 +248,12 @@ docker exec -i -e PGOPTIONS="-c max_parallel_workers_per_gather=0 -c max_paralle
 #                            satır log'a "does not exist" yazar, zincir etkilenmez)
 docker exec -i supabase-db psql -U postgres -d postgres   -c "REFRESH MATERIALIZED VIEW CONCURRENTLY public.idare_bagsiz_mv;" >> /opt/ihale-platform/logs/scraper.log 2>&1
 
+#   5) genel_sayac_mv : panel "Toplam DT + İhale" tek-satır sayaç (canlı count=exact
+#                       yerine; ilanlar count'u 1,96M'de ~2s + bloat'ta timeout riski).
+#                       NON-concurrent: tek satır, benzersiz indeks yok → CONCURRENTLY
+#                       çalışmaz; ~1-3s kilit gece kabul (migration_genel_sayac_mv.sql).
+docker exec -i supabase-db psql -U postgres -d postgres   -c "REFRESH MATERIALIZED VIEW public.genel_sayac_mv;" >> /opt/ihale-platform/logs/scraper.log 2>&1
+
 # ── İdare türü boşluk alarmı ───────────────────────────────────────────────────────
 # İhalede görünüp idare_tur eşlemesinde KARŞILIĞI OLMAYAN idareler = yeni açılan/ad
 # değiştiren birimler. Sessizce "sınıfsız" kalmasınlar diye log'a düşer; sayı büyürse
