@@ -81,7 +81,23 @@
       </div>
 
       <!-- Filtre çubuğu: il her zaman görünür (misafirde kilitli), segment YALNIZ üyede -->
+      <style>
+        .v1-mod-bar { display:inline-flex; border:1.5px solid var(--v1-cizgi); border-radius:9px; overflow:hidden; background:#fff; }
+        .v1-mod-btn { border:none; background:none; padding:8px 13px; font-family:var(--v1-font); font-size:12.5px; font-weight:700;
+          color:var(--v1-muted); cursor:pointer; border-right:1.5px solid var(--v1-cizgi); white-space:nowrap; }
+        .v1-mod-btn:last-child { border-right:none; }
+        .v1-mod-btn.aktif { background:var(--v1-mavi); color:#fff; }
+        .v1-mod-btn:not(.aktif):hover { background:var(--v1-mavi-acik); color:var(--v1-mavi); }
+      </style>
       <div class="v1-fc">
+        <div class="v1-fc-alan" id="v1-mod-alan" style="display:none;">
+          <span class="v1-fc-etiket">Kapsam</span>
+          <div class="v1-mod-bar" id="v1-mod-bar">
+            <button type="button" class="v1-mod-btn aktif" data-fmod="ihale" title="Kamu ihalesi kazanan firmalar">📄 İhale</button>
+            <button type="button" class="v1-mod-btn" data-fmod="dt" title="Doğrudan temin kazanan firmalar">⚡ DT</button>
+            <button type="button" class="v1-mod-btn" data-fmod="birlikte" title="İhale + doğrudan temin birleşik">🔗 İkisi</button>
+          </div>
+        </div>
         <div class="v1-fc-alan">
           <span class="v1-fc-etiket">İl</span>
           <select id="v1-il" title="İle göre süz"><option value="">Tüm iller</option></select>
@@ -225,12 +241,15 @@
 
   let sayfa=1, uyeMi=false, uid=null, mod='tum', takipli=new Set(), aramaT, istekNo=0;
   let il='', segment='', sirala=VARSAYILAN_SIRALA, yon=VARSAYILAN_YON, siralaSecildi=false, kamuDahil=false;
+  // Faz C(b): kapsam modu — 'ihale' (varsayılan, mevcut yol) | 'dt' | 'birlikte' (RPC dalı). rpcSort: DT/İkisi sütun sırası.
+  let firmaMod='ihale', rpcSort='bedel';
+  const tarihKisa=(x)=>{ if(!x) return '—'; try{ return new Date(x).toLocaleDateString('tr-TR'); }catch(_){ return '—'; } };
   let kurumMuVar=true;   // 26-23: kurum_mu kolonu yoksa (migration öncesi) filtre atlanır (deploy-güvenli)
   const ilAdet=new Map();          // il → firma adedi (il_firma_dagilimi'nden)
 
   const el=(id)=>document.getElementById(id);
   const artanMi=()=>yon==='asc';
-  const kolonSayisi=()=>uyeMi?8:6;   // #|Firma|İl|Sözleşme|Ciro(+Son12Ay|Büyüme)|takip
+  const kolonSayisi=()=> (firmaMod!=='ihale') ? 7 : (uyeMi?8:6);   // ihale: #|Firma|İl|Sözleşme|Ciro(+Son12Ay|Büyüme)|takip · DT/İkisi: #|Firma|İl|Sözleşme|Ciro|Son Sözleşme|takip
 
   // v1-kabuk topbar'ı DOMContentLoaded'da monte eder; getSession() localStorage'dan
   // mikrotaskta dönüp ondan ÖNCE bitince v1PaketYaz hedef elemanı bulamıyor ve rozet
@@ -254,6 +273,7 @@
     if(q) p.set('ara',q);
     if(il) p.set('il',il);
     if(segment) p.set('segment',segment);
+    if(firmaMod!=='ihale') p.set('fmod',firmaMod);
     if(siralaSecildi){ p.set('sirala',sirala); p.set('yon',yon); }
     const s=p.toString();
     try{ history.replaceState(null,'',location.pathname+(s?'?'+s:'')); }catch(_){}
@@ -267,11 +287,13 @@
     const g=P.get('segment')||P.get('seg')||'';   // segmentler sayfası ?seg= kullanıyor
     if(Object.prototype.hasOwnProperty.call(SEGMENTLER,g)) segment=g;
     il=(P.get('il')||'').trim();
+    const fm=P.get('fmod'); if(fm==='dt'||fm==='birlikte') firmaMod=fm;
   }
 
   /** Misafirde üyeye özel sütun/segment seçilemez — URL'den gelse bile geri al. */
   function yetkiyeGoreKirp(){
     if(uyeMi) return;
+    firmaMod='ihale';   // DT/İkisi RPC'leri anon'a kapalı; misafirde kapsam seçici de gizli
     segment='';
     // ⚠️ `il` de düşmeli: misafirde il açılır listesi doldurulmuyor (illeriYukle
     //    yalnız üyede çağrılıyor) ve disabled. Bırakılırsa liste başlığı
@@ -294,6 +316,18 @@
   }
 
   function basliklariYaz(){
+    // DT/İkisi kapsamı: firma_dizin_dt/birlikte RPC'sinin döndürdüğü sabit kolonlar; sıralama RPC p_sort ile (asc/desc yok, hep azalan).
+    if(firmaMod!=='ihale'){
+      const rth=(k,ad,w)=>`<th class="v1-th-sirala v1-sayi-h${rpcSort===k?' aktif':''}" data-rpcsort="${k}" style="width:${w};cursor:pointer;"
+        title="${esc(ad)} sütununa göre sırala">${esc(ad)} <span class="v1-ok">${rpcSort===k?'▼':'↕'}</span></th>`;
+      el('v1-thead').innerHTML='<tr><th style="width:44px;">#</th><th>Firma</th><th style="width:100px;">İl</th>'+
+        rth('sozlesme','Sözleşme','120px')+rth('bedel','Ciro','160px')+rth('tarih','Son Sözleşme','140px')+
+        '<th style="width:120px;"></th></tr>';
+      el('v1-thead').querySelectorAll('[data-rpcsort]').forEach(th=>th.addEventListener('click',()=>{
+        const s=th.dataset.rpcsort; if(rpcSort===s) return; rpcSort=s; sayfa=1; basliklariYaz(); yukle();
+      }));
+      return;
+    }
     const alanlar=Object.keys(SIRALANABILIR).filter(k=>uyeMi || !SIRALANABILIR[k].uyeOzel);
     el('v1-thead').innerHTML='<tr>'+
       '<th style="width:44px;">#</th><th>Firma</th><th style="width:100px;">İl</th>'+
@@ -374,10 +408,90 @@
 
   function listeBasligiYaz(){
     let b = (mod==='takip') ? 'Takip Ettiğim Firmalar'
+          : (firmaMod==='dt') ? 'Doğrudan Temin Firmaları'
+          : (firmaMod==='birlikte') ? 'Tüm Firmalar (İhale + DT)'
           : (segment && SEGMENTLER[segment]) ? SEGMENTLER[segment].emoji+' '+SEGMENTLER[segment].ad
           : 'Tüm Firmalar';
-    if(il) b+=' — '+il;
+    if(il && !(firmaMod==='dt')) b+=' — '+il;
     el('v1-liste-baslik').textContent=b;
+  }
+
+  // ── Kapsam modu (İhale / DT / İkisi) ────────────────────────────────────
+  // Mod bar butonlarının aktif sınıfını + moda özel UI (segment gizle, DT'de il pasif) uygular.
+  function modBarBoya(){
+    const bar=el('v1-mod-bar'); if(bar) bar.querySelectorAll('[data-fmod]').forEach(b=>b.classList.toggle('aktif',b.dataset.fmod===firmaMod));
+  }
+  function modUIUygula(){
+    if(!uyeMi){ modBarBoya(); return; }   // misafir: bar gizli, il/segment guest dalında ayarlı — dokunma
+    const rpcMod=(firmaMod!=='ihale');
+    // Segment çipleri yalnız ihale kapsamında anlamlı (seg_* kolonları yukleniciler'de)
+    if(el('v1-segment-alan')) el('v1-segment-alan').style.display=(!rpcMod && uyeMi)?'flex':'none';
+    if(rpcMod && el('v1-seg-ipucu')) el('v1-seg-ipucu').style.display='none';
+    // firma_dizin_dt'de p_il yok → DT modunda il filtresi pasif (İkisi'de aktif)
+    const ilEl=el('v1-il');
+    if(ilEl){ if(firmaMod==='dt'){ ilEl.disabled=true; ilEl.title='İl filtresi doğrudan temin kapsamında uygulanamaz'; }
+              else { ilEl.disabled=!uyeMi; ilEl.title='İle göre süz'; } }
+    modBarBoya();
+  }
+  function firmaModSec(m){
+    if(!uyeMi || m===firmaMod) return;
+    firmaMod=m; segment=''; sayfa=1;
+    modUIUygula();
+    basliklariYaz(); listeBasligiYaz(); temizleGoster(); urlYaz(); yukle();
+  }
+
+  // ── DT/İkisi kapsamı (firma_dizin_dt / firma_dizin_birlikte RPC) ─────────
+  // Anon'a KAPALI (firma adı) → yalnız üyede çağrılır. İhale yolundan AYRI: segment/
+  // kurum_mu/arama_fold/ciro_son_12ay burada YOK; RPC tek atışta ihale/DT/birleşik döner.
+  async function yukleRpc(benim, KS){
+    const tb=el('v1-tbody');
+    const q=(el('v1-ara-liste').value||'').trim();
+    const rpc = firmaMod==='dt' ? 'firma_dizin_dt' : 'firma_dizin_birlikte';
+    // firma_dizin_dt'de p_il YOK (DT ilana idare üzerinden bağlı değil) → yalnız İkisi'de il geçir
+    const params = firmaMod==='dt'
+      ? { p_ara:q||null, p_limit:BOY, p_offset:(sayfa-1)*BOY, p_sort:rpcSort, p_kamu_dahil:kamuDahil }
+      : { p_ara:q||null, p_il:il||null, p_limit:BOY, p_offset:(sayfa-1)*BOY, p_sort:rpcSort, p_kamu_dahil:kamuDahil };
+    try{
+      const {data,error}=await sb.rpc(rpc,params);
+      if(benim!==istekNo) return;
+      if(error) throw error;
+      const rows=data||[];
+      const kapsamAd = firmaMod==='dt' ? '⚡ Doğrudan Temin kazananları' : '🔗 İhale + Doğrudan Temin (birleşik)';
+      if(!rows.length){
+        tb.innerHTML=`<tr><td colspan="${KS}" class="v1-bos">Eşleşen firma bulunamadı.</td></tr>`;
+        el('v1-sayi').textContent=''; el('v1-sayfalama').innerHTML=''; return;
+      }
+      const sortAd = rpcSort==='sozlesme'?'Sözleşme sayısı':rpcSort==='tarih'?'Son sözleşme':'Ciro';
+      el('v1-sayi').innerHTML=`<strong>${esc(kapsamAd)}</strong>`+(firmaMod==='birlikte'&&il?` · ${esc(il)}`:'')+
+        ` · <strong>${esc(sortAd)}</strong> azalan · Sayfa <strong>${sayfa}</strong> · ${rows.length} firma`;
+      tb.innerHTML=rows.map((r,i)=>{
+        const ad=r.ad||'—', t=takipli.has(ad);
+        const dtVar=Number(r.dt_bedel)>0;
+        const rozet = firmaMod==='dt'
+          ? ' <span style="background:#FFF3E0;color:#A96A00;font-size:11px;font-weight:700;padding:1px 6px;border-radius:6px;white-space:nowrap;">⚡ DT</span>'
+          : (dtVar ? ' <span style="background:#FFF3E0;color:#A96A00;font-size:10px;font-weight:700;padding:1px 5px;border-radius:6px;white-space:nowrap;" title="Doğrudan temin kazanımı da var">⚡</span>' : '');
+        return `<tr>
+          <td style="color:var(--v1-muted);font-weight:700;">${(sayfa-1)*BOY+i+1}</td>
+          <td><a class="v1-firma-ad" href="v1-firma-analiz?ara=${encodeURIComponent(ad)}">${esc(ad)}</a>${rozet}</td>
+          <td style="font-size:13px;">${esc(r.il||'—')}</td>
+          <td class="v1-sayi" style="font-weight:700;color:var(--v1-lacivert);">${num(r.toplam_sozlesme_sayisi)}</td>
+          <td class="v1-sayi" style="font-weight:700;color:var(--v1-mavi);">${tl(r.toplam_ciro)}</td>
+          <td class="v1-sayi" style="font-size:12.5px;color:var(--v1-muted);">${tarihKisa(r.son_sozlesme_tarihi)}</td>
+          <td style="text-align:right;">
+            <button class="v1-tk" data-ad="${esc(ad)}" style="background:${t?'var(--v1-mavi)':'#fff'};color:${t?'#fff':'var(--v1-mavi)'};
+              border:1.5px solid var(--v1-mavi);border-radius:8px;padding:6px 12px;font-family:var(--v1-font);
+              font-size:12.5px;font-weight:700;cursor:pointer;white-space:nowrap;">${t?'✓ Takipte':'+ Takip Et'}</button></td></tr>`;
+      }).join('');
+      tb.querySelectorAll('.v1-tk').forEach(b=>b.addEventListener('click',()=>takipToggle(b)));
+      sayfalama(rows.length);
+    }catch(e){
+      if(benim!==istekNo) return;
+      const kilit=/(42501|permission|JWT|Unauthorized|401)/i.test(e.message||'');
+      tb.innerHTML=`<tr><td colspan="${KS}" class="v1-bos">${kilit
+        ? '🔒 Bu kapsam üyelere özeldir. <a href="login">Giriş yapın →</a>'
+        : 'Liste yüklenemedi. '+esc(e.message||'')}</td></tr>`;
+      el('v1-sayi').textContent=''; el('v1-sayfalama').innerHTML='';
+    }
   }
 
   // ── Liste ───────────────────────────────────────────────────────────────
@@ -397,6 +511,8 @@
       bosalt();
       return;
     }
+    // Faz C(b): DT/İkisi kapsamı → firma_dizin_dt/birlikte RPC dalı (yalnız "Tüm Firmalar"; "Takip" ihale yolunu kullanır)
+    if(firmaMod!=='ihale' && mod!=='takip'){ await yukleRpc(benim, KS); return; }
     try{
       const q=(el('v1-ara-liste').value||'').trim();
       if(mod==='takip' && !takipli.size){
@@ -624,6 +740,8 @@
     } else {
       el('v1-segment-alan').style.display='flex';
       el('v1-kamu-alan').style.display='flex';
+      el('v1-mod-alan').style.display='flex';
+      el('v1-mod-bar').querySelectorAll('[data-fmod]').forEach(b=>b.addEventListener('click',()=>firmaModSec(b.dataset.fmod)));
       cipleriYaz();
       // Normalde await YOK — liste il açılır listesini beklemesin. AMA derin linkte
       // (?il=ANKARA) sayaç satırı ilAdet'ten besleniyor; beklemezsek "0 firma kayıtlı"
@@ -655,10 +773,14 @@
       if(mod===m) return;
       mod=m; sayfa=1;
       ['s-tum','s-takip'].forEach(x=>el(x).classList.toggle('aktif',x===id));
+      // Takip sekmesinde kapsam seçici yok (RPC'ler takip filtresi almaz) → bar'ı gizle, ihale'ye dön
+      if(uyeMi) el('v1-mod-alan').style.display=(m==='takip')?'none':'flex';
+      if(m==='takip' && firmaMod!=='ihale'){ firmaMod='ihale'; modUIUygula(); basliklariYaz(); }
       urlYaz(); yukle();
     });
     sek('s-tum','tum'); sek('s-takip','takip');
 
+    modUIUygula();   // URL'den ?fmod=dt/birlikte geldiyse mod bar + segment/il durumunu uygula
     basliklariYaz(); ipucuYaz(); temizleGoster();
     yukle();
   })();
