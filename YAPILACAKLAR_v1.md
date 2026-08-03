@@ -482,8 +482,8 @@ Durum: ✅ bitti · ⏳ sıradaki · 📋 planlandı (FE=frontend/pull · DB=mig
 
 ### 🔴 Önemli
 - [26-1] ✅ FE — Sözleşmeler "Excel" export butonu → Veri Dışa Aktarım Yasağı ihlali → KALDIR. (v1-sozlesmeler.html)
-- [26-2] 📋 DB — Firma cirosu trilyon anomali: YAMAN ENERJİ ₺1,111 Mr/47 söz. Bozuk sozlesme_bedeli → bul&düzelt (Bank 12,3Tn'i şişiriyor).
-- [26-3] 📋 DB — İmkânsız tenzilat (tek-kısımlı): %-268,7 / %97,4 / %55,7. yaklaşık maliyet parse hatası; lot filtresi yakalamıyor.
+- [26-2] ✅ DB — Firma cirosu trilyon anomali ÇÖZÜLDÜ/DOĞRULANDI (3 Ağu): artık YOK. yukleniciler max ciro 187 Mr (REC İnşaat, gerçek), 1 Tn üstü 0 satır; ihale_sonuclari.sozlesme_bedeli max 83 Mr (yaklaşık maliyetle uyumlu); YAMAN ENERJİ 172 Mn/47 söz (makul); "BANK 12,3Tn" 0 satır. Gece ciro-recompute (temiz sonuç tablosu) + tenzilat/lot fix düzeltmiş. (Kategori Toplam Tutar + firma ciro KPI de bozuk-veri-şişmesi taşımıyor — teyit.)
+- [26-3] ⏳ DB/FE — İmkânsız tenzilat (tek-kısımlı) — KARAKTERİZE (3 Ağu, hâlâ canlı): lot_sayisi=1 1,43M satırda 40.331 negatif / 22.129 >%60 / 4.388 >%90. KÖK NEDEN: (a) bozuk sozlesme_bedeli (ör. 5₺ → sahte %99,8), (b) yaklasik_maliyet parse hatası (rakam eksik → -667%). Mevcut guard v1-ihale-detay `Math.abs(v)<100` -268/±100 yakalıyor ama %97-99 (5₺) + orta negatif geçiyor. Ayrıca `tenzilat_yuzde` kolonu tutarsız (bazı uçlar NULL). SEÇENEK: (A) cephe guard sıkılaştır (makul band, ör. sozlesme_bedeli≥1000 && -50<v<90) v1-ihale-detay+v1-firma-analiz tenzilatDegeri; (B) DB'de bozuk taban satırlarda tenzilat_yuzde=NULL (tüm gösterimler faydalanır, DB yazımı). **Kullanıcı onayı bekliyor: hangi yaklaşım + eşik.**
 - [26-4] ⏳ FE — Üst-bar arama "Aktif İhaleler" sekmesine düşüp aktif-dışı (2021-23) döndürüyor; İhale Tarihi "—"; başlık/kapsam çelişkili. (v1-ihaleler sorguKur/ara)
 - [26-21] 📋 FE — İhale Analizi (v1-rekabet) Bütçe histogramı bozuk: maliyetli tüm kayıt ₺10-50Mn kovasında; küçükler 0. Bucketing/ölçek.
 - [26-22] 📋 FE — Uyumluluk: tüm satır sabit %60 (profil tercihi boş); %75+/%85+ filtre + sıralama işlevsiz; eşleşme motoru tutarsız.
