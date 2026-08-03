@@ -87,7 +87,8 @@
       </div>
 
       <div class="v1-sekmeler">
-        <button class="v1-sekme aktif" id="s-tum">Tüm Kurumlar</button>
+        <button class="v1-sekme aktif" id="s-kategori">Kategoriler</button>
+        <button class="v1-sekme" id="s-tum">Tüm Kurumlar</button>
         <button class="v1-sekme" id="s-takip">Takip Ettiklerim</button>
       </div>
 
@@ -96,7 +97,20 @@
         <a href="login">Giriş yapın</a> veya <a href="fiyatlandirma_odeme_bolumu">üye olun</a> →
       </div>
 
-      <div class="v1-kart" style="padding:18px 20px;">
+      <!-- Kategoriler (Kurum Merkezi landing) — kurum_kategori_ozet(): DETSİS kökleri, yerel yönetimler düzleştirilmiş -->
+      <div class="v1-kart" id="v1-kategori-kart" style="padding:18px 20px;">
+        <div class="v1-tablo-bas" style="margin-bottom:16px;">
+          <div>
+            <div style="font-size:17px;font-weight:800;color:var(--v1-lacivert);">Kurum Kategorileri</div>
+            <div class="v1-tablo-sayi" id="v1-kat-sayi">Yükleniyor…</div>
+          </div>
+        </div>
+        <div class="v1-kat-grid" id="v1-kat-grid">
+          <div class="v1-bos" style="grid-column:1/-1;">Yükleniyor…</div>
+        </div>
+      </div>
+
+      <div class="v1-kart" id="v1-tablo-kart" style="padding:18px 20px;">
         <div class="v1-tablo-bas">
           <div>
             <div style="font-size:17px;font-weight:800;color:var(--v1-lacivert);" id="v1-liste-baslik">Tüm Kurumlar</div>
@@ -146,14 +160,25 @@
   const IL_YOK='__yok__';
   // v1-kurum-analiz.html ile ORTAK önbellek (aynı RPC, aynı ham biçim)
   const CACHE_KEY='idare_dizin_v2', CACHE_TTL=30*60*1000;   // v2: satıra DT sayıları eklendi (eski 4-el cache geçersiz)
+  const KAT_CACHE='kurum_kategori_v1';                      // kurum_kategori_ozet() önbelleği (küçük, 76 satır)
+  // Kategori kartı eşiği: ihale+DT toplamı bunun altındaki kökler (askeri alt-birim gürültüsü:
+  // KIŞLA GAZİNO, TCG…, HAVA İSTİHKAM…) "Diğer küçük kurumlar" altında katlanır.
+  const KAT_ESIK=1500;
+  const KAT_IKON={yerel:'🏙️', merkezi:'🏛️', diger:'📦'};
+  const KAT_ROZET={
+    yerel:  {et:'Yerel Yönetim', bg:'#E7F6F1', fg:'#0B7A5E'},
+    merkezi:{et:'Merkezi',       bg:'var(--v1-mavi-acik)', fg:'var(--v1-mavi)'},
+    diger:  {et:'Diğer',         bg:'#F0F2F5', fg:'var(--v1-muted)'}
+  };
   const trFold=window.trFold||((s)=>(s||'').toLocaleLowerCase('tr'));
   // Türkçe sıralama — 23K satırda localeCompare'i satır başı çağırmak yerine tek collator
   const KRS=new Intl.Collator('tr');
   const SIRA_ANAHTAR=['ad','il','toplam','aktif','dt_toplam','dt_aktif'];
   const YON_VARSAYILAN={ad:'asc', il:'asc', toplam:'desc', aktif:'desc'};
 
-  let tumu=[], takipli=new Set(), uyeMi=false, mod='tum', sayfa=1;
+  let tumu=[], takipli=new Set(), uyeMi=false, mod='kategori', sayfa=1;
   let ilSecim='', sirala='toplam', yon='desc';
+  let katVeri=[], katYuklu=false, katGenis=false;
 
   // ── URL (derin link) ────────────────────────────────────────────────
   function urlOku(){
@@ -327,6 +352,82 @@
     }));
   }
 
+  // ── Görünüm (Kategoriler ⇄ tablo) ───────────────────────────────────
+  function gorunumGoster(){
+    const katK=document.getElementById('v1-kategori-kart');
+    const tblK=document.getElementById('v1-tablo-kart');
+    const mis=document.getElementById('v1-misafir');
+    if(!uyeMi){ mis.style.display='block'; katK.style.display='none'; tblK.style.display='none'; return; }
+    mis.style.display='none';
+    const kat=(mod==='kategori');
+    katK.style.display=kat?'':'none';
+    tblK.style.display=kat?'none':'';
+  }
+
+  // ── Kategoriler (Kurum Merkezi landing) ─────────────────────────────
+  async function kategoriYukle(){
+    if(!uyeMi) return;
+    if(katYuklu){ kategoriCiz(); return; }
+    const grid=document.getElementById('v1-kat-grid');
+    try{
+      let ham=null;
+      try{ const p=JSON.parse(sessionStorage.getItem(KAT_CACHE)||'null');
+        if(p&&p.t&&(Date.now()-p.t)<CACHE_TTL&&Array.isArray(p.d)) ham=p.d; }catch(_){ /* bozuk önbellek */ }
+      if(!ham){
+        const {data,error}=await sb.rpc('kurum_kategori_ozet',{},{get:true});
+        if(error) throw error;
+        ham=Array.isArray(data)?data:[];
+        try{ sessionStorage.setItem(KAT_CACHE,JSON.stringify({t:Date.now(),d:ham})); }catch(_){ /* kota */ }
+      }
+      katVeri=ham; katYuklu=true; kategoriCiz();
+    }catch(e){ grid.innerHTML=`<div class="v1-bos" style="grid-column:1/-1;">Kategoriler yüklenemedi. ${esc(e.message||'')}</div>`; }
+  }
+
+  function katKart(k){
+    const ad=k.ad||'', dn=k.detsis_no||'';
+    const ih=Number(k.toplam_ihale)||0, dt=Number(k.toplam_dt)||0, cs=Number(k.cocuk_sayisi)||0;
+    const r=KAT_ROZET[k.grup]||KAT_ROZET.diger, ik=KAT_IKON[k.grup]||'🏛️';
+    return `<a class="v1-kat-kart" href="v1-kurum-analiz?gorunum=agac&dal=${encodeURIComponent(dn)}">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:9px;">
+        <span class="v1-kat-ad" style="margin:0;"><span style="margin-right:6px;">${ik}</span>${esc(ad)}</span>
+        <span class="v1-kat-rozet" style="background:${r.bg};color:${r.fg};">${r.et}</span>
+      </div>
+      <div class="v1-kat-stat">
+        <span>İhale <b>${num(ih)}</b></span>
+        <span>DT <b>${num(dt)}</b></span>
+        ${cs>0?`<span>Alt birim <b>${num(cs)}</b></span>`:''}
+      </div></a>`;
+  }
+
+  function kategoriCiz(){
+    const grid=document.getElementById('v1-kat-grid');
+    const majors=[], minors=[];
+    for(const k of katVeri){
+      const t=(Number(k.toplam_ihale)||0)+(Number(k.toplam_dt)||0);
+      (t>=KAT_ESIK?majors:minors).push(k);
+    }
+    let html=majors.map(katKart).join('');
+    if(minors.length){
+      let mih=0, mdt=0; for(const k of minors){ mih+=Number(k.toplam_ihale)||0; mdt+=Number(k.toplam_dt)||0; }
+      html+=`<button type="button" class="v1-kat-kart" id="v1-kat-diger"
+        style="width:100%;text-align:left;font-family:var(--v1-font);cursor:pointer;">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:9px;">
+          <span class="v1-kat-ad" style="margin:0;"><span style="margin-right:6px;">🗂️</span>Diğer küçük kurumlar</span>
+          <span class="v1-kat-rozet" style="background:#F0F2F5;color:var(--v1-muted);">${num(minors.length)} kategori</span>
+        </div>
+        <div class="v1-kat-stat">
+          <span>İhale <b>${num(mih)}</b></span><span>DT <b>${num(mdt)}</b></span>
+          <span style="color:var(--v1-mavi);font-weight:700;">${katGenis?'▲ Gizle':'▼ Tümünü gör'}</span>
+        </div></button>`;
+      if(katGenis) html+=minors.map(katKart).join('');
+    }
+    grid.innerHTML=html;
+    const dg=document.getElementById('v1-kat-diger');
+    if(dg) dg.addEventListener('click',()=>{ katGenis=!katGenis; kategoriCiz(); });
+    document.getElementById('v1-kat-sayi').innerHTML=
+      `Toplam <strong>${num(katVeri.length)}</strong> kategori · ${num(majors.length)} ana kategori`;
+  }
+
   async function takipToggle(idare){
     if(!uyeMi){ alert('Kurum takibi için giriş yapmalısınız.'); return; }
     try{
@@ -381,16 +482,32 @@
       th.addEventListener('keydown',e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); tetik(); } });
     });
 
+    const TABS=['s-kategori','s-tum','s-takip'];
     const sek=(id,m,baslik)=>document.getElementById(id).addEventListener('click',()=>{
       mod=m; sayfa=1;
-      ['s-tum','s-takip'].forEach(x=>document.getElementById(x).classList.toggle('aktif',x===id));
-      document.getElementById('v1-liste-baslik').textContent=baslik;
+      TABS.forEach(x=>document.getElementById(x).classList.toggle('aktif',x===id));
+      if(baslik) document.getElementById('v1-liste-baslik').textContent=baslik;
+      gorunumGoster();
       if(!uyeMi) return;                 // misafir kilidi ekranda kalsın
-      ilSecenekleriYaz(); ciz();
+      if(m==='kategori') kategoriYukle();
+      else { ilSecenekleriYaz(); ciz(); }
     });
+    sek('s-kategori','kategori',null);
     sek('s-tum','tum','Tüm Kurumlar'); sek('s-takip','takip','Takip Ettiğim Kurumlar');
     baslikOkYaz();
-    yukle();
+
+    // Başlangıç sekmesi: tabloya derin link (ara/il/sirala) veya ?sekme=liste/takip → tablo; aksi halde Kategoriler
+    const sekmeP=P.get('sekme');
+    if(sekmeP==='liste') mod='tum';
+    else if(sekmeP==='takip') mod='takip';
+    else if(P.get('ara')||P.get('il')||P.get('sirala')) mod='tum';
+    else mod='kategori';
+    { const aktifId=mod==='takip'?'s-takip':mod==='tum'?'s-tum':'s-kategori';
+      TABS.forEach(x=>document.getElementById(x).classList.toggle('aktif',x===aktifId));
+      if(mod==='tum') document.getElementById('v1-liste-baslik').textContent='Tüm Kurumlar';
+      if(mod==='takip') document.getElementById('v1-liste-baslik').textContent='Takip Ettiğim Kurumlar'; }
+    gorunumGoster();
+    if(uyeMi){ yukle(); if(mod==='kategori') kategoriYukle(); }
   })();
 })();
 </script>
