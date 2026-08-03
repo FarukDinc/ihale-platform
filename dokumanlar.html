@@ -5,7 +5,7 @@
     <meta name="author" content="Ömer Faruk Dinç">
     <meta name="copyright" content="© 2026 Ömer Faruk Dinç — İhaleGlobal">
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Dökümanlar — İhaleGlobal</title>
+  <title>Dokümanlar — İhaleGlobal</title>
   <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=4" />
   <link rel="icon" type="image/png" sizes="48x48" href="/favicon-48.png?v=4" />
   <link rel="apple-touch-icon" sizes="180x180" href="/favicon-180.png?v=4" />
@@ -135,7 +135,7 @@
       <a href="takipte" class="nav-item"><span class="icon">☆</span> Takibim</a>
       <a href="bildirimler" class="nav-item"><span class="icon">🔔</span> Bildirimler</a>
       <a href="uyumluluk" class="nav-item"><span class="icon">✓</span> Uyumluluk</a>
-      <a href="dokumanlar" class="nav-item active"><span class="icon">📁</span> Dökümanlar</a>
+      <a href="dokumanlar" class="nav-item active"><span class="icon">📁</span> Dokümanlar</a>
       <a href="profil" class="nav-item"><span class="icon">⚙</span> Profil & Filtreler</a>
       <a href="fiyatlandirma_odeme_bolumu" class="nav-item"><span class="icon">💳</span> Abonelik</a>
     </nav>
@@ -149,7 +149,7 @@
 
   <div class="main">
     <div class="topbar">
-      <span style="font-size:15px;font-weight:600;">Dökümanlar</span>
+      <span style="font-size:15px;font-weight:600;">Dokümanlar</span>
       <div class="topbar-actions">
         <button id="tumunu-ac-btn" onclick="tumunuAcKapat()" style="background:var(--card-bg);border:1px solid var(--border);color:var(--muted);padding:5px 12px;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;font-family:var(--font);">Tümünü Aç</button>
         <a href="takipte" class="action-btn" style="padding:7px 14px;font-size:12px;font-weight:600;border-radius:6px;border:1px solid var(--border);background:var(--card-bg);color:var(--white);text-decoration:none;">Takipte →</a>
@@ -159,23 +159,23 @@
 
     <div class="page-body">
       <div class="page-header">
-        <h1>Dökümanlar</h1>
+        <h1>Dokümanlar</h1>
         <p>Takip ettiğiniz ihalelerin dökümanlarını buradan görüntüleyin ve indirin.</p>
       </div>
 
       <div class="tab-bar">
-        <div class="tab active" onclick="sekmeAc('takip', this)">Takip Dökümanları</div>
+        <div class="tab active" onclick="sekmeAc('takip', this)">Takip Dokümanları</div>
         <div class="tab" onclick="sekmeAc('teknik', this)">Teknik Şartnameler</div>
         <div class="tab" onclick="sekmeAc('idari', this)">İdari Şartnameler</div>
       </div>
 
       <div id="panel-takip">
         <div class="bilgi-kutu">
-          ℹ Dökümanlar EKAP'tan otomatik çekilir. Yeni ihaleler için dökümanlar 24 saat içinde güncellenir.
-          Döküman indirmek için EKAP hesabınızla giriş yapmanız gerekebilir.
+          ℹ Dokümanlar EKAP'tan otomatik çekilir. Yeni ihaleler için dökümanlar 24 saat içinde güncellenir.
+          Doküman indirmek için EKAP hesabınızla giriş yapmanız gerekebilir.
         </div>
         <div class="search-bar">
-          <input type="text" id="dok-search" placeholder="Döküman veya ihale adı ara..." oninput="araFiltrele()" />
+          <input type="text" id="dok-search" placeholder="Doküman veya ihale adı ara..." oninput="araFiltrele()" />
         </div>
         <div id="dok-icerik">
           <div class="empty-state"><div class="empty-icon">⏳</div><p>Yükleniyor...</p></div>
@@ -204,7 +204,7 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-<script src="js/kenar-menu.js?v=9"></script>
+<script src="js/kenar-menu.js?v=10"></script>
 <script src="js/sidebar-user.js?v=6"></script>
 <script src="js/bildirim-sayaci.js?v=rot1"></script>
 <script src="js/main.js?v=trf2"></script>
@@ -267,7 +267,7 @@
              <a class="dok-item" href="${d.url||'#'}" ${d.url?'target="_blank" rel="noopener"':''}>
                <span class="dok-icon">${dokIcon(d.tur || d.ad)}</span>
                <div class="dok-info">
-                 <div class="dok-adi">${d.ad || d.baslik || 'Döküman'}</div>
+                 <div class="dok-adi">${d.ad || d.baslik || 'Doküman'}</div>
                  <div class="dok-tur">${d.tur || d.type || ''}</div>
                </div>
                ${d.url ? '<span style="font-size:10px;color:var(--muted);">↗</span>' : ''}
@@ -315,7 +315,7 @@
       icerik.innerHTML = `<div class="empty-state">
         <div class="empty-icon">📁</div>
         <h3>Takip listesi boş</h3>
-        <p>Dökümanları görmek için önce ihaleleri takip listesine ekleyin.</p>
+        <p>Dokümanları görmek için önce ihaleleri takip listesine ekleyin.</p>
         <a href="ihaleler" style="display:inline-block;background:var(--amber);color:var(--navy);padding:10px 22px;border-radius:6px;font-size:13px;font-weight:700;text-decoration:none;">İhalelere Göz At →</a>
       </div>`;
       return;

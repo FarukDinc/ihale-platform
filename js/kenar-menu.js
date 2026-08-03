@@ -72,7 +72,7 @@
         { ad: 'Takibim', href: 'takipte' },
         { ad: 'Bildirimler', href: 'bildirimler' },
         { ad: 'Uyumluluk', href: 'uyumluluk' },
-        { ad: 'Dökümanlar', href: 'dokumanlar' },
+        { ad: 'Dokümanlar', href: 'dokumanlar' },
         { ad: 'Profil & Filtreler', href: 'profil' },
         { ad: 'Abonelik', href: 'fiyatlandirma_odeme_bolumu' },
       ] },
