@@ -413,6 +413,20 @@ def firma_ai_yorum(
                         return {"basari": True, "metin": mevcut_kayit["ai_yorum"], "cache": True}
                 except ValueError:
                     pass  # tarih parse edilemedi, tazele
+        elif not mevcut_kayit:
+            # DT-only firma (yukleniciler'de YOK → orada cache'lenemez): ai_yorumlari(varlik_tip='firma')'da
+            # 7 günlük cache. Yoksa her görüntülemede yeniden üretilip 1 kredi düşerdi (DT-only firma bug'ı).
+            try:
+                dc = supabase.table("ai_yorumlari").select("yorum, uretildi").eq(
+                    "varlik_tip", "firma").eq("varlik_anahtar", normalize_ad or firma).limit(1).execute()
+                dtc = (dc.data or [None])[0]
+                if dtc and dtc.get("yorum") and dtc.get("uretildi"):
+                    yas = datetime.now(timezone.utc) - datetime.fromisoformat(
+                        str(dtc["uretildi"]).replace("Z", "+00:00"))
+                    if yas < timedelta(days=AI_YORUM_GECERLILIK_GUN):
+                        return {"basari": True, "metin": dtc["yorum"], "cache": True}
+            except Exception:
+                pass  # cache okunamadı/parse edilemedi → yeniden üret
 
         # 2. Kredi ön kontrolü
         kredi_bilgi = supabase.table("kullanici_krediler").select(
@@ -452,11 +466,23 @@ def firma_ai_yorum(
             raise HTTPException(status_code=402, detail="Yetersiz kredi")
 
         # 6. Cache'e yaz (+ veri-hash → gece tazeleme veri değişince yorumu geçersiz kılar)
-        supabase.table("yukleniciler").update({
-            "ai_yorum": sonuc["metin"],
-            "ai_yorum_tarih": datetime.now(timezone.utc).isoformat(),
-            "ai_yorum_hash": firma_veri_hash(kirilimlar),
-        }).eq("normalize_ad", normalize_ad).execute()
+        yeni_hash = firma_veri_hash(kirilimlar)
+        if mevcut_kayit:
+            supabase.table("yukleniciler").update({
+                "ai_yorum": sonuc["metin"],
+                "ai_yorum_tarih": datetime.now(timezone.utc).isoformat(),
+                "ai_yorum_hash": yeni_hash,
+            }).eq("normalize_ad", normalize_ad).execute()
+        else:
+            # DT-only firma → yukleniciler'de yok; ai_yorumlari(varlik_tip='firma')'ya cache'le (7 gün expiry).
+            try:
+                supabase.table("ai_yorumlari").upsert({
+                    "varlik_tip": "firma", "varlik_anahtar": normalize_ad or firma,
+                    "yorum": sonuc["metin"], "veri_hash": yeni_hash,
+                    "uretildi": datetime.now(timezone.utc).isoformat(),
+                }, on_conflict="varlik_tip,varlik_anahtar").execute()
+            except Exception as e:
+                print(f"  ⚠ DT-only firma yorum cache yazılamadı: {e}")
 
         return {"basari": True, "metin": sonuc["metin"], "cache": False}
 
