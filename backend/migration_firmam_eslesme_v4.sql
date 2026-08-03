@@ -61,7 +61,10 @@ LANGUAGE sql STABLE AS $$
            f.kat_toplam, f.bedel AS fbedel
     FROM public.ilanlar i, firma f
     WHERE i.durum='aktif'
-      AND (i.son_teklif_tarihi IS NULL OR i.son_teklif_tarihi >= now())
+      -- 26-11: son_teklif_tarihi NULL olan aktif ihaleler "İhale Tarihi —" gösteriyordu (545/6224 ~%9).
+      -- Deadline'ı bilinmeyen ihaleye güvenle teklif verilemez → "size uygun AÇIK ihaleler"den DIŞLA
+      -- (ilan_tarihi'ni "İhale Tarihi" olarak göstermek yanıltıcı olurdu; exclude daha doğru).
+      AND i.son_teklif_tarihi >= now()
       AND ( (f.kat_say ? i.kategori)
          OR (f.idareler IS NOT NULL AND i.idare = ANY(f.idareler))
          OR i.il = ANY(f.iller)
