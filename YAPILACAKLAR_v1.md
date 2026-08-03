@@ -498,7 +498,7 @@ Durum: ✅ bitti · ⏳ sıradaki · 📋 planlandı (FE=frontend/pull · DB=mig
 - [26-10] 📋 DB — Kararlar "Sonuç" hep "Belirtilmemiş"; Düzenleyici(0)+Mahkeme(0) kapsam ince.
 - [26-25] ✅ FE — ÇÖZÜLDÜ (3 Ağu): v1-ihaleler `usulTemiz` genişletildi — Açık/Açık İhale/4734 KİK → "Açık İhale"; İstisna+"4734 / 3-x"+Kapsam Dışı → "İstisna / Kapsam Dışı"; 2886/Pazarlık/Belli kanonik (TR İ/ı için toUpperCase KULLANILMADI, ham metinde arandı). AYRICA İstisna FİLTRESİ `.or('%İstisna%,%4734 / 3-%')` ile 90K "4734 / 3-x" satırını kapsar (eskiden Diğer'e düşüyordu); USUL_HARIC'e eklendi. Canlı doğrulandı (REST .or çalışıyor, display kanonik, 0 hata).
 - [26-26] 📋 DB — Firma Segmentleri üst özet rozetler "—/hesaplanıyor" takılı (aggregate timeout → MV).
-- [26-27] 📋 DB — Segment mantığı: "Parlayan Yıldızlar"a 0-taban ilk-kez JV karışıyor (+182.126%) → İlk Kez'e ayır.
+- [26-27] ✅ DB — ÇÖZÜLMÜŞ (3 Ağu doğrulandı): canlı seg_parlayan `önceki12>0 AND son12≥2×önceki` (OR "ilk kez büyük" dalı kaldırılmış) → 0-taban Parlayan **0 firma**. migration_qa_26_27_parlayan.sql uygulanmış + gece refresh koşmuş. Bugün: baz migration_firma_segmentleri.sql'i de fix'le senkronladım (rebuild regresyonu önlendi).
 - [26-28] 📋 DB — Bağlantısız Kurumlar 17.329 (%41 DETSİS'e bağlanamamış).
 
 ### 🟡 Düşük

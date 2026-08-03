@@ -83,12 +83,11 @@ BEGIN
                     AND h.toplam >= 100000),
     -- 150MN+: kümülatif ciro ≥ 150.000.000 TL
     seg_150mn    = (h.toplam >= 150000000),
-    -- PARLAYAN: son 12 ay anlamlı (≥5Mn) ve önceki döneme göre ≥2x büyüme;
-    --           YA DA yeni gelip büyük iş yapan (ilk kez + son12 ≥ 20Mn)
-    seg_parlayan = (
-        (h.son12 >= 5000000 AND h.onceki12 > 0 AND h.son12 >= h.onceki12 * 2)
-        OR (h.ilk_tarih > (ref_tarih - INTERVAL '12 months')::date AND h.son12 >= 20000000)
-    ),
+    -- PARLAYAN (26-27): son 12 ay anlamlı (≥5Mn) ve önceki döneme göre ≥2x GERÇEK büyüme —
+    --   önceki_12ay > 0 baz ŞART. Eski OR dalı ("ilk kez + son12≥20Mn") önceki_12ay=0 olan
+    --   ilk-kez JV'leri (TAŞYAPI 0→48B, +182.126%) Parlayan'a sokuyordu → KALDIRILDI; onlar
+    --   zaten seg_ilk_kez'de. (Canlıya migration_qa_26_27_parlayan.sql ile uygulandı; baz senkron.)
+    seg_parlayan = (h.son12 >= 5000000 AND h.onceki12 > 0 AND h.son12 >= h.onceki12 * 2),
     -- SÖNEN: önceki dönem anlamlıydı (≥5Mn) ama son 12 ayda %70+ düştü (sıfır dahil)
     seg_sonen    = (h.onceki12 >= 5000000 AND h.son12 <= h.onceki12 * 0.3),
     segment_guncellendi = now()
