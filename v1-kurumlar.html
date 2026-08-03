@@ -42,6 +42,15 @@
     .v1-tablo th.v1-sr:hover { color:var(--v1-mavi); }
     .v1-tablo th.v1-sr:focus-visible { outline:2px solid var(--v1-mavi); outline-offset:-2px; }
     .v1-ok { font-size:10.5px; margin-left:5px; }
+    /* Kurum Merkezi — kategori kartları (UV-6 Faz B) */
+    .v1-kat-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(250px,1fr)); gap:12px; }
+    .v1-kat-kart { background:#fff; border:1px solid var(--v1-cizgi); border-radius:12px; padding:14px 16px;
+      cursor:pointer; text-decoration:none; color:inherit; display:block; transition:border-color .15s, box-shadow .15s; }
+    .v1-kat-kart:hover { border-color:var(--v1-mavi); box-shadow:var(--v1-golge); text-decoration:none; }
+    .v1-kat-ad { font-size:13.5px; font-weight:800; color:var(--v1-lacivert); line-height:1.3; margin-bottom:9px; }
+    .v1-kat-rozet { font-size:9.5px; font-weight:800; padding:1px 7px; border-radius:6px; white-space:nowrap; }
+    .v1-kat-stat { display:flex; gap:16px; flex-wrap:wrap; font-size:12px; color:var(--v1-muted); }
+    .v1-kat-stat b { color:var(--v1-metin); font-weight:800; }
   </style>
 </head>
 <body class="v1" data-v1-aktif="kurumlar" data-v1-kirinti="İhaleGlobal > Kurumlar">
@@ -57,6 +66,24 @@
            title="DETSİS hiyerarşisi — bakanlık › genel müdürlük › il müdürlüğü; kuruma tıklayınca analizi doğrudan açılır">🌳 Kurum Ağacı</a>
         <a class="v1-gor-btn" href="v1-kurum-analiz?gorunum=liste"
            title="İdare Dizini — KPI şeridi, aktiflik süzgeci ve tıklayınca aynı ekranda açılan kurum analizi">🏛️ İdare Dizini</a>
+      </div>
+
+      <!-- Özet stat tile'lar (rakip düzeni, kendi mavi paletimiz) — tümü client'ta hesaplanır (idare_dizin_json yüklü) -->
+      <style>
+        .v1-kstat { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin:6px 0 20px; }
+        .v1-kstat-tile { display:flex; align-items:center; gap:14px; background:#fff; border:1px solid var(--v1-cizgi);
+          border-radius:14px; padding:15px 18px; box-shadow:0 1px 3px rgba(12,62,112,.05); }
+        .v1-kstat-ikon { width:46px; height:46px; border-radius:50%; background:var(--v1-mavi-acik); color:var(--v1-mavi);
+          display:flex; align-items:center; justify-content:center; font-size:22px; flex-shrink:0; }
+        .v1-kstat-sayi { font-size:23px; font-weight:800; color:var(--v1-lacivert); line-height:1.1; }
+        .v1-kstat-et { font-size:12.5px; color:var(--v1-muted); margin-top:3px; }
+        @media(max-width:900px){ .v1-kstat{ grid-template-columns:repeat(2,1fr); } }
+      </style>
+      <div class="v1-kstat">
+        <div class="v1-kstat-tile"><span class="v1-kstat-ikon">🏛️</span><div><div class="v1-kstat-sayi" id="kst-idare">—</div><div class="v1-kstat-et">Toplam İdare</div></div></div>
+        <div class="v1-kstat-tile"><span class="v1-kstat-ikon">📄</span><div><div class="v1-kstat-sayi" id="kst-ihale">—</div><div class="v1-kstat-et">Toplam İhale</div></div></div>
+        <div class="v1-kstat-tile"><span class="v1-kstat-ikon">⚡</span><div><div class="v1-kstat-sayi" id="kst-dt">—</div><div class="v1-kstat-et">Toplam Doğrudan Temin</div></div></div>
+        <div class="v1-kstat-tile"><span class="v1-kstat-ikon">⭐</span><div><div class="v1-kstat-sayi" id="kst-takip">—</div><div class="v1-kstat-et">Takip Ettiğim</div></div></div>
       </div>
 
       <div class="v1-sekmeler">
@@ -183,6 +210,7 @@
       const {data:t,error:te}=await sb.from('takip_idareler').select('idare_ad');
       if(te) console.warn('takip listesi okunamadı:',te.message||te);
       else (t||[]).forEach(r=>takipli.add(r.idare_ad));
+      statTileYaz();
       ilSecenekleriYaz();
       ciz();
     }catch(e){ tb.innerHTML=`<tr><td colspan="8" class="v1-bos">Liste yüklenemedi. ${esc(e.message||'')}</td></tr>`; }
@@ -190,6 +218,17 @@
 
   // ── Filtre / sıralama (tamamı client'ta — RPC bir kez çağrılır) ──────
   const tabanListe=()=>mod==='takip'?tumu.filter(r=>takipli.has(r.idare)):tumu;
+
+  // Özet stat tile'ları (TÜM idareler üzerinden — sekme/filtreden bağımsız global özet)
+  function statTileYaz(){
+    let ih=0, dt=0;
+    for(const r of tumu){ ih+=r.toplam||0; dt+=r.dt_toplam||0; }
+    const yaz=(id,v)=>{ const e=document.getElementById(id); if(e) e.textContent=num(v); };
+    yaz('kst-idare', tumu.length);
+    yaz('kst-ihale', ih);
+    yaz('kst-dt', dt);
+    yaz('kst-takip', takipli.size);
+  }
 
   function ilSecenekleriYaz(){
     const sel=document.getElementById('v1-il');
