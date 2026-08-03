@@ -172,14 +172,26 @@
   const usulTemiz=(u)=>{
     if(!u) return '';
     const U=u.toUpperCase();
-    if(!/TENDER_SEARCH|PAGEITEM|ENUMERATIONS/.test(U)) return u;
-    if(U.includes('AMONG_CERTAIN_BIDDERS')) return 'Belli İstekliler Arasında';
-    if(U.includes('OPEN'))               return 'Açık İhale';
-    if(U.includes('BARGAIN'))            return 'Pazarlık Usulü';
-    if(U.includes('DESIGN_COMPETITION')) return 'Tasarım Yarışması';
-    if(U.includes('DIRECT_PROCUREMENT')) return 'Doğrudan Temin';
-    if(U.includes('FRAMEWORK_AGREEMENT'))return 'Çerçeve Anlaşma';
-    return 'Diğer / İstisna';
+    // Eski i18n enum formatı (TENDER_SEARCH.… ASCII anahtarları — toUpperCase güvenli)
+    if(/TENDER_SEARCH|PAGEITEM|ENUMERATIONS/.test(U)){
+      if(U.includes('AMONG_CERTAIN_BIDDERS')) return 'Belli İstekliler Arasında';
+      if(U.includes('OPEN'))               return 'Açık İhale';
+      if(U.includes('BARGAIN'))            return 'Pazarlık Usulü';
+      if(U.includes('DESIGN_COMPETITION')) return 'Tasarım Yarışması';
+      if(U.includes('DIRECT_PROCUREMENT')) return 'Doğrudan Temin';
+      if(U.includes('FRAMEWORK_AGREEMENT'))return 'Çerçeve Anlaşma';
+      return 'Diğer / İstisna';
+    }
+    // 26-25: güncel Türkçe ham değer çeşitlerini TEK kanonik etikete indir (Açık/Açık İhale/
+    // 4734 KİK Açık İhale → "Açık İhale"; İstisna (4734 md 3-x)/4734 / 3-x → "İstisna / Kapsam Dışı"…).
+    // Türkçe İ/ı için toUpperCase KULLANMA (ham metinde ara). SIRA: 2886 "Açık Teklif" içerdiği için ÖNCE.
+    if(u.includes('2886'))         return '2886 Sayılı DİK';
+    if(u.includes('Belli İstekl')) return 'Belli İstekliler Arasında';
+    if(u.includes('Pazarlık'))     return 'Pazarlık Usulü';
+    if(u.includes('İstisna') || u.includes('Kapsam Dışı') || /4734\s*\/\s*3-/.test(u)) return 'İstisna / Kapsam Dışı';
+    if(u.includes('Açık'))         return 'Açık İhale';
+    if(u.trim()==='Diğer')         return 'Diğer';
+    return u;   // tanınmayan mevzuat (Elektrik Dağıtım, Vakıf Üniv. vb.) olduğu gibi
   };
   const P=new URLSearchParams(location.search);
   const SAYFA_BOY=20;
@@ -226,7 +238,7 @@
           (Pazarlık'ta da 4 adet). Bu yüzden KİK dallarında 2886 DIŞLANIYOR ve 2886 kendi
           seçeneği oluyor. Dropdown'da karşılığı olmayan 161 satır da "Diğer mevzuat"a düşüyor;
           eskiden hiçbir seçenekle erişilemiyordu. */
-  const USUL_HARIC=['%Açık%','%Belli İstekliler%','%Pazarlık%','%İstisna%','%2886%'];
+  const USUL_HARIC=['%Açık%','%Belli İstekliler%','%Pazarlık%','%İstisna%','%4734 / 3-%','%2886%'];
   const USULLER=[
     {v:'acik',    ad:'Açık İhale (4734 / KİK)',
      uygula:q=>q.ilike('usul','%Açık%').not('usul','ilike','%2886%')},
@@ -235,7 +247,8 @@
     {v:'pazarlik',ad:'Pazarlık',
      uygula:q=>q.ilike('usul','%Pazarlık%').not('usul','ilike','%2886%')},
     {v:'istisna', ad:'İstisna / Kapsam Dışı',
-     uygula:q=>q.ilike('usul','%İstisna%')},
+     // "4734 / 3-x" (90K) da 4734 md.3 istisnasıdır ama '%İstisna%' kaçırıyordu → OR ile ekle (26-25).
+     uygula:q=>q.or('usul.ilike.%İstisna%,usul.ilike.%4734 / 3-%')},
     {v:'dik2886', ad:'2886 Sayılı DİK (satış / kiraya verme)',
      uygula:q=>q.ilike('usul','%2886%')},
     {v:'diger',   ad:'Diğer mevzuat (Elektrik Dağıtım, Vakıf Üniv., TİGEM…)',
