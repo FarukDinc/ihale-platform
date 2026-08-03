@@ -484,15 +484,15 @@ Durum: ✅ bitti · ⏳ sıradaki · 📋 planlandı (FE=frontend/pull · DB=mig
 - [26-1] ✅ FE — Sözleşmeler "Excel" export butonu → Veri Dışa Aktarım Yasağı ihlali → KALDIR. (v1-sozlesmeler.html)
 - [26-2] ✅ DB — Firma cirosu trilyon anomali ÇÖZÜLDÜ/DOĞRULANDI (3 Ağu): artık YOK. yukleniciler max ciro 187 Mr (REC İnşaat, gerçek), 1 Tn üstü 0 satır; ihale_sonuclari.sozlesme_bedeli max 83 Mr (yaklaşık maliyetle uyumlu); YAMAN ENERJİ 172 Mn/47 söz (makul); "BANK 12,3Tn" 0 satır. Gece ciro-recompute (temiz sonuç tablosu) + tenzilat/lot fix düzeltmiş. (Kategori Toplam Tutar + firma ciro KPI de bozuk-veri-şişmesi taşımıyor — teyit.)
 - [26-3] ✅ DB/FE — İmkânsız tenzilat ÇÖZÜLDÜ (3 Ağu, kullanıcı kararı: "sadece fiziksel imkânsız" + "ikisi de"). Eşik: bedel/maliyet<100₺ VEYA tenzilat≥%95 VEYA ≤-%100 → NULL; orta değerler (-%55, %70) KORUNUR. 5 katman: (1) ekap_sonuc_backfill.py guard, (2) ekap_sonuc_scraper.py guard (gece kalıcı), (3) migration_26_3_tenzilat_fiziksel.sql → **191.471 satır** tenzilat_yuzde+kazanan_teklif_farki_yuzde NULL, (4) v1-ihale-detay taban+band guard, (5) v1-firma-analiz merkezi tenzilatDegeri guard. Doğrulama: lot_sayisi=1 kalan uç=0/çöp-taban=0; dolu 1,42M (min -99,995 / max 94,995); -53% aşım korundu. Not: analiz_pivot/sonuc_ozet_mv ortalamaları gece refresh'te temiz tenzilatı alır.
-- [26-4] ⏳ FE — Üst-bar arama "Aktif İhaleler" sekmesine düşüp aktif-dışı (2021-23) döndürüyor; İhale Tarihi "—"; başlık/kapsam çelişkili. (v1-ihaleler sorguKur/ara)
-- [26-21] 📋 FE — İhale Analizi (v1-rekabet) Bütçe histogramı bozuk: maliyetli tüm kayıt ₺10-50Mn kovasında; küçükler 0. Bucketing/ölçek.
+- [26-4] ✅ FE — ÇÖZÜLDÜ (3 Ağu): sorguKur 'aktif' dalı kelime aramasında aktif-durum filtresini atlıyordu (`!val('f-kelime')`) → sekme "Aktif" derken 2021-23 aktif-dışı dönüyordu. Artık aktif filtre kelime aramasında UYGULANIR; yalnız idare drill-down + İKN/ekap_id'de atlanır. Başlık da "Aktif İhaleler" (İKN'de "tüm zamanlar") + kapsam şeridi. Misafirde doğrulandı: "Son 1 gün" aktif sonuç, başlık tutarlı, 0 console hatası.
+- [26-21] ✅ FE — BUG DEĞİL (3 Ağu triyaj): histogram kümelenmesi `yaklasik_maliyet_min=10785492/max=43142132` = KİK band tahmini (itiraz_bedelinden, 4 sabit çift) — bellek [[aktif-ihale-maliyet-band]] "çöp sanıp silme = 26-21 dersi". Gerçek maliyet yalnız ihale_sonuclari'nda. (İsteğe bağlı FE iyileştirme: bandı "KİK tahmini" diye etiketle; migration_qa_26'nın bunu null'laması yanlış teşhisti, uygulanmamalı.)
 - [26-22] 📋 FE — Uyumluluk: tüm satır sabit %60 (profil tercihi boş); %75+/%85+ filtre + sıralama işlevsiz; eşleşme motoru tutarsız.
-- [26-23] 📋 DB/FE — Firmalar: DMO yüklenici firma olarak listeleniyor (alıcı idare) → firma_kurum_mu ile dizinde gizle/işaretle.
-- [26-24] 📋 DB/FE — DT Sonuçları ~640K satırda kazanan yok (sayaç 2,7M ama kazananlı 2,07M) → sonuç filtresi kazananlı DT'ye.
+- [26-23] ✅ DB/FE — ÇÖZÜLMÜŞ (3 Ağu triyaj): DEVLET MALZEME OFİSİ GENEL MÜDÜRLÜĞÜ kurum_mu=true (İhale modunda gizli); özel "DMO Grup Ltd" firmaları doğru false. Gece cron senkron (run_scraper satır 54).
+- [26-24] ✅ DB/FE — ÇÖZÜLMÜŞ (3 Ağu triyaj): DT sonuçlarında kazanansız 0 (2,87M'nin tamamı dolu). Gece DT-kazanan backfill'i bitirmiş.
 
 ### 🟠 Orta
 - [26-5] 📋 DB — DT ileri-tarih +1yıl (24 Kas 2028 / 23 Tem 2027); scraper yıl-parse; +test kaydı "denme". (bkz UV-5)
-- [26-6] 📋 DB/FE — İl dup "İZMIR (1)" vs "İZMİR (1.494)" (noktasız/noktalı İ) → il normalize.
+- [26-6] ✅ DB/FE — ÇÖZÜLMÜŞ (3 Ağu triyaj): İZMIR (noktasız) 0 satır. (migration_qa_26 uygulanmış.)
 - [26-7] 📋 DB — Ad-ortası boşluk (ALTINPAR K / BET ON / STANBUL) = UV-4 ile aynı.
 - [26-8] 📋 DB/FE — Sektör taksonomi sızıntısı: "Mal Alımı"/"Hizmet Alımı"/"İnşaat & Yapım" 41 kanonik dışı.
 - [26-10] 📋 DB — Kararlar "Sonuç" hep "Belirtilmemiş"; Düzenleyici(0)+Mahkeme(0) kapsam ince.
