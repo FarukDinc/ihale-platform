@@ -502,12 +502,12 @@ Durum: ✅ bitti · ⏳ sıradaki · 📋 planlandı (FE=frontend/pull · DB=mig
 - [26-28] ✅ DB — ÇÖZÜLMÜŞ (3 Ağu triyaj): idare_bagsiz_mv **144** (17.329 değil). Orphan-kurum greft yapılmış (bellek: orphan-kurum-greft, 17.329→99 + isim/AI dağıtım).
 
 ### 🟡 Düşük
-- [26-11] ⏳ FE — Arama/Analiz "katılabileceğiniz ihaleler" İhale Tarihi "—" → tarih fallback (26-4 ile beraber).
-- [26-12] ⏳ FE — Takibim'de "Takip Ettiğim Sektörler" bölümü yok (Bana Özel 1 sayıyor).
-- [26-13] ⏳ FE — İhalelerim breadcrumb "e-Satınalma" ama Kamu sidebar'ında.
-- [26-14] ⏳ FE — v2 Kurumsal kapısı native prompt() → styled modal.
+- [26-11] ✅ DB — ÇÖZÜLDÜ (3 Ağu): eşleşme motoru (firma_icin_acik_ihaleler v4) WHERE'i `son_teklif_tarihi IS NULL OR >= now()` ile null-deadline aktif ihaleleri (545/6224 ~%9) döndürüp "İhale Tarihi —" gösteriyordu. Fix: `AND son_teklif_tarihi >= now()` (null-deadline dışla — deadline'sız ihaleye teklif verilemez; ilan_tarihi'ni "İhale Tarihi" göstermek yanıltıcı olurdu). Canlıda WHERE'de IS NULL kalmadı (doğrulandı).
+- [26-12] ✅ FE — ÇÖZÜLDÜ (3 Ağu): "Takip Ettiğim Sektörler" bölümü ZATEN vardı (v1-takipte 266-273, takip_sektorler'den) ama sektör "Takibi Bırak" düğmesi ÇALIŞMIYORDU — tkTikla delegesi v1-sektor-liste'ye bağlı değildi. Tek satır dinleyici eklendi.
+- [26-13] ✅ FE — bug DEĞİL (3 Ağu): breadcrumb "e-Satınalma > İhalelerim" DOĞRU — sayfa E-Satınalma dünyasında (WS_OF['ihalelerim']='esatinalma'), Kamu'da değil. Rapor önermesi hatalı. Yalnız kozmetik büyük harf hizalandı (e→E).
+- [26-14] ✅ FE — ÇÖZÜLMÜŞ (3 Ağu doğrulandı): v2 Kurumsal kapısı ZATEN stilize modal (js/v1-kabuk.js v2SifreModal:310-338), native prompt YOK. Rapor stale.
 - [26-15] ✅ FE — ÇÖZÜLDÜ (3 Ağu): "Döküman"→TDK "Doküman" global (27 html + js/kenar-menu.js sidebar); kenar-menu.js ?v=10 bump. Canlı doğrulandı (düzgün UTF-8, mojibake 0, eski 0). sed byte-güvenli.
-- [26-16] 📋 FE — Bildirim "Standart Plan/50 kredi" ama paket Pro (kozmetik/tarihsel).
+- [26-16] 🟡 KAYNAK DÜZELTİLDİ, DEPLOY BEKLİYOR (3 Ağu): ödeme bildirimi/kredi-hareketi "Standart Plan" yazıyordu (plan_kodu='standart' ama UI'da "Pro Plan"). supabase/functions/odeme-baslat/index.ts (icerik+aciklama) + backend/payment.py PLANLAR ad → "Pro Plan" düzeltildi+commit'lendi. ⚠️ CANLI DEĞİL: Edge functions ayrı volume'dan serve ediliyor (/opt/supabase/docker/volumes/functions, repo'dan değil) → deploy = index.ts'i o volume'a kopyala + edge reload. PAYMENT fonksiyonu = hassas, dikkatli/ayrı deploy (string-only değişiklik, düşük risk ama payment container). "50 kredi" mesafeli-satis/docs'ta HUKUKİ statik, dokunulmadı.
 - [26-17] ⏳ FE — UNGM global ilan sektör "—" (data); "Palestine, State of" TR çeviri.
 - [26-29] ⏳ FE — Firmalar segment sayacı il-toplamını gösteriyor (segmenti yansıtmıyor).
 - [26-30] ⏳ FE — Maliyet filtre çipi ham sayı ("50000000 – …") → ₺ format.
