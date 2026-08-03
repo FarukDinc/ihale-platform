@@ -300,8 +300,12 @@
       let tenzHtml;
       if(tekKisim){
         const v=(s0.tenzilat_yuzde!=null)?s0.tenzilat_yuzde:s0.kazanan_teklif_farki_yuzde;
-        const tz=(v!=null&&Math.abs(Number(v))<100)
-          ? '%'+Number(v).toLocaleString('tr-TR',{maximumFractionDigits:1}) : '—';
+        const nv=Number(v);
+        // [26-3] Fiziksel imkânsızı gizle (bozuk taban → güvenilmez): teklif/maliyet <100₺,
+        // tenzilat ≥%95 (yakın-bedava) veya ≤-%100 (2× aşım). Orta değerler görünür kalır.
+        const tabanOk=Number(s0.sozlesme_bedeli)>=100 && Number(s0.yaklasik_maliyet)>=100;
+        const tz=(v!=null && tabanOk && nv<95 && nv>-100)
+          ? '%'+nv.toLocaleString('tr-TR',{maximumFractionDigits:1}) : '—';
         tenzHtml=`<div><b>Tenzilat</b><span>${tz}</span></div>`;
       }else if(cokKisim){
         tenzHtml=`<div><b>Tenzilat</b><span class="kucuk" title="Çok kısımlı ihalede EKAP kısım bazlı yaklaşık maliyet yayımlamadığından tenzilat hesaplanamaz">${num(lot)} kısımlı — hesaplanamaz</span></div>`;

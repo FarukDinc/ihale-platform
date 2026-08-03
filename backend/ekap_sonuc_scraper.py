@@ -370,6 +370,15 @@ def sonuc_parse(ihale_id: str, ekap_id: str, ham_sonuc: dict) -> dict:
         item.get("yaklasikMaliyet") or item.get("yaklasikMaliyetBedeli")
     )
 
+    # Fiziksel imkânsız tenzilatı ele (EKAP alanı çöp olabilir): yakın-bedava (≥%95),
+    # 2 kat aşım (≤-%100) veya çöp taban değer (<100₺) → güvenilmez, NULL. [26-3]
+    if tenzilat is not None and (
+        tenzilat >= 95 or tenzilat <= -100
+        or (sozlesme_bedeli is not None and sozlesme_bedeli < 100)
+        or (yaklasik is not None and yaklasik < 100)
+    ):
+        tenzilat = None
+
     return {
         "ekap_id":                ekap_id,
         "ihale_id":               ihale_id,

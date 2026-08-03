@@ -735,7 +735,14 @@
   function tenzilatDegeri(s){
     if (!s || Number(s.lot_sayisi) !== 1) return null;
     const v = (s.tenzilat_yuzde != null) ? s.tenzilat_yuzde : s.kazanan_teklif_farki_yuzde;
-    return v != null ? Number(v) : null;
+    if (v == null) return null;
+    const nv = Number(v);
+    // [26-3] Fiziksel imkânsızı ele (bozuk taban → güvenilmez): tenzilat ≥%95 (yakın-bedava) /
+    // ≤-%100 (2× aşım), veya çöp taban (<100₺). Orta değerler korunur ("veriyi gizleme" kuralı).
+    if (nv >= 95 || nv <= -100) return null;
+    if (s.sozlesme_bedeli != null && Number(s.sozlesme_bedeli) < 100) return null;
+    if (s.yaklasik_maliyet != null && Number(s.yaklasik_maliyet) < 100) return null;
+    return nv;
   }
   // Payda etiketi: kesme varsa sayının neyin üzerinden hesaplandığını açıkça söyler.
   function ornekEtiketi(adet){
@@ -1798,7 +1805,7 @@
         .eq('id', yid).limit(1),
       // lot_sayisi ŞART: onsuz tenzilat ortalamasına çok kısımlı ihalelerin sahte %95'leri karışır
       sb.from('ihale_sonuclari')
-        .select('kazanan_teklif,sozlesme_bedeli,tenzilat_yuzde,kazanan_teklif_farki_yuzde,lot_sayisi,ilanlar(idare,il,kategori)')
+        .select('kazanan_teklif,sozlesme_bedeli,tenzilat_yuzde,kazanan_teklif_farki_yuzde,yaklasik_maliyet,lot_sayisi,ilanlar(idare,il,kategori)')
         .eq('yuklenici_id', yid).limit(SONUC_LIMIT),
     ]).then(([a,b]) => ({ y:(a.data && a.data[0]) || null, sonuc: b.data || [] }));
   }

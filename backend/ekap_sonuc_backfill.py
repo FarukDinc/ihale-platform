@@ -756,7 +756,14 @@ def sonuc_kayitlari_olustur(ilan: dict, detay: dict) -> list[dict]:
             # Bu uç değerler zaten çöp — çok kısımlı ihalede ihale-geneli yaklaşık maliyetin
             # her kısma kopyalanmasından doğuyor (bkz. lot_sayisi kuralı). Kaydı korumak için
             # tenzilatı NULL'a düşür; kaydın geri kalanı (kazanan, bedel, tarih) sağlam.
-            if abs(tenzilat) >= 1000:
+            # Fiziksel imkânsız (bozuk taban → tenzilat güvenilmez) → NULL. [26-3]
+            #   • numeric(6,3) taşması (|t|≥1000) — kaydı düşürmesin
+            #   • yakın-bedava (t≥95: teklif ≤ maliyetin %5'i) — çöp
+            #   • 2 kat aşım (t≤-100: teklif ≥ 2× maliyet) — çöp
+            #   • çöp taban değer (kazanan_teklif/yaklaşık < 100₺, ör. 5₺ sözleşme)
+            # Orta değerler (ör. -%55, %70 indirim) KORUNUR — gerçek olabilir ("veriyi gizleme").
+            if abs(tenzilat) >= 1000 or tenzilat >= 95 or tenzilat <= -100 \
+               or (kazanan_teklif is not None and kazanan_teklif < 100) or yaklasik < 100:
                 tenzilat = None
 
         ortalama = None
