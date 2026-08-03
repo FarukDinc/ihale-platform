@@ -27,6 +27,13 @@
 
 BEGIN;
 
+-- Docker /dev/shm yalnız 64MB → paralel hash join DSM segmenti sığmaz
+-- ("could not resize shared memory segment ... No space left on device").
+-- Bu ağır build'i (2,72M ⋈ 1,6M ilan + 2,87M DT) tek-thread çalıştır (yavaş ama güvenli).
+-- Aynı SET gece REFRESH'te de gerekir (run_scraper.sh).
+SET LOCAL max_parallel_workers_per_gather = 0;
+SET LOCAL max_parallel_maintenance_workers = 0;
+
 DROP MATERIALIZED VIEW IF EXISTS public.idare_hiyerarsi_bedel_mv;
 CREATE MATERIALIZED VIEW public.idare_hiyerarsi_bedel_mv AS
 WITH ikn_detsis AS (
