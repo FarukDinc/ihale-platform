@@ -19,7 +19,9 @@ AS $$
     'sonen',    (SELECT count(*) FROM public.yukleniciler WHERE seg_sonen),
     'ilk_kez',  (SELECT count(*) FROM public.yukleniciler WHERE seg_ilk_kez),
     'yuz50mn',  (SELECT count(*) FROM public.yukleniciler WHERE seg_150mn),
-    'guncellendi', (SELECT max(segment_guncellendi) FROM public.yukleniciler),
+    -- segment_guncellendi TEKDÜZE (batch now()) → tam tarama yerine partial-indeksli
+    -- seg_parlayan alt-kümesinden al (ix_yuk_seg_parlayan; ~5K satır). Darboğaz buydu (970ms).
+    'guncellendi', (SELECT max(segment_guncellendi) FROM public.yukleniciler WHERE seg_parlayan),
     -- Kıyas çapası: segment hesabının kullandığı referans tarih (bugün DEĞİL).
     'ref_tarih', (SELECT max(s.sonuc_tarihi)::date FROM public.ihale_sonuclari s WHERE s.sonuc_tarihi <= now())
   );
