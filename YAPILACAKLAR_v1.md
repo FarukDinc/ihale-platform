@@ -668,9 +668,17 @@ bu. UZUN VADE: koda başlamadan ÖNCE rakip-inceleme + tasarım notu. Referans: 
 **✅ FAZ B.2 (v1-kurum-analiz, CANLI 3 Ağu):** agacBaslat() sonunda `?dal=<detsis>` → agacYoluAc() (idare_agac_yol
   ile kök→düğüm aç + hedefe kaydır/vurgula) + hedefin çocuklarını genişlet. Yollar psql'de doğrulandı.
 
+**✅ FAZ A.2 (CANLI 3 Ağu):** kategori kartlarına **"Toplam Sözleşme Tutarı"** (tam rakam ₺). Yeni MV
+  `idare_hiyerarsi_bedel_mv` (backend/migration_idare_hiyerarsi_bedel.sql) — sayim_mv'yi aynalar (detsis anahtarlı,
+  aynı idare_ata_torun closure); ihale=sozlesme_bedeli (ikn→ilanlar DISTINCT ON), DT=kazanan_bedel (dt_no→ilan, TRY/boş).
+  kurum_kategori_ozet'e +toplam_ihale_bedel/+toplam_dt_bedel. Gece refresh eklendi (PGOPTIONS ile paralellik kapalı — 64MB /dev/shm).
+  Doğrulandı: çift-sayım yok (en büyük düğüm YEREL kökü ≤ toplam), BELEDİYELER 2,64 T₺ / ULAŞTIRMA 2,05 T₺ / SAĞLIK 900 Mr₺.
+**✅ YAN BUG (A.2 sırasında):** idare_harcama_mv sahibi supabase_admin'di, gece refresh -U postgres → permission denied,
+  SESSİZCE başarısız (İdareler "Toplam Harcama" kurulumdan beri bayat). Sahiplik postgres'e alındı, refresh+PGOPTIONS ile düzeltildi.
+**⏳ FAZ A.3 (bekliyor, data HAZIR):** İdareler tablosu (Tüm Kurumlar) idare_dizin_json r[6]/r[7]'yi (sözleşme sayısı+harcama)
+  ZATEN alıyor ama göstermiyor → tabloya "Toplam Harcama" kolonu ekle (sıralanabilir).
 **⏳ FAZ C (bekliyor):** firma tarafı ufak hizalama — birleşik ihale∪DT firma sayısı KPI + v1-firmalar'da İhale/DT/İkisi
   mod tutarlılığı (v1-firma-analiz'de zaten var).
-**⏳ FAZ A.2 (bekliyor):** idare_hiyerarsi_sayim_mv'ye tutar/bedel agregası → kategori kartlarına "Toplam Tutar" (rakipte var).
 **⚠️ DOĞRULAMA:** Kategori+ağaç ÜYEYE ÖZEL → girişsiz panelde görsel test yapılamadı; görsel onay kullanıcının girişli ekranında.
 
 ---
