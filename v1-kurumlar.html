@@ -78,6 +78,13 @@
         .v1-kstat-sayi { font-size:23px; font-weight:800; color:var(--v1-lacivert); line-height:1.1; }
         .v1-kstat-et { font-size:12.5px; color:var(--v1-muted); margin-top:3px; }
         @media(max-width:900px){ .v1-kstat{ grid-template-columns:repeat(2,1fr); } }
+        /* İnce ayar: sayısal kolonlar (Aktif İhale…Aktif DT) SAĞA hizalı → rakamlar hizalanır, temiz tarama */
+        #v1-tablo th:nth-child(n+5):nth-child(-n+9),
+        #v1-tablo td:nth-child(n+5):nth-child(-n+9) { text-align:right; }
+        /* Satır hover — tarama kolaylığı */
+        #v1-tablo tbody tr:hover td { background:var(--v1-mavi-acik); }
+        /* Toplam Harcama (7. kolon) marquee — biraz daha vurgulu */
+        #v1-tablo td:nth-child(7) { font-size:13.5px; }
       </style>
       <div class="v1-kstat">
         <div class="v1-kstat-tile"><span class="v1-kstat-ikon">🏛️</span><div><div class="v1-kstat-sayi" id="kst-idare">—</div><div class="v1-kstat-et">Toplam İdare</div></div></div>
