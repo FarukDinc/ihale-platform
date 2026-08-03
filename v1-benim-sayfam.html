@@ -333,9 +333,9 @@
       sayac('ilanlar',q=>q.eq('durum','aktif').gte('son_teklif_tarihi', new Date().toISOString())).then(v=>set('Aktif İhale',num(v))),
       // Aktif DT = teklif vermeye AÇIK: durum açık + tarih (son teklif) geçmemiş. Yalnız durum
       // (283.285) süresi geçmiş bayatları da sayıyordu; harita dt_il_sayim_aktif ile parite.
-      sayac('dogrudan_temin_ilanlari',q=>q.in('durum',DT_AKTIF).gte('tarih', new Date().toISOString())).then(v=>set('Aktif Doğrudan Temin',kisalt(v))),
+      sayac('dogrudan_temin_ilanlari',q=>q.in('durum',DT_AKTIF).gte('tarih', new Date().toISOString())).then(v=>set('Aktif Doğrudan Temin',num(v))),
       // Toplam geçmiş hacim = TÜM doğrudan temin + TÜM ihale ilanı (yayınlanmış her şey).
-      Promise.all([sayac('dogrudan_temin_ilanlari'),sayac('ilanlar')]).then(([a,b])=>set('Toplam DT + İhale',kisalt(a+b))),
+      Promise.all([sayac('dogrudan_temin_ilanlari'),sayac('ilanlar')]).then(([a,b])=>set('Toplam DT + İhale',num(a+b))),
       // Yüklenici Firma = İhale + DT BİRLEŞİK (union distinct) — dashboard geneli birleşik
       // gösterdiği için (harita İhale+DT toplam, "Toplam DT+İhale"). yukleniciler tek başına
       // yalnız ihale kazananları (~220K); firma_ozet_birlikte DT-only tedarikçileri de sayar
