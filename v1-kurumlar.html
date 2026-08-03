@@ -186,8 +186,8 @@
   const trFold=window.trFold||((s)=>(s||'').toLocaleLowerCase('tr'));
   // Türkçe sıralama — 23K satırda localeCompare'i satır başı çağırmak yerine tek collator
   const KRS=new Intl.Collator('tr');
-  const SIRA_ANAHTAR=['ad','il','toplam','aktif','dt_toplam','dt_aktif'];
-  const YON_VARSAYILAN={ad:'asc', il:'asc', toplam:'desc', aktif:'desc'};
+  const SIRA_ANAHTAR=['ad','il','toplam','aktif','sozlesme','harcama','dt_toplam','dt_aktif'];
+  const YON_VARSAYILAN={ad:'asc', il:'asc', toplam:'desc', aktif:'desc', sozlesme:'desc', harcama:'desc', dt_toplam:'desc', dt_aktif:'desc'};
 
   let tumu=[], takipli=new Set(), uyeMi=false, mod='kategori', sayfa=1;
   let ilSecim='', sirala='toplam', yon='desc';
