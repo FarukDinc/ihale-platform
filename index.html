@@ -930,7 +930,11 @@
       const bugun = new Date(); bugun.setHours(0, 0, 0, 0);
       try {
         const [toplam, guncel, bugunEklenen] = await Promise.all([
-          sb.from('ilanlar').select('id', { count: 'exact', head: true }),
+          // Toplam ihale = gece cache'lenen genel_sayac_mv (~0,15s). Filtresiz canlı count=exact
+          // 1,96M'de ~2s + bloat'ta anon 3s timeout'una takılıyordu (bkz. v1-benim-sayfam regresyonu).
+          sb.from('genel_sayac_mv').select('toplam_ihale').limit(1)
+            .then(r => (r.data && r.data[0]) ? { count: r.data[0].toplam_ihale }
+              : sb.from('ilanlar').select('id', { count: 'exact', head: true })),
           sb.from('ilanlar').select('id', { count: 'exact', head: true }).gte('son_teklif_tarihi', new Date().toISOString()),
           sb.from('ilanlar').select('id', { count: 'exact', head: true }).gte('ilan_tarihi', bugun.toISOString()),
         ]);
