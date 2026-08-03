@@ -506,7 +506,7 @@ Durum: ✅ bitti · ⏳ sıradaki · 📋 planlandı (FE=frontend/pull · DB=mig
 - [26-12] ⏳ FE — Takibim'de "Takip Ettiğim Sektörler" bölümü yok (Bana Özel 1 sayıyor).
 - [26-13] ⏳ FE — İhalelerim breadcrumb "e-Satınalma" ama Kamu sidebar'ında.
 - [26-14] ⏳ FE — v2 Kurumsal kapısı native prompt() → styled modal.
-- [26-15] ⏳ FE — "Dökümanlar" → TDK "Dokümanlar" (sidebar + sayfa).
+- [26-15] ✅ FE — ÇÖZÜLDÜ (3 Ağu): "Döküman"→TDK "Doküman" global (27 html + js/kenar-menu.js sidebar); kenar-menu.js ?v=10 bump. Canlı doğrulandı (düzgün UTF-8, mojibake 0, eski 0). sed byte-güvenli.
 - [26-16] 📋 FE — Bildirim "Standart Plan/50 kredi" ama paket Pro (kozmetik/tarihsel).
 - [26-17] ⏳ FE — UNGM global ilan sektör "—" (data); "Palestine, State of" TR çeviri.
 - [26-29] ⏳ FE — Firmalar segment sayacı il-toplamını gösteriyor (segmenti yansıtmıyor).
