@@ -489,7 +489,10 @@
     //       başlık "Aktif İhaleler" kalırsa yanıltıcı → arama modunda başlığı netleştir.
     if(sekme==='aktif'){
       const _kw=val('f-kelime');
-      const _h = _kw ? ('“'+_kw+'” için İhaleler (tüm zamanlar)') : 'Aktif İhaleler';
+      // 26-4: düz başlık kelimesi artık aktif filtreyle sorgulanıyor → başlık "Aktif İhaleler";
+      // yalnız İKN/ekap_id araması tüm durumdan çektiği için "(tüm zamanlar)" kalır.
+      const _iknArama = _kw && uyeMi && /^\s*(\d{4}\/\d+|ILN\d+|DMO[-\d]+)\s*$/i.test(_kw);
+      const _h = _kw ? ('“'+_kw+'” için '+(_iknArama?'İhaleler (tüm zamanlar)':'Aktif İhaleler')) : 'Aktif İhaleler';
       const _b1=document.getElementById('v1-baslik'), _b2=document.getElementById('v1-liste-baslik');
       if(_b1) _b1.textContent=_h; if(_b2) _b2.textContent=_h;
       document.title=_h+' — İhaleGlobal';
