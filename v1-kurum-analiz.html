@@ -1646,6 +1646,21 @@
     el('ag-sayac').textContent = `${sayi(kokler.length)} kök kurum · dalları ▸ ile açın`;
     el('ag-yukleniyor').style.display = 'none';
     el('ag-icerik').style.display = 'block';
+
+    // Kategori kartından (v1-kurumlar) ?dal=<detsis_no> ile gelindiyse: o kategoriyi
+    // otomatik aç — atalarını genişlet (yerel yönetim çocukları için kök YEREL YÖNETİM),
+    // kendisine kaydır + vurgula, sonra kendi çocuklarını da göster (kullanıcı drill-down bekler).
+    const dalHedef = new URLSearchParams(location.search).get('dal');
+    if (dalHedef) {
+      try {
+        await agacYoluAc(dalHedef);
+        const hedef = document.querySelector(`.ag-dugum[data-detsis="${CSS.escape(dalHedef)}"]`);
+        if (hedef) {
+          const coc = hedef.querySelector(':scope > .ag-cocuklar');
+          if (coc && !coc.classList.contains('acik')) await dugumAcKapa(hedef);
+        }
+      } catch (e) { console.warn('?dal otomatik açılamadı:', e); }
+    }
   }
 
   function kapsamaCiz(ozet) {
