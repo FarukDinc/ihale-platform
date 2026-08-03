@@ -645,6 +645,16 @@ kurum ağacı + `v1-firma-analiz` dizin + `v1-firmalar`'ı o desene göre yenide
 zaten elimizde** ([[ekap-detsis-idare-tur]]: DetsisAgaci 87.528, idareKodList eşleştirme) — ağaç için taban
 bu. UZUN VADE: koda başlamadan ÖNCE rakip-inceleme + tasarım notu. Referans: [[rakip-ihalepro-referans]].
 → `v1-kurumlar.html`, kurum ağacı (idare_dizin / DETSİS), `v1-firma-analiz.html` (dizin), `v1-firmalar.html`
+**✅ ADIM 1 — RAKİP ANALİZİ (3 Ağu, PUBLIC erişilebilir, login YOK):**
+- **Kurumlar:** 2 sekme İdareler/Kurumlar; üst seviye 36 DETSİS grubu (bakanlıklar + BELEDİYELER/DMO/CUMHURBAŞKANLIĞI/
+  "5018 kapsamı dışı"…); her düğüm kartında Aktif İhale + Geçmiş İhale + Sözleşme Sayısı + Toplam Tutar (TL/TL2/USD/
+  enflasyon-düzeltilmiş 4 değer); ağaç hiyerarşisi; "Takip Ettiğim Kurumlar" + "Tüm Kurumlar 50.630".
+- **Firmalar:** sekmeler Firmalar + **Parlayan Yıldızlar** (1.883); her firmada İhale/Sözleşme/Tutar; misafirde `*****`
+  maskeli (DMO açık); "Tüm Firmalar 443.288".
+- **BULGU:** parçaların ÇOĞU bizde ZATEN VAR (DETSİS ağacı idare_agac_*, Parlayan Yıldızlar seg, misafir maskeleme,
+  per-kurum stat). Fark = CİLA/DÜZEN (düğüm-başı stat kartları, temiz hiyerarşi, çoklu-para tutar). Sıfırdan değil.
+- **⏳ ADIM 2 (KULLANICI YÖNLENDİRMESİ BEKLİYOR):** "yeniden tasarla" geniş → tam olarak NE değişecek? (üst seviyeyi
+  bakanlık-gruplarına mı böyleyelim / stat kartlarını mı zenginleştirelim / firmalar sekme yapısı / çoklu-para tutar?).
 
 ---
 
