@@ -620,7 +620,15 @@ DÜZ "boşlukları sil" YAPILAMAZ (meşru boşluklar var) → doğru varyantla f
 (aynı idarenin doğru adı çoğu zaman zaten mevcut) VEYA hedefli düzeltme sözlüğü. (c) `idare_ozet_mv`
 + `ilanlar.idare` + `dogrudan_temin_ilanlari.idare` temizliği; DETSİS eşlemesi doğru ada bağlanmalı.
 → `backend/ekap_scraper.py` (idare alanı), `ilanlar.idare`/`dogrudan_temin_ilanlari.idare`, `idare_ozet_mv`, dedup
-## UV-5 — Tarih doğrulama: EKAP tarihleri baz alınmalı (saat sorunu) 📋
+## UV-5 — Tarih doğrulama: EKAP tarihleri baz alınmalı (saat sorunu) ✅ TEŞHİS TAMAM (3 Ağu) — TAM-FIX RİSKLİ, YAPILMADI
+**VERDİCT (3 Ağu, [[tarih-tz-konvansiyonlari]]):** Tarih alanları TUTARSIZ 2 tz konvansiyonu kullanıyor (DB session UTC):
+`son_teklif_tarihi` naive (10:30 TR→10:30 UTC; UTC günü DOĞRU, saat +3h ama frontend gizler), `ilan_tarihi`/`dt.tarih`
+tarih-only 00:00 UTC (gün doğru), `sonuc_tarihi` **tz-aware TR-gece-yarısı** (00:00 TR=21:00 UTC, DST doğru; frontend
+JS→TR doğru ama server `::date`/`EXTRACT YEAR` UTC → yıl/gün sınırında 1 kayar, ör. 1 Ocak sonucu prev-yıl). **Kullanıcıya
+görünen tarihler pratikte DOĞRU.** Tam düzeltme = milyonlarca satır migrate + tüm okuma-sitesi denetimi → riskli, görünür
+fayda düşük → YAPILMADI. Tek edge-bug: sonuc_tarihi UTC yıl çıkarımı; istenirse `EXTRACT(YEAR FROM (sonuc_tarihi AT TIME
+ZONE 'Europe/Istanbul'))`. `tarih_iso`'yu TR-aware yapmak eski naive veriyle tutarsızlık yaratır → migrate etmeden yapma.
+--- (özgün not aşağıda) ---
 Bogus SAAT (ör. hep "03:00") frontend listelerinden KALDIRILDI (v1-ihaleler satir()); scraper'ın
 yazdığı saat gerçeği yansıtmıyordu. KALAN İŞ: TARİH'lerin kendisi de EKAP ile teyit edilmeli —
 scraper'ın son_teklif_tarihi / tarih / sonuc_tarihi alanlarını EKAP kaynağıyla karşılaştır, sapma
