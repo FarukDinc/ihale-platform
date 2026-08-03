@@ -38,6 +38,9 @@
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
   <style>
+    /* v1 KURUMSAL MAVİ TONU — landing amber aksanını v1 maviye çevir (YALNIZ bu sayfa; style.css paylaşımlı,
+       30+ v2 sayfayı etkilememek için burada override; data-theme özgüllüğü nedeniyle her varyant yazıldı). */
+    :root, :root[data-theme="light"], :root[data-theme="dark"] { --amber:#135EAA; --amber-dim:#0F4E8A; }
     /* NAV active link */
     .nav-links a.active { color: var(--white); }
 
