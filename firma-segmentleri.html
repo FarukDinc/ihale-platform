@@ -285,7 +285,9 @@
     // Önizleme uyarısı: sonuç arşivi henüz tamamlanmadıysa göster
     try {
       const HEDEF = 1688002;
-      const { count } = await sb.from('ihale_sonuclari').select('id', { count:'exact', head:true });
+      const { data: gsc } = await sb.from('genel_sayac_mv').select('toplam_sonuc').limit(1);
+      const count = (gsc && gsc[0]) ? gsc[0].toplam_sonuc
+        : (await sb.from('ihale_sonuclari').select('id', { count:'exact', head:true })).count;
       if (count && count < HEDEF * 0.95) {
         document.getElementById('uyari-yuzde').textContent =
           Math.round(count / HEDEF * 100);

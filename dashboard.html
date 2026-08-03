@@ -1789,7 +1789,9 @@
         eklenenT += bugunEklenen.count || 0; sonGunT += bugunSonGun.count || 0;
         sIh.aktif = aktif.count || 0; sIh.buyuk = buyuk.count || 0; sIh.eklenen = bugunEklenen.count || 0;
         try {
-          const { count: kazanimSay } = await sb.from('ihale_sonuclari').select('id', { count: 'exact', head: true });
+          const { data: gsc } = await sb.from('genel_sayac_mv').select('toplam_sonuc').limit(1);
+          const kazanimSay = (gsc && gsc[0]) ? gsc[0].toplam_sonuc
+            : (await sb.from('ihale_sonuclari').select('id', { count: 'exact', head: true })).count;
           kazanimT += kazanimSay || 0; sIh.kazanim = kazanimSay || 0;
         } catch (_) {}
       }

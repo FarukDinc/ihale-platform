@@ -2201,7 +2201,10 @@
       const [guncel, gecmis, sonuc] = await Promise.all([
         sb.from('ilanlar').select('id', { count: 'exact', head: true }).gte('son_teklif_tarihi', simdi),
         sb.from('ilanlar').select('id', { count: 'exact', head: true }).lt('etkin_tarih', simdi),
-        sb.from('ihale_sonuclari').select('id', { count: 'exact', head: true }),
+        // Sözleşme (ihale_sonuclari) tam sayımı gece cache'lenen MV'den (2,7M count=exact timeout riski).
+        sb.from('genel_sayac_mv').select('toplam_sonuc').limit(1)
+          .then(r => (r.data && r.data[0]) ? { count: r.data[0].toplam_sonuc }
+            : sb.from('ihale_sonuclari').select('id', { count: 'exact', head: true })),
       ]);
       const fmt = n => (Number(n) || 0).toLocaleString('tr-TR');
       const setEl = (id, n) => { const el = document.getElementById(id); if (el && n) el.textContent = '(' + fmt(n) + ')'; };

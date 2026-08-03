@@ -327,9 +327,13 @@
     const simdiISO=new Date().toISOString();
     Promise.all([
       sayac('ilanlar',q=>q.eq('durum','aktif')).then(v=>set('Aktif İhale',num(v))),
-      sayac('dogrudan_temin_ilanlari').then(v=>set('Doğrudan Temin',kısalt(v))),
-      sayac('ihale_sonuclari').then(v=>set('Sözleşme',kısalt(v))),
-      sayac('yukleniciler').then(v=>set('Yüklenici Firma',num(v))),
+      // DT + Sözleşme + Yüklenici tam sayımları gece cache'lenen genel_sayac_mv'den (tek istek,
+      // ~0,15s). Filtresiz canlı count=exact büyük tabloda ~2s + bloat'ta timeout'a takılıyordu.
+      sb.from('genel_sayac_mv').select('toplam_dt,toplam_sonuc,toplam_yuklenici').limit(1).then(r=>{
+        const g=(r.data&&r.data[0])?r.data[0]:{};
+        set('Doğrudan Temin',kısalt(g.toplam_dt||0)); set('Sözleşme',kısalt(g.toplam_sonuc||0));
+        set('Yüklenici Firma',num(g.toplam_yuklenici||0));
+      }),
       // İşveren İdare: idare_sayim() idare başına satır döner (authenticated); count head ile satır indirmeden say.
       sb.rpc('idare_sayim',{},{count:'exact',head:true}).then(({count})=>set('İşveren İdare',num(count||0))).catch(()=>set('İşveren İdare','—')),
     ]);
