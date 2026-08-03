@@ -99,6 +99,26 @@
       </div>
       <div class="v1-seg-ipucu" id="v1-seg-ipucu" style="display:none;"></div>
 
+      <!-- Birleşik firma özeti (ihale ∪ DT) — firma_ozet_birlikte(); anon'a AÇIK → misafirde de dolar (çengel) -->
+      <style>
+        .v1-fstat { display:grid; grid-template-columns:repeat(4,1fr); gap:14px; margin:0 0 18px; }
+        .v1-fstat-tile { display:flex; align-items:center; gap:14px; background:#fff; border:1px solid var(--v1-cizgi);
+          border-radius:14px; padding:15px 18px; box-shadow:0 1px 3px rgba(12,62,112,.05); }
+        .v1-fstat-ikon { width:46px; height:46px; border-radius:50%; background:var(--v1-mavi-acik); color:var(--v1-mavi);
+          display:flex; align-items:center; justify-content:center; font-size:22px; flex-shrink:0; }
+        .v1-fstat-sayi { font-size:22px; font-weight:800; color:var(--v1-lacivert); line-height:1.1; }
+        .v1-fstat-et { font-size:12px; color:var(--v1-muted); margin-top:3px; }
+        .v1-fstat-rozet { font-size:9px; font-weight:800; color:var(--v1-mavi); background:var(--v1-mavi-acik);
+          padding:1px 6px; border-radius:5px; margin-left:5px; vertical-align:middle; }
+        @media(max-width:900px){ .v1-fstat{ grid-template-columns:repeat(2,1fr); } }
+      </style>
+      <div class="v1-fstat">
+        <div class="v1-fstat-tile"><span class="v1-fstat-ikon">🏢</span><div><div class="v1-fstat-sayi" id="fst-firma">—</div><div class="v1-fstat-et">Toplam Firma<span class="v1-fstat-rozet">ihale + DT</span></div></div></div>
+        <div class="v1-fstat-tile"><span class="v1-fstat-ikon">📄</span><div><div class="v1-fstat-sayi" id="fst-sozlesme">—</div><div class="v1-fstat-et">Toplam Sözleşme</div></div></div>
+        <div class="v1-fstat-tile"><span class="v1-fstat-ikon">💰</span><div><div class="v1-fstat-sayi" id="fst-ciro">—</div><div class="v1-fstat-et">Toplam Ciro<span class="v1-fstat-rozet">ihale + DT</span></div></div></div>
+        <div class="v1-fstat-tile"><span class="v1-fstat-ikon">🤝</span><div><div class="v1-fstat-sayi" id="fst-ortak">—</div><div class="v1-fstat-et">İş Ortaklığı</div></div></div>
+      </div>
+
       <div class="v1-kart" style="padding:18px 20px;">
         <div class="v1-tablo-bas">
           <div>
@@ -142,6 +162,25 @@
     return m;
   }
   const tl=(v)=>v==null?'—':'₺'+Number(v).toLocaleString('tr-TR',{maximumFractionDigits:0});
+  // Büyük ciro için okunur+iri format (KPI tile): 11,7 Trilyon ₺ / 850 Milyar ₺ …
+  const paraBuyuk=(n)=>{ n=Number(n)||0;
+    if(n>=1e12) return (n/1e12).toLocaleString('tr-TR',{maximumFractionDigits:1})+' Trilyon ₺';
+    if(n>=1e9)  return (n/1e9 ).toLocaleString('tr-TR',{maximumFractionDigits:1})+' Milyar ₺';
+    if(n>=1e6)  return (n/1e6 ).toLocaleString('tr-TR',{maximumFractionDigits:1})+' Milyon ₺';
+    return num(n)+' ₺'; };
+  // Birleşik (ihale ∪ DT) firma özeti KPI'ı — anon'a AÇIK, misafirde de dolar
+  async function firmaKpiYaz(){
+    try{
+      const {data,error}=await sb.rpc('firma_ozet_birlikte');
+      if(error||!data||!data[0]) return;
+      const r=data[0];
+      const yaz=(id,v)=>{ const e=el(id); if(e) e.textContent=v; };
+      yaz('fst-firma', num(r.toplam));
+      yaz('fst-sozlesme', num(r.toplam_sozlesme));
+      yaz('fst-ciro', paraBuyuk(r.toplam_ciro));
+      yaz('fst-ortak', num(r.ortak_sayisi));
+    }catch(_){ /* KPI opsiyonel — sessiz geç */ }
+  }
   // ⚠️ Türkçe arama: burada KENDİ fold fonksiyonumuzu yazmıyoruz. js/v1-kabuk.js
   //    window.trFold + window.v1Ara sunuyor ve SQL tr_fold() ile birebir aynı katlamayı
   //    yapıyor (ı→i dahil). Sayfa-içi kopya "IŞIK"ı "isik"e katlamadığı için sessizce
@@ -549,6 +588,7 @@
   // ── Açılış ──────────────────────────────────────────────────────────────
   (async()=>{
     urlOku();
+    firmaKpiYaz();   // birleşik firma özeti — anon-açık, auth'u beklemeden çiz (misafirde de dolar)
     try{ const {data}=await sb.auth.getSession(); uyeMi=!!(data&&data.session);
       uid=uyeMi?data.session.user.id:null;
       if(uyeMi){
