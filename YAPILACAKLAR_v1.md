@@ -681,10 +681,11 @@ bu. UZUN VADE: koda başlamadan ÖNCE rakip-inceleme + tasarım notu. Referans: 
 **✅ FAZ C(a) (CANLI 3 Ağu):** v1-firmalar birleşik firma KPI şeridi (4 tile: 🏢 Toplam Firma 433.558 · 📄 Sözleşme 5,59M ·
   💰 Ciro 11,7 Trilyon ₺ · 🤝 İş Ortaklığı 9.865) — `firma_ozet_birlikte()` anon-AÇIK → misafirde de dolar (çengel).
   paraBuyuk() kompakt Trilyon/Milyar format. Misafir panelinde görsel doğrulandı (değerler + 0 console hatası).
-**⏳ FAZ C(b) (bekliyor, DAHA BÜYÜK):** v1-firmalar'a İhale/DT/İkisi mod toggle (v1-firma-analiz'deki dz-mod'u örnek al).
-  SÜRTÜNME: segment çipleri (seg_*/ciro_son_12ay/buyume_yuzde) YALNIZ yukleniciler'de → DT/İkisi modunda gizle/pasifleştir +
-  sıralanabilir sütunları RPC alanlarına indir (sozlesme/bedel/tarih/ad) + yukle()'yi firma_dizin_dt/birlikte'ye dallandır +
-  yukle() race guard'ı mod dallanmasında koru + DT/İkisi RPC anon-KAPALI → misafirde mod butonu gizle/uyarı.
+**✅ FAZ C(b) (CANLI 3 Ağu):** v1-firmalar Kapsam mod bar (📄İhale/⚡DT/🔗İkisi). İHALE YOLU DEĞİŞMEDİ (regresyon sıfır);
+  DT/İkisi additive `yukleRpc()` dalı → firma_dizin_dt / firma_dizin_birlikte (7 kolon: #/Firma/İl/Sözleşme/Ciro/Son Sözleşme/takip).
+  Segment ihale-only (DT/İkisi gizli); DT'de il pasif (RPC'de p_il yok); rpcSort sütun başlıkları (sozlesme/bedel/tarih);
+  misafirde bar gizli + yetkiyeGoreKirp ihale'ye zorlar; takip sekmesinde ihale zorla; ?fmod= URL kalıcı; race guard (benim/istekNo) korundu.
+  Doğrulama: guest tam parse + KPI + kilit + ?fmod=dt güvenli (0 console hatası); RPC şema/imza psql'de; **DT/İkisi liste render'ı girişli ekranda görülür (üyeye özel)**.
 **⚠️ DOĞRULAMA:** Kategori+ağaç ÜYEYE ÖZEL → girişsiz panelde görsel test yapılamadı; görsel onay kullanıcının girişli ekranında.
 
 ---
