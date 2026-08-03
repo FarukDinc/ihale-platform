@@ -653,8 +653,25 @@ bu. UZUN VADE: koda başlamadan ÖNCE rakip-inceleme + tasarım notu. Referans: 
   maskeli (DMO açık); "Tüm Firmalar 443.288".
 - **BULGU:** parçaların ÇOĞU bizde ZATEN VAR (DETSİS ağacı idare_agac_*, Parlayan Yıldızlar seg, misafir maskeleme,
   per-kurum stat). Fark = CİLA/DÜZEN (düğüm-başı stat kartları, temiz hiyerarşi, çoklu-para tutar). Sıfırdan değil.
-- **⏳ ADIM 2 (KULLANICI YÖNLENDİRMESİ BEKLİYOR):** "yeniden tasarla" geniş → tam olarak NE değişecek? (üst seviyeyi
-  bakanlık-gruplarına mı böyleyelim / stat kartlarını mı zenginleştirelim / firmalar sekme yapısı / çoklu-para tutar?).
+- **✅ ADIM 2 — KARAR:** Hibrit taksonomi (DETSİS kökleri + yerelleri düzleştir). Tasarım notu: `UV6_KURUM_MERKEZI_TASARIM.md`.
+
+**✅ FAZ A (backend, CANLI 3 Ağu):** `kurum_kategori_ozet()` RPC — `backend/migration_kurum_kategori_ozet.sql`.
+  73 DETSİS kökü döndürür; "YEREL YÖNETİM KURULUŞLARI" (24350161) gizlenip çocukları (BELEDİYELER/İL ÖZEL/BİRLİKLER/
+  MUHTARLIKLAR) üst kategori olarak düzleştirilir. Döner: detsis_no, ad, grup, toplam_ihale, toplam_dt, cocuk_sayisi.
+  anon KAPALI (kimlik verisi), authenticated açık. Doğrulandı (has_function_privilege).
+
+**✅ FAZ B (v1-kurumlar, CANLI 3 Ağu):** "Kategoriler" sekmesi EKLENDİ + VARSAYILAN (Kategoriler / Tüm Kurumlar /
+  Takip Ettiklerim). Kart eşiği ihale+DT ≥ 1500 → 23 ana kart (BELEDİYELER→DIŞİŞLERİ); altı "Diğer küçük kurumlar"
+  katlanır kartta (askeri alt-birim gürültüsü + düşük-hacim yüksek yargı). Kart tıkla → v1-kurum-analiz?gorunum=agac&dal=.
+  Derin link (?ara/?il/?sirala veya ?sekme=liste/takip) → tablo. Misafir kapısı + JS-hata + eşik-mantığı doğrulandı.
+
+**✅ FAZ B.2 (v1-kurum-analiz, CANLI 3 Ağu):** agacBaslat() sonunda `?dal=<detsis>` → agacYoluAc() (idare_agac_yol
+  ile kök→düğüm aç + hedefe kaydır/vurgula) + hedefin çocuklarını genişlet. Yollar psql'de doğrulandı.
+
+**⏳ FAZ C (bekliyor):** firma tarafı ufak hizalama — birleşik ihale∪DT firma sayısı KPI + v1-firmalar'da İhale/DT/İkisi
+  mod tutarlılığı (v1-firma-analiz'de zaten var).
+**⏳ FAZ A.2 (bekliyor):** idare_hiyerarsi_sayim_mv'ye tutar/bedel agregası → kategori kartlarına "Toplam Tutar" (rakipte var).
+**⚠️ DOĞRULAMA:** Kategori+ağaç ÜYEYE ÖZEL → girişsiz panelde görsel test yapılamadı; görsel onay kullanıcının girişli ekranında.
 
 ---
 
