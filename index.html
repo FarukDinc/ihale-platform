@@ -826,17 +826,15 @@
       // İç v1 dashboard (v1-benim-sayfam kpiYukle) ile AYNI 6 KPI ve AYNI tanımlar → aynı canlı değerler.
       const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
       const num = (n) => (Number(n)||0).toLocaleString('tr-TR');
-      const kisalt = (n) => { n=Number(n)||0; return n>=1e6 ? (n/1e6).toLocaleString('tr-TR',{maximumFractionDigits:1})+' Mn'
-                                             : n>=1e3 ? (n/1e3).toLocaleString('tr-TR',{maximumFractionDigits:0})+' Bin' : String(n); };
       const say = (t, f) => { let q = sb.from(t).select('id',{count:'exact',head:true}); if(f) q=f(q); return q.then(r=>r.count||0).catch(()=>0); };
       const DT_AKTIF = ['Doğrudan Temin Duyurusu Yayımlanmış','Teklifler Değerlendiriliyor'];
 
       // Aktif İhale = durum='aktif' AND son teklif geçmemiş (liste ile birebir)
       say('ilanlar', q=>q.eq('durum','aktif').gte('son_teklif_tarihi', acikFiltre)).then(v=>set('cnt-active', num(v)));
       // Aktif DT = teklif vermeye açık (harita dt_il_sayim_aktif paritesi)
-      say('dogrudan_temin_ilanlari', q=>q.in('durum',DT_AKTIF).gte('tarih', acikFiltre)).then(v=>set('cnt-dt', kisalt(v)));
-      // Toplam DT + İhale = tüm DT + tüm ihale ilanı
-      Promise.all([say('dogrudan_temin_ilanlari'), say('ilanlar')]).then(([a,b])=>set('cnt-toplam', kisalt(a+b)));
+      say('dogrudan_temin_ilanlari', q=>q.in('durum',DT_AKTIF).gte('tarih', acikFiltre)).then(v=>set('cnt-dt', num(v)));
+      // Toplam DT + İhale = tüm DT + tüm ihale ilanı (tam rakam — büyük görünsün)
+      Promise.all([say('dogrudan_temin_ilanlari'), say('ilanlar')]).then(([a,b])=>set('cnt-toplam', num(a+b)));
       // Yüklenici Firma = İhale + DT birleşik (RPC düşerse yukleniciler count)
       sb.rpc('firma_ozet_birlikte').then(({data,error})=>{ if(error||!data||!data[0]) throw 0; set('cnt-firma', num(data[0].toplam)); })
         .catch(()=>say('yukleniciler').then(v=>set('cnt-firma', num(v))));
