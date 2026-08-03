@@ -675,10 +675,16 @@ bu. UZUN VADE: koda başlamadan ÖNCE rakip-inceleme + tasarım notu. Referans: 
   Doğrulandı: çift-sayım yok (en büyük düğüm YEREL kökü ≤ toplam), BELEDİYELER 2,64 T₺ / ULAŞTIRMA 2,05 T₺ / SAĞLIK 900 Mr₺.
 **✅ YAN BUG (A.2 sırasında):** idare_harcama_mv sahibi supabase_admin'di, gece refresh -U postgres → permission denied,
   SESSİZCE başarısız (İdareler "Toplam Harcama" kurulumdan beri bayat). Sahiplik postgres'e alındı, refresh+PGOPTIONS ile düzeltildi.
-**⏳ FAZ A.3 (bekliyor, data HAZIR):** İdareler tablosu (Tüm Kurumlar) idare_dizin_json r[6]/r[7]'yi (sözleşme sayısı+harcama)
-  ZATEN alıyor ama göstermiyor → tabloya "Toplam Harcama" kolonu ekle (sıralanabilir).
-**⏳ FAZ C (bekliyor):** firma tarafı ufak hizalama — birleşik ihale∪DT firma sayısı KPI + v1-firmalar'da İhale/DT/İkisi
-  mod tutarlılığı (v1-firma-analiz'de zaten var).
+**✅ FAZ A.3 (CANLI 3 Ağu):** İdareler tablosu "Sözleşme" + "Toplam Harcama" kolonları + 💰 stat tile (compact ₺ paraKisa).
+  Kolonlar/veri/render paralel oturumda eklendi; ben SIRA_ANAHTAR'a sozlesme+harcama ekleyip sortability bug'ını düzelttim
+  (başlık tıklaması sıralama handler'ında erken dönüyordu, ok göstergesi boştu).
+**✅ FAZ C(a) (CANLI 3 Ağu):** v1-firmalar birleşik firma KPI şeridi (4 tile: 🏢 Toplam Firma 433.558 · 📄 Sözleşme 5,59M ·
+  💰 Ciro 11,7 Trilyon ₺ · 🤝 İş Ortaklığı 9.865) — `firma_ozet_birlikte()` anon-AÇIK → misafirde de dolar (çengel).
+  paraBuyuk() kompakt Trilyon/Milyar format. Misafir panelinde görsel doğrulandı (değerler + 0 console hatası).
+**⏳ FAZ C(b) (bekliyor, DAHA BÜYÜK):** v1-firmalar'a İhale/DT/İkisi mod toggle (v1-firma-analiz'deki dz-mod'u örnek al).
+  SÜRTÜNME: segment çipleri (seg_*/ciro_son_12ay/buyume_yuzde) YALNIZ yukleniciler'de → DT/İkisi modunda gizle/pasifleştir +
+  sıralanabilir sütunları RPC alanlarına indir (sozlesme/bedel/tarih/ad) + yukle()'yi firma_dizin_dt/birlikte'ye dallandır +
+  yukle() race guard'ı mod dallanmasında koru + DT/İkisi RPC anon-KAPALI → misafirde mod butonu gizle/uyarı.
 **⚠️ DOĞRULAMA:** Kategori+ağaç ÜYEYE ÖZEL → girişsiz panelde görsel test yapılamadı; görsel onay kullanıcının girişli ekranında.
 
 ---
