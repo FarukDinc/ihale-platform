@@ -60,7 +60,14 @@ window.Uyum = (() => {
   }
 
   function hesapla(ilan, profil) {
-    if (!profil) return Math.floor(Math.random() * 20 + 55);
+    if (!profil) {
+      // Profil/firma yok → gerçek eşleşme hesaplanamaz. RASTGELE DEĞİL: Math.random() her
+      // render'da farklı skor + kararsız sıralama üretiyordu (26-22 "eşleşme motoru tutarsız").
+      // İlan kimliğinden DETERMİNİSTİK "genel tahmin" (55-74) → aynı ilan hep aynı skoru alır.
+      const s = String((ilan && (ilan.id || ilan.baslik)) || '');
+      let h = 0; for (let i = 0; i < s.length; i++) h = ((h * 31 + s.charCodeAt(i)) | 0);
+      return 55 + (Math.abs(h) % 20);
+    }
     let puan = 0;
 
     // Kategori eşleşmesi (40 puan)
