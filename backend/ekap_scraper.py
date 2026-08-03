@@ -846,7 +846,7 @@ _CPV_KATEGORI = {
     "33": "Tıbbi Cihazlar", "34": "Ulaşım Araçları", "35": "Güvenlik",
     "37": "Spor & Eğlence", "38": "Laboratuvar", "39": "Mobilya & Temizlik",
     "41": "Su", "42": "Sanayi Makineleri", "43": "Madencilik Ekipmanı",
-    "44": "İnşaat Malzemeleri", "45": "İnşaat & Yapım", "48": "Yazılım",
+    "44": "İnşaat Malzemeleri", "45": "İnşaat - Altyapı - Üstyapı - Yapım", "48": "Yazılım",
     "50": "Bakım & Onarım", "51": "Montaj", "55": "Konaklama & Yemek",
     "60": "Ulaşım Hizmetleri", "63": "Lojistik", "64": "Posta & İletişim",
     "65": "Kamu Hizmetleri", "66": "Sigorta & Finans", "70": "Gayrimenkul",
@@ -865,7 +865,7 @@ def kategori_tur(okas: str | None, tur: str | None, baslik: str | None) -> str |
             return _CPV_KATEGORI[prefix]
     # OKAS yoksa ihale türünden genel kategori
     t = (tur or "").lower()
-    if "yapım" in t:        return "İnşaat & Yapım"
+    if "yapım" in t:        return "İnşaat - Altyapı - Üstyapı - Yapım"  # 26-8: kanonik (legacy "İnşaat & Yapım" değil)
     if "bilgi" in t or "yazılım" in t: return "Bilişim Hizmetleri"
     if "mal" in t:          return "Mal Alımı"
     if "hizmet" in t:       return "Hizmet Alımı"
