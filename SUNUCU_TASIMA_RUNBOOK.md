@@ -55,16 +55,20 @@ Fiziksel volume kopyası DEĞİL → **taze Supabase kurulumu + mantıksal resto
 21. Doğrulama listesini (Faz 4) canlı domain üzerinde tekrarla.
 22. Gece cron 24 adım hatasız · iki backfill akıyor · watchdog'lar çalışıyor.
 23. Eski kutu 2-3 gün geri-dönüş için beklesin; sağlamsa iptal.
-23b. **⭐ DT GEÇMİŞ BACKFILL (yeni kutuda çalıştır — göç bunun İÇİN de değerli):** DT arşivi eksik —
+23b. **⭐ DT GEÇMİŞ BACKFILL (yeni kutuda çalıştır — tek komut hazır):** DT arşivi eksik —
     44.829 kurumun **%76'sında yalnız 2025+ DT var** (ölçüm 4 Ağu). Kapsam yaşlandıkça çöküyor:
     2025 1,47M → 2024 305K (%20) → 2023 195K → 2022 116K → 2021 ve öncesi ~0. Kök: page/date-slice
-    backfill güncel sayfaları çekip eskiye inmeden durdu (checkpoint sayfa 3). **Eski (zayıf) kutuda
-    denendi ama İMKÂNSIZ:** 60 dk'da sadece sayfa 150, proxy timeout + upsert-500 (DB darboğazı) seli,
-    ilk sayfalar dupe. Yeni kutu (256GB RAM, /dev/shm sınırı yok, hızlı DB) bunu **10x+ hızlı** yapar.
-    Komut: `ekap_dogrudan_temin_scraper.py --bas 01.01.YYYY --bit 31.12.YYYY --max-pages 20000` yıl yıl
-    (2024→2016); PARALEL dilim = 30-100x ama Webshare eşzamanlı-soket sınırına dikkat (bkz [[proxy-havuzu]]).
-    Webshare IP-beyazlistesi yeni kutu IP'siyle güncel olmalı (Faz 4-14). **Cutover ÖNCESİ eski kutuda BAŞLATMA**
-    (göç dump'ını kirletir + kesilir; idempotent ama boşa iş).
+    backfill güncel sayfaları çekip eskiye inmeden durdu (checkpoint sayfa 3).
+    **DARBOĞAZ DÜZELTMESİ (4 Ağu):** ilk sanılanın aksine darboğaz DB DEĞİL (upsert-500 sadece 2/151),
+    asıl sorun scraper'ın **TEK-THREAD/SERİ** olması + EKAP'ın ~%35 timeout'u → tek dilim timeout'ları
+    seri bekleyip ~%90 wall-clock kaybediyor. **ÇÖZÜM = PARALEL AY-DİLİMİ** (date-slice checkpoint yazmaz
+    → çakışmaz). **KANIT:** 3 paralel dilim = **5,38x** (baseline 8 → paralel 43 sayfa/90s; timeout'lar
+    örtüşüyor). 12 dilim ≈ 1,1M kayıt/saat → tüm boşluk **saatler** içinde.
+    **KOMUT (orkestratör hazır, idempotent/resume'lu):**
+    `backend/dt_gecmis_backfill_paralel.sh 2024 2016 12`  (yıl aralığı yeniden-eskiye, 12 paralel;
+    tamamlanan aylar logs/dt_backfill/done/ ile atlanır). Webshare **High Concurrency ALINDI** (12+ soket
+    OK, bkz [[proxy-havuzu]]); IP-beyazlistesi yeni sunucu IP'siyle güncel olmalı (Faz 4-14).
+    **Cutover ÖNCESİ eski kutuda BAŞLATMA** (göç dump'ını kirletir + kesilir; idempotent ama boşa iş).
 24. **OFF-SITE YEDEK (bare-metal'de snapshot YOK):** ✅ KARAR (2 Ağu) — siparişte **Günlük İmaj Yedekleme** (**250 TL/ay**) seçildi; açıklama "güvenli **harici** depolama" = **off-site TEYİT EDİLDİ** ✅. Restore yolu/hızını cutover öncesi netleştir. **Gece `pg_dump` (ihale_yedek/fasonda_yedek) yine de SÜRSÜN** — en taşınabilir restore yolu + göç seed'i; sağlayıcı yedeği "tüm sunucu" katmanı, pg_dump "DB" katmanı. (DIY rclone→B2 elendi.)
 
 ---
