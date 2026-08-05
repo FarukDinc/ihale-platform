@@ -1715,7 +1715,7 @@
     return `<div class="ag-dugum" data-detsis="${esc(d.detsis_no)}" data-derin="${derin}" data-ad="${esc(d.ad)}">
       <div class="ag-satir" style="--derin:${derin}">
         <button class="ag-ok ${acilir ? '' : 'yok'}" title="${acilir ? sayi(d.cocuk_sayisi) + ' alt birim — aç/kapat' : ''}">▸</button>
-        <span class="ag-ad" title="${esc(d.ad)} — analize git">${esc(d.ad)}${acilir ? ` <span class="adet">(${sayi(d.cocuk_sayisi)})</span>` : ''}</span>
+        <span class="ag-ad" title="${esc(d.ad)}">${esc(d.ad)}${acilir ? ` <span class="adet">(${sayi(d.cocuk_sayisi)})</span>` : ''}</span>
         <span class="ag-rozet ${Number(d.toplam_ihale) ? 'ihale' : 'bos'}" title="İhale — kendi: ${sayi(d.kendi_ihale)}, dal toplamı (kendisi + tüm alt birimler): ${sayi(d.toplam_ihale)}">📋 ${sayi(d.kendi_ihale)} / ${sayi(d.toplam_ihale)}</span>
         <span class="ag-rozet ${Number(d.toplam_dt) ? 'dt' : 'bos'}" title="Doğrudan temin — kendi: ${sayi(d.kendi_dt)}, dal toplamı: ${sayi(d.toplam_dt)}">⚡ ${sayi(d.kendi_dt)} / ${sayi(d.toplam_dt)}</span>
         <span class="ag-pay" title="Tüm ihale kayıtları içindeki pay">${payYuzde(Number(d.toplam_ihale), agTumIhale)}</span>
