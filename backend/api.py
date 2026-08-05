@@ -492,6 +492,56 @@ def firma_ai_yorum(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+@app.post("/dokuman-indir")
+async def dokuman_indir(istek: AnalizIstek, authorization: str = Header(None)):
+    """İhalepro tarzı 'Doküman İndir' — EKAP'tan CAPTCHA'lı ham İHALE dokümanını (ZIP/PDF) indirir
+    ve kullanıcıya servis eder. Kredi düşer (1, BAŞARILI indirmeden SONRA → indirilemezse kredi yanmaz).
+    ~20-35s (Playwright + Gemini CAPTCHA; şartname-AI ile aynı kanıtlı akış). MVP: cache yok (kredi
+    hacmi kontrol eder), İhale (ilanlar) — DT ayrı akış (sonraki faz)."""
+    import io
+    from fastapi.responses import StreamingResponse
+    from sartname_indir import dokuman_indir_ham
+
+    kullanici_id = kullanici_dogrula(authorization)
+    ihale_id = istek.ihale_id
+
+    ilan = (supabase.table("ilanlar").select("id, ekap_id, baslik")
+            .eq("id", ihale_id).limit(1).execute().data or [None])[0]
+    if not ilan:
+        raise HTTPException(status_code=404, detail="İhale bulunamadı")
+
+    # Kredi ön kontrolü (indirmeden önce; boşuna ~30s Playwright başlatma)
+    kredi_bilgi = supabase.table("kullanici_krediler").select("kalan_kredi") \
+        .eq("kullanici_id", kullanici_id).single().execute()
+    if (kredi_bilgi.data or {}).get("kalan_kredi", 0) < 1:
+        raise HTTPException(status_code=402, detail="Yetersiz kredi")
+
+    # İNDİR (async ~20-35s)
+    sonuc = await dokuman_indir_ham(str(ihale_id))
+    if not sonuc.get("basari"):
+        raise HTTPException(status_code=502, detail=sonuc.get("hata") or "Belge indirilemedi")
+
+    # Kredi düş — SADECE başarılı indirmeden sonra. p_islem_turu 'analiz'/'yukleme' CHECK (bkz teklif-olustur).
+    try:
+        kredi_sonuc = supabase.rpc("kredi_dus", {
+            "p_kullanici_id": kullanici_id, "p_miktar": 1, "p_referans_id": ihale_id,
+            "p_referans_tip": "ihale", "p_islem_turu": "analiz",
+            "p_aciklama": f"Doküman İndir: {(ilan.get('baslik') or '')[:50]}"
+        }).execute()
+        if not getattr(kredi_sonuc, "data", None):
+            raise HTTPException(status_code=402, detail="Yetersiz kredi")
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"  ⚠ kredi_dus (dokuman) hatası: {e}")
+
+    ekap = (ilan.get("ekap_id") or str(ihale_id)).replace("/", "-").replace(" ", "")
+    uz = sonuc["uzanti"]
+    ctype = {"zip": "application/zip", "pdf": "application/pdf"}.get(uz, "application/octet-stream")
+    return StreamingResponse(io.BytesIO(sonuc["bytes"]), media_type=ctype,
+        headers={"Content-Disposition": f'attachment; filename="{ekap}_ihale_dokumani.{uz}"'})
+
+
 @app.post("/teklif-olustur")
 def teklif_olustur(
     istek: AnalizIstek,

@@ -128,6 +128,30 @@ async def _playwright_indir(url: str, deneme: int = 3) -> bytes | None:
             await br.close()
 
 
+async def dokuman_indir_ham(ihale_id: str) -> dict:
+    """HAM doküman dosyasını indirir (parse ETMEDEN) — kullanıcıya servis için (ihalepro tarzı
+    'Doküman İndir'). indir_parse ile aynı EKAP CAPTCHA akışı (_playwright_indir), ama metne
+    çevirmez; ham byte + uzantı döner. Döner: {basari, bytes|None, uzanti('zip'|'pdf'|'bin'), hata}."""
+    import httpx
+    url = None
+    try:
+        async with httpx.AsyncClient(verify=E.old_ekap_ssl(), timeout=40) as api:
+            for islem in ("1", "3"):   # 1=İhale Dokümanı ZIP (cetvel+şartname), 3=Teknik Şartname
+                u = await E.dokuman_url_al(api, str(ihale_id), islem)
+                if u and "VatandasIlan" in u:
+                    url = u
+                    break
+    except Exception as e:
+        return {"basari": False, "bytes": None, "uzanti": None, "hata": f"doküman URL alınamadı: {str(e)[:120]}"}
+    if not url:
+        return {"basari": False, "bytes": None, "uzanti": None, "hata": "Bu ihalede indirilebilir doküman yok"}
+    ham = await _playwright_indir(url)
+    if not ham or len(ham) < 200:
+        return {"basari": False, "bytes": None, "uzanti": None, "hata": "Belge indirilemedi (CAPTCHA/EKAP)"}
+    uz = "zip" if ham[:4] == b"PK\x03\x04" else ("pdf" if ham[:4] == b"%PDF" else "bin")
+    return {"basari": True, "bytes": ham, "uzanti": uz, "hata": None}
+
+
 async def indir_parse(ihale_id: str) -> dict:
     """Bir ihalenin teknik şartname + birim fiyat cetvelini indirir ve metne çevirir.
     Döner: {"basari", "metin"(birleşik, AZAMI_METIN kırpık)|None, "dosyalar"[ad], "hata"}."""
