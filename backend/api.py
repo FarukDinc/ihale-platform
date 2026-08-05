@@ -505,10 +505,15 @@ async def dokuman_indir(istek: AnalizIstek, authorization: str = Header(None)):
     kullanici_id = kullanici_dogrula(authorization)
     ihale_id = istek.ihale_id
 
-    ilan = (supabase.table("ilanlar").select("id, ekap_id, baslik")
+    # ekap_ihale_id = EKAP iç ihale kimliği (dokuman_url_al bunu ister — UUID/IKN DEĞİL;
+    # çalışan şartname akışı da ilan["ekap_ihale_id"] geçiyor, bkz teklif-strateji).
+    ilan = (supabase.table("ilanlar").select("id, ekap_id, ekap_ihale_id, baslik")
             .eq("id", ihale_id).limit(1).execute().data or [None])[0]
     if not ilan:
         raise HTTPException(status_code=404, detail="İhale bulunamadı")
+    ekap_ihale_id = ilan.get("ekap_ihale_id")
+    if not ekap_ihale_id:
+        raise HTTPException(status_code=404, detail="Bu ihalede indirilebilir EKAP dokümanı yok (kimlik yok)")
 
     # Kredi ön kontrolü (indirmeden önce; boşuna ~30s Playwright başlatma)
     kredi_bilgi = supabase.table("kullanici_krediler").select("kalan_kredi") \
@@ -516,8 +521,8 @@ async def dokuman_indir(istek: AnalizIstek, authorization: str = Header(None)):
     if (kredi_bilgi.data or {}).get("kalan_kredi", 0) < 1:
         raise HTTPException(status_code=402, detail="Yetersiz kredi")
 
-    # İNDİR (async ~20-35s)
-    sonuc = await dokuman_indir_ham(str(ihale_id))
+    # İNDİR (async ~20-35s) — EKAP iç ihale kimliğiyle (UUID DEĞİL)
+    sonuc = await dokuman_indir_ham(str(ekap_ihale_id))
     if not sonuc.get("basari"):
         raise HTTPException(status_code=502, detail=sonuc.get("hata") or "Belge indirilemedi")
 
