@@ -62,6 +62,18 @@
     #v1-kat-tablo tbody tr { cursor:pointer; }
     #v1-kat-tablo tbody tr:hover td { background:var(--v1-mavi-acik); }
     #v1-kat-tablo .v1-git { color:var(--v1-mavi); font-weight:800; font-size:12.5px; white-space:nowrap; }
+    /* Arama motoru hero (ihalepro tarzı Kurum Merkezi girişi) */
+    .v1-hero { background:linear-gradient(135deg, var(--v1-lacivert), var(--v1-mavi)); border-radius:16px;
+      padding:24px 26px; margin-bottom:18px; color:#fff; }
+    .v1-hero-baslik { font-size:19px; font-weight:800; margin-bottom:3px; }
+    .v1-hero-alt { font-size:13px; opacity:.92; margin-bottom:15px; }
+    .v1-hero-ara { display:flex; gap:10px; max-width:660px; }
+    .v1-hero-ara input { flex:1; border:none; border-radius:10px; padding:13px 16px; font-family:var(--v1-font);
+      font-size:14px; color:var(--v1-metin); outline:none; }
+    .v1-hero-ara button { border:none; border-radius:10px; padding:13px 26px; background:#fff; color:var(--v1-mavi);
+      font-family:var(--v1-font); font-size:14px; font-weight:800; cursor:pointer; white-space:nowrap; }
+    .v1-hero-ara button:hover { background:var(--v1-mavi-acik); color:var(--v1-lacivert); }
+    @media(max-width:600px){ .v1-hero-ara{ flex-direction:column; } .v1-hero-ara button{ width:100%; } }
   </style>
 </head>
 <body class="v1" data-v1-aktif="kurumlar" data-v1-kirinti="İhaleGlobal > Kurumlar">
@@ -71,6 +83,16 @@
       <div class="v1-sayfa-baslik">İşveren Kurumlar</div>
       <div class="v1-sayfa-alt">İhale açan idareler — hangi kurum kaç ihale açmış, kaçı şu an aktif.
         Bakanlıktan il müdürlüğüne uzanan hiyerarşi için <strong>Kurum Ağacı</strong> görünümünü kullanın.</div>
+
+      <!-- Arama motoru hero (ihalepro tarzı Kurum Merkezi) -->
+      <form class="v1-hero" id="v1-hero-form">
+        <div class="v1-hero-baslik">🔎 Kurum Arama Motoru</div>
+        <div class="v1-hero-alt">Binlerce idare ve kurumun ihale karnesini tek yerden ara — aktif ihaleler, sözleşmeler, toplam harcama.</div>
+        <div class="v1-hero-ara">
+          <input type="text" id="v1-hero-input" placeholder="Kurum / idare adı ara… (ör. Ankara Büyükşehir Belediyesi)" autocomplete="off" />
+          <button type="submit">Ara</button>
+        </div>
+      </form>
 
       <div class="v1-gor">
         <a class="v1-gor-btn" href="v1-kurum-analiz?gorunum=agac"
@@ -513,6 +535,17 @@
     document.getElementById('v1-sifirla').addEventListener('click',()=>{
       ilSecim=''; document.getElementById('v1-ara-liste').value=''; sayfa=1;
       document.getElementById('v1-il').value=''; urlYaz(); ciz();
+    });
+
+    // Arama motoru hero → "Tüm Kurumlar" sekmesine geç + mevcut arama akışını tetikle
+    document.getElementById('v1-hero-form').addEventListener('submit',e=>{
+      e.preventDefault();
+      document.getElementById('s-tum').click();          // sekme geç (misafirse kilit gösterir)
+      if(!uyeMi) return;
+      const q=document.getElementById('v1-hero-input').value.trim();
+      const inp=document.getElementById('v1-ara-liste');
+      inp.value=q; inp.dispatchEvent(new Event('input',{bubbles:true}));
+      document.getElementById('v1-tablo-kart').scrollIntoView({behavior:'smooth',block:'start'});
     });
 
     // Tıklanabilir sütun başlıkları — aynı sütuna ikinci tık yönü çevirir
