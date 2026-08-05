@@ -49,6 +49,9 @@ dugum_ihale_bedel AS (
     FROM public.ihale_sonuclari s
     JOIN ikn_detsis id ON id.ikn = s.ikn
    WHERE s.sozlesme_bedeli > 0
+     -- FİZİKSEL SANİTE (5 Ağu): bozuk-şişmiş eski sözleşme bedellerini dışla — kazanan teklif
+     -- maliyetin 50 katından çok olamaz (2012-2013 parse hatası, ~505 Mr hayalet; bkz. migration_idare_harcama.sql).
+     AND NOT (s.yaklasik_maliyet > 0 AND s.sozlesme_bedeli > 50 * s.yaklasik_maliyet)
    GROUP BY id.detsis_no
 ),
 dugum_dt_bedel AS (
@@ -87,6 +90,7 @@ CREATE UNIQUE INDEX idx_idare_hiy_bedel_pk ON public.idare_hiyerarsi_bedel_mv (d
 -- ANON'A KAPALI (idare adı kimlik verisi; sayim MV ile aynı politika)
 REVOKE ALL   ON public.idare_hiyerarsi_bedel_mv FROM PUBLIC, anon;
 GRANT SELECT ON public.idare_hiyerarsi_bedel_mv TO authenticated, service_role;
+ALTER MATERIALIZED VIEW public.idare_hiyerarsi_bedel_mv OWNER TO postgres;  -- gece -U postgres refresh (sessiz-bayat önle)
 
 -- kurum_kategori_ozet() — bedel kolonları eklenir (RETURNS TABLE değişimi → DROP + CREATE şart)
 DROP FUNCTION IF EXISTS public.kurum_kategori_ozet();

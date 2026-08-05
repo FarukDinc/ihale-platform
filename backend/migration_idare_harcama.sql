@@ -18,7 +18,9 @@
 
 BEGIN;
 
-CREATE MATERIALIZED VIEW IF NOT EXISTS public.idare_harcama_mv AS
+-- Tanım değişti (fiziksel-sanite filtresi) → IF NOT EXISTS yerine DROP+CREATE.
+DROP MATERIALIZED VIEW IF EXISTS public.idare_harcama_mv;
+CREATE MATERIALIZED VIEW public.idare_harcama_mv AS
 SELECT il.idare,
        count(*)::bigint                          AS sozlesme_sayisi,
        COALESCE(sum(s.sozlesme_bedeli), 0)::numeric AS toplam_harcama
@@ -31,12 +33,21 @@ JOIN (
   ORDER BY ikn
 ) il ON il.ikn = s.ikn
 WHERE s.sozlesme_bedeli > 0
+  -- FİZİKSEL SANİTE (5 Ağu): kazanan teklif, yaklaşık maliyetin 50 katından ÇOK olamaz. Eski
+  -- (2012-2013 ağırlıklı) veride kazanan_teklif/sozlesme_bedeli bozuk-şişmiş parse edilmiş
+  -- (13.977 lot / 936 ihale / ~505 Mr HAYALET harcama) → harcama sıralamasını zehirliyordu:
+  -- ör. Hakkari hastane birliği sahte 312 Mr (maliyeti 740 ₺ olan kısma 1,4 Mr "sözleşme").
+  -- Meşru dev ihaleler korunur (sözleşme ≈ maliyet, ratio ~1). Maliyeti bilinen imkansızları dışla.
+  AND NOT (s.yaklasik_maliyet > 0 AND s.sozlesme_bedeli > 50 * s.yaklasik_maliyet)
 GROUP BY il.idare;
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_idare_harcama_mv_idare
   ON public.idare_harcama_mv (idare);
 
 ANALYZE public.idare_harcama_mv;
+
+-- KRİTİK: gece REFRESH `-U postgres` ile koşuyor → sahip postgres OLMALI (yoksa sessiz-bayat).
+ALTER MATERIALIZED VIEW public.idare_harcama_mv OWNER TO postgres;
 
 -- anon'a AÇMA (maske dersi): yalnız authenticated + service_role. idare_dizin_json
 -- SECURITY DEFINER olduğu için MV'yi sahibi olarak okur; grant caller için sadece tutarlılık.
