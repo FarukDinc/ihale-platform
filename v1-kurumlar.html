@@ -54,6 +54,14 @@
     .v1-kat-tutar-blok { border-top:1px solid var(--v1-cizgi); margin-top:2px; padding-top:8px; }
     .v1-kat-tutar-et { font-size:9.5px; color:var(--v1-muted); font-weight:800; text-transform:uppercase; letter-spacing:.4px; }
     .v1-kat-tutar { font-size:15px; font-weight:800; color:var(--v1-mavi); letter-spacing:-.2px; margin-top:1px; }
+    /* Kategori TABLOSU — ihalepro tarzı grup taraması (kart yerine sıralanabilir tablo) */
+    #v1-kat-tablo th.v1-sr { cursor:pointer; user-select:none; }
+    #v1-kat-tablo th.v1-sr:hover { color:var(--v1-mavi); }
+    #v1-kat-tablo th:nth-child(n+2):nth-child(-n+6),
+    #v1-kat-tablo td:nth-child(n+2):nth-child(-n+6) { text-align:right; }
+    #v1-kat-tablo tbody tr { cursor:pointer; }
+    #v1-kat-tablo tbody tr:hover td { background:var(--v1-mavi-acik); }
+    #v1-kat-tablo .v1-git { color:var(--v1-mavi); font-weight:800; font-size:12.5px; white-space:nowrap; }
   </style>
 </head>
 <body class="v1" data-v1-aktif="kurumlar" data-v1-kirinti="İhaleGlobal > Kurumlar">
@@ -116,8 +124,18 @@
             <div class="v1-tablo-sayi" id="v1-kat-sayi">Yükleniyor…</div>
           </div>
         </div>
-        <div class="v1-kat-grid" id="v1-kat-grid">
-          <div class="v1-bos" style="grid-column:1/-1;">Yükleniyor…</div>
+        <div style="overflow-x:auto;">
+          <table class="v1-tablo" id="v1-kat-tablo">
+            <thead><tr>
+              <th class="v1-sr" data-k="ad" title="İsme göre sırala">Kurum / Kategori<span class="v1-ok" id="kok-ad"></span></th>
+              <th class="v1-sr" data-k="toplam_ihale" title="Toplam ihaleye göre sırala">Toplam İhale<span class="v1-ok" id="kok-toplam_ihale"></span></th>
+              <th class="v1-sr" data-k="toplam_dt" title="Toplam doğrudan temine göre sırala">Toplam DT<span class="v1-ok" id="kok-toplam_dt"></span></th>
+              <th class="v1-sr" data-k="tutar" title="Toplam tutara göre sırala">Toplam Tutar<span class="v1-ok" id="kok-tutar"></span></th>
+              <th class="v1-sr" data-k="cocuk_sayisi" title="Alt birim sayısına göre sırala">Alt Birim<span class="v1-ok" id="kok-cocuk_sayisi"></span></th>
+              <th style="width:84px;"></th>
+            </tr></thead>
+            <tbody id="v1-kat-govde"><tr><td colspan="6" class="v1-bos">Yükleniyor…</td></tr></tbody>
+          </table>
         </div>
       </div>
 
@@ -410,62 +428,47 @@
     }catch(e){ grid.innerHTML=`<div class="v1-bos" style="grid-column:1/-1;">Kategoriler yüklenemedi. ${esc(e.message||'')}</div>`; }
   }
 
-  function katKart(k){
+  // ihalepro tarzı grup TABLOSU satırı (kart yerine) — satıra tıkla → kurum ağacı
+  let katSira='toplam_ihale', katYon='desc';
+  const KAT_SIRA_ANAHTAR=['ad','toplam_ihale','toplam_dt','tutar','cocuk_sayisi'];
+  function katSatir(k){
     const ad=k.ad||'', dn=k.detsis_no||'';
     const ih=Number(k.toplam_ihale)||0, dt=Number(k.toplam_dt)||0, cs=Number(k.cocuk_sayisi)||0;
     const tutar=(Number(k.toplam_ihale_bedel)||0)+(Number(k.toplam_dt_bedel)||0);
     const r=KAT_ROZET[k.grup]||KAT_ROZET.diger, ik=KAT_IKON[k.grup]||'🏛️';
-    return `<a class="v1-kat-kart" href="v1-kurum-analiz?gorunum=agac&dal=${encodeURIComponent(dn)}">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:9px;">
-        <span class="v1-kat-ad" style="margin:0;"><span style="margin-right:6px;">${ik}</span>${esc(ad)}</span>
-        <span class="v1-kat-rozet" style="background:${r.bg};color:${r.fg};">${r.et}</span>
-      </div>
-      <div class="v1-kat-stat" style="margin-bottom:8px;">
-        <span>İhale <b>${num(ih)}</b></span>
-        <span>DT <b>${num(dt)}</b></span>
-        ${cs>0?`<span>Alt birim <b>${num(cs)}</b></span>`:''}
-      </div>
-      <div class="v1-kat-tutar-blok">
-        <div class="v1-kat-tutar-et">Toplam Sözleşme Tutarı</div>
-        <div class="v1-kat-tutar" title="İhale + doğrudan temin sözleşme tutarı (sonuçlanmış)">${tutar>0?num(tutar)+' ₺':'—'}</div>
-      </div></a>`;
+    const url=`v1-kurum-analiz?gorunum=agac&dal=${encodeURIComponent(dn)}`;
+    return `<tr data-url="${esc(url)}" tabindex="0">`+
+      `<td><span style="margin-right:7px;">${ik}</span><span style="font-weight:800;color:var(--v1-lacivert);">${esc(ad)}</span>`+
+      `<span class="v1-kat-rozet" style="background:${r.bg};color:${r.fg};margin-left:8px;">${r.et}</span></td>`+
+      `<td>${num(ih)}</td>`+
+      `<td>${num(dt)}</td>`+
+      `<td style="font-weight:800;color:var(--v1-mavi);white-space:nowrap;">${tutar>0?num(tutar)+' ₺':'—'}</td>`+
+      `<td>${cs>0?num(cs):'—'}</td>`+
+      `<td style="text-align:right;"><span class="v1-git">Ağaç ›</span></td></tr>`;
+  }
+  function katVeriSirala(){
+    const yon=katYon==='asc'?1:-1;
+    const anah=r=> katSira==='ad' ? (r.ad||'').toLocaleLowerCase('tr')
+      : katSira==='tutar' ? (Number(r.toplam_ihale_bedel)||0)+(Number(r.toplam_dt_bedel)||0)
+      : Number(r[katSira])||0;
+    return [...katVeri].sort((a,b)=>{ const x=anah(a),y=anah(b); return x<y?-yon:x>y?yon:0; });
+  }
+  function katOkYaz(){
+    KAT_SIRA_ANAHTAR.forEach(k=>{ const el=document.getElementById('kok-'+k);
+      if(el) el.textContent=(katSira===k)?(katYon==='asc'?'▲':'▼'):''; });
   }
 
   function kategoriCiz(){
-    const grid=document.getElementById('v1-kat-grid');
-    const majors=[], minors=[];
-    for(const k of katVeri){
-      const t=(Number(k.toplam_ihale)||0)+(Number(k.toplam_dt)||0);
-      (t>=KAT_ESIK?majors:minors).push(k);
-    }
-    let html=majors.map(katKart).join('');
-    if(minors.length){
-      let mih=0, mdt=0, mtutar=0;
-      for(const k of minors){
-        mih+=Number(k.toplam_ihale)||0; mdt+=Number(k.toplam_dt)||0;
-        mtutar+=(Number(k.toplam_ihale_bedel)||0)+(Number(k.toplam_dt_bedel)||0);
-      }
-      html+=`<button type="button" class="v1-kat-kart" id="v1-kat-diger"
-        style="width:100%;text-align:left;font-family:var(--v1-font);cursor:pointer;">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:9px;">
-          <span class="v1-kat-ad" style="margin:0;"><span style="margin-right:6px;">🗂️</span>Diğer küçük kurumlar</span>
-          <span class="v1-kat-rozet" style="background:#F0F2F5;color:var(--v1-muted);">${num(minors.length)} kategori</span>
-        </div>
-        <div class="v1-kat-stat" style="margin-bottom:8px;">
-          <span>İhale <b>${num(mih)}</b></span><span>DT <b>${num(mdt)}</b></span>
-          <span style="color:var(--v1-mavi);font-weight:700;">${katGenis?'▲ Gizle':'▼ Tümünü gör'}</span>
-        </div>
-        <div class="v1-kat-tutar-blok">
-          <div class="v1-kat-tutar-et">Toplam Sözleşme Tutarı</div>
-          <div class="v1-kat-tutar">${mtutar>0?num(mtutar)+' ₺':'—'}</div>
-        </div></button>`;
-      if(katGenis) html+=minors.map(katKart).join('');
-    }
-    grid.innerHTML=html;
-    const dg=document.getElementById('v1-kat-diger');
-    if(dg) dg.addEventListener('click',()=>{ katGenis=!katGenis; kategoriCiz(); });
-    document.getElementById('v1-kat-sayi').innerHTML=
-      `Toplam <strong>${num(katVeri.length)}</strong> kategori · ${num(majors.length)} ana kategori`;
+    const gov=document.getElementById('v1-kat-govde');
+    if(!katVeri.length){ gov.innerHTML='<tr><td colspan="6" class="v1-bos">Kategori bulunamadı.</td></tr>'; return; }
+    gov.innerHTML=katVeriSirala().map(katSatir).join('');
+    gov.querySelectorAll('tr[data-url]').forEach(tr=>{
+      const git=()=>{ location.href=tr.dataset.url; };
+      tr.addEventListener('click',git);
+      tr.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); git(); } });
+    });
+    katOkYaz();
+    document.getElementById('v1-kat-sayi').innerHTML=`Toplam <strong>${num(katVeri.length)}</strong> kategori`;
   }
 
   async function takipToggle(idare){
@@ -517,6 +520,19 @@
         if(sirala===k) yon=(yon==='asc'?'desc':'asc');
         else { sirala=k; yon=YON_VARSAYILAN[k]; }
         sayfa=1; urlYaz(); ciz();
+      };
+      th.addEventListener('click',tetik);
+      th.addEventListener('keydown',e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); tetik(); } });
+    });
+
+    // Kategori tablosu sütun sıralama (ihalepro tarzı — aynı sütuna 2. tık yönü çevirir)
+    document.querySelectorAll('#v1-kat-tablo th.v1-sr').forEach(th=>{
+      th.setAttribute('role','button'); th.tabIndex=0;
+      const tetik=()=>{
+        const k=th.dataset.k; if(!KAT_SIRA_ANAHTAR.includes(k)) return;
+        if(katSira===k) katYon=(katYon==='asc'?'desc':'asc');
+        else { katSira=k; katYon=(k==='ad')?'asc':'desc'; }
+        kategoriCiz();
       };
       th.addEventListener('click',tetik);
       th.addEventListener('keydown',e=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); tetik(); } });
