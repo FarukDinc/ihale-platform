@@ -670,6 +670,7 @@
 
   const P = new URLSearchParams(location.search);
   let KURUM = P.get('kurum') || '';    // birleşik hub: pushState ile sayfa içinde değişir
+  let KURUM_DETSIS = P.get('detsis') || '';   // kurum dedup drill: verilirse analiz TÜM isim varyantlarını kapsar (isim değil detsis_no)
   let _ihaleOzet = null, _dtOzet = null, _dagilimTip = 'ihale';   // Dağılım Analizi İhale/DT seçici
   let uyeMi = false;
 
@@ -753,7 +754,7 @@
     kap.innerHTML = '<div class="v1-bos">Yükleniyor…</div>';
     const { data: dilim, error } = await sb.from('dogrudan_temin_ilanlari')
       .select('dt_no,baslik,il,tur,kategori,durum,tarih')
-      .ilike('idare', `%${KURUM}%`)
+      .filter(KURUM_DETSIS ? 'detsis_no' : 'idare', KURUM_DETSIS ? 'eq' : 'ilike', KURUM_DETSIS || `%${KURUM}%`)
       .order('tarih', { ascending: false, nullsFirst: false })
       .range(bas, bas + PER_PAGE);   // PER_PAGE+1: sonraki sayfa var mı
     if (istek !== listeIstek) return;
@@ -788,7 +789,7 @@
     const SONUC_DURUM = ['Sonuç Duyurusu Yayımlanmış', 'Sonuç Bilgileri Gönderildi', 'Doğrudan Temin Sonuçlandırıldı'];
     const { data: dilim, error } = await sb.from('dogrudan_temin_ilanlari')
       .select('dt_no,baslik,il,tur,kategori,durum,tarih')
-      .ilike('idare', `%${KURUM}%`)
+      .filter(KURUM_DETSIS ? 'detsis_no' : 'idare', KURUM_DETSIS ? 'eq' : 'ilike', KURUM_DETSIS || `%${KURUM}%`)
       .in('durum', SONUC_DURUM)
       .order('tarih', { ascending: false, nullsFirst: false })
       .range(bas, bas + SZ_PER);
@@ -819,7 +820,7 @@
 
     const { data: dilim, error } = await sb.from('ilanlar')
       .select('id,ekap_id,baslik,il,tur,ilan_tarihi,son_teklif_tarihi,yaklasik_maliyet_min,yaklasik_maliyet_max,ihale_sonuclari(kazanan_firma,kazanan_teklif,kazanan_teklif_farki_yuzde,sonuc_tarihi,kisim_no)')
-      .ilike('idare', `%${KURUM}%`)
+      .filter(KURUM_DETSIS ? 'detsis_no' : 'idare', KURUM_DETSIS ? 'eq' : 'ilike', KURUM_DETSIS || `%${KURUM}%`)
       // etkin_tarih: ilan_tarihi yalnız ~%3 dolu; sıralama indeksle aynı yönde
       // (yön indeksle eşleşmezse sorgu 9000× yavaşlar)
       .order('etkin_tarih', { ascending: false, nullsFirst: false })
@@ -947,7 +948,7 @@
 
     const { data, error } = await sb.from('ilanlar')
       .select(SZ_SELECT)
-      .ilike('idare', `%${KURUM}%`)
+      .filter(KURUM_DETSIS ? 'detsis_no' : 'idare', KURUM_DETSIS ? 'eq' : 'ilike', KURUM_DETSIS || `%${KURUM}%`)
       .order('etkin_tarih', { ascending: false, nullsFirst: false })
       .order('id', { ascending: true })
       .range(bas, bas + SZ_PER);      // +1 satır = "sonraki sayfa var mı" yoklaması
@@ -1189,7 +1190,7 @@
       if (!_dtOzet) {
         el('l-kategori').innerHTML = '<div class="v1-bos">Yükleniyor…</div>';
         el('l-usul').innerHTML = '<div class="v1-bos">Yükleniyor…</div>';
-        try { const { data, error } = await sb.rpc('kurum_dt_ozet', { p_idare: KURUM }); if (error) throw error; _dtOzet = data || {}; }
+        try { const { data, error } = await sb.rpc('kurum_dt_ozet', { p_idare: KURUM, p_detsis: KURUM_DETSIS || null }); if (error) throw error; _dtOzet = data || {}; }
         catch (e) { el('l-kategori').innerHTML = '<div class="v1-bos">Doğrudan temin dağılımı yüklenemedi.</div>'; el('l-usul').innerHTML = '<div class="v1-bos">—</div>'; return; }
       }
       cubukListe('l-kategori', _dtOzet.kategori || [], 'Kategori verisi yok.');
@@ -1312,8 +1313,8 @@
   }
 
   // Seçilen idarenin analizini AYNI SAYFADA açar
-  async function analizYukle(kurum) {
-    KURUM = kurum;
+  async function analizYukle(kurum, detsis) {
+    KURUM = kurum; KURUM_DETSIS = detsis || '';
     el('dizin-view').style.display = 'none';
     el('root-content').style.display = 'none';
     el('root-loading').style.display = 'block';
@@ -1350,7 +1351,7 @@
     takipDurumu();
 
     // Server-side aggregate: 8 kırılım + KPI tek RPC'de (client-load-all yok)
-    const { data: ozet, error } = await sb.rpc('kurum_ozet', { p_idare: KURUM });
+    const { data: ozet, error } = await sb.rpc('kurum_ozet', { p_idare: KURUM, p_detsis: KURUM_DETSIS || null });
     if (error) throw error;
 
     el('root-loading').style.display = 'none';
@@ -1529,7 +1530,7 @@
     const max = Math.max(1, ...dilim.map(i => i.toplam));
     // İnline onclick YOK — idare adındaki tırnak kırardı; data-ad + delegasyon
     govde.innerHTML = dilim.map((i, ix) => `
-      <tr class="tiklanir" data-ad="${esc(i.ad)}">
+      <tr class="tiklanir" data-ad="${esc(i.ad)}" data-detsis="${esc(i.detsis || '')}">
         <td><span style="color:var(--v1-muted);font-weight:700;margin-right:8px;">${bas + ix + 1}</span>
           <span class="v1-t-ad" title="${esc(i.ad)}">${esc(i.ad)}</span></td>
         <td class="iz-il-c" style="font-size:13px;color:var(--v1-muted);">${esc(i.il)}</td>
@@ -1540,7 +1541,7 @@
         <td><span style="font-weight:800;color:${i.aktif > 0 ? 'var(--v1-teal)' : 'var(--v1-muted)'};">${num(i.aktif)}</span></td>
         <td><span style="font-weight:700;color:var(--v1-lacivert);">${num(i.dt_toplam)}</span></td>
         <td class="iz-islem-c" style="text-align:right;">
-          <button class="ag-kucuk-btn mavi" data-ad="${esc(i.ad)}">📊 Analiz</button></td>
+          <button class="ag-kucuk-btn mavi" data-ad="${esc(i.ad)}" data-detsis="${esc(i.detsis || '')}">📊 Analiz</button></td>
       </tr>`).join('');
 
     const pager = el('iz-pager');
@@ -1984,9 +1985,9 @@
     dizinGorunum(gorunumOku(dizinGor), false);
   }
 
-  function analizAc(kurum) {
+  function analizAc(kurum, detsis) {
     el('root-loading').innerHTML = '<div class="v1-spin"></div><p>Kurum verileri yükleniyor…</p>';
-    analizYukle(kurum).catch(e => {
+    analizYukle(kurum, detsis).catch(e => {
       console.error(e);
       el('root-loading').innerHTML = kilitliMi(e)
         ? kilitHtml('Kurum Analizi üyelere özeldir',
@@ -1995,9 +1996,10 @@
     });
   }
 
-  function kurumAc(ad) {
-    try { history.pushState({ kurum: ad }, '', 'v1-kurum-analiz?kurum=' + encodeURIComponent(ad)); } catch (_) { /* file:// test */ }
-    analizAc(ad);
+  function kurumAc(ad, detsis) {
+    const qs = 'v1-kurum-analiz?kurum=' + encodeURIComponent(ad) + (detsis ? '&detsis=' + encodeURIComponent(detsis) : '');
+    try { history.pushState({ kurum: ad, detsis: detsis || '' }, '', qs); } catch (_) { /* file:// test */ }
+    analizAc(ad, detsis);
   }
 
   function dizineDon() {
@@ -2028,7 +2030,7 @@
     el('iz-sort-aktif').addEventListener('click', () => { el('iz-sirala').value = 'aktif_desc'; izFiltrele(); });
     el('iz-govde').addEventListener('click', e => {
       const satir = e.target.closest('[data-ad]');
-      if (satir) kurumAc(satir.dataset.ad);
+      if (satir) kurumAc(satir.dataset.ad, satir.dataset.detsis);
     });
 
     // ağaç
@@ -2092,7 +2094,7 @@
 
     window.addEventListener('popstate', () => {
       const k = new URLSearchParams(location.search).get('kurum') || '';
-      if (k) analizAc(k); else dizinGoster();   // dizinGoster ?gorunum= değerini uygular
+      if (k) analizAc(k, new URLSearchParams(location.search).get('detsis') || ''); else dizinGoster();   // dizinGoster ?gorunum= değerini uygular
     });
   }
 
@@ -2118,7 +2120,7 @@
     dizinGorunum(gorunumOku('liste'), false);
     // Açılış rotası: ?kurum= → analiz (deep-link) ÖNCELİKLİ, yoksa dizin.
     // dizinGoster() görünümü tekrar uygular ve gerekiyorsa ağacı kurar.
-    if (KURUM) analizAc(KURUM); else dizinGoster();
+    if (KURUM) analizAc(KURUM, KURUM_DETSIS); else dizinGoster();
   })();
 
   // AI Yorum Modülü — kredili grounded kurum değerlendirmesi (/api/ai/kurum-yorum). window'a

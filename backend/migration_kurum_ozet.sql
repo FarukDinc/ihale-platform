@@ -25,7 +25,9 @@
 
 BEGIN;
 
-CREATE OR REPLACE FUNCTION public.kurum_ozet(p_idare text)
+-- p_detsis (kurum dedup drill): verilirse detsis_no ile TÜM isim varyantları; yoksa eski ad-ILIKE.
+DROP FUNCTION IF EXISTS public.kurum_ozet(text);
+CREATE FUNCTION public.kurum_ozet(p_idare text, p_detsis text DEFAULT NULL)
 RETURNS jsonb
 LANGUAGE sql STABLE SECURITY DEFINER
 SET search_path = public, pg_temp
@@ -36,7 +38,8 @@ AS $$
            son_teklif_tarihi,
            COALESCE(ilan_tarihi, son_teklif_tarihi) AS tarih
     FROM public.ilanlar
-    WHERE idare ILIKE '%' || p_idare || '%'
+    WHERE (p_detsis IS NOT NULL AND detsis_no = p_detsis)
+       OR (p_detsis IS NULL     AND idare ILIKE '%' || p_idare || '%')
   )
   SELECT jsonb_build_object(
     'kpi', jsonb_build_object(
@@ -68,7 +71,7 @@ AS $$
   );
 $$;
 
-GRANT EXECUTE ON FUNCTION public.kurum_ozet(text) TO anon, authenticated, service_role;
+GRANT EXECUTE ON FUNCTION public.kurum_ozet(text, text) TO anon, authenticated, service_role;
 
 COMMIT;
 

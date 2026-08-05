@@ -19,7 +19,9 @@
 
 BEGIN;
 
-CREATE OR REPLACE FUNCTION public.kurum_dt_ozet(p_idare text)
+-- p_detsis (kurum dedup drill): verilirse detsis_no ile TÜM varyantlar; yoksa eski ad-ILIKE.
+DROP FUNCTION IF EXISTS public.kurum_dt_ozet(text);
+CREATE FUNCTION public.kurum_dt_ozet(p_idare text, p_detsis text DEFAULT NULL)
 RETURNS jsonb
 LANGUAGE sql STABLE SECURITY DEFINER
 SET search_path = public, pg_temp
@@ -30,7 +32,8 @@ AS $$
     -- O indeks OLMADAN 2,9M'de TIMEOUT verir — önce onu uygula.
     SELECT dt_no, tur, il, kategori, durum, tarih
     FROM public.dogrudan_temin_ilanlari
-    WHERE idare ILIKE '%' || p_idare || '%'
+    WHERE (p_detsis IS NOT NULL AND detsis_no = p_detsis)
+       OR (p_detsis IS NULL     AND idare ILIKE '%' || p_idare || '%')
   ),
   sf AS (
     -- DT sonuçları (kazanan + bedel) — dogrudan_temin_sonuclari'na TEK join; kazanan VE bedel
@@ -62,15 +65,15 @@ AS $$
     ),
     -- DT kazanan firmaları: dogrudan_temin_sonuclari.kazanan_firma (anon-kapalı; RPC SECURITY DEFINER)
     'kazanan', (SELECT COALESCE(jsonb_agg(jsonb_build_object('grup_deger', k, 'ihale_sayisi', n) ORDER BY n DESC), '[]'::jsonb)
-                FROM (SELECT kazanan_firma k, count(*) n
+                FROM (SELECT (array_agg(kazanan_firma ORDER BY kazanan_bedel DESC NULLS LAST))[1] k, count(*) n
                       FROM sf
                       WHERE kazanan_firma IS NOT NULL AND kazanan_firma <> ''
-                      GROUP BY kazanan_firma ORDER BY count(*) DESC LIMIT 12) x)
+                      GROUP BY public.normalize_firma(kazanan_firma) ORDER BY count(*) DESC LIMIT 12) x)
   );
 $$;
 
-REVOKE EXECUTE ON FUNCTION public.kurum_dt_ozet(text) FROM PUBLIC, anon;
-GRANT  EXECUTE ON FUNCTION public.kurum_dt_ozet(text) TO authenticated, service_role;
+REVOKE EXECUTE ON FUNCTION public.kurum_dt_ozet(text, text) FROM PUBLIC, anon;
+GRANT  EXECUTE ON FUNCTION public.kurum_dt_ozet(text, text) TO authenticated, service_role;
 
 COMMIT;
 

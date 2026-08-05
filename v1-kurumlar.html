@@ -419,7 +419,7 @@
       const L=(c,u,inner)=> c ? `<a class="v1-say-link" href="${u}">${inner}</a>` : inner;
       return `<tr>
         <td style="color:var(--v1-muted);font-weight:700;">${bas+i+1}</td>
-        <td><a class="v1-t-ad" href="v1-kurum-analiz?kurum=${iu}">${esc(r.idare)}</a></td>
+        <td><a class="v1-t-ad" href="v1-kurum-analiz?kurum=${iu}${du}">${esc(r.idare)}</a></td>
         <td style="font-size:13px;">${esc(r.il||'—')}</td>
         <td><div style="display:flex;align-items:center;gap:10px;">
           <span class="v1-bar-wrap"><span class="v1-bar" style="width:${w}%"></span></span>
