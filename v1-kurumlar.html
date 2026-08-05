@@ -289,7 +289,8 @@
         dt_aktif:Number(r&&r[5])||0,
         sozlesme:Number(r&&r[6])||0,
         harcama:Number(r&&r[7])||0,
-        detsis:(r&&r[8])||null
+        detsis:(r&&r[8])||null,
+        detsis_ad:(r&&r[9])||null
       })).filter(r=>r.idare);
       tumu=detsisGrupla(tumu);   // aynı DETSİS'li isim varyantlarını tek kuruma birleştir (BEL-PA dedup)
       // takip_idareler kolonu `idare_ad` (idare DEĞİL); supabase-js hata FIRLATMAZ
@@ -322,10 +323,10 @@
     for(const r of rows){
       if(!r.detsis){ teksiz.push(r); continue; }
       let g=grup.get(r.detsis);
-      if(!g){ g={idare:r.idare, il:r.il, detsis:r.detsis, toplam:0,aktif:0,sozlesme:0,harcama:0,dt_toplam:0,dt_aktif:0, _max:-1}; grup.set(r.detsis,g); }
+      if(!g){ g={idare:r.detsis_ad||r.idare, il:r.il, detsis:r.detsis, toplam:0,aktif:0,sozlesme:0,harcama:0,dt_toplam:0,dt_aktif:0, _max:-1, _resmi:!!r.detsis_ad}; grup.set(r.detsis,g); }
       g.toplam+=r.toplam; g.aktif+=r.aktif; g.sozlesme+=r.sozlesme;
       g.harcama+=r.harcama; g.dt_toplam+=r.dt_toplam; g.dt_aktif+=r.dt_aktif;
-      if(r.toplam>g._max){ g._max=r.toplam; g.idare=r.idare; g.il=r.il; }   // kanonik = en çok ihaleli yazım
+      if(r.toplam>g._max){ g._max=r.toplam; if(!g._resmi) g.idare=r.idare; g.il=r.il; }   // kanonik = DETSİS resmi adı; yoksa en çok ihaleli yazım
     }
     return teksiz.concat(Array.from(grup.values()));
   }

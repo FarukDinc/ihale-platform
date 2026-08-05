@@ -33,11 +33,12 @@ RETURNS jsonb LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $
     jsonb_build_array(i.idare, i.toplam, i.aktif, i.en_yakin_il,
                       COALESCE(d.toplam, 0), COALESCE(d.aktif, 0),
                       COALESCE(h.sozlesme_sayisi, 0), COALESCE(h.toplam_harcama, 0),
-                      i.detsis_no)
+                      i.detsis_no, hi.ad)
     ORDER BY i.toplam DESC), '[]'::jsonb)
   FROM public.idare_ozet_mv i
   LEFT JOIN public.dt_idare_ozet_mv d ON d.idare = i.idare
-  LEFT JOIN public.idare_harcama_mv h ON h.idare = i.idare;
+  LEFT JOIN public.idare_harcama_mv h ON h.idare = i.idare
+  LEFT JOIN public.idare_hiyerarsi hi ON hi.detsis_no = i.detsis_no;  -- [9] DETSİS resmi (temiz) ad → dedup kanonik adı
 $$;
 ALTER FUNCTION public.idare_dizin_json() SET statement_timeout = '20s';
 REVOKE EXECUTE ON FUNCTION public.idare_dizin_json() FROM public, anon;   -- idare adı kimlik verisi
