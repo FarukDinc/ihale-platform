@@ -3,11 +3,10 @@
 > Kaynak: `iki-evren-bug-avi` workflow (4 denetim ajanı). Reçete: `IKI_EVREN.md`.
 > Durum: ✅ düzeltildi · ⏳ sıradaki · 📋 bekliyor
 >
-> **DURUM 5 Ağu: 9/10 CANLI** — ✅ B1·B2·B3·B5·B6·B7·B8·B9·B10. Kalan **B4** (harcama-MV
-> detsis) + **B2b** (idare_dizin_json kurum-tarafı FULL OUTER) İKİSİ DE `idare_dizin_json`'a
-> dokunuyor → açık harcama PR'ı (`claude/goofy-driscoll-bd9649`) ile çakışır → **PR merge
-> olunca birlikte yap** (git↔canlı dizin_json drift'ini de o zaman uzlaştır). Bkz. bellek
-> [[bozuk-sozlesme-bedeli-harcama]] TUZAK notu.
+> **DURUM 5 Ağu: 10/10 CANLI ✅ TAMAMLANDI** — B1·B2·B3·B4·B5·B6·B7·B8·B9·B10 + B2b.
+> Harcama PR (`claude/goofy-driscoll-bd9649` d0cf3d5) main'e merge edildi (8b346db), git↔canlı
+> drift kapandı. B4+B2b `migration_idare_dizin_detsis_fulljoin.sql` ile: kurum DT 2,09M→3,01M
+> (isimle kayıp %30 geri), 143 DT-only kurum görünür, BEL-PA dedup, ihale/harcama regresyonsuz.
 
 ## 3 tema
 1. **TOPLAMA** — "İkisi/Birlikte" görünümlerinde ihale cirosu (milyon) + DT bedeli (~₺37K medyan) TEK sayıya toplanıyor → yanıltıcı. (Kural 3 ihlali.)
