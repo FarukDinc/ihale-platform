@@ -60,7 +60,6 @@
       <div class="v1-sayfa-baslik" id="v1-baslik">Aktif İhaleler</div>
       <div class="v1-sekmeler">
         <button class="v1-sekme aktif" id="sekme-aktif">Aktif İhaleler</button>
-        <button class="v1-sekme" id="sekme-sonuc">Sonuçlar</button>
         <button class="v1-sekme" id="sekme-dt">Doğrudan Teminler</button>
       </div>
 
@@ -834,7 +833,7 @@
     // sıralama ayarlar ve listeyi yükler. Hem sekme düğmeleri hem İhale/DT seçicisi buraya düşer.
     const kaynakKur=()=>{ sayfa=1;
       const dt=dtModu();
-      ['aktif','sonuc','dt'].forEach(x=>document.getElementById('sekme-'+x).classList.toggle('aktif',sekme===x));
+      ['aktif','dt'].forEach(x=>document.getElementById('sekme-'+x).classList.toggle('aktif',sekme===x));   // KR2: 'sonuc' sekmesi kaldırıldı (sol menü Sonuçlar'dan gelir); sekme=sonuc'ta hiçbir sekme aktif değil
       // İhale/DT seçicisi yalnız Sonuçlar ve Geçmiş sekmelerinde görünür
       const sec=document.getElementById('sonuc-tip-satir');
       if(sec) sec.style.display=(sekme==='sonuc'||sekme==='gecmis')?'':'none';
@@ -863,7 +862,6 @@
     };
     const sekmeAyarla=(s)=>{ sekme=s; kaynakKur(); };
     document.getElementById('sekme-aktif').addEventListener('click',()=>sekmeAyarla('aktif'));
-    document.getElementById('sekme-sonuc').addEventListener('click',()=>sekmeAyarla('sonuc'));
     document.getElementById('sekme-dt').addEventListener('click',()=>sekmeAyarla('dt'));
     // İhale / Doğrudan Temin seçicisi (Sonuçlar & Geçmiş) → aynı sayfada kaynak değiştirir
     document.querySelectorAll('.v1-tip-btn').forEach(b=>b.addEventListener('click',()=>{
