@@ -267,7 +267,7 @@
 
         <!-- ── Liste görünümü ── -->
         <div id="liste-gorunum">
-          <div class="v1-kpi" style="grid-template-columns:repeat(4,1fr);margin-bottom:18px;" id="iz-kpi">
+          <div class="v1-kpi" style="grid-template-columns:repeat(5,1fr);margin-bottom:18px;" id="iz-kpi">
             <div class="v1-kpi-kart" style="cursor:default;"><span class="v1-kpi-govde">
               <span class="v1-kpi-sayi" id="iz-st-idare">—</span><span class="v1-kpi-etiket">Toplam İdare</span></span></div>
             <div class="v1-kpi-kart" style="cursor:default;"><span class="v1-kpi-govde">
@@ -276,6 +276,8 @@
               <span class="v1-kpi-sayi" id="iz-st-ihale">—</span><span class="v1-kpi-etiket">Toplam İhale</span></span></div>
             <div class="v1-kpi-kart" style="cursor:default;"><span class="v1-kpi-govde">
               <span class="v1-kpi-sayi" id="iz-st-aktif-ihale">—</span><span class="v1-kpi-etiket">Aktif İhale</span></span></div>
+            <div class="v1-kpi-kart" style="cursor:default;"><span class="v1-kpi-govde">
+              <span class="v1-kpi-sayi" id="iz-st-dt">—</span><span class="v1-kpi-etiket">Toplam DT</span></span></div>
           </div>
 
           <div id="iz-yukleniyor" class="v1-yukleniyor">
@@ -312,9 +314,10 @@
                     <th class="iz-il-h" style="width:120px;">BAŞLICA İL</th>
                     <th class="iz-srt" id="iz-sort-toplam" style="width:110px;">TOPLAM ▾</th>
                     <th class="iz-srt" id="iz-sort-aktif" style="width:100px;">AKTİF</th>
+                    <th style="width:100px;">TOPLAM DT</th>
                     <th class="iz-islem-h" style="width:120px;"></th>
                   </tr></thead>
-                  <tbody id="iz-govde"><tr><td colspan="5" class="v1-bos">Veri bekleniyor…</td></tr></tbody>
+                  <tbody id="iz-govde"><tr><td colspan="6" class="v1-bos">Veri bekleniyor…</td></tr></tbody>
                 </table>
               </div>
               <div class="k-pager" id="iz-pager" style="display:none;">
@@ -1446,7 +1449,8 @@
       try { sessionStorage.setItem(CACHE_KEY, JSON.stringify({ t: Date.now(), d: sonuc })); } catch (_) { /* kota */ }
     }
 
-    izTum = sonuc.map(r => ({ ad: r[0], toplam: Number(r[1]) || 0, aktif: Number(r[2]) || 0, il: r[3] || '—' }));
+    izTum = izDetsisGrupla(sonuc.map(r => ({ ad: r[0], toplam: Number(r[1]) || 0, aktif: Number(r[2]) || 0, il: r[3] || '—',
+      dt_toplam: Number(r[4]) || 0, dt_aktif: Number(r[5]) || 0, detsis: r[8] || null, detsis_ad: r[9] || null })));
 
     const toplamIhale = izTum.reduce((s, i) => s + i.toplam, 0);
     const aktifIhale = izTum.reduce((s, i) => s + i.aktif, 0);
@@ -1455,6 +1459,7 @@
     el('iz-st-aktif-idare').textContent = num(aktifIdare);
     el('iz-st-ihale').textContent = num(toplamIhale);
     el('iz-st-aktif-ihale').textContent = num(aktifIhale);
+    el('iz-st-dt').textContent = num(izTum.reduce((s, i) => s + (i.dt_toplam || 0), 0));
 
     const iller = [...new Set(izTum.map(i => i.il).filter(x => x && x !== '—'))].sort((a, b) => a.localeCompare(b, 'tr'));
     const ilSel = el('iz-il-filtre');
@@ -1467,6 +1472,19 @@
     const ara = P.get('ara');
     if (ara && !KURUM) el('iz-arama').value = ara;
     izFiltrele();
+  }
+
+  // Kurum dedup — aynı DETSİS'li isim varyantlarını tek kuruma birleştir (İKİ EVREN; bkz IKI_EVREN.md).
+  function izDetsisGrupla(rows) {
+    const grup = new Map(); const teksiz = [];
+    for (const r of rows) {
+      if (!r.detsis) { teksiz.push(r); continue; }
+      let g = grup.get(r.detsis);
+      if (!g) { g = { ad: r.detsis_ad || r.ad, il: r.il, detsis: r.detsis, toplam: 0, aktif: 0, dt_toplam: 0, dt_aktif: 0, _max: -1, _resmi: !!r.detsis_ad }; grup.set(r.detsis, g); }
+      g.toplam += r.toplam; g.aktif += r.aktif; g.dt_toplam += r.dt_toplam; g.dt_aktif += r.dt_aktif;
+      if (r.toplam > g._max) { g._max = r.toplam; if (!g._resmi) g.ad = r.ad; g.il = r.il; }
+    }
+    return teksiz.concat(Array.from(grup.values()));
   }
 
   function izFiltrele() {
@@ -1504,7 +1522,7 @@
 
     const govde = el('iz-govde');
     if (!dilim.length) {
-      govde.innerHTML = '<tr><td colspan="5" class="v1-bos">Arama kriterleriyle eşleşen idare bulunamadı.</td></tr>';
+      govde.innerHTML = '<tr><td colspan="6" class="v1-bos">Arama kriterleriyle eşleşen idare bulunamadı.</td></tr>';
       el('iz-pager').style.display = 'none';
       return;
     }
@@ -1520,6 +1538,7 @@
             <span style="display:block;height:100%;background:var(--v1-mavi);border-radius:5px;width:${Math.max(3, Math.round(i.toplam / max * 100))}%"></span></span>
           <span style="font-weight:800;color:var(--v1-lacivert);white-space:nowrap;">${num(i.toplam)}</span></div></td>
         <td><span style="font-weight:800;color:${i.aktif > 0 ? 'var(--v1-teal)' : 'var(--v1-muted)'};">${num(i.aktif)}</span></td>
+        <td><span style="font-weight:700;color:var(--v1-lacivert);">${num(i.dt_toplam)}</span></td>
         <td class="iz-islem-c" style="text-align:right;">
           <button class="ag-kucuk-btn mavi" data-ad="${esc(i.ad)}">📊 Analiz</button></td>
       </tr>`).join('');
