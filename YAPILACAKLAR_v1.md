@@ -675,6 +675,15 @@ bu. UZUN VADE: koda başlamadan ÖNCE rakip-inceleme + tasarım notu. Referans: 
   Doğrulandı: çift-sayım yok (en büyük düğüm YEREL kökü ≤ toplam), BELEDİYELER 2,64 T₺ / ULAŞTIRMA 2,05 T₺ / SAĞLIK 900 Mr₺.
 **✅ YAN BUG (A.2 sırasında):** idare_harcama_mv sahibi supabase_admin'di, gece refresh -U postgres → permission denied,
   SESSİZCE başarısız (İdareler "Toplam Harcama" kurulumdan beri bayat). Sahiplik postgres'e alındı, refresh+PGOPTIONS ile düzeltildi.
+**✅ KÖK: BOZUK SÖZLEŞME BEDELİ ZEHİRİ ÇÖZÜLDÜ (5 Ağu, prod ihale2):** Harcama sıralamasını zehirleyen ~505 Mr hayalet =
+  PARSE HATASI DEĞİL (bedel_parse doğru). İki kusur: (A) ÇERÇEVE/çok-lot total-kopyalama — EKAP firma toplamını her kısma
+  tekrar yazar, sum() N katı (Hakkari 2013/116533: 312 Mr→9,25 Mr); (B) tek-lot ~1000× şişme (~88 ihale/16 Mr, ham kaynak boş).
+  Ayrıca eski >50× filtresi yaklaşık-maliyet=1 placeholder MEŞRU sözleşmeleri (~5,6 Mr) yanlış dışlıyordu. ÇÖZÜM: (1) geri-alınabilir
+  ham temizlik `migration_bozuk_sozlesme_temizle.sql` (yedek `ihale_sonuclari_bozuk_yedek` 25.567 satır; Kural A bozuk-ihale-içi
+  (ikn,firma,bedel) dedup 25.479 satır, Kural B 88 satır NULL; sağlam ihaleler dokunulmadı). (2) idare_harcama_mv + idare_hiyerarsi_bedel_mv:
+  >50× filtre KALDIRILDI (ham temiz→düz toplam), `sozlesme_sayisi`=count(DISTINCT ikn) (lot değil ihale), DT ≤10 Mr guard.
+  (3) ekap_sonuc_backfill.py çerçeve-dedup guard (gelecek zehiri önler). DOĞRULAMA: grand 11,2→10,7 tn; Hakkari 312→9,46 Mr (top-4'ten düştü);
+  top idare TOKİ/Karayolları/DDY; top tender meşru tek-lot altyapı (ratio~0.9). Kod commit EDİLMEDİ.
 **✅ FAZ A.3 (CANLI 3 Ağu):** İdareler tablosu "Sözleşme" + "Toplam Harcama" kolonları + 💰 stat tile (compact ₺ paraKisa).
   Kolonlar/veri/render paralel oturumda eklendi; ben SIRA_ANAHTAR'a sozlesme+harcama ekleyip sortability bug'ını düzelttim
   (başlık tıklaması sıralama handler'ında erken dönüyordu, ok göstergesi boştu).
