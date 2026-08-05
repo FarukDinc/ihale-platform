@@ -294,3 +294,10 @@ docker exec -i supabase-db psql -U postgres -d postgres < /opt/ihale-platform/ba
 # dalgalanma) dokunulmaz (tutarlılık + AI maliyeti yok). firma_iletisim'e dokunmaz (web-grounding).
 echo "[$(date +'%Y-%m-%d %H:%M:%S')] === AI yorum tazeleme (kurum) ===" >> /opt/ihale-platform/logs/scraper.log
 $VENV/python ai_yorum_tazele.py >> /opt/ihale-platform/logs/scraper.log 2>&1
+
+# ── İKİ EVREN REGRESYON TESTİ — EN SONDA (tüm MV'ler tazelendikten sonra) ────────────
+# 19 invariant assertion (B1-B10 + güvenlik maske + harcama guard-asildi + no-regression).
+# Non-fatal (scraper'ı düşürmez); ayrı log. Gece bir dikiş-hatası geri gelirse "❌ FAIL"
+# + "OZET: ... kalan_FAIL=N" satırı log'a düşer. Elle: bash backend/iki_evren_test.sh
+echo "[$(date +'%Y-%m-%d %H:%M:%S')] === Iki Evren regresyon testi ===" >> /opt/ihale-platform/logs/iki_evren_test.log
+docker exec -i supabase-db psql -U postgres -d postgres < /opt/ihale-platform/backend/iki_evren_dogrulama.sql >> /opt/ihale-platform/logs/iki_evren_test.log 2>&1
