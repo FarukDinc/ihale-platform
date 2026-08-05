@@ -61,7 +61,6 @@
       <div class="v1-sekmeler">
         <button class="v1-sekme aktif" id="sekme-aktif">Aktif İhaleler</button>
         <button class="v1-sekme" id="sekme-sonuc">Sonuçlar</button>
-        <button class="v1-sekme" id="sekme-gecmis">Geçmiş</button>
         <button class="v1-sekme" id="sekme-dt">Doğrudan Teminler</button>
       </div>
 
@@ -208,7 +207,7 @@
   const _aktifZorla = P.get('aktif')==='1';   // idare drill-down'da bile YALNIZ aktif (kurumlar "Aktif İhale/DT" hücreleri)
   const _detsis = P.get('detsis') || '';      // kurum DETSİS drill-down → tüm isim varyantlarını kapsar (isim-ilike DEĞİL detsis_no eq)
   let sayfa=1, toplam=0,
-      sekme=['sonuc','gecmis','dt'].includes(_sekmeP)?_sekmeP:((P.get('tur')==='dt')?'dt':'aktif'),
+      sekme=(_sekmeP==='gecmis')?'sonuc':(['sonuc','dt'].includes(_sekmeP)?_sekmeP:((P.get('tur')==='dt')?'dt':'aktif')),   // I4: gecmis→sonuc (sekme kaldırıldı, eski link'ler çalışsın)
       sonucTip=(P.get('tip')==='dt')?'dt':'ihale',   // Sonuçlar/Geçmiş sekmelerinde İhale mi DT mi
       uyeMi=false, uid=null, sirala='son_teklif_tarihi', yon=true;
   let yukleIstek = 0;   // #15c: bayat async yukle cevabı taze olanı ezmesin (DT↔İhale tab yarışı)
@@ -381,13 +380,12 @@
       // gte NULL son_teklif'i eler → tarihsiz "—" kayıtlar Aktif'in başında görünmez.
       // İKN/ekap_id araması hariç: belirli kaydı her durumdan bulmak için filtre atlanır.
       if (!_iknArama) q=q.eq('durum','aktif').gte('son_teklif_tarihi', new Date().toISOString());
-    } else if (sekme==='gecmis') {
-      // Geçmiş = süresi geçmiş, SONUCU AÇIKLANMAMIŞ ihaleler = durum 'kapali' (~1,6M).
-      // ⛔ ESKİ HATA: yalnız 'aktif ama son_teklif geçmiş' (~271) alınıyordu → 1,6M kapalı ihale
-      //    hiçbir sekmede görünmüyordu. 'kapali' = teklif süresi bitmiş, EKAP'ta sonuç ilanı
-      //    yayımlanmamış (sonuclandi'ye geçmemiş) ihaleler. idx_ilanlar_durum_son_teklif ile uyumlu.
-      q=q.eq('durum','kapali');
-    } else q=q.eq('durum','sonuclandi');
+    } else {
+      // I4: "Geçmiş" sekmesi kaldırıldı → Sonuçlar = TÜM geçmiş ihaleler = sonuçlanmış
+      // (sonuclandi) + süresi geçmiş sonucu-açıklanmamış (kapali, ~1,6M). Perf test 50ms;
+      // idx_ilanlar_durum_son_teklif ile uyumlu. Böylece 1,6M kapalı ihale gizli kalmaz.
+      q=q.in('durum',['sonuclandi','kapali']);
+    }
     // ⛔ Düz `.ilike('baslik','%insaat%')` Türkçe İ/ı'da SESSİZCE 0 döner. Katlanmış
     //    `baslik_fold` kolonu misafire de AÇIK ve trgm indeksli (ölçüm: 0,18sn).
     // İKN / ekap_id ile arama: "2026/1224100", "ILN02520263", "DMO-17786" gibi kimlikler
@@ -802,7 +800,7 @@
       setVal('f-kelime',metin);
       araNotYaz(`<strong>${esc(metin)}</strong> başlıkta arandı — kapsam sekmeye göre değişir: `+
         `<strong>Aktif İhaleler</strong> yalnız teklif süresi açık olanları, `+
-        `<strong>Sonuçlar</strong> / <strong>Geçmiş</strong> ise geçmiş kayıtları gösterir.`);
+        `<strong>Sonuçlar</strong> ise tüm geçmiş/sonuçlanmış kayıtları gösterir.`);
     }
   }
 
@@ -836,7 +834,7 @@
     // sıralama ayarlar ve listeyi yükler. Hem sekme düğmeleri hem İhale/DT seçicisi buraya düşer.
     const kaynakKur=()=>{ sayfa=1;
       const dt=dtModu();
-      ['aktif','sonuc','gecmis','dt'].forEach(x=>document.getElementById('sekme-'+x).classList.toggle('aktif',sekme===x));
+      ['aktif','sonuc','dt'].forEach(x=>document.getElementById('sekme-'+x).classList.toggle('aktif',sekme===x));
       // İhale/DT seçicisi yalnız Sonuçlar ve Geçmiş sekmelerinde görünür
       const sec=document.getElementById('sonuc-tip-satir');
       if(sec) sec.style.display=(sekme==='sonuc'||sekme==='gecmis')?'':'none';
@@ -866,7 +864,6 @@
     const sekmeAyarla=(s)=>{ sekme=s; kaynakKur(); };
     document.getElementById('sekme-aktif').addEventListener('click',()=>sekmeAyarla('aktif'));
     document.getElementById('sekme-sonuc').addEventListener('click',()=>sekmeAyarla('sonuc'));
-    document.getElementById('sekme-gecmis').addEventListener('click',()=>sekmeAyarla('gecmis'));
     document.getElementById('sekme-dt').addEventListener('click',()=>sekmeAyarla('dt'));
     // İhale / Doğrudan Temin seçicisi (Sonuçlar & Geçmiş) → aynı sayfada kaynak değiştirir
     document.querySelectorAll('.v1-tip-btn').forEach(b=>b.addEventListener('click',()=>{
