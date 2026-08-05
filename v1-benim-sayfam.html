@@ -366,8 +366,8 @@
   // ── Takip Listem (3 kart) ──
   async function takipListem(){
     const el=document.getElementById('v1-takip');
-    const kart=(ikon,sayi,etiket)=>`<div class="v1-takip-kart"><span class="v1-takip-ikon">${ikon}</span>
-      <span><span class="v1-takip-sayi">${sayi}</span><span class="v1-takip-et">${etiket}</span></span></div>`;
+    const kart=(ikon,sayi,etiket,href)=>`<a class="v1-takip-kart" href="${href}" style="text-decoration:none;color:inherit;cursor:pointer;"><span class="v1-takip-ikon">${ikon}</span>
+      <span><span class="v1-takip-sayi">${sayi}</span><span class="v1-takip-et">${etiket}</span></span></a>`;
     let f=0,k=0,s=0;
     // Birincil kaynak: takip_ozet() — sayımı auth.uid() ile sunucuda yapar (tek gidiş-dönüş).
     try{
@@ -383,7 +383,7 @@
       }catch(_e){ return 0; } };
       [f,k,s]=await Promise.all([say('takip_firmalar'),say('takip_idareler'),say('takip_sektorler')]);
     }
-    el.innerHTML=kart(IK.firma,num(f),'Takip Ettiğim Firma')+kart(IK.idare,num(k),'Takip Ettiğim Kurum')+kart(IK.sektor,num(s),'Takip Ettiğim Sektör');
+    el.innerHTML=kart(IK.firma,num(f),'Takip Ettiğim Firma','v1-takipte')+kart(IK.idare,num(k),'Takip Ettiğim Kurum','v1-takipte')+kart(IK.sektor,num(s),'Takip Ettiğim Sektör','v1-takipte');
   }
 
   // ── "Sizin İçin" eşleşme (firmam_acik_ihaleler) ──

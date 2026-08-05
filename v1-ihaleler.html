@@ -205,6 +205,7 @@
   //    Btree ters taranır → ASC için NULLS FIRST şart. 'ASC NULLS LAST' istersek planner indeksi
   //    kullanamaz, 1,6M satır tarar (ölçüm: 7064ms → 0,79ms). Bu yüzden nullsFirst = ascending.
   const _sekmeP=P.get('sekme');
+  const _aktifZorla = P.get('aktif')==='1';   // idare drill-down'da bile YALNIZ aktif (kurumlar "Aktif İhale/DT" hücreleri)
   let sayfa=1, toplam=0,
       sekme=['sonuc','gecmis','dt'].includes(_sekmeP)?_sekmeP:((P.get('tur')==='dt')?'dt':'aktif'),
       sonucTip=(P.get('tip')==='dt')?'dt':'ihale',   // Sonuçlar/Geçmiş sekmelerinde İhale mi DT mi
@@ -338,7 +339,7 @@
       if (sekme==='sonuc')       d=d.in('durum',['Sonuç Duyurusu Yayımlanmış','Sonuç Bilgileri Gönderildi','Doğrudan Temin Sonuçlandırıldı']);
       else if (sekme==='gecmis') d=d.in('durum',['Teklifler Değerlendiriliyor','Doğrudan Temin Duyurusu Yayımlanmış']).lt('tarih', new Date().toISOString());
       // dt sekmesi: filtresiz → AÇIK DT; ama idare/kelime ile drill-down → TÜM durum (kurum 'DT Kayıtları' o idarenin hepsini görsün)
-      else if (!(uyeMi && val('f-idare')) && !val('f-kelime')) d=d.eq('durum','Doğrudan Temin Duyurusu Yayımlanmış').gte('tarih', new Date().toISOString());
+      else if (_aktifZorla || (!(uyeMi && val('f-idare')) && !val('f-kelime'))) d=d.eq('durum','Doğrudan Temin Duyurusu Yayımlanmış').gte('tarih', new Date().toISOString());
       const kw=val('f-kelime');
       if(kw){
         // DT numarası (ör. 25DT2095274) → dt_no TAM eşleşme (indeksli, ~1sn). Prefix ilike
@@ -371,7 +372,7 @@
       // sekmesinde aktif sonuç beklenir (26-4: kelime arayınca aktif-dışı 2021-23 dönüp sekmeyle çelişiyordu).
       const _kw = val('f-kelime');
       const _iknArama = _kw && uyeMi && /^\s*(\d{4}\/\d+|ILN\d+|DMO[-\d]+)\s*$/i.test(_kw);
-      if (!(uyeMi && val('f-idare')) && !_iknArama) q=q.eq('durum','aktif').gte('son_teklif_tarihi', new Date().toISOString());
+      if (_aktifZorla || (!(uyeMi && val('f-idare')) && !_iknArama)) q=q.eq('durum','aktif').gte('son_teklif_tarihi', new Date().toISOString());
     } else if (sekme==='gecmis') {
       // Geçmiş = süresi geçmiş, SONUCU AÇIKLANMAMIŞ ihaleler = durum 'kapali' (~1,6M).
       // ⛔ ESKİ HATA: yalnız 'aktif ama son_teklif geçmiş' (~271) alınıyordu → 1,6M kapalı ihale

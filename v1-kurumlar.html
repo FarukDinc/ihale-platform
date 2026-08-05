@@ -118,6 +118,9 @@
         #v1-tablo tbody tr:hover td { background:var(--v1-mavi-acik); }
         /* Toplam Harcama (7. kolon) marquee — biraz daha vurgulu */
         #v1-tablo td:nth-child(7) { font-size:13.5px; }
+        /* Tıklanabilir stat hücreleri → o kurumun filtreli listesi */
+        #v1-tablo a.v1-say-link { text-decoration:none; cursor:pointer; }
+        #v1-tablo a.v1-say-link:hover span { text-decoration:underline; text-underline-offset:2px; }
       </style>
       <div class="v1-kstat">
         <div class="v1-kstat-tile"><span class="v1-kstat-ikon">🏛️</span><div><div class="v1-kstat-sayi" id="kst-idare">—</div><div class="v1-kstat-et">Toplam İdare</div></div></div>
@@ -391,18 +394,21 @@
     tb.innerHTML=dilim.map((r,i)=>{
       const w=Math.max(3,Math.round((r.toplam||0)/max*100));
       const t=takipli.has(r.idare);
+      const iu=encodeURIComponent(r.idare);
+      // Stat hücresi → o kurumun filtreli listesi (v1-ihaleler). Yalnız değer>0'da link.
+      const L=(c,u,inner)=> c ? `<a class="v1-say-link" href="${u}">${inner}</a>` : inner;
       return `<tr>
         <td style="color:var(--v1-muted);font-weight:700;">${bas+i+1}</td>
-        <td><a class="v1-t-ad" href="v1-kurum-analiz?kurum=${encodeURIComponent(r.idare)}">${esc(r.idare)}</a></td>
+        <td><a class="v1-t-ad" href="v1-kurum-analiz?kurum=${iu}">${esc(r.idare)}</a></td>
         <td style="font-size:13px;">${esc(r.il||'—')}</td>
         <td><div style="display:flex;align-items:center;gap:10px;">
           <span class="v1-bar-wrap"><span class="v1-bar" style="width:${w}%"></span></span>
-          <span style="font-weight:700;color:var(--v1-lacivert);white-space:nowrap;">${num(r.toplam)}</span></div></td>
-        <td><span style="font-weight:700;color:var(--v1-teal);">${num(r.aktif)}</span></td>
-        <td><span style="font-weight:700;color:var(--v1-lacivert);">${num(r.sozlesme)}</span></td>
-        <td><span style="font-weight:800;color:var(--v1-mavi);white-space:nowrap;">${paraKisa(r.harcama)}</span></td>
-        <td><span style="font-weight:700;color:var(--v1-lacivert);">${num(r.dt_toplam)}</span></td>
-        <td><span style="font-weight:700;color:var(--v1-teal);">${num(r.dt_aktif)}</span></td>
+          ${L(r.toplam>0,`v1-ihaleler?idare=${iu}`,`<span style="font-weight:700;color:var(--v1-lacivert);white-space:nowrap;">${num(r.toplam)}</span>`)}</div></td>
+        <td>${L(r.aktif>0,`v1-ihaleler?idare=${iu}&aktif=1`,`<span style="font-weight:700;color:var(--v1-teal);">${num(r.aktif)}</span>`)}</td>
+        <td>${L(r.sozlesme>0,`v1-ihaleler?idare=${iu}&sekme=sonuc`,`<span style="font-weight:700;color:var(--v1-lacivert);">${num(r.sozlesme)}</span>`)}</td>
+        <td>${L(r.harcama>0,`v1-ihaleler?idare=${iu}&sekme=sonuc`,`<span style="font-weight:800;color:var(--v1-mavi);white-space:nowrap;">${paraKisa(r.harcama)}</span>`)}</td>
+        <td>${L(r.dt_toplam>0,`v1-ihaleler?idare=${iu}&tur=dt`,`<span style="font-weight:700;color:var(--v1-lacivert);">${num(r.dt_toplam)}</span>`)}</td>
+        <td>${L(r.dt_aktif>0,`v1-ihaleler?idare=${iu}&tur=dt&aktif=1`,`<span style="font-weight:700;color:var(--v1-teal);">${num(r.dt_aktif)}</span>`)}</td>
         <td style="text-align:right;">
           <button class="v1-tk" data-i="${esc(r.idare)}" style="background:${t?'var(--v1-mavi)':'#fff'};color:${t?'#fff':'var(--v1-mavi)'};
             border:1.5px solid var(--v1-mavi);border-radius:8px;padding:6px 12px;font-family:var(--v1-font);
