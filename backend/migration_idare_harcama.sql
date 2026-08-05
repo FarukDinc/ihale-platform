@@ -18,11 +18,11 @@
 
 BEGIN;
 
--- Tanım değişti (fiziksel-sanite filtresi) → IF NOT EXISTS yerine DROP+CREATE.
+-- Tanım değişti (KÖK temizlik sonrası: sayı=DISTINCT ikn + filtre kaldırıldı) → DROP+CREATE.
 DROP MATERIALIZED VIEW IF EXISTS public.idare_harcama_mv;
 CREATE MATERIALIZED VIEW public.idare_harcama_mv AS
 SELECT il.idare,
-       count(*)::bigint                          AS sozlesme_sayisi,
+       count(DISTINCT s.ikn)::bigint                AS sozlesme_sayisi,
        COALESCE(sum(s.sozlesme_bedeli), 0)::numeric AS toplam_harcama
 FROM public.ihale_sonuclari s
 JOIN (
@@ -33,12 +33,14 @@ JOIN (
   ORDER BY ikn
 ) il ON il.ikn = s.ikn
 WHERE s.sozlesme_bedeli > 0
-  -- FİZİKSEL SANİTE (5 Ağu): kazanan teklif, yaklaşık maliyetin 50 katından ÇOK olamaz. Eski
-  -- (2012-2013 ağırlıklı) veride kazanan_teklif/sozlesme_bedeli bozuk-şişmiş parse edilmiş
-  -- (13.977 lot / 936 ihale / ~505 Mr HAYALET harcama) → harcama sıralamasını zehirliyordu:
-  -- ör. Hakkari hastane birliği sahte 312 Mr (maliyeti 740 ₺ olan kısma 1,4 Mr "sözleşme").
-  -- Meşru dev ihaleler korunur (sözleşme ≈ maliyet, ratio ~1). Maliyeti bilinen imkansızları dışla.
-  AND NOT (s.yaklasik_maliyet > 0 AND s.sozlesme_bedeli > 50 * s.yaklasik_maliyet)
+  -- sozlesme_sayisi ARTIK LOT değil İHALE sayar (count DISTINCT ikn) — Hakkari 1726 lot değil
+  -- ~240 ihale; Kategoriler tablosuyla tutarlı.
+  --
+  -- FİZİKSEL-SANİTE FİLTRESİ KALDIRILDI (5 Ağu): eski >50× filtresi kaba bir yara bandıydı —
+  -- (a) çerçeve total-kopyalarını dışlarken meşru toplamı da kaybediyor, (b) yaklaşık maliyet=1
+  -- placeholder olan MEŞRU büyük sözleşmeleri (~5,6 Mr) yanlışlıkla dışlıyordu. KÖK çözüm artık
+  -- ham veride: migration_bozuk_sozlesme_temizle.sql çerçeve tekrarını ve ~1000× şişmeyi NULL'ladı,
+  -- gelecekte ekap_sonuc_backfill.py çerçeve-dedup guard'ı önlüyor. Ham temiz → düz toplam doğru.
 GROUP BY il.idare;
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_idare_harcama_mv_idare

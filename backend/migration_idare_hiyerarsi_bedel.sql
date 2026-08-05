@@ -49,9 +49,9 @@ dugum_ihale_bedel AS (
     FROM public.ihale_sonuclari s
     JOIN ikn_detsis id ON id.ikn = s.ikn
    WHERE s.sozlesme_bedeli > 0
-     -- FİZİKSEL SANİTE (5 Ağu): bozuk-şişmiş eski sözleşme bedellerini dışla — kazanan teklif
-     -- maliyetin 50 katından çok olamaz (2012-2013 parse hatası, ~505 Mr hayalet; bkz. migration_idare_harcama.sql).
-     AND NOT (s.yaklasik_maliyet > 0 AND s.sozlesme_bedeli > 50 * s.yaklasik_maliyet)
+     -- KÖK TEMİZLİK sonrası >50× filtresi KALDIRILDI: çerçeve total-kopya + ~1000× şişme artık
+     -- ham veride NULL'landı (migration_bozuk_sozlesme_temizle.sql) + backfill guard önlüyor.
+     -- Filtre yaklaşık-maliyet=1 placeholder meşru sözleşmeleri yanlış dışlıyordu. Düz toplam doğru.
    GROUP BY id.detsis_no
 ),
 dugum_dt_bedel AS (
@@ -62,6 +62,11 @@ dugum_dt_bedel AS (
    WHERE d.detsis_no IS NOT NULL
      AND ds.kazanan_bedel > 0
      AND (ds.para_birimi IS NULL OR ds.para_birimi IN ('TRY', ''))
+     -- DT SANİTE (5 Ağu): DT tek satır/dt_no (çerçeve tekrarı YOK) — dağılım büyük ölçüde temiz
+     -- (medyan ~30K). 1-10 Mr kuyruğu BELİRSİZ: İSPER/BELKA gibi belediye şirketi 22-i in-house
+     -- personel/hizmet DT'leri MEŞRU büyük olabilir → dokunma ("çöp sanıp silme" dersi). Yalnız
+     -- fiziksel-absürt tepe (>10 Mr, örn 14,7 Mr emlak-planlama "hizmet" DT'si) dışlanır.
+     AND ds.kazanan_bedel <= 10000000000
    GROUP BY d.detsis_no
 ),
 yuvarlanan AS (

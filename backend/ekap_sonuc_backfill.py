@@ -798,6 +798,33 @@ def sonuc_kayitlari_olustur(ilan: dict, detay: dict) -> list[dict]:
                          and html_yuklenici_anahtar == _anahtar(kazanan_firma or "")):
             kayit.update({k: v for k, v in sozlesme_duzeyi.items() if v is not None})
         kayitlar.append(kayit)
+
+    # ── ÇERÇEVE / total-kopyalama GUARD'ı (5 Ağu 2026) ──────────────────────────
+    # KÖK NEDEN: Bir PARSE hatası DEĞİL — bedel_parse doğru. ÇERÇEVE ANLAŞMA ve bazı çok-kısımlı
+    # ihalelerde EKAP, bir firmanın SÖZLEŞME TOPLAMINI kazandığı HER kısma tekrar yazar
+    # (sozlesmeBedeliDegeri aynı), yaklaşık maliyet ise kısım-bazlıdır. Her lot ayrı satır olarak
+    # yazıldığından harcama MV'leri sum(sozlesme_bedeli) yapınca toplamı N katına çıkarır
+    # (~505 Mr hayalet; örn 2013/116533: 312 Mr sahte). Tarihsel veri temizlendi
+    # (migration_bozuk_sozlesme_temizle.sql) — bu guard GELECEKTE aynı zehirlenmeyi önler:
+    # tender içinde aynı (firma, sözleşme bedeli) tekrar ederse İLK kısımda tutulur, kalan
+    # kısımlarda sözleşme/kazanan değeri NULL'lanır (per-lot yaklaşık maliyet, teklif, tarih KALIR).
+    # Meşru çok-lot (her lot FARKLI bedel) etkilenmez; firma iki lotu tıpatıp aynı fiyata
+    # kazanmışsa (tekilleştirilemez ve zaten dup gibi görünür) bir kez sayılır — kabul edilebilir.
+    if len(kayitlar) > 1:
+        gorulen = set()
+        for kayit in kayitlar:
+            bedel = kayit.get("sozlesme_bedeli")
+            if bedel is None:
+                continue
+            anahtar = (_anahtar(kayit.get("kazanan_firma") or ""), bedel)
+            if anahtar in gorulen:
+                # tekrarlanan çerçeve toplamı — bu kısımda değer taşıma
+                kayit["sozlesme_bedeli"] = None
+                kayit["kazanan_teklif"] = None
+                kayit["tenzilat_yuzde"] = None
+                kayit["kazanan_teklif_farki_yuzde"] = None
+            else:
+                gorulen.add(anahtar)
     return kayitlar
 
 
