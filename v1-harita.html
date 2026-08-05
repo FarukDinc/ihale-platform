@@ -135,6 +135,11 @@
               <button data-k="rfq">🛒 Açık Talepler</button>
             </div>
             <span style="flex:1;"></span>
+            <!-- İki Evren: sektör yoğunluğunu İhale mi DT mi kazananlara göre boya (yalnız sektör seçiliyken) -->
+            <span class="v1-katman" id="h-smod" style="display:none;margin-right:8px;" title="Sektör yoğunluğu: İhale mi Doğrudan Temin mi">
+              <button type="button" data-sm="ihale" class="aktif">📋 İhale</button>
+              <button type="button" data-sm="dt">⚡ DT</button>
+            </span>
             <select class="v1-sec" id="h-sektor" title="Sektöre göre boya"><option value="">🏭 Tüm Sektörler</option></select>
           </div>
           <div id="h-harita" class="v1-bos">Harita yükleniyor…</div>
@@ -215,7 +220,10 @@
   // #h-rfqlar düğümü olduğu için A'nın talepleri B'nin paneline yazılıyordu.
   let panelNesil=0;
   let sektorSecili=null;   // kanonik kategori kodu (js/kategoriler.js) ya da null
-  let sektorVeri=null;     // kategori -> ilKey -> {firma, soz, bedel}
+  let sektorVeri=null;     // aktif moddaki: kategori -> ilKey -> {firma, soz, bedel}
+  // İki Evren: sektör yoğunluğu İhale (il_sektor_ozet) veya DT (il_sektor_ozet_dt) — AYRI evren, toggle'la.
+  let sektorMod='ihale';
+  const sektorVeriBellek={};   // mod -> veri (İhale/DT arası geçişte yeniden çekmeyi önle)
   let kovalar=[];          // [{alt, ust, renk}] — veriden (quantile) hesaplanır
   let toplamFirma=0, sektorTopF=0, sektorTopSoz=0, sektorTopBedel=0;
 
@@ -678,16 +686,18 @@
   // tekrar çekmek /rest/v1 2 istek/sn limitini yer → sessionStorage'da 6 saat önbellek.
   const ONBELLEK='v1_harita_sektor_v1', ONBELLEK_SURE=6*3600e3;
   async function sektorVeriYukle(){
-    if(sektorVeri) return true;
+    if(sektorVeriBellek[sektorMod]){ sektorVeri=sektorVeriBellek[sektorMod]; return true; }
+    const rpc = sektorMod==='dt' ? 'il_sektor_ozet_dt' : 'il_sektor_ozet';
+    const cacheKey = ONBELLEK+'_'+sektorMod;   // İhale/DT ayrı önbellek
     try{
-      const c=JSON.parse(sessionStorage.getItem(ONBELLEK)||'null');
-      if(c && c.t && (Date.now()-c.t)<ONBELLEK_SURE && c.v){ sektorVeri=c.v; return true; }
+      const c=JSON.parse(sessionStorage.getItem(cacheKey)||'null');
+      if(c && c.t && (Date.now()-c.t)<ONBELLEK_SURE && c.v){ sektorVeriBellek[sektorMod]=c.v; sektorVeri=c.v; return true; }
     }catch(_){}
     const sel=document.getElementById('h-sektor');
     sel.disabled=true;
     document.getElementById('h-lejant').innerHTML='<span class="lj-baslik">Sektör verisi hesaplanıyor…</span>';
     try{
-      const {data,error}=await sb.rpc('il_sektor_ozet');
+      const {data,error}=await sb.rpc(rpc);
       if(error) throw error;
       const v={};
       (data||[]).forEach(r=>{
@@ -698,11 +708,11 @@
         e.soz  +=Number(r.sozlesme_adet)||0;
         e.bedel+=Number(r.toplam_bedel)||0;
       });
-      sektorVeri=v;
-      try{ sessionStorage.setItem(ONBELLEK, JSON.stringify({t:Date.now(), v})); }catch(_){}  // kota hatası sayfayı düşürmesin
+      sektorVeriBellek[sektorMod]=v; sektorVeri=v;
+      try{ sessionStorage.setItem(cacheKey, JSON.stringify({t:Date.now(), v})); }catch(_){}  // kota hatası sayfayı düşürmesin
       return true;
     }catch(e){
-      console.error('il_sektor_ozet', e);
+      console.error(rpc, e);
       return false;
     }finally{ sel.disabled=false; }
   }
@@ -732,6 +742,8 @@
   async function sektorSec(kod){
     const istek=++sektorIstek;
     sektorSecili=kod||null;
+    // İhale/DT sektör toggle'ı yalnız bir sektör seçiliyken anlamlı → göster/gizle
+    { const sm=document.getElementById('h-smod'); if(sm) sm.style.display = sektorSecili ? 'inline-flex' : 'none'; }
     // 26-31: sektör değişince üst KPI'lar bayat kalmasın → fetch öncesi '…' (kpiCiz sonra doldurur)
     ['k-firma','k-yogun','k-rfq','k-il'].forEach(i=>{const e=document.getElementById(i); if(e)e.textContent='…';});
     urlYaz();
@@ -773,8 +785,21 @@
     KAT.forEach(k=>{ const o=document.createElement('option');
       o.value=k.kod; o.textContent=`${k.emoji||'🏭'} ${k.kod}`; sk.appendChild(o); });
     sk.addEventListener('change',()=>sektorSec(sk.value));
-    document.querySelectorAll('.v1-katman button').forEach(b=>
+    document.querySelectorAll('.v1-katman button[data-k]').forEach(b=>
       b.addEventListener('click',()=>katmanSec(b.dataset.k)));
+
+    // İki Evren: sektör yoğunluğu İhale/DT toggle (il_sektor_ozet ↔ il_sektor_ozet_dt).
+    // Yalnız sektör katmanı boyamasını etkiler; il-panelinin kendi firmaMod'u AYRI kalır.
+    const smodEl=document.getElementById('h-smod');
+    function sektorModIsaretle(){ smodEl.querySelectorAll('button').forEach(b=>b.classList.toggle('aktif', b.dataset.sm===sektorMod)); }
+    smodEl.querySelectorAll('button').forEach(b=>b.addEventListener('click',async()=>{
+      if(sektorMod===b.dataset.sm) return;
+      sektorMod=b.dataset.sm; sektorModIsaretle();
+      if(sektorSecili){
+        const ok=await sektorVeriYukle();
+        if(ok){ boya(); kpiCiz(); if(seciliKey) ilSec(seciliKey); else panelVarsayilan(); }
+      }
+    }));
 
     if(!svgKur()) return;
 
