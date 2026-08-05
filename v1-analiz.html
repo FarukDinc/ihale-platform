@@ -143,16 +143,26 @@
   }
   async function ara(q){
     const liste=document.getElementById('v1-ac-liste');
-    let {data}=await sb.from('yukleniciler').select('id,ad,il,toplam_sozlesme_sayisi,toplam_ciro')
-      .ilike('arama_fold','%'+trFold(q)+'%').order('toplam_ciro',{ascending:false,nullsFirst:false}).limit(8);
-    if(!data||!data.length){ liste.className='v1-ac-liste'; liste.innerHTML='<div style="padding:12px 14px;color:var(--v1-muted);font-size:13px;">Firma bulunamadı</div>'; return; }
+    // İhale kazananları (yukleniciler) + DT kazananları (firma_dt_ara) PARALEL — DT-only firmalar da çıksın
+    const [ihR,dtR]=await Promise.all([
+      sb.from('yukleniciler').select('id,ad,il,toplam_sozlesme_sayisi,toplam_ciro')
+        .ilike('arama_fold','%'+trFold(q)+'%').order('toplam_ciro',{ascending:false,nullsFirst:false}).limit(6),
+      sb.rpc('firma_dt_ara',{p_q:q,p_limit:6})
+    ]);
+    const ih=(ihR.data||[]).map(f=>({tip:'ihale',id:f.id,ad:f.ad,il:f.il,sozlesme:f.toplam_sozlesme_sayisi,ciro:f.toplam_ciro}));
+    const dt=(dtR.data||[]).map(f=>({tip:'dt',ad:f.ad,il:'',sozlesme:f.dt_sozlesme,ciro:f.dt_bedel}));
+    const data=[...ih,...dt];
+    if(!data.length){ liste.className='v1-ac-liste'; liste.innerHTML='<div style="padding:12px 14px;color:var(--v1-muted);font-size:13px;">Firma bulunamadı</div>'; return; }
     liste.className='v1-ac-liste';
-    liste.innerHTML=data.map(f=>`<button class="v1-ac-item" data-id="${f.id}">
-      <span class="v1-ac-ad">${esc(f.ad)}</span>
-      <span class="v1-ac-meta">${esc(f.il||'—')} · ${num(f.toplam_sozlesme_sayisi)} sözleşme · ${tl(f.toplam_ciro)}</span></button>`).join('');
+    liste.innerHTML=data.map((f,i)=>`<button class="v1-ac-item" data-i="${i}">
+      <span class="v1-ac-ad">${esc(f.ad)}${f.tip==='dt'?' <span style="font-size:10px;font-weight:800;color:var(--v1-teal);background:#E6F7F1;padding:1px 6px;border-radius:5px;">⚡ DT</span>':''}</span>
+      <span class="v1-ac-meta">${esc(f.il||'—')} · ${num(f.sozlesme)} sözleşme · ${tl(f.ciro)}</span></button>`).join('');
     liste.querySelectorAll('.v1-ac-item').forEach(b=>b.addEventListener('click',async()=>{
+      const f=data[+b.dataset.i];
       el().innerHTML='<div class="v1-bos">Firmanız kaydediliyor…</div>';
-      const {error}=await sb.rpc('firmami_belirle',{p_yuklenici_id:b.dataset.id});
+      const {error}= f.tip==='dt'
+        ? await sb.rpc('firmami_belirle_dt',{p_firma_ad:f.ad})
+        : await sb.rpc('firmami_belirle',{p_yuklenici_id:f.id});
       if(error){ el().innerHTML='<div class="v1-bos" style="color:var(--v1-kirmizi);">Kaydedilemedi.</div>'; setTimeout(renderOnboarding,1600); return; }
       baslat();
     }));
@@ -163,12 +173,12 @@
     el().innerHTML=`
       <div class="v1-firma-bant">
         <div class="v1-firma-ikon">${IKON_FIRMA}</div>
-        <div class="v1-firma-adi">${esc(f.ad||'Firmam')}</div>
+        <div class="v1-firma-adi">${esc(f.ad||'Firmam')}${f.dt_mi?' <span style="font-size:11px;font-weight:800;color:var(--v1-teal);background:#E6F7F1;padding:2px 8px;border-radius:6px;vertical-align:middle;white-space:nowrap;">⚡ Doğrudan Temin firması</span>':''}</div>
         <button class="v1-degistir" id="v1-degistir">Firmayı değiştir</button>
       </div>
 
       <div class="v1-serit">
-        <div class="v1-serit-t">Firmanın Tüm Zamanlarda Gerçekleşen Sözleşme Verileri</div>
+        <div class="v1-serit-t">${f.dt_mi?'Firmanın Doğrudan Temin Sözleşme Verileri':'Firmanın Tüm Zamanlarda Gerçekleşen Sözleşme Verileri'}</div>
         <div style="font-size:13px;color:var(--v1-muted);">${esc(f.il||'')}</div>
       </div>
 
@@ -217,12 +227,29 @@
     document.getElementById('v1-degistir').addEventListener('click',async()=>{
       await sb.rpc('firmami_belirle',{p_yuklenici_id:null}); renderOnboarding();
     });
-    kirilimler(f.ad); eslesmeYukle();
+    kirilimler(f); eslesmeYukle();
   }
 
   // Kırılımlar: analiz_pivot (kategori + il) — ⚠️ ağır olabilir, ayrı ayrı ve hataya dayanıklı
-  async function kirilimler(firmaAd){
+  async function kirilimler(f){
+    const firmaAd=(f&&f.ad)||'';
     if(!firmaAd) return;
+    // DT-only firma: ihale-tabanlı analiz_pivot boş döner → firma_dt_kirilim (sektör/il/kurum)
+    if(f&&f.dt_mi){
+      try{
+        const {data}=await sb.rpc('firma_dt_kirilim',{p_firma_ad:firmaAd});
+        const sek=data&&data.sektor;
+        document.getElementById('v1-sektor').textContent=sek?sek.ad:'—';
+        document.getElementById('v1-sektor-alt').textContent=sek?`${num(sek.sayi)} iş`:'';
+        const iller=(data&&data.iller)||[];
+        document.getElementById('v1-top-il').textContent=(iller[0]&&iller[0].il)||'—';
+        document.getElementById('v1-il-say').textContent=num(iller.length);
+        document.getElementById('v1-tenzilat').textContent='—';   // DT'de tenzilat yok
+        document.getElementById('v1-kurum-say').textContent=num((data&&data.kurum_sayisi)||0);
+        haritaCiz(iller.map(x=>({grup_deger:x.il, ihale_sayisi:x.sayi})));
+      }catch(_){ ['v1-sektor','v1-top-il','v1-il-say','v1-tenzilat','v1-kurum-say'].forEach(i=>{const e=document.getElementById(i);if(e)e.textContent='—';}); haritaCiz([]); }
+      return;
+    }
     // Sektör
     try{
       const {data}=await sb.rpc('analiz_pivot',{p_grup:'kategori',p_firma:firmaAd});
@@ -291,7 +318,7 @@
     try{
       const {data,error}=await sb.rpc('firmam_getir');
       if(error) throw error;
-      if(data && data.firma_id) renderPanel(data); else renderOnboarding();
+      if(data && (data.firma_id || data.dt_mi)) renderPanel(data); else renderOnboarding();
     }catch(_){ renderOnboarding(); }
   }
 
