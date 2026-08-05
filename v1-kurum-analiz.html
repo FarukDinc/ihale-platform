@@ -183,11 +183,13 @@
       padding:8px 14px 8px calc(14px + var(--derin, 0) * 22px);
       border-bottom:1px solid var(--v1-cizgi); transition:background .12s; }
     .ag-satir:hover { background:#F8FBFF; }
-    .ag-ok { width:22px; height:22px; flex-shrink:0; background:none; border:none; color:var(--v1-muted);
-      cursor:pointer; font-size:11px; border-radius:4px; transition:transform .15s, color .15s; font-family:var(--v1-font); }
-    .ag-ok:hover { color:var(--v1-mavi); }
+    .ag-ok { width:30px; height:30px; flex-shrink:0; background:none; border:1px solid transparent; color:var(--v1-mavi);
+      cursor:pointer; font-size:18px; font-weight:800; border-radius:7px; transition:transform .15s, color .15s, background .15s; font-family:var(--v1-font); }
+    .ag-ok:hover { color:var(--v1-mavi); background:var(--v1-mavi-acik); border-color:#CFE2F5; }
     .ag-ok.acik { transform:rotate(90deg); }
     .ag-ok.yok { visibility:hidden; cursor:default; }
+    .ag-ad { cursor:pointer; }
+    .ag-ad:hover { color:var(--v1-mavi); text-decoration:underline; }
     .ag-ad { font-size:13px; font-weight:700; color:var(--v1-lacivert); cursor:pointer; overflow:hidden;
       text-overflow:ellipsis; white-space:nowrap; min-width:0; flex:1; }
     .ag-ad:hover { color:var(--v1-mavi); }
@@ -1710,10 +1712,10 @@
   // Düğüm satırı: kendi/toplam sayılar AYRI (ihale 📋, DT ⚡) + tüm kayıtlar içindeki pay
   function dugumHtml(d, derin) {
     const acilir = Number(d.cocuk_sayisi) > 0;
-    return `<div class="ag-dugum" data-detsis="${esc(d.detsis_no)}" data-derin="${derin}">
+    return `<div class="ag-dugum" data-detsis="${esc(d.detsis_no)}" data-derin="${derin}" data-ad="${esc(d.ad)}">
       <div class="ag-satir" style="--derin:${derin}">
-        <button class="ag-ok ${acilir ? '' : 'yok'}" title="${acilir ? sayi(d.cocuk_sayisi) + ' alt birim' : ''}">▸</button>
-        <span class="ag-ad" title="${esc(d.ad)}">${esc(d.ad)}${acilir ? ` <span class="adet">(${sayi(d.cocuk_sayisi)})</span>` : ''}</span>
+        <button class="ag-ok ${acilir ? '' : 'yok'}" title="${acilir ? sayi(d.cocuk_sayisi) + ' alt birim — aç/kapat' : ''}">▸</button>
+        <span class="ag-ad" title="${esc(d.ad)} — analize git">${esc(d.ad)}${acilir ? ` <span class="adet">(${sayi(d.cocuk_sayisi)})</span>` : ''}</span>
         <span class="ag-rozet ${Number(d.toplam_ihale) ? 'ihale' : 'bos'}" title="İhale — kendi: ${sayi(d.kendi_ihale)}, dal toplamı (kendisi + tüm alt birimler): ${sayi(d.toplam_ihale)}">📋 ${sayi(d.kendi_ihale)} / ${sayi(d.toplam_ihale)}</span>
         <span class="ag-rozet ${Number(d.toplam_dt) ? 'dt' : 'bos'}" title="Doğrudan temin — kendi: ${sayi(d.kendi_dt)}, dal toplamı: ${sayi(d.toplam_dt)}">⚡ ${sayi(d.kendi_dt)} / ${sayi(d.toplam_dt)}</span>
         <span class="ag-pay" title="Tüm ihale kayıtları içindeki pay">${payYuzde(Number(d.toplam_ihale), agTumIhale)}</span>
@@ -1767,7 +1769,9 @@
     }
     const analiz = e.target.closest('.ag-bagsiz-analiz');
     if (analiz) { kurumAc(analiz.dataset.ad); return; }
-    if (e.target.closest('.ag-ok') || e.target.closest('.ag-ad')) dugumAcKapa(dugum);
+    // T1: OK (►) → dalı aç/kapat (alt kurumlar); AD → idarenin analiz sayfasına git.
+    if (e.target.closest('.ag-ok')) { dugumAcKapa(dugum); return; }
+    if (e.target.closest('.ag-ad')) { kurumAc(dugum.dataset.ad, dugum.dataset.detsis); return; }
   }
 
   // Tembel dal açılımı: çocuklar İLK açılışta RPC ile gelir, sonrası DOM'da kalır
