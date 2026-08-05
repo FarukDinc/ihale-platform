@@ -47,11 +47,12 @@
           <table class="v1-tablo" id="v1-tablo">
             <thead><tr>
               <th style="width:44px;">#</th><th>Sektör</th>
-              <th style="width:210px;">Toplam İhale</th>
-              <th style="width:110px;">Açık İhale</th>
+              <th style="width:200px;">Toplam İhale</th>
+              <th style="width:100px;">Açık İhale</th>
+              <th style="width:130px;">Doğrudan Temin</th>
               <th style="width:120px;"></th>
             </tr></thead>
-            <tbody id="v1-tbody"><tr><td colspan="5" class="v1-bos">Yükleniyor…</td></tr></tbody>
+            <tbody id="v1-tbody"><tr><td colspan="6" class="v1-bos">Yükleniyor…</td></tr></tbody>
           </table>
         </div>
       </div>
@@ -84,13 +85,19 @@
   async function yukle(){
     const tb=document.getElementById('v1-tbody');
     try{
-      const {data,error}=await sb.rpc('kategori_sayim');
-      if(error) throw error;
-      tumu=(data||[]).filter(r=>r&&r.kategori).sort((a,b)=>(b.toplam||0)-(a.toplam||0));
+      // İki Evren: ihale (kategori_sayim) + DT (kategori_sayim_dt) AYRI çekilir, kategori
+      // anahtarında birleştirilir — sayımlar TOPLANMAZ, ayrı kolonda gösterilir. DT ek/opsiyonel:
+      // düşerse ihale listesi yine dolar (dt_toplam=0).
+      const [ih,dt]=await Promise.all([ sb.rpc('kategori_sayim'), sb.rpc('kategori_sayim_dt') ]);
+      if(ih.error) throw ih.error;
+      const m=new Map();
+      (ih.data||[]).forEach(r=>{ if(r&&r.kategori) m.set(r.kategori,{kategori:r.kategori,toplam:Number(r.toplam)||0,aktif:Number(r.aktif)||0,dt_toplam:0}); });
+      (dt.data||[]).forEach(r=>{ if(!r||!r.kategori) return; const o=m.get(r.kategori)||{kategori:r.kategori,toplam:0,aktif:0,dt_toplam:0}; o.dt_toplam=Number(r.toplam)||0; m.set(r.kategori,o); });
+      tumu=[...m.values()].sort((a,b)=>(b.toplam||0)-(a.toplam||0));
       await takipYukle();
       ciz();
     }catch(e){ console.warn('kategori_sayim:',(e&&(e.message||e.hint))||e);
-      tb.innerHTML=`<tr><td colspan="5" class="v1-bos">Liste yüklenemedi.</td></tr>`; }
+      tb.innerHTML=`<tr><td colspan="6" class="v1-bos">Liste yüklenemedi.</td></tr>`; }
   }
 
   function ciz(){
@@ -109,7 +116,7 @@
         : (kilit ? 'Sektör takibi üyelere özeldir. <a href="login?donus='+encodeURIComponent(location.pathname+location.search)+'" style="color:var(--v1-mavi);font-weight:700;">Giriş yapın</a>.'
         : (takipHata ? 'Takip listeniz okunamadı — sayfayı yenileyin.'   // boş listeyi "takip yok" diye gösterme
                   : (q ? 'Sonuç bulunamadı.' : 'Henüz sektör takip etmiyorsunuz.')));
-      tb.innerHTML=`<tr><td colspan="5" class="v1-bos">${bos}</td></tr>`; return;
+      tb.innerHTML=`<tr><td colspan="6" class="v1-bos">${bos}</td></tr>`; return;
     }
     const max=Math.max(1,...liste.map(r=>r.toplam||0));
     tb.innerHTML=liste.map((r,i)=>{
@@ -122,6 +129,7 @@
           <span class="v1-bar-wrap"><span class="v1-bar" style="width:${w}%"></span></span>
           <span style="font-weight:700;color:var(--v1-lacivert);white-space:nowrap;">${num(r.toplam)}</span></div></td>
         <td><span style="font-weight:700;color:var(--v1-teal);">${num(r.aktif)}</span></td>
+        <td><span style="font-weight:700;color:#A96A00;" title="Doğrudan temin kayıtları (ayrı evren — ihaleyle toplanmaz)">${num(r.dt_toplam||0)}</span></td>
         <td style="text-align:right;">
           <button class="v1-takip-btn" data-i="${i}" style="background:${takipli?'var(--v1-mavi)':'#fff'};
             color:${takipli?'#fff':'var(--v1-mavi)'};border:1.5px solid var(--v1-mavi);border-radius:8px;padding:6px 12px;
