@@ -82,11 +82,11 @@ LANGUAGE sql STABLE AS $$
       (SELECT array_agg(k) FROM (
          SELECT di.kategori k FROM public.dogrudan_temin_sonuclari s
            JOIN public.dogrudan_temin_ilanlari di ON di.dt_no = s.dt_no
-          WHERE s.kazanan_firma = p_firma_ad AND di.kategori IS NOT NULL
+          WHERE public.normalize_firma(s.kazanan_firma) = public.normalize_firma(p_firma_ad) AND di.kategori IS NOT NULL
           GROUP BY di.kategori ORDER BY count(*) DESC LIMIT 5) t)          AS kategoriler,
       (SELECT array_agg(DISTINCT di.il) FROM public.dogrudan_temin_sonuclari s
          JOIN public.dogrudan_temin_ilanlari di ON di.dt_no = s.dt_no
-        WHERE s.kazanan_firma = p_firma_ad AND di.il IS NOT NULL)          AS iller
+        WHERE public.normalize_firma(s.kazanan_firma) = public.normalize_firma(p_firma_ad) AND di.il IS NOT NULL)          AS iller
   )
   SELECT i.id, i.baslik, i.idare, i.il, i.kategori,
          i.yaklasik_maliyet_min::numeric, i.yaklasik_maliyet_max::numeric, i.tahmini_bedel::numeric,

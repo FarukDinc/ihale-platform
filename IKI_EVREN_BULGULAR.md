@@ -20,7 +20,7 @@
 | B6 | `v1-harita.html:690,787` | tek-evren | harita+firma yoğunluğu yalnız İhale; `il_sektor_ozet_dt` çağrılmıyor | v1-firma-analiz İhale/DT toggle desenini kopyala | ~1g |
 | B7 | `v1-sektorler.html:87` | tek-evren | `kategori_sayim` yalnız İhale; DT sektör yok | `kategori_sayim_dt` ekle, İhale/DT ayrı kolon | ~0.5g |
 | B8 | `migration_uygun_firmalar_v3_3.sql:67` | isim-anahtar | `GROUP BY kazanan_firma` (ad) → firma ikiye bölünür | `GROUP BY normalize_firma(...)` | ~2s |
-| B9 | `migration_firmam_dt_destek.sql:85` (firma_dt_icin_acik_ihaleler) | isim-anahtar | DT firma profili `kazanan_firma=ad` → varyat kaçar | `normalize_firma(...)=normalize_firma(...)` (indeks var) | ~1s |
+| ✅ B9 | `migration_firmam_dt_destek.sql:85` (firma_dt_icin_acik_ihaleler) | isim-anahtar | DT firma profili `kazanan_firma=ad` → varyat kaçar | ✅ `normalize_firma(...)` (5 Ağu; idx_dt_sonuc_firma_norm) | ~1s |
 | B10 | `migration_kurum_dt_ozet.sql:68` | isim-anahtar | top-12 kazanan `GROUP BY kazanan_firma` (ad) | `GROUP BY normalize_firma` | ~1s |
 
 ## Spekülatif / düşük (muhtemelen bilinçli)
