@@ -106,19 +106,29 @@ def checkpoint_yaz(sayfa: int):
         json.dump({"son_sayfa": sayfa}, f)
 
 
-def enum_haritalari(havuz) -> dict:
-    """EKAP'ın dtEnum'undan tür/durum/il kod->etiket haritalarını çeker."""
-    with havuz.istek() as ist:
-        r = ist.client.get(ARAMA_ENDPOINT, params={"ES": "", "ihaleidListesi": "", "metot": "dtEnum"},
-                           headers=BASE_HEADERS, timeout=30.0)
-        ist.yanit(r)   # yalnız gerçek blok kodları cezalandırır
-        r.raise_for_status()
-        veri = r.json()
-    return {
-        "tur": {e["A"]: e["D"] for e in veri.get("enumDtTipleri", [])},
-        "durum": {e["A"]: e["D"] for e in veri.get("enumDtDurumlari", [])},
-        "il": {e["A"]: e["D"] for e in veri.get("enumDtIller", [])},
-    }
+def enum_haritalari(havuz, deneme: int = 4) -> dict:
+    """EKAP'ın dtEnum'undan tür/durum/il kod->etiket haritalarını çeker.
+    Proxy 572 / timeout gibi GEÇİCİ hatalarda başka IP ile tekrar dener — tek bir
+    enum hatası tüm süreci (paralel backfill'de bir AYI) düşürmesin. (Eskiden try
+    yoktu → enum'da 572 ProxyError = slice exit-1, o ay atlanıyordu.)"""
+    for i in range(deneme):
+        try:
+            with havuz.istek() as ist:
+                r = ist.client.get(ARAMA_ENDPOINT, params={"ES": "", "ihaleidListesi": "", "metot": "dtEnum"},
+                                   headers=BASE_HEADERS, timeout=30.0)
+                ist.yanit(r)   # yalnız gerçek blok kodları cezalandırır
+                r.raise_for_status()
+                veri = r.json()
+            return {
+                "tur": {e["A"]: e["D"] for e in veri.get("enumDtTipleri", [])},
+                "durum": {e["A"]: e["D"] for e in veri.get("enumDtDurumlari", [])},
+                "il": {e["A"]: e["D"] for e in veri.get("enumDtIller", [])},
+            }
+        except (httpx.TimeoutException, httpx.HTTPStatusError, httpx.TransportError, json.JSONDecodeError) as e:
+            if i == deneme - 1:
+                raise
+            print(f"    ⚠ enum haritaları isteği başarısız ({e}), tekrar deneniyor ({i+1}/{deneme})...")
+            time.sleep(2 * (i + 1))
 
 
 def tarih_parse(s: str | None):
@@ -162,7 +172,9 @@ def sayfa_cek(havuz, sayfa: int, deneme: int = 3, bas: str | None = None, bit: s
                 ist.yanit(r)   # yalnız 403/407/429/5xx cezalandırır (404 uygulama yanıtı)
                 r.raise_for_status()
                 return r.json().get("yeniDogrudanTeminAramaResultList", []) or []
-        except (httpx.TimeoutException, httpx.HTTPStatusError, json.JSONDecodeError) as e:
+        except (httpx.TimeoutException, httpx.HTTPStatusError, httpx.TransportError, json.JSONDecodeError) as e:
+            # TransportError: proxy 572 / bağlantı reset gibi geçici hatalar → anında BAŞKA IP ile tekrar
+            #   (eskiden yalnız ana döngü yakalıyordu → 60s bekleyip AYNI sayfayı yeniden istiyordu).
             # json.JSONDecodeError: EKAP bazen 200 ile HTML bakım/hata sayfası döner (JSON değil) → retry
             if i == deneme - 1:
                 raise
