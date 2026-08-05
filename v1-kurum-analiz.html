@@ -752,16 +752,20 @@
     const bas = (sayfa - 1) * PER_PAGE;
     const kap = el('liste-kap');
     kap.innerHTML = '<div class="v1-bos">Yükleniyor…</div>';
+    // İhale Listesi = YALNIZ GÜNCEL (aktif/açık) DT: duyurusu yayımlanmış + tarihi gelmemiş.
+    // Tarihi geçenler otomatik "Sonuçlar & Sözleşmeler"e düşer (orada gösterilir).
     const { data: dilim, error } = await sb.from('dogrudan_temin_ilanlari')
       .select('dt_no,baslik,il,tur,kategori,durum,tarih')
       .filter(KURUM_DETSIS ? 'detsis_no' : 'idare', KURUM_DETSIS ? 'eq' : 'ilike', KURUM_DETSIS || `%${KURUM}%`)
+      .eq('durum', 'Doğrudan Temin Duyurusu Yayımlanmış')
+      .gte('tarih', new Date().toISOString())
       .order('tarih', { ascending: false, nullsFirst: false })
       .range(bas, bas + PER_PAGE);   // PER_PAGE+1: sonraki sayfa var mı
     if (istek !== listeIstek) return;
     if (error || !dilim || !dilim.length) {
       kap.innerHTML = error
         ? (kilitliMi(error) ? kilitHtml('Doğrudan temin listesi üyelere özel', 'Bu idarenin DT kayıtlarını görmek için giriş yapın.') : '<div class="v1-bos">Doğrudan temin listesi yüklenemedi.</div>')
-        : '<div class="v1-bos">Bu kuruma ait doğrudan temin bulunamadı.</div>';
+        : '<div class="v1-bos">Şu an <strong>açık/güncel</strong> doğrudan temin yok. Tamamlananlar <strong>“Sonuçlar &amp; Sözleşmeler”</strong> sekmesinde.</div>';
       el('pager').style.display = 'none';
       return;
     }
@@ -818,9 +822,12 @@
     const kap = el('liste-kap');
     kap.innerHTML = '<div class="v1-bos">Yükleniyor…</div>';
 
+    // İhale Listesi = YALNIZ GÜNCEL (aktif) ihaleler: son teklif tarihi henüz GEÇMEMİŞ.
+    // Tarihi geçenler otomatik "Sonuçlar & Sözleşmeler"e düşer (KPI "Aktif" ile aynı ölçüt).
     const { data: dilim, error } = await sb.from('ilanlar')
       .select('id,ekap_id,baslik,il,tur,ilan_tarihi,son_teklif_tarihi,yaklasik_maliyet_min,yaklasik_maliyet_max,ihale_sonuclari(kazanan_firma,kazanan_teklif,kazanan_teklif_farki_yuzde,sonuc_tarihi,kisim_no)')
       .filter(KURUM_DETSIS ? 'detsis_no' : 'idare', KURUM_DETSIS ? 'eq' : 'ilike', KURUM_DETSIS || `%${KURUM}%`)
+      .gt('son_teklif_tarihi', new Date().toISOString())
       // etkin_tarih: ilan_tarihi yalnız ~%3 dolu; sıralama indeksle aynı yönde
       // (yön indeksle eşleşmezse sorgu 9000× yavaşlar)
       .order('etkin_tarih', { ascending: false, nullsFirst: false })
@@ -833,7 +840,7 @@
         ? (kilitliMi(error)
             ? kilitHtml('İhale listesi üyelere özel', 'Bu idarenin ihale kayıtlarını görmek için hesabınızla giriş yapın.')
             : '<div class="v1-bos">Liste yüklenemedi, lütfen tekrar deneyin.</div>')
-        : '<div class="v1-bos">Bu kuruma ait ihale bulunamadı.</div>';
+        : '<div class="v1-bos">Şu an <strong>açık/güncel</strong> ihale yok. Sonuçlananlar <strong>“Sonuçlar &amp; Sözleşmeler”</strong> sekmesinde.</div>';
       el('pager').style.display = 'none';
       return;
     }
