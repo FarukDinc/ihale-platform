@@ -56,26 +56,16 @@ ALTER MATERIALIZED VIEW public.idare_harcama_mv OWNER TO postgres;
 REVOKE ALL ON public.idare_harcama_mv FROM PUBLIC, anon;
 GRANT SELECT ON public.idare_harcama_mv TO authenticated, service_role;
 
--- idare_dizin_json'a [6]=sözleşme sayısı, [7]=toplam harcama ekle (DT join'i korunur)
-CREATE OR REPLACE FUNCTION public.idare_dizin_json()
-RETURNS jsonb
-LANGUAGE sql STABLE SECURITY DEFINER SET search_path = public AS $$
-  SELECT COALESCE(jsonb_agg(
-    jsonb_build_array(i.idare, i.toplam, i.aktif, i.en_yakin_il,
-                      COALESCE(d.toplam, 0), COALESCE(d.aktif, 0),
-                      COALESCE(h.sozlesme_sayisi, 0), COALESCE(h.toplam_harcama, 0))
-    ORDER BY i.toplam DESC), '[]'::jsonb)
-  FROM public.idare_ozet_mv i
-  LEFT JOIN public.dt_idare_ozet_mv d ON d.idare = i.idare
-  LEFT JOIN public.idare_harcama_mv h ON h.idare = i.idare;
-$$;
-ALTER FUNCTION public.idare_dizin_json() SET statement_timeout = '20s';
-GRANT EXECUTE ON FUNCTION public.idare_dizin_json() TO authenticated, service_role;
+-- NOT (5 Ağu, drift uzlaştırma): idare_dizin_json bu dosyadan ÇIKARILDI. Bu migration eskiden
+-- burada isimle-join (d.idare=i.idare, h.idare=i.idare), length-8 bir idare_dizin_json tanımlıyordu.
+-- KANONİK tanım artık `migration_idare_dedup_detsis.sql` (B3): detsis_no + hi.ad ile length-10,
+-- dedup'lı. Buradaki eski sürüm yeniden uygulanırsa B3'ü EZER → bilinçle kaldırıldı. Bu dosya
+-- yalnız idare_harcama_mv'yi yönetir; idare_dizin_json'a DOKUNMAZ.
 
 COMMIT;
 
 NOTIFY pgrst, 'reload schema';
 
 -- DOĞRULAMA:
---   SELECT jsonb_array_length((public.idare_dizin_json())->0);  -- 8 olmalı
 --   SELECT idare, sozlesme_sayisi, toplam_harcama FROM public.idare_harcama_mv ORDER BY toplam_harcama DESC LIMIT 5;
+--   -- idare_dizin_json doğrulaması migration_idare_dedup_detsis.sql'de (length 10, detsis).
