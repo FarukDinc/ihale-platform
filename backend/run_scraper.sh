@@ -241,6 +241,9 @@ docker exec -i supabase-db psql -U postgres -d postgres   -c "REFRESH MATERIALIZ
 #       AYNI (1)+(2) önkoşulu → hemen ardından). Docker /dev/shm 64MB → PGOPTIONS ile paralellik kapalı,
 #       yoksa ağır ihale_sonuclari⋈ilanlar + DT join'i DSM segmentini taşırır.
 docker exec -i -e PGOPTIONS="-c max_parallel_workers_per_gather=0 -c max_parallel_maintenance_workers=0" supabase-db psql -U postgres -d postgres   -c "REFRESH MATERIALIZED VIEW CONCURRENTLY public.idare_hiyerarsi_bedel_mv;" >> /opt/ihale-platform/logs/scraper.log 2>&1
+#   3c) idare_hiyerarsi_aktif_mv : kategori "Aktif Ihale" + "Sozlesme Sayisi" (ihalepro 4-stat
+#       paritesi; aktif_ihale now() kullanir -> gece taze olmali). Sahip=postgres (ALTER OWNER migration'da).
+docker exec -i -e PGOPTIONS="-c max_parallel_workers_per_gather=0 -c max_parallel_maintenance_workers=0" supabase-db psql -U postgres -d postgres   -c "REFRESH MATERIALIZED VIEW CONCURRENTLY public.idare_hiyerarsi_aktif_mv;" >> /opt/ihale-platform/logs/scraper.log 2>&1
 #   4) idare_bagsiz_mv     : Kurum Ağacı'nın "Bağlantısız Kurumlar" dalı (detsis_no'su
 #                            NULL kalan idareler) — (1)'den SONRA gelmeli ki gece
 #                            eşlenen idareler bağlantısız listesinden düşsün.
