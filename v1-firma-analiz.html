@@ -820,16 +820,18 @@
       $('dz-st-soz').textContent   = num(r.toplam_sozlesme);
       $('dz-st-ciro').textContent  = paraKisa(r.toplam_ciro);
       $('dz-st-ortak').textContent = num(r.ortak_sayisi);
-      const rozet = dzMod==='dt' ? 'yalnız DT' : dzMod==='birlikte' ? 'ihale + DT' : 'yalnız ihaleler';
+      // İki Evren: birlikte modda ciro/sözleşme İHALE-only (firma_ozet_birlikte artık toplamıyor);
+      // DT bedeli ayrı satırda. Toplam Firma = ihale∪DT union (legitim sayım).
+      const rozet = dzMod==='dt' ? 'yalnız DT' : dzMod==='birlikte' ? 'ihale' : 'yalnız ihaleler';
       if($('dz-st-soz-badge'))  $('dz-st-soz-badge').textContent  = rozet;
       if($('dz-st-ciro-badge')) $('dz-st-ciro-badge').textContent = rozet;
       if($('dz-st-firma-alt'))  $('dz-st-firma-alt').textContent  =
         dzMod==='dt' ? 'doğrudan temin kazanmış' : dzMod==='birlikte' ? 'ihale veya DT kazanmış' : 'ihale kazanmış';
       if($('dz-st-soz-alt'))    $('dz-st-soz-alt').textContent    =
-        dzMod==='dt' ? 'DT sonuç kaydı' : dzMod==='birlikte' ? 'ihale + DT kaydı' : 'EKAP ihale sonuç kaydı';
+        dzMod==='dt' ? 'DT sonuç kaydı' : dzMod==='birlikte' ? 'ihale sözleşme kaydı' : 'EKAP ihale sonuç kaydı';
       $('dz-st-ciro-alt').textContent =
         dzMod==='dt' ? `${num(r.toplam_sozlesme)} DT · ${num(r.toplam)} firma üzerinden`
-        : dzMod==='birlikte' ? `${num(r.toplam_sozlesme)} sözleşme (ihale+DT) · ${num(r.toplam)} firma`
+        : dzMod==='birlikte' ? `${num(r.toplam_sozlesme)} ihale sözleşmesi · ⚡ ${paraKisa(r.dt_bedel)} DT bedeli`
         : `${num(r.toplam_sozlesme)} ihale sözleşmesi · ${num(r.toplam)} firma üzerinden`;
     }catch(e){
       ['dz-st-firma','dz-st-soz','dz-st-ciro','dz-st-ortak'].forEach(i => { $(i).textContent='—'; });
@@ -914,12 +916,19 @@
     }
     govde.innerHTML = rows.map(f => {
       const ad = f.ad || f.normalize_ad || '—';
+      // İki Evren: birlikte modda ihale (toplam_*) ve DT (dt_*) AYRI hücrede — toplanmaz.
+      // DT-only firma → ihale 0/'—', DT bedeli ⚡ ile. Diğer modlarda düz göster.
+      const bMod=(dzMod==='birlikte');
+      const iSoz=Number(f.toplam_sozlesme_sayisi)||0, dSoz=Number(f.dt_sozlesme_sayisi)||0;
+      const iCiro=Number(f.toplam_ciro)||0, dBed=Number(f.dt_bedel)||0;
+      const sozDisp=bMod?`${iSoz>0?num(iSoz):'—'}${dSoz>0?` <span style="color:#A96A00;font-size:11px;font-weight:700;">+${num(dSoz)} DT</span>`:''}`:num(f.toplam_sozlesme_sayisi);
+      const ciroDisp=bMod?`${iCiro>0?paraTam(iCiro):'—'}${dBed>0?` <span style="color:#A96A00;font-weight:700;">⚡ ${paraTam(dBed)}</span>`:''}`:paraTam(f.toplam_ciro);
       return `<tr data-yid="${esc(f.id)}">
         <td><span class="fa-t-ad" title="${uyeMi ? esc(ad) : 'Üyelere özel'}">${uyeMi ? esc(ad) : MASKE_ROZET}</span>${
           f.ortak_girisim ? '<span class="fa-badge">İŞ ORT.</span>' : ''}${uyeMi && kurumMu(ad) ? KURUM_ROZET : ''}</td>
         <td class="gizli-m fa-t-sonuc">${esc(f.il || '—')}</td>
-        <td class="fa-t-sayi">${num(f.toplam_sozlesme_sayisi)}</td>
-        <td class="fa-t-ciro">${paraTam(f.toplam_ciro)}</td>
+        <td class="fa-t-sayi">${sozDisp}</td>
+        <td class="fa-t-ciro">${ciroDisp}</td>
         <td class="gizli-m fa-t-sonuc">${f.son_sozlesme_tarihi ? tarihF(f.son_sozlesme_tarihi) : '—'}</td>
         <td class="gizli-m" style="text-align:right;"><span class="fa-t-analiz">Analiz →</span></td>
       </tr>`;

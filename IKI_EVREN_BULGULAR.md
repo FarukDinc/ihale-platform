@@ -12,8 +12,8 @@
 
 | # | Yer | Desen | Sorun | Düzeltme | Efor |
 |---|---|---|---|---|---|
-| B1 | `migration_firma_ozet_modlar.sql:39` + `firma_dizin_birlikte` (4 dosya senkron) | toplama | ciro+bedel tek "Toplam Ciro"; sıralama anahtarı da toplam | İhale ciro / DT bedel **ayrı alan**; sıralama tek-evren üzerinden; 4 tanım senkron | ~1g |
-| B2 | `firma_dizin_birlikte` (:29) + `idare_dizin_json` (:38) | tek-evren | ihale-çıpalı LEFT JOIN → yalnız-DT firma/kurum yok | **FULL OUTER JOIN** (firma: normalize_ad=firma_norm; kurum: idare_ozet⟗dt_idare_ozet) | ~1g |
+| ✅ B1 | `migration_firma_birlikte_iki_evren.sql` (firma_ozet/dizin_birlikte) | toplama | ciro+bedel tek "Toplam Ciro"; sıralama anahtarı da toplam | ✅ ihale ciro/sözleşme AYRI + DT bedel/sözleşme AYRI (hiç toplanmaz); sıralama `GREATEST(ihale,dt)`; KPI 2 ayrı kutucuk (İhale Cirosu / DT Bedeli); v1-firmalar+firma-analiz iki-değerli hücre (5 Ağu) | ~1g |
+| ✅ B2 | `firma_dizin_birlikte` → FULL OUTER (firma tarafı) | tek-evren | ihale-çıpalı LEFT JOIN → yalnız-DT firma yok (213K/280K = %76!) | ✅ **FULL OUTER JOIN** normalize_ad=firma_norm → DT-only firmalar görünür; perf: `firma_kurum_norm` anti-join MV (19,3s→0,38s, önceki kırılganlığı da giderdi); gece cron'a refresh eklendi (5 Ağu). **Kurum tarafı (idare_dizin_json ⟗) = B2b, ayrı** | ~1g |
 | ✅ B3 | `v1-kurum-analiz.html:1449` | tek-evren | idare_dizin_json DT alanları dönüyor ama map r[4]/r[5] düşürüyor | ✅ Map+tablo+KPI'ya DT + DETSİS dedup eklendi (5 Ağu) | ~1-2s |
 | B4 | `migration_idare_dedup_detsis.sql:39` (idare_dizin_json) | isim-anahtar | DT/harcama İSİMLE join → ad varyantında sessiz-0 | `dt_idare_ozet_mv`+`idare_harcama_mv`'ye detsis_no ekle, detsis ile join | ~0.5g |
 | ✅ B5 | `v1-kurum-analiz.html` kurum_ozet/kurum_dt_ozet + 4 sorgu | isim-anahtar | KURUM=ad `ilike('idare')` → birleşmiş kurumun tek varyantı | ✅ kurum_ozet/kurum_dt_ozet +p_detsis, KURUM_DETSIS wiring, 4 sorgu `.filter(detsis eq)`, v1-kurumlar link (5 Ağu). **analiz_pivot(firma) = B5b (dinamik SQL, ayrı)** | ~0.5g |

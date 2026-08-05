@@ -130,9 +130,9 @@
       </style>
       <div class="v1-fstat">
         <div class="v1-fstat-tile"><span class="v1-fstat-ikon">🏢</span><div><div class="v1-fstat-sayi" id="fst-firma">—</div><div class="v1-fstat-et">Toplam Firma<span class="v1-fstat-rozet">ihale + DT</span></div></div></div>
-        <div class="v1-fstat-tile"><span class="v1-fstat-ikon">📄</span><div><div class="v1-fstat-sayi" id="fst-sozlesme">—</div><div class="v1-fstat-et">Toplam Sözleşme</div></div></div>
-        <div class="v1-fstat-tile"><span class="v1-fstat-ikon">💰</span><div><div class="v1-fstat-sayi" id="fst-ciro">—</div><div class="v1-fstat-et">Toplam Ciro<span class="v1-fstat-rozet">ihale + DT</span></div></div></div>
-        <div class="v1-fstat-tile"><span class="v1-fstat-ikon">🤝</span><div><div class="v1-fstat-sayi" id="fst-ortak">—</div><div class="v1-fstat-et">İş Ortaklığı</div></div></div>
+        <div class="v1-fstat-tile"><span class="v1-fstat-ikon">💼</span><div><div class="v1-fstat-sayi" id="fst-ihale-ciro">—</div><div class="v1-fstat-et">İhale Cirosu<span class="v1-fstat-rozet">ihale</span></div></div></div>
+        <div class="v1-fstat-tile"><span class="v1-fstat-ikon">⚡</span><div><div class="v1-fstat-sayi" id="fst-dt-bedel">—</div><div class="v1-fstat-et">DT Bedeli<span class="v1-fstat-rozet" style="color:#A96A00;background:#FFF3E0;">DT</span></div></div></div>
+        <div class="v1-fstat-tile"><span class="v1-fstat-ikon">🤝</span><div><div class="v1-fstat-sayi" id="fst-ortak">—</div><div class="v1-fstat-et">İş Ortaklığı<span class="v1-fstat-rozet">ihale</span></div></div></div>
       </div>
 
       <div class="v1-kart" style="padding:18px 20px;">
@@ -191,9 +191,11 @@
       if(error||!data||!data[0]) return;
       const r=data[0];
       const yaz=(id,v)=>{ const e=el(id); if(e) e.textContent=v; };
+      // İki Evren: ihale cirosu (milyar/trilyon) ile DT bedeli (~₺37K medyan) AYRI kutucuk —
+      // TOPLANMAZ (firma_ozet_birlikte artık ihale-only toplam_ciro + ayrı dt_bedel döner).
       yaz('fst-firma', num(r.toplam));
-      yaz('fst-sozlesme', num(r.toplam_sozlesme));
-      yaz('fst-ciro', paraBuyuk(r.toplam_ciro));
+      yaz('fst-ihale-ciro', paraBuyuk(r.toplam_ciro));
+      yaz('fst-dt-bedel', paraBuyuk(r.dt_bedel));
       yaz('fst-ortak', num(r.ortak_sayisi));
     }catch(_){ /* KPI opsiyonel — sessiz geç */ }
   }
@@ -470,12 +472,23 @@
         const rozet = firmaMod==='dt'
           ? ' <span style="background:#FFF3E0;color:#A96A00;font-size:11px;font-weight:700;padding:1px 6px;border-radius:6px;white-space:nowrap;">⚡ DT</span>'
           : (dtVar ? ' <span style="background:#FFF3E0;color:#A96A00;font-size:10px;font-weight:700;padding:1px 5px;border-radius:6px;white-space:nowrap;" title="Doğrudan temin kazanımı da var">⚡</span>' : '');
+        // İki Evren: birlikte modunda ihale (toplam_*) ile DT (dt_*) AYRI gösterilir — TOPLANMAZ.
+        // DT modunda RPC toplam_* alanlarına DT değerlerini koyar (tek evren) → düz göster.
+        const bMode=firmaMod==='birlikte';
+        const iSoz=Number(r.toplam_sozlesme_sayisi)||0, dSoz=Number(r.dt_sozlesme_sayisi)||0;
+        const iCiro=Number(r.toplam_ciro)||0, dBed=Number(r.dt_bedel)||0;
+        const sozCell=bMode
+          ? `${iSoz>0?num(iSoz):'<span style="color:var(--v1-muted);">—</span>'}${dSoz>0?` <span style="color:#A96A00;font-size:11px;font-weight:700;">+${num(dSoz)} DT</span>`:''}`
+          : num(r.toplam_sozlesme_sayisi);
+        const ciroCell=bMode
+          ? `${iCiro>0?tl(iCiro):'<span style="color:var(--v1-muted);">—</span>'}${dBed>0?`<div style="color:#A96A00;font-size:11.5px;font-weight:700;">⚡ ${tl(dBed)}</div>`:''}`
+          : tl(r.toplam_ciro);
         return `<tr>
           <td style="color:var(--v1-muted);font-weight:700;">${(sayfa-1)*BOY+i+1}</td>
           <td><a class="v1-firma-ad" href="v1-firma-analiz?ara=${encodeURIComponent(ad)}">${esc(ad)}</a>${rozet}</td>
           <td style="font-size:13px;">${esc(r.il||'—')}</td>
-          <td class="v1-sayi" style="font-weight:700;color:var(--v1-lacivert);">${num(r.toplam_sozlesme_sayisi)}</td>
-          <td class="v1-sayi" style="font-weight:700;color:var(--v1-mavi);">${tl(r.toplam_ciro)}</td>
+          <td class="v1-sayi" style="font-weight:700;color:var(--v1-lacivert);">${sozCell}</td>
+          <td class="v1-sayi" style="font-weight:700;color:var(--v1-mavi);">${ciroCell}</td>
           <td class="v1-sayi" style="font-size:12.5px;color:var(--v1-muted);">${tarihKisa(r.son_sozlesme_tarihi)}</td>
           <td style="text-align:right;">
             <button class="v1-tk" data-ad="${esc(ad)}" style="background:${t?'var(--v1-mavi)':'#fff'};color:${t?'#fff':'var(--v1-mavi)'};

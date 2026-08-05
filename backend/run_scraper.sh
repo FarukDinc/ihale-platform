@@ -215,6 +215,10 @@ docker exec -i supabase-db psql -U postgres -d postgres \
   -c "REFRESH MATERIALIZED VIEW CONCURRENTLY public.dt_analiz_il_mv;" \
   -c "REFRESH MATERIALIZED VIEW CONCURRENTLY public.firma_dt_toplam;" >> /opt/ihale-platform/logs/scraper.log 2>&1
 
+# firma_kurum_norm: yukleniciler + firma_dt_toplam'a bağlı (kurum-firma anti-join kümesi,
+# firma_dizin/ozet_birlikte hız için) → ikisi de tazelendikten SONRA. CONCURRENTLY (unique idx var).
+docker exec -i supabase-db psql -U postgres -d postgres -c "REFRESH MATERIALIZED VIEW CONCURRENTLY public.firma_kurum_norm;" >> /opt/ihale-platform/logs/scraper.log 2>&1
+
 # ── Türetilmiş alanlar: etkin_tarih + idare_tur ────────────────────────────────────
 # İKİSİ DE UCUZ (yalnız DEĞİŞEN satırları yazar, IS DISTINCT FROM) ve MV'lerden ÖNCE
 # koşmalı: MV'ler bu kolonları okuyabilir.
