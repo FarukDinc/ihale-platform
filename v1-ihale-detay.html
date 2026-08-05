@@ -186,6 +186,7 @@
           <a class="v1-d-btn hayalet" href="v1-teklif-olustur?ihale_id=${r.id}#fiyat">💡 AI Fiyat Stratejisi</a>
           <a class="v1-d-btn hayalet" href="${ekapUrl}" target="_blank" rel="noopener"
              title="EKAP ${dtMi?'Doğrudan Temin':'İhale'} arama sayfası — bu ihalenin IKN'si (${esc(r.ikn||r.ekap_id||'')}) ile aratın">🔗 EKAP'a Git</a>
+          ${dtMi?'':`<button class="v1-d-btn hayalet" id="d-dokuman" title="EKAP ihale dokümanını (şartname + cetvel) indir — 1 kredi, ~20-40 sn">📥 Doküman İndir</button>`}
         </div>
       </div>
 
@@ -224,6 +225,7 @@
     ilanMetniDoldur(r);
     document.getElementById('d-takip').addEventListener('click',takipToggle);
     document.getElementById('d-takvim').addEventListener('click',()=>takvim(r));
+    { const bd=document.getElementById('d-dokuman'); if(bd) bd.addEventListener('click',()=>dokumanIndir(r)); }
     takipDurumGuncelle();
   }
 
@@ -495,6 +497,44 @@
       'URL:https://ihaleglobal.com/v1-ihale-detay?id='+r.id,'END:VEVENT','END:VCALENDAR'].join('\r\n');
     const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([ics],{type:'text/calendar'}));
     a.download='ihale.ics'; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(a.href);
+  }
+
+  // 📥 Doküman İndir — POST /api/dokuman-indir (auth+kredi); ~20-40s EKAP CAPTCHA indirme → dosya.
+  async function dokumanIndir(r){
+    const {data}=await sb.auth.getSession();
+    const token=data&&data.session&&data.session.access_token;
+    if(!token){ location.href='login'; return; }
+    const ov=document.createElement('div');
+    ov.style.cssText='position:fixed;inset:0;background:rgba(12,62,112,.55);z-index:99999;display:flex;align-items:center;justify-content:center;';
+    ov.innerHTML=`<div style="background:#fff;border-radius:16px;padding:26px 30px;max-width:470px;width:90%;box-shadow:0 10px 40px rgba(0,0,0,.25);font-family:var(--v1-font);">
+      <div style="font-size:18px;font-weight:800;color:var(--v1-lacivert);margin-bottom:14px;">📥 Doküman İndir</div>
+      <div id="dk-msg" style="font-size:14px;color:var(--v1-metin);line-height:1.7;">
+        <div><span class="v1-spin" style="display:inline-block;width:14px;height:14px;border:2px solid #cfe2f5;border-top-color:var(--v1-mavi);border-radius:50%;vertical-align:middle;"></span> EKAP dokümanı indiriliyor…</div>
+        <div style="color:var(--v1-muted);font-size:12.5px;margin-top:8px;">Dosya büyüklüğüne göre <b>20-40 saniye</b> sürebilir (CAPTCHA çözülüyor). Yalnız <b>başarılı indirmede 1 kredi</b> düşer.</div>
+      </div>
+      <div style="text-align:right;margin-top:18px;"><button id="dk-kapat" style="background:#fff;border:1.5px solid var(--v1-cizgi);border-radius:9px;padding:8px 16px;font-weight:700;cursor:pointer;font-family:var(--v1-font);">Kapat</button></div>
+    </div>`;
+    document.body.appendChild(ov);
+    ov.querySelector('#dk-kapat').addEventListener('click',()=>ov.remove());
+    const msg=ov.querySelector('#dk-msg');
+    try{
+      const res=await fetch('/api/dokuman-indir',{method:'POST',
+        headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
+        body:JSON.stringify({ihale_id:r.id})});
+      if(!res.ok){
+        let det=''; try{ det=(await res.json()).detail||''; }catch(_){}
+        msg.innerHTML=`<div style="color:var(--v1-kirmizi);font-weight:700;">❌ ${res.status===402?'Yetersiz kredi — paket yükseltebilirsiniz.':(esc(det)||'Doküman indirilemedi (EKAP/CAPTCHA). Tekrar deneyin.')}</div>`;
+        return;
+      }
+      const blob=await res.blob();
+      const cd=res.headers.get('Content-Disposition')||''; const mm=cd.match(/filename="?([^"]+)"?/);
+      const ad=mm?mm[1]:String(r.ekap_id||r.id).replace(/\//g,'-')+'_ihale_dokumani';
+      const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download=ad;
+      document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+      msg.innerHTML=`<div style="color:var(--v1-teal);font-weight:700;">✅ Doküman indirildi.</div><div style="color:var(--v1-muted);font-size:12.5px;margin-top:6px;">${esc(ad)}</div>`;
+    }catch(e){
+      msg.innerHTML=`<div style="color:var(--v1-kirmizi);font-weight:700;">❌ Bağlantı hatası: ${esc(e.message||'')}</div>`;
+    }
   }
 
   function sonGoruntulenenKaydet(r){
