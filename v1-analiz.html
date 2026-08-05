@@ -169,47 +169,81 @@
   }
 
   // ── Analiz paneli ─────────────────────────────────────────────────────
+  // İKİ EVREN paneli (bkz. IKI_EVREN.md): ihale bölümü + DT bölümü AYRI, asla toplanmaz.
   async function renderPanel(f){
-    el().innerHTML=`
-      <div class="v1-firma-bant">
-        <div class="v1-firma-ikon">${IKON_FIRMA}</div>
-        <div class="v1-firma-adi">${esc(f.ad||'Firmam')}${f.dt_mi?' <span style="font-size:11px;font-weight:800;color:var(--v1-teal);background:#E6F7F1;padding:2px 8px;border-radius:6px;vertical-align:middle;white-space:nowrap;">⚡ Doğrudan Temin firması</span>':''}</div>
-        <button class="v1-degistir" id="v1-degistir">Firmayı değiştir</button>
-      </div>
+    const hasIhale=!!f.has_ihale, hasDt=!!f.has_dt;
+    const ih=f.ihale||{}, dt=f.dt||{};
 
+    const ihaleBolum = hasIhale ? `
       <div class="v1-serit">
-        <div class="v1-serit-t">${f.dt_mi?'Firmanın Doğrudan Temin Sözleşme Verileri':'Firmanın Tüm Zamanlarda Gerçekleşen Sözleşme Verileri'}</div>
+        <div class="v1-serit-t">📄 İhale (4734) — Gerçekleşen Sözleşme Verileri</div>
         <div style="font-size:13px;color:var(--v1-muted);">${esc(f.il||'')}</div>
       </div>
-
       <div class="v1-buyuk2">
-        <div class="v1-buyuk"><div class="v1-buyuk-sayi">${num(f.toplam_sozlesme_sayisi)}</div><div class="v1-buyuk-et">sözleşme</div></div>
+        <div class="v1-buyuk"><div class="v1-buyuk-sayi">${num(ih.sozlesme)}</div><div class="v1-buyuk-et">ihale sözleşmesi</div></div>
         <div class="v1-buyuk"><div class="v1-buyuk-sayi" id="v1-kurum-say">…</div><div class="v1-buyuk-et">kurum ile iş bitirme</div></div>
       </div>
-
       <div class="v1-uc">
-        <div class="v1-uc-kart"><div class="v1-uc-et">Toplam Sözleşme Bedeli</div><div class="v1-uc-deger">${tl(f.toplam_ciro)}</div></div>
-        <div class="v1-uc-kart"><div class="v1-uc-et">Ortalama Sözleşme Bedeli</div><div class="v1-uc-deger">${
-          (f.toplam_sozlesme_sayisi>0&&f.toplam_ciro)?tl(f.toplam_ciro/f.toplam_sozlesme_sayisi):'—'}</div></div>
+        <div class="v1-uc-kart"><div class="v1-uc-et">Toplam İhale Bedeli</div><div class="v1-uc-deger">${tl(ih.ciro)}</div></div>
+        <div class="v1-uc-kart"><div class="v1-uc-et">Ortalama İhale Bedeli</div><div class="v1-uc-deger">${
+          (ih.sozlesme>0&&ih.ciro)?tl(ih.ciro/ih.sozlesme):'—'}</div></div>
         <div class="v1-uc-kart"><div class="v1-uc-et">En Çok İş Yaptığı Sektör</div>
           <div class="v1-uc-deger" id="v1-sektor" style="font-size:16px;line-height:1.3;">…</div>
           <div class="v1-uc-alt" id="v1-sektor-alt"></div></div>
       </div>
-
       <div class="v1-harita-satir">
         <div class="v1-kart" style="padding:16px;">
-          <div class="v1-kart-baslik">Türkiye Geneli — İl Bazlı İş Dağılımı</div>
+          <div class="v1-kart-baslik">İhale — İl Bazlı İş Dağılımı</div>
           <div id="v1-harita" class="v1-bos">Harita yükleniyor…</div>
         </div>
         <div class="v1-kart" style="padding:6px 18px;">
-          <div class="v1-yan-satir"><div class="v1-yan-et">Toplam Sözleşme Bedeli</div><div class="v1-yan-deger">${tl(f.toplam_ciro)}</div></div>
+          <div class="v1-yan-satir"><div class="v1-yan-et">Toplam İhale Bedeli</div><div class="v1-yan-deger">${tl(ih.ciro)}</div></div>
           <div class="v1-yan-satir"><div class="v1-yan-et">En çok iş kazanılan il</div><div class="v1-yan-deger" id="v1-top-il">…</div></div>
           <div class="v1-yan-satir"><div class="v1-yan-et">Çalışılan il sayısı</div><div class="v1-yan-deger" id="v1-il-say">…</div></div>
           <div class="v1-yan-satir"><div class="v1-yan-et">Ortalama tenzilat</div><div class="v1-yan-deger" id="v1-tenzilat">…</div></div>
         </div>
-      </div>
+      </div>` : '';
 
-      <div class="v1-kart">
+    const dtBolum = hasDt ? `
+      <div class="v1-serit" style="background:#E6F7F1;border-color:#BBE6D6;margin-top:22px;">
+        <div class="v1-serit-t" style="color:#0B6B4F;">⚡ Doğrudan Temin — Sözleşme Verileri</div>
+        <div style="font-size:12px;color:var(--v1-muted);">İhale cirosundan ayrı ölçek — toplanmaz</div>
+      </div>
+      <div class="v1-buyuk2">
+        <div class="v1-buyuk"><div class="v1-buyuk-sayi">${num(dt.sozlesme)}</div><div class="v1-buyuk-et">DT sözleşmesi</div></div>
+        <div class="v1-buyuk"><div class="v1-buyuk-sayi" id="v1-dt-kurum-say">…</div><div class="v1-buyuk-et">kurum ile doğrudan temin</div></div>
+      </div>
+      <div class="v1-uc">
+        <div class="v1-uc-kart"><div class="v1-uc-et">Toplam DT Bedeli</div><div class="v1-uc-deger">${tl(dt.bedel)}</div></div>
+        <div class="v1-uc-kart"><div class="v1-uc-et">Ortalama DT Bedeli</div><div class="v1-uc-deger">${
+          (dt.sozlesme>0&&dt.bedel)?tl(dt.bedel/dt.sozlesme):'—'}</div></div>
+        <div class="v1-uc-kart"><div class="v1-uc-et">En Çok DT Sektörü</div>
+          <div class="v1-uc-deger" id="v1-dt-sektor" style="font-size:16px;line-height:1.3;">…</div>
+          <div class="v1-uc-alt" id="v1-dt-sektor-alt"></div></div>
+      </div>
+      <div class="v1-harita-satir">
+        <div class="v1-kart" style="padding:16px;">
+          <div class="v1-kart-baslik">Doğrudan Temin — İl Bazlı Dağılım</div>
+          <div id="v1-dt-harita" class="v1-bos">Harita yükleniyor…</div>
+        </div>
+        <div class="v1-kart" style="padding:6px 18px;">
+          <div class="v1-yan-satir"><div class="v1-yan-et">Toplam DT Bedeli</div><div class="v1-yan-deger">${tl(dt.bedel)}</div></div>
+          <div class="v1-yan-satir"><div class="v1-yan-et">En çok DT ili</div><div class="v1-yan-deger" id="v1-dt-top-il">…</div></div>
+          <div class="v1-yan-satir"><div class="v1-yan-et">DT il sayısı</div><div class="v1-yan-deger" id="v1-dt-il-say">…</div></div>
+        </div>
+      </div>` : '';
+
+    el().innerHTML=`
+      <div class="v1-firma-bant">
+        <div class="v1-firma-ikon">${IKON_FIRMA}</div>
+        <div class="v1-firma-adi">${esc(f.ad||'Firmam')}
+          ${hasIhale?'<span style="font-size:11px;font-weight:800;color:#fff;background:var(--v1-mavi);padding:2px 8px;border-radius:6px;vertical-align:middle;">İhale</span>':''}
+          ${hasDt?'<span style="font-size:11px;font-weight:800;color:var(--v1-teal);background:#E6F7F1;padding:2px 8px;border-radius:6px;vertical-align:middle;white-space:nowrap;">⚡ DT</span>':''}</div>
+        <button class="v1-degistir" id="v1-degistir">Firmayı değiştir</button>
+      </div>
+      ${ihaleBolum}
+      ${dtBolum}
+      <div class="v1-kart" style="margin-top:22px;">
         <div class="v1-kart-baslik" style="justify-content:space-between;">
           <span style="display:flex;align-items:center;gap:9px;">
             <svg viewBox="0 0 24 24" width="20" height="20" fill="var(--v1-teal)"><path d="M12 1.6l1.9 4.7 4.7 1.9-4.7 1.9L12 14.8l-1.9-4.7L5.4 8.2l4.7-1.9L12 1.6Z"/></svg>
@@ -230,37 +264,20 @@
     kirilimler(f); eslesmeYukle();
   }
 
-  // Kırılımlar: analiz_pivot (kategori + il) — ⚠️ ağır olabilir, ayrı ayrı ve hataya dayanıklı
+  // Kırılımlar — İki Evren: ihale + DT bağımsız doldurulur (has_* guard'lı; bkz. IKI_EVREN.md)
   async function kirilimler(f){
-    const firmaAd=(f&&f.ad)||'';
-    if(!firmaAd) return;
-    // DT-only firma: ihale-tabanlı analiz_pivot boş döner → firma_dt_kirilim (sektör/il/kurum)
-    if(f&&f.dt_mi){
-      try{
-        const {data}=await sb.rpc('firma_dt_kirilim',{p_firma_ad:firmaAd});
-        const sek=data&&data.sektor;
-        document.getElementById('v1-sektor').textContent=sek?sek.ad:'—';
-        document.getElementById('v1-sektor-alt').textContent=sek?`${num(sek.sayi)} iş`:'';
-        const iller=(data&&data.iller)||[];
-        document.getElementById('v1-top-il').textContent=(iller[0]&&iller[0].il)||'—';
-        document.getElementById('v1-il-say').textContent=num(iller.length);
-        document.getElementById('v1-tenzilat').textContent='—';   // DT'de tenzilat yok
-        document.getElementById('v1-kurum-say').textContent=num((data&&data.kurum_sayisi)||0);
-        haritaCiz(iller.map(x=>({grup_deger:x.il, ihale_sayisi:x.sayi})));
-      }catch(_){ ['v1-sektor','v1-top-il','v1-il-say','v1-tenzilat','v1-kurum-say'].forEach(i=>{const e=document.getElementById(i);if(e)e.textContent='—';}); haritaCiz([]); }
-      return;
-    }
-    // Sektör
-    try{
-      const {data}=await sb.rpc('analiz_pivot',{p_grup:'kategori',p_firma:firmaAd});
+    if(f && f.has_ihale && f.ihale && f.ihale.ad) ihaleKirilim(f.ihale.ad);
+    if(f && f.has_dt    && f.dt    && f.dt.ad)    dtKirilim(f.dt.ad);
+  }
+  // İHALE kırılımı: 3× analiz_pivot → v1-* id'leri + v1-harita (ihale görünen adıyla)
+  async function ihaleKirilim(firmaAd){
+    try{ const {data}=await sb.rpc('analiz_pivot',{p_grup:'kategori',p_firma:firmaAd});
       const s=(data||[]).slice().sort((a,b)=>(b.ihale_sayisi||0)-(a.ihale_sayisi||0))[0];
       if(s){ document.getElementById('v1-sektor').textContent=s.grup_deger||'—';
         document.getElementById('v1-sektor-alt').textContent=`${num(s.ihale_sayisi)} iş · ${tl(s.toplam_bedel)}`; }
       else document.getElementById('v1-sektor').textContent='—';
     }catch(_){ document.getElementById('v1-sektor').textContent='—'; }
-    // İl + harita + tenzilat
-    try{
-      const {data}=await sb.rpc('analiz_pivot',{p_grup:'il',p_firma:firmaAd});
+    try{ const {data}=await sb.rpc('analiz_pivot',{p_grup:'il',p_firma:firmaAd});
       const rows=(data||[]).filter(r=>r.grup_deger);
       const sirali=rows.slice().sort((a,b)=>(b.ihale_sayisi||0)-(a.ihale_sayisi||0));
       document.getElementById('v1-top-il').textContent=sirali[0]?.grup_deger||'—';
@@ -268,18 +285,29 @@
       const tz=rows.filter(r=>r.ort_tenzilat!=null);
       document.getElementById('v1-tenzilat').textContent = tz.length
         ? '%'+(tz.reduce((a,r)=>a+Number(r.ort_tenzilat),0)/tz.length).toLocaleString('tr-TR',{maximumFractionDigits:1}) : '—';
-      haritaCiz(rows);
-    }catch(_){ ['v1-top-il','v1-il-say','v1-tenzilat'].forEach(i=>{const e=document.getElementById(i); if(e)e.textContent='—';});
-      haritaCiz([]); }
-    // Kurum sayısı
-    try{
-      const {data}=await sb.rpc('analiz_pivot',{p_grup:'idare',p_firma:firmaAd});
+      haritaCiz(rows,'v1-harita');
+    }catch(_){ ['v1-top-il','v1-il-say','v1-tenzilat'].forEach(i=>{const e=document.getElementById(i);if(e)e.textContent='—';}); haritaCiz([],'v1-harita'); }
+    try{ const {data}=await sb.rpc('analiz_pivot',{p_grup:'idare',p_firma:firmaAd});
       document.getElementById('v1-kurum-say').textContent=num((data||[]).length);
     }catch(_){ document.getElementById('v1-kurum-say').textContent='—'; }
   }
+  // DT kırılımı: firma_dt_kirilim → v1-dt-* id'leri + v1-dt-harita (DT görünen adıyla)
+  async function dtKirilim(firmaAd){
+    try{
+      const {data}=await sb.rpc('firma_dt_kirilim',{p_firma_ad:firmaAd});
+      const sek=data&&data.sektor;
+      document.getElementById('v1-dt-sektor').textContent=sek?sek.ad:'—';
+      document.getElementById('v1-dt-sektor-alt').textContent=sek?`${num(sek.sayi)} iş`:'';
+      const iller=(data&&data.iller)||[];
+      document.getElementById('v1-dt-top-il').textContent=(iller[0]&&iller[0].il)||'—';
+      document.getElementById('v1-dt-il-say').textContent=num(iller.length);
+      document.getElementById('v1-dt-kurum-say').textContent=num((data&&data.kurum_sayisi)||0);
+      haritaCiz(iller.map(x=>({grup_deger:x.il, ihale_sayisi:x.sayi})),'v1-dt-harita');
+    }catch(_){ ['v1-dt-sektor','v1-dt-top-il','v1-dt-il-say','v1-dt-kurum-say'].forEach(i=>{const e=document.getElementById(i);if(e)e.textContent='—';}); haritaCiz([],'v1-dt-harita'); }
+  }
 
-  function haritaCiz(rows){
-    const h=document.getElementById('v1-harita'); const TR=window.TR_HARITA;
+  function haritaCiz(rows, hedefId='v1-harita'){
+    const h=document.getElementById(hedefId); const TR=window.TR_HARITA;
     if(!h) return;
     if(!TR){ h.textContent='Harita verisi yüklenemedi.'; return; }
     const cnt={}; rows.forEach(r=>{cnt[foldKey(r.grup_deger)]=r.ihale_sayisi||0;});
@@ -318,7 +346,7 @@
     try{
       const {data,error}=await sb.rpc('firmam_getir');
       if(error) throw error;
-      if(data && (data.firma_id || data.dt_mi)) renderPanel(data); else renderOnboarding();
+      if(data && (data.has_ihale || data.has_dt)) renderPanel(data); else renderOnboarding();
     }catch(_){ renderOnboarding(); }
   }
 
