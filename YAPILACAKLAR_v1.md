@@ -688,6 +688,15 @@ bu. UZUN VADE: koda başlamadan ÖNCE rakip-inceleme + tasarım notu. Referans: 
   Doğrulama: guest tam parse + KPI + kilit + ?fmod=dt güvenli (0 console hatası); RPC şema/imza psql'de; **DT/İkisi liste render'ı girişli ekranda görülür (üyeye özel)**.
 **⚠️ DOĞRULAMA:** Kategori+ağaç ÜYEYE ÖZEL → girişsiz panelde görsel test yapılamadı; görsel onay kullanıcının girişli ekranında.
 
+**✅ FAZ D (CANLI 5 Ağu — ihalepro TARAMA sayfası paritesi; kullanıcı "tablo gibi yap" geri bildirimi):**
+Kategoriler sekmesi kart-ızgarasından → **ihalepro tarzı sıralanabilir grup TABLOSU** (37 üst-DETSİS grubu).
+(1) **7 kolon:** Kurum/Kategori · **Aktif İhale** · Toplam İhale · **Sözleşme** · Toplam DT · Toplam Tutar + satır→ağaç, sortable başlıklar.
+(2) Yeni `idare_hiyerarsi_aktif_mv` (`backend/migration_kurum_kategori_ek.sql`): aktif_ihale (durum=aktif+son teklif ileri) +
+sozlesme_sayisi (ihale_sonuclari sözleşmeli DISTINCT ikn, ikn→detsis; lot-şişmesi önlendi), idare_ata_torun rollup;
+**sahip=postgres** (gece `-U postgres` refresh sessiz-bayat tuzağı; run_scraper.sh madde 3c). kurum_kategori_ozet 2 kolon genişletildi.
+(3) **Arama motoru hero** (gradient "Kurum Arama Motoru") → "Tüm Kurumlar" sekmesi + mevcut arama akışını tetikler.
+KALAN ihalepro farkı (opsiyonel): çoklu-para tutar (₺/enflasyon/$/güncel) + aktif-sayı VERİ KAPSAMI (bizde 6.081; DT/ihale backfill'e bağlı).
+
 ---
 
 ### Sıradaki (kullanıcı söyleyecek)
