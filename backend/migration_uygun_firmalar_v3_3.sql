@@ -41,7 +41,7 @@ BEGIN
     -- Kategori dalı (idx_ilanlar_kategori → idx_ihale_sonuclari_ilan_id)
     RETURN QUERY
     SELECT
-      s.kazanan_firma,
+      (array_agg(s.kazanan_firma ORDER BY COALESCE(s.kazanan_teklif, s.sozlesme_bedeli) DESC NULLS LAST))[1],
       (array_agg(s.yuklenici_id) FILTER (WHERE s.yuklenici_id IS NOT NULL))[1],
       mode() WITHIN GROUP (ORDER BY i.il),
       count(*),
@@ -64,7 +64,7 @@ BEGIN
       AND (p_bedel IS NULL OR p_bedel <= 0
            OR COALESCE(s.kazanan_teklif, s.sozlesme_bedeli)
               BETWEEN p_bedel / p_bant AND p_bedel * p_bant)
-    GROUP BY s.kazanan_firma
+    GROUP BY public.normalize_firma(s.kazanan_firma)
     ORDER BY 9 DESC, 5 DESC NULLS LAST
     LIMIT p_limit;
   ELSE
@@ -76,7 +76,7 @@ BEGIN
       JOIN public.ilanlar i2 ON tr_fold(i2.baslik) LIKE '%' || t.kelime || '%'
     )
     SELECT
-      s.kazanan_firma,
+      (array_agg(s.kazanan_firma ORDER BY COALESCE(s.kazanan_teklif, s.sozlesme_bedeli) DESC NULLS LAST))[1],
       (array_agg(s.yuklenici_id) FILTER (WHERE s.yuklenici_id IS NOT NULL))[1],
       mode() WITHIN GROUP (ORDER BY i.il),
       count(*),
@@ -99,7 +99,7 @@ BEGIN
       AND (p_bedel IS NULL OR p_bedel <= 0
            OR COALESCE(s.kazanan_teklif, s.sozlesme_bedeli)
               BETWEEN p_bedel / p_bant AND p_bedel * p_bant)
-    GROUP BY s.kazanan_firma
+    GROUP BY public.normalize_firma(s.kazanan_firma)
     ORDER BY 9 DESC, 5 DESC NULLS LAST
     LIMIT p_limit;
   END IF;
