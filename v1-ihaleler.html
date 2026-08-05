@@ -374,7 +374,13 @@
       // sekmesinde aktif sonuç beklenir (26-4: kelime arayınca aktif-dışı 2021-23 dönüp sekmeyle çelişiyordu).
       const _kw = val('f-kelime');
       const _iknArama = _kw && uyeMi && /^\s*(\d{4}\/\d+|ILN\d+|DMO[-\d]+)\s*$/i.test(_kw);
-      if (_aktifZorla || (!(uyeMi && (val('f-idare')||_detsis)) && !_iknArama)) q=q.eq('durum','aktif').gte('son_teklif_tarihi', new Date().toISOString());
+      // "Aktif İhaleler" = HER ZAMAN yalnız teklif süresi AÇIK (durum=aktif + son_teklif>=now).
+      // İdare/detsis drill-down'ı artık aktif-DIŞI (kapalı/geçmiş) GÖSTERMEZ → o idarenin yalnız
+      // aktifleri; geçmiş için Sonuçlar/Geçmiş sekmesi. (Önceki hata: idare filtresinde aktif filtre
+      // ATLANIYORDU → BEL-PA gibi 0-aktif kurumda kapalı ihaleler "Aktif"te çıkıyordu.) Ayrıca
+      // gte NULL son_teklif'i eler → tarihsiz "—" kayıtlar Aktif'in başında görünmez.
+      // İKN/ekap_id araması hariç: belirli kaydı her durumdan bulmak için filtre atlanır.
+      if (!_iknArama) q=q.eq('durum','aktif').gte('son_teklif_tarihi', new Date().toISOString());
     } else if (sekme==='gecmis') {
       // Geçmiş = süresi geçmiş, SONUCU AÇIKLANMAMIŞ ihaleler = durum 'kapali' (~1,6M).
       // ⛔ ESKİ HATA: yalnız 'aktif ama son_teklif geçmiş' (~271) alınıyordu → 1,6M kapalı ihale
