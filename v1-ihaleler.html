@@ -362,8 +362,8 @@
       return d;
     }
     const kolon = sayimIcin ? 'id' : (uyeMi
-      ? 'id,ekap_id,baslik,il,tur,usul,kategori,idare,durum,ilan_tarihi,son_teklif_tarihi,yaklasik_maliyet_min,yaklasik_maliyet_max'
-      : 'id,baslik,il,tur,usul,kategori,durum,ilan_tarihi,son_teklif_tarihi');
+      ? 'id,ekap_id,baslik,il,tur,usul,kategori,idare,durum,ilan_tarihi,son_teklif_tarihi,etkin_tarih,yaklasik_maliyet_min,yaklasik_maliyet_max'
+      : 'id,baslik,il,tur,usul,kategori,durum,ilan_tarihi,son_teklif_tarihi,etkin_tarih');
     let q = sb.from('ilanlar').select(kolon, sayimIcin?{count:'exact',head:true}:undefined);
     if (sekme==='aktif') {
       // Teklif süresi DEVAM EDEN ihaleler (ihalepro "Aktif İhaleler" davranışı).
@@ -581,7 +581,9 @@
     // ilan tablosunda 'son_teklif_tarihi' / 'ekap_id'.
     const dtMi = dtModu();
     // İhale modunda son_teklif_tarihi boşsa (eski/aranmış kayıtlar) ilan tarihine düş → "—" kalmasın.
-    const ham = dtMi ? (sirala==='yayin_tarihi' ? r.yayin_tarihi : r.tarih) : (r.son_teklif_tarihi || r.ilan_tarihi);
+    // I2: Sonuçlanan/geçmiş ihalelerde son_teklif+ilan NULL olabilir → etkin_tarih (COALESCE'li,
+    // ~%100 dolu; ihalenin gerçekleştiği tarih) yedeğiyle "İhale Tarihi" boş "—" kalmaz.
+    const ham = dtMi ? (sirala==='yayin_tarihi' ? r.yayin_tarihi : r.tarih) : (r.son_teklif_tarihi || r.etkin_tarih || r.ilan_tarihi);
     const t=ham?new Date(ham):null;
     const kalan=t?Math.ceil((t-new Date())/86400000):null;
     const tarih=t?t.toLocaleDateString('tr-TR',{day:'numeric',month:'long',year:'numeric'}):'—';
