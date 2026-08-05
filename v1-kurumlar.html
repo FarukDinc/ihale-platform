@@ -288,8 +288,10 @@
         dt_toplam:Number(r&&r[4])||0,
         dt_aktif:Number(r&&r[5])||0,
         sozlesme:Number(r&&r[6])||0,
-        harcama:Number(r&&r[7])||0
+        harcama:Number(r&&r[7])||0,
+        detsis:(r&&r[8])||null
       })).filter(r=>r.idare);
+      tumu=detsisGrupla(tumu);   // aynı DETSİS'li isim varyantlarını tek kuruma birleştir (BEL-PA dedup)
       // takip_idareler kolonu `idare_ad` (idare DEĞİL); supabase-js hata FIRLATMAZ
       const {data:t,error:te}=await sb.from('takip_idareler').select('idare_ad');
       if(te) console.warn('takip listesi okunamadı:',te.message||te);
@@ -310,6 +312,22 @@
     if(n>=1e6) return '₺'+(n/1e6).toLocaleString('tr-TR',{maximumFractionDigits:1})+' Mn';
     if(n>=1e3) return '₺'+(n/1e3).toLocaleString('tr-TR',{maximumFractionDigits:0})+' B';
     return n>0 ? '₺'+num(n) : '—';
+  }
+
+  // Kurum dedup — aynı DETSİS'li isim varyantlarını tek kuruma birleştir (İKİ EVREN Kural 1: kurum
+  // kanonik anahtarı = detsis_no; bkz. IKI_EVREN.md). detsis'siz (NULL) idareler gruplanmaz;
+  // kanonik ad = en çok ihaleli varyant. İstatistikler toplanır → sayılar korunur.
+  function detsisGrupla(rows){
+    const grup=new Map(); const teksiz=[];
+    for(const r of rows){
+      if(!r.detsis){ teksiz.push(r); continue; }
+      let g=grup.get(r.detsis);
+      if(!g){ g={idare:r.idare, il:r.il, detsis:r.detsis, toplam:0,aktif:0,sozlesme:0,harcama:0,dt_toplam:0,dt_aktif:0, _max:-1}; grup.set(r.detsis,g); }
+      g.toplam+=r.toplam; g.aktif+=r.aktif; g.sozlesme+=r.sozlesme;
+      g.harcama+=r.harcama; g.dt_toplam+=r.dt_toplam; g.dt_aktif+=r.dt_aktif;
+      if(r.toplam>g._max){ g._max=r.toplam; g.idare=r.idare; g.il=r.il; }   // kanonik = en çok ihaleli yazım
+    }
+    return teksiz.concat(Array.from(grup.values()));
   }
 
   // Özet stat tile'ları (TÜM idareler üzerinden — sekme/filtreden bağımsız global özet)
