@@ -935,7 +935,7 @@
           sb.from('genel_sayac_mv').select('toplam_ihale').limit(1)
             .then(r => (r.data && r.data[0]) ? { count: r.data[0].toplam_ihale }
               : sb.from('ilanlar').select('id', { count: 'exact', head: true })),
-          sb.from('ilanlar').select('id', { count: 'exact', head: true }).gte('son_teklif_tarihi', new Date().toISOString()),
+          sb.from('ilanlar').select('id', { count: 'exact', head: true }).gte('son_teklif_tarihi', new Date().toISOString().slice(0,10)),
           sb.from('ilanlar').select('id', { count: 'exact', head: true }).gte('ilan_tarihi', bugun.toISOString()),
         ]);
         set('oz-toplam', (toplam.count ?? 0).toLocaleString('tr'));

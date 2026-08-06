@@ -336,9 +336,9 @@
       // durum'a göre daralt: Sonuçlar → sonucu duyurulmuş DT, Geçmiş → henüz sonuçlanmamış DT.
       // (dt sekmesi: tümü.) Canlı doğrulandı: "Sonuç Duyurusu…" 2,55M · "Doğrudan Temin Duyurusu…" 408K.
       if (sekme==='sonuc')       d=d.in('durum',['Sonuç Duyurusu Yayımlanmış','Sonuç Bilgileri Gönderildi','Doğrudan Temin Sonuçlandırıldı']);
-      else if (sekme==='gecmis') d=d.in('durum',['Teklifler Değerlendiriliyor','Doğrudan Temin Duyurusu Yayımlanmış']).lt('tarih', new Date().toISOString());
+      else if (sekme==='gecmis') d=d.in('durum',['Teklifler Değerlendiriliyor','Doğrudan Temin Duyurusu Yayımlanmış']).lt('tarih', new Date().toISOString().slice(0,10));
       // dt sekmesi: filtresiz → AÇIK DT; ama idare/kelime ile drill-down → TÜM durum (kurum 'DT Kayıtları' o idarenin hepsini görsün)
-      else if (_aktifZorla || (!(uyeMi && (val('f-idare')||_detsis)) && !val('f-kelime'))) d=d.eq('durum','Doğrudan Temin Duyurusu Yayımlanmış').gte('tarih', new Date().toISOString());
+      else if (_aktifZorla || (!(uyeMi && (val('f-idare')||_detsis)) && !val('f-kelime'))) d=d.eq('durum','Doğrudan Temin Duyurusu Yayımlanmış').gte('tarih', new Date().toISOString().slice(0,10));
       const kw=val('f-kelime');
       if(kw){
         // DT numarası (ör. 25DT2095274) → dt_no TAM eşleşme (indeksli, ~1sn). Prefix ilike
@@ -378,7 +378,7 @@
       // ATLANIYORDU → BEL-PA gibi 0-aktif kurumda kapalı ihaleler "Aktif"te çıkıyordu.) Ayrıca
       // gte NULL son_teklif'i eler → tarihsiz "—" kayıtlar Aktif'in başında görünmez.
       // İKN/ekap_id araması hariç: belirli kaydı her durumdan bulmak için filtre atlanır.
-      if (!_iknArama) q=q.eq('durum','aktif').gte('son_teklif_tarihi', new Date().toISOString());
+      if (!_iknArama) q=q.eq('durum','aktif').gte('son_teklif_tarihi', new Date().toISOString().slice(0,10));
     } else {
       // I4: "Geçmiş" sekmesi kaldırıldı → Sonuçlar = TÜM geçmiş ihaleler = sonuçlanmış
       // (sonuclandi) + süresi geçmiş sonucu-açıklanmamış (kapali, ~1,6M). Perf test 50ms;

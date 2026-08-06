@@ -2437,7 +2437,7 @@
         : await sb.from('ilanlar')
             .select('id,baslik,idare,il,tur,kategori,tahmini_bedel,son_teklif_tarihi,durum')
             .eq('durum', 'aktif')
-            .gte('son_teklif_tarihi', new Date().toISOString())
+            .gte('son_teklif_tarihi', new Date().toISOString().slice(0,10))
             .order('son_teklif_tarihi', { ascending: true })
             .limit(150);
 

@@ -769,7 +769,7 @@
       .select('dt_no,baslik,il,tur,kategori,durum,tarih')
       .filter(KURUM_DETSIS ? 'detsis_no' : 'idare', KURUM_DETSIS ? 'eq' : 'ilike', KURUM_DETSIS || `%${KURUM}%`)
       .eq('durum', 'Doğrudan Temin Duyurusu Yayımlanmış')
-      .gte('tarih', new Date().toISOString())
+      .gte('tarih', new Date().toISOString().slice(0,10))
       .order('tarih', { ascending: false, nullsFirst: false })
       .range(bas, bas + PER_PAGE);   // PER_PAGE+1: sonraki sayfa var mı
     if (istek !== listeIstek) return;
@@ -839,7 +839,7 @@
     const { data: dilim, error } = await sb.from('ilanlar')
       .select('id,ekap_id,baslik,il,tur,ilan_tarihi,son_teklif_tarihi,yaklasik_maliyet_min,yaklasik_maliyet_max,ihale_sonuclari(kazanan_firma,kazanan_teklif,kazanan_teklif_farki_yuzde,sonuc_tarihi,kisim_no)')
       .filter(KURUM_DETSIS ? 'detsis_no' : 'idare', KURUM_DETSIS ? 'eq' : 'ilike', KURUM_DETSIS || `%${KURUM}%`)
-      .gt('son_teklif_tarihi', new Date().toISOString())
+      .gt('son_teklif_tarihi', new Date().toISOString().slice(0,10))
       // etkin_tarih: ilan_tarihi yalnız ~%3 dolu; sıralama indeksle aynı yönde
       // (yön indeksle eşleşmezse sorgu 9000× yavaşlar)
       .order('etkin_tarih', { ascending: false, nullsFirst: false })

@@ -269,7 +269,7 @@
     try {
       const sb = window.supabase.createClient(API.CONFIG.SUPABASE_URL, API.CONFIG.SUPABASE_ANON_KEY);
       const { count } = await sb.from('ilanlar').select('id', { count: 'exact', head: true })
-        .eq('durum', 'aktif').gte('son_teklif_tarihi', new Date().toISOString());
+        .eq('durum', 'aktif').gte('son_teklif_tarihi', new Date().toISOString().slice(0,10));
       const el = document.getElementById('lg-aktif');
       if (el && count != null) el.textContent = (count).toLocaleString('tr-TR');
     } catch (_) {}

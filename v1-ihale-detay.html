@@ -432,7 +432,7 @@
       // RPC henüz uygulanmadıysa/hata: eski kategori+tur filtresine düş (bölüm bozulmasın)
       try{
         let q=sb.from('ilanlar').select('id,baslik,il,tur,son_teklif_tarihi')
-          .eq('durum','aktif').gte('son_teklif_tarihi',new Date().toISOString()).neq('id',r.id);
+          .eq('durum','aktif').gte('son_teklif_tarihi',new Date().toISOString().slice(0,10)).neq('id',r.id);
         if(r.kategori) q=q.eq('kategori',r.kategori);
         if(r.tur) q=q.eq('tur',r.tur);
         const {data}=await q.order('son_teklif_tarihi',{ascending:true,nullsFirst:true}).limit(6);

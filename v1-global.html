@@ -246,7 +246,7 @@
     if(v('f-t1'))     q=q.gte('son_teklif_tarihi',v('f-t1'));
     if(v('f-t2'))     q=q.lte('son_teklif_tarihi',v('f-t2')+'T23:59:59');
     const ac=document.getElementById('f-acik');
-    if(ac&&ac.checked) q=q.gte('son_teklif_tarihi',new Date().toISOString());
+    if(ac&&ac.checked) q=q.gte('son_teklif_tarihi',new Date().toISOString().slice(0,10));
     return q;
   }
 

@@ -188,7 +188,7 @@
         // (Mevcut RPC'ler DURUYOR: dt_il_sayim, DT sayfasındaki il dropdown'ının tam
         //  listesini besliyor; aktif-only yapılsaydı iller sessizce düşerdi.)
         ilSayimGetir(sb, 'il_sayim_aktif', 'ilanlar', 13000,
-          q => q.gte('son_teklif_tarihi', new Date().toISOString())),
+          q => q.gte('son_teklif_tarihi', new Date().toISOString().slice(0,10))),
         ilSayimGetir(sb, 'dt_il_sayim_aktif', 'dogrudan_temin_ilanlari', 13000,
           q => q.in('durum', ['Doğrudan Temin Duyurusu Yayımlanmış', 'Teklifler Değerlendiriliyor'])),
       ]);
