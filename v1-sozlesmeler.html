@@ -74,6 +74,10 @@
           <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
             <div class="v1-listede-ara">
               <svg viewBox="0 0 24 24" width="15" height="15" fill="var(--v1-muted)"><path fill-rule="evenodd" d="M10.5 3a7.5 7.5 0 1 0 4.55 13.46l4.24 4.25 1.42-1.42-4.25-4.24A7.5 7.5 0 0 0 10.5 3Zm0 2a5.5 5.5 0 1 1 0 11 5.5 5.5 0 0 1 0-11Z"/></svg>
+              <input type="text" id="v1-ara-idare" placeholder="İdare adı ara">
+            </div>
+            <div class="v1-listede-ara">
+              <svg viewBox="0 0 24 24" width="15" height="15" fill="var(--v1-muted)"><path fill-rule="evenodd" d="M10.5 3a7.5 7.5 0 1 0 4.55 13.46l4.24 4.25 1.42-1.42-4.25-4.24A7.5 7.5 0 0 0 10.5 3Zm0 2a5.5 5.5 0 1 1 0 11 5.5 5.5 0 0 1 0-11Z"/></svg>
               <input type="text" id="v1-ara-liste" placeholder="Kazanan firma ara">
             </div>
           </div>
@@ -127,6 +131,8 @@
   const bugunku=(nominal,tarih)=>{ if(!window.TUFE||!nominal||!tarih) return ''; const c=TUFE.carpani(tarih); if(!c||c<1.05) return '';
     return `<br><span style="font-weight:400;color:var(--v1-muted);font-size:11px;" title="TÜFE ile enflasyon düzeltmeli — bugünkü alım gücü (${c.toFixed(1)}x)">≈ ${tl(TUFE.buguneCevir(nominal,tarih))} bugünkü</span>`; };
   const BOY=20;
+  const P=new URLSearchParams(location.search);
+  let _detsis=P.get('detsis')||'';   // S1: kurum-analiz'den derin-link (kesin kanonik anahtar)
   let uyeMi=false, sekme='tumu', sayfa=1, aramaT;
 
   async function yukle(){
@@ -142,13 +148,21 @@
     tb.innerHTML='<tr><td colspan="5" class="v1-bos">Yükleniyor…</td></tr>';
     try{
       const k=(document.getElementById('v1-ara-liste').value||'').trim();
+      const ki=(document.getElementById('v1-ara-idare').value||'').trim();
+      const idareAktif=!!(ki||_detsis);   // S1: idare süzgeci → ihale_sonuclari.ilan_id → ilanlar embed
       const kur=(sayimIcin)=>{
-        // ⚠️ Gerçek kolonlar: tenzilat_yuzde (tenzilat DEĞİL), sozlesme_bedeli, is_bitis_tarihi
+        // ⚠️ Gerçek kolonlar: tenzilat_yuzde (tenzilat DEĞİL), sozlesme_bedeli, is_bitis_tarihi.
+        // idare/detsis ilanlar tablosunda → PostgREST embed (FK ilan_id). Süzgeç aktifse !inner.
+        const embed = idareAktif ? 'ilanlar!inner(idare,detsis_no)' : 'ilanlar(idare,detsis_no)';
         let q=sb.from('ihale_sonuclari').select(
-          sayimIcin?'id':'id,ilan_id,kazanan_firma,kazanan_teklif,sozlesme_bedeli,sonuc_tarihi,tenzilat_yuzde,is_bitis_tarihi',
+          sayimIcin ? ('id'+(idareAktif?','+embed:''))
+                    : ('id,ilan_id,kazanan_firma,kazanan_teklif,sozlesme_bedeli,sonuc_tarihi,tenzilat_yuzde,is_bitis_tarihi,'+embed),
           sayimIcin?{count:'exact',head:true}:undefined)
           .not('kazanan_firma','is',null);
         if(k) q=q.ilike('kazanan_firma','%'+k+'%');
+        // İdare süzgeci: detsis (kesin, kanonik) öncelikli; yoksa idare adına ilike (İ/ı locale kabul)
+        if(_detsis)  q=q.eq('ilanlar.detsis_no',_detsis);
+        else if(ki)  q=q.ilike('ilanlar.idare','%'+ki+'%');
         // Biten / Devam Eden — is_bitis_tarihi'ne göre (veri gerçekten var)
         const bugun=new Date().toISOString().slice(0,10);
         if(sekme==='biten') q=q.not('is_bitis_tarihi','is',null).lt('is_bitis_tarihi',bugun);
@@ -169,6 +183,7 @@
       if(!d.length){ tb.innerHTML='<tr><td colspan="5" class="v1-bos">Sözleşme bulunamadı.</td></tr>'; document.getElementById('v1-sayfalama').innerHTML=''; return; }
       tb.innerHTML=d.map(r=>{
         const t=r.sonuc_tarihi?new Date(r.sonuc_tarihi).toLocaleDateString('tr-TR'):'—';
+        const idr=r.ilanlar?(Array.isArray(r.ilanlar)?r.ilanlar[0]:r.ilanlar):null;   // S1: embed obje/dizi normalize
         const bitis=r.is_bitis_tarihi?new Date(r.is_bitis_tarihi):null;
         const devam = bitis ? (bitis>=new Date()) : null;
         const tenz = (r.tenzilat_yuzde!=null && Math.abs(r.tenzilat_yuzde)<100)
@@ -176,7 +191,7 @@
           : `<span style="color:var(--v1-muted);font-size:12px;" title="Kısım bazlı yaklaşık maliyet yayımlanmadığında hesaplanamaz">—</span>`;
         return `<tr>
           <td class="v1-t-tarih">${t}${devam!=null?`<br><span class="v1-sonuc-rozet" style="background:${devam?'#E6F6EC':'#EFF2F6'};color:${devam?'var(--v1-yesil)':'var(--v1-muted)'};font-size:10.5px;">${devam?'Devam':'Bitti'}</span>`:''}</td>
-          <td><a class="v1-t-ad" href="v1-firma-analiz?ara=${encodeURIComponent(r.kazanan_firma||'')}">${esc(r.kazanan_firma||'—')}</a></td>
+          <td><a class="v1-t-ad" href="v1-firma-analiz?ara=${encodeURIComponent(r.kazanan_firma||'')}">${esc(r.kazanan_firma||'—')}</a>${idr&&idr.idare?`<div style="font-size:11px;color:var(--v1-muted);margin-top:3px;line-height:1.3;">🏛 <a href="v1-kurum-analiz?${idr.detsis_no?'detsis='+encodeURIComponent(idr.detsis_no):'kurum='+encodeURIComponent(idr.idare)}" title="İdarenin analiz sayfası" style="color:var(--v1-muted);text-decoration:none;border-bottom:1px dotted var(--v1-muted);">${esc(idr.idare)}</a></div>`:''}</td>
           <td style="font-weight:700;color:var(--v1-mavi);">${tl(r.sozlesme_bedeli ?? r.kazanan_teklif)}${bugunku(r.sozlesme_bedeli ?? r.kazanan_teklif, r.sonuc_tarihi)}</td>
           <td>${tenz}</td>
           <td style="text-align:right;">${r.ilan_id?`<a class="v1-yuvarlak-btn" style="text-decoration:none;" href="v1-ihale-detay?id=${r.ilan_id}" title="İhale detayı">
@@ -210,6 +225,9 @@
         v1PaketYaz(['standart','kurumsal'].includes(k?.plan)?'Pro':'Temel'); } else v1PaketYaz('Misafir'); }
     }catch(_){}
     document.getElementById('v1-ara-liste').addEventListener('input',()=>{clearTimeout(aramaT); aramaT=setTimeout(()=>{sayfa=1;yukle();},350);});
+    const idareInput=document.getElementById('v1-ara-idare');
+    idareInput.addEventListener('input',()=>{clearTimeout(aramaT); aramaT=setTimeout(()=>{_detsis='';sayfa=1;yukle();},350);}); // elle yazınca detsis derin-linki düşer
+    if(P.get('idare')) idareInput.value=P.get('idare');
     document.querySelectorAll('.v1-sekme').forEach(b=>b.addEventListener('click',()=>{
       document.querySelectorAll('.v1-sekme').forEach(x=>x.classList.remove('aktif')); b.classList.add('aktif');
       sekme=b.dataset.t; sayfa=1;
