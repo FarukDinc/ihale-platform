@@ -401,7 +401,7 @@
             <span style="display:block;font-size:11px;color:var(--v1-muted);margin-top:3px;">teklif süresi dolmamış</span></span></div>
           <div class="v1-kpi-kart" style="cursor:default;"><span class="v1-kpi-govde">
             <span class="v1-kpi-sayi" id="kpi-butce">—</span>
-            <span class="v1-kpi-etiket">Toplam Bütçe
+            <span class="v1-kpi-etiket" id="kpi-butce-etiket">Toplam Bütçe
               <span class="k-rozet" title="Yalnız ihaleler — bu kurumun doğrudan temin harcamaları bu toplama dahil DEĞİL">yalnız ihaleler</span></span>
             <!-- Payda görünür: toplam bütçe = sum(yaklasik_maliyet_min); maliyeti ilan
                  EDİLMEMİŞ kayıtlar bu toplama 0 katkı verir. Payda yazılmazsa kullanıcı
@@ -1435,6 +1435,11 @@
     el('kpi-aktif').textContent = num(aktifSay);
     el('kpi-il').textContent = num(ilSayisi);
     const bEl = el('kpi-butce');
+    // Etiket her kuruma geçişte "Toplam Bütçe"ye sıfırlanmalı — önceki kurum belediye şirketiyse
+    // "Toplam Sözleşme Bedeli"ye çevrilmiş olabilir (butceSozlesmeDoldur). firstChild = etiket
+    // metni; rozet ("yalnız ihaleler") nested span olduğu için innerHTML'le silmeyip metni değiştir.
+    const etEl0 = el('kpi-butce-etiket');
+    if (etEl0 && etEl0.firstChild) etEl0.firstChild.textContent = 'Toplam Bütçe ';
     if (butceVar) {
       bEl.textContent = paraFormat(toplamButce);
       bEl.style.color = '';
@@ -1445,6 +1450,9 @@
       bEl.style.color = 'var(--v1-muted)';
       bEl.style.fontSize = '18px';
       el('kpi-butce-alt').textContent = 'bu kurumun ihalelerinde yaklaşık maliyet ilan edilmemiş';
+      // K5: belediye şirketleri (BEL-PA vb.) yaklaşık maliyet ilan etmez → toplam_butce=0.
+      // Ama GERÇEK sözleşme harcaması idare_harcama_mv'de var → "Belirtilmemiş"i onunla değiştir.
+      butceSozlesmeDoldur(KURUM);   // ⚡ non-blocking, sayfayı bekletmez
     }
 
     aylikTrendGrafik((ozet && ozet.aylik_trend) || {});
@@ -1454,6 +1462,31 @@
     _ihaleOzet = ozet; _dtOzet = null;   // yeni kurum → DT önbelleğini sıfırla; İhale dağılımı varsayılan
     dagilimCiz('ihale');
     dtKartlariniDoldur();   // ⚡ DT KPI kartlarını paralel doldur (kurum_dt_ozet; non-blocking, sayfayı bekletmez)
+  }
+
+  // K5: yaklaşık maliyet ilan etmeyen idareler (belediye şirketleri: BEL-PA vb.) toplam_butce=0
+  // → "Belirtilmemiş" gösteriyordu. Gerçek sözleşme harcaması idare_harcama_mv'de idare ADIYLA
+  // saklı (İHALE evreni; sonuçlanmış sözleşme bedelleri toplamı). Varsa "Toplam Bütçe" tile'ını
+  // "Toplam Sözleşme Bedeli" olarak yeniden yaz. İki Evren: DT bloğuna (dt-kpi-bedel) DOKUNMA.
+  // Race guard: await sonrası KURUM değiştiyse bayat cevabı yazma (dtKartlariniDoldur ile aynı desen).
+  async function butceSozlesmeDoldur(buKurum){
+    if (!buKurum) return;
+    try{
+      const { data, error } = await sb.from('idare_harcama_mv')
+        .select('toplam_harcama,sozlesme_sayisi').eq('idare', buKurum).maybeSingle();
+      if (error || !data) return;
+      if (buKurum !== KURUM) return;   // kullanıcı başka kuruma geçti → bayat cevabı yazma
+      const harcama = Number(data.toplam_harcama) || 0;
+      if (harcama <= 0) return;        // harcama da yoksa "Belirtilmemiş" kalsın
+      const bEl = el('kpi-butce');
+      bEl.textContent = paraFormat(harcama);
+      bEl.style.color = '';
+      bEl.style.fontSize = bEl.textContent.length > 13 ? '19px' : '';
+      const etEl = el('kpi-butce-etiket');
+      if (etEl && etEl.firstChild) etEl.firstChild.textContent = 'Toplam Sözleşme Bedeli ';
+      const say = Number(data.sozlesme_sayisi) || 0;
+      el('kpi-butce-alt').textContent = `${num(say)} sözleşme (sonuçlanmış) · yalnız ihaleler`;
+    }catch(e){ /* sessiz: Belirtilmemiş kalır */ }
   }
 
   // DT KPI kartları (Toplam DT / Aktif / Toplam DT Bedeli / Kapsanan İl). kurum_dt_ozet on-demand
@@ -1601,7 +1634,7 @@
     const max = Math.max(1, ...dilim.map(i => i.toplam));
     // İnline onclick YOK — idare adındaki tırnak kırardı; data-ad + delegasyon
     govde.innerHTML = dilim.map((i, ix) => `
-      <tr class="tiklanir" data-ad="${esc(i.ad)}" data-detsis="${esc(i.detsis || '')}">
+      <tr class="tiklanir" data-kad="${esc(i.ad)}" data-detsis="${esc(i.detsis || '')}">
         <td><span style="color:var(--v1-muted);font-weight:700;margin-right:8px;">${bas + ix + 1}</span>
           <span class="v1-t-ad" title="${esc(i.ad)}">${esc(i.ad)}</span></td>
         <td class="iz-il-c" style="font-size:13px;color:var(--v1-muted);">${esc(i.il)}</td>
@@ -1612,7 +1645,7 @@
         <td><span style="font-weight:800;color:${i.aktif > 0 ? 'var(--v1-teal)' : 'var(--v1-muted)'};">${num(i.aktif)}</span></td>
         <td><span style="font-weight:700;color:var(--v1-lacivert);">${num(i.dt_toplam)}</span></td>
         <td class="iz-islem-c" style="text-align:right;">
-          <button class="ag-kucuk-btn mavi" data-ad="${esc(i.ad)}" data-detsis="${esc(i.detsis || '')}">📊 Analiz</button></td>
+          <button class="ag-kucuk-btn mavi" data-kad="${esc(i.ad)}" data-detsis="${esc(i.detsis || '')}">📊 Analiz</button></td>
       </tr>`).join('');
 
     const pager = el('iz-pager');
@@ -1795,7 +1828,7 @@
   // Düğüm satırı: kendi/toplam sayılar AYRI (ihale 📋, DT ⚡) + tüm kayıtlar içindeki pay
   function dugumHtml(d, derin) {
     const acilir = Number(d.cocuk_sayisi) > 0;
-    return `<div class="ag-dugum" data-detsis="${esc(d.detsis_no)}" data-derin="${derin}" data-ad="${esc(d.ad)}">
+    return `<div class="ag-dugum" data-detsis="${esc(d.detsis_no)}" data-derin="${derin}" data-kad="${esc(d.ad)}">
       <div class="ag-satir" style="--derin:${derin}">
         <button class="ag-ok ${acilir ? '' : 'yok'}" title="${acilir ? sayi(d.cocuk_sayisi) + ' alt birim — aç/kapat' : ''}">▸</button>
         <span class="ag-ad" title="${esc(d.ad)}">${esc(d.ad)}${acilir ? ` <span class="adet">(${sayi(d.cocuk_sayisi)})</span>` : ''}</span>
@@ -1851,10 +1884,10 @@
       return;
     }
     const analiz = e.target.closest('.ag-bagsiz-analiz');
-    if (analiz) { kurumAc(analiz.dataset.ad); return; }
+    if (analiz) { kurumAc(analiz.dataset.kad); return; }
     // T1: OK (►) → dalı aç/kapat (alt kurumlar); AD → idarenin analiz sayfasına git.
     if (e.target.closest('.ag-ok')) { dugumAcKapa(dugum); return; }
-    if (e.target.closest('.ag-ad')) { kurumAc(dugum.dataset.ad, dugum.dataset.detsis); return; }
+    if (e.target.closest('.ag-ad')) { kurumAc(dugum.dataset.kad, dugum.dataset.detsis); return; }
   }
 
   // Tembel dal açılımı: çocuklar İLK açılışta RPC ile gelir, sonrası DOM'da kalır
@@ -1903,11 +1936,11 @@
     const html = satirlar.map(r => `
       <div class="ag-satir" style="--derin:${derin}">
         <button class="ag-ok yok">▸</button>
-        <span class="ag-ad ag-bagsiz-analiz" data-ad="${esc(r.idare)}" title="${esc(r.idare)} — analizi aç">${esc(r.idare)}</span>
+        <span class="ag-ad ag-bagsiz-analiz" data-kad="${esc(r.idare)}" title="${esc(r.idare)} — analizi aç">${esc(r.idare)}</span>
         <span class="ag-rozet ${Number(r.ihale_sayisi) ? 'ihale' : 'bos'}" title="Bu idarenin ağaca bağlanamayan ihale kayıtları">📋 ${sayi(r.ihale_sayisi)}</span>
         <span class="ag-rozet ${Number(r.dt_sayisi) ? 'dt' : 'bos'}" title="Bu idarenin ağaca bağlanamayan DT kayıtları">⚡ ${sayi(r.dt_sayisi)}</span>
         <span class="ag-pay"></span>
-        <button class="ag-kucuk-btn mavi ag-bagsiz-analiz" data-ad="${esc(r.idare)}">📊 Analiz</button>
+        <button class="ag-kucuk-btn mavi ag-bagsiz-analiz" data-kad="${esc(r.idare)}">📊 Analiz</button>
       </div>`).join('');
     const daha = satirlar.length >= 50
       ? `<div class="ag-daha" style="--derin:${derin}"><button class="v1-mini-btn ag-bagsiz-daha">Daha fazla göster</button></div>` : '';
@@ -1950,7 +1983,7 @@
           </div>`).join('') + '</div>' : '')
       + (bagsizlar.length ? '<div class="ag-sonuc"><div class="ag-sonuc-baslik">Bağlantısız kurumlarda eşleşenler — tıklayınca analiz açılır</div>'
         + bagsizlar.map(r => `
-          <div class="ag-sonuc-satir ag-sonuc-bagsiz" data-ad="${esc(r.idare)}">
+          <div class="ag-sonuc-satir ag-sonuc-bagsiz" data-kad="${esc(r.idare)}">
             <span class="ag-sonuc-ad" title="${esc(r.idare)}">${esc(r.idare)}</span>
             <span class="ag-rozet ${Number(r.ihale_sayisi) ? 'ihale' : 'bos'}">📋 ${sayi(r.ihale_sayisi)}</span>
             <span class="ag-rozet ${Number(r.dt_sayisi) ? 'dt' : 'bos'}">⚡ ${sayi(r.dt_sayisi)}</span>
@@ -2123,8 +2156,8 @@
     });
     el('iz-sort-aktif').addEventListener('click', () => { el('iz-sirala').value = 'aktif_desc'; izFiltrele(); });
     el('iz-govde').addEventListener('click', e => {
-      const satir = e.target.closest('[data-ad]');
-      if (satir) kurumAc(satir.dataset.ad, satir.dataset.detsis);
+      const satir = e.target.closest('[data-kad]');
+      if (satir) kurumAc(satir.dataset.kad, satir.dataset.detsis);
     });
 
     // ağaç
@@ -2133,7 +2166,7 @@
       const a = e.target.closest('.ag-sonuc-agac');
       if (a) { agacYoluAc(a.dataset.detsis); return; }
       const b = e.target.closest('.ag-sonuc-bagsiz');
-      if (b) kurumAc(b.dataset.ad);
+      if (b) kurumAc(b.dataset.kad);
     });
     let agZaman;
     el('ag-arama').addEventListener('input', () => { clearTimeout(agZaman); agZaman = setTimeout(agacAra, 350); });
