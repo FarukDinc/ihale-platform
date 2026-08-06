@@ -455,7 +455,6 @@
 
         <div class="v1-sekmeler">
           <button class="v1-sekme aktif" data-sek="genel">Genel Bakış</button>
-          <button class="v1-sekme" data-sek="dagilim">Dağılım Analizi</button>
           <button class="v1-sekme" data-sek="liste">İhale Listesi</button>
           <button class="v1-sekme" data-sek="sonuc">Sonuçlar &amp; Sözleşmeler</button>
         </div>
@@ -482,10 +481,9 @@
             <div class="v1-kart-baslik">İl Bazlı Dağılım</div>
             <div class="k-il-liste" id="l-il"><div class="v1-bos">Yükleniyor…</div></div>
           </div>
-        </div>
 
-        <!-- DAĞILIM ANALİZİ -->
-        <div id="sek-dagilim" class="v1-panel">
+          <!-- DAĞILIM ANALİZİ (K3: ayrı sekme kaldırıldı → Genel Bakış'ın altına gömüldü, boş durmasın) -->
+          <div class="v1-kart-baslik" style="margin:26px 0 2px;font-size:16px;border-top:1px solid var(--v1-cizgi);padding-top:20px;">📊 Dağılım Analizi</div>
           <div class="dag-tip">
             <button type="button" data-dtip="ihale" class="dag-tip-btn aktif">📋 İhale</button>
             <button type="button" data-dtip="dt" class="dag-tip-btn">⚡ Doğrudan Temin</button>
