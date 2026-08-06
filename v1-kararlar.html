@@ -31,6 +31,18 @@
       padding:30px 22px; text-align:center; color:var(--v1-muted); font-size:13.5px; line-height:1.65; }
     .v1-bos-not strong { display:block; color:var(--v1-lacivert); font-size:15px; margin-bottom:6px; }
     .v1-kaynak-link { display:inline-block; margin-top:3px; font-size:11.5px; font-weight:600; }
+    /* KR1: satır tıklanınca açılan detay */
+    .v1-karar-satir { cursor:pointer; }
+    .v1-karar-satir:hover td { background:#F8FBFF; }
+    .v1-karar-satir.acik td { background:var(--v1-mavi-acik); }
+    .v1-detay-tr > td { padding:0 !important; }
+    .v1-detay { padding:14px 18px; background:#F8FBFF; border-left:3px solid var(--v1-mavi); }
+    .v1-detay-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:10px 22px; font-size:13px; }
+    .v1-detay-grid > div { line-height:1.5; }
+    .v1-detay-grid b { color:var(--v1-lacivert); display:block; font-size:10.5px; text-transform:uppercase; letter-spacing:.04em; margin-bottom:2px; }
+    .v1-detay-tam { grid-column:1/-1; }
+    .v1-detay-not { grid-column:1/-1; margin-top:6px; font-size:12px; color:var(--v1-muted);
+      background:#FFF9E9; border:1px solid #F2E2B8; border-radius:8px; padding:8px 11px; line-height:1.55; }
   </style>
 </head>
 <body class="v1" data-v1-aktif="kararlar" data-v1-kirinti="Kamu > KİK Kararları">
@@ -112,7 +124,7 @@
   const DIGER_FILTRE='karar_turu.is.null,karar_turu.not.in.('+BILINEN.join(',')+')';
   // kaynak_url canlıda 775/775 NULL; dolduğunda `javascript:` taşıyan satır depolanmış XSS olur.
   const guvenliUrl=(u)=>/^https?:\/\//i.test(u||'')?u:'';
-  let uyeMi=false, tur='', sayfa=1, aramaT, turAdet={};
+  let uyeMi=false, tur='', sayfa=1, aramaT, turAdet={}, sonSatirlar=[];
 
   // Ham DB kodu → kullanıcıya gösterilen Türkçe etiket (ham 'uyusmazlik' gösterilmez).
   const TUR_ETIKET={
@@ -253,24 +265,59 @@
       document.getElementById('v1-sayi').innerHTML = toplam!=null
         ? `Arama kriterinize uygun <strong>${num(toplam)}</strong> karar listeleniyor`
         : `<strong>${d.length}</strong> karar gösteriliyor`;
-      tb.innerHTML=d.map(r=>{
+      sonSatirlar=d;
+      tb.innerHTML=d.map((r,i)=>{
         const sn=sonucBilgi(r.sonuc);
         const t=r.karar_tarihi?new Date(r.karar_tarihi).toLocaleDateString('tr-TR'):'—';
         const url=guvenliUrl(r.kaynak_url);
         const link=url?`<br><a class="v1-kaynak-link" href="${esc(url)}" target="_blank" rel="noopener noreferrer">Kaynak ↗</a>`:'';
-        return `<tr>
+        return `<tr class="v1-karar-satir" data-idx="${i}">
           <td class="v1-t-tarih"><strong style="color:var(--v1-lacivert);">${esc(r.karar_no||'—')}</strong><br><span class="saat">${t}</span>${link}</td>
           <td><div class="v1-t-ad" style="font-weight:600;">${esc(r.baslik||r.ihale_konusu||'—')}</div>
             <div class="v1-karar-ozet">${esc(r.idare||'')}${r.ozet?' · '+esc(r.ozet):''}</div></td>
           <td><span class="v1-tur-rozet">${esc(turEtiket(r.karar_turu))}</span></td>
           <td><span class="v1-sonuc-rozet" style="background:${sn.bg};color:${sn.fg};"${sn.ipucu?` title="${esc(sn.ipucu)}"`:''}>${esc(sn.ad)}</span></td></tr>`;
       }).join('');
+      tb.querySelectorAll('.v1-karar-satir').forEach(tr=>tr.addEventListener('click',e=>{
+        if(e.target.closest('a')) return;   // Kaynak/KİK linkine tık detay AÇMAZ
+        detayAc(tr);
+      }));
       sayfalama(toplam,d.length);
     }catch(e){
       tabloGoster();
       tb.innerHTML=`<tr><td colspan="4" class="v1-bos">Liste yüklenemedi. ${esc(e.message||'')}</td></tr>`;
       document.getElementById('v1-sayfalama').innerHTML='';
     }
+  }
+
+  // KR1: satıra tıklayınca mevcut kolonlardan zengin detay panelini aç/kapat.
+  // Kararın TAM METNİ arşivde yok (kik_backfill kaynak_url/gerekçe boş) → dürüst not + KİK dış-link.
+  function detayAc(tr){
+    const yanit=tr.nextElementSibling;
+    const zatenAcik=yanit&&yanit.classList.contains('v1-detay-tr');
+    // Açık tüm detayları kapat (aynı anda tek panel)
+    document.querySelectorAll('#v1-tbody .v1-detay-tr').forEach(x=>x.remove());
+    document.querySelectorAll('#v1-tbody .v1-karar-satir.acik').forEach(x=>x.classList.remove('acik'));
+    if(zatenAcik) return;   // aynı satıra tekrar tık → sadece kapat
+    const r=sonSatirlar[+tr.dataset.idx]; if(!r) return;
+    tr.classList.add('acik');
+    const t=r.karar_tarihi?new Date(r.karar_tarihi).toLocaleDateString('tr-TR'):'—';
+    const konu=esc(r.ihale_konusu||r.baslik||'—');
+    const alan=(etk,deg)=>deg?`<div><b>${etk}</b>${esc(deg)}</div>`:'';
+    const kno=esc(r.karar_no||'');
+    const d=document.createElement('tr');
+    d.className='v1-detay-tr';
+    d.innerHTML=`<td colspan="4"><div class="v1-detay"><div class="v1-detay-grid">
+        <div class="v1-detay-tam"><b>İhale / Başvuru Konusu</b>${konu}</div>
+        ${alan('Karar No',r.karar_no)}
+        ${alan('Karar Tarihi',t)}
+        ${alan('İdare',r.idare)}
+        ${alan('Karar Türü',turEtiket(r.karar_turu))}
+        ${alan('Başvuran / Özet',r.ozet)}
+        <div class="v1-detay-not">Kararın tam metni ve gerekçesi şu an arşivde bulunmuyor.
+          Resmî tam metin için <a href="https://www.kik.gov.tr/tr/uyusmazlik-kararlari" target="_blank" rel="noopener noreferrer">KİK Uyuşmazlık Kararları</a>${kno?` sayfasında <strong>${kno}</strong> numarasıyla`:'nda'} arayabilirsiniz.</div>
+      </div></div></td>`;
+    tr.after(d);
   }
 
   function sayfalama(toplam,adet){
