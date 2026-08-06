@@ -489,7 +489,8 @@
     const url=`v1-kurum-analiz?gorunum=agac&dal=${encodeURIComponent(dn)}`;
     return `<tr data-url="${esc(url)}" tabindex="0">`+
       `<td><span style="margin-right:7px;">${ik}</span><span style="font-weight:800;color:var(--v1-lacivert);">${esc(ad)}</span>`+
-      `<span class="v1-kat-rozet" style="background:${r.bg};color:${r.fg};margin-left:8px;">${r.et}</span></td>`+
+      `<span class="v1-kat-rozet" style="background:${r.bg};color:${r.fg};margin-left:8px;">${r.et}</span>`+
+      ` <a class="kat-ihale-git" href="v1-kurum-analiz?kurum=${encodeURIComponent(ad)}${dn?'&detsis='+encodeURIComponent(dn):''}" title="Bu tepe kurumun KENDİ ihale karnesine git (alt birimleri açmak için kurum ismine tıkla)" style="margin-left:10px;font-size:11.5px;font-weight:700;color:var(--v1-mavi);text-decoration:none;white-space:nowrap;border-bottom:1px dotted var(--v1-mavi);">📊 İhaleleri →</a></td>`+
       `<td><span style="font-weight:700;color:var(--v1-teal);">${num(af)}</span></td>`+
       `<td>${num(ih)}</td>`+
       `<td>${num(sz)}</td>`+
@@ -514,8 +515,11 @@
     if(!katVeri.length){ gov.innerHTML='<tr><td colspan="7" class="v1-bos">Kategori bulunamadı.</td></tr>'; return; }
     gov.innerHTML=katVeriSirala().map(katSatir).join('');
     gov.querySelectorAll('tr[data-url]').forEach(tr=>{
-      const git=()=>{ location.href=tr.dataset.url; };
-      tr.addEventListener('click',git);
+      const git=()=>{ location.href=tr.dataset.url; };   // isim/satır → ağaç (alt idareler açılır)
+      tr.addEventListener('click',e=>{
+        if(e.target.closest('.kat-ihale-git')) return;   // 📊 İhaleleri → kendi href'i (tepe kurum karnesi); satır=alt idareler
+        git();
+      });
       tr.addEventListener('keydown',e=>{ if(e.key==='Enter'){ e.preventDefault(); git(); } });
     });
     katOkYaz();
