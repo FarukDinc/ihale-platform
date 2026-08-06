@@ -1701,8 +1701,10 @@
   async function agacBaslat() {
     if (!uyeMi) { agacGirisKapisi(); return; }
 
-    // 30 dk önbellek: kökler + kapsama özeti (RPC'ler seyrek kalsın — 2 r/s limiti)
-    const CK = 'kurum_agac_v1', TTL = 30 * 60 * 1000;
+    // 30 dk önbellek: kökler + kapsama özeti (RPC'ler seyrek kalsın — 2 r/s limiti).
+    // ⚠️ v2: idare_agac_* RPC çıktısı (detsis dedup) değişince eski v1 cache'i bayat-şekilli
+    // kalıp render'ı bozuyordu (ağaç boş/takılı) → anahtar yükseltilerek eski cache geçersiz.
+    const CK = 'kurum_agac_v2', TTL = 30 * 60 * 1000;
     let kokler = null, ozet = null;
     try {
       const ham = sessionStorage.getItem(CK);
@@ -1733,7 +1735,26 @@
     kapsamaCiz(ozet);
 
     const kokEl = el('ag-kokler');
-    kokEl.innerHTML = kokler.map(d => dugumHtml(d, 0)).join('') + bagsizKokHtml(ozet);
+    // KENDİ KENDİNİ İYİLEŞTİR: bayat/uyumsuz-şekilli cache render'ı bozarsa (dugumHtml/bagsizKokHtml
+    // throw → ağaç boş/takılı), cache'i at + taze çek + yeniden çiz. Bu sınıf hata sessizce kurtarılır.
+    const agacCiz = () => { kokEl.innerHTML = kokler.map(d => dugumHtml(d, 0)).join('') + bagsizKokHtml(ozet); };
+    try {
+      agacCiz();
+    } catch (renderHata) {
+      console.warn('Ağaç render başarısız (muhtemel bayat cache) → tazeleniyor:', renderHata);
+      try { sessionStorage.removeItem(CK); } catch (_) {}
+      const [kokRes, ozetRes] = await Promise.all([
+        sb.rpc('idare_agac_dallar', { p_ust: null }),
+        sb.rpc('idare_agac_bagsiz_ozet'),
+      ]);
+      if (kokRes.error) throw kokRes.error;
+      kokler = kokRes.data || [];
+      ozet = ozetRes.error ? null : ozetRes.data;
+      try { sessionStorage.setItem(CK, JSON.stringify({ t: Date.now(), k: kokler, o: ozet })); } catch (_) {}
+      agTumIhale = Number(ozet && ozet.tum_ihale) || kokler.reduce((s, r) => s + (Number(r.toplam_ihale) || 0), 0);
+      agTumDt = Number(ozet && ozet.tum_dt) || kokler.reduce((s, r) => s + (Number(r.toplam_dt) || 0), 0);
+      agacCiz();
+    }
     el('ag-sayac').textContent = `${sayi(kokler.length)} kök kurum · dalları ▸ ile açın`;
     el('ag-yukleniyor').style.display = 'none';
     el('ag-icerik').style.display = 'block';
