@@ -1372,16 +1372,28 @@
     const ilSayisi = Number(kpi.il_sayisi) || 0;
     topSayfa = Math.max(1, Math.ceil(toplam / PER_PAGE));
 
+    // K4: Toplam Bütçe = sum(yaklasik_maliyet). Toplam 0 ise "—" YANILTICI (kullanıcı "veri
+    // bozuk/tutmuyor" sanıyor) → "Belirtilmemiş": bu kurumun ihalelerinde yaklaşık maliyet hiç
+    // ilan edilmemiş demek (0 gerçekten "0 TL" değil, "bilinmiyor").
+    const butceVar = toplamButce > 0;
+    const butceStr = butceVar ? paraFormat(toplamButce) : 'belirtilmemiş';
     el('kurum-meta').textContent =
-      `${num(toplam)} ihale kaydı · ${num(ilSayisi)} il · toplam bütçe: ${paraFormat(toplamButce)} (yalnız ihaleler, doğrudan temin hariç)`;
+      `${num(toplam)} ihale kaydı · ${num(ilSayisi)} il · toplam bütçe: ${butceStr} (yalnız ihaleler, doğrudan temin hariç)`;
     el('kpi-toplam').textContent = num(toplam);
     el('kpi-aktif').textContent = num(aktifSay);
-    el('kpi-butce').textContent = paraFormat(toplamButce);
     el('kpi-il').textContent = num(ilSayisi);
-    el('kpi-butce-alt').textContent = `${num(toplam)} ihale üzerinden · maliyeti ilan edilmeyen kayıtlar 0 sayılır`;
-    // Uzun parasal değerde KPI sayısı taşmasın
     const bEl = el('kpi-butce');
-    bEl.style.fontSize = bEl.textContent.length > 13 ? '19px' : '';
+    if (butceVar) {
+      bEl.textContent = paraFormat(toplamButce);
+      bEl.style.color = '';
+      bEl.style.fontSize = bEl.textContent.length > 13 ? '19px' : '';   // uzun parasal değer taşmasın
+      el('kpi-butce-alt').textContent = `${num(toplam)} ihale üzerinden · maliyeti ilan edilmeyen kayıtlar 0 sayılır`;
+    } else {
+      bEl.textContent = 'Belirtilmemiş';
+      bEl.style.color = 'var(--v1-muted)';
+      bEl.style.fontSize = '18px';
+      el('kpi-butce-alt').textContent = 'bu kurumun ihalelerinde yaklaşık maliyet ilan edilmemiş';
+    }
 
     aylikTrendGrafik((ozet && ozet.aylik_trend) || {});
     yillikGrafik((ozet && ozet.yillik) || []);
