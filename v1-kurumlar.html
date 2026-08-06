@@ -420,7 +420,7 @@
       return `<tr>
         <td style="color:var(--v1-muted);font-weight:700;">${bas+i+1}</td>
         <td><a class="v1-t-ad" href="v1-kurum-analiz?kurum=${iu}${du}">${esc(r.idare)}</a></td>
-        <td style="font-size:13px;">${esc(r.il||'—')}</td>
+        <td style="font-size:13px;">${/BAKANLIĞI\s*$/.test((r.idare||'').trim()) ? '<span style="color:var(--v1-muted);" title="Ulusal bakanlık — tek ile bağlı değil (en sık ihale ili yanıltıcıydı)">🇹🇷 Ulusal</span>' : esc(r.il||'—')}</td>
         <td><div style="display:flex;align-items:center;gap:10px;">
           <span class="v1-bar-wrap"><span class="v1-bar" style="width:${w}%"></span></span>
           ${L(r.toplam>0,`v1-ihaleler?idare=${iu}${du}`,`<span style="font-weight:700;color:var(--v1-lacivert);white-space:nowrap;">${num(r.toplam)}</span>`)}</div></td>
