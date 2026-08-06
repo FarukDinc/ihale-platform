@@ -35,6 +35,9 @@ from ekap_dogrudan_temin_scraper import (
 )
 from proxy_havuz import havuz_al, ekap_ssl_baglami
 
+# Varsayilan durum dosyasi. --durum-dosya ile DEGISTIRILEBILIR: ayni anda BIRDEN COK DT sureci
+# (or. biri ISP gateway, digeri Webshare havuzu) FARKLI ay araliklarinda kosarken ayni JSON'u
+# ezmesin diye. Iki surec ayni dosyayi yazarsa checkpoint'ler birbirini siler.
 DURUM_DOSYA = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".dt_tarih_backfill.json")
 
 
@@ -72,7 +75,13 @@ def main():
     ap.add_argument("--bitis-saat", default=None,
                     help="UTC 'SS:DD' — bu saate gelince temiz dur (gece cron'uyla çakışmasın)")
     ap.add_argument("--azami-sayfa", type=int, default=4000, help="Ay başına güvenlik tavanı")
+    ap.add_argument("--durum-dosya", default=None,
+                    help="Checkpoint JSON yolu (paralel 2. surec icin AYRI dosya ver; yoksa ezisirler)")
     args = ap.parse_args()
+    if args.durum_dosya:
+        global DURUM_DOSYA
+        DURUM_DOSYA = args.durum_dosya
+        print(f"📝 Durum dosyasi: {DURUM_DOSYA}")
 
     dur_dt = None
     if args.bitis_saat:
