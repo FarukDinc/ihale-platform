@@ -532,6 +532,17 @@
             <button type="button" data-stip="ihale" class="dag-tip-btn aktif">📋 İhale Sonuçları</button>
             <button type="button" data-stip="dt" class="dag-tip-btn">⚡ Doğrudan Temin Sonuçları</button>
           </div>
+          <!-- K2: Devam Eden Sözleşmeler — is_bitis_tarihi>=bugün kısımlar; seyrek veri → yoksa gizli -->
+          <div class="v1-kart" id="devam-kart" style="padding:18px 20px;margin-bottom:14px;display:none;">
+            <div class="v1-tablo-bas">
+              <div>
+                <div style="font-size:17px;font-weight:800;color:var(--v1-lacivert);">⚡ Devam Eden Sözleşmeler
+                  <span class="k-rozet" title="Sözleşme bitiş tarihi (is_bitis_tarihi) henüz gelmemiş — süren işler. Bu alan EKAP'ta seyrek doldurulur; yalnızca uzun süreli/imtiyaz sözleşmeleri görünür.">süren işler</span></div>
+                <div class="v1-tablo-sayi" id="devam-bilgi"></div>
+              </div>
+            </div>
+            <div id="devam-kap"></div>
+          </div>
           <div class="v1-kart" style="padding:18px 20px;">
             <div class="v1-tablo-bas">
               <div>
@@ -684,7 +695,7 @@
 
   // Sonuçlar & Sözleşmeler sekmesi
   const SZ_PER = 20;     // sayfa başına İHALE sayısı (satır sayısı bundan FAZLA olabilir)
-  let szSayfa = 1, szIstek = 0, szDahaVar = false, szYuklendi = false;
+  let szSayfa = 1, szIstek = 0, szDahaVar = false, szYuklendi = false, devamYuklendi = false;
 
   function sekmeAc(id) {
     document.querySelectorAll('#root-content .v1-panel').forEach(p => p.classList.remove('aktif'));
@@ -784,6 +795,7 @@
 
   // Sonuçlar & Sözleşmeler sekmesi → DT: bu idarenin sonuçlanmış DT'leri (kazanan firma + bedel)
   async function sonucSayfaDT(s) {
+    el('devam-kart').style.display = 'none';   // K2: DT'de sözleşme süresi kavramı yok
     const istek = ++szIstek;
     szSayfa = Math.max(1, s);
     const bas = (szSayfa - 1) * SZ_PER;
@@ -944,8 +956,48 @@
     szYuklendi = false;   // sekmeye tekrar tıklayınca YENİDEN denensin
   }
 
+  // K2: Devam eden sözleşmeler — is_bitis_tarihi>=bugün olan kısımlar. Seyrek veri (EKAP is_bitis
+  // %0,5 dolu; çoğu kurumda boş → kart gizli). Yalnız İhale modunda anlamlı (DT tek-seferlik alım).
+  // KURUM çapası ZORUNLU (gömülü-kaynak filtresi kurumsuz timeout'a düşer).
+  async function devamEdenYukle() {
+    const kart = el('devam-kart');
+    if (sonucTip !== 'ihale') { kart.style.display = 'none'; return; }
+    const bugun = new Date().toISOString().slice(0, 10);
+    try {
+      const { data, error } = await sb.from('ilanlar')
+        .select('id,baslik,ihale_sonuclari!inner(kisim_no,kazanan_firma,sozlesme_bedeli,kazanan_teklif,is_baslama_tarihi,is_bitis_tarihi)')
+        .filter(KURUM_DETSIS ? 'detsis_no' : 'idare', KURUM_DETSIS ? 'eq' : 'ilike', KURUM_DETSIS || `%${KURUM}%`)
+        .filter('ihale_sonuclari.is_bitis_tarihi', 'gte', bugun)
+        .limit(50);
+      if (error || !data || !data.length) { kart.style.display = 'none'; return; }
+      const satirlar = [];
+      data.forEach(il => (il.ihale_sonuclari || []).forEach(so => {
+        if (so.is_bitis_tarihi && so.is_bitis_tarihi.slice(0, 10) >= bugun)
+          satirlar.push({ ...so, baslik: il.baslik, ilan_id: il.id });
+      }));
+      if (!satirlar.length) { kart.style.display = 'none'; return; }
+      satirlar.sort((a, b) => (a.is_bitis_tarihi || '').localeCompare(b.is_bitis_tarihi || ''));   // en yakında bitecek üstte
+      const gun = (d) => d ? new Date(d).toLocaleDateString('tr-TR') : '—';
+      const govde = satirlar.map(so => {
+        const kalan = so.is_bitis_tarihi ? Math.ceil((new Date(so.is_bitis_tarihi) - new Date()) / 86400000) : null;
+        const bedel = paraFormat(so.sozlesme_bedeli != null ? so.sozlesme_bedeli : so.kazanan_teklif);
+        return `<tr>
+          <td style="white-space:nowrap;font-size:12.5px;">${gun(so.is_baslama_tarihi)} – ${gun(so.is_bitis_tarihi)}${kalan != null ? `<br><span style="color:var(--v1-teal);font-size:11px;font-weight:600;">${kalan > 0 ? sayi(kalan) + ' gün kaldı' : 'bugün bitiyor'}</span>` : ''}</td>
+          <td><a class="v1-t-ad" href="v1-ihale-detay?id=${so.ilan_id}">${esc(so.baslik || '—')}</a></td>
+          <td><a class="v1-t-ad" href="v1-firma-analiz?ara=${encodeURIComponent(so.kazanan_firma || '')}">${esc(so.kazanan_firma || '—')}</a></td>
+          <td style="font-weight:700;color:var(--v1-mavi);text-align:right;white-space:nowrap;">${bedel}</td></tr>`;
+      }).join('');
+      el('devam-kap').innerHTML = `<div style="overflow-x:auto;"><table class="v1-tablo">
+        <thead><tr><th style="width:160px;">Süre (başlama – bitiş)</th><th>İhale</th><th>Yüklenici</th><th style="width:150px;text-align:right;">Sözleşme Bedeli</th></tr></thead>
+        <tbody>${govde}</tbody></table></div>`;
+      el('devam-bilgi').textContent = `${sayi(satirlar.length)} devam eden sözleşme kaydı · en yakında bitecek üstte`;
+      kart.style.display = '';
+    } catch (_) { kart.style.display = 'none'; }
+  }
+
   async function sonucSayfa(s) {
     if (sonucTip === 'dt') return sonucSayfaDT(s);
+    if (s <= 1 && !devamYuklendi) { devamYuklendi = true; devamEdenYukle(); }   // K2: devam eden sözleşmeler (kurum başına 1 kez)
     const istek = ++szIstek;
     szSayfa = Math.max(1, s);
     const bas = (szSayfa - 1) * SZ_PER;
@@ -1333,7 +1385,7 @@
     el('liste-kap').innerHTML = '';
     // Sonuç sekmesi de sıfırlanmalı — yoksa yeni kurumda ÖNCEKİ kurumun
     // sözleşmeleri ekranda kalır (szYuklendi true iken yeniden çekilmez).
-    szSayfa = 1; szIstek++; szDahaVar = false; szYuklendi = false;
+    szSayfa = 1; szIstek++; szDahaVar = false; szYuklendi = false; devamYuklendi = false;
     el('sonuc-kap').innerHTML = '<div class="v1-bos">Yükleniyor…</div>';
     el('sonuc-bilgi').textContent = '';
     el('sonuc-pager').style.display = 'none';
@@ -2085,7 +2137,7 @@
         if (b.dataset.stip === sonucTip) return;
         sonucTip = b.dataset.stip;
         document.querySelectorAll('[data-stip]').forEach(x => x.classList.toggle('aktif', x.dataset.stip === sonucTip));
-        szSayfa = 1; sonucSayfa(1);
+        szSayfa = 1; devamYuklendi = false; sonucSayfa(1);   // K2: İhale↔DT geçişinde devam kartını yeniden değerlendir
       }));
     el('btn-liste-git').addEventListener('click', () => {
       // "Tüm İhalelerini Gör" → tam Kamu İhaleler sayfası, bu idareye süzülmüş (drill-down: tüm durum).
