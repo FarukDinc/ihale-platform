@@ -168,6 +168,25 @@
     .fa-ikili { display:grid; grid-template-columns:repeat(auto-fit,minmax(290px,1fr)); gap:16px; }
     .fa-graf { position:relative; height:190px; }
 
+    /* ── Top-10 İdare tablosu (İhale + DT genel bakış: en çok iş alınan idareler) ── */
+    .fa-ti-kaydir { overflow-x:auto; }
+    .fa-ti { width:100%; border-collapse:collapse; }
+    .fa-ti th { text-align:left; font-size:10.5px; font-weight:800; color:var(--v1-muted);
+      text-transform:uppercase; letter-spacing:.04em; padding:7px 8px; border-bottom:1.5px solid var(--v1-cizgi); white-space:nowrap; }
+    .fa-ti th.sag { text-align:right; }
+    .fa-ti td { padding:9px 8px; border-bottom:1px solid var(--v1-cizgi); font-size:12.5px; vertical-align:middle; }
+    .fa-ti tr:last-child td { border-bottom:none; }
+    .fa-ti tbody tr:hover td { background:#F8FBFF; }
+    .fa-ti .no { color:var(--v1-muted); font-weight:800; width:24px; text-align:center; }
+    .fa-ti .ad { min-width:220px; }
+    .fa-ti .ad a { color:var(--v1-mavi); font-weight:700; text-decoration:none; }
+    .fa-ti .ad a:hover { text-decoration:underline; }
+    .fa-ti .n { text-align:right; font-weight:800; color:var(--v1-lacivert); white-space:nowrap; }
+    .fa-ti .b { text-align:right; font-weight:800; color:var(--v1-lacivert); white-space:nowrap; }
+    .fa-ti-yogun { font-size:12px; color:var(--v1-metin); background:var(--v1-mavi-acik); border:1px solid #CFE2F5;
+      border-radius:9px; padding:9px 12px; margin-bottom:12px; line-height:1.55; }
+    .fa-ti-yogun b { color:var(--v1-lacivert); }
+
     /* ── İhale sonuç kartı ─────────────────────────────────────────────── */
     .fa-ik { background:#fff; border:1px solid var(--v1-cizgi); border-radius:var(--v1-radius);
       padding:14px 18px; margin-bottom:10px; transition:border-color .15s; }
@@ -587,6 +606,13 @@
                 <div class="v1-kart-baslik">Sektör / Kategori Dağılımı</div>
                 <div id="kategori-list"><div class="v1-bos">—</div></div>
               </div>
+            </div>
+            <!-- En Çok İş Aldığı İdareler (Top 10) — İHALE tarafı (analiz_pivot idare; tam veri) -->
+            <div class="v1-kart" style="margin-top:16px;margin-bottom:0;">
+              <div class="v1-kart-baslik">🏛️ En Çok İş Aldığı İdareler (Top 10)
+                <span class="fa-rozet" title="Yalnız ihaleler — bu firmanın 4734 ihale kazanımlarının idare bazında dağılımı (tam veri). Doğrudan temin dahil değildir.">yalnız ihaleler</span>
+              </div>
+              <div id="ihale-idare-icerik"><div class="v1-bos">—</div></div>
             </div>
           </div>
 
@@ -1106,6 +1132,7 @@
       <div class="fa-bos-bas">İhale (4734) kazanımı yok</div>
       <div class="fa-bos-alt">Bu firma yalnızca <b>doğrudan temin</b> kazanmış. Yukarıdaki
         <b>Doğrudan Teminler Genel Bakış</b> ve <b>Katıldığı Doğrudan Teminler</b> sekmelerinden inceleyebilirsiniz.</div></div>`;
+    { const iel = $('ihale-idare-icerik'); if (iel) iel.innerHTML = '<div class="v1-bos">İhale (4734) kazanımı yok — idare kırılımı yalnızca Doğrudan Teminler Genel Bakış sekmesinde.</div>'; }
     if (pushUrl){
       const url = new URL(window.location);
       url.searchParams.set('firma', ad);
@@ -1132,6 +1159,7 @@
     $('pivot-kaplayici').innerHTML = '';
     $('ai-kaplayici').innerHTML = '';
     $('risk-serit').style.display = 'none';
+    { const iel = $('ihale-idare-icerik'); if (iel) iel.innerHTML = '<div class="v1-bos">—</div>'; }  // önceki firmanın idare tablosu sızmasın
 
     goster('detay');
     $('firma-meta').textContent = 'Veri yükleniyor…';
@@ -1224,6 +1252,7 @@
       ['tur-list','il-list','kategori-list'].forEach(i => { $(i).innerHTML = '<div class="v1-bos">Veri yok.</div>'; });
       if (_yilChart){ _yilChart.destroy(); _yilChart = null; }
     }
+    ihaleIdareYukle();   // "En Çok İş Aldığı İdareler (Top 10)" — İhale genel bakış (analiz_pivot, tam veri)
 
     // (a) Firma açılınca ÖZET yerine SÖZLEŞME LİSTESİ karşılasın — derin analiz yapan
     //     doğrudan "Katıldığı İhaleler"i görsün (Genel Bakış tek tık uzakta). DT sekmesindeyken
@@ -1268,6 +1297,46 @@
     </div>`).join('');
   }
 
+  // "En Çok İş Aldığı İdareler" tablosu — rows: {ad, sayi, bedel}[]; idare adı v1-kurum-analiz'e linkli.
+  // İhale ve DT tarafı aynı biçimi paylaşır (sonEt: adet kolonu başlığı — "İhale" / "DT").
+  function topIdareTabloHtml(rows, sonEt){
+    if(!rows || !rows.length) return '<div class="v1-bos">İdare kırılımı için yeterli veri yok.</div>';
+    const govde = rows.map((r,i) => `<tr>
+      <td class="no">${i+1}</td>
+      <td class="ad"><a href="v1-kurum-analiz?kurum=${encodeURIComponent(r.ad)}" title="${esc(r.ad)}">🏛️ ${esc(r.ad)}</a></td>
+      <td class="n">${num(r.sayi)}</td>
+      <td class="b">${r.bedel ? paraTam(r.bedel) : '—'}</td>
+    </tr>`).join('');
+    return `<div class="fa-ti-kaydir"><table class="fa-ti">
+      <thead><tr><th class="no">#</th><th>İdare</th><th class="sag">${esc(sonEt||'Adet')}</th><th class="sag">Toplam Bedel</th></tr></thead>
+      <tbody>${govde}</tbody></table></div>`;
+  }
+
+  // İHALE tarafı "En Çok İş Aldığı İdareler" — analiz_pivot('idare') ile (tam veri, örneklem değil).
+  // toplam_bedel = SUM(kazanan_teklif). DT-only firmalarda [] döner → "kazanım yok" mesajı.
+  async function ihaleIdareYukle(){
+    const el = $('ihale-idare-icerik');
+    if(!el) return;
+    if(!FIRMA){ el.innerHTML = '<div class="v1-bos">—</div>'; return; }
+    el.innerHTML = '<div class="fa-mini-spin"></div>';
+    try{
+      const { data, error } = await sb.rpc('analiz_pivot', { p_grup:'idare', p_firma:FIRMA });
+      if(error) throw error;
+      const all = data || [];
+      if(!all.length){ el.innerHTML = '<div class="v1-bos">Bu firmanın idare bazında ihale kazanımı bulunamadı.</div>'; return; }
+      const toplamIs = all.reduce((a,r) => a + (Number(r.ihale_sayisi)||0), 0);
+      const rows = all.slice(0,10).map(r => ({ ad:r.grup_deger, sayi:Number(r.ihale_sayisi)||0, bedel:Number(r.toplam_bedel)||0 }));
+      const topPay = (toplamIs && rows[0]) ? Math.round(rows[0].sayi / toplamIs * 100) : 0;
+      const yogun = (rows.length > 1 && topPay >= 25)
+        ? `<div class="fa-ti-yogun">🎯 <b>Konsantrasyon:</b> en çok iş alınan idare, bu firmanın tüm ihale kazanımlarının <b>%${topPay}</b>'ini oluşturuyor (${num(rows[0].sayi)} / ${num(toplamIs)}).</div>`
+        : '';
+      el.innerHTML = yogun + topIdareTabloHtml(rows, 'İhale');
+    }catch(e){
+      el.innerHTML = '<div class="v1-bos">İdare kırılımı yüklenemedi.</div>';
+      console.info('ihale idare pivot:', e && e.message);
+    }
+  }
+
   // ── MADDE 18: firmanın DOĞRUDAN TEMİN kazanımları (firma_dt_ozet) — ihale evreninden AYRI ──
   async function dtBlokYukle(firmaAd){
     const gEl = $('fa-dtgenel-icerik'), kpiRow = $('fa-dt-kpi');
@@ -1296,12 +1365,27 @@
       $('kpi-dt-il').textContent        = num(d.il_sayisi||0);
       $('kpi-dt-sektor').textContent    = num(d.kategori_sayisi||0);
       if(kpiRow) kpiRow.style.display = '';
-      // ── DT Genel Bakış paneli (İhaleler Genel Bakış aynası): İl + Kategori dağılımı ──
+      // ── DT Genel Bakış paneli (İhaleler Genel Bakış aynası): İdare (Top 10) + İl + Kategori ──
       const ilRows = (d.iller||[]).map(x => `<div class="fa-satir"><span class="sol">📍 ${esc(x.il)}</span><span class="sag">${num(x.sayi)}</span></div>`).join('')
         || '<div class="v1-bos">İl bilgisi yok.</div>';
       const katList = (d.kategoriler||[]).map(x => [x.kategori || 'Kategorisiz', Number(x.sayi)||0]);
       const katHtml = katList.length ? cubukHtml(katList, true) : '<div class="v1-bos">Kategori bilgisi yok.</div>';
+      // En Çok İş Aldığı İdareler (Top 10) — DT tarafı: idare bazında konsantrasyon
+      const dtIdareList = (d.idareler||[]).map(x => ({ ad:x.idare, sayi:Number(x.sayi)||0, bedel:Number(x.bedel)||0 }));
+      const dtTopPay = (dtIdareList.length && n) ? Math.round(dtIdareList[0].sayi / n * 100) : 0;
+      const dtYogun = (dtIdareList.length > 1 && dtTopPay >= 25)
+        ? `<div class="fa-ti-yogun" style="background:#FFFBF0;border-color:#EFE3C4;">🎯 <b>Konsantrasyon:</b> en çok DT alınan idare, bu firmanın tüm doğrudan temin kazanımlarının <b>%${dtTopPay}</b>'ini oluşturuyor (${num(dtIdareList[0].sayi)} / ${num(n)}).</div>`
+        : '';
+      const dtIdareHtml = dtIdareList.length
+        ? dtYogun + topIdareTabloHtml(dtIdareList, 'DT')
+        : '<div class="v1-bos">İdare bilgisi yok.</div>';
       if(gEl) gEl.innerHTML = `
+        <div class="v1-kart" style="margin-bottom:16px;">
+          <div class="v1-kart-baslik">🏛️ En Çok İş Aldığı İdareler (Top 10)
+            <span class="fa-rozet" style="background:#F5E6C0;color:#8A5A00;" title="Yalnız doğrudan temin — idare bazında dağılım">yalnız DT</span>
+          </div>
+          ${dtIdareHtml}
+        </div>
         <div class="fa-ikili">
           <div class="v1-kart" style="margin-bottom:0;">
             <div class="v1-kart-baslik">İl Bazlı Dağılım (DT)</div>
@@ -2043,7 +2127,7 @@
     let paths = '';
     H.iller.forEach(il => {
       hIlAdMap[il.key] = il.ad;
-      paths += `<path class="il" data-key="${esc(il.key)}" data-ad="${esc(il.ad)}" d="${il.d}" fill="${H_BOS}"></path>`;
+      paths += `<path class="il" data-key="${esc(il.key)}" data-kad="${esc(il.ad)}" d="${il.d}" fill="${H_BOS}"></path>`;
     });
     wrap.innerHTML = `<svg class="fa-h-svg" viewBox="${esc(H.viewBox)}" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg"><g>${paths}</g></svg>`;
     wrap.querySelectorAll('path.il').forEach(p => {
@@ -2082,7 +2166,7 @@
     const ana = sm
       ? (d => `<div>${hSektorEmoji(hSektorSecili)} ${num(d.firma)} firma · ${num(d.soz)} sözleşme${d.bedel ? ' · '+paraKisa(d.bedel) : ''}</div>`)(sm[k] || {})
       : (f => `<div>🏢 ${num(f.adet)} firma${f.ciro ? ' · '+paraKisa(f.ciro)+(hDt()?' bedel':' ciro') : ''}</div>`)(hIlTotal()[k] || {});
-    tt.innerHTML = `<div class="t-ad">${esc(p.dataset.ad)}</div>${ana}`;
+    tt.innerHTML = `<div class="t-ad">${esc(p.dataset.kad)}</div>${ana}`;
     tt.style.display = 'block';
     tt.style.left = Math.min(e.clientX + 14, window.innerWidth - 260) + 'px';
     tt.style.top = (e.clientY + 14) + 'px';
