@@ -189,7 +189,7 @@
     const kolon = tur === 'firma' ? 'firma_ad' : 'idare_ad';
     const ekli = await ekliSet(tablo, kolon);
     secim.innerHTML = adlar.length ? adlar.map(ad =>
-      `<button class="tp-oge" data-ad="${esc(ad)}" data-tur="${tur}"><span class="tp-oge-ad">${esc(ad)}</span><span class="${ekli.has(trFold(ad)) ? 'tp-oge-ekli' : 'tp-oge-arti'}">${ekli.has(trFold(ad)) ? '✓ ekli' : '+'}</span></button>`
+      `<button class="tp-oge" data-kad="${esc(ad)}" data-tur="${tur}"><span class="tp-oge-ad">${esc(ad)}</span><span class="${ekli.has(trFold(ad)) ? 'tp-oge-ekli' : 'tp-oge-arti'}">${ekli.has(trFold(ad)) ? '✓ ekli' : '+'}</span></button>`
     ).join('') : '<div class="tp-bos">Sonuç yok</div>';
     secim.querySelectorAll('.tp-oge').forEach(b => b.addEventListener('click', () => ekleToggle(b, tur)));
   }
@@ -198,13 +198,13 @@
     const ekli = await ekliSet('takip_sektorler', 'sektor');
     const secim = document.getElementById('tp-secim');
     secim.innerHTML = kats.map(k =>
-      `<button class="tp-oge" data-ad="${esc(k)}" data-tur="sektor"><span class="tp-oge-ad">${esc(k)}</span><span class="${ekli.has(trFold(k)) ? 'tp-oge-ekli' : 'tp-oge-arti'}">${ekli.has(trFold(k)) ? '✓ ekli' : '+'}</span></button>`
+      `<button class="tp-oge" data-kad="${esc(k)}" data-tur="sektor"><span class="tp-oge-ad">${esc(k)}</span><span class="${ekli.has(trFold(k)) ? 'tp-oge-ekli' : 'tp-oge-arti'}">${ekli.has(trFold(k)) ? '✓ ekli' : '+'}</span></button>`
     ).join('');
     secim.querySelectorAll('.tp-oge').forEach(b => b.addEventListener('click', () => ekleToggle(b, 'sektor')));
   }
 
   async function ekleToggle(btn, tur) {
-    const ad = btn.dataset.ad;
+    const ad = btn.dataset.kad;
     const tablo = tur === 'firma' ? 'takip_firmalar' : tur === 'idare' ? 'takip_idareler' : 'takip_sektorler';
     const kolon = tur === 'firma' ? 'firma_ad' : tur === 'idare' ? 'idare_ad' : 'sektor';
     const rozet = btn.querySelector('span:last-child');

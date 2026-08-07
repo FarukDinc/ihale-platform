@@ -56,10 +56,10 @@
            'uyusmazlik'; 'duzenleyici'/'mahkeme' henüz 0). Eski 'UK'/'MK'/'MT' kodları DB'de HİÇ
            yoktu → üç sekme de boş dönüyordu. Bilinmeyen bir tür girerse "Diğer" sekmesi JS'ten eklenir. -->
       <div class="v1-sekmeler" id="v1-sekmeler">
-        <button class="v1-sekme aktif" data-t="" data-ad="Tüm Kararlar">Tümü<span class="v1-sekme-adet" hidden></span></button>
-        <button class="v1-sekme" data-t="uyusmazlik" data-ad="Uyuşmazlık Kararları">Uyuşmazlık Kararları<span class="v1-sekme-adet" hidden></span></button>
-        <button class="v1-sekme" data-t="duzenleyici" data-ad="Düzenleyici Kararlar">Düzenleyici Kararlar<span class="v1-sekme-adet" hidden></span></button>
-        <button class="v1-sekme" data-t="mahkeme" data-ad="Mahkeme Kararları">Mahkeme Kararları<span class="v1-sekme-adet" hidden></span></button>
+        <button class="v1-sekme aktif" data-t="" data-kad="Tüm Kararlar">Tümü<span class="v1-sekme-adet" hidden></span></button>
+        <button class="v1-sekme" data-t="uyusmazlik" data-kad="Uyuşmazlık Kararları">Uyuşmazlık Kararları<span class="v1-sekme-adet" hidden></span></button>
+        <button class="v1-sekme" data-t="duzenleyici" data-kad="Düzenleyici Kararlar">Düzenleyici Kararlar<span class="v1-sekme-adet" hidden></span></button>
+        <button class="v1-sekme" data-t="mahkeme" data-kad="Mahkeme Kararları">Mahkeme Kararları<span class="v1-sekme-adet" hidden></span></button>
       </div>
 
       <div id="v1-misafir" class="v1-uyari" style="display:none;">
@@ -151,7 +151,7 @@
   };
 
   const aktifSekme=()=>document.querySelector('.v1-sekme.aktif');
-  const aktifAd=()=>{ const b=aktifSekme(); return b?(b.dataset.ad||b.dataset.t||'Kararlar'):'Kararlar'; };
+  const aktifAd=()=>{ const b=aktifSekme(); return b?(b.dataset.kad||b.dataset.t||'Kararlar'):'Kararlar'; };
 
   // Sekme başına gerçek satır sayısı — hangi sekmenin boş olduğunu tahmin etmeyip ölçüyoruz.
   async function adetleriYukle(){
@@ -174,7 +174,7 @@
   function digerSekmesiEkle(){
     if(document.querySelector('.v1-sekme[data-t="'+DIGER+'"]')) return;
     const b=document.createElement('button');
-    b.className='v1-sekme'; b.dataset.t=DIGER; b.dataset.ad='Diğer Kararlar';
+    b.className='v1-sekme'; b.dataset.t=DIGER; b.dataset.kad='Diğer Kararlar';
     b.innerHTML='Diğer Kararlar<span class="v1-sekme-adet" hidden></span>';
     b.addEventListener('click',()=>sekmeSec(b));
     document.getElementById('v1-sekmeler').appendChild(b);
@@ -199,7 +199,7 @@
   function doluSekmeler(){
     return Array.from(document.querySelectorAll('.v1-sekme'))
       .filter(b=>b.dataset.t&&b.dataset.t!==tur&&turAdet[b.dataset.t]>0)
-      .map(b=>b.dataset.ad);
+      .map(b=>b.dataset.kad);
   }
 
   function bosGoster(html){
@@ -343,7 +343,7 @@
     document.querySelectorAll('.v1-sekme').forEach(x=>x.classList.remove('aktif'));
     b.classList.add('aktif');
     tur=b.dataset.t||''; sayfa=1;
-    document.getElementById('v1-liste-baslik').textContent=b.dataset.ad||'Tüm Kararlar';
+    document.getElementById('v1-liste-baslik').textContent=b.dataset.kad||'Tüm Kararlar';
     rozetleriYaz();
     yukle();
   }

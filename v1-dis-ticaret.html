@@ -286,7 +286,7 @@
     };
     el.innerHTML=`<svg viewBox="${D.viewBox}" xmlns="http://www.w3.org/2000/svg" class="v1-dunya-svg" role="img" aria-label="Dünya ticaret haritası">`+
       D.ulkeler.map(u=>{ const v=harita[u.kod]; const d=deger(v);
-        return `<path d="${u.d}" fill="${renk(d)}" data-k="${esc(u.kod)}" data-ad="${esc(u.ad||'')}"></path>`;
+        return `<path d="${u.d}" fill="${renk(d)}" data-k="${esc(u.kod)}" data-kad="${esc(u.ad||'')}"></path>`;
       }).join('')+`</svg>`;
     // Tooltip
     const tip=document.getElementById('t-tip');
@@ -294,15 +294,15 @@
       p.addEventListener('mousemove',(e)=>{
         const v=harita[p.dataset.k]||{};
         const dn=(Number(v.ihr)||0)-(Number(v.ith)||0);
-        tip.innerHTML=`<b>${esc(p.dataset.ad||p.dataset.k)}</b><br>
+        tip.innerHTML=`<b>${esc(p.dataset.kad||p.dataset.k)}</b><br>
           İhracat: ${usd(v.ihr)}<br>İthalat: ${usd(v.ith)}<br>
           Denge: <b style="color:${dn>=0?'#8ACFA6':'#F6C6C9'}">${usd(dn)}</b>`;
         tip.style.display='block'; tip.style.left=Math.min(e.clientX+14,window.innerWidth-270)+'px';
         tip.style.top=Math.max(8,e.clientY-70)+'px';
       });
       p.addEventListener('mouseleave',()=>{ tip.style.display='none'; });
-      p.addEventListener('click',()=>{ const a=document.getElementById('t-ara'); a.value=p.dataset.ad||''; listeCiz();
-        ulkeDetay(p.dataset.k, p.dataset.ad||p.dataset.k);
+      p.addEventListener('click',()=>{ const a=document.getElementById('t-ara'); a.value=p.dataset.kad||''; listeCiz();
+        ulkeDetay(p.dataset.k, p.dataset.kad||p.dataset.k);
         document.getElementById('t-tbody').scrollIntoView({block:'center',behavior:'smooth'}); });
     });
     // Tekerlekle yakınlaştır / sürükleyerek gez — küçük ülkeler tam görünümde tıklanamıyor
@@ -327,7 +327,7 @@
     document.getElementById('t-sayi').innerHTML=`<strong>${num(d.length)}</strong> ülke · ${yil} (kıyas ${kiyas})`;
     const tb=document.getElementById('t-tbody');
     if(!d.length){ tb.innerHTML='<tr><td colspan="6" class="v1-bos">Eşleşen ülke yok.</td></tr>'; return; }
-    tb.innerHTML=d.slice(0,120).map((r,i)=>`<tr style="cursor:pointer;" data-iso="${esc(r.iso3||'')}" data-ad="${esc(r.ad)}">
+    tb.innerHTML=d.slice(0,120).map((r,i)=>`<tr style="cursor:pointer;" data-iso="${esc(r.iso3||'')}" data-kad="${esc(r.ad)}">
       <td style="color:var(--v1-muted);font-weight:700;">${i+1}</td>
       <td style="font-weight:600;color:var(--v1-metin);">${esc(r.ad)}</td>
       <td style="font-weight:700;color:var(--v1-mavi);">${usd(r.ihr)}</td>
@@ -336,7 +336,7 @@
       <td>${r.degisim==null?'—':`<span class="v1-degisim ${r.degisim>=0?'arti':'eksi'}">${r.degisim>=0?'▲':'▼'} %${Math.abs(r.degisim).toLocaleString('tr-TR',{maximumFractionDigits:1})}</span>`}</td>
     </tr>`).join('');
     tb.querySelectorAll('tr[data-iso]').forEach(tr=>tr.addEventListener('click',()=>{
-      if(tr.dataset.iso) ulkeDetay(tr.dataset.iso,tr.dataset.ad);
+      if(tr.dataset.iso) ulkeDetay(tr.dataset.iso,tr.dataset.kad);
     }));
   }
 

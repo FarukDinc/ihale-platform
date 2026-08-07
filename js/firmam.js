@@ -85,7 +85,7 @@
     }
     if (!data || !data.length) { liste.innerHTML = '<div class="firmam-ac-bos">Firma bulunamadı</div>'; return; }
     liste.innerHTML = data.map(f => `
-      <button class="firmam-ac-item" data-id="${f.id}" data-ad="${esc(f.ad)}" data-il="${esc(f.il||'')}"
+      <button class="firmam-ac-item" data-id="${f.id}" data-kad="${esc(f.ad)}" data-il="${esc(f.il||'')}"
         data-ciro="${f.toplam_ciro||0}" data-say="${f.toplam_sozlesme_sayisi||0}">
         <span class="firmam-ac-ad">${esc(f.ad)}</span>
         <span class="firmam-ac-meta">${esc(f.il||'—')} · ${(f.toplam_sozlesme_sayisi||0).toLocaleString('tr-TR')} sözleşme</span>

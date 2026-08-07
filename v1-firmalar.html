@@ -491,7 +491,7 @@
           <td class="v1-sayi" style="font-weight:700;color:var(--v1-mavi);">${ciroCell}</td>
           <td class="v1-sayi" style="font-size:12.5px;color:var(--v1-muted);">${tarihKisa(r.son_sozlesme_tarihi)}</td>
           <td style="text-align:right;">
-            <button class="v1-tk" data-ad="${esc(ad)}" style="background:${t?'var(--v1-mavi)':'#fff'};color:${t?'#fff':'var(--v1-mavi)'};
+            <button class="v1-tk" data-kad="${esc(ad)}" style="background:${t?'var(--v1-mavi)':'#fff'};color:${t?'#fff':'var(--v1-mavi)'};
               border:1.5px solid var(--v1-mavi);border-radius:8px;padding:6px 12px;font-family:var(--v1-font);
               font-size:12.5px;font-weight:700;cursor:pointer;white-space:nowrap;">${t?'✓ Takipte':'+ Takip Et'}</button></td></tr>`;
       }).join('');
@@ -632,7 +632,7 @@
           <td class="v1-sayi" style="font-weight:700;color:var(--v1-mavi);">${tl(r.toplam_ciro)}</td>
           ${ekstra}
           <td style="text-align:right;">
-            <button class="v1-tk" data-ad="${esc(r.ad)}" style="background:${t?'var(--v1-mavi)':'#fff'};color:${t?'#fff':'var(--v1-mavi)'};
+            <button class="v1-tk" data-kad="${esc(r.ad)}" style="background:${t?'var(--v1-mavi)':'#fff'};color:${t?'#fff':'var(--v1-mavi)'};
               border:1.5px solid var(--v1-mavi);border-radius:8px;padding:6px 12px;font-family:var(--v1-font);
               font-size:12.5px;font-weight:700;cursor:pointer;white-space:nowrap;">${t?'✓ Takipte':'+ Takip Et'}</button></td></tr>`;
       }).join('')
@@ -678,7 +678,7 @@
   //    geçiyor ve düğme koşulsuz "✓ Takipte" oluyordu. Artık her çağrıda {error} kontrol
   //    ediliyor, hata varsa düğme eski haline dönüyor ve kullanıcıya söyleniyor.
   async function takipToggle(btn){
-    const ad=btn.dataset.ad;
+    const ad=btn.dataset.kad;
     if(!uyeMi||!uid){ alert('Firma takibi için giriş yapmalısınız.'); return; }
     const oncekiDurum=takipli.has(ad);
     btn.disabled=true; btn.style.opacity='.6'; btn.textContent='…';

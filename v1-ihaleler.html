@@ -559,7 +559,7 @@
       tb.innerHTML=data.map(r=>satir(r)).join('');
       tb.querySelectorAll('[data-genislet]').forEach(b=>b.addEventListener('click',()=>genislet(b)));
       tb.querySelectorAll('[data-takvim]').forEach(b=>b.addEventListener('click',()=>
-        window.v1Takvim(b.dataset.takvim, b.dataset.ad, b.dataset.tarih, b.dataset.yol)));
+        window.v1Takvim(b.dataset.takvim, b.dataset.kad, b.dataset.tarih, b.dataset.yol)));
       tb.querySelectorAll('[data-takip]').forEach(b=>b.addEventListener('click',()=>takipYaz(b)));
       if(uyeMi&&uid) takipDurumlariniIsaretle((data||[]).map(r=>r.id));
       sayfalamaKur();
@@ -612,7 +612,7 @@
              ("PLASTİK BARDAK (100'lü PAKET)") vuruyordu. Veri artık data-* ile taşınıyor;
              data-genislet düğmesindeki desenin aynısı. -->
         <button class="v1-yuvarlak-btn" title="Takvime ekle" data-takvim="${r.id}"
-                data-ad="${esc((r.baslik||'').slice(0,60))}" data-tarih="${ham||''}"
+                data-kad="${esc((r.baslik||'').slice(0,60))}" data-tarih="${ham||''}"
                 data-yol="${esc(detayHref)}">
           <svg viewBox="0 0 24 24" fill="currentColor"><path fill-rule="evenodd" d="M7 2v2H5.5A2.5 2.5 0 0 0 3 6.5v13A2.5 2.5 0 0 0 5.5 22h13a2.5 2.5 0 0 0 2.5-2.5v-13A2.5 2.5 0 0 0 18.5 4H17V2h-2v2H9V2H7Zm12 8H5v9.5c0 .28.22.5.5.5h13a.5.5 0 0 0 .5-.5V10Z"/></svg>
         </button>

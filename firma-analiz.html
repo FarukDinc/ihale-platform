@@ -1687,7 +1687,7 @@
     let paths = '';
     H.iller.forEach(il => {
       ilAdMap[il.key] = il.ad;
-      paths += `<path class="il" data-key="${il.key}" data-ad="${esc(il.ad)}" d="${il.d}" fill="#1a2130"></path>`;
+      paths += `<path class="il" data-key="${il.key}" data-kad="${esc(il.ad)}" d="${il.d}" fill="#1a2130"></path>`;
     });
     wrap.innerHTML = `<svg class="fah-harita" viewBox="${H.viewBox}" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg"><g>${paths}</g></svg>`;
     wrap.querySelectorAll('path.il').forEach(p => {
@@ -1730,7 +1730,7 @@
     const ana = sm
       ? (d => `<div class="t-satir">${sektorEmoji(sektorSecili)} ${(d.firma || 0).toLocaleString('tr')} firma · ${(d.soz || 0).toLocaleString('tr')} sözleşme${d.bedel ? ' · ' + paraKisa(d.bedel) : ''}</div>`)(sm[k] || {})
       : (f => `<div class="t-satir">🏢 ${(f.adet || 0).toLocaleString('tr')} firma${f.ciro ? ' · ' + paraKisa(f.ciro) + ' ciro' : ''}</div>`)(firmaMap[k] || {});
-    tt.innerHTML = `<div class="t-ad">${esc(p.dataset.ad)}</div>${ana}`;
+    tt.innerHTML = `<div class="t-ad">${esc(p.dataset.kad)}</div>${ana}`;
     tt.style.display = 'block';
     tt.style.left = Math.min(e.clientX + 14, window.innerWidth - 250) + 'px';
     tt.style.top = (e.clientY + 14) + 'px';

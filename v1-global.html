@@ -373,7 +373,7 @@
       return r>0.6?MAVI[5]:r>0.33?MAVI[4]:r>0.16?MAVI[3]:r>0.06?MAVI[2]:MAVI[1]; };
     el.className='v1-dunya-wrap';
     el.innerHTML=`<svg viewBox="${D.viewBox}" xmlns="http://www.w3.org/2000/svg" class="v1-dunya-svg" role="img" aria-label="Ülke bazlı ihale yoğunluğu">`+
-      D.ulkeler.map(u=>`<path d="${u.d}" fill="${renk(say[u.kod]||0)}" data-k="${esc(u.kod)}" data-ad="${esc(adlar[u.kod]||u.ad||'')}" data-n="${say[u.kod]||0}"></path>`).join('')+`</svg>`;
+      D.ulkeler.map(u=>`<path d="${u.d}" fill="${renk(say[u.kod]||0)}" data-k="${esc(u.kod)}" data-kad="${esc(adlar[u.kod]||u.ad||'')}" data-n="${say[u.kod]||0}"></path>`).join('')+`</svg>`;
     // Tooltip kabı script'ten sonra geldiği için yoksa burada oluşturulur —
     // erken `return` etmek lejantı ve zoom kurulumunu da düşürürdü.
     let tip=document.getElementById('g-tip');
@@ -384,7 +384,7 @@
         // Harita arşiv toplamını gösterir; liste varsayılan olarak yalnız açık
         // ihaleleri süzer → tıklayınca rakam düşebilir, bunu peşinen söylüyoruz.
         // Sayım alınamadıysa "0 ihale" yazmak YALAN olur → rakam hiç gösterilmez.
-        tip.innerHTML=`<b>${esc(p.dataset.ad||p.dataset.k)}</b>`+(dagilimHatasi
+        tip.innerHTML=`<b>${esc(p.dataset.kad||p.dataset.k)}</b>`+(dagilimHatasi
           ? `<br><span style="opacity:.75;">İhale sayısı alınamadı</span>`
           : `<br>${num(n)} ihale (arşiv toplamı)`+
             (n?`<br><span style="opacity:.75;">Tıklayın → listede süzün</span>`:''));
@@ -393,7 +393,7 @@
       });
       p.addEventListener('mouseleave',()=>{tip.style.display='none';});
       p.addEventListener('click',()=>{
-        const ad=p.dataset.ad; if(!ad||!Number(p.dataset.n)) return;
+        const ad=p.dataset.kad; if(!ad||!Number(p.dataset.n)) return;
         const su=document.getElementById('f-ulke'); if(!su) return;
         // Seçenek listede yoksa ekle: aksi halde su.value='' kalır ve tıklama
         // sessizce TÜM ülkeleri listeler (kullanıcı süzüldüğünü sanır).

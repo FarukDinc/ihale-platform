@@ -1272,13 +1272,13 @@
     }
     // İnline onclick YOK — idare adındaki tırnak kırardı; data-ad + delegasyon (izBaslat).
     govde.innerHTML = dilim.map(i => `
-      <div class="iz-row" data-ad="${esc(i.ad)}">
+      <div class="iz-row" data-kad="${esc(i.ad)}">
         <div class="iz-ad" title="${esc(i.ad)}">${esc(i.ad)}</div>
         <div class="iz-il">${esc(i.il)}</div>
         <div class="iz-toplam">${i.toplam.toLocaleString('tr-TR')}</div>
         <div class="iz-aktif">${i.aktif > 0 ? i.aktif.toLocaleString('tr-TR') : '<span style="color:var(--muted)">0</span>'}</div>
         <div class="iz-actions">
-          <button class="iz-btn iz-btn-amber" data-ad="${esc(i.ad)}">Analiz</button>
+          <button class="iz-btn iz-btn-amber" data-kad="${esc(i.ad)}">Analiz</button>
           <a href="ihaleler?ara=${encodeURIComponent(i.ad)}&amp;sekme=gecmis" class="iz-btn iz-btn-ghost">İhaleler</a>
         </div>
       </div>`).join('');
@@ -1311,8 +1311,8 @@
     });
     document.getElementById('iz-govde').addEventListener('click', e => {
       if (e.target.closest('a')) return;               // "İhaleler" linki listeye gider
-      const el = e.target.closest('[data-ad]');
-      if (el) kurumAc(el.dataset.ad);
+      const el = e.target.closest('[data-kad]');
+      if (el) kurumAc(el.dataset.kad);
     });
     document.addEventListener('keydown', e => {
       if ((e.ctrlKey || e.metaKey) && e.key === 'k' && !KURUM) {
@@ -1443,7 +1443,7 @@
       const a = e.target.closest('.ag-sonuc-agac');
       if (a) { agacYoluAc(a.dataset.detsis); return; }
       const b = e.target.closest('.ag-sonuc-bagsiz');
-      if (b) kurumAc(b.dataset.ad);
+      if (b) kurumAc(b.dataset.kad);
     });
     let t;
     document.getElementById('ag-arama').addEventListener('input', () => { clearTimeout(t); t = setTimeout(agacAra, 350); });
@@ -1513,7 +1513,7 @@
       return;
     }
     const analiz = e.target.closest('.ag-bagsiz-analiz');
-    if (analiz) { kurumAc(analiz.dataset.ad); return; }
+    if (analiz) { kurumAc(analiz.dataset.kad); return; }
     if (e.target.closest('.ag-ok') || e.target.closest('.ag-ad')) dugumAcKapa(dugum);
   }
 
@@ -1560,11 +1560,11 @@
     const html = satirlar.map(r => `
       <div class="ag-satir" style="--derin:${derin}">
         <button class="ag-ok yok">▸</button>
-        <span class="ag-ad ag-bagsiz-analiz" data-ad="${esc(r.idare)}" title="${esc(r.idare)} — analizi aç">${esc(r.idare)}</span>
+        <span class="ag-ad ag-bagsiz-analiz" data-kad="${esc(r.idare)}" title="${esc(r.idare)} — analizi aç">${esc(r.idare)}</span>
         <span class="ag-rozet ${Number(r.ihale_sayisi) ? 'ihale' : 'bos'}" title="Bu idarenin ağaca bağlanamayan ihale kayıtları">📋 ${sayi(r.ihale_sayisi)}</span>
         <span class="ag-rozet ${Number(r.dt_sayisi) ? 'dt' : 'bos'}" title="Bu idarenin ağaca bağlanamayan DT kayıtları">⚡ ${sayi(r.dt_sayisi)}</span>
         <span class="ag-pay"></span>
-        <button class="iz-btn iz-btn-amber ag-bagsiz-analiz" data-ad="${esc(r.idare)}">Analiz</button>
+        <button class="iz-btn iz-btn-amber ag-bagsiz-analiz" data-kad="${esc(r.idare)}">Analiz</button>
       </div>`).join('');
     const daha = satirlar.length >= 50
       ? `<div class="ag-daha" style="--derin:${derin}"><button class="pager-btn ag-bagsiz-daha">Daha fazla göster</button></div>` : '';
@@ -1607,7 +1607,7 @@
           </div>`).join('') + '</div>' : '')
       + (bagsizlar.length ? `<div class="ag-sonuc"><div class="ag-sonuc-baslik">Bağlantısız kurumlarda eşleşenler — tıklayınca analiz açılır</div>`
         + bagsizlar.map(r => `
-          <div class="ag-sonuc-satir ag-sonuc-bagsiz" data-ad="${esc(r.idare)}">
+          <div class="ag-sonuc-satir ag-sonuc-bagsiz" data-kad="${esc(r.idare)}">
             <span class="ag-sonuc-ad" title="${esc(r.idare)}">${esc(r.idare)}</span>
             <span class="ag-rozet ${Number(r.ihale_sayisi) ? 'ihale' : 'bos'}">📋 ${sayi(r.ihale_sayisi)}</span>
             <span class="ag-rozet ${Number(r.dt_sayisi) ? 'dt' : 'bos'}">⚡ ${sayi(r.dt_sayisi)}</span>

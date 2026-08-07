@@ -285,7 +285,7 @@
     let pins = '';
     H.iller.forEach(il => {
       ilAdMap[il.key] = il.ad;
-      paths += `<path class="il" data-key="${il.key}" data-ad="${esc(il.ad)}" data-cx="${il.cx}" data-cy="${il.cy}" d="${il.d}" fill="${cssVar2('#1a2130')}"></path>`;
+      paths += `<path class="il" data-key="${il.key}" data-kad="${esc(il.ad)}" data-cx="${il.cx}" data-cy="${il.cy}" d="${il.d}" fill="${cssVar2('#1a2130')}"></path>`;
     });
     const svg = `<svg class="tr-harita" viewBox="${H.viewBox}" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">
       <g id="g-iller">${paths}</g><g id="g-pins">${pins}</g></svg>`;
@@ -378,7 +378,7 @@
       ? (d => `<div class="t-satir">${sektorEmoji(sektorSecili)} ${(d.firma||0).toLocaleString('tr')} firma · ${(d.soz||0).toLocaleString('tr')} sözleşme${d.bedel? ' · ' + paraKisa(d.bedel):''}</div>
          <div class="t-satir" style="color:var(--muted);font-size:11px;">${esc(sektorSecili)}</div>`)(sm[k] || {})
       : `<div class="t-satir">🏢 ${(f.adet||0).toLocaleString('tr')} firma${f.ciro? ' · ' + paraKisa(f.ciro) + ' ciro':''}</div>`;
-    tt.innerHTML = `<div class="t-ad">${esc(p.dataset.ad)}</div>
+    tt.innerHTML = `<div class="t-ad">${esc(p.dataset.kad)}</div>
       ${anaSatir}
       ${n>0? `<div class="t-satir" style="color:#4ade80;">🤝 ${n} açık RFQ</div>`:''}`;
     tt.style.display = 'block';
