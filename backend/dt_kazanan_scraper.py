@@ -609,11 +609,21 @@ async def main_async(args):
 
             kuyruk = await asyncio.to_thread(kuyruk_say, client)
             if kuyruk < 0:
-                print("✗ Kuyruk sayımı başarısız — muhtemelen migration_dt_kazanan.sql uygulanmamış.\n"
-                      "  Önce çalıştırın: docker exec -i supabase-db psql -U postgres -d postgres "
-                      "< backend/migration_dt_kazanan.sql")
-                sys.exit(1)
-            print(f"→ Kuyruk (token'lı + denenmemiş + sonuç durumunda): {kuyruk} dt_no")
+                # Kuyruk sayımı YALNIZ bilgilendirme amaçlı — secim_cek() bu değere hiç
+                # bağlı değil. count=exact 2,7M satırlık filtrede, ÖZELLİKLE gece ağır MV
+                # yenileme penceresinde PostgREST statement-timeout'una takılıp 5xx (→ -1)
+                # dönebilir. ESKİDEN burada sys.exit(1) vardı → GEÇİCİ bir count hatası TÜM
+                # enrichment turunu 0 iş yapmadan öldürüyor ve "migration yok" YANILTICI
+                # mesajını basıyordu (4-5 Ağu 2026 geceleri böyle boşa geçti; count'un kendisi
+                # elle 379 ms'de dönüyordu — kalıcı sorun DEĞİL). Artık ölümcül DEĞİL:
+                # gerçekten migration/şema eksik olsaydı secim_cek()'in raise_for_status'u
+                # zaten patlardı (aynı kolonları sorguluyor); yalnız count timeout ise tur
+                # normal ilerlesin.
+                print("⚠ Kuyruk sayımı başarısız (muhtemelen count=exact timeout — gece MV "
+                      "penceresi) — SADECE bilgilendirme atlanıp tura DEVAM ediliyor. Gerçek "
+                      "şema/migration sorununu secim_cek() yine de yakalar.")
+            else:
+                print(f"→ Kuyruk (token'lı + denenmemiş + sonuç durumunda): {kuyruk} dt_no")
             print(f"→ {ESZAMANLI} eşzamanlı işçi ile paralel çekiliyor "
                   f"(küresel tavan: {'sınırsız' if args.rpm <= 0 else str(args.rpm) + '/dk'})")
 
