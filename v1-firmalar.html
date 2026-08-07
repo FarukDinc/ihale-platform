@@ -346,11 +346,14 @@
     });
   }
 
-  // ── İl açılır listesi (il_firma_dagilimi RPC — anon'a AÇIK) ─────────────
+  // ── İl açılır listesi — İhale/İkisi: il_firma_dagilimi (yukleniciler.il); DT: dt_il_sayim
+  // (dogrudan_temin_ilanlari.il = firma_dt_toplam.dt_il ile AYNI kaynak → eq BAYT BAYT tutar). F2.
   async function illeriYukle(){
     const sec=el('v1-il');
+    ilAdet.clear();   // mod değişince eski kaynağın illeri kalmasın
     try{
-      const {data,error}=await sb.rpc('il_firma_dagilimi');
+      const kaynak=(firmaMod==='dt')?'dt_il_sayim':'il_firma_dagilimi';
+      const {data,error}=await sb.rpc(kaynak);
       if(error) throw error;
       const liste=(Array.isArray(data)?data:[])
         .filter(r=>r && r.il)
@@ -414,7 +417,7 @@
           : (firmaMod==='birlikte') ? 'Tüm Firmalar (İhale + DT)'
           : (segment && SEGMENTLER[segment]) ? SEGMENTLER[segment].emoji+' '+SEGMENTLER[segment].ad
           : 'Tüm Firmalar';
-    if(il && !(firmaMod==='dt')) b+=' — '+il;
+    if(il) b+=' — '+il;   // F2: DT modunda da il başlıkta
     el('v1-liste-baslik').textContent=b;
   }
 
@@ -429,16 +432,16 @@
     // Segment çipleri yalnız ihale kapsamında anlamlı (seg_* kolonları yukleniciler'de)
     if(el('v1-segment-alan')) el('v1-segment-alan').style.display=(!rpcMod && uyeMi)?'flex':'none';
     if(rpcMod && el('v1-seg-ipucu')) el('v1-seg-ipucu').style.display='none';
-    // firma_dizin_dt'de p_il yok → DT modunda il filtresi pasif (İkisi'de aktif)
+    // F2: firma_dizin_dt artık p_il (dt_il = baskın DT ili) alıyor → DT modunda da il filtresi AKTİF.
     const ilEl=el('v1-il');
-    if(ilEl){ if(firmaMod==='dt'){ ilEl.disabled=true; ilEl.title='İl filtresi doğrudan temin kapsamında uygulanamaz'; }
-              else { ilEl.disabled=!uyeMi; ilEl.title='İle göre süz'; } }
+    if(ilEl){ ilEl.disabled=!uyeMi; ilEl.title='İle göre süz'; }
     modBarBoya();
   }
-  function firmaModSec(m){
+  async function firmaModSec(m){
     if(!uyeMi || m===firmaMod) return;
     firmaMod=m; segment=''; sayfa=1;
     modUIUygula();
+    await illeriYukle();   // F2: DT↔İhale↔İkisi il dropdown kaynağı değişir (dt_il_sayim / il_firma_dagilimi)
     basliklariYaz(); listeBasligiYaz(); temizleGoster(); urlYaz(); yukle();
   }
 
@@ -449,10 +452,8 @@
     const tb=el('v1-tbody');
     const q=(el('v1-ara-liste').value||'').trim();
     const rpc = firmaMod==='dt' ? 'firma_dizin_dt' : 'firma_dizin_birlikte';
-    // firma_dizin_dt'de p_il YOK (DT ilana idare üzerinden bağlı değil) → yalnız İkisi'de il geçir
-    const params = firmaMod==='dt'
-      ? { p_ara:q||null, p_limit:BOY, p_offset:(sayfa-1)*BOY, p_sort:rpcSort, p_kamu_dahil:kamuDahil }
-      : { p_ara:q||null, p_il:il||null, p_limit:BOY, p_offset:(sayfa-1)*BOY, p_sort:rpcSort, p_kamu_dahil:kamuDahil };
+    // F2: firma_dizin_dt artık p_il (dt_il = baskın DT ili) alıyor → her iki RPC de p_il geçer.
+    const params = { p_ara:q||null, p_il:il||null, p_limit:BOY, p_offset:(sayfa-1)*BOY, p_sort:rpcSort, p_kamu_dahil:kamuDahil };
     try{
       const {data,error}=await sb.rpc(rpc,params);
       if(benim!==istekNo) return;
@@ -464,7 +465,7 @@
         el('v1-sayi').textContent=''; el('v1-sayfalama').innerHTML=''; return;
       }
       const sortAd = rpcSort==='sozlesme'?'Sözleşme sayısı':rpcSort==='tarih'?'Son sözleşme':'Ciro';
-      el('v1-sayi').innerHTML=`<strong>${esc(kapsamAd)}</strong>`+(firmaMod==='birlikte'&&il?` · ${esc(il)}`:'')+
+      el('v1-sayi').innerHTML=`<strong>${esc(kapsamAd)}</strong>`+(firmaMod!=='ihale'&&il?` · ${esc(il)}`:'')+
         ` · <strong>${esc(sortAd)}</strong> azalan · Sayfa <strong>${sayfa}</strong> · ${rows.length} firma`;
       tb.innerHTML=rows.map((r,i)=>{
         const ad=r.ad||'—', t=takipli.has(ad);
