@@ -72,6 +72,9 @@ $VENV/python ekap_dogrudan_temin_scraper.py --max-pages 150 >> /opt/ihale-platfo
 # exit 1 verir (kuyruk_say hata mesajı loga düşer, turu bozmaz).
 echo "[$(date +'%Y-%m-%d %H:%M:%S')] === DT kazanan/bedel backfill ===" >> /opt/ihale-platform/logs/scraper.log
 $VENV/python dt_kazanan_scraper.py --limit 2000 --rpm 300 >> /opt/ihale-platform/logs/scraper.log 2>&1
+# I3/D1 TAZELİK TURU: ASC backlog en yeniye geç ulaşır → en yeni "kazanan işleniyor" DT'leri
+# YENİ→ESKİ (desc) ayrı turla önce kapat. dtDetayGetir açık uç (ekap.kik.gov.tr), 572/F5 riski yok.
+$VENV/python dt_kazanan_scraper.py --order desc --limit 3000 --rpm 300 >> /opt/ihale-platform/logs/scraper.log 2>&1
 # ilan.gov.tr (Basın İlan Kurumu) gazete İHALE ilanları — EKAP'ta olmayan (2886 satış/kira vb.) eklenir
 # 40 → 100 (21 Tem): eski tavan günlük hacmi kaçırıyordu (B4 uyarısı tetikleniyordu).
 # API İHALE/İCRA/TEBLİGAT karışık döner, ~%27'si İHALE; 100 sayfa = 2000 karışık ≈ 540 İHALE,

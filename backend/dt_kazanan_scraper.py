@@ -257,7 +257,7 @@ def kuyruk_say(client):
         return -1
 
 
-def secim_cek(client, n, offset=0):
+def secim_cek(client, n, offset=0, order_dir="asc"):
     """Sıradaki n adet denenmemiş dt_no (+ token'ları). Damgalanan satırlar sorgudan
     düştüğü için ilerleme kısmen kendiliğinden olur (ai_kategori_backfill.py deseni);
     ancak GEÇİCİ hata alıp DAMGALANMAYAN satırlar NULL kalır ve offset'siz sorguda aynı
@@ -267,7 +267,7 @@ def secim_cek(client, n, offset=0):
     r = client.get(f"{SUPABASE_URL}/rest/v1/dogrudan_temin_ilanlari",
                    params={"select": "dt_no,dt_ihale_token,dt_idare_token", "dt_ihale_token": "not.is.null",
                            "kazanan_denendi": "is.null", "durum": _durum_filtre(),
-                           "order": "dt_no", "limit": str(n), "offset": str(offset)},
+                           "order": f"dt_no.{order_dir}", "limit": str(n), "offset": str(offset)},
                    headers=_headers())
     r.raise_for_status()
     return r.json()
@@ -575,6 +575,8 @@ def main():
     ap.add_argument("--batch", type=int, default=BATCH_VARSAYILAN, help="Sorgu başına dt_no (öntanım 200)")
     ap.add_argument("--rpm", type=int, default=0, help="Dakika başına azami EKAP isteği (0=sınırsız; kibarlık için ~120 önerilir)")
     ap.add_argument("--dry-run", action="store_true", help="Birkaç dt_no çek, YAZMA; örnek sonuçları göster")
+    ap.add_argument("--order", choices=["asc", "desc"], default="asc",
+                    help="asc=eski→yeni backlog (öntanım, geriye uyumlu); desc=yeni→eski TAZELİK turu (en yeni 'işleniyor'ları önce kapatır)")
     args = ap.parse_args()
 
     if args.limit <= 0 or args.batch <= 0:
@@ -641,7 +643,7 @@ async def main_async(args):
                       f"⏰ Damgalanan satır bir daha seçilmez; migration'ı önce uygulamanız önerilir.")
 
             if args.dry_run:
-                batch = await asyncio.to_thread(secim_cek, client, min(args.batch, 5))
+                batch = await asyncio.to_thread(secim_cek, client, min(args.batch, 5), 0, args.order)
                 if not batch:
                     print("  Kuyruk boş — dt_ihale_token dolu satır yok (retrofit sonrası ilk scrape turunu bekleyin).")
                     return
@@ -683,7 +685,7 @@ async def main_async(args):
             offset = 0
             kesici = {"ardisik": 0, "dur": False}
             while kalan > 0 and not kesici["dur"]:
-                batch = await asyncio.to_thread(secim_cek, client, min(args.batch, kalan), offset)
+                batch = await asyncio.to_thread(secim_cek, client, min(args.batch, kalan), offset, args.order)
                 if not batch:
                     break
                 # Partiyi ESZAMANLI eşzamanlılıkla PARALEL çek (asıl hızlanma burada). Devre kesici
